@@ -13906,6 +13906,7 @@ function ksErrText(e) {
 var KSW = { lvl: 0, gems: 0, loaded: false, unsub: null, claiming: false, retryT: null };
 function ksStartWallet() {
   if (!ksFb() || KSW.unsub || !cloudDb) return;
+  var touch = function () { KS_BACKEND.call("touch", {}).catch(function () {}); }; touch(); setInterval(touch, 3600000); /* v910: account 'last seen' date (server-side, nothing else recorded) */
   KSW.unsub = cloudDb.doc("players/" + PLAYER_ID + "/wallet/main").onSnapshot(function (s) {
     var d = (s.exists && s.data()) || {}; KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
     game.state.gems = KSW.gems; try { render(); } catch (e) {} ksClaimLoop();

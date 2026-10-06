@@ -6,10 +6,16 @@ const admins = require("../functions/admins.json");
 const adminList = "[" + admins.map((u) => "'" + u + "'").join(", ") + "]";
 
 const BODY = `
-      // ---- players: each player writes only their own data; the wallet (gems) is written by the server only ----
+      // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
+      //      are written by the server only, and readable only by that player and admins. ----
       match /players/{pid}/{coll}/{docId} {
-        allow read: if signedIn() && (coll != 'wallet' || isMe(pid) || isAdmin());
-        allow write: if coll != 'wallet' && (isMe(pid) || (isAdmin() && pid.matches('bot_.*')));
+        allow read: if signedIn() && (!(coll in serverOnly()) || isMe(pid) || isAdmin());
+        allow write: if !(coll in serverOnly()) && (isMe(pid) || (isAdmin() && pid.matches('bot_.*')));
+      }
+      // ---- purchases: written by the server only; a player can read their own, admins all ----
+      match /purchases/{id} {
+        allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow write: if false;
       }
       // ---- legacy single-owner paths from the claude.ai version: admin only ----
       match /save/{d} { allow read, write: if isAdmin(); }
@@ -65,6 +71,7 @@ service cloud.firestore {
     function isMe(pid) { return signedIn() && request.auth.uid == pid; }
     function isAdmin() { return signedIn() && request.auth.uid in ${adminList}; }
     function hpKeys() { return ['hp', 'hpT', 'burnLeft', 'raidedAt']; }
+    function serverOnly() { return ['wallet', 'ledger', 'meta']; }
 
     // ===== live =====
 ${BODY}

@@ -68,4 +68,14 @@ t("paths", () => {
   assert.throws(() => C.envRoot("../x"), /bad env/);
   assert.strictEqual(C.cityDocId("12,34"), "12_34"); assert.throws(() => C.cityDocId("1/2"), /bad tile/);
 });
+t("ledger + purchases", () => {
+  const e = C.ledgerEntry("gems", -100, 50, "extinguish", "12,34", null, 5); assert.deepStrictEqual(e, { item: "gems", delta: -100, balance: 50, reason: "extinguish", at: 5, ref: "12,34" });
+  assert.throws(() => C.ledgerEntry("gold", 1, 1, "x", null, null, 1), /unknown item/);
+  assert.strictEqual(C.purchaseId("stripe", "pi_3Nabc.def"), "stripe_pi_3Nabc-def");
+  assert.throws(() => C.purchaseId("Stripe!", "x"), /bad provider/);
+  const pack = { name: "Pouch", price: 4.99, currency: "NZD", items: { gems: 2500 } };
+  const r = C.decidePurchase(null, pack, "pouch", { gems: 10 }, "u1", 9); assert.strictEqual(r.gems, 2510); assert.strictEqual(r.record.status, "delivered");
+  assert.ok(C.decidePurchase(r.record, pack, "pouch", { gems: 2510 }, "u1", 10).dup, "same receipt twice is not delivered twice");
+  assert.throws(() => C.decidePurchase(null, null, "nope", {}, "u1", 1), /unknown pack/);
+});
 console.log(n + " tests passed");

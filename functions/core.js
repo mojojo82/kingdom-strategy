@@ -90,5 +90,30 @@ function cityDocId(tileId) {
   return s.replace(",", "_");
 }
 
+// ---- ledger + purchases ----
+// One ledger entry per change to any tracked item (gems now; gifts and other consumables later): who, what, how much, balance after, why.
+const LEDGER_ITEMS = ["gems"];
+function ledgerEntry(item, delta, balance, reason, ref, by, now) {
+  if (LEDGER_ITEMS.indexOf(item) === -1) throw new GameError("invalid-argument", "unknown item " + item);
+  const e = { item, delta: Math.trunc(delta), balance: Math.trunc(balance), reason: String(reason), at: now };
+  if (ref != null && ref !== "") e.ref = String(ref);
+  if (by) e.by = String(by);
+  return e;
+}
+// Purchases are keyed by the payment provider's receipt id, so the same payment can never be delivered twice (or lost by a retry).
+function purchaseId(provider, receiptId) {
+  const p = String(provider || ""), r = String(receiptId || "");
+  if (!/^[a-z0-9_-]{2,32}$/.test(p) || !/^[A-Za-z0-9._:-]{4,200}$/.test(r)) throw new GameError("invalid-argument", "bad provider/receipt");
+  return (p + "_" + r).replace(/[^A-Za-z0-9_-]/g, "-");
+}
+function decidePurchase(existing, pack, packId, wallet, uid, now) {
+  if (existing) return { dup: true, record: existing };
+  if (!pack || !pack.items) throw new GameError("not-found", "unknown pack " + packId);
+  const gems0 = (wallet && wallet.gems) || 0, add = Math.trunc(pack.items.gems || 0);
+  if (!(add > 0)) throw new GameError("failed-precondition", "pack has no deliverable items");
+  return { dup: false, gems: gems0 + add, add,
+    record: { uid, pack: packId, packName: pack.name || packId, price: pack.price, currency: pack.currency, items: { gems: add }, status: "delivered", at: now, deliveredAt: now } };
+}
+
 module.exports = { BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

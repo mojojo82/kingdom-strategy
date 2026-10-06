@@ -7,6 +7,7 @@ const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const C = require("./core");
 const ADMIN_UIDS = require("./admins.json");
+const PACKS = require("./packs.json");
 
 initializeApp();
 setGlobalOptions({ region: "us-central1", maxInstances: 20, invoker: "public" }); /* reachable by the game; every function still checks the signed-in player itself */
@@ -31,6 +32,8 @@ function wrap(fn) {
 }
 const walletRef = (R, uid) => db.doc(R + "players/" + uid + "/wallet/main");
 const cityRef = (R, tileId) => db.doc(R + "cities/" + C.cityDocId(tileId));
+// Server-only ledger: players/<uid>/ledger/<auto id>. Written in the same transaction as the change it records, so the two can't disagree.
+function ledger(tx, R, uid, item, delta, balance, reason, ref, by) { tx.set(db.collection(R + "players/" + uid + "/ledger").doc(), C.ledgerEntry(item, delta, balance, reason, ref, by, Date.now())); }
 
 // Pay 50 gems for the next Conquest level. Order + speed checked against the game's own pacing.
 exports.claimLevel = wrap(async (req, uid, R, d) => {
@@ -38,7 +41,7 @@ exports.claimLevel = wrap(async (req, uid, R, d) => {
   return db.runTransaction(async (tx) => {
     const ws = await tx.get(walletRef(R, uid));
     const r = C.decideLevelClaim(ws.exists ? ws.data() : null, g, Date.now());
-    if (r.wallet) tx.set(walletRef(R, uid), r.wallet, { merge: true });
+    if (r.wallet) { tx.set(walletRef(R, uid), r.wallet, { merge: true }); ledger(tx, R, uid, "gems", C.LEVEL_CLEAR_GEMS, r.gems, "level_clear", "level " + g); }
     return { gems: r.gems, lvl: r.wallet ? r.wallet.lvl : (ws.data() || {}).lvl, dup: r.dup };
   });
 });
@@ -49,7 +52,7 @@ exports.extinguishBase = wrap(async (req, uid, R, d) => db.runTransaction(async 
   const cs = await tx.get(cityRef(R, d.tileId)), ws = await tx.get(walletRef(R, uid));
   const city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
   const r = C.decideExtinguish(city, Date.now()), left = C.needGems(ws.data(), r.cost);
-  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId), r.cityPatch);
+  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "extinguish", d.tileId);
   return { gems: left, city: r.cityPatch };
 }));
 
@@ -57,7 +60,7 @@ exports.repairBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx)
   const cs = await tx.get(cityRef(R, d.tileId)), ws = await tx.get(walletRef(R, uid));
   const city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
   const r = C.decideRepair(city, Date.now()), left = C.needGems(ws.data(), r.cost);
-  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId), r.cityPatch);
+  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "repair", d.tileId);
   return { gems: left, city: r.cityPatch };
 }));
 
@@ -96,8 +99,8 @@ exports.adminGrantGems = wrap(async (req, uid, R, d) => {
   const target = String(d.uid || ""), amount = Math.trunc(+d.amount || 0);
   if (!/^[A-Za-z0-9_-]{6,128}$/.test(target) || !amount || Math.abs(amount) > 1e7) throw new HttpsError("invalid-argument", "bad uid/amount");
   return db.runTransaction(async (tx) => {
-    const ws = await tx.get(walletRef(R, target)), gems = Math.max(0, ((ws.data() || {}).gems || 0) + amount);
-    tx.set(walletRef(R, target), { gems }, { merge: true });
+    const ws = await tx.get(walletRef(R, target)), before = (ws.data() || {}).gems || 0, gems = Math.max(0, before + amount);
+    tx.set(walletRef(R, target), { gems }, { merge: true }); ledger(tx, R, target, "gems", gems - before, gems, "admin_grant", String(d.note || "").slice(0, 200), uid);
     tx.set(db.collection(R + "adminlog").doc(), { by: uid, uid: target, amount, at: Date.now() });
     return { gems };
   });
@@ -108,9 +111,13 @@ exports.adminSetWallet = wrap(async (req, uid, R, d) => {
   if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
   const target = String(d.uid || ""), gems = Math.trunc(+d.gems), lvl = Math.trunc(+d.lvl);
   if (!/^[A-Za-z0-9_-]{6,128}$/.test(target) || !(gems >= 0) || !(lvl >= 0)) throw new HttpsError("invalid-argument", "bad values");
-  await walletRef(R, target).set({ gems, lvl, lvlAt: Date.now() }, { merge: true });
-  await db.collection(R + "adminlog").add({ by: uid, uid: target, setWallet: { gems, lvl }, at: Date.now() });
-  return { gems, lvl };
+  return db.runTransaction(async (tx) => {
+    const ws = await tx.get(walletRef(R, target)), before = (ws.data() || {}).gems || 0;
+    tx.set(walletRef(R, target), { gems, lvl, lvlAt: Date.now() }, { merge: true });
+    ledger(tx, R, target, "gems", gems - before, gems, "admin_set", "level " + lvl, uid);
+    tx.set(db.collection(R + "adminlog").doc(), { by: uid, uid: target, setWallet: { gems, lvl }, at: Date.now() });
+    return { gems, lvl };
+  });
 });
 
 // Move my city to another tile. Done on the server so damage and fire move with it (teleporting can't be used as a free repair).
@@ -125,3 +132,47 @@ exports.relocateCity = wrap(async (req, uid, R, d) => db.runTransaction(async (t
   tx.set(toRef, moved); tx.delete(fromRef);
   return { ok: true };
 }));
+
+// ---- purchases ----
+// Delivers a paid pack exactly once per payment receipt: purchases/<provider>_<receipt> + wallet + ledger, all in one transaction.
+// For now only an admin can call it (testing, or fixing a payment that didn't come through). When a payment provider is connected,
+// its server-to-server webhook will call the same deliverPurchase() after verifying the payment.
+async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
+  const id = C.purchaseId(provider, receiptId), pref = db.doc(R + "purchases/" + id);
+  return db.runTransaction(async (tx) => {
+    const [ps, ws] = await Promise.all([tx.get(pref), tx.get(walletRef(R, uid))]);
+    const r = C.decidePurchase(ps.exists ? ps.data() : null, PACKS[packId], packId, ws.data(), uid, Date.now());
+    if (r.dup) return { dup: true, id, record: r.record };
+    const rec = Object.assign({ provider, receiptId: String(receiptId) }, r.record); if (by) rec.deliveredBy = by;
+    tx.set(pref, rec); tx.set(walletRef(R, uid), { gems: r.gems }, { merge: true });
+    ledger(tx, R, uid, "gems", r.add, r.gems, "purchase", id, by);
+    return { dup: false, id, gems: r.gems, record: rec };
+  });
+}
+exports.adminDeliverPurchase = wrap(async (req, uid, R, d) => {
+  if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
+  const target = String(d.uid || ""); if (!/^[A-Za-z0-9_-]{6,128}$/.test(target)) throw new HttpsError("invalid-argument", "bad uid");
+  return deliverPurchase(R, target, String(d.pack || ""), String(d.provider || "manual"), String(d.receiptId || ""), uid);
+});
+// Mark a purchase refunded / charged back. Records it (and who did it); what to do about the gems is your call, so nothing is taken back automatically.
+exports.adminMarkPurchase = wrap(async (req, uid, R, d) => {
+  if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
+  const status = String(d.status || ""); if (["refunded", "chargeback", "delivered"].indexOf(status) === -1) throw new HttpsError("invalid-argument", "bad status");
+  const pref = db.doc(R + "purchases/" + String(d.id || "").replace(/[^A-Za-z0-9_-]/g, "-"));
+  return db.runTransaction(async (tx) => {
+    const ps = await tx.get(pref); if (!ps.exists) throw new C.GameError("not-found", "no such purchase");
+    const patch = { status, statusAt: Date.now(), statusBy: uid, statusNote: String(d.note || "").slice(0, 300) };
+    tx.update(pref, patch); return Object.assign({}, ps.data(), patch);
+  });
+});
+
+// ---- account dates ----
+// "Account created" and "last seen" only. No IPs, devices or sessions. Called by the game once per session (and at most hourly).
+exports.touch = wrap(async (req, uid, R) => {
+  const ref = db.doc(R + "players/" + uid + "/meta/account"), now = Date.now();
+  return db.runTransaction(async (tx) => {
+    const s = await tx.get(ref), d = s.exists ? s.data() : {};
+    if (d.lastSeen && now - d.lastSeen < 10 * 60 * 1000) return { createdAt: d.createdAt, lastSeen: d.lastSeen };
+    const out = { createdAt: d.createdAt || now, lastSeen: now }; tx.set(ref, out, { merge: true }); return out;
+  });
+});

@@ -112,6 +112,34 @@ const P = (s) => R + s;
     await setDoc(doc(ADM.db, P("terrain/0_0")), { s: "0", t: 1 });
     await denied(setDoc(doc(A.db, P("mapdecor/1_1")), { s: "x", t: 1 }));
   });
+  await t("ledger: every gem change is recorded by the server, readable only by the player and admins", async () => {
+    const { getDocs, collection, query, orderBy } = require("firebase/firestore");
+    const q = await getDocs(query(collection(A.db, P("players/" + A.uid + "/ledger")), orderBy("at")));
+    const rows = q.docs.map((x) => x.data().reason + ":" + x.data().delta + "=" + x.data().balance);
+    assert.deepStrictEqual(rows, ["level_clear:50=50", "level_clear:50=100", "extinguish:-100=0", "admin_grant:1000=1000", "repair:-225=775"], JSON.stringify(rows));
+    await denied(getDocs(collection(B.db, P("players/" + A.uid + "/ledger"))));
+    await denied(setDoc(doc(A.db, P("players/" + A.uid + "/ledger/fake")), { item: "gems", delta: 999, balance: 999, reason: "purchase", at: 1 }));
+    const adm = await getDocs(collection(ADM.db, P("players/" + A.uid + "/ledger"))); assert.strictEqual(adm.size, 5);
+  });
+  await t("purchases: delivered once per receipt, recorded, only admin can deliver/mark", async () => {
+    await fnErr(A.call("adminDeliverPurchase", { uid: A.uid, pack: "test_gems_100", provider: "manual", receiptId: "r-0001" }), /admin only|permission/);
+    let r = await ADM.call("adminDeliverPurchase", { uid: A.uid, pack: "test_gems_100", provider: "manual", receiptId: "r-0001" }); assert.ok(!r.dup); assert.strictEqual(r.gems, 875);
+    r = await ADM.call("adminDeliverPurchase", { uid: A.uid, pack: "test_gems_100", provider: "manual", receiptId: "r-0001" }); assert.ok(r.dup, "second delivery of same receipt must be a no-op");
+    const w = await getDoc(doc(A.db, P("players/" + A.uid + "/wallet/main"))); assert.strictEqual(w.data().gems, 875);
+    const mine = await getDoc(doc(A.db, P("purchases/manual_r-0001"))); assert.strictEqual(mine.data().status, "delivered"); assert.strictEqual(mine.data().uid, A.uid);
+    await denied(getDoc(doc(B.db, P("purchases/manual_r-0001"))));
+    await denied(setDoc(doc(A.db, P("purchases/fake")), { uid: A.uid, status: "delivered" }));
+    await fnErr(ADM.call("adminDeliverPurchase", { uid: A.uid, pack: "no_such_pack", provider: "manual", receiptId: "r-0002" }), /unknown pack/);
+    const m = await ADM.call("adminMarkPurchase", { id: "manual_r-0001", status: "refunded", note: "test" }); assert.strictEqual(m.status, "refunded");
+    const w2 = await getDoc(doc(A.db, P("players/" + A.uid + "/wallet/main"))); assert.strictEqual(w2.data().gems, 875, "refund marks only, never takes gems by itself");
+  });
+  await t("account dates: server writes created/last seen; players can't edit them", async () => {
+    const r = await A.call("touch"); assert.ok(r.createdAt && r.lastSeen);
+    const d = await getDoc(doc(A.db, P("players/" + A.uid + "/meta/account"))); assert.strictEqual(d.data().createdAt, r.createdAt);
+    assert.deepStrictEqual(Object.keys(d.data()).sort(), ["createdAt", "lastSeen"], "only the two dates are stored");
+    await denied(setDoc(doc(A.db, P("players/" + A.uid + "/meta/account")), { createdAt: 1, lastSeen: 1 }));
+    await denied(getDoc(doc(B.db, P("players/" + A.uid + "/meta/account"))));
+  });
   await t("live env is separate from test env", async () => {
     ENV = "live"; R = "";
     const r = await B.call("claimLevel", { chapter: 1, levelNum: 1 }); assert.strictEqual(r.gems, 50);
