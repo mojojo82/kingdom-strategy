@@ -104,11 +104,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     try { await adminAuth.getAuth().createUser({ uid: "ciadmin0001", email: "admin@e2e.dev", password: "secret123" }); } catch (e) { if (!/exists/.test(e.message)) throw e; }
     const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } }), P = await ctx.newPage();
     P.on("dialog", (d) => d.accept(d.type() === "prompt" ? "SEND" : undefined));
-    P.on("pageerror", (e) => problems.push("ADMIN page error: " + e.message));
-    await P.goto("http://127.0.0.1:8000/admin/?emu=1"); await P.waitForSelector("#signin:not(.hide)", { timeout: 60000 });
+    const alog = []; P.on("pageerror", (e) => { problems.push("ADMIN page error: " + e.message); alog.push("pageerror " + e.message); });
+    P.on("console", (m) => alog.push(m.type() + " " + m.text().slice(0, 300))); P.on("requestfailed", (r) => alog.push("reqfail " + r.url().slice(0, 120) + " " + (r.failure() || {}).errorText));
+    const step = async (name, fn) => { try { return await fn(); } catch (e) { const st = await P.evaluate(() => ({ signin: document.getElementById("signin").className, app: document.getElementById("app").className, msg: document.getElementById("siMsg").textContent, who: document.getElementById("who").textContent, results: (document.getElementById("results") || {}).textContent })).catch((x) => String(x)); throw new Error(name + ": " + e.message.split("\n")[0] + " | page " + JSON.stringify(st) + " | log " + alog.slice(-12).join(" || ")); } };
+    await P.goto("http://127.0.0.1:8000/admin/?emu=1"); await step("sign-in form", () => P.waitForSelector("#signin:not(.hide)", { timeout: 60000 }));
     await P.fill("#em", "admin@e2e.dev"); await P.fill("#pw", "secret123"); await P.click("#eIn");
-    await P.waitForSelector("#app:not(.hide)", { timeout: 60000 });
-    await P.fill("#q", "Alice"); await P.click("#findBtn"); await P.waitForSelector("#results [data-uid]", { timeout: 30000 });
+    await step("admin app after sign-in", () => P.waitForSelector("#app:not(.hide)", { timeout: 60000 }));
+    await P.fill("#q", "Alice"); await P.click("#findBtn"); await step("search results", () => P.waitForSelector("#results [data-uid]", { timeout: 30000 }));
     await P.click("#results [data-uid]"); await P.waitForFunction(() => document.getElementById("pName").textContent === "Alice", null, { timeout: 30000 });
     await P.fill("#mTitle", "Welcome gift"); await P.fill("#mBody", "Enjoy!");
     await P.selectOption("#mItems .itemrow select", "food"); await P.fill("#mItems .itemrow input", "2500");
