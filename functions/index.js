@@ -1,3 +1,4 @@
+// deploy rev 2
 // Kingdom Strategy - Cloud Functions. Everything worth gems happens here, never on the player's device.
 // Callable from the game with firebase.functions().httpsCallable(name)({ env, ... }). env = "live" | "test".
 "use strict";
