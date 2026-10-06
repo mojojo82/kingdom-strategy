@@ -1,0 +1,75 @@
+name: firebase
+# Tests the server (rules + Cloud Functions) on Firebase's local emulators, then deploys them to the real project.
+# Test/deploy logs are committed to the ci-logs branch so they can be read without GitHub's log viewer.
+on:
+  push:
+    branches: [main]
+    paths: ["functions/**", "tools/**", "ci/**", "firebase.json", ".github/workflows/firebase.yml", "test/index.html"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: firebase, cancel-in-progress: false }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - name: Install
+        run: |
+          (cd functions && npm install --no-audit --no-fund)
+          (cd ci && npm install --no-audit --no-fund)
+      - name: Unit + emulator tests
+        id: tests
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          cp functions/admins.json /tmp/admins.real.json
+          {
+            echo "== unit tests"; node functions/test/core.test.js &&
+            echo '["ciadmin0001"]' > functions/admins.json && node tools/build-rules.js &&
+            echo "== emulator tests" &&
+            npx -y firebase-tools@13 emulators:exec --project demo-kingdom --only auth,firestore,functions "node ci/integration.test.js"
+          } 2>&1 | tee ci-out/test.log
+      - name: Restore real admin list
+        if: always()
+        run: cp /tmp/admins.real.json functions/admins.json && node tools/build-rules.js
+      - name: Publish test log
+        if: always()
+        run: |
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git fetch origin ci-logs:ci-logs 2>/dev/null && git worktree add /tmp/cl ci-logs || { git worktree add --detach /tmp/cl && cd /tmp/cl && git checkout --orphan ci-logs && git rm -rfq . ; cd -; }
+          cp ci-out/test.log /tmp/cl/test.log
+          echo "run ${GITHUB_RUN_ID} sha ${GITHUB_SHA} tests=${{ steps.tests.outcome }}" > /tmp/cl/test-status.txt
+          cd /tmp/cl && git add -A && git commit -qm "test log ${GITHUB_RUN_ID}" && git push -q origin ci-logs
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Deploy rules + functions
+        id: deploy
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -o pipefail
+          mkdir -p ci-out
+          if [ -z "$SA" ]; then echo "No FIREBASE_SERVICE_ACCOUNT secret yet - skipping deploy." | tee ci-out/deploy.log; exit 0; fi
+          echo "$SA" > /tmp/sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
+          (cd functions && npm install --no-audit --no-fund)
+          node tools/build-rules.js
+          npx -y firebase-tools@13 deploy --only firestore:rules,functions --project kingdom-strategy --non-interactive --force 2>&1 | tee ci-out/deploy.log
+      - name: Publish deploy log
+        if: always()
+        run: |
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git fetch origin ci-logs:ci-logs 2>/dev/null && git worktree add /tmp/cl ci-logs || { git worktree add --detach /tmp/cl && cd /tmp/cl && git checkout --orphan ci-logs && git rm -rfq . ; cd -; }
+          cp ci-out/deploy.log /tmp/cl/deploy.log 2>/dev/null || echo "no deploy log" > /tmp/cl/deploy.log
+          echo "run ${GITHUB_RUN_ID} sha ${GITHUB_SHA} deploy=${{ steps.deploy.outcome }}" > /tmp/cl/deploy-status.txt
+          cd /tmp/cl && git add -A && git commit -qm "deploy log ${GITHUB_RUN_ID}" && git push -q origin ci-logs
