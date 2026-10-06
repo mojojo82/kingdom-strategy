@@ -101,7 +101,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
     const adminApp = require("firebase-admin/app"), adminAuth = require("firebase-admin/auth");
     if (!adminApp.getApps().length) adminApp.initializeApp({ projectId: "demo-kingdom" });
-    try { await adminAuth.getAuth().createUser({ uid: "ciadmin0001", email: "admin@e2e.dev", password: "secret123" }); } catch (e) { if (!/exists/.test(e.message)) throw e; }
+    try { await adminAuth.getAuth().createUser({ uid: "ciadmin0001", email: "admin@e2e.dev", password: "secret123" }); }
+    catch (e) { if (!/exists/.test(e.message)) throw e; await adminAuth.getAuth().updateUser("ciadmin0001", { email: "admin@e2e.dev", password: "secret123" }); } /* the security tests already made this uid (no password) */
     const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } }), P = await ctx.newPage();
     P.on("dialog", (d) => d.accept(d.type() === "prompt" ? "SEND" : undefined));
     const alog = []; P.on("pageerror", (e) => { problems.push("ADMIN page error: " + e.message); alog.push("pageerror " + e.message); });
