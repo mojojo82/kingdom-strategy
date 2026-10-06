@@ -4,6 +4,140 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kingdom Strategy Prototype</title>
+<script id="ksFirebaseAdapter">
+/* v902: Firebase backend. Only switches on when the game runs OUTSIDE claude.ai (GitHub Pages / Firebase Hosting, or ?fb=1).
+   It provides the same window.claude.use("db") the game already talks to, backed by Cloud Firestore, so no game code changes.
+   - /test/ path (or ?env=test) keeps all data under envs/test/... so testing never touches live players.
+   - Firestore can't store arrays inside arrays: those are wrapped as {__arr:[...]} on write and unwrapped on read.
+   - acquire() leases live in a separate _leases collection (Firestore transaction), never inside the game's own docs. */
+(function () {
+  if (window.claude && typeof window.claude.use === "function") return; /* inside claude.ai: keep its own db */
+  var host = location.hostname, qs = location.search;
+  if (!(/github\.io$|\.web\.app$|\.firebaseapp\.com$/.test(host) || /[?&]fb=1\b/.test(qs))) return;
+  var CFG = {
+    apiKey: "AIzaSyAte8e9E9rtt2PvSxk0EacwM0rjoiO7Hoo",
+    authDomain: "kingdom-strategy.firebaseapp.com",
+    projectId: "kingdom-strategy",
+    storageBucket: "kingdom-strategy.firebasestorage.app",
+    messagingSenderId: "862432836712",
+    appId: "1:862432836712:web:77c692fc9fc2fbf5ff0fdd"
+  };
+  var ENV = (/\/test\//.test(location.pathname) || /[?&]env=test\b/.test(qs)) ? "test" : "live";
+  var ROOT = ENV === "test" ? "envs/test/" : "";
+  var SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
+  var KS = window.KS_BACKEND = { kind: "firebase", env: ENV, status: "loading", uid: null, error: null };
+
+  function badge() { /* small corner chip so you can see which backend/env is running and whether it connected */
+    var b = document.getElementById("ksFbBadge");
+    if (!b) { if (!document.body) return; b = document.createElement("div"); b.id = "ksFbBadge"; b.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:2147483000;font:11px/1.2 system-ui,sans-serif;padding:3px 7px;border-radius:6px;background:rgba(10,16,32,.85);border:1px dashed #f0c95f;color:#f3e9d2;pointer-events:auto;cursor:pointer;opacity:.85"; b.onclick = function () { alert("Backend: Firebase (" + KS.env + ")\nStatus: " + KS.status + (KS.uid ? "\nSigned in: anonymous" : "\nSigned in: no") + (KS.error ? "\nError: " + KS.error : "")); }; document.body.appendChild(b); }
+    var ok = KS.status === "ready", warn = KS.status === "ready-noauth";
+    b.textContent = "🔥 " + (KS.env === "test" ? "TEST" : "LIVE") + " · " + (ok ? "online" : warn ? "online (no sign-in)" : KS.status === "loading" ? "connecting…" : "offline");
+    b.style.borderColor = ok ? "#7fd07f" : warn ? "#f0c95f" : KS.status === "loading" ? "#6fb7ff" : "#ff7070";
+  }
+  document.addEventListener("DOMContentLoaded", badge);
+
+  function load(src) { return new Promise(function (res, rej) { var s = document.createElement("script"); s.src = src; s.async = false; s.onload = res; s.onerror = function () { rej(new Error("Couldn't load " + src)); }; document.head.appendChild(s); }); }
+
+  /* ---- value encoding (Firestore: no nested arrays, no undefined) ---- */
+  function enc(v) {
+    if (Array.isArray(v)) return v.map(function (x) { return Array.isArray(x) ? { __arr: enc(x) } : enc(x); });
+    if (v && typeof v === "object") { var o = {}; for (var k in v) if (Object.prototype.hasOwnProperty.call(v, k) && v[k] !== undefined && typeof v[k] !== "function") o[k] = enc(v[k]); return o; }
+    if (typeof v === "number" && !isFinite(v)) return null; /* JSON semantics, same as the claude db */
+    return v;
+  }
+  function dec(v) {
+    if (Array.isArray(v)) return v.map(dec);
+    if (v && typeof v === "object") {
+      if (typeof v.toMillis === "function") return v.toMillis();
+      var ks = Object.keys(v); if (ks.length === 1 && ks[0] === "__arr" && Array.isArray(v.__arr)) return dec(v.__arr);
+      var o = {}; ks.forEach(function (k) { o[k] = dec(v[k]); }); return o;
+    }
+    return v;
+  }
+  function mapErr(e) { /* give errors the wording the game already checks for */
+    var msg = (e && e.message) || String(e), code = (e && e.code) || "";
+    var out = new Error(msg); out.code = code;
+    if (/maximum allowed size|exceeds the maximum|too large/i.test(msg)) out.message = msg + " (arguments must be plain JSON data within the store's limits)";
+    if (code === "not-found" || code === "firestore/not-found") out.message = "not_found: " + msg;
+    if (code === "permission-denied") { KS.error = "permission denied - check Firestore rules / Anonymous sign-in"; badge(); }
+    return out;
+  }
+  function wrapDoc(s) { var ex = !!s.exists, raw = ex ? s.data() : undefined; return { id: s.id, exists: ex, hasPendingWrites: !!(s.metadata && s.metadata.hasPendingWrites), data: function () { return ex ? dec(raw) : undefined; } }; }
+  function wrapQuery(s) { var docs = s.docs.map(wrapDoc); return { docs: docs, size: docs.length, empty: !docs.length, forEach: function (f) { docs.forEach(f); } }; }
+  function clampTtl(t) { t = +t || 30000; return Math.max(1000, Math.min(600000, t)); }
+
+  function makeDb(fs) {
+    var FP = firebase.firestore.FieldPath;
+    function P(p) { return ROOT + String(p).replace(/^\/+|\/+$/g, ""); }
+    function query(path, ref) {
+      return {
+        where: function (f, op, v) { return query(path, ref.where(f, op, enc(v))); },
+        orderBy: function (f, d) { return query(path, ref.orderBy(f, d || "asc")); },
+        limit: function (n) { return query(path, ref.limit(n)); },
+        get: function () { return ref.get().then(wrapQuery, function (e) { throw mapErr(e); }); },
+        onSnapshot: function (next, err) { return ref.onSnapshot(function (s) { next(wrapQuery(s)); }, function (e) { var m = mapErr(e); console.error("Firestore listen " + path + ":", m.message); if (err) err(m); }); },
+        doc: function (id) { return doc(path + "/" + id); }
+      };
+    }
+    function doc(path) {
+      var ref = fs.doc(P(path)), id = String(path).split("/").pop();
+      return {
+        id: id, path: path,
+        get: function () { return ref.get().then(wrapDoc, function (e) { throw mapErr(e); }); },
+        set: function (data) { return ref.set(enc(data || {})).then(function () {}, function (e) { throw mapErr(e); }); },
+        update: function (data) {
+          var keys = Object.keys(data || {}).filter(function (k) { return data[k] !== undefined; }); if (!keys.length) return Promise.resolve();
+          var args = []; keys.forEach(function (k) { args.push(new FP(k), enc(data[k])); }); /* FieldPath: a "." in a key is a plain character, like the claude db */
+          return ref.update.apply(ref, args).then(function () {}, function (e) { throw mapErr(e); });
+        },
+        delete: function () { return ref.delete().then(function () {}, function (e) { throw mapErr(e); }); },
+        onSnapshot: function (next, err) { return ref.onSnapshot(function (s) { next(wrapDoc(s)); }, function (e) { var m = mapErr(e); console.error("Firestore listen " + path + ":", m.message); if (err) err(m); }); },
+        acquire: function (o) {
+          o = o || {}; var holder = String(o.holder || "anon"), ttl = clampTtl(o.ttlMs);
+          var lref = fs.doc(ROOT + "_leases/" + String(path).replace(/\//g, "~"));
+          return fs.runTransaction(function (tx) {
+            return tx.get(lref).then(function (s) {
+              var now = Date.now(), d = s.exists ? s.data() : null;
+              if (d && d.holder !== holder && d.exp > now) return { acquired: false, expiresAt: new Date(d.exp).toISOString() };
+              var exp = now + ttl; tx.set(lref, { holder: holder, exp: exp, path: String(path) });
+              if (o.data) tx.set(ref, enc(o.data), { merge: true });
+              return { acquired: true, holder: holder, expiresAt: new Date(exp).toISOString() };
+            });
+          }).catch(function (e) { throw mapErr(e); });
+        },
+        collection: function (c) { return query(path + "/" + c, fs.collection(P(path + "/" + c))); }
+      };
+    }
+    return { doc: doc, collection: function (p) { return query(p, fs.collection(P(p))); }, backend: "firebase", env: ENV };
+  }
+
+  var ready = null;
+  function boot() {
+    if (ready) return ready;
+    ready = load(SDK + "firebase-app-compat.js")
+      .then(function () { return Promise.all([load(SDK + "firebase-auth-compat.js"), load(SDK + "firebase-firestore-compat.js")]); })
+      .then(function () {
+        var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(CFG);
+        var fs = firebase.firestore();
+        try { fs.settings({ ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
+        var auth = firebase.auth();
+        return new Promise(function (res) {
+          var done = false, un = auth.onAuthStateChanged(function (u) {
+            if (u && !done) { done = true; try { un(); } catch (e) {} KS.uid = u.uid; KS.status = "ready"; badge(); res(makeDb(fs)); }
+          });
+          auth.signInAnonymously().catch(function (e) {
+            if (done) return; done = true; try { un(); } catch (x) {}
+            KS.status = "ready-noauth"; KS.error = "anonymous sign-in failed (" + (e && e.code) + ") - turn on Authentication > Sign-in method > Anonymous";
+            console.warn("Firebase:", KS.error); badge(); res(makeDb(fs));
+          });
+        });
+      })
+      .catch(function (e) { KS.status = "offline"; KS.error = (e && e.message) || String(e); console.error("Firebase backend failed:", KS.error); badge(); return null; });
+    return ready;
+  }
+  window.claude = { use: function (name) { return name === "db" ? boot() : Promise.resolve(null); }, __firebase: true };
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
