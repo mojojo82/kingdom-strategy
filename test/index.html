@@ -13329,6 +13329,27 @@ function terrainMarkDirty(x, y) {
   if (!terrainFlushTimer) terrainFlushTimer = setTimeout(terrainFlushCloud, 1200);
 }
 var terrainSyncStarted = false;
+/* v903: first run on Firebase copies the hand-painted map (terrain chunks + placed sprites) from seed-world.json,
+   exported from the claude.ai database. Runs once per environment (marker doc world/seedImport), never overwrites a chunk/sprite that already exists. */
+function firebaseSeedWorld() {
+  if (!cloudDb || cloudDb.backend !== "firebase" || serverPrefix() !== "" || typeof fetch !== "function") return;
+  var mark = cloudDb.doc("world/seedImport");
+  mark.get().then(function (s) {
+    if (s.exists && s.data() && s.data().v >= 1) return;
+    return mark.acquire({ holder: PLAYER_ID || "seed", ttlMs: 60000 }).then(function (r) {
+      if (!r || !r.acquired) return;
+      return fetch("seed-world.json", { cache: "no-store" }).then(function (res) { return res.ok ? res.json() : null; }).then(function (seed) {
+        if (!seed) return;
+        var jobs = [];
+        ["terrain", "mapdecor"].forEach(function (c) { Object.keys(seed[c] || {}).forEach(function (id) {
+          var ref = cloudDb.doc(c + "/" + id);
+          jobs.push(ref.get().then(function (sn) { return sn.exists ? null : ref.set(seed[c][id]); }));
+        }); });
+        return Promise.all(jobs).then(function () { console.log("World seed imported:", jobs.length, "docs"); return mark.set({ v: seed.v || 1, at: Date.now(), by: PLAYER_ID || "" }); });
+      });
+    });
+  }).catch(function (e) { console.error("World seed import failed:", e && e.message); });
+}
 function startTerrainSync() {
   if (terrainSyncStarted || !cloudDb) return; terrainSyncStarted = true;
   cloudDb.collection(serverPrefix() + "terrain").onSnapshot(function (qsnap) {
@@ -14661,7 +14682,7 @@ function assignServerForNewPlayer() {
 // subscribe to anything — those two read CURRENT_SERVER_ID indirectly via
 // serverPrefix(), so it must be correct before they start.
 function resolveServerAssignment() {
-  function afterResolved() { startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } }
+  function afterResolved() { startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } }
   if (IS_GUEST_LINK || !cloudDb) {
     // Guests ride along the legacy world; offline/no-db has no multiplayer
     // concept to assign anyway. CURRENT_SERVER_ID is already correct
@@ -22200,7 +22221,7 @@ function renderCoreSaveDebugPanel() {
     "<b>Core save debug</b> " +
       "<span style='cursor:pointer;float:right;opacity:0.6' id='coreSaveDebugClose'>&times;</span>",
     "device: " + detectDevicePlatform().label,
-    "storage: localStorage only (not synced)",
+    "storage: " + (cloudDb ? (cloudDb.backend === "firebase" ? "Firebase (" + cloudDb.env + ")" : "claude.ai cloud") + (lastCloudWrittenJson ? " · synced" : " · not yet synced") : "this device only (offline)"), /* v903: was a hard-coded label */
     "Gareth: " + gTxt,
     "last saved: " + lastWriteTxt,
     "FPS toggle: " + fpsTxt,
