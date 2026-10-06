@@ -74,14 +74,14 @@ jobs:
           set -o pipefail
           echo "$SA" > /tmp/sa.json
           gcloud auth activate-service-account --key-file=/tmp/sa.json --quiet 2>&1 | tee -a ci-out/deploy.log
-          for f in claimlevel extinguishbase repairbase extinguishallybase hitbase admingrantgems adminsetwallet relocatecity; do
+          for f in $(grep -oE '^exports\.[A-Za-z0-9_]+' functions/index.js | sed 's/exports\.//' | tr 'A-Z' 'a-z'); do
             gcloud run services add-iam-policy-binding $f --project kingdom-strategy --region us-central1 --member=allUsers --role=roles/run.invoker --quiet >/dev/null 2>/tmp/err.txt && echo "invoker ok: $f" | tee -a ci-out/deploy.log || { echo "invoker FAILED: $f"; cat /tmp/err.txt; } 2>&1 | tee -a ci-out/deploy.log
           done
       - name: Smoke test (functions reachable by the game, refuse signed-out calls)
         if: steps.deploy.outcome == 'success'
         run: |
           set -o pipefail
-          for f in claimLevel hitBase extinguishBase; do
+          for f in claimLevel hitBase extinguishBase touch adminDeliverPurchase; do
             out=$(curl -s -m 30 -X POST -H "content-type: application/json" -d '{"data":{"env":"test"}}' https://us-central1-kingdom-strategy.cloudfunctions.net/$f)
             echo "$f -> $out" | tee -a ci-out/deploy.log
             echo "$out" | grep -q UNAUTHENTICATED || { echo "SMOKE FAIL: $f not reachable as expected" | tee -a ci-out/deploy.log; exit 1; }
