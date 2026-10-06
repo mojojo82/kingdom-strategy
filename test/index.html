@@ -3860,7 +3860,7 @@ function initDeviceLock(db) {
             try { renderHeroHopBtn(); } catch (e) {}
           } },
         { key: MAP_ISO_KEY, apply: function (v) {
-            mapIso = v === "1";
+            mapIso = v !== "0";
             try { localStorage.setItem(MAP_ISO_KEY, v); } catch (e) {}
             try { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); renderMapIsoBtn(); renderMarch3dBtn(); } catch (e) {} /* v892: a synced iso setting arriving after load kept the old scroll, so the view jumped elsewhere */
           } },
@@ -12799,7 +12799,7 @@ function mapWorldPixelSide(size) {
 }
 // v825: isometric map (Dev Tools toggle). Same tile grid, drawn rotated 45deg and squashed to a 35deg viewing elevation (vertical scale = sin 35deg).
 var MAP_ISO_KEY = "kingdom_prototype_mapiso_v1", mapIso = false;
-try { mapIso = localStorage.getItem(MAP_ISO_KEY) === "1"; } catch (e) {}
+mapIso = true; try { mapIso = localStorage.getItem(MAP_ISO_KEY) !== "0"; } catch (e) {} /* v904: isometric is the default; only an explicit "0" (player chose flat) turns it off */
 var ISO_K = Math.sin(35 * Math.PI / 180);
 function isoGeom() {
   var n = Math.round(Math.sqrt(game.state.map.length)), s = tilePxZ(), p = s + gapPxZ(), pad = padPxZ(), r2 = Math.SQRT1_2 * p, dW = s * Math.SQRT2, dH = dW * ISO_K;
