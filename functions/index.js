@@ -1,4 +1,3 @@
-// deploy rev 2
 // Kingdom Strategy - Cloud Functions. Everything worth gems happens here, never on the player's device.
 // Callable from the game with firebase.functions().httpsCallable(name)({ env, ... }). env = "live" | "test".
 "use strict";
@@ -10,7 +9,7 @@ const C = require("./core");
 const ADMIN_UIDS = require("./admins.json");
 
 initializeApp();
-setGlobalOptions({ region: "us-central1", maxInstances: 20 });
+setGlobalOptions({ region: "us-central1", maxInstances: 20, invoker: "public" }); /* reachable by the game; every function still checks the signed-in player itself */
 const db = getFirestore();
 
 function uidOf(req) {
