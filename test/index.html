@@ -915,6 +915,7 @@
   .chat-time { font-size:10px; color:#8a6a44; }
   .chat-text { font-size:12.5px; color:#2e1d10; word-break:break-word; margin-top:1px; line-height:1.4; }
   .chat-empty { color:#6b5230; font-size:12px; text-align:center; padding:24px 0; }
+  .chat-older { text-align:center; font-size:11px; color:#a3906a; padding:6px 0 10px; border-bottom:1px dashed rgba(163,144,106,.35); margin-bottom:6px; } /* v909 */
   .chat-input-row { display:flex; gap:6px; margin-top:10px; }
   .chat-input-row input, .chat-input-row textarea { flex:1; resize:none; font-family:inherit; max-height:120px; background:#fbf3de; border:1.5px solid #a9822f; color:#2e1d10; border-radius:6px; padding:7px 9px; font-size:12.5px; }
   .chat-input-row input::placeholder, .chat-input-row textarea::placeholder { color:#8a6a44; }
@@ -23098,12 +23099,12 @@ function startAllianceSync() {
   }, function (e) { console.error("alliance list sync", e && e.message); });
 }
 function subscribeMyAlliance(aid) {
-  ALLY.subs.forEach(function (u) { try { u(); } catch (e) {} }); ALLY.subs = []; ALLY.members = {}; ALLY.requests = {}; ALLY.chat = []; ALLY.subAid = aid; ALLY.alliance = aid ? (ALLY.list[aid] || null) : null;
+  ALLY.subs.forEach(function (u) { try { u(); } catch (e) {} }); ALLY.subs = []; ALLY.members = {}; ALLY.requests = {}; ALLY.chat = []; try { chatOlderReset('alliance'); } catch (e) {} ALLY.subAid = aid; ALLY.alliance = aid ? (ALLY.list[aid] || null) : null;
   if (!aid) return;
   var base = allyPath("alliances/" + aid);
   ALLY.subs.push(cloudDb.collection(base + "/members").onSnapshot(function (q) { var m = {}; q.docs.forEach(function (d) { if (d.exists) m[d.id] = d.data(); }); ALLY.members = m; allyNotify(); }));
   ALLY.subs.push(cloudDb.collection(base + "/requests").onSnapshot(function (q) { var r = {}; q.docs.forEach(function (d) { if (d.exists) r[d.id] = d.data(); }); ALLY.requests = r; allyNotify(); }));
-  ALLY.subs.push(cloudDb.collection(base + "/chat").orderBy("ts", "desc").limit(100).onSnapshot(function (q) { ALLY.chat = q.docs.filter(function (d) { return d.exists; }).map(function (d) { var o = d.data(); o._id = d.id; return o; }).reverse(); allyNotify(); }));
+  ALLY.subs.push(cloudDb.collection(base + "/chat").orderBy("ts", "desc").limit(100).onSnapshot(function (q) { var prevA = ALLY.chat; ALLY.chat = q.docs.filter(function (d) { return d.exists; }).map(function (d) { var o = d.data(); o._id = d.id; return o; }).reverse(); try { chatCarry(CHO.alliance, prevA, ALLY.chat); } catch (e) {} allyNotify(); }));
 }
 function allyWriteMember(aid, pid, rank, info) {
   var tag = (ALLY.list[aid] && ALLY.list[aid].tag) || (info && info.tag) || "";
@@ -24021,8 +24022,37 @@ function setPlayerName(name) {
   try { localStorage.setItem(PLAYER_NAME_KEY, name); } catch (e) {}
   assetSyncUpload(PLAYER_NAME_KEY, name);
 }
+/* v909: chat history pages. The newest 100 messages stay live; scrolling to the top of the chat loads the next 100 older ones (as far back as it goes). */
+var CHAT_PAGE = 100, CHO = { world: { older: [], noMore: false, loading: false }, alliance: { older: [], noMore: false, loading: false } };
+function chatCarry(st, prev, next) { /* a message sliding out of the live newest-100 window moves into the loaded history instead of vanishing */
+  if (!st || !st.older.length || !prev || !prev.length) return; var lo = next && next.length ? next[0].ts : Infinity, ids = {};
+  (next || []).forEach(function (m) { ids[m._id] = 1; }); var add = prev.filter(function (m) { return !ids[m._id] && m.ts < lo; }); if (add.length) st.older = chatMerge(st.older, add);
+}
+function chatOlderReset(k) { CHO[k] = { older: [], noMore: false, loading: false }; }
+function chatMerge(older, live) { var seen = {}, out = []; (older || []).concat(live || []).forEach(function (m) { var k = m._id || (m.ts + "|" + m.pid + "|" + m.text); if (!seen[k]) { seen[k] = 1; out.push(m); } }); out.sort(function (a, b) { return a.ts - b.ts; }); return out; }
+function chatOlderState() { return chatTab === "world" && WCHAT.on ? CHO.world : (chatTab === "alliance" && ALLY.my && cloudDb) ? CHO.alliance : null; }
+function chatOlderHeader() {
+  var st = chatOlderState(); if (!st) return "";
+  var live = chatTab === "world" ? WCHAT.msgs : ALLY.chat; if ((live || []).length < CHAT_PAGE && !st.older.length) return ""; /* the whole history already fits */
+  return '<div class="chat-older">' + (st.loading ? "Loading older messages…" : st.noMore ? "— Start of chat —" : "↑ Scroll up for older messages") + "</div>";
+}
+function chatLoadOlder() {
+  var st = chatOlderState(); if (!st || st.loading || st.noMore) return;
+  var world = chatTab === "world", live = world ? WCHAT.msgs : ALLY.chat, all = chatMerge(st.older, live); if (!all.length || (live.length < CHAT_PAGE && !st.older.length)) { st.noMore = true; return; }
+  var col = world ? worldChatPath() : allyPath("alliances/" + ALLY.my.aid + "/chat"), oldest = all[0].ts, tab = chatTab;
+  st.loading = true; renderWorldChat();
+  cloudDb.collection(col).where("ts", "<", oldest).orderBy("ts", "desc").limit(CHAT_PAGE).get().then(function (q) {
+    var got = q.docs.filter(function (d) { return d.exists && d.data() && d.data().text; }).map(function (d) { var o = d.data(), m = { pid: o.pid, name: o.name, text: o.text, ts: o.ts, _id: d.id }; if (o.loc) m.loc = o.loc; return m; });
+    st.older = chatMerge(got, st.older); if (got.length < CHAT_PAGE) st.noMore = true;
+  }, function (e) { console.error("older chat", e && e.message); }).then(function () {
+    st.loading = false; if (chatTab !== tab) return;
+    var el = document.getElementById("chatMessages"), fromBottom = el ? el.scrollHeight - el.scrollTop : 0;
+    renderWorldChat(); if (el) el.scrollTop = el.scrollHeight - fromBottom; /* keep the message you were reading in place */
+  });
+}
+(function () { var el = document.getElementById("chatMessages"); if (el) el.addEventListener("scroll", function () { if (el.scrollTop < 60) chatLoadOlder(); }, { passive: true }); })();
 function getChatMessages() {
-  if (typeof WCHAT !== "undefined" && WCHAT.on) return WCHAT.msgs.slice();
+  if (typeof WCHAT !== "undefined" && WCHAT.on) return chatMerge(CHO.world.older, WCHAT.msgs);
   var local = [], cloud = [];
   try { local = JSON.parse(localStorage.getItem(WORLD_CHAT_KEY) || "[]"); } catch (e) {}
   try { var c = assetSyncGet(WORLD_CHAT_KEY); if (c) cloud = JSON.parse(c); } catch (e) {}
@@ -24054,7 +24084,7 @@ function startWorldChatSync() {
   if (WCHAT.unsub) { try { WCHAT.unsub(); } catch (e) {} }
   WCHAT.sid = sid; WCHAT.on = true;
   WCHAT.unsub = cloudDb.collection(worldChatPath()).orderBy("ts", "desc").limit(100).onSnapshot(function (q) {
-    WCHAT.msgs = q.docs.filter(function (d) { return d.exists && d.data() && d.data().text; }).map(function (d) { var o = d.data(), m = { pid: o.pid, name: o.name, text: o.text, ts: o.ts, _id: d.id }; if (o.loc) m.loc = o.loc; return m; }).reverse();
+    var prevW = WCHAT.msgs; WCHAT.msgs = q.docs.filter(function (d) { return d.exists && d.data() && d.data().text; }).map(function (d) { var o = d.data(), m = { pid: o.pid, name: o.name, text: o.text, ts: o.ts, _id: d.id }; if (o.loc) m.loc = o.loc; return m; }).reverse(); try { chatCarry(CHO.world, prevW, WCHAT.msgs); } catch (e) {}
     worldChatNotify();
   }, function (e) { console.error("world chat sync", e && e.message); });
 }
@@ -24101,7 +24131,7 @@ function renderWorldChat() {
   if (inp) { inp.disabled = !live; inp.placeholder = chatTab === "world" ? "Say something to the realm..." : chatTab === "alliance" ? (ALLY.my ? "Message your alliance..." : "Join an alliance to chat") : "No private chats yet"; }
   if (sendB) sendB.disabled = !live;
   if (chatTab === "alliance" && !ALLY.my) { el.innerHTML = '<div class="chat-empty">🛡️ You are not in an alliance yet.<br>Join or create one from More › Alliance.</div>'; return; }
-  if (chatTab === "alliance") { msgs = ALLY.chat.map(function (c) { return { pid: c.pid, name: c.name, text: c.text, ts: c.ts }; }); if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No alliance messages yet — say hello to [' + escapeHtml(ALLY.my.tag) + ']!</div>'; return; } } /* v895 */
+  if (chatTab === "alliance") { msgs = chatMerge(CHO.alliance.older, ALLY.chat).map(function (c) { return { pid: c.pid, name: c.name, text: c.text, ts: c.ts }; }); if (!msgs.length) { el.innerHTML = '<div class="chat-empty">No alliance messages yet — say hello to [' + escapeHtml(ALLY.my.tag) + ']!</div>'; return; } } /* v895 */
   if (chatTab === "private") { el.innerHTML = '<div class="chat-empty">✉️ No private conversations yet.</div>'; return; }
   if (!msgs.length) {
     el.innerHTML = '<div class="chat-empty">No messages yet — say hello to the realm!</div>';
@@ -24111,7 +24141,8 @@ function renderWorldChat() {
   var avatarHtml = avatarSrc ? '<img class="chat-avatar" src="' + avatarSrc + '">' : '<div class="chat-avatar">👤</div>';
   var prevTop = el.scrollTop, wasBottom = !el.childNodes.length || (el.scrollHeight - el.scrollTop - el.clientHeight < 40);
   var me = getPlayerName(), lastDay = "";
-  el.innerHTML = msgs.map(function (m) {
+  var oh = chatOlderHeader();
+  el.innerHTML = oh + msgs.map(function (m) {
     var d = new Date(m.ts), time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     var day = d.toLocaleDateString([], { year: "numeric", month: "2-digit", day: "2-digit" }), sep = "";
     if (day !== lastDay) { sep = '<div class="chat-date">' + day + '</div>'; lastDay = day; }
