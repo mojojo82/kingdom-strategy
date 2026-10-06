@@ -71,7 +71,7 @@ service cloud.firestore {
     function isMe(pid) { return signedIn() && request.auth.uid == pid; }
     function isAdmin() { return signedIn() && request.auth.uid in ${adminList}; }
     function hpKeys() { return ['hp', 'hpT', 'burnLeft', 'raidedAt']; }
-    function serverOnly() { return ['wallet', 'ledger', 'meta']; }
+    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail']; }
 
     // ===== live =====
 ${BODY}

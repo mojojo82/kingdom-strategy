@@ -176,3 +176,75 @@ exports.touch = wrap(async (req, uid, R) => {
     const out = { createdAt: d.createdAt || now, lastSeen: now }; tx.set(ref, out, { merge: true }); return out;
   });
 });
+
+// ---- mail (admin gifts of any catalogue item) ----
+const mailCol = (R, uid) => db.collection(R + "players/" + uid + "/mail");
+function adminOnly(uid) { if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only"); }
+function validUid(u) { u = String(u || ""); if (!/^[A-Za-z0-9_-]{6,128}$/.test(u)) throw new HttpsError("invalid-argument", "bad uid"); return u; }
+async function allPlayerIds(R) { /* every player that has data in this environment (bots excluded) */
+  const refs = await db.collection(R + "players").listDocuments();
+  return refs.map((r) => r.id).filter((id) => !id.startsWith("bot_") && !id.startsWith("guest-"));
+}
+
+// Send a mail with items to one player (uid) or everyone (all: true). Nothing is given until the player claims it.
+exports.adminSendMail = wrap(async (req, uid, R, d) => {
+  adminOnly(uid);
+  const mail = C.makeMail(d.title, d.body, d.items, uid, Date.now());
+  const targets = d.all === true ? await allPlayerIds(R) : [validUid(d.uid)];
+  for (let i = 0; i < targets.length; i += 400) {
+    const batch = db.batch();
+    targets.slice(i, i + 400).forEach((t) => batch.set(mailCol(R, t).doc(), mail));
+    await batch.commit();
+  }
+  await db.collection(R + "adminlog").add({ by: uid, mail: { title: mail.title, items: mail.items }, to: d.all === true ? "ALL" : targets[0], count: targets.length, at: Date.now() });
+  return { sent: targets.length };
+});
+
+// Player claims a mail: once only. Server-held items (gems) are added here; save items are returned for the game to add to the save.
+exports.claimMail = wrap(async (req, uid, R, d) => {
+  const ref = mailCol(R, uid).doc(String(d.id || "x").replace(/[^A-Za-z0-9_-]/g, ""));
+  return db.runTransaction(async (tx) => {
+    const [ms, ws] = await Promise.all([tx.get(ref), tx.get(walletRef(R, uid))]);
+    const r = C.decideMailClaim(ms.exists ? ms.data() : null, Date.now());
+    if (r.dup) return { dup: true, id: ref.id, items: r.list, claimedAt: ms.data().claimedAt };
+    let gems = (ws.data() || {}).gems || 0, walletPatch = null;
+    r.list.forEach((x) => {
+      if (x.kind === "wallet" && x.id === "gems") { gems += x.qty; walletPatch = { gems }; ledger(tx, R, uid, "gems", x.qty, gems, "mail", ref.id); }
+      else ledger(tx, R, uid, x.id, x.qty, null, "mail", ref.id);
+    });
+    if (walletPatch) tx.set(walletRef(R, uid), walletPatch, { merge: true });
+    tx.update(ref, r.patch);
+    return { dup: false, id: ref.id, items: r.list, gems, claimedAt: r.patch.claimedAt };
+  });
+});
+
+// ---- admin panel lookups ----
+exports.adminCatalog = wrap(async (req, uid) => { adminOnly(uid); return { items: C.ITEMS, packs: PACKS }; });
+
+const NAME_DOC = "assetitems/kingdom_prototype_playername_v1";
+exports.adminFindPlayers = wrap(async (req, uid, R, d) => {
+  adminOnly(uid);
+  const q = String(d.q || "").trim().toLowerCase(); if (!q) throw new HttpsError("invalid-argument", "type a name or player id");
+  const ids = (await allPlayerIds(R)).slice(0, 5000);
+  if (!ids.length) return { players: [] };
+  const nameSnaps = await db.getAll(...ids.map((id) => db.doc(R + "players/" + id + "/" + NAME_DOC)));
+  const hits = [];
+  ids.forEach((id, i) => { const n = nameSnaps[i].exists ? String((nameSnaps[i].data() || {}).data || "") : ""; if (id.toLowerCase() === q || id.toLowerCase().startsWith(q) || (n && n.toLowerCase().includes(q))) hits.push({ uid: id, name: n }); });
+  const top = hits.slice(0, 25);
+  if (top.length) { const metas = await db.getAll(...top.map((h) => db.doc(R + "players/" + h.uid + "/meta/account"))); top.forEach((h, i) => { const m = metas[i].exists ? metas[i].data() : {}; h.lastSeen = m.lastSeen || null; h.createdAt = m.createdAt || null; }); }
+  return { players: top, total: hits.length };
+});
+
+exports.adminPlayerInfo = wrap(async (req, uid, R, d) => {
+  adminOnly(uid);
+  const t = validUid(d.uid), base = R + "players/" + t + "/";
+  const [w, m, n, led, mail, pur] = await Promise.all([
+    db.doc(base + "wallet/main").get(), db.doc(base + "meta/account").get(), db.doc(base + NAME_DOC).get(),
+    db.collection(base + "ledger").orderBy("at", "desc").limit(200).get(),
+    db.collection(base + "mail").orderBy("sentAt", "desc").limit(100).get(),
+    db.collection(R + "purchases").where("uid", "==", t).get()
+  ]);
+  const purchases = pur.docs.map((x) => Object.assign({ id: x.id }, x.data())).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 100);
+  return { uid: t, name: n.exists ? (n.data() || {}).data || "" : "", wallet: w.exists ? w.data() : {}, meta: m.exists ? m.data() : {},
+    ledger: led.docs.map((x) => Object.assign({ id: x.id }, x.data())), mail: mail.docs.map((x) => Object.assign({ id: x.id }, x.data())), purchases };
+});

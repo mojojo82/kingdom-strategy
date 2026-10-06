@@ -70,12 +70,25 @@ t("paths", () => {
 });
 t("ledger + purchases", () => {
   const e = C.ledgerEntry("gems", -100, 50, "extinguish", "12,34", null, 5); assert.deepStrictEqual(e, { item: "gems", delta: -100, balance: 50, reason: "extinguish", at: 5, ref: "12,34" });
-  assert.throws(() => C.ledgerEntry("gold", 1, 1, "x", null, null, 1), /unknown item/);
+  assert.throws(() => C.ledgerEntry("dragons", 1, 1, "x", null, null, 1), /unknown item/);
   assert.strictEqual(C.purchaseId("stripe", "pi_3Nabc.def"), "stripe_pi_3Nabc-def");
   assert.throws(() => C.purchaseId("Stripe!", "x"), /bad provider/);
   const pack = { name: "Pouch", price: 4.99, currency: "NZD", items: { gems: 2500 } };
   const r = C.decidePurchase(null, pack, "pouch", { gems: 10 }, "u1", 9); assert.strictEqual(r.gems, 2510); assert.strictEqual(r.record.status, "delivered");
   assert.ok(C.decidePurchase(r.record, pack, "pouch", { gems: 2510 }, "u1", 10).dup, "same receipt twice is not delivered twice");
   assert.throws(() => C.decidePurchase(null, null, "nope", {}, "u1", 1), /unknown pack/);
+});
+t("item catalogue + mail", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../../test/index.html"), "utf8");
+  Object.keys(C.ITEMS).filter((k) => k[0] !== "_").forEach((k) => { const d = C.ITEMS[k]; assert.ok(d.name && (d.kind === "wallet" || d.kind === "save"), k);
+    if (d.kind === "save") { const root = d.path.split(".")[0]; assert.ok(new RegExp("\\b" + root + ":").test(html) || /^heroes\./.test(d.path), "save field not in game: " + d.path); } });
+  const m = C.makeMail("Sorry!", "Compensation", { gems: 50, food: 1000 }, "adm", 7);
+  assert.deepStrictEqual(m.items, { gems: 50, food: 1000 }); assert.strictEqual(m.from, "Admin");
+  assert.throws(() => C.makeMail("x", "", { gems: 0 }, "a", 1), /bad amount/);
+  assert.throws(() => C.makeMail("x", "", { dragons: 1 }, "a", 1), /unknown item/);
+  assert.throws(() => C.makeMail("", "", { gems: 1 }, "a", 1), /title/);
+  const c1 = C.decideMailClaim(m, 9); assert.ok(!c1.dup); assert.strictEqual(c1.list.length, 2); assert.strictEqual(c1.list[1].path, "resources.food");
+  assert.ok(C.decideMailClaim(Object.assign({}, m, { claimedAt: 9 }), 10).dup, "claim twice = no-op");
+  const le = C.ledgerEntry("food", 1000, null, "mail", "m1", null, 3); assert.ok(!("balance" in le));
 });
 console.log(n + " tests passed");

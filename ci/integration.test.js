@@ -140,6 +140,36 @@ const P = (s) => R + s;
     await denied(setDoc(doc(A.db, P("players/" + A.uid + "/meta/account")), { createdAt: 1, lastSeen: 1 }));
     await denied(getDoc(doc(B.db, P("players/" + A.uid + "/meta/account"))));
   });
+  await t("mail: admin sends any items; player claims once; each item recorded; players can't fake mail", async () => {
+    await fnErr(A.call("adminSendMail", { uid: B.uid, title: "x", items: { gems: 5 } }), /admin only|permission/);
+    await fnErr(ADM.call("adminSendMail", { uid: A.uid, title: "x", items: { dragons: 5 } }), /unknown item/);
+    await ADM.call("adminSendMail", { uid: A.uid, title: "Sorry!", body: "For the bug", items: { gems: 25, food: 1000, shards_gareth: 3 } });
+    const { getDocs, collection } = require("firebase/firestore");
+    const ms = await getDocs(collection(A.db, P("players/" + A.uid + "/mail"))); assert.strictEqual(ms.size, 1); const mid = ms.docs[0].id;
+    assert.deepStrictEqual(ms.docs[0].data().items, { gems: 25, food: 1000, shards_gareth: 3 });
+    await denied(getDocs(collection(B.db, P("players/" + A.uid + "/mail"))));
+    await denied(setDoc(doc(A.db, P("players/" + A.uid + "/mail/fake")), { title: "free stuff", items: { gems: 99999 }, sentAt: 1 }));
+    await denied(updateDoc(doc(A.db, P("players/" + A.uid + "/mail/" + mid)), { claimedAt: null }));
+    const before = (await getDoc(doc(A.db, P("players/" + A.uid + "/wallet/main")))).data().gems;
+    let r = await A.call("claimMail", { id: mid }); assert.ok(!r.dup); assert.strictEqual(r.gems, before + 25);
+    assert.deepStrictEqual(r.items.map((x) => x.id + ":" + x.qty + ":" + x.kind).sort(), ["food:1000:save", "gems:25:wallet", "shards_gareth:3:save"]);
+    r = await A.call("claimMail", { id: mid }); assert.ok(r.dup, "second claim is a no-op");
+    assert.strictEqual((await getDoc(doc(A.db, P("players/" + A.uid + "/wallet/main")))).data().gems, before + 25);
+    await fnErr(B.call("claimMail", { id: mid }), /no such mail/);
+    const info = await ADM.call("adminPlayerInfo", { uid: A.uid });
+    const mailRows = info.ledger.filter((l) => l.reason === "mail" && l.ref === mid).map((l) => l.item + "+" + l.delta).sort();
+    assert.deepStrictEqual(mailRows, ["food+1000", "gems+25", "shards_gareth+3"]);
+    assert.ok(info.mail[0].claimedAt > 0);
+  });
+  await t("admin lookups: search by id/name, info, catalog; mail to all; non-admins refused", async () => {
+    await setDoc(doc(A.db, P("players/" + A.uid + "/assetitems/kingdom_prototype_playername_v1")), { data: "Alicia", ts: 1 });
+    let f = await ADM.call("adminFindPlayers", { q: "alic" }); assert.ok(f.players.some((p) => p.uid === A.uid && p.name === "Alicia"), JSON.stringify(f));
+    f = await ADM.call("adminFindPlayers", { q: B.uid }); assert.strictEqual(f.players[0].uid, B.uid);
+    await fnErr(A.call("adminFindPlayers", { q: "a" }), /admin only|permission/);
+    await fnErr(A.call("adminPlayerInfo", { uid: B.uid }), /admin only|permission/);
+    const c = await ADM.call("adminCatalog"); assert.ok(c.items.gems && c.items.food && c.packs.test_gems_100);
+    const all = await ADM.call("adminSendMail", { all: true, title: "Event", items: { wood: 10 } }); assert.ok(all.sent >= 3, "sent " + all.sent);
+  });
   await t("live env is separate from test env", async () => {
     ENV = "live"; R = "";
     const r = await B.call("claimLevel", { chapter: 1, levelNum: 1 }); assert.strictEqual(r.gems, 50);

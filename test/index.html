@@ -1917,6 +1917,27 @@
 
   /* v899: PC top bar + stats popup + taller chat */
   #statsBtn { display:none; }
+  /* v911: mail (Firebase builds only) */
+  #mailBtn { display:none; position:relative; }
+  html.ks-mail-on #mailBtn { display:inline-flex; align-items:center; justify-content:center; font-size:18px; padding:6px 10px; }
+  #mailBadge { display:none; position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#d9412b; color:#fff; font:700 10px/16px system-ui,sans-serif; text-align:center; }
+  #mailBadge.on { display:block; }
+  #mailBackdrop { display:none; position:fixed; inset:0; z-index:100049; background:rgba(0,0,0,.5); }
+  #mailPanel { display:none; position:fixed; z-index:100050; left:50%; top:max(70px, 8vh); transform:translateX(-50%); width:min(440px, calc(100vw - 24px)); max-height:min(78vh, 680px); overflow:hidden; flex-direction:column;
+    background:#121c33; color:#f3e9d2; border:2px dashed #c9a24a; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.6); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; }
+  body.mail-open #mailPanel { display:flex; } body.mail-open #mailBackdrop { display:block; }
+  #mailPanel .mh { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px dashed #3b4a6b; font-weight:700; color:#f0c95f; font-size:16px; }
+  #mailPanel .mh .x { margin-left:auto; cursor:pointer; color:#a9b4c8; font-size:18px; }
+  #mailPanel .ml { overflow-y:auto; padding:8px 10px 12px; }
+  #mailPanel .mi { border:1px dotted #3b4a6b; border-radius:8px; padding:10px; margin-top:8px; background:#0e1629; }
+  #mailPanel .mi.new { border-color:#c9a24a; }
+  #mailPanel .mt { display:flex; justify-content:space-between; gap:8px; font-weight:600; } #mailPanel .md { color:#8f9bb3; font-size:11px; white-space:nowrap; }
+  #mailPanel .mb { margin-top:6px; font-size:13px; line-height:1.4; color:#d6dbe6; white-space:pre-wrap; }
+  #mailPanel .mx { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  #mailPanel .mx span { border:1px dashed #5d6f93; border-radius:6px; padding:3px 7px; font-size:12px; background:#16223d; }
+  #mailPanel .mc { margin-top:9px; width:100%; border:0; border-radius:6px; padding:9px; font-weight:700; font-size:14px; background:#2bb3d9; color:#06131c; cursor:pointer; }
+  #mailPanel .mc[disabled] { background:#2a3550; color:#8f9bb3; cursor:default; }
+  #mailPanel .me { text-align:center; color:#8f9bb3; padding:40px 10px; font-size:13px; }
   .stats-close { display:none; }
   #statsBackdrop { display:none; }
   @media (min-width:901px) {
@@ -2145,6 +2166,7 @@
 
 
 <div id="statsBackdrop"></div>
+<div id="mailBackdrop"></div><div id="mailPanel" role="dialog" aria-label="Mail"><div class="mh">✉️ Mail <span class="x" id="mailClose" title="Close">✕</span></div><div class="ml" id="mailList"></div></div>
 <div id="topbar">
   <div id="titleWrap">
     <div id="avatarWrap" title="Click to change your avatar">
@@ -2160,6 +2182,7 @@
     <button id="resBtn" type="button" title="Resources" aria-label="Resources">🎒</button>
   </div>
   <div id="resbar"></div>
+  <button id="mailBtn" class="secondary" type="button" title="Mail" aria-label="Mail">✉️<span id="mailBadge"></span></button>
   <button id="statsBtn" class="secondary" type="button" title="Stats" aria-label="Stats">📊</button>
   <button id="settingsBtn" class="secondary" title="Profile name, avatar, player code and server">Settings</button>
   <button id="playtestLinkBtn" class="secondary" title="Copy a link that gives whoever opens it a brand new, isolated save — completely separate from yours.">Playtest Link</button>
@@ -8047,6 +8070,7 @@ function createGame(opts) {
     // tracked production against.
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
+    state.mailApplied = (saved.mailApplied && typeof saved.mailApplied === "object") ? saved.mailApplied : {}; /* v911: mails whose items are already in this save */
     if (typeof saved.lastRaidApplied === "number") state.lastRaidApplied = saved.lastRaidApplied;
     if (saved.formations) {
       saved.formations.forEach(function (f, idx) {
@@ -13906,6 +13930,7 @@ function ksErrText(e) {
 var KSW = { lvl: 0, gems: 0, loaded: false, unsub: null, claiming: false, retryT: null };
 function ksStartWallet() {
   if (!ksFb() || KSW.unsub || !cloudDb) return;
+  try { ksStartMail(); } catch (e) { console.error(e); }
   var touch = function () { KS_BACKEND.call("touch", {}).catch(function () {}); }; touch(); setInterval(touch, 3600000); /* v910: account 'last seen' date (server-side, nothing else recorded) */
   KSW.unsub = cloudDb.doc("players/" + PLAYER_ID + "/wallet/main").onSnapshot(function (s) {
     var d = (s.exists && s.data()) || {}; KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
@@ -13913,6 +13938,56 @@ function ksStartWallet() {
   }, function (e) { console.error("wallet sync", e && e.message); });
   setInterval(function () { if (KSW.loaded && game.state.gems !== KSW.gems) { game.state.gems = KSW.gems; try { render(); } catch (e) {} } ksClaimLoop(); }, 5000); /* the wallet is the only truth: undo any local edit of gems */
 }
+// ---- v911: mail. The admin sends items; the player claims each mail once. The server records the claim (ledger);
+// server-held items (gems) are added there, save items are added here and marked in state.mailApplied so they're never added twice. ----
+var KSM = { list: [], unsub: null, busy: {} };
+function ksStartMail() {
+  if (KSM.unsub) return; document.documentElement.classList.add("ks-mail-on");
+  KSM.unsub = cloudDb.collection("players/" + PLAYER_ID + "/mail").orderBy("sentAt", "desc").limit(60).onSnapshot(function (q) {
+    KSM.list = q.docs.filter(function (d) { return d.exists; }).map(function (d) { var o = d.data(); o.id = d.id; return o; });
+    var st = game.state; st.mailApplied = st.mailApplied || {};
+    KSM.list.forEach(function (m) { if (m.claimedAt && !st.mailApplied[m.id]) ksMailClaim(m.id, true); }); /* claimed but the items never made it into this save (closed mid-claim): finish it */
+    ksMailRender();
+  }, function (e) { console.error("mail sync", e && e.message); });
+}
+function ksAddAtPath(path, qty) {
+  var parts = String(path).split("."), o = game.state;
+  for (var i = 0; i < parts.length - 1; i++) { if (!o[parts[i]] || typeof o[parts[i]] !== "object") o[parts[i]] = {}; o = o[parts[i]]; }
+  var k = parts[parts.length - 1]; o[k] = (+o[k] || 0) + qty;
+}
+function ksMailApply(id, items) {
+  var st = game.state; st.mailApplied = st.mailApplied || {}; if (st.mailApplied[id]) return false;
+  (items || []).forEach(function (x) { if (x.kind === "save" && x.path) ksAddAtPath(x.path, x.qty); });
+  st.mailApplied[id] = Date.now(); persist(); if (cloudSyncReady) cloudSyncNow(true); /* saved straight away */
+  try { render(); } catch (e) {} return true;
+}
+function ksMailClaim(id, quiet) {
+  if (KSM.busy[id]) return; KSM.busy[id] = true; ksMailRender();
+  KS_BACKEND.call("claimMail", { id: id }).then(function (r) {
+    if (typeof r.gems === "number" && !r.dup) { KSW.gems = r.gems; game.state.gems = r.gems; }
+    if (ksMailApply(id, r.items) && !quiet) game.log("✉️ Claimed: " + r.items.map(function (x) { return x.qty.toLocaleString() + " " + x.name; }).join(", "));
+  }, function (e) { if (!quiet) game.log(ksErrText(e)); }).then(function () { delete KSM.busy[id]; ksMailRender(); });
+}
+function ksMailRender() {
+  var unread = KSM.list.filter(function (m) { return !m.claimedAt; }).length, b = document.getElementById("mailBadge");
+  if (b) { b.textContent = unread > 9 ? "9+" : String(unread); b.classList.toggle("on", unread > 0); }
+  var el = document.getElementById("mailList"); if (!el || !document.body.classList.contains("mail-open")) return;
+  if (!KSM.list.length) { el.innerHTML = '<div class="me">No mail yet.</div>'; return; }
+  el.innerHTML = KSM.list.map(function (m) {
+    var items = Object.keys(m.items || {}).map(function (k) { return "<span>" + escapeHtml((m.labels && m.labels[k]) || k.replace(/_/g, " ")) + " × " + (+m.items[k]).toLocaleString() + "</span>"; }).join("");
+    var when = new Date(m.sentAt || 0).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    var btn = m.claimedAt ? '<button class="mc" disabled>Claimed ' + new Date(m.claimedAt).toLocaleDateString() + "</button>" : '<button class="mc" data-claim="' + escapeHtml(m.id) + '"' + (KSM.busy[m.id] ? " disabled" : "") + ">" + (KSM.busy[m.id] ? "Claiming…" : "Claim") + "</button>";
+    return '<div class="mi' + (m.claimedAt ? "" : " new") + '"><div class="mt"><span>' + escapeHtml(m.title || "") + '</span><span class="md">' + when + "</span></div>" + (m.body ? '<div class="mb">' + escapeHtml(m.body) + "</div>" : "") + '<div class="mx">' + items + "</div>" + btn + "</div>";
+  }).join("");
+  [].forEach.call(el.querySelectorAll("[data-claim]"), function (x) { x.onclick = function () { ksMailClaim(x.getAttribute("data-claim")); }; });
+}
+(function initMailPanel() {
+  function close() { document.body.classList.remove("mail-open"); }
+  var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { document.body.classList.toggle("mail-open"); ksMailRender(); };
+  var c = document.getElementById("mailClose"); if (c) c.onclick = close;
+  var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+})();
 function ksClaimLoop() { /* claim gems for each Conquest level cleared but not yet paid, one at a time, at the pace the server allows */
   if (!ksFb() || !KSW.loaded || KSW.claiming || KSW.retryT) return;
   var st = game.state.idle, cleared = (st.chapter - 1) * 20 + st.levelNum - 1;

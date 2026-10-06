@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Kingdom Admin</title>
+<style>
+  :root { --bg:#0a1224; --panel:#121c33; --panel2:#0e1629; --line:#3b4a6b; --gold:#f0c95f; --gold2:#c9a24a; --text:#f3e9d2; --dim:#8f9bb3; --cyan:#2bb3d9; --red:#e2584a; --green:#7fd07f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui,-apple-system,'Segoe UI',sans-serif; }
+  header { position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 16px; background:#0d1730; border-bottom:2px dashed var(--gold2); }
+  header h1 { margin:0; font-size:17px; color:var(--gold); letter-spacing:.5px; }
+  .env { display:flex; border:1px dotted var(--line); border-radius:8px; overflow:hidden; }
+  .env button { border:0; background:transparent; color:var(--dim); padding:6px 12px; font-weight:700; cursor:pointer; }
+  .env button.on.test { background:#1f4e7a; color:#fff; } .env button.on.live { background:var(--red); color:#fff; }
+  .who { margin-left:auto; color:var(--dim); font-size:12px; display:flex; gap:8px; align-items:center; }
+  main { max-width:1100px; margin:0 auto; padding:16px; display:grid; gap:14px; }
+  .card { background:var(--panel); border:1px dashed var(--line); border-radius:10px; padding:14px; }
+  .card h2 { margin:0 0 10px; font-size:15px; color:var(--gold); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  input, select, textarea { background:var(--panel2); color:var(--text); border:1px dotted #5d6f93; border-radius:6px; padding:8px 9px; font:inherit; }
+  textarea { width:100%; min-height:60px; resize:vertical; }
+  input.grow { flex:1; min-width:180px; }
+  button.b { border:0; border-radius:6px; padding:8px 13px; font-weight:700; cursor:pointer; background:var(--cyan); color:#06131c; }
+  button.b.ghost { background:transparent; color:var(--cyan); border:1px dotted var(--cyan); }
+  button.b.warn { background:var(--red); color:#fff; } button.b.gold { background:var(--gold); color:#1a1205; }
+  button.b[disabled] { opacity:.5; cursor:default; }
+  .muted { color:var(--dim); font-size:12px; } .err { color:#ffb3b3; } .ok { color:var(--green); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px dotted #26324d; vertical-align:top; }
+  th { color:var(--dim); font-weight:600; font-size:12px; }
+  tr.click { cursor:pointer; } tr.click:hover td { background:#18264a; }
+  .pos { color:var(--green); } .neg { color:#ff9a8c; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px; }
+  .stat { display:inline-block; margin-right:18px; } .stat b { color:var(--gold); font-size:16px; }
+  .tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; } .tabs button { background:transparent; border:1px dotted var(--line); color:var(--dim); border-radius:6px; padding:6px 11px; cursor:pointer; font-weight:600; }
+  .tabs button.on { color:var(--gold); border-color:var(--gold2); }
+  .itemrow { display:flex; gap:6px; margin-top:6px; } .itemrow select { flex:1; } .itemrow input { width:120px; }
+  .pill { display:inline-block; border:1px dashed #5d6f93; border-radius:6px; padding:1px 6px; font-size:12px; margin:1px 2px; background:#16223d; }
+  .banner { padding:8px 12px; border-radius:8px; font-weight:700; }
+  .banner.live { background:#4a1714; border:1px solid var(--red); color:#ffd2cc; } .banner.test { background:#132a45; border:1px solid #2f6aa3; color:#cfe6ff; }
+  #signin { max-width:380px; margin:40px auto; }
+  #signin button.b { width:100%; margin-top:8px; padding:11px; }
+  #toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1b2a4d; border:1px dashed var(--gold2); padding:9px 14px; border-radius:8px; display:none; max-width:90vw; z-index:9; }
+  .hide { display:none !important; }
+  @media (max-width:600px) { main { padding:10px; } .who { width:100%; margin-left:0; } td, th { padding:5px 4px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚔️ Kingdom Admin</h1>
+  <div class="env" id="envSw"><button data-env="test" class="test">TEST</button><button data-env="live" class="live">LIVE</button></div>
+  <div class="who" id="who"></div>
+</header>
+
+<div id="signin" class="card hide">
+  <h2>Admin sign-in</h2>
+  <div class="muted">Only the admin account can do anything here.</div>
+  <button class="b gold" id="gIn">Continue with Google</button>
+  <input id="em" type="email" placeholder="Email" style="width:100%;margin-top:12px">
+  <input id="pw" type="password" placeholder="Password" style="width:100%;margin-top:8px">
+  <button class="b" id="eIn">Sign in</button>
+  <div class="muted err" id="siMsg" style="margin-top:8px"></div>
+</div>
+
+<main id="app" class="hide">
+  <div id="envBanner" class="banner"></div>
+
+  <section class="card">
+    <h2>Find a player</h2>
+    <div class="row"><input class="grow" id="q" placeholder="Name or player id"><button class="b" id="findBtn">Search</button></div>
+    <div id="results" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card hide" id="playerCard">
+    <div class="row" style="justify-content:space-between"><h2 id="pName" style="margin:0"></h2><button class="b ghost" id="refreshBtn">↻ Refresh</button></div>
+    <div class="muted" style="margin:4px 0 10px">Player id: <span id="pUid"></span> <button class="b ghost" id="copyUid" style="padding:2px 8px;font-size:11px">copy</button></div>
+    <div id="pStats"></div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="card" style="background:var(--panel2)">
+        <h2>✉️ Send items (mail)</h2>
+        <div class="muted">The player gets a mail and taps Claim. Every claim is recorded.</div>
+        <input id="mTitle" placeholder="Title (e.g. Sorry for the bug)" style="width:100%;margin-top:8px" maxlength="80">
+        <textarea id="mBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
+        <div id="mItems"></div>
+        <div class="row" style="margin-top:8px"><button class="b ghost" id="addItem">+ Add item</button><button class="b" id="sendMail">Send to this player</button></div>
+      </div>
+      <div class="card" style="background:var(--panel2)">
+        <h2>💎 Gems (instant)</h2>
+        <div class="muted">Adds or removes gems straight away (use a minus number to remove).</div>
+        <div class="row" style="margin-top:8px"><input id="gAmt" type="number" placeholder="e.g. 100 or -50" style="width:140px"><input class="grow" id="gNote" placeholder="Reason / note"></div>
+        <div class="row" style="margin-top:8px"><button class="b" id="gemBtn">Apply</button></div>
+        <h2 style="margin-top:16px">🛒 Deliver a pack</h2>
+        <div class="muted">For a payment that didn't come through. Same receipt id can never be delivered twice.</div>
+        <div class="row" style="margin-top:8px"><select id="packSel" class="grow"></select></div>
+        <div class="row" style="margin-top:6px"><input class="grow" id="rcpt" placeholder="Payment receipt id"></div>
+        <div class="row" style="margin-top:8px"><button class="b" id="packBtn">Deliver</button></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;background:var(--panel2)">
+      <div class="tabs" id="tabs"><button data-t="ledger" class="on">History</button><button data-t="mail">Mail</button><button data-t="purchases">Purchases</button></div>
+      <div id="tabBody"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>📣 Mail to ALL players</h2>
+    <div class="muted">Compensation, events, gifts. Goes to every player in the selected environment.</div>
+    <input id="aTitle" placeholder="Title" style="width:100%;margin-top:8px" maxlength="80">
+    <textarea id="aBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
+    <div id="aItems"></div>
+    <div class="row" style="margin-top:8px"><button class="b ghost" id="aAddItem">+ Add item</button><button class="b warn" id="aSend">Send to everyone</button></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CFG = { apiKey: "AIzaSyAte8e9E9rtt2PvSxk0EacwM0rjoiO7Hoo", authDomain: "kingdom-strategy.firebaseapp.com", projectId: "kingdom-strategy",
+    storageBucket: "kingdom-strategy.firebasestorage.app", messagingSenderId: "862432836712", appId: "1:862432836712:web:77c692fc9fc2fbf5ff0fdd" };
+  var EMU = /[?&]emu=1\b/.test(location.search) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  firebase.initializeApp(EMU ? Object.assign({}, CFG, { projectId: "demo-kingdom" }) : CFG);
+  var auth = firebase.auth(), fns = firebase.app().functions("us-central1");
+  if (EMU) { auth.useEmulator("http://127.0.0.1:9099"); fns.useEmulator("127.0.0.1", 5001); }
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { env: "test", catalog: null, player: null, tab: "ledger", info: null };
+  try { var e0 = localStorage.getItem("ksAdminEnv"); if (e0 === "live" || e0 === "test") S.env = e0; } catch (e) {}
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function when(t) { return t ? new Date(t).toLocaleString([], { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"; }
+  function toast(t, bad) { var el = $("toast"); el.textContent = t; el.className = bad ? "err" : ""; el.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = "none"; }, 4000); }
+  function call(name, data) { return fns.httpsCallable(name)(Object.assign({ env: S.env }, data || {})).then(function (r) { return r.data; }); }
+  function errText(e) { return (e && e.message) || "error"; }
+  function itemLabel(id) { var d = S.catalog && S.catalog.items[id]; return d ? (d.icon ? d.icon + " " : "") + d.name : id; }
+
+  // ---- environment switch ----
+  function renderEnv() {
+    [].forEach.call($("envSw").children, function (b) { b.classList.toggle("on", b.getAttribute("data-env") === S.env); });
+    var bn = $("envBanner"); bn.className = "banner " + S.env;
+    bn.textContent = S.env === "live" ? "LIVE server: changes affect real players." : "TEST server: changes only affect the test copy of the game.";
+  }
+  [].forEach.call($("envSw").children, function (b) { b.onclick = function () { S.env = b.getAttribute("data-env"); try { localStorage.setItem("ksAdminEnv", S.env); } catch (e) {} renderEnv(); S.player = null; $("playerCard").classList.add("hide"); $("results").innerHTML = ""; }; });
+
+  // ---- sign in ----
+  function siErr(e) { $("siMsg").textContent = errText(e); }
+  $("gIn").onclick = function () { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(siErr); };
+  $("eIn").onclick = function () { auth.signInWithEmailAndPassword($("em").value.trim(), $("pw").value).catch(siErr); };
+  $("pw").onkeydown = function (e) { if (e.key === "Enter") $("eIn").click(); };
+  auth.onAuthStateChanged(function (u) {
+    if (!u || u.isAnonymous) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); $("who").innerHTML = ""; return; }
+    $("who").innerHTML = esc(u.email || u.uid) + ' <button class="b ghost" id="so" style="padding:3px 9px;font-size:12px">Sign out</button>';
+    $("so").onclick = function () { auth.signOut(); };
+    call("adminCatalog").then(function (c) {
+      S.catalog = c; $("signin").classList.add("hide"); $("app").classList.remove("hide"); renderEnv();
+      $("packSel").innerHTML = Object.keys(c.packs).filter(function (k) { return k[0] !== "_"; }).map(function (k) { var p = c.packs[k]; return '<option value="' + esc(k) + '">' + esc(p.name) + " (" + Object.keys(p.items).map(function (i) { return p.items[i] + " " + i; }).join(", ") + ")</option>"; }).join("");
+      $("mItems").innerHTML = ""; $("aItems").innerHTML = ""; addItemRow("mItems"); addItemRow("aItems");
+    }, function (e) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); $("siMsg").textContent = /admin only|permission/i.test(errText(e)) ? "This account isn't an admin." : errText(e); });
+  });
+
+  // ---- item rows ----
+  function addItemRow(box) {
+    var ids = Object.keys(S.catalog.items).filter(function (k) { return k[0] !== "_"; });
+    var r = document.createElement("div"); r.className = "itemrow";
+    r.innerHTML = '<select>' + ids.map(function (k) { return '<option value="' + esc(k) + '">' + esc(itemLabel(k)) + "</option>"; }).join("") + '</select><input type="number" min="1" placeholder="Amount"><button class="b ghost" title="Remove">✕</button>';
+    r.querySelector("button").onclick = function () { r.remove(); };
+    $(box).appendChild(r);
+  }
+  function readItems(box) {
+    var out = {}, bad = null;
+    [].forEach.call($(box).querySelectorAll(".itemrow"), function (r) { var id = r.querySelector("select").value, q = Math.trunc(+r.querySelector("input").value); if (!r.querySelector("input").value) return; if (!(q >= 1)) bad = "Amounts must be 1 or more."; out[id] = (out[id] || 0) + q; });
+    if (bad) throw new Error(bad); if (!Object.keys(out).length) throw new Error("Add at least one item with an amount."); return out;
+  }
+  function itemsText(items) { return Object.keys(items).map(function (k) { return items[k].toLocaleString() + " × " + itemLabel(k); }).join("\n"); }
+  $("addItem").onclick = function () { addItemRow("mItems"); };
+  $("aAddItem").onclick = function () { addItemRow("aItems"); };
+
+  // ---- find ----
+  function find() {
+    var q = $("q").value.trim(); if (!q) return; $("results").innerHTML = '<div class="muted">Searching…</div>';
+    call("adminFindPlayers", { q: q }).then(function (r) {
+      if (!r.players.length) { $("results").innerHTML = '<div class="muted">No players found.</div>'; return; }
+      $("results").innerHTML = '<table><tr><th>Name</th><th>Player id</th><th>Last seen</th></tr>' + r.players.map(function (p) { return '<tr class="click" data-uid="' + esc(p.uid) + '"><td>' + esc(p.name || "(no name)") + "</td><td class=muted>" + esc(p.uid) + "</td><td>" + when(p.lastSeen) + "</td></tr>"; }).join("") + "</table>" + (r.total > r.players.length ? '<div class="muted">' + (r.total - r.players.length) + " more - narrow the search.</div>" : "");
+      [].forEach.call($("results").querySelectorAll("[data-uid]"), function (tr) { tr.onclick = function () { openPlayer(tr.getAttribute("data-uid")); }; });
+    }, function (e) { $("results").innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; });
+  }
+  $("findBtn").onclick = find; $("q").onkeydown = function (e) { if (e.key === "Enter") find(); };
+
+  // ---- player ----
+  function openPlayer(uid) {
+    S.player = uid; $("playerCard").classList.remove("hide"); $("pUid").textContent = uid; $("pName").textContent = "Loading…"; $("pStats").innerHTML = ""; $("tabBody").innerHTML = "";
+    call("adminPlayerInfo", { uid: uid }).then(function (info) {
+      if (S.player !== uid) return; S.info = info;
+      $("pName").textContent = info.name || "(no name)";
+      $("pStats").innerHTML = '<span class="stat">Gems <b>' + ((info.wallet && info.wallet.gems) || 0).toLocaleString() + '</b></span><span class="stat">Paid level <b>' + ((info.wallet && info.wallet.lvl) || 0) + '</b></span><span class="stat muted">Created ' + when(info.meta && info.meta.createdAt) + '</span><span class="stat muted">Last seen ' + when(info.meta && info.meta.lastSeen) + "</span>";
+      renderTab();
+    }, function (e) { $("pName").textContent = "Error"; toast(errText(e), true); });
+  }
+  $("refreshBtn").onclick = function () { if (S.player) openPlayer(S.player); };
+  $("copyUid").onclick = function () { try { navigator.clipboard.writeText(S.player); toast("Copied"); } catch (e) {} };
+  [].forEach.call($("tabs").children, function (b) { b.onclick = function () { S.tab = b.getAttribute("data-t"); [].forEach.call($("tabs").children, function (x) { x.classList.toggle("on", x === b); }); renderTab(); }; });
+  function renderTab() {
+    var i = S.info, el = $("tabBody"); if (!i) return;
+    if (S.tab === "ledger") {
+      el.innerHTML = i.ledger.length ? '<table><tr><th>When</th><th>Item</th><th>Change</th><th>Balance</th><th>Why</th><th>Ref</th></tr>' + i.ledger.map(function (r) {
+        return "<tr><td>" + when(r.at) + "</td><td>" + esc(itemLabel(r.item)) + '</td><td class="' + (r.delta < 0 ? "neg" : "pos") + '">' + (r.delta > 0 ? "+" : "") + r.delta.toLocaleString() + "</td><td>" + (r.balance != null ? r.balance.toLocaleString() : '<span class="muted">—</span>') + "</td><td>" + esc(r.reason) + (r.by ? ' <span class="muted">(admin)</span>' : "") + '</td><td class="muted">' + esc(r.ref || "") + "</td></tr>"; }).join("") + "</table>" : '<div class="muted">No history yet.</div>';
+    } else if (S.tab === "mail") {
+      el.innerHTML = i.mail.length ? '<table><tr><th>Sent</th><th>Title</th><th>Items</th><th>Claimed</th></tr>' + i.mail.map(function (m) {
+        return "<tr><td>" + when(m.sentAt) + "</td><td>" + esc(m.title) + "</td><td>" + Object.keys(m.items || {}).map(function (k) { return '<span class="pill">' + esc(itemLabel(k)) + " × " + (+m.items[k]).toLocaleString() + "</span>"; }).join("") + "</td><td>" + (m.claimedAt ? '<span class="ok">' + when(m.claimedAt) + "</span>" : '<span class="muted">not yet</span>') + "</td></tr>"; }).join("") + "</table>" : '<div class="muted">No mail sent to this player.</div>';
+    } else {
+      el.innerHTML = i.purchases.length ? '<table><tr><th>When</th><th>Pack</th><th>Price</th><th>Receipt</th><th>Status</th><th></th></tr>' + i.purchases.map(function (p) {
+        return "<tr><td>" + when(p.at) + "</td><td>" + esc(p.packName || p.pack) + "</td><td>" + esc(p.price) + " " + esc(p.currency || "") + '</td><td class="muted">' + esc(p.provider) + " " + esc(p.receiptId) + "</td><td>" + esc(p.status) + (p.statusNote ? ' <span class="muted">(' + esc(p.statusNote) + ")</span>" : "") +
+          '</td><td><select data-mark="' + esc(p.id) + '"><option value="">Mark…</option><option value="refunded">Refunded</option><option value="chargeback">Chargeback</option><option value="delivered">Delivered</option></select></td></tr>'; }).join("") + "</table>" : '<div class="muted">No purchases.</div>';
+      [].forEach.call(el.querySelectorAll("[data-mark]"), function (s) { s.onchange = function () {
+        var st = s.value; if (!st) return; var note = prompt("Mark purchase as " + st + " on " + S.env.toUpperCase() + ".\nNote (optional):", ""); if (note === null) { s.value = ""; return; }
+        call("adminMarkPurchase", { id: s.getAttribute("data-mark"), status: st, note: note }).then(function () { toast("Marked " + st); openPlayer(S.player); }, function (e) { toast(errText(e), true); s.value = ""; });
+      }; });
+    }
+  }
+
+  // ---- actions (every one asks to confirm, naming the environment) ----
+  function confirmEnv(what) { return confirm((S.env === "live" ? "⚠️ LIVE SERVER\n\n" : "TEST server\n\n") + what + "\n\nGo ahead?"); }
+  $("sendMail").onclick = function () {
+    var items; try { items = readItems("mItems"); } catch (e) { toast(e.message, true); return; }
+    var title = $("mTitle").value.trim(); if (!title) { toast("Give the mail a title.", true); return; }
+    if (!confirmEnv("Mail \"" + title + "\" to " + ($("pName").textContent) + ":\n" + itemsText(items))) return;
+    call("adminSendMail", { uid: S.player, title: title, body: $("mBody").value, items: items }).then(function () { toast("Mail sent"); $("mTitle").value = ""; $("mBody").value = ""; $("mItems").innerHTML = ""; addItemRow("mItems"); openPlayer(S.player); }, function (e) { toast(errText(e), true); });
+  };
+  $("gemBtn").onclick = function () {
+    var n = Math.trunc(+$("gAmt").value); if (!n) { toast("Enter an amount.", true); return; }
+    if (!confirmEnv((n > 0 ? "Give " + n + " gems to " : "Remove " + (-n) + " gems from ") + $("pName").textContent)) return;
+    call("adminGrantGems", { uid: S.player, amount: n, note: $("gNote").value }).then(function (r) { toast("Gems now " + r.gems.toLocaleString()); $("gAmt").value = ""; $("gNote").value = ""; openPlayer(S.player); }, function (e) { toast(errText(e), true); });
+  };
+  $("packBtn").onclick = function () {
+    var pack = $("packSel").value, rc = $("rcpt").value.trim(); if (!rc) { toast("Enter the payment receipt id.", true); return; }
+    if (!confirmEnv("Deliver pack " + pack + " to " + $("pName").textContent + "\nReceipt: " + rc)) return;
+    call("adminDeliverPurchase", { uid: S.player, pack: pack, provider: "manual", receiptId: rc }).then(function (r) { toast(r.dup ? "Already delivered earlier for that receipt - nothing changed." : "Delivered. Gems now " + r.gems.toLocaleString()); $("rcpt").value = ""; openPlayer(S.player); }, function (e) { toast(errText(e), true); });
+  };
+  $("aSend").onclick = function () {
+    var items; try { items = readItems("aItems"); } catch (e) { toast(e.message, true); return; }
+    var title = $("aTitle").value.trim(); if (!title) { toast("Give the mail a title.", true); return; }
+    if (!confirmEnv("Mail \"" + title + "\" to EVERY player:\n" + itemsText(items))) return;
+    var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (typed !== "SEND") { toast("Cancelled"); return; }
+    call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
+  };
+  renderEnv();
+})();
+</script>
+</body>
+</html>

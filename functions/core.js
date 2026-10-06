@@ -92,10 +92,12 @@ function cityDocId(tileId) {
 
 // ---- ledger + purchases ----
 // One ledger entry per change to any tracked item (gems now; gifts and other consumables later): who, what, how much, balance after, why.
-const LEDGER_ITEMS = ["gems"];
+const ITEMS = require("./items.json");
+const LEDGER_ITEMS = Object.keys(ITEMS).filter((k) => k[0] !== "_");
 function ledgerEntry(item, delta, balance, reason, ref, by, now) {
   if (LEDGER_ITEMS.indexOf(item) === -1) throw new GameError("invalid-argument", "unknown item " + item);
-  const e = { item, delta: Math.trunc(delta), balance: Math.trunc(balance), reason: String(reason), at: now };
+  const e = { item, delta: Math.trunc(delta), reason: String(reason), at: now };
+  if (balance != null) e.balance = Math.trunc(balance); /* known for server-held items; save items live on the player's device */
   if (ref != null && ref !== "") e.ref = String(ref);
   if (by) e.by = String(by);
   return e;
@@ -115,5 +117,33 @@ function decidePurchase(existing, pack, packId, wallet, uid, now) {
     record: { uid, pack: packId, packName: pack.name || packId, price: pack.price, currency: pack.currency, items: { gems: add }, status: "delivered", at: now, deliveredAt: now } };
 }
 
+// ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
+const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle)?\.?[a-zA-Z0-9_]+$/;
+function normalizeItems(items) {
+  if (!items || typeof items !== "object") throw new GameError("invalid-argument", "no items");
+  const out = [];
+  Object.keys(items).forEach((id) => {
+    const def = ITEMS[id], qty = Math.trunc(+items[id]);
+    if (!def || id[0] === "_") throw new GameError("invalid-argument", "unknown item " + id);
+    if (!(qty >= 1 && qty <= 1e9)) throw new GameError("invalid-argument", "bad amount for " + id);
+    if (def.kind === "save" && !SAVE_PATH_OK.test(def.path || "")) throw new GameError("internal", "bad catalogue path for " + id);
+    out.push({ id, qty, kind: def.kind, path: def.path || null, name: def.name, icon: def.icon || "" });
+  });
+  if (!out.length || out.length > 20) throw new GameError("invalid-argument", "1-20 items per mail");
+  return out;
+}
+function makeMail(title, body, items, by, now) {
+  const t = String(title || "").trim().slice(0, 80), b = String(body || "").trim().slice(0, 1000);
+  if (!t) throw new GameError("invalid-argument", "mail needs a title");
+  const list = normalizeItems(items), it = {}, labels = {}; list.forEach((x) => { it[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
+  return { title: t, body: b, items: it, labels, from: "Admin", sentAt: now, by: String(by || "") };
+}
+function decideMailClaim(mail, now) {
+  if (!mail) throw new GameError("not-found", "no such mail");
+  const list = normalizeItems(mail.items);
+  if (mail.claimedAt) return { dup: true, list };
+  return { dup: false, list, patch: { claimedAt: now } };
+}
+
 module.exports = { BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizeItems, makeMail, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

@@ -97,6 +97,34 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const d = await A.evaluate(() => { const el = document.querySelector(".idle-util-icons"); return el ? getComputedStyle(el).display : "none"; });
     check(d === "none", "dev icons display: " + d);
   });
+  await t("admin website: sign in, find player, send mail; player claims it in the game", async () => {
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";
+    const adminApp = require("firebase-admin/app"), adminAuth = require("firebase-admin/auth");
+    if (!adminApp.getApps().length) adminApp.initializeApp({ projectId: "demo-kingdom" });
+    try { await adminAuth.getAuth().createUser({ uid: "ciadmin0001", email: "admin@e2e.dev", password: "secret123" }); } catch (e) { if (!/exists/.test(e.message)) throw e; }
+    const ctx = await browser.newContext({ viewport: { width: 1300, height: 900 } }), P = await ctx.newPage();
+    P.on("dialog", (d) => d.accept(d.type() === "prompt" ? "SEND" : undefined));
+    P.on("pageerror", (e) => problems.push("ADMIN page error: " + e.message));
+    await P.goto("http://127.0.0.1:8000/admin/?emu=1"); await P.waitForSelector("#signin:not(.hide)", { timeout: 60000 });
+    await P.fill("#em", "admin@e2e.dev"); await P.fill("#pw", "secret123"); await P.click("#eIn");
+    await P.waitForSelector("#app:not(.hide)", { timeout: 60000 });
+    await P.fill("#q", "Alice"); await P.click("#findBtn"); await P.waitForSelector("#results [data-uid]", { timeout: 30000 });
+    await P.click("#results [data-uid]"); await P.waitForFunction(() => document.getElementById("pName").textContent === "Alice", null, { timeout: 30000 });
+    await P.fill("#mTitle", "Welcome gift"); await P.fill("#mBody", "Enjoy!");
+    await P.selectOption("#mItems .itemrow select", "food"); await P.fill("#mItems .itemrow input", "2500");
+    await P.click("#addItem"); const rows = await P.$$("#mItems .itemrow"); await rows[1].$("select").then((s) => s.selectOption("gems")); await rows[1].$("input").then((i) => i.fill("10"));
+    await P.click("#sendMail"); await sleep(3000);
+    await P.click('#tabs [data-t="mail"]'); const mailTab = await P.textContent("#tabBody"); check(/Welcome gift/.test(mailTab) && /not yet/.test(mailTab), "admin mail tab: " + mailTab.slice(0, 200));
+    // player side
+    await sleep(2000);
+    const badge = await A.evaluate(() => document.getElementById("mailBadge").textContent); check(+badge >= 1, "mail badge " + badge);
+    const g0 = await A.evaluate(() => ({ food: game.state.resources.food, gems: game.state.gems }));
+    await A.click("#mailBtn"); await A.waitForSelector("#mailList [data-claim]"); await A.click("#mailList .mi.new [data-claim]"); await sleep(3500);
+    const g1 = await A.evaluate(() => ({ food: game.state.resources.food, gems: game.state.gems }));
+    check(g1.food === g0.food + 2500 && g1.gems === g0.gems + 10, JSON.stringify({ g0, g1 }));
+    await P.click("#refreshBtn"); await sleep(2500); await P.click('#tabs [data-t="ledger"]'); const hist = await P.textContent("#tabBody"); check(/Food/.test(hist) && /\+2,500/.test(hist), "admin history: " + hist.slice(0, 300));
+    await P.close();
+  });
   await t("no permission errors or page errors during play", async () => { check(!problems.length, "\n        " + problems.slice(0, 15).join("\n        ")); });
 
   console.log("\n" + passed + " passed, " + failed + " failed");
