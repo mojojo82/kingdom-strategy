@@ -7,7 +7,8 @@ ok - gem spends
 ok - hits
 ok - paths
 ok - ledger + purchases
-7 tests passed
+ok - item catalogue + mail
+8 tests passed
 firestore.rules written, admins: 1
 == emulator tests
 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
@@ -30,9 +31,9 @@ npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and con
 [33m[1m⚠ [22m[39m [1m[33mfunctions: [39m[22mpackage.json indicates an outdated version of firebase-functions. Please upgrade using [1mnpm install --save firebase-functions@latest[22m in your functions directory.
 [33m[1m⚠ [22m[39m [1m[33mfunctions: [39m[22mPlease note that there will be breaking changes when you upgrade.
 [32m[1m✔  functions:[22m[39m Using node@22 from host.
-Serving at port 8038
+Serving at port 8560
 
-[32m[1m✔  functions:[22m[39m Loaded functions definitions from source: claimLevel, extinguishBase, repairBase, extinguishAllyBase, hitBase, adminGrantGems, adminSetWallet, relocateCity, adminDeliverPurchase, adminMarkPurchase, touch.
+[32m[1m✔  functions:[22m[39m Loaded functions definitions from source: claimLevel, extinguishBase, repairBase, extinguishAllyBase, hitBase, adminGrantGems, adminSetWallet, relocateCity, adminDeliverPurchase, adminMarkPurchase, touch, adminSendMail, claimMail, adminCatalog, adminFindPlayers, adminPlayerInfo.
 [32m[1m✔  functions[us-central1-claimLevel]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/claimLevel).
 [32m[1m✔  functions[us-central1-extinguishBase]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/extinguishBase).
 [32m[1m✔  functions[us-central1-repairBase]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/repairBase).
@@ -44,211 +45,266 @@ Serving at port 8038
 [32m[1m✔  functions[us-central1-adminDeliverPurchase]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/adminDeliverPurchase).
 [32m[1m✔  functions[us-central1-adminMarkPurchase]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/adminMarkPurchase).
 [32m[1m✔  functions[us-central1-touch]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/touch).
+[32m[1m✔  functions[us-central1-adminSendMail]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/adminSendMail).
+[32m[1m✔  functions[us-central1-claimMail]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/claimMail).
+[32m[1m✔  functions[us-central1-adminCatalog]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/adminCatalog).
+[32m[1m✔  functions[us-central1-adminFindPlayers]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/adminFindPlayers).
+[32m[1m✔  functions[us-central1-adminPlayerInfo]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-kingdom/us-central1/adminPlayerInfo).
 [36m[1mi [22m[39m Running script: [1mnode ci/integration.test.js && echo == end-to-end game test && node ci/e2e.test.js[22m
-[2026-10-06T23:03:03.415Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33171 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:22.480Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666882e error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L77, false for 'update' @ L77
 ok   - own save: write ok, someone else's save: denied
-[2026-10-06T23:03:03.436Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33172 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:22.500Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666882f error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L77, false for 'update' @ L77
 ok   - wallet: players cannot write their own or read others'
-[2026-10-06T23:03:03.518Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33174 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:22.573Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668831 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L77, false for 'update' @ L77
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 12.514591ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 17.531158ms
 ok   - guest (anonymous) accounts can't write or use the server
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 291.934621ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 255.079027ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 17.50257ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 17.435857ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 14.61573ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 12.036535ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 11.353265ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 13.610199ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 18.504591ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 22.531217ms
 ok   - level gems: next level only, once each, not faster than the game allows
-[2026-10-06T23:03:08.898Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33176 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:27.923Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668833 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L93, evaluation error at L95:28 for 'update' @ L95, false for 'create' @ L93
-[2026-10-06T23:03:08.914Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33177 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:27.942Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668834 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L93, evaluation error at L95:28 for 'update' @ L95, false for 'create' @ L93
-[2026-10-06T23:03:08.935Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33178 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:27.961Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668835 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 evaluation error at L95:28 for 'update' @ L95, false for 'update' @ L95
-[2026-10-06T23:03:08.952Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33179 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:27.977Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668836 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 evaluation error at L98:28 for 'delete' @ L98, false for 'delete' @ L98
 ok   - cities: claim own tile ok; HP fields, other players' cities: denied
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 270.856522ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 275.720368ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 28.767368ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 31.560757ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 11.268444ms
-[2026-10-06T23:03:10.133Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33175 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 9.705114ms
+[2026-10-06T23:30:29.158Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668832 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 evaluation error at L95:28 for 'update' @ L95, false for 'update' @ L95
-[2026-10-06T23:03:10.148Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa3317b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:30:29.170Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668838 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 evaluation error at L95:28 for 'update' @ L95, false for 'update' @ L95
 ok   - hits: server only, no hitting yourself, 30s cooldown per target
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 250.667189ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 265.069496ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 17.965464ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 16.773859ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 24.238938ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 16.041053ms
 ok   - putting out my fire costs 100 gems (server-side)
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-repairBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-repairBase" in 239.482062ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-repairBase" in 243.595099ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminGrantGems"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminGrantGems" in 18.625086ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminGrantGems" in 17.195867ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminGrantGems"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminGrantGems" in 232.454487ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminGrantGems" in 255.644965ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-repairBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-repairBase" in 32.221387ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-repairBase" in 28.879457ms
 ok   - repair needs gems; admin grant works; non-admin grant denied
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 19.688118ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 16.799802ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 28.587653ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 20.186617ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishAllyBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishAllyBase" in 260.232822ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishAllyBase" in 258.308656ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishAllyBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishAllyBase" in 22.705878ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishAllyBase" in 19.728675ms
 ok   - alliances: no friendly fire; allies put out fires for free
-[2026-10-06T23:03:46.147Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa3317c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:04.768Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668839 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 evaluation error at L98:28 for 'delete' @ L98, false for 'delete' @ L98
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-relocateCity"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 262.759734ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 246.044691ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-relocateCity"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 20.015546ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 18.86819ms
 ok   - teleport keeps damage; deleting a damaged city client-side is denied
-[2026-10-06T23:03:47.403Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa3317d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:05.903Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666883a error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L104, false for 'update' @ L107
-[2026-10-06T23:03:47.416Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa3317e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:05.914Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666883b error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L104, false for 'update' @ L107
-[2026-10-06T23:03:47.428Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa3317f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:05.923Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666883c error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'update' @ L107
 ok   - world chat: post as yourself only, max 500 chars, no edits
-[2026-10-06T23:03:47.443Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33180 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:05.934Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666883d error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L111, false for 'update' @ L111
-[2026-10-06T23:03:47.496Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33182 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:05.986Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x3666883f error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L112, false for 'update' @ L112
 ok   - painted map: admin only
-[2026-10-06T23:03:47.599Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33184 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[2026-10-06T23:31:06.069Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668841 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L77, false for 'update' @ L77
 ok   - ledger: every gem change is recorded by the server, readable only by the player and admins
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminDeliverPurchase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 12.106823ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 11.152992ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminDeliverPurchase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 256.812835ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 228.437551ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminDeliverPurchase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 20.225629ms
-[2026-10-06T23:03:48.887Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33186 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 17.200777ms
+[2026-10-06T23:31:07.307Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668843 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L82, false for 'update' @ L82
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminDeliverPurchase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 22.752541ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminDeliverPurchase" in 20.809365ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminMarkPurchase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-adminMarkPurchase" in 263.490857ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminMarkPurchase" in 247.496647ms
 ok   - purchases: delivered once per receipt, recorded, only admin can deliver/mark
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 251.117001ms
-[2026-10-06T23:03:51.295Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33187 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 233.59171ms
+[2026-10-06T23:31:09.472Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668844 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L77, false for 'update' @ L77
 ok   - account dates: server writes created/last seen; players can't edit them
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminSendMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminSendMail" in 11.775304ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminSendMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminSendMail" in 2.734012ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminSendMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminSendMail" in 239.975793ms
+[2026-10-06T23:31:10.574Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668845 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L77, false for 'update' @ L77
+[2026-10-06T23:31:10.581Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668846 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L77
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimMail" in 259.982306ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimMail" in 16.740699ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimMail" in 15.066491ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminPlayerInfo"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminPlayerInfo" in 262.379056ms
+ok   - mail: admin sends any items; player claims once; each item recorded; players can't fake mail
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminFindPlayers"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminFindPlayers" in 273.888869ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminFindPlayers"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminFindPlayers" in 16.568712ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminFindPlayers"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminFindPlayers" in 1.839935ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminPlayerInfo"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminPlayerInfo" in 3.043992ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminCatalog"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminCatalog" in 12.028605ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-adminSendMail"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-adminSendMail" in 34.410285ms
+ok   - admin lookups: search by id/name, info, catalog; mail to all; non-admins refused
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 17.724481ms
-[2026-10-06T23:03:51.339Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x8fa33188 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 15.62497ms
+[2026-10-06T23:31:14.822Z]  @firebase/firestore: Firestore (10.14.1): GrpcConnection RPC 'Write' stream 0x36668847 error. Code: 7 Message: 7 PERMISSION_DENIED: 
 false for 'create' @ L19, false for 'update' @ L19
 ok   - live env is separate from test env
 
-16 passed, 0 failed
+18 passed, 0 failed
 == end-to-end game test
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 4.223627ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 7.510148ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 28.763454ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 43.30719ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 7.928512ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 3.818522ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 37.919154ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 56.988821ms
 ok   - both players signed in with a home city
 ok   - world chat between players
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 2.952053ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 2.653661ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 18.253129ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 15.815173ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 10.436488ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 10.371421ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-claimLevel"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 22.155615ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-claimLevel" in 18.60992ms
 ok   - level gems paid by the server
 ok   - alliance: create, join, accept
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 1.80422ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 1.769945ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 16.063567ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 13.178351ms
 ok   - no friendly fire; allies put fires out for free
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 4.465617ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 9.926423ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-touch"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 33.893965ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-touch" in 33.808268ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 2.062257ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 1.678694ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-hitBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 36.589279ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-hitBase" in 36.234018ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishBase"
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 2.280067ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 1.906319ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-extinguishBase"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 44.51373ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-extinguishBase" in 35.065084ms
 ok   - enemy hit burns the base; owner pays 100 gems to put it out
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-relocateCity"
-[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 2.126989ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 2.132ms
 [36m[1mi  functions:[22m[39m Beginning execution of "us-central1-relocateCity"
 [90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
-[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 44.969497ms
+[36m[1mi  functions:[22m[39m Finished "us-central1-relocateCity" in 31.781015ms
 ok   - teleport moves the city (server-side)
 ok   - progress saves to the cloud shortly after an action
 ok   - cheats are refused: own wallet, other player's save, painting the map
 ok   - dev tools hidden for normal players
+FAIL - admin website: sign in, find player, send mail; player claims it in the game 
+       page.waitForSelector: Timeout 60000ms exceeded.
+Call log:
+  - waiting for locator('#app:not(.hide)') to be visible
+
 ok   - no permission errors or page errors during play
 
-11 passed, 0 failed
-[32m[1m✔ [22m[39m Script exited successfully (code 0)
+11 passed, 1 failed
+[33m[1m⚠ [22m[39m Script exited unsuccessfully (code 1)
 [36m[1mi  emulators:[22m[39m Shutting down emulators.
 [36m[1mi  functions:[22m[39m Stopping Functions Emulator
 [36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
@@ -257,3 +313,5 @@ ok   - no permission errors or page errors during play
 [36m[1mi  tasks:[22m[39m Stopping Cloud Tasks Emulator
 [36m[1mi  hub:[22m[39m Stopping emulator hub
 [36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mnode ci/integration.test.js && echo == end-to-end game test && node ci/e2e.test.js[22m" exited with code 1
