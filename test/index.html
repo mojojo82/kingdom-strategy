@@ -1919,6 +1919,19 @@
   #statsBtn { display:none; }
   /* v911: mail (Firebase builds only) */
   #mailBtn { display:none; position:relative; }
+  /* v912: mailbox on the world map (flag up when there's unclaimed mail) */
+  #mapMailBtn { display:none; position:absolute; right:10px; top:10px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
+  html.ks-mail-on #mapMailBtn { display:flex; }
+  #mapMailBtn .mmi { font-size:24px; line-height:1; }
+  #mapMailBtn.has { border-style:solid; border-color:#f0c95f; animation:mapMailPulse 1.8s ease-in-out infinite; }
+  @keyframes mapMailPulse { 0%,100% { box-shadow:0 3px 10px rgba(0,0,0,.45); } 50% { box-shadow:0 0 0 3px rgba(240,201,95,.35), 0 3px 10px rgba(0,0,0,.45); } }
+  #mapMailBadge { display:none; position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 4px; border-radius:9px; background:#d9412b; color:#fff; font:700 11px/18px system-ui,sans-serif; text-align:center; }
+  #mapMailBadge.on { display:block; }
+  @media (prefers-reduced-motion: reduce) { #mapMailBtn.has { animation:none; } }
+  @media (max-width:900px) { /* phones: sit just above the chat bar (it covers the bottom of the map), and keep the 🔥 server chip off the bottom nav */
+    body[data-screen="world"] #mapMailBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
+    #ksFbBadge { bottom:calc(var(--bnH,86px) + 54px) !important; z-index:39 !important; }
+  }
   html.ks-mail-on #mailBtn { display:inline-flex; align-items:center; justify-content:center; font-size:18px; padding:6px 10px; }
   #mailBadge { display:none; position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#d9412b; color:#fff; font:700 10px/16px system-ui,sans-serif; text-align:center; }
   #mailBadge.on { display:block; }
@@ -2460,6 +2473,7 @@
           </div>
             </div>
             <div id="fpsCounter">-- FPS</div>
+            <button id="mapMailBtn" type="button" title="Mail" aria-label="Mail"><span class="mmi">📪</span><span id="mapMailBadge"></span></button>
             <div id="mapviewport">
               <div id="mapworld">
                 <div id="mapMarchLayer"></div>
@@ -13971,6 +13985,9 @@ function ksMailClaim(id, quiet) {
 function ksMailRender() {
   var unread = KSM.list.filter(function (m) { return !m.claimedAt; }).length, b = document.getElementById("mailBadge");
   if (b) { b.textContent = unread > 9 ? "9+" : String(unread); b.classList.toggle("on", unread > 0); }
+  var mb = document.getElementById("mapMailBadge"), mbt = document.getElementById("mapMailBtn"); /* v912: map mailbox mirrors it */
+  if (mb) { mb.textContent = unread > 9 ? "9+" : String(unread); mb.classList.toggle("on", unread > 0); }
+  if (mbt) { mbt.classList.toggle("has", unread > 0); var ic = mbt.querySelector(".mmi"); if (ic) ic.textContent = unread > 0 ? "📬" : "📪"; mbt.title = unread > 0 ? unread + " unclaimed mail" : "Mail"; }
   var el = document.getElementById("mailList"); if (!el || !document.body.classList.contains("mail-open")) return;
   if (!KSM.list.length) { el.innerHTML = '<div class="me">No mail yet.</div>'; return; }
   el.innerHTML = KSM.list.map(function (m) {
@@ -13984,6 +14001,7 @@ function ksMailRender() {
 (function initMailPanel() {
   function close() { document.body.classList.remove("mail-open"); }
   var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { document.body.classList.toggle("mail-open"); ksMailRender(); };
+  var mb = document.getElementById("mapMailBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); document.body.classList.add("mail-open"); ksMailRender(); };
   var c = document.getElementById("mailClose"); if (c) c.onclick = close;
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
