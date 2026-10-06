@@ -13358,7 +13358,7 @@ function spawnTeleportDropExtras(tileId) {
 var TERRAIN_KEY_V2 = "kingdom_prototype_terrain_v2", terrainLandChunks = {}; /* v865: saved per painted chunk; index of chunks holding any land */
 var TERRAIN_KEY = "kingdom_prototype_terrain_v1", TERRAIN_DEV_KEY = "kingdom_prototype_terraindev_v1", terrainDev = false;
 try { terrainDev = localStorage.getItem(TERRAIN_DEV_KEY) === "1"; } catch (e) {}
-var TERRAIN_PX = 20, TERRAIN_CHUNK = 20, terrainN = 0, terrainArr = null, terrainEls = {}, terrainDirty = {}, terrainFlushTimer = null, terrainLastWrite = {};
+var TERRAIN_PX = 20, TERRAIN_EDGE_PX = 2, TERRAIN_CHUNK = 20, terrainN = 0, terrainArr = null, terrainEls = {}, terrainDirty = {}, terrainFlushTimer = null, terrainLastWrite = {};
 var TERR_GRASS = [[0x48,0x85,0x2c],[0x68,0x9d,0x2d],[0x79,0xa6,0x2c],[0x89,0xb2,0x2e],[0xa2,0xbf,0x2f]];
 var TERR_DIRT = [[0xb1,0x78,0x47],[0xcd,0x93,0x50],[0xd2,0x99,0x53],[0xd4,0x9c,0x56],[0xe0,0xac,0x63]];
 var TERR_SAND = [[0xcf,0x96,0x4a],[0xdd,0x9e,0x50],[0xe6,0xb0,0x62]];
@@ -13461,15 +13461,23 @@ function terrainAt(x, y) { var n = terrainN; x = x < 0 ? 0 : x >= n ? n - 1 : x;
 function terrainDrawCell(cv, i, j) {
   var t00 = terrainAt(i - 1, j - 1), t10 = terrainAt(i, j - 1), t01 = terrainAt(i - 1, j), t11 = terrainAt(i, j);
   if (!(t00 || t10 || t01 || t11)) return false;
-  var hd = t00 === 4 || t10 === 4 || t01 === 4 || t11 === 4, N = hd ? GRASS2_PX : TERRAIN_PX; if (cv.width !== N) { cv.width = N; cv.height = N; } /* v881 */
-  var ctx = cv.getContext("2d"), img = ctx.createImageData(N, N), d = img.data;
-  var l00 = t00 ? 1 : 0, l10 = t10 ? 1 : 0, l01 = t01 ? 1 : 0, l11 = t11 ? 1 : 0, g00 = t00 === 2 ? 1 : 0, g10 = t10 === 2 ? 1 : 0, g01 = t01 === 2 ? 1 : 0, g11 = t11 === 2 ? 1 : 0, q00 = t00 === 3 ? 1 : 0, q10 = t10 === 3 ? 1 : 0, q01 = t01 === 3 ? 1 : 0, q11 = t11 === 3 ? 1 : 0, h00 = t00 === 4 ? 1 : 0, h10 = t10 === 4 ? 1 : 0, h01 = t01 === 4 ? 1 : 0, h11 = t11 === 4 ? 1 : 0;
-  for (var py = 0; py < N; py++) for (var px = 0; px < N; px++) {
-    var u = (px + 0.5) / N, v = (py + 0.5) / N, wx = i - 1 + u, wy = j - 1 + v, o = (py * N + px) * 4;
+  var hd = t00 === 4 || t10 === 4 || t01 === 4 || t11 === 4, N = hd ? GRASS2_PX : TERRAIN_PX, M = TERRAIN_EDGE_PX, NN = N + 2 * M; if (cv.width !== NN) { cv.width = NN; cv.height = NN; } /* v881; v907: + M-texel border */
+  var ctx = cv.getContext("2d"), img = ctx.createImageData(NN, NN), d = img.data;
+  /* v907: every canvas carries an M-texel border copied from the neighbouring cells (worked out exactly the same way), so neighbours overlap with
+     identical pixels and the soft edge of one canvas never lets the background through (the thin diagonal lines in the grass). */
+  var cc = {}, cell = function (ci, cj) { var k = ci + "," + cj; if (cc[k]) return cc[k];
+    var a = terrainAt(ci - 1, cj - 1), b = terrainAt(ci, cj - 1), c = terrainAt(ci - 1, cj), e = terrainAt(ci, cj);
+    return (cc[k] = [a ? 1 : 0, b ? 1 : 0, c ? 1 : 0, e ? 1 : 0, a === 2 ? 1 : 0, b === 2 ? 1 : 0, c === 2 ? 1 : 0, e === 2 ? 1 : 0, a === 3 ? 1 : 0, b === 3 ? 1 : 0, c === 3 ? 1 : 0, e === 3 ? 1 : 0, a === 4 ? 1 : 0, b === 4 ? 1 : 0, c === 4 ? 1 : 0, e === 4 ? 1 : 0]); };
+  var Kin = cell(i, j);
+  for (var qy = 0; qy < NN; qy++) for (var qx = 0; qx < NN; qx++) {
+    var px = qx - M, py = qy - M, o = (qy * NN + qx) * 4;
+    var gx = (i - 1) * N + px, gy = (j - 1) * N + py, wx = (gx + 0.5) / N, wy = (gy + 0.5) / N, fx = Math.floor(wx), fy = Math.floor(wy), u = wx - fx, v = wy - fy;
+    var K = (px >= 0 && px < N && py >= 0 && py < N) ? Kin : cell(fx + 1, fy + 1);
+    var l00 = K[0], l10 = K[1], l01 = K[2], l11 = K[3], g00 = K[4], g10 = K[5], g01 = K[6], g11 = K[7], q00 = K[8], q10 = K[9], q01 = K[10], q11 = K[11], h00 = K[12], h10 = K[13], h01 = K[14], h11 = K[15];
     var w00 = (1 - u) * (1 - v), w10 = u * (1 - v), w01 = (1 - u) * v, w11 = u * v;
     var f = w00 * l00 + w10 * l10 + w01 * l01 + w11 * l11;
     var nz = (tnoise(wx * 4, wy * 4, 1) - 0.5) * 0.26 + (tnoise(wx * 9, wy * 9, 2) - 0.5) * 0.1;
-    var dd = f + nz - 0.5, col, a = 255, ix = Math.floor(wx * N), iy = Math.floor(wy * N), hh = thash(ix, iy, 7);
+    var dd = f + nz - 0.5, col, a = 255, ix = gx, iy = gy, hh = thash(ix, iy, 7);
     if (dd >= 0) {
       if (dd < 0.075) col = TERR_SAND[Math.floor(hh * 3)];
       else {
@@ -13491,7 +13499,7 @@ function terrainLayer() {
   L = document.createElement("div"); L.id = "mapTerrainLayer"; world.insertBefore(L, world.firstChild); return L;
 }
 function terrainCellPlace(el, i, j) {
-  var s = tilePxZ(), p = s + gapPxZ(), size = p + 1, cx, cy;
+  var s = tilePxZ(), p = s + gapPxZ(), NN = el.width || TERRAIN_PX + 2 * TERRAIN_EDGE_PX, size = p * NN / (NN - 2 * TERRAIN_EDGE_PX), cx, cy; /* v907: the border texels sit outside the cell, same texel size as inside */
   if (mapIso) { var c = isoCenterG(isoGeom(), i - 0.5, j - 0.5); cx = c.x; cy = c.y; }
   else { cx = padPxZ() + (i - 0.5) * p + s / 2; cy = padPxZ() + (j - 0.5) * p + s / 2; }
   el.style.width = size + "px"; el.style.height = size + "px"; el.style.left = (cx - size / 2) + "px"; el.style.top = (cy - size / 2) + "px";
@@ -13501,9 +13509,10 @@ function terrainSyncCell(i, j, redraw) {
   var k = i + "," + j, el = terrainEls[k];
   if (el && !redraw) return true;
   if (!el && !(terrainAt(i - 1, j - 1) || terrainAt(i, j - 1) || terrainAt(i - 1, j) || terrainAt(i, j))) return false; /* v862: all-sea cell - nothing to make (matters when zoomed right out) */
-  if (!el) { el = document.createElement("canvas"); el.className = "terr"; el.width = TERRAIN_PX; el.height = TERRAIN_PX; }
+  if (!el) { el = document.createElement("canvas"); el.className = "terr"; el.width = TERRAIN_PX + 2 * TERRAIN_EDGE_PX; el.height = el.width; }
   if (!terrainDrawCell(el, i, j)) { if (terrainEls[k]) { el.remove(); delete terrainEls[k]; } return false; }
-  if (!terrainEls[k]) { var L = terrainLayer(); if (!L) return false; L.appendChild(el); terrainEls[k] = el; terrainCellPlace(el, i, j); }
+  if (!terrainEls[k]) { var L = terrainLayer(); if (!L) return false; L.appendChild(el); terrainEls[k] = el; }
+  terrainCellPlace(el, i, j); /* v907: size depends on the canvas size, which a redraw can change (Grass 2) */
   return true;
 }
 function terrainClearAll() { Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); }); terrainEls = {}; }
