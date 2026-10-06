@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kingdom Strategy Prototype</title>
 <script id="ksFirebaseAdapter">
-/* v902: Firebase backend. Only switches on when the game runs OUTSIDE claude.ai (GitHub Pages / Firebase Hosting, or ?fb=1).
-   It provides the same window.claude.use("db") the game already talks to, backed by Cloud Firestore, so no game code changes.
+/* v905: Firebase backend with real accounts. Only switches on OUTSIDE claude.ai (GitHub Pages / Firebase Hosting, or ?fb=1).
+   It provides the same window.claude.use("db") the game already talks to, backed by Cloud Firestore, so game code barely changes.
+   - Players must sign in (Google or email/password) before the game connects. Their Firebase uid is their player id.
+   - Anything worth gems runs on the server: KS_BACKEND.call(name, data) -> Cloud Function (see functions/index.js).
    - /test/ path (or ?env=test) keeps all data under envs/test/... so testing never touches live players.
    - Firestore can't store arrays inside arrays: those are wrapped as {__arr:[...]} on write and unwrapped on read.
    - acquire() leases live in a separate _leases collection (Firestore transaction), never inside the game's own docs. */
 (function () {
   if (window.claude && typeof window.claude.use === "function") return; /* inside claude.ai: keep its own db */
   var host = location.hostname, qs = location.search;
-  if (!(/github\.io$|\.web\.app$|\.firebaseapp\.com$/.test(host) || /[?&]fb=1\b/.test(qs))) return;
+  if (!(/github\.io$|\.web\.app$|\.firebaseapp\.com$/.test(host) || /[?&](fb|emu)=1\b/.test(qs))) return;
   var CFG = {
     apiKey: "AIzaSyAte8e9E9rtt2PvSxk0EacwM0rjoiO7Hoo",
     authDomain: "kingdom-strategy.firebaseapp.com",
@@ -22,17 +24,27 @@
     messagingSenderId: "862432836712",
     appId: "1:862432836712:web:77c692fc9fc2fbf5ff0fdd"
   };
+  var ADMIN_UIDS = []; /* UI only (shows dev tools). The real admin check is on the server: functions/admins.json + firestore.rules */
+  try { if (localStorage.getItem("ks_wipe") === "1") { Object.keys(localStorage).forEach(function (k) { if (/^kingdom_?/i.test(k) || /^kingdomMap/.test(k)) localStorage.removeItem(k); }); localStorage.removeItem("ks_wipe"); } } catch (e) {}
   var ENV = (/\/test\//.test(location.pathname) || /[?&]env=test\b/.test(qs)) ? "test" : "live";
   var ROOT = ENV === "test" ? "envs/test/" : "";
   var SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
-  var KS = window.KS_BACKEND = { kind: "firebase", env: ENV, status: "loading", uid: null, error: null };
+  /* dev tools (🔍 🛠️ icons, debug floaters, map painting) are hidden for everyone except admins */
+  document.documentElement.classList.add("ks-noadmin");
+  (function () { var st = document.createElement("style"); st.textContent = "html.ks-noadmin .idle-util-icons,html.ks-noadmin #coreSaveDebugPanel,html.ks-noadmin #assetSyncDebugPanel,html.ks-noadmin #mapPaintBtn,html.ks-noadmin #spritePalette,html.ks-noadmin #terrainPainter,html.ks-noadmin #devToolsPanel{display:none!important}"; document.head.appendChild(st); })();
+  var KS = window.KS_BACKEND = { kind: "firebase", env: ENV, root: ROOT, status: "loading", uid: null, name: null, email: null, isAdmin: false, error: null, pendingName: null };
 
-  function badge() { /* small corner chip so you can see which backend/env is running and whether it connected */
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function badge() { /* small corner chip: env, connection, account. Tap for account / sign out. */
     var b = document.getElementById("ksFbBadge");
-    if (!b) { if (!document.body) return; b = document.createElement("div"); b.id = "ksFbBadge"; b.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:2147483000;font:11px/1.2 system-ui,sans-serif;padding:3px 7px;border-radius:6px;background:rgba(10,16,32,.85);border:1px dashed #f0c95f;color:#f3e9d2;pointer-events:auto;cursor:pointer;opacity:.85"; b.onclick = function () { alert("Backend: Firebase (" + KS.env + ")\nStatus: " + KS.status + (KS.uid ? "\nSigned in: anonymous" : "\nSigned in: no") + (KS.error ? "\nError: " + KS.error : "")); }; document.body.appendChild(b); }
-    var ok = KS.status === "ready", warn = KS.status === "ready-noauth";
-    b.textContent = "🔥 " + (KS.env === "test" ? "TEST" : "LIVE") + " · " + (ok ? "online" : warn ? "online (no sign-in)" : KS.status === "loading" ? "connecting…" : "offline");
-    b.style.borderColor = ok ? "#7fd07f" : warn ? "#f0c95f" : KS.status === "loading" ? "#6fb7ff" : "#ff7070";
+    if (!b) { if (!document.body) return; b = document.createElement("div"); b.id = "ksFbBadge"; b.style.cssText = "position:fixed;left:6px;bottom:6px;z-index:2147483000;font:11px/1.2 system-ui,sans-serif;padding:3px 7px;border-radius:6px;background:rgba(10,16,32,.85);border:1px dashed #f0c95f;color:#f3e9d2;cursor:pointer;opacity:.85;max-width:60vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"; b.onclick = accountMenu; document.body.appendChild(b); }
+    var ok = KS.status === "ready";
+    b.textContent = "🔥 " + (KS.env === "test" ? "TEST" : "LIVE") + " · " + (ok ? (KS.name || KS.email || "signed in") : KS.status === "signin" ? "sign in" : KS.status === "loading" ? "connecting…" : "offline");
+    b.style.borderColor = ok ? "#7fd07f" : KS.status === "loading" || KS.status === "signin" ? "#6fb7ff" : "#ff7070";
+  }
+  function accountMenu() {
+    var msg = "Server: Firebase (" + KS.env + ")\nStatus: " + KS.status + (KS.uid ? "\nAccount: " + (KS.email || KS.name || "") + "\nPlayer id: " + KS.uid : "") + (KS.error ? "\nError: " + KS.error : "");
+    if (KS.uid && confirm(msg + "\n\nSign out of this account?")) KS.signOut(); else if (!KS.uid) alert(msg);
   }
   document.addEventListener("DOMContentLoaded", badge);
 
@@ -59,7 +71,6 @@
     var out = new Error(msg); out.code = code;
     if (/maximum allowed size|exceeds the maximum|too large/i.test(msg)) out.message = msg + " (arguments must be plain JSON data within the store's limits)";
     if (code === "not-found" || code === "firestore/not-found") out.message = "not_found: " + msg;
-    if (code === "permission-denied") { KS.error = "permission denied - check Firestore rules / Anonymous sign-in"; badge(); }
     return out;
   }
   function wrapDoc(s) { var ex = !!s.exists, raw = ex ? s.data() : undefined; return { id: s.id, exists: ex, hasPendingWrites: !!(s.metadata && s.metadata.hasPendingWrites), data: function () { return ex ? dec(raw) : undefined; } }; }
@@ -111,24 +122,99 @@
     return { doc: doc, collection: function (p) { return query(p, fs.collection(P(p))); }, backend: "firebase", env: ENV };
   }
 
+  /* ---- sign-in screen (game style: dark navy / gold, flat cyan buttons, dashed borders) ---- */
+  var AUTH_CSS = "#ksAuth{position:fixed;inset:0;z-index:2147483600;background:rgba(5,9,20,.94);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}"
+    + "#ksAuth .box{width:100%;max-width:360px;background:#121c33;border:2px dashed #c9a24a;border-radius:12px;padding:20px 18px;color:#f3e9d2;box-shadow:0 10px 40px rgba(0,0,0,.6)}"
+    + "#ksAuth h2{margin:0 0 4px;font-size:20px;color:#f0c95f;text-align:center;letter-spacing:.5px}#ksAuth .sub{text-align:center;font-size:12px;color:#a9b4c8;margin-bottom:14px}"
+    + "#ksAuth button{width:100%;border:0;border-radius:6px;padding:11px 12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}"
+    + "#ksAuth .g{background:#f3e9d2;color:#1a1a1a}#ksAuth .c{background:#2bb3d9;color:#06131c}#ksAuth .o{background:transparent;color:#2bb3d9;border:1px dotted #2bb3d9}"
+    + "#ksAuth input{width:100%;box-sizing:border-box;margin-top:8px;padding:10px;border-radius:6px;border:1px dotted #5d6f93;background:#0a1224;color:#f3e9d2;font-size:15px}"
+    + "#ksAuth .or{display:flex;align-items:center;gap:8px;color:#7d8aa3;font-size:12px;margin:14px 0 4px}#ksAuth .or:before,#ksAuth .or:after{content:'';flex:1;border-top:1px dashed #3b4a6b}"
+    + "#ksAuth .row{display:flex;gap:8px}#ksAuth .row button{flex:1}#ksAuth .link{display:block;text-align:center;margin-top:10px;font-size:12px;color:#8fd3ea;cursor:pointer;text-decoration:underline}"
+    + "#ksAuth .msg{min-height:18px;margin-top:10px;font-size:12px;text-align:center;color:#ffb3b3}#ksAuth .msg.ok{color:#9fe39f}#ksAuth .env{text-align:center;font-size:11px;color:#7d8aa3;margin-top:12px}";
+  function authOverlay() {
+    var o = document.getElementById("ksAuth"); if (o) return o;
+    var st = document.createElement("style"); st.textContent = AUTH_CSS; document.head.appendChild(st);
+    o = document.createElement("div"); o.id = "ksAuth"; document.body.appendChild(o); return o;
+  }
+  function friendly(e) {
+    var c = (e && e.code) || "";
+    return ({ "auth/invalid-email": "That email address doesn't look right.", "auth/missing-password": "Enter a password.", "auth/weak-password": "Password needs at least 6 characters.",
+      "auth/email-already-in-use": "There's already an account with that email - sign in instead.", "auth/invalid-credential": "Wrong email or password.", "auth/wrong-password": "Wrong email or password.",
+      "auth/user-not-found": "No account with that email - create one instead.", "auth/popup-closed-by-user": "Sign-in window was closed.", "auth/popup-blocked": "Your browser blocked the sign-in window - allow pop-ups and try again.",
+      "auth/unauthorized-domain": "This website isn't authorised for sign-in yet (Firebase > Authentication > Settings > Authorized domains).", "auth/operation-not-allowed": "This sign-in method isn't switched on in Firebase yet.",
+      "auth/network-request-failed": "No connection - check your internet and try again.", "auth/too-many-requests": "Too many tries - wait a minute and try again." })[c] || ((e && e.message) || "Something went wrong.");
+  }
+  function showSignIn(auth) {
+    KS.status = "signin"; badge();
+    var o = authOverlay();
+    o.innerHTML = '<div class="box"><h2>⚔️ Kingdom Strategy</h2><div class="sub">Sign in to play. Your kingdom is saved to your account.</div>'
+      + '<button class="g" id="ksG">Continue with Google</button><div class="or">or use email</div>'
+      + '<input id="ksE" type="email" autocomplete="email" placeholder="Email"><input id="ksP" type="password" autocomplete="current-password" placeholder="Password (6+ characters)">'
+      + '<div class="row"><button class="c" id="ksIn">Sign in</button><button class="o" id="ksUp">Create account</button></div>'
+      + '<span class="link" id="ksF">Forgot password?</span><div class="msg" id="ksM"></div><div class="env">' + (ENV === "test" ? "TEST server" : "") + '</div></div>';
+    o.style.display = "flex";
+    function msg(t, ok) { var m = document.getElementById("ksM"); m.textContent = t || ""; m.className = "msg" + (ok ? " ok" : ""); }
+    function busy(b) { ["ksG", "ksIn", "ksUp"].forEach(function (id) { document.getElementById(id).disabled = b; }); }
+    function run(p) { busy(true); msg(""); p.catch(function (e) { msg(friendly(e)); }).then(function () { busy(false); }); }
+    var em = function () { return document.getElementById("ksE").value.trim(); }, pw = function () { return document.getElementById("ksP").value; };
+    document.getElementById("ksG").onclick = function () { run(auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())); };
+    document.getElementById("ksIn").onclick = function () { run(auth.signInWithEmailAndPassword(em(), pw())); };
+    document.getElementById("ksUp").onclick = function () { run(auth.createUserWithEmailAndPassword(em(), pw())); };
+    document.getElementById("ksP").onkeydown = function (e) { if (e.key === "Enter") document.getElementById("ksIn").click(); };
+    document.getElementById("ksF").onclick = function () { if (!em()) { msg("Type your email above first."); return; } busy(true); auth.sendPasswordResetEmail(em()).then(function () { msg("Password reset email sent - check your inbox.", true); }, function (e) { msg(friendly(e)); }).then(function () { busy(false); }); };
+  }
+  function askName(defaultName) {
+    return new Promise(function (res) {
+      var o = authOverlay();
+      o.innerHTML = '<div class="box"><h2>Name your lord</h2><div class="sub">This is what other players see. You can change it later.</div>'
+        + '<input id="ksN" maxlength="12" placeholder="Name (max 12)"><button class="c" id="ksGo">Start</button><div class="msg" id="ksM"></div></div>';
+      o.style.display = "flex";
+      var inp = document.getElementById("ksN"); inp.value = String(defaultName || "").slice(0, 12); inp.focus();
+      function go() { var n = inp.value.trim().slice(0, 12); if (!n) { document.getElementById("ksM").textContent = "Pick a name."; return; } o.style.display = "none"; res(n); }
+      document.getElementById("ksGo").onclick = go; inp.onkeydown = function (e) { if (e.key === "Enter") go(); };
+    });
+  }
+  function wipeLocalGame() { /* this browser's copy belongs to another account (or to no account): clear it so it can't leak into this one */
+    try { Object.keys(localStorage).forEach(function (k) { if (/^kingdom_?/i.test(k) || /^kingdomMap/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
+  }
+  function wipeAndReload() { /* the running game may save once more before the page unloads, so the wipe is repeated at the very start of the next load */
+    try { window.saveLoadFailed = true; } catch (e) {} /* the game's own guard: persist() stops writing */
+    try { localStorage.setItem("ks_wipe", "1"); } catch (e) {}
+    wipeLocalGame(); location.reload();
+  }
+
   var ready = null;
   function boot() {
     if (ready) return ready;
     ready = load(SDK + "firebase-app-compat.js")
-      .then(function () { return Promise.all([load(SDK + "firebase-auth-compat.js"), load(SDK + "firebase-firestore-compat.js")]); })
+      .then(function () { return Promise.all([load(SDK + "firebase-auth-compat.js"), load(SDK + "firebase-firestore-compat.js"), load(SDK + "firebase-functions-compat.js")]); })
       .then(function () {
-        var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(CFG);
+        var EMU = /[?&]emu=1\b/.test(qs) && /^(localhost|127\.0\.0\.1)$/.test(host); /* automated tests against Firebase's local emulators */
+        if (!firebase.apps.length) firebase.initializeApp(EMU ? Object.assign({}, CFG, { projectId: "demo-kingdom" }) : CFG);
         var fs = firebase.firestore();
         try { fs.settings({ ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
-        var auth = firebase.auth();
-        return new Promise(function (res) {
-          var done = false, un = auth.onAuthStateChanged(function (u) {
-            if (u && !done) { done = true; try { un(); } catch (e) {} KS.uid = u.uid; KS.status = "ready"; badge(); res(makeDb(fs)); }
-          });
-          auth.signInAnonymously().catch(function (e) {
-            if (done) return; done = true; try { un(); } catch (x) {}
-            KS.status = "ready-noauth"; KS.error = "anonymous sign-in failed (" + (e && e.code) + ") - turn on Authentication > Sign-in method > Anonymous";
-            console.warn("Firebase:", KS.error); badge(); res(makeDb(fs));
+        var auth = firebase.auth(), fns = firebase.app().functions("us-central1");
+        if (EMU) { fs.useEmulator("127.0.0.1", 8080); auth.useEmulator("http://127.0.0.1:9099"); fns.useEmulator("127.0.0.1", 5001); KS.emulator = true; }
+        KS.call = function (name, data) { return fns.httpsCallable(name)(Object.assign({ env: ENV }, data || {})).then(function (r) { return r.data; }); };
+        KS.signOut = function () { auth.signOut().then(function () { try { localStorage.removeItem("ks_uid"); } catch (e) {} wipeAndReload(); }); };
+        return new Promise(function (resolve) {
+          var started = false;
+          auth.onAuthStateChanged(function (u) {
+            if (started) return;
+            if (!u || u.isAnonymous) { if (u && u.isAnonymous) auth.signOut(); showSignIn(auth); return; }
+            started = true;
+            var last = null; try { last = localStorage.getItem("ks_uid"); } catch (e) {}
+            if (last !== u.uid) { try { localStorage.setItem("ks_uid", u.uid); } catch (e) {} wipeAndReload(); return; }
+            KS.uid = u.uid; KS.email = u.email || null; KS.isAdmin = ADMIN_UIDS.indexOf(u.uid) !== -1; if (KS.isAdmin) document.documentElement.classList.remove("ks-noadmin");
+            fs.doc(ROOT + "players/" + u.uid + "/save/main").get().then(function (s) {
+              if (s.exists) return null;
+              return askName(u.displayName || (u.email ? u.email.split("@")[0] : "")).then(function (n) { KS.pendingName = n; });
+            }).catch(function () {}).then(function () {
+              var ov = document.getElementById("ksAuth"); if (ov) ov.style.display = "none";
+              KS.name = KS.pendingName || u.displayName || null; KS.status = "ready"; badge();
+              resolve(makeDb(fs));
+            });
           });
         });
       })
@@ -6493,7 +6579,7 @@ function createGame(opts) {
     state.idle.lastLevelClearAt = Date.now();
     state.idle.bossRetry = false; state.idle.bossPhase = false;
     var _lr = state.idle.levelRewards || { valor: 0, energon: 0, fragments: 0 }; state.idle.levelRewards = null;
-    _lr.gems = LEVEL_CLEAR_GEMS; state.gems = (state.gems || 0) + LEVEL_CLEAR_GEMS;
+    _lr.gems = LEVEL_CLEAR_GEMS; if (!(typeof window !== "undefined" && window.KS_BACKEND && window.KS_BACKEND.kind === "firebase")) state.gems = (state.gems || 0) + LEVEL_CLEAR_GEMS; else setTimeout(function () { try { ksClaimLoop(); } catch (e) {} }, 0); /* v905: on Firebase the server pays (claimLevel) */
     if (manualResults) state.idle.pending = { type: "victory", at: now(), chapterNum: state.idle.chapter, label: state.idle.chapter + "-" + state.idle.levelNum, rewards: _lr || { valor: 0, energon: 0, fragments: 0 }, chapterBoss: idleIsChapterBossLevel() };
     state.idle.levelNum++;
     if (state.idle.levelNum > IDLE_LEVELS_PER_CHAPTER) { state.idle.levelNum = 1; state.idle.chapter++; }
@@ -10044,6 +10130,11 @@ function generatePlayerCode() {
 
 function resolvePlayerId() {
   if (_playerIdPromise) return _playerIdPromise;
+  if (window.KS_BACKEND && KS_BACKEND.kind === "firebase" && KS_BACKEND.uid) { /* v905: signed-in Firebase account = player id (no codes) */
+    var pend = KS_BACKEND.pendingName; KS_BACKEND.pendingName = null;
+    if (pend) { try { localStorage.setItem(PLAYER_NAME_KEY, pend); } catch (e) {} (function retry(n) { setTimeout(function () { if (PLAYER_ID && assetSyncDb) { try { setPlayerName(pend); } catch (e) {} } else if (n > 0) retry(n - 1); }, 800); })(20); }
+    _playerIdPromise = Promise.resolve(KS_BACKEND.uid); return _playerIdPromise;
+  }
   _playerIdPromise = (function () {
     try {
       var existing = localStorage.getItem(PLAYER_ID_KEY);
@@ -13332,7 +13423,7 @@ var terrainSyncStarted = false;
 /* v903: first run on Firebase copies the hand-painted map (terrain chunks + placed sprites) from seed-world.json,
    exported from the claude.ai database. Runs once per environment (marker doc world/seedImport), never overwrites a chunk/sprite that already exists. */
 function firebaseSeedWorld() {
-  if (!cloudDb || cloudDb.backend !== "firebase" || serverPrefix() !== "" || typeof fetch !== "function") return;
+  if (!cloudDb || cloudDb.backend !== "firebase" || serverPrefix() !== "" || typeof fetch !== "function" || !(window.KS_BACKEND && KS_BACKEND.isAdmin)) return; /* v905: painted map is admin-only */
   var mark = cloudDb.doc("world/seedImport");
   mark.get().then(function (s) {
     if (s.exists && s.data() && s.data().v >= 1) return;
@@ -13735,6 +13826,7 @@ function writeCityHp(tileId, rec) {
   return Promise.resolve();
 }
 function hitBase(tileId) { /* -> promise of { before, after, zeroed } */
+  if (ksFb() && isBaseTile(tileId)) { var hb = Math.round(baseHpNow(tileId).hp); return KS_BACKEND.call("hitBase", { tileId: tileId }).then(function (r) { if (r.city) cityHp[tileId] = Object.assign({}, cityHp[tileId] || {}, r.city); try { renderVisibleTiles(); renderTileInfo(); } catch (e) {} return { before: r.before, after: r.after, zeroed: r.zeroed }; }, function (e) { console.warn("hitBase:", e && e.message); return { before: hb, after: hb, zeroed: false }; }); } /* v905: the server applies hits */
   var read = cloudDb && isBaseTile(tileId) ? cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tileId)).get().then(function (snap) { var d = snap.exists ? snap.data() : null; return d && typeof d.hp === "number" ? d : null; }).catch(function () { return cityHp[tileId] || null; }) : Promise.resolve(cityHp[tileId] || null);
   return read.then(function (doc) {
     var now = Date.now(), cur = baseHpAt(doc, now), after = Math.max(0, cur.hp - BASE_HIT_HP), zeroed = after <= 0 && cur.hp > 0;
@@ -13744,13 +13836,51 @@ function hitBase(tileId) { /* -> promise of { before, after, zeroed } */
   });
 }
 function isBaseBurning(tileId) { return !!cityHp[tileId] && baseHpNow(tileId).burning; }
+// ---- v905: server-side gems (Firebase). The wallet doc is written only by Cloud Functions; the game just shows it. ----
+function ksFb() { return !!(window.KS_BACKEND && KS_BACKEND.kind === "firebase" && KS_BACKEND.call && KS_BACKEND.uid && PLAYER_ID === KS_BACKEND.uid); }
+function ksErrText(e) {
+  var m = (e && e.message) || "";
+  return ({ not_enough_gems: "Not enough gems.", not_burning: "The fire is already out.", full_hp: "Your base is already at full HP.", hit_cooldown: "You hit that base moments ago - wait a little.",
+    not_your_city: "That isn't your city.", not_allies: "Only alliance members can do that.", taken: "That spot was just taken.", ally_city: "That's an ally's city.", own_city: "That's your own city." })[m] || ("Server: " + (m || "error"));
+}
+var KSW = { lvl: 0, gems: 0, loaded: false, unsub: null, claiming: false, retryT: null };
+function ksStartWallet() {
+  if (!ksFb() || KSW.unsub || !cloudDb) return;
+  KSW.unsub = cloudDb.doc("players/" + PLAYER_ID + "/wallet/main").onSnapshot(function (s) {
+    var d = (s.exists && s.data()) || {}; KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
+    game.state.gems = KSW.gems; try { render(); } catch (e) {} ksClaimLoop();
+  }, function (e) { console.error("wallet sync", e && e.message); });
+  setInterval(function () { if (KSW.loaded && game.state.gems !== KSW.gems) { game.state.gems = KSW.gems; try { render(); } catch (e) {} } ksClaimLoop(); }, 5000); /* the wallet is the only truth: undo any local edit of gems */
+}
+function ksClaimLoop() { /* claim gems for each Conquest level cleared but not yet paid, one at a time, at the pace the server allows */
+  if (!ksFb() || !KSW.loaded || KSW.claiming || KSW.retryT) return;
+  var st = game.state.idle, cleared = (st.chapter - 1) * 20 + st.levelNum - 1;
+  if (KSW.lvl >= cleared) return;
+  var g = KSW.lvl + 1; KSW.claiming = true;
+  KS_BACKEND.call("claimLevel", { chapter: Math.floor((g - 1) / 20) + 1, levelNum: (g - 1) % 20 + 1 }).then(function (r) {
+    if (typeof r.lvl === "number") KSW.lvl = Math.max(KSW.lvl, r.lvl); KSW.gems = r.gems; game.state.gems = r.gems;
+  }, function (e) {
+    var ms = (e && e.details && e.details.retryAfterMs) || 10000;
+    KSW.retryT = setTimeout(function () { KSW.retryT = null; ksClaimLoop(); }, Math.min(60000, ms + 250));
+  }).then(function () { KSW.claiming = false; if (!KSW.retryT) setTimeout(ksClaimLoop, 50); });
+}
+function ksServerCityAction(fn, tileId, extra) { /* -> promise; merges the server's city result into the local HP cache */
+  return KS_BACKEND.call(fn, Object.assign({ tileId: tileId }, extra || {})).then(function (r) {
+    if (r && r.city) cityHp[tileId] = Object.assign({}, cityHp[tileId] || {}, r.city);
+    if (r && typeof r.gems === "number") { game.state.gems = r.gems; KSW.gems = r.gems; }
+    try { renderVisibleTiles(); renderTileInfo(); render(); } catch (e) {}
+    return r;
+  }, function (e) { game.log(ksErrText(e)); try { render(); } catch (x) {} throw e; });
+}
 function extinguishMyBase() {
+  if (ksFb()) { var fid = game.state.homeTileId; if (!baseHpNow(fid).burning) return; if ((game.state.gems || 0) < BASE_EXTINGUISH_GEMS) { game.log("Not enough gems to put out the fire."); return; } ksServerCityAction("extinguishBase", fid).catch(function () {}); return; }
   var id = game.state.homeTileId, cur = baseHpNow(id); if (!cur.burning) return;
   if ((game.state.gems || 0) < BASE_EXTINGUISH_GEMS) { game.log("Not enough gems to put out the fire."); return; }
   game.state.gems -= BASE_EXTINGUISH_GEMS; persist();
   writeCityHp(id, { hp: cur.hp, hpT: Date.now(), burnLeft: 0 }); render();
 }
 function repairMyBase() {
+  if (ksFb()) { var rid = game.state.homeTileId; if (baseHpNow(rid).hp >= BASE_HP_MAX - 0.5) return; if ((game.state.gems || 0) < BASE_REPAIR_GEMS) { game.log("Not enough gems to repair."); return; } ksServerCityAction("repairBase", rid).catch(function () {}); return; }
   var id = game.state.homeTileId, cur = baseHpNow(id); if (cur.hp >= BASE_HP_MAX - 0.5) return;
   if ((game.state.gems || 0) < BASE_REPAIR_GEMS) { game.log("Not enough gems to repair."); return; }
   game.state.gems -= BASE_REPAIR_GEMS; persist();
@@ -14522,6 +14652,9 @@ function ensureHomeTileAssigned() {
 function teleportTo(tileId) {
   if ((game.state.marches || []).length) return Promise.resolve({ ok: false, reason: "marches_out" }); /* v860: no moving the city while a march is still out (it would come home to the new spot) */
   var oldTileId = game.state.homeTileId;
+  if (ksFb() && oldTileId) { /* v905: server moves the city so damage/fire move with it */
+    return KS_BACKEND.call("relocateCity", { from: oldTileId, to: tileId }).then(function () { delete occupiedTileIds[oldTileId]; occupiedTileIds[tileId] = PLAYER_ID; game.setHomeTile(tileId); persist(); return { ok: true }; }, function (e) { return { ok: false, reason: (e && e.message) || "server" }; });
+  }
   return claimCityTile(tileId).then(function (res) {
     if (!res.ok) return res;
     return releaseCityTile(oldTileId).then(function () {
@@ -14682,7 +14815,7 @@ function assignServerForNewPlayer() {
 // subscribe to anything — those two read CURRENT_SERVER_ID indirectly via
 // serverPrefix(), so it must be correct before they start.
 function resolveServerAssignment() {
-  function afterResolved() { startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } }
+  function afterResolved() { startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
   if (IS_GUEST_LINK || !cloudDb) {
     // Guests ride along the legacy world; offline/no-db has no multiplayer
     // concept to assign anyway. CURRENT_SERVER_ID is already correct
@@ -23007,6 +23140,7 @@ function allyRefreshMyMemberInfo() { /* keep my name/power on the roster current
 function extinguishAllyBase(tileId) {
   var owner = occupiedTileIds[tileId]; if (!isAlly(owner)) return;
   var cur = baseHpNow(tileId); if (!cur.burning) return;
+  if (ksFb()) { ksServerCityAction("extinguishAllyBase", tileId).catch(function () {}); return; } /* v905 */
   writeCityHp(tileId, { hp: cur.hp, hpT: Date.now(), burnLeft: 0 });
 }
 function renderAllyProfileLine() { var el = document.getElementById("gpAlliance"); if (el) el.textContent = ALLY.my ? "[" + ALLY.my.tag + "] " + ((ALLY.alliance && ALLY.alliance.name) || "") : "—"; }
@@ -26939,7 +27073,15 @@ setInterval(function () { if (deviceIsActive && !document.hidden) { try { game.t
 // the local autosave above does. cloudSyncNow() itself no-ops until the
 // initial load/seed above has resolved (cloudSyncReady) and skips
 // unnecessary writes when nothing has actually changed.
-setInterval(function () { if (cloudSyncReady) cloudSyncNow(false); }, 5000);
+setInterval(function () { if (cloudSyncReady) cloudSyncNow(false); }, 60000); /* v905: background progress every 60s (was 5s); player actions save within ~1.5s (below) */
+// v905: a player action (tap/click/key) followed by a save pushes that save to the cloud within ~1.5s, so closing the game straight after
+// an action can't undo it; and leaving/hiding the page pushes whatever is unsaved.
+var ksLastInput = 0, ksCloudSaveT = null;
+["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, function () { ksLastInput = Date.now(); }, true); });
+function cloudSaveSoon() { if (ksCloudSaveT) return; ksCloudSaveT = setTimeout(function () { ksCloudSaveT = null; if (cloudSyncReady) cloudSyncNow(false); }, 1500); }
+(function () { var basePersist = persist; persist = function () { var r = basePersist.apply(this, arguments); if (Date.now() - ksLastInput < 3000) cloudSaveSoon(); return r; }; })();
+document.addEventListener("visibilitychange", function () { if (document.hidden && cloudSyncReady) cloudSyncNow(false); });
+window.addEventListener("pagehide", function () { if (cloudSyncReady) cloudSyncNow(false); });
 render();
 if (mapMode === "world") startMarchAnim();
 

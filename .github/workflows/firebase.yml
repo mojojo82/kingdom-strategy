@@ -21,7 +21,7 @@ jobs:
       - name: Install
         run: |
           (cd functions && npm install --no-audit --no-fund)
-          (cd ci && npm install --no-audit --no-fund)
+          (cd ci && npm install --no-audit --no-fund && npx playwright install --with-deps chromium)
       - name: Unit + emulator tests
         id: tests
         run: |
@@ -32,7 +32,7 @@ jobs:
             echo "== unit tests"; node functions/test/core.test.js &&
             echo '["ciadmin0001"]' > functions/admins.json && node tools/build-rules.js &&
             echo "== emulator tests" &&
-            npx -y firebase-tools@13 emulators:exec --project demo-kingdom --only auth,firestore,functions "node ci/integration.test.js"
+            npx -y firebase-tools@13 emulators:exec --project demo-kingdom --only auth,firestore,functions "node ci/integration.test.js && echo == end-to-end game test && node ci/e2e.test.js"
           } 2>&1 | tee ci-out/test.log
       - name: Restore real admin list
         if: always()
