@@ -320,3 +320,12 @@
   (46 px, dashed gold, dark glass), stacked with it: above it on phones, below it on PC; takes the mailbox's spot if mail is off. Tap -> More > Recon;
   going back to the World map keeps your spot (v923). Test: g184_maprecon.js (phone + PC).
 - Next candidates discussed: Reports (with an unread dot), Alliance. World chat already shows on the map.
+
+## v926 (TEST game only): moving sea foam on the World map
+- Harley showed a reference (deep sea with drifting whitecaps); asked for the lightest version, no foam on land, sea colour untouched.
+- One screen-sized transparent canvas (#mapSeaFoam) is the FIRST child of #mapworld (kept first, under the painted-land layer and every tile), moved
+  with translate3d to the current scroll each frame; foam is stored in map pixels so it stays on the water while dragging. Spawned only where the tile
+  and its 8 neighbours are sea (terrain code 0); open sea outside the kingdom counts as sea. Each streak: 2-4 short wavy white segments + a fleck,
+  fades in/holds/out over 2.6-5.2 s, drifts slowly. ~1 per 7,000 px² of view, fewer/smaller when zoomed out; cleared on zoom change.
+  Runs only on the World screen with the page visible, capped ~30 fps; reduced-motion -> still. Sea colour = the viewport's own gradient (unchanged).
+- Measured (g185_seafoam.js, phone size, dpr 2): ~0.1 ms per foam frame, up to ~49 streaks in view, 0 on painted land, stops off the World map.
