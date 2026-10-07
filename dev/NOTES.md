@@ -380,3 +380,8 @@
   charge went off on return instead of while away). The engine always fired on time; the visual layer diffed skillFireCounts against a stale
   lastSkillFireCounts. startIdleAnim now syncs lastSkillFireCounts/lastSkillLandCounts and clears skillFlash. Test g187_skillaway (reproduced:
   9 flash frames on return before, 0 after; a skill fired on screen still plays). g172-g175, g181 still pass.
+- v935: tapping World froze the screen ~1-2 s (Harley). Cause: the phone map box (#mapviewportWrap) only got its height from a 500 ms interval
+  (worldOverlayLayout); until then #mapviewport was 66,000 px tall, so renderVisibleTiles built ~2,000-2,500 tiles (+ layout of all of them),
+  then threw them away. Fix: setScreen("world") runs the layout at once (window.worldOverlayLayoutNow), and renderVisibleTiles never treats
+  the view as bigger than the window. CPU x4, phone size: World first paint 3.2-3.6 s -> 0.18-0.23 s; tiles built 1,979 -> 80.
+  Test g188_worldswitch (fails on v934, passes now). Map/conquest tests g176, g181, g183-g187 pass.

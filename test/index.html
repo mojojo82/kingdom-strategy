@@ -13419,6 +13419,7 @@ function renderVisibleTiles() {
   var world = document.getElementById("mapworld");
   var marchLayer = document.getElementById("mapMarchLayer");
   if (!viewport || !world) return;
+  var vpW = Math.min(viewport.clientWidth, window.innerWidth), vpH = Math.min(viewport.clientHeight, window.innerHeight); /* v935: safety net - the view is never bigger than the screen, even while the map box is still being sized */
   var size = Math.round(Math.sqrt(game.state.map.length));
   var pitch = tilePxZ() + gapPxZ();
   // A couple of tiles' worth of buffer beyond each edge so a normal scroll
@@ -13426,12 +13427,12 @@ function renderVisibleTiles() {
   // catches up.
   var buffer = 2;
   var minX = Math.max(0, Math.floor((viewport.scrollLeft - padPxZ()) / pitch) - buffer);
-  var maxX = Math.min(size - 1, Math.ceil((viewport.scrollLeft + viewport.clientWidth - padPxZ()) / pitch) + buffer);
+  var maxX = Math.min(size - 1, Math.ceil((viewport.scrollLeft + vpW - padPxZ()) / pitch) + buffer);
   var minY = Math.max(0, Math.floor((viewport.scrollTop - padPxZ()) / pitch) - buffer);
-  var maxY = Math.min(size - 1, Math.ceil((viewport.scrollTop + viewport.clientHeight - padPxZ()) / pitch) + buffer);
+  var maxY = Math.min(size - 1, Math.ceil((viewport.scrollTop + vpH - padPxZ()) / pitch) + buffer);
   var isoG = null, isoRect = null;
   if (mapIso) { /* v825: bounding box (in tile coords) of the viewport rectangle, then an exact centre-in-rectangle test per tile below */
-    isoG = isoGeom(); var M = 5 * isoG.p, L = viewport.scrollLeft - M, R = viewport.scrollLeft + viewport.clientWidth + M, T = viewport.scrollTop - M, B = viewport.scrollTop + viewport.clientHeight + M;
+    isoG = isoGeom(); var M = 5 * isoG.p, L = viewport.scrollLeft - M, R = viewport.scrollLeft + vpW + M, T = viewport.scrollTop - M, B = viewport.scrollTop + vpH + M;
     isoRect = { L: L, R: R, T: T, B: B }; minX = size; maxX = -1; minY = size; maxY = -1;
     [[L, T], [R, T], [L, B], [R, B]].forEach(function (c) { var a = (c[0] - isoG.offX) / isoG.r2, b = (c[1] - isoG.offY) / (isoG.r2 * ISO_K), tx = (a + b) / 2, ty = (b - a) / 2; minX = Math.min(minX, Math.floor(tx) - 1); maxX = Math.max(maxX, Math.ceil(tx) + 1); minY = Math.min(minY, Math.floor(ty) - 1); maxY = Math.max(maxY, Math.ceil(ty) + 1); });
     minX = Math.max(0, minX); minY = Math.max(0, minY); maxX = Math.min(size - 1, maxX); maxY = Math.min(size - 1, maxY);
@@ -14916,7 +14917,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v934 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v935 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;
@@ -23971,6 +23972,7 @@ function setScreen(screen, sub) {
   if (sub !== "chat") chatReturn = null;
   appScreen = screen; appSub = sub;
   document.body.setAttribute("data-screen", screen); document.body.setAttribute("data-sub", sub);
+  if (screen === "world") { try { var mcW = document.getElementById("mapModeContent"); if (mcW) mcW.style.display = ""; if (window.worldOverlayLayoutNow) window.worldOverlayLayoutNow(); } catch (e) {} } /* v935: size the map box before anything renders into it (it was 66,000 px tall for up to 0.5 s -> ~2,500 tiles built, a 1-2 s freeze) */
   try { ksBadgeDock(); updateHomeBubble(); } catch (e) {}
   var want = null;
   if (screen === "world") want = "world";
@@ -24135,6 +24137,7 @@ function renderBottomNav() {
       placeTileInfo();
     } catch (e) {}
   }
+  window.worldOverlayLayoutNow = upd; /* v935: setScreen calls this at once - the map box must have its real height before the first map render */
   window.addEventListener("resize", upd); setInterval(upd, 500); upd();
 })();
 (function wrapIdleBottom() {
