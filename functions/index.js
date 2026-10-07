@@ -190,7 +190,7 @@ async function allPlayerIds(R) { /* every player that has data in this environme
 // Send a mail with items to one player (uid) or everyone (all: true). Nothing is given until the player claims it.
 exports.adminSendMail = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);
-  const mail = C.makeMail(d.title, d.body, d.items, uid, Date.now());
+  const mail = C.makeMail(d.title, d.body, d.items, uid, Date.now(), d.category);
   const targets = d.all === true ? await allPlayerIds(R) : [validUid(d.uid)];
   for (let i = 0; i < targets.length; i += 400) {
     const batch = db.batch();

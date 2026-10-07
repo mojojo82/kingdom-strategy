@@ -198,3 +198,9 @@
 ## v913
 - Admin powers require Google sign-in (2-step verification is enforced by Google): functions isAdmin(uid, req) checks sign_in_provider == google.com (emulator excepted); rules isAdmin() adds the same check (CI builds rules with CI_ADMIN_ANY_PROVIDER=1 for its stand-in admin); game shows dev tools only after getIdTokenResult().signInProvider === google.com; admin site explains 'Admin needs Google sign-in'.
 - harleymitsu7 switched from email/password to Google sign-in (Harley, 7 Oct).
+
+## v914
+- Mailbox tabs: ⚔️ Wars / 🛡️ Alliance / ⚙️ System / 📜 Reports / ⭐ Saved. All five always show (empty ones say so); red count on a tab for unclaimed mail; opening the mailbox jumps to the first tab (Wars first) with unclaimed mail, else the tab used last. Phone: five tabs fit at 380px.
+- Category is a new optional field on mail (`category`: wars/alliance/system/reports; core.js MAIL_CATEGORIES). None or unknown = System, so every mail sent before v914 lands under System. adminSendMail takes `category` (default system, anything else is rejected). Admin site: "Tab:" dropdown on both the per-player mail form and mail-to-all. Nothing sends Wars/Alliance/Reports mail yet except the admin dropdown; future battle/alliance features just set the category.
+- Saved = the player's own star bookmarks (☆/★ on each mail), stored in the save as state.mailSaved (no server change, rules unchanged). A starred mail shows under Saved and still under its own tab. Only the newest 60 mails are loaded, so a starred mail older than that drops out of view until the limit is raised.
+- Tests: core unit +5 asserts (default, case, each category, Saved rejected, junk rejected). New simfork/g170_mailtabs.js (tabs, counts, old no-category mail under System, star/unstar, bookmarks in cloud save and after reload, phone width). dev/tests/fnrunner.js now finds functions/ from the repo layout. Not run: emulator test for the category on adminSendMail (CI does that).

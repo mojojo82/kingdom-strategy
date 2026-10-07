@@ -132,11 +132,14 @@ function normalizeItems(items) {
   if (!out.length || out.length > 20) throw new GameError("invalid-argument", "1-20 items per mail");
   return out;
 }
-function makeMail(title, body, items, by, now) {
+const MAIL_CATEGORIES = ["wars", "alliance", "system", "reports"]; /* v914: mailbox tabs (Saved is a player bookmark, not a category) */
+function makeMail(title, body, items, by, now, category) {
   const t = String(title || "").trim().slice(0, 80), b = String(body || "").trim().slice(0, 1000);
   if (!t) throw new GameError("invalid-argument", "mail needs a title");
+  const cat = category == null || category === "" ? "system" : String(category).toLowerCase(); /* no category given = System */
+  if (MAIL_CATEGORIES.indexOf(cat) < 0) throw new GameError("invalid-argument", "unknown mail category " + cat);
   const list = normalizeItems(items), it = {}, labels = {}; list.forEach((x) => { it[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
-  return { title: t, body: b, items: it, labels, from: "Admin", sentAt: now, by: String(by || "") };
+  return { title: t, body: b, items: it, labels, from: "Admin", category: cat, sentAt: now, by: String(by || "") };
 }
 function decideMailClaim(mail, now) {
   if (!mail) throw new GameError("not-found", "no such mail");
@@ -146,4 +149,4 @@ function decideMailClaim(mail, now) {
 }
 
 module.exports = { BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizeItems, makeMail, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

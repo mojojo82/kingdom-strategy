@@ -30,7 +30,8 @@ module.exports = function makeRunner(store) {
   };
   const orig = Module._load;
   Module._load = function (req, parent, isMain) { return fakes[req] || orig.apply(this, arguments); };
-  const file = path.join(__dirname, "../kingdom-strategy/functions/index.js");
+  const repoFile = path.join(__dirname, "../../functions/index.js"); /* repo layout; the original session had tests/ next to kingdom-strategy/ */
+  const file = require("fs").existsSync(repoFile) ? repoFile : path.join(__dirname, "../kingdom-strategy/functions/index.js");
   delete require.cache[require.resolve(file)];
   const fns = require(file);
   Module._load = orig;

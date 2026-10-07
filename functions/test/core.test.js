@@ -87,6 +87,11 @@ t("item catalogue + mail", () => {
   assert.throws(() => C.makeMail("x", "", { gems: 0 }, "a", 1), /bad amount/);
   assert.throws(() => C.makeMail("x", "", { dragons: 1 }, "a", 1), /unknown item/);
   assert.throws(() => C.makeMail("", "", { gems: 1 }, "a", 1), /title/);
+  assert.strictEqual(m.category, "system", "no category = system");
+  assert.strictEqual(C.makeMail("x", "", { gems: 1 }, "a", 1, "Wars").category, "wars", "category is case-insensitive");
+  C.MAIL_CATEGORIES.forEach((k) => assert.strictEqual(C.makeMail("x", "", { gems: 1 }, "a", 1, k).category, k));
+  assert.throws(() => C.makeMail("x", "", { gems: 1 }, "a", 1, "saved"), /unknown mail category/); /* Saved is a player bookmark, never a sent category */
+  assert.throws(() => C.makeMail("x", "", { gems: 1 }, "a", 1, "spam"), /unknown mail category/);
   const c1 = C.decideMailClaim(m, 9); assert.ok(!c1.dup); assert.strictEqual(c1.list.length, 2); assert.strictEqual(c1.list[1].path, "resources.food");
   assert.ok(C.decideMailClaim(Object.assign({}, m, { claimedAt: 9 }), 10).dup, "claim twice = no-op");
   const le = C.ledgerEntry("food", 1000, null, "mail", "m1", null, 3); assert.ok(!("balance" in le));

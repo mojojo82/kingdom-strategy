@@ -82,7 +82,8 @@
       <div class="card" style="background:var(--panel2)">
         <h2>✉️ Send items (mail)</h2>
         <div class="muted">The player gets a mail and taps Claim. Every claim is recorded.</div>
-        <input id="mTitle" placeholder="Title (e.g. Sorry for the bug)" style="width:100%;margin-top:8px" maxlength="80">
+        <select id="mCat" style="width:100%;margin-top:8px" title="Which mailbox tab the player sees it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
+        <input id="mTitle" placeholder="Title (e.g. Sorry for the bug)" style="width:100%;margin-top:6px" maxlength="80">
         <textarea id="mBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
         <div id="mItems"></div>
         <div class="row" style="margin-top:8px"><button class="b ghost" id="addItem">+ Add item</button><button class="b" id="sendMail">Send to this player</button></div>
@@ -109,7 +110,8 @@
   <section class="card">
     <h2>📣 Mail to ALL players</h2>
     <div class="muted">Compensation, events, gifts. Goes to every player in the selected environment.</div>
-    <input id="aTitle" placeholder="Title" style="width:100%;margin-top:8px" maxlength="80">
+    <select id="aCat" style="width:100%;margin-top:8px" title="Which mailbox tab the players see it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
+    <input id="aTitle" placeholder="Title" style="width:100%;margin-top:6px" maxlength="80">
     <textarea id="aBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
     <div id="aItems"></div>
     <div class="row" style="margin-top:8px"><button class="b ghost" id="aAddItem">+ Add item</button><button class="b warn" id="aSend">Send to everyone</button></div>
@@ -230,7 +232,7 @@
     var items; try { items = readItems("mItems"); } catch (e) { toast(e.message, true); return; }
     var title = $("mTitle").value.trim(); if (!title) { toast("Give the mail a title.", true); return; }
     if (!confirmEnv("Mail \"" + title + "\" to " + ($("pName").textContent) + ":\n" + itemsText(items))) return;
-    call("adminSendMail", { uid: S.player, title: title, body: $("mBody").value, items: items }).then(function () { toast("Mail sent"); $("mTitle").value = ""; $("mBody").value = ""; $("mItems").innerHTML = ""; addItemRow("mItems"); openPlayer(S.player); }, function (e) { toast(errText(e), true); });
+    call("adminSendMail", { uid: S.player, title: title, body: $("mBody").value, items: items, category: $("mCat").value }).then(function () { toast("Mail sent"); $("mTitle").value = ""; $("mBody").value = ""; $("mItems").innerHTML = ""; addItemRow("mItems"); openPlayer(S.player); }, function (e) { toast(errText(e), true); });
   };
   $("gemBtn").onclick = function () {
     var n = Math.trunc(+$("gAmt").value); if (!n) { toast("Enter an amount.", true); return; }
@@ -247,7 +249,7 @@
     var title = $("aTitle").value.trim(); if (!title) { toast("Give the mail a title.", true); return; }
     if (!confirmEnv("Mail \"" + title + "\" to EVERY player:\n" + itemsText(items))) return;
     var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (typed !== "SEND") { toast("Cancelled"); return; }
-    call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
+    call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items, category: $("aCat").value }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
   };
   renderEnv();
 })();

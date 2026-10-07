@@ -1943,6 +1943,14 @@
   #mailPanel .mh { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px dashed #3b4a6b; font-weight:700; color:#f0c95f; font-size:16px; }
   #mailPanel .mh .x { margin-left:auto; cursor:pointer; color:#a9b4c8; font-size:18px; }
   #mailPanel .ml { overflow-y:auto; padding:8px 10px 12px; }
+  /* v914: mailbox tabs (flat, dashed; the open one goes gold) */
+  #mailPanel .mtabs { display:flex; gap:4px; padding:8px 10px 0; }
+  #mailPanel .mtab { position:relative; flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px 4px; border:1px dashed #3b4a6b; border-radius:6px; background:#0e1629; color:#a9b4c8; cursor:pointer; font:600 10.5px/1.2 system-ui,sans-serif; }
+  #mailPanel .mtab .ti { font-size:16px; line-height:1; } #mailPanel .mtab .tl { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  #mailPanel .mtab.on { border:1px solid #c9a24a; color:#f0c95f; background:#16223d; }
+  #mailPanel .mtab .tn { position:absolute; top:-5px; right:-3px; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:#d9412b; color:#fff; font:700 9.5px/15px system-ui,sans-serif; text-align:center; }
+  #mailPanel .mtt { display:flex; align-items:flex-start; gap:6px; min-width:0; }
+  #mailPanel .ms { flex:none; border:0; background:none; padding:0 2px; font-size:17px; line-height:1.1; color:#8f9bb3; cursor:pointer; } #mailPanel .ms.on { color:#f0c95f; }
   #mailPanel .mi { border:1px dotted #3b4a6b; border-radius:8px; padding:10px; margin-top:8px; background:#0e1629; }
   #mailPanel .mi.new { border-color:#c9a24a; }
   #mailPanel .mt { display:flex; justify-content:space-between; gap:8px; font-weight:600; } #mailPanel .md { color:#8f9bb3; font-size:11px; white-space:nowrap; }
@@ -2180,7 +2188,7 @@
 
 
 <div id="statsBackdrop"></div>
-<div id="mailBackdrop"></div><div id="mailPanel" role="dialog" aria-label="Mail"><div class="mh">✉️ Mail <span class="x" id="mailClose" title="Close">✕</span></div><div class="ml" id="mailList"></div></div>
+<div id="mailBackdrop"></div><div id="mailPanel" role="dialog" aria-label="Mail"><div class="mh">✉️ Mail <span class="x" id="mailClose" title="Close">✕</span></div><div class="mtabs" id="mailTabs"></div><div class="ml" id="mailList"></div></div>
 <div id="topbar">
   <div id="titleWrap">
     <div id="avatarWrap" title="Click to change your avatar">
@@ -8086,6 +8094,7 @@ function createGame(opts) {
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
     state.mailApplied = (saved.mailApplied && typeof saved.mailApplied === "object") ? saved.mailApplied : {}; /* v911: mails whose items are already in this save */
+    state.mailSaved = (saved.mailSaved && typeof saved.mailSaved === "object") ? saved.mailSaved : {}; /* v914: mails the player starred (Saved tab) */
     if (typeof saved.lastRaidApplied === "number") state.lastRaidApplied = saved.lastRaidApplied;
     if (saved.formations) {
       saved.formations.forEach(function (f, idx) {
@@ -13955,7 +13964,20 @@ function ksStartWallet() {
 }
 // ---- v911: mail. The admin sends items; the player claims each mail once. The server records the claim (ledger);
 // server-held items (gems) are added there, save items are added here and marked in state.mailApplied so they're never added twice. ----
-var KSM = { list: [], unsub: null, busy: {} };
+var KSM = { list: [], unsub: null, busy: {}, tab: "system" };
+/* v914: mailbox tabs. Wars / Alliance / System / Reports come from the mail's category (none or unknown = System); Saved is the player's own star bookmarks (state.mailSaved) */
+var KSM_TABS = [["wars", "⚔️", "Wars"], ["alliance", "🛡️", "Alliance"], ["system", "⚙️", "System"], ["reports", "📜", "Reports"], ["saved", "⭐", "Saved"]];
+var KSM_EMPTY = { wars: "No war mail yet.", alliance: "No alliance mail yet.", system: "No system mail yet.", reports: "No reports yet.", saved: "Nothing saved. Tap the ☆ on a mail to keep it here." };
+function ksMailCat(m) { var c = m && m.category; return (c === "wars" || c === "alliance" || c === "reports") ? c : "system"; }
+function ksMailUnreadIn(cat) { return KSM.list.filter(function (m) { return !m.claimedAt && ksMailCat(m) === cat; }).length; }
+function ksMailPickTab() { /* on opening: go to the first tab (Wars first) with unclaimed mail; if none has any, stay on the tab used last */
+  for (var i = 0; i < KSM_TABS.length - 1; i++) if (ksMailUnreadIn(KSM_TABS[i][0]) > 0) { KSM.tab = KSM_TABS[i][0]; return; }
+}
+function ksMailToggleSave(id) {
+  var st = game.state; st.mailSaved = st.mailSaved || {};
+  if (st.mailSaved[id]) delete st.mailSaved[id]; else st.mailSaved[id] = Date.now();
+  persist(); ksMailRender();
+}
 function ksStartMail() {
   if (KSM.unsub) return; document.documentElement.classList.add("ks-mail-on");
   KSM.unsub = cloudDb.collection("players/" + PLAYER_ID + "/mail").orderBy("sentAt", "desc").limit(60).onSnapshot(function (q) {
@@ -13990,19 +14012,27 @@ function ksMailRender() {
   if (mb) { mb.textContent = unread > 9 ? "9+" : String(unread); mb.classList.toggle("on", unread > 0); }
   if (mbt) { mbt.classList.toggle("has", unread > 0); var ic = mbt.querySelector(".mmi"); if (ic) ic.textContent = unread > 0 ? "📬" : "📪"; mbt.title = unread > 0 ? unread + " unclaimed mail" : "Mail"; }
   var el = document.getElementById("mailList"); if (!el || !document.body.classList.contains("mail-open")) return;
-  if (!KSM.list.length) { el.innerHTML = '<div class="me">No mail yet.</div>'; return; }
-  el.innerHTML = KSM.list.map(function (m) {
+  var saved = game.state.mailSaved || {}, tabsEl = document.getElementById("mailTabs");
+  if (tabsEl) {
+    tabsEl.innerHTML = KSM_TABS.map(function (t) { var n = t[0] === "saved" ? 0 : ksMailUnreadIn(t[0]);
+      return '<button type="button" class="mtab' + (KSM.tab === t[0] ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ti">' + t[1] + '</span><span class="tl">' + t[2] + "</span>" + (n ? '<b class="tn">' + (n > 9 ? "9+" : n) + "</b>" : "") + "</button>"; }).join("");
+    [].forEach.call(tabsEl.querySelectorAll("[data-tab]"), function (x) { x.onclick = function () { KSM.tab = x.getAttribute("data-tab"); ksMailRender(); el.scrollTop = 0; }; });
+  }
+  var shown = KSM.list.filter(function (m) { return KSM.tab === "saved" ? !!saved[m.id] : ksMailCat(m) === KSM.tab; });
+  if (!shown.length) { el.innerHTML = '<div class="me">' + (KSM_EMPTY[KSM.tab] || "No mail yet.") + "</div>"; return; }
+  el.innerHTML = shown.map(function (m) {
     var items = Object.keys(m.items || {}).map(function (k) { return "<span>" + escapeHtml((m.labels && m.labels[k]) || k.replace(/_/g, " ")) + " × " + (+m.items[k]).toLocaleString() + "</span>"; }).join("");
     var when = new Date(m.sentAt || 0).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     var btn = m.claimedAt ? '<button class="mc" disabled>Claimed ' + new Date(m.claimedAt).toLocaleDateString() + "</button>" : '<button class="mc" data-claim="' + escapeHtml(m.id) + '"' + (KSM.busy[m.id] ? " disabled" : "") + ">" + (KSM.busy[m.id] ? "Claiming…" : "Claim") + "</button>";
-    return '<div class="mi' + (m.claimedAt ? "" : " new") + '"><div class="mt"><span>' + escapeHtml(m.title || "") + '</span><span class="md">' + when + "</span></div>" + (m.body ? '<div class="mb">' + escapeHtml(m.body) + "</div>" : "") + '<div class="mx">' + items + "</div>" + btn + "</div>";
+    return '<div class="mi' + (m.claimedAt ? "" : " new") + '"><div class="mt"><span class="mtt"><button type="button" class="ms' + (saved[m.id] ? " on" : "") + '" data-save="' + escapeHtml(m.id) + '" title="' + (saved[m.id] ? "Remove from Saved" : "Save this mail") + '" aria-label="Save">' + (saved[m.id] ? "★" : "☆") + "</button>" + escapeHtml(m.title || "") + '</span><span class="md">' + when + "</span></div>" + (m.body ? '<div class="mb">' + escapeHtml(m.body) + "</div>" : "") + '<div class="mx">' + items + "</div>" + btn + "</div>";
   }).join("");
   [].forEach.call(el.querySelectorAll("[data-claim]"), function (x) { x.onclick = function () { ksMailClaim(x.getAttribute("data-claim")); }; });
+  [].forEach.call(el.querySelectorAll("[data-save]"), function (x) { x.onclick = function () { ksMailToggleSave(x.getAttribute("data-save")); }; });
 }
 (function initMailPanel() {
   function close() { document.body.classList.remove("mail-open"); }
-  var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { document.body.classList.toggle("mail-open"); ksMailRender(); };
-  var mb = document.getElementById("mapMailBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); document.body.classList.add("mail-open"); ksMailRender(); };
+  var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { document.body.classList.toggle("mail-open"); ksMailPickTab(); ksMailRender(); };
+  var mb = document.getElementById("mapMailBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); document.body.classList.add("mail-open"); ksMailPickTab(); ksMailRender(); };
   var c = document.getElementById("mailClose"); if (c) c.onclick = close;
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
