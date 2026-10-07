@@ -25,7 +25,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     setScreen("conquest"); const st = game.state.idle; st.chapter = 1; st.levelNum = 1; st.enemies = []; st.bossPhase = true; st.enemiesKilledInLevel = 0; st.spawnTimer = null;
     const log = { orbs: 0, swings: 0, hpDrops: 0 }, orig = window.spawnEnemyProjectile;
     window.spawnEnemyProjectile = function (fx, fy, w, h, arc, dmg, orb) { if (orb) log.orbs++; return orig.apply(this, arguments); };
-    let lf = 0, lh = st.playerHp; const iv = setInterval(() => { const f = idleAnim.bossMeleeFlash || 0; if (f > lf + 0.5) log.swings++; lf = f; if (st.playerHp < lh) log.hpDrops++; lh = st.playerHp; }, 30);
+    let lf = 0, lh = st.playerHp; const iv = setInterval(() => { const f = idleAnim.bossMeleeFlash || 0; if (f > lf + 0.5) log.swings++; lf = f; if (st.playerHp < lh && st.enemies.some((e) => e.type === "boss")) log.hpDrops++; lh = st.playerHp; /* only while the boss is up (the next wave's arrows are not orbs) */ }, 30);
     await new Promise((r) => setTimeout(r, 25000)); clearInterval(iv); return log;
   });
   console.log("1. boss over 25s ->", JSON.stringify(r)); assert.ok(r.hpDrops >= 3, "boss hit us"); assert.strictEqual(r.swings, 0, "no sword-swing swap"); assert.ok(r.orbs >= r.hpDrops, "an orb for every hit");

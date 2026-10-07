@@ -240,3 +240,17 @@
 - **After:** rewards popping with no body going down: 0 / 0 / 1 (of 15/10/9). Level pace unchanged (g175: clears at 24.8/49.7/84.3 s vs 24.5/49.5/82.8).
   Note: the engine's internal HP number still moves when a shot is fired (invisible); everything the player sees moves on landing.
 - Tests: g174_weaponhits.js (SET=a|b|c), g175_progress.js.
+
+## v919 (TEST game only): World map loads nearby chunks only; the fade sweep reads nothing extra
+- **Problem (g176, before):** every session listened to EVERY changed map chunk of the kingdom (a chunk = 20x20 tiles; up to 3,600 on the 1200x1200
+  map), and every 5 minutes EVERY online session re-read all of them again for the 24 h "fade back" sweep. Test kingdom with 301 changed chunks:
+  301 docs at session start + 301 more per session every 5 minutes (100 players online -> ~360k reads/hour just for the sweep).
+- **Fix:** per-chunk doc listeners only for chunks that are wanted: 3x3 chunks around your city, your marches' targets, and (World map open, zoom
+  close enough to show resources) the chunks in view, picked once the view settles (0.4 s) so a pan doesn't subscribe everything it passes. Dropped
+  60 s after they stop being wanted; at most 80 at once (the longest-unwanted is dropped first). The fade sweep scans only the chunks already held in
+  memory. March arrivals still read their chunk fresh under a lease, so gameplay never depends on a chunk you aren't listening to.
+- **After:** 8 chunk docs at session start (not 301), 0 per sweep (not 301); opening the map far away loads that view's chunks; a change next to your
+  city still arrives live.
+- Not changed: cities (all cities of the kingdom stay live: needed for the zoomed-out markers and occupancy; bounded by the 1,000-player kingdom cap),
+  marches, alliances, terrain/decor (tiny).
+- g172's boss window now only counts hits while the boss is up (the next wave's arrows aren't orbs; it was flaky).

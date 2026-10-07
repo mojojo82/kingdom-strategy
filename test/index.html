@@ -13406,6 +13406,7 @@ function renderVisibleTiles() {
   try { baseFireRender(minX, maxX, minY, maxY); } catch (e) { console.error(e); }
   try { forestRender(minX, maxX, minY, maxY, isoRect, isoG); } catch (e) { console.error(e); }
   var lod = mapLod();
+  try { noteWorldViewChunks(minX, maxX, minY, maxY, lod); } catch (e) { console.error(e); } /* v919 */
   if (lod !== mapLodLast) { Object.keys(mapTileEls).forEach(function (id) { mapTileEls[id].remove(); }); mapTileEls = {}; tilePool.forEach(function (d) { d.remove(); }); tilePool = []; mapLodLast = lod; } /* v862: rebuild tiles when the detail level changes */
   if (lod > 0) world.style.setProperty("--lodk", String(Math.max(1, 7 / tilePxZ())));
   var wanted = {};
@@ -15327,14 +15328,58 @@ function applyChunkDataToLocalMap(chunkId, data) {
   });
 }
 var worldChunkSyncStarted = false;
+/* v919: NEARBY chunks only. Each session used to listen to EVERY changed chunk of the kingdom (up to 3,600 docs on the 1200x1200 map) and, every
+   5 minutes, re-read all of them again for the fade sweep. Now a chunk is listened to only while it is wanted: in view on the World map (when tiles
+   are drawn in enough detail to show resources), around your own city, or the target of one of your marches. It is dropped a minute after it stops
+   being wanted. March arrivals still read their chunk fresh under a lease, so nothing depends on chunks you are not listening to. */
+var chunkSubs = {}, worldViewChunks = {}, CHUNK_SUB_MAX = 80, CHUNK_SUB_LINGER_MS = 60000;
+function chunkIdAt(x, y) { return Math.floor(x / WORLD_CHUNK_SIZE) + "_" + Math.floor(y / WORLD_CHUNK_SIZE); }
+function worldChunksWanted() {
+  var want = {}, vp = document.getElementById("mapviewport");
+  if (vp && vp.offsetParent) Object.keys(worldViewChunks).forEach(function (k) { want[k] = 1; }); /* the World map is on screen */
+  var home = game.state.homeTileId && mapTileById(game.state.map, game.state.homeTileId);
+  if (home) for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) want[chunkIdAt(home.x + dx * WORLD_CHUNK_SIZE, home.y + dy * WORLD_CHUNK_SIZE)] = 1;
+  (game.state.marches || []).forEach(function (m) { var t = m.tileId && mapTileById(game.state.map, m.tileId); if (t) want[chunkIdFor(t)] = 1; });
+  return want;
+}
+function chunkIdFor(t) { return chunkIdAt(t.x, t.y); }
+function syncChunkSubs() {
+  if (!cloudDb || !worldChunkSyncStarted) return;
+  var want = worldChunksWanted(), nowMs = Date.now(), n = Object.keys(chunkSubs).length;
+  function dropSub(id) { try { chunkSubs[id].unsub && chunkSubs[id].unsub(); } catch (e) {} delete chunkSubs[id]; n--; }
+  Object.keys(want).forEach(function (id) {
+    if (chunkSubs[id]) { chunkSubs[id].wantedAt = nowMs; return; }
+    if (!/^\d+_\d+$/.test(id)) return;
+    if (n >= CHUNK_SUB_MAX) { /* full: make room by dropping the chunk that has been unwanted the longest */
+      var old = Object.keys(chunkSubs).filter(function (k) { return !want[k]; }).sort(function (a, b) { return chunkSubs[a].wantedAt - chunkSubs[b].wantedAt; })[0];
+      if (old == null) return; dropSub(old);
+    }
+    var sub = chunkSubs[id] = { wantedAt: nowMs, data: null, unsub: null }; n++;
+    sub.unsub = cloudDb.doc(serverPrefix() + "chunks/" + id).onSnapshot(function (snap) {
+      sub.data = snap && snap.exists ? snap.data() : null;
+      applyChunkDataToLocalMap(id, sub.data);
+    }, function (e) { console.error("World chunk sync error:", id, e && e.code, e && e.message); });
+  });
+  Object.keys(chunkSubs).forEach(function (id) {
+    if (want[id] || nowMs - chunkSubs[id].wantedAt < CHUNK_SUB_LINGER_MS) return;
+    dropSub(id);
+  });
+}
+function noteWorldViewChunks(minX, maxX, minY, maxY, lod) { /* called by renderVisibleTiles: the chunks under the visible tiles (none when zoomed out too far to show resources) */
+  var v = {};
+  if (lod <= 1 && maxX >= minX && maxY >= minY) {
+    var cx0 = Math.floor(minX / WORLD_CHUNK_SIZE), cx1 = Math.floor(maxX / WORLD_CHUNK_SIZE), cy0 = Math.floor(minY / WORLD_CHUNK_SIZE), cy1 = Math.floor(maxY / WORLD_CHUNK_SIZE);
+    for (var cx = cx0; cx <= cx1; cx++) for (var cy = cy0; cy <= cy1; cy++) v[cx + "_" + cy] = 1;
+  }
+  var a = Object.keys(v).sort().join(","), b = Object.keys(worldViewChunks).sort().join(",");
+  if (a === b) return;
+  clearTimeout(noteWorldViewChunks.t); /* only once the view settles (~0.4 s): a pan across the map must not subscribe every chunk it passes over */
+  noteWorldViewChunks.t = setTimeout(function () { worldViewChunks = v; syncChunkSubs(); }, 400);
+}
 function startWorldTileSync() {
   if (worldChunkSyncStarted || !cloudDb) return;
   worldChunkSyncStarted = true;
-  cloudDb.collection(serverPrefix() + "chunks").onSnapshot(function (qsnap) {
-    qsnap.docs.forEach(function (doc) {
-      applyChunkDataToLocalMap(doc.id, doc.exists ? doc.data() : null);
-    });
-  }, function (e) { console.error("World chunk sync error:", e && e.code, e && e.message); });
+  syncChunkSubs(); setInterval(syncChunkSubs, 5000);
   scheduleWorldFadeSweep();
 }
 // Any stable string works as an acquire() "holder" (the db capability's own
@@ -15710,7 +15755,9 @@ function runWorldFadeSweep() {
   function tileIsFadeEligible(entry, tileId) {
     return !!entry && typeof entry.updatedAt === "number" && (now - entry.updatedAt) >= WORLD_TILE_FADE_MS && !isTileOccupied(tileId);
   }
-  return cloudDb.collection(serverPrefix() + "chunks").get().then(function (qsnap) {
+  /* v919: scan the chunks this session already listens to (their data is in memory) instead of re-reading every chunk of the kingdom every 5 minutes */
+  var held = Object.keys(chunkSubs).filter(function (id) { return chunkSubs[id].data; }).map(function (id) { return { id: id, data: function () { return chunkSubs[id].data; }, exists: true }; });
+  return Promise.resolve({ docs: held }).then(function (qsnap) {
     return Promise.all(qsnap.docs.map(function (doc) {
       if (!doc.exists) return null;
       var tilesData = (doc.data() && doc.data().tiles) || {};
