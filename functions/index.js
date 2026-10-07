@@ -290,7 +290,7 @@ exports.adminSavePack = wrap(async (req, uid, R, d) => {
   if (!id || PACKS[id]) throw new HttpsError("invalid-argument", "that pack id is taken by a built-in pack");
   pack.updatedAt = Date.now(); pack.updatedBy = uid;
   await db.doc(R + "packs/" + id).set(pack);
-  await db.collection(R + "adminlog").add({ by: uid, pack: { id, name: pack.name, items: pack.items, price: pack.price }, at: pack.updatedAt });
+  await db.collection(R + "adminlog").add({ by: uid, pack: { id, name: pack.name, items: pack.items, tier: pack.tier, limit: pack.limit, reset: pack.reset }, at: pack.updatedAt });
   const packs = await allPacks(R); return { id, pack, packs, shop: await shopConfig(R, Object.keys(packs)) };
 });
 exports.adminDeletePack = wrap(async (req, uid, R, d) => {
