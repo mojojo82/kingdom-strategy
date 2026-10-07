@@ -329,3 +329,8 @@
   fades in/holds/out over 2.6-5.2 s, drifts slowly. ~1 per 7,000 px² of view, fewer/smaller when zoomed out; cleared on zoom change.
   Runs only on the World screen with the page visible, capped ~30 fps; reduced-motion -> still. Sea colour = the viewport's own gradient (unchanged).
 - Measured (g185_seafoam.js, phone size, dpr 2): ~0.1 ms per foam frame, up to ~49 streaks in view, 0 on painted land, stops off the World map.
+- v926b: Harley's iPhone showed NO foam (page confirmed live). The canvas was inside the huge scrolling #mapworld, moved ~50,000 px with translate3d
+  each frame — likely what iOS Safari wouldn't composite (can't test WebKit here). Now #mapSeaFoam is a sibling BEHIND #mapviewport in its wrapper,
+  never moves, carries the map's exact sea gradient, and draws the foam at (map position - scroll); the map window gets .sea-under (see-through)
+  only once the layer exists. Scroll events trigger an immediate redraw so the foam keeps up while dragging. Sea pixels before/after: identical
+  ((50,112,151) etc.). Still unverified on a real iPhone.
