@@ -119,7 +119,8 @@ function decidePurchase(existing, pack, packId, wallet, uid, now) {
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
 const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle)?\.?[a-zA-Z0-9_]+$/;
-function normalizeItems(items) {
+function normalizeItems(items, allowEmpty) { /* allowEmpty: mails may be a message only (v939) */
+  if (allowEmpty && (items == null || (typeof items === "object" && !Array.isArray(items) && !Object.keys(items).length))) return [];
   if (!items || typeof items !== "object") throw new GameError("invalid-argument", "no items");
   const out = [];
   Object.keys(items).forEach((id) => {
@@ -138,12 +139,12 @@ function makeMail(title, body, items, by, now, category) {
   if (!t) throw new GameError("invalid-argument", "mail needs a title");
   const cat = category == null || category === "" ? "system" : String(category).toLowerCase(); /* no category given = System */
   if (MAIL_CATEGORIES.indexOf(cat) < 0) throw new GameError("invalid-argument", "unknown mail category " + cat);
-  const list = normalizeItems(items), it = {}, labels = {}; list.forEach((x) => { it[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
+  const list = normalizeItems(items, true), it = {}, labels = {}; list.forEach((x) => { it[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
   return { title: t, body: b, items: it, labels, from: "Admin", category: cat, sentAt: now, by: String(by || "") };
 }
 function decideMailClaim(mail, now) {
   if (!mail) throw new GameError("not-found", "no such mail");
-  const list = normalizeItems(mail.items);
+  const list = normalizeItems(mail.items, true); /* message-only mail: claiming just marks it read */
   if (mail.claimedAt) return { dup: true, list };
   return { dup: false, list, patch: { claimedAt: now } };
 }

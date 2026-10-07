@@ -94,6 +94,11 @@ t("item catalogue + mail", () => {
   assert.throws(() => C.makeMail("x", "", { gems: 1 }, "a", 1, "spam"), /unknown mail category/);
   const c1 = C.decideMailClaim(m, 9); assert.ok(!c1.dup); assert.strictEqual(c1.list.length, 2); assert.strictEqual(c1.list[1].path, "resources.food");
   assert.ok(C.decideMailClaim(Object.assign({}, m, { claimedAt: 9 }), 10).dup, "claim twice = no-op");
+  /* v939: message-only mail (no items) */
+  const mo = C.makeMail("Server news", "Maintenance at 5pm", {}, "adm", 7); assert.deepStrictEqual(mo.items, {}); assert.strictEqual(mo.body, "Maintenance at 5pm");
+  assert.deepStrictEqual(C.makeMail("Hi", "", null, "adm", 7).items, {}, "no items given = message only");
+  const mc = C.decideMailClaim(mo, 9); assert.ok(!mc.dup); assert.strictEqual(mc.list.length, 0); assert.strictEqual(mc.patch.claimedAt, 9, "opening marks it read");
+  assert.throws(() => C.normalizeItems({}), /no items|1-20/, "other callers (purchases) still need items");
   const le = C.ledgerEntry("food", 1000, null, "mail", "m1", null, 3); assert.ok(!("balance" in le));
 });
 t("anti-cheat: save plausibility", () => {

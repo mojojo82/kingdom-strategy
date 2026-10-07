@@ -14369,7 +14369,8 @@ function ksMailClaim(id, quiet) {
 function ksMailShown() { var sv = game.state.mailSaved || {}; return KSM.list.filter(function (m) { return KSM.tab === "saved" ? !!sv[m.id] : ksMailCat(m) === KSM.tab; }); }
 function ksMailRow(m, sv) {
   var cat = ksMailCat(m), it = ksMailItems(m), done = !!m.claimedAt, busy = !!KSM.busy[m.id], id = escapeHtml(m.id), on = !!sv[m.id], pv = String(m.body || "").split("\n")[0];
-  var line = done ? '<div class="mcl">' + ksIc("check", 14) + "Claimed · " + escapeHtml(it.map(function (c) { return c.label + " × " + c.qty.toLocaleString(); }).join(", ")) + "</div>"
+  var line = !it.length ? (done ? '<div class="mcl">' + ksIc("check", 14) + "Read</div>" : "") /* v939: message-only mail - nothing to claim */
+    : done ? '<div class="mcl">' + ksIc("check", 14) + "Claimed · " + escapeHtml(it.map(function (c) { return c.label + " × " + c.qty.toLocaleString(); }).join(", ")) + "</div>"
     : '<div class="mx">' + it.map(function (c) { return "<span>" + escapeHtml(c.label) + " × " + c.qty.toLocaleString() + "</span>"; }).join("") + '</div><button type="button" class="mc" data-claim="' + id + '"' + (busy ? " disabled" : "") + ">" + (busy ? "Claiming…" : "Claim") + "</button>";
   return '<div class="mi' + (done ? "" : " new") + '" data-open="' + id + '" tabindex="0"><div class="mic">' + ksIc(cat, 24) + '</div><div class="mbd"><div class="mrow1"><span class="mtt">' + escapeHtml(m.title || "") + '</span><span class="md">' + escapeHtml(ksMailWhen(m.sentAt)) + "</span></div>"
     + (pv && !done ? '<div class="mpv">' + escapeHtml(pv) + "</div>" : "") + line + '</div><button type="button" class="ms' + (on ? " on" : "") + '" data-save="' + id + '" title="' + (on ? "Remove from Saved" : "Save this mail") + '" aria-label="' + (on ? "Remove from Saved" : "Save this mail") + '"><i class="i-star">' + ksIc("star", 22) + '</i><i class="i-mark">' + ksIc("mark", 22) + "</i></button></div>";
@@ -14377,13 +14378,13 @@ function ksMailRow(m, sv) {
 function ksMailDetail(m) {
   var cat = ksMailCat(m), it = ksMailItems(m), when = new Date(m.sentAt || 0).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
   return '<div class="mdet"><div class="dh"><span class="dtag">' + ksIc(cat, 14) + KSM_CAT[cat] + '</span><span class="dwhen">' + escapeHtml(when + " · From " + (m.from || "Admin")) + '</span></div><div class="dtitle">' + escapeHtml(m.title || "") + '</div><div class="dsep d1"></div>'
-    + (m.body ? '<div class="dbody">' + escapeHtml(m.body) + "</div>" : "") + '<div class="dsep d2"></div><div class="dlab"><span class="la">Items in this mail</span><span class="lb">Enclosed</span></div><div class="dtiles">'
+    + (m.body ? '<div class="dbody">' + escapeHtml(m.body) + "</div>" : "") + '<div class="dsep d2"></div>' + (it.length ? '<div class="dlab"><span class="la">Items in this mail</span><span class="lb">Enclosed</span></div>' : "") + '<div class="dtiles">'
     + it.map(function (c) { return '<div class="dtile"><span class="dtl"><i class="dti">' + escapeHtml(c.icon) + '</i><span class="dtn">' + escapeHtml(c.name) + '</span></span><span class="dtd"></span><span class="dtq">× ' + c.qty.toLocaleString() + "</span></div>"; }).join("") + "</div></div>";
 }
 function ksMailFoot(m, sv) {
   var on = !!sv[m.id], busy = !!KSM.busy[m.id], id = escapeHtml(m.id);
   return '<button type="button" class="dsave' + (on ? " on" : "") + '" data-save="' + id + '"><i class="i-star">' + ksIc("star", 20) + '</i><i class="i-mark">' + ksIc("mark", 20) + "</i><span>" + (on ? "Saved" : "Save") + "</span></button>"
-    + (m.claimedAt ? '<button type="button" class="dclaim" disabled>Claimed</button>' : '<button type="button" class="dclaim" data-claim="' + id + '"' + (busy ? " disabled" : "") + ">" + (busy ? "Claiming…" : "Claim") + "</button>");
+    + (!ksMailItems(m).length ? "" : m.claimedAt ? '<button type="button" class="dclaim" disabled>Claimed</button>' : '<button type="button" class="dclaim" data-claim="' + id + '"' + (busy ? " disabled" : "") + ">" + (busy ? "Claiming…" : "Claim") + "</button>");
 }
 function ksMailClaimAll() { /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
   var ids = ksMailShown().filter(function (m) { return !m.claimedAt; }).map(function (m) { return m.id; }); if (!ids.length || KSM.allBusy) return;
@@ -14419,7 +14420,8 @@ function ksMailRender() {
   var rb = document.getElementById("mapReconBtn"); if (rb) rb.onclick = function (e) { e.stopPropagation(); setScreen("more", "recon"); }; /* v925 */
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   var p = document.getElementById("mailPanel"); if (p) {
-    function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0; }
+    function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0;
+      KSM.list.forEach(function (m) { if (m.id === id && !m.claimedAt && !ksMailItems(m).length) ksMailClaim(id, true); }); } /* v939: opening a message-only mail marks it read */
     p.addEventListener("click", function (e) {
       var t = e.target.closest ? e.target : e.target.parentNode, x;
       if ((x = t.closest("[data-claim]"))) { ksMailClaim(x.getAttribute("data-claim")); return; }
@@ -14918,7 +14920,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v938 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v939 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;

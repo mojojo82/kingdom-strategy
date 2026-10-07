@@ -81,7 +81,7 @@
     <div class="grid2" style="margin-top:14px">
       <div class="card" style="background:var(--panel2)">
         <h2>✉️ Send items (mail)</h2>
-        <div class="muted">The player gets a mail and taps Claim. Every claim is recorded.</div>
+        <div class="muted">The player gets a mail and taps Claim. Every claim is recorded. Items are optional: leave them empty to send just a message.</div>
         <select id="mCat" style="width:100%;margin-top:8px" title="Which mailbox tab the player sees it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
         <input id="mTitle" placeholder="Title (e.g. Sorry for the bug)" style="width:100%;margin-top:6px" maxlength="80">
         <textarea id="mBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
@@ -177,9 +177,9 @@
   function readItems(box) {
     var out = {}, bad = null;
     [].forEach.call($(box).querySelectorAll(".itemrow"), function (r) { var id = r.querySelector("select").value, q = Math.trunc(+r.querySelector("input").value); if (!r.querySelector("input").value) return; if (!(q >= 1)) bad = "Amounts must be 1 or more."; out[id] = (out[id] || 0) + q; });
-    if (bad) throw new Error(bad); if (!Object.keys(out).length) throw new Error("Add at least one item with an amount."); return out;
+    if (bad) throw new Error(bad); return out; /* v939: no items = a message-only mail */
   }
-  function itemsText(items) { return Object.keys(items).map(function (k) { return items[k].toLocaleString() + " × " + itemLabel(k); }).join("\n"); }
+  function itemsText(items) { if (!Object.keys(items).length) return "(message only, no items)"; return Object.keys(items).map(function (k) { return items[k].toLocaleString() + " × " + itemLabel(k); }).join("\n"); }
   $("addItem").onclick = function () { addItemRow("mItems"); };
   $("aAddItem").onclick = function () { addItemRow("aItems"); };
 

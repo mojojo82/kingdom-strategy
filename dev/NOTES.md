@@ -393,3 +393,7 @@
   (Harley: tapping near the bottom brought up the white swipe line). --bnH follows automatically, so chat bar / map buttons / X-Y pill move with it.
 - v938: nav buttons 16px above the bottom edge (was 10). Harley suspects the World "freeze" is the iPhone holding taps near the home bar
   (iOS defers touches at the screen edge while it checks for a home-bar swipe), which fits: it only shows when tapping the bottom nav.
+- v939: message-only mail (Harley). Server: normalizeItems(items, allowEmpty) - makeMail/decideMailClaim accept no items (other callers like
+  purchases still need 1-20); claiming an empty mail just sets claimedAt. Admin: items optional ("(message only, no items)" in the confirm).
+  Game: no Claim button / no "Items in this mail" for it; opening it calls claimMail quietly = marked read, unread badge clears, row shows "✓ Read".
+  Tests: core.test.js (message-only mail), g189_mailmsg; g170/g171/g184 still pass.
