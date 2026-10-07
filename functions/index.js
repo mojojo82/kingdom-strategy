@@ -19,7 +19,8 @@ function uidOf(req) {
   if (a.token && a.token.firebase && a.token.firebase.sign_in_provider === "anonymous") throw new HttpsError("permission-denied", "guest accounts can't do this");
   return a.uid;
 }
-function isAdmin(uid) { return ADMIN_UIDS.indexOf(uid) !== -1; }
+/* Admin = on the admin list AND signed in with Google (2-step verification is enforced by Google). The local emulator (tests) accepts any sign-in. */
+function isAdmin(uid, req) { const prov = req && req.auth && req.auth.token && req.auth.token.firebase ? req.auth.token.firebase.sign_in_provider : null; return ADMIN_UIDS.indexOf(uid) !== -1 && (prov === "google.com" || process.env.FUNCTIONS_EMULATOR === "true"); }
 function wrap(fn) {
   return onCall(async (req) => {
     try { return await fn(req, uidOf(req), C.envRoot((req.data || {}).env), req.data || {}); }
@@ -95,7 +96,7 @@ exports.hitBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) =>
 
 // Admin only: add or remove gems (testing now, pack purchases later).
 exports.adminGrantGems = wrap(async (req, uid, R, d) => {
-  if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
+  if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only");
   const target = String(d.uid || ""), amount = Math.trunc(+d.amount || 0);
   if (!/^[A-Za-z0-9_-]{6,128}$/.test(target) || !amount || Math.abs(amount) > 1e7) throw new HttpsError("invalid-argument", "bad uid/amount");
   return db.runTransaction(async (tx) => {
@@ -108,7 +109,7 @@ exports.adminGrantGems = wrap(async (req, uid, R, d) => {
 
 // Admin only: set a player's wallet outright (used once when moving an existing save across).
 exports.adminSetWallet = wrap(async (req, uid, R, d) => {
-  if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
+  if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only");
   const target = String(d.uid || ""), gems = Math.trunc(+d.gems), lvl = Math.trunc(+d.lvl);
   if (!/^[A-Za-z0-9_-]{6,128}$/.test(target) || !(gems >= 0) || !(lvl >= 0)) throw new HttpsError("invalid-argument", "bad values");
   return db.runTransaction(async (tx) => {
@@ -150,13 +151,13 @@ async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
   });
 }
 exports.adminDeliverPurchase = wrap(async (req, uid, R, d) => {
-  if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
+  if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only");
   const target = String(d.uid || ""); if (!/^[A-Za-z0-9_-]{6,128}$/.test(target)) throw new HttpsError("invalid-argument", "bad uid");
   return deliverPurchase(R, target, String(d.pack || ""), String(d.provider || "manual"), String(d.receiptId || ""), uid);
 });
 // Mark a purchase refunded / charged back. Records it (and who did it); what to do about the gems is your call, so nothing is taken back automatically.
 exports.adminMarkPurchase = wrap(async (req, uid, R, d) => {
-  if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only");
+  if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only");
   const status = String(d.status || ""); if (["refunded", "chargeback", "delivered"].indexOf(status) === -1) throw new HttpsError("invalid-argument", "bad status");
   const pref = db.doc(R + "purchases/" + String(d.id || "").replace(/[^A-Za-z0-9_-]/g, "-"));
   return db.runTransaction(async (tx) => {
@@ -179,7 +180,7 @@ exports.touch = wrap(async (req, uid, R) => {
 
 // ---- mail (admin gifts of any catalogue item) ----
 const mailCol = (R, uid) => db.collection(R + "players/" + uid + "/mail");
-function adminOnly(uid) { if (!isAdmin(uid)) throw new HttpsError("permission-denied", "admin only"); }
+function adminOnly(uid, req) { if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only"); }
 function validUid(u) { u = String(u || ""); if (!/^[A-Za-z0-9_-]{6,128}$/.test(u)) throw new HttpsError("invalid-argument", "bad uid"); return u; }
 async function allPlayerIds(R) { /* every player that has data in this environment (bots excluded) */
   const refs = await db.collection(R + "players").listDocuments();
@@ -188,7 +189,7 @@ async function allPlayerIds(R) { /* every player that has data in this environme
 
 // Send a mail with items to one player (uid) or everyone (all: true). Nothing is given until the player claims it.
 exports.adminSendMail = wrap(async (req, uid, R, d) => {
-  adminOnly(uid);
+  adminOnly(uid, req);
   const mail = C.makeMail(d.title, d.body, d.items, uid, Date.now());
   const targets = d.all === true ? await allPlayerIds(R) : [validUid(d.uid)];
   for (let i = 0; i < targets.length; i += 400) {
@@ -219,11 +220,11 @@ exports.claimMail = wrap(async (req, uid, R, d) => {
 });
 
 // ---- admin panel lookups ----
-exports.adminCatalog = wrap(async (req, uid) => { adminOnly(uid); return { items: C.ITEMS, packs: PACKS }; });
+exports.adminCatalog = wrap(async (req, uid) => { adminOnly(uid, req); return { items: C.ITEMS, packs: PACKS }; });
 
 const NAME_DOC = "assetitems/kingdom_prototype_playername_v1";
 exports.adminFindPlayers = wrap(async (req, uid, R, d) => {
-  adminOnly(uid);
+  adminOnly(uid, req);
   const q = String(d.q || "").trim().toLowerCase(); if (!q) throw new HttpsError("invalid-argument", "type a name or player id");
   const ids = (await allPlayerIds(R)).slice(0, 5000);
   if (!ids.length) return { players: [] };
@@ -236,7 +237,7 @@ exports.adminFindPlayers = wrap(async (req, uid, R, d) => {
 });
 
 exports.adminPlayerInfo = wrap(async (req, uid, R, d) => {
-  adminOnly(uid);
+  adminOnly(uid, req);
   const t = validUid(d.uid), base = R + "players/" + t + "/";
   const [w, m, n, led, mail, pur] = await Promise.all([
     db.doc(base + "wallet/main").get(), db.doc(base + "meta/account").get(), db.doc(base + NAME_DOC).get(),

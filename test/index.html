@@ -206,7 +206,8 @@
             started = true;
             var last = null; try { last = localStorage.getItem("ks_uid"); } catch (e) {}
             if (last !== u.uid) { try { localStorage.setItem("ks_uid", u.uid); } catch (e) {} wipeAndReload(); return; }
-            KS.uid = u.uid; KS.email = u.email || null; KS.isAdmin = ADMIN_UIDS.indexOf(u.uid) !== -1; if (KS.isAdmin) document.documentElement.classList.remove("ks-noadmin");
+            KS.uid = u.uid; KS.email = u.email || null; KS.isAdmin = false;
+            if (ADMIN_UIDS.indexOf(u.uid) !== -1 && u.getIdTokenResult) u.getIdTokenResult().then(function (t) { if (t.signInProvider === "google.com" || KS.emulator) { KS.isAdmin = true; document.documentElement.classList.remove("ks-noadmin"); } }).catch(function () {}); /* v913: admin needs Google sign-in (2-step verification lives there) */
             fs.doc(ROOT + "players/" + u.uid + "/save/main").get().then(function (s) {
               if (s.exists) return null;
               return askName(u.displayName || (u.email ? u.email.split("@")[0] : "")).then(function (n) { KS.pendingName = n; });

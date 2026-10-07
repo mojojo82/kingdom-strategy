@@ -56,7 +56,7 @@
 
 <div id="signin" class="card hide">
   <h2>Admin sign-in</h2>
-  <div class="muted">Only the admin account can do anything here.</div>
+  <div class="muted">Only the admin account can do anything here, signed in with Google.</div>
   <button class="b gold" id="gIn">Continue with Google</button>
   <input id="em" type="email" placeholder="Email" style="width:100%;margin-top:12px">
   <input id="pw" type="password" placeholder="Password" style="width:100%;margin-top:8px">
@@ -161,7 +161,7 @@
       S.catalog = c; $("signin").classList.add("hide"); $("app").classList.remove("hide"); renderEnv();
       $("packSel").innerHTML = Object.keys(c.packs).filter(function (k) { return k[0] !== "_"; }).map(function (k) { var p = c.packs[k]; return '<option value="' + esc(k) + '">' + esc(p.name) + " (" + Object.keys(p.items).map(function (i) { return p.items[i] + " " + i; }).join(", ") + ")</option>"; }).join("");
       $("mItems").innerHTML = ""; $("aItems").innerHTML = ""; addItemRow("mItems"); addItemRow("aItems");
-    }, function (e) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); $("siMsg").textContent = /admin only|permission/i.test(errText(e)) ? "This account isn't an admin." : errText(e); });
+    }, function (e) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); u.getIdTokenResult().then(function (t) { $("siMsg").textContent = !/admin only|permission/i.test(errText(e)) ? errText(e) : (t.signInProvider !== "google.com" && !EMU) ? "Admin needs Google sign-in. Sign out and use Continue with Google." : "This account isn't an admin."; }); });
   });
 
   // ---- item rows ----

@@ -30,7 +30,7 @@ jobs:
           cp functions/admins.json /tmp/admins.real.json
           {
             echo "== unit tests"; node functions/test/core.test.js &&
-            echo '["ciadmin0001"]' > functions/admins.json && node tools/build-rules.js &&
+            echo '["ciadmin0001"]' > functions/admins.json && CI_ADMIN_ANY_PROVIDER=1 node tools/build-rules.js &&
             echo "== emulator tests" &&
             npx -y firebase-tools@13 emulators:exec --project demo-kingdom --only auth,firestore,functions "node ci/integration.test.js && echo == end-to-end game test && node ci/e2e.test.js"
           } 2>&1 | tee ci-out/test.log

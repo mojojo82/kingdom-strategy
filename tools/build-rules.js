@@ -4,6 +4,8 @@
 const fs = require("fs"), path = require("path");
 const admins = require("../functions/admins.json");
 const adminList = "[" + admins.map((u) => "'" + u + "'").join(", ") + "]";
+/* Admin powers need Google sign-in (that is where 2-step verification lives). Only the CI emulator run (CI_ADMIN_ANY_PROVIDER=1) relaxes this. */
+const adminProv = process.env.CI_ADMIN_ANY_PROVIDER === "1" ? "" : " && request.auth.token.firebase.sign_in_provider == 'google.com'";
 
 const BODY = `
       // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
@@ -69,7 +71,7 @@ service cloud.firestore {
     // A real account (Google or email). Guest/anonymous sign-ins are not enough.
     function signedIn() { return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
     function isMe(pid) { return signedIn() && request.auth.uid == pid; }
-    function isAdmin() { return signedIn() && request.auth.uid in ${adminList}; }
+    function isAdmin() { return signedIn() && request.auth.uid in ${adminList}${adminProv}; }
     function hpKeys() { return ['hp', 'hpT', 'burnLeft', 'raidedAt']; }
     function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail']; }
 
