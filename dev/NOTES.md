@@ -421,3 +421,4 @@
   - Game: More > 🛒 Shop overlay: tabs, cards (icon, name, desc, items, badge, "Ends in", "1 per day · resets in"), local currency picked
     from time zone then phone region (switcher in the footer, remembered), live updates, buy button = "payments coming soon" note.
   - Tests: core.test.js (tiers, limits, periods), ci/integration.test.js (shop), g191_packs (admin), g192_shop (game).
+  - Admin: shop tab rows and library cards show each item as icon + amount chips (e.g. 💎 300 Gems, 🪵 5,000 Wood) so contents are visible at a glance.

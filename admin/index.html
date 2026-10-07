@@ -52,6 +52,7 @@
   .tabent { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:6px 0; border-bottom:1px dotted #26324d; } .tabent .nm { flex:1 1 200px; }
   .tabent input[type=datetime-local] { width:190px; } .tabent .bdg { width:110px; } .mini { padding:3px 8px !important; font-size:12px !important; }
   #tierEd input { width:90px; }
+  .tabitems { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; } .ichip { display:inline-flex; align-items:center; gap:2px; border:1px dashed #5d6f93; border-radius:6px; padding:1px 6px; font-size:12px; background:#0f1520; white-space:nowrap; } .ichip .inm { color:var(--dim); font-size:11px; }
   @media (max-width:600px) { main { padding:10px; } .who { width:100%; margin-left:0; } td, th { padding:5px 4px; } }
 </style>
 </head>
@@ -324,6 +325,9 @@
   function fmtPrice(c, v) { return v ? (CUR_SYM[c] || c + " ") + (+v).toLocaleString(undefined, { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }) : "Free"; }
   function tierRow(t) { return (S.shop && S.shop.tiers && S.shop.tiers[t]) || null; }
   function tierText(t, short) { var r = tierRow(t); if (!r) return "Tier " + t + " (missing)"; if (!+t) return "Free"; return CURS.map(function (c) { return fmtPrice(c, r[c]); }).join(short ? " · " : "  ·  "); }
+  function itemChips(items) { /* v943: what's inside, at a glance: icon + amount (hover for the name) */
+    return Object.keys(items || {}).map(function (i) { var d = (S.catalog.items || {})[i] || {}; return '<span class="ichip" title="' + esc(itemLabel(i)) + '">' + esc(d.icon || "•") + " " + esc((+items[i]).toLocaleString()) + '<span class="inm"> ' + esc(d.name || i) + "</span></span>"; }).join("");
+  }
   function packItemsText(p) { return Object.keys(p.items || {}).map(function (i) { return (+p.items[i]).toLocaleString() + " × " + itemLabel(i); }).join(", "); }
   function limitText(p) { if (!p.limit) return ""; return p.limit + (p.reset === "daily" ? " per day" : p.reset === "weekly" ? " per week" : p.reset === "monthly" ? " per month" : " per player (one-time)"); }
   function packTabs(id) { return ((S.shop && S.shop.tabs) || []).filter(function (t) { return t.items.some(function (e) { return e.pack === id; }); }); }
@@ -345,7 +349,7 @@
     $("pkGrid").innerHTML = ids.map(function (k) { var p = P[k], tabs = packTabs(k);
       return '<div class="pkc' + (p.active === false ? " off" : "") + '"><div class="pkh"><span class="pki">' + esc(p.icon || "📦") + '</span><div><div class="pkn">' + esc(p.name) + '</div><div class="pkt">' + esc(k) + (p.builtIn ? " · built-in" : "") + (p.active === false ? " · inactive" : "") + "</div></div></div>"
         + (p.desc ? '<div class="muted">' + esc(p.desc) + "</div>" : "")
-        + "<div>" + Object.keys(p.items || {}).map(function (i) { return '<span class="pill">' + esc((+p.items[i]).toLocaleString() + " × " + itemLabel(i)) + "</span>"; }).join("") + "</div>"
+        + '<div class="tabitems">' + itemChips(p.items) + "</div>"
         + '<div class="pkp">' + (p.tier != null ? (+p.tier ? "Tier " + p.tier + ": " : "") + esc(tierText(p.tier || 0, true)) : esc(p.price ? p.price + " " + (p.currency || "") : "Free")) + "</div>"
         + '<div class="pkt">' + [limitText(p) ? "🔒 " + limitText(p) : "", tabs.map(function (t) { return (t.icon || "") + " " + t.name; }).join(", "), p.mail ? "🎁 mail gift" : "", !tabs.length && !p.mail ? "not shown anywhere" : ""].filter(Boolean).map(esc).join(" · ") + "</div>"
         + (p.builtIn ? "" : '<div class="pka"><button class="b ghost mini" data-pkedit="' + esc(k) + '">Edit</button><button class="b ghost mini" data-pkdel="' + esc(k) + '">Delete</button></div>') + "</div>"; }).join("") || '<div class="muted">No packs match.</div>';
@@ -376,7 +380,8 @@
       return '<div class="tabbox"><div class="row"><input data-tf="icon" data-ti="' + ti + '" value="' + esc(tb.icon || "") + '" maxlength="4" style="width:56px;text-align:center" title="Tab icon"><input data-tf="name" data-ti="' + ti + '" value="' + esc(tb.name) + '" maxlength="24" class="grow" placeholder="Tab name">'
         + '<button class="b ghost mini" data-tmv="-1" data-ti="' + ti + '">◀</button><button class="b ghost mini" data-tmv="1" data-ti="' + ti + '">▶</button><button class="b ghost mini" data-tdel="' + ti + '">Remove tab</button></div>'
         + (tb.items.length ? tb.items.map(function (e, ei) { var p = P[e.pack] || { name: e.pack + " (missing)" }, live = (!e.start || now >= e.start) && (!e.end || now < e.end);
-          return '<div class="tabent"><span class="nm">' + (ei + 1) + ". " + esc((p.icon || "") + " " + p.name) + ' <span class="muted">' + esc(p.tier != null ? tierText(p.tier || 0, true).split(" · ").slice(0, 2).join(" · ") : "") + "</span>" + (live ? "" : ' <span class="pill">' + (e.start && now < e.start ? "starts later" : "ended") + "</span>") + "</span>"
+          return '<div class="tabent"><span class="nm">' + (ei + 1) + ". " + esc((p.icon || "") + " " + p.name) + ' <span class="muted">' + esc(p.tier != null ? tierText(p.tier || 0, true).split(" · ").slice(0, 2).join(" · ") : "") + "</span>" + (live ? "" : ' <span class="pill">' + (e.start && now < e.start ? "starts later" : "ended") + "</span>")
+            + '<span class="tabitems">' + itemChips(p.items) + "</span></span>"
             + '<span class="muted">from</span><input type="datetime-local" data-ef="start" data-ti="' + ti + '" data-ei="' + ei + '" value="' + toLocalInput(e.start) + '" title="Starts (optional)"><span class="muted">until</span><input type="datetime-local" data-ef="end" data-ti="' + ti + '" data-ei="' + ei + '" value="' + toLocalInput(e.end) + '" title="Ends (optional)">'
             + '<input class="bdg" data-ef="badge" data-ti="' + ti + '" data-ei="' + ei + '" value="' + esc(e.badge || "") + '" maxlength="20" placeholder="Badge">'
             + '<button class="b ghost mini" data-emv="-1" data-ti="' + ti + '" data-ei="' + ei + '">↑</button><button class="b ghost mini" data-emv="1" data-ti="' + ti + '" data-ei="' + ei + '">↓</button><button class="b ghost mini" data-edel="1" data-ti="' + ti + '" data-ei="' + ei + '">✕</button></div>'; }).join("") : '<div class="muted" style="margin-top:6px">No packs in this tab yet.</div>')
