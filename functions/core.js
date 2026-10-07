@@ -229,11 +229,55 @@ function decideTopupClaim(topup, ladder, idx, now) {
   const t = JSON.parse(JSON.stringify(topup || {})); t.l = t.l || {}; t.l[ladder.id] = { k, n, c: claimed.concat([idx]) };
   return { dup: false, topup: t, items: m.items };
 }
+// ---- v946: events (e.g. Burst of Life: reach a total power, claim a reward at each milestone; the last one is the grand prize) ----
+const EVENT_GOALS = ["power", "townhall", "conquest"];
+function normalizeEvents(list) {
+  list = Array.isArray(list) ? list : []; if (list.length > 20) throw new GameError("invalid-argument", "max 20 events");
+  const seen = {};
+  return list.map((ev) => {
+    const name = String((ev && ev.name) || "").trim().slice(0, 40); if (!name) throw new GameError("invalid-argument", "event needs a name");
+    let id = packIdFrom(ev.id || name); while (seen[id]) id += "_2"; seen[id] = 1;
+    const goal = String(ev.goal || "power"); if (EVENT_GOALS.indexOf(goal) < 0) throw new GameError("invalid-argument", "bad event goal");
+    const sc = ev.schedule || {}, type = sc.type === "dates" ? "dates" : "newplayer", schedule = { type };
+    if (type === "newplayer") { const days = +sc.days; if (!(days > 0 && days <= 365)) throw new GameError("invalid-argument", "new-player event needs 1-365 days (" + name + ")"); schedule.days = days; }
+    else { const st = Math.trunc(+sc.start || 0), en = Math.trunc(+sc.end || 0); if (!(st > 0 && en > st)) throw new GameError("invalid-argument", "dated event needs a start and an end (" + name + ")"); schedule.start = st; schedule.end = en; }
+    let banner = null; if (ev.banner) { banner = String(ev.banner); if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(banner) || banner.length > 700000) throw new GameError("invalid-argument", "bad banner picture (" + name + ")"); }
+    const ms = Array.isArray(ev.milestones) ? ev.milestones : []; if (!ms.length || ms.length > 30) throw new GameError("invalid-argument", "1-30 milestones (" + name + ")");
+    const milestones = ms.map((m) => { const target = Math.trunc(+(m && m.target) || 0); if (!(target > 0 && target <= 1e12)) throw new GameError("invalid-argument", "milestone target must be more than 0 (" + name + ")");
+      const list2 = normalizeItems(m.items), items = {}, labels = {}; list2.forEach((x) => { items[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
+      return { target, worth: Math.max(0, Math.trunc(+m.worth || 0)), items, labels }; }).sort((a, b) => a.target - b.target);
+    return { id, name, icon: Array.from(String(ev.icon || "🎉").trim()).slice(0, 4).join("") || "🎉", tag: String(ev.tag || "").trim().slice(0, 20), desc: String(ev.desc || "").trim().slice(0, 200),
+      banner, goal, schedule, active: ev.active !== false, milestones };
+  });
+}
+/* when this event runs for this player (createdAt = when their account was made); null = never */
+function eventWindow(ev, createdAt) {
+  if (!ev || ev.active === false) return null;
+  if (ev.schedule.type === "newplayer") { const c = +createdAt || 0; return c ? { start: c, end: c + ev.schedule.days * 86400000 } : null; }
+  return { start: ev.schedule.start, end: ev.schedule.end };
+}
+/* the player's progress on the goal, from their saved game */
+function eventProgress(goal, save) {
+  save = save || {};
+  if (goal === "power") return Math.max(0, Math.trunc(+save.power || 0));
+  if (goal === "townhall") return Math.max(0, Math.trunc(+(((save.buildings || {}).townhall || {}).level) || 0));
+  if (goal === "conquest") { const i = save.idle || {}; return Math.max(0, globalLevel(+i.chapter || 1, +i.levelNum || 1) - 1); } /* levels cleared */
+  return 0;
+}
+function decideEventClaim(claimed, ev, idx, progress, win, now) {
+  if (!ev) throw new GameError("not-found", "no such event");
+  if (!win || now < win.start || now >= win.end) throw new GameError("failed-precondition", "this event isn't running for you");
+  const m = ev.milestones[idx]; if (!m) throw new GameError("not-found", "no such milestone");
+  const c = (claimed && claimed.k === win.start) ? (claimed.c || []) : [];
+  if (c.indexOf(idx) >= 0) return { dup: true };
+  if (progress < m.target) throw new GameError("failed-precondition", "not reached yet", { have: progress, need: m.target });
+  return { dup: false, claimed: { k: win.start, c: c.concat([idx]) }, items: m.items };
+}
 function shopEntryLive(e, now) { return (!e.start || now >= e.start) && (!e.end || now < e.end); }
 function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
-const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle)?\.?[a-zA-Z0-9_]+$/;
+const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle|speedups|skins)?\.?[a-zA-Z0-9_]+$/; /* v946: + speedups, skins */
 function normalizeItems(items, allowEmpty) { /* allowEmpty: mails may be a message only (v939) */
   if (allowEmpty && (items == null || (typeof items === "object" && !Array.isArray(items) && !Object.keys(items).length))) return [];
   if (!items || typeof items !== "object") throw new GameError("invalid-argument", "no items");
@@ -333,4 +377,4 @@ function checkSave(before, after, dtSec, allow) {
 }
 
 module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

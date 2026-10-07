@@ -122,6 +122,16 @@ t("item catalogue + mail", () => {
   assert.throws(() => C.decideTopupClaim(tc1.topup, shT.topups[1], 0, T0), /not enough/);
   tp = C.addTopup(tc1.topup, shT.topups, 500, T0 + 86400e3); assert.strictEqual(tp.l.daily_top_up.n, 500, "next day starts again"); assert.deepStrictEqual(tp.l.daily_top_up.c, []);
   assert.strictEqual(tp.l.lifetime.n, 3000, "lifetime keeps counting");
+  /* v946: events */
+  const evs = C.normalizeEvents([{ name: "Burst of Life", tag: "Beginner", goal: "power", schedule: { type: "newplayer", days: 7 }, milestones: [{ target: 300000, worth: 700, items: { gems: 300 } }, { target: 50000, worth: 300, items: { gems: 100, wood: 100000 } }] }]);
+  assert.strictEqual(evs[0].id, "burst_of_life"); assert.deepStrictEqual(evs[0].milestones.map((m) => m.target), [50000, 300000]);
+  assert.throws(() => C.normalizeEvents([{ name: "x", schedule: { type: "newplayer", days: 0 }, milestones: [{ target: 1, items: { gems: 1 } }] }]), /days/);
+  const W = C.eventWindow(evs[0], 1000); assert.deepStrictEqual(W, { start: 1000, end: 1000 + 7 * 86400000 });
+  assert.strictEqual(C.eventProgress("power", { power: 61234 }), 61234); assert.strictEqual(C.eventProgress("townhall", { buildings: { townhall: { level: 7 } } }), 7);
+  const ec = C.decideEventClaim(null, evs[0], 0, 61234, W, 5000); assert.ok(!ec.dup); assert.deepStrictEqual(ec.claimed, { k: 1000, c: [0] });
+  assert.ok(C.decideEventClaim(ec.claimed, evs[0], 0, 61234, W, 5000).dup);
+  assert.throws(() => C.decideEventClaim(ec.claimed, evs[0], 1, 61234, W, 5000), /not reached/);
+  assert.throws(() => C.decideEventClaim(null, evs[0], 0, 61234, W, W.end + 1), /isn't running/);
   const daily = C.normalizePack({ name: "Daily", items: { gems: 10 }, tier: 1, limit: 1, reset: "daily" }); assert.strictEqual(daily.reset, "daily");
   assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, reset: "weekly" }).reset, "none", "no limit = no reset");
   assert.throws(() => C.normalizePack({ name: "x", items: { gems: 1 }, limit: 1, reset: "hourly" }), /reset/);

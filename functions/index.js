@@ -290,7 +290,34 @@ async function shopConfig(R, packIds) {
   try { return C.normalizeShop({ tiers: d.tiers, topups: d.topups, tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
   catch (e) { return C.normalizeShop({}, null); }
 }
-exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const packs = await allPacks(R); return { items: C.ITEMS, packs, shop: await shopConfig(R, Object.keys(packs)), currencies: C.SHOP_CURRENCIES, resets: C.PACK_RESETS }; });
+async function eventsConfig(R) { const s = await db.doc(R + "config/events").get(); try { return C.normalizeEvents(s.exists ? s.data().events : []); } catch (e) { return []; } }
+exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const packs = await allPacks(R); return { items: C.ITEMS, packs, shop: await shopConfig(R, Object.keys(packs)), events: await eventsConfig(R), currencies: C.SHOP_CURRENCIES, resets: C.PACK_RESETS }; });
+// v946: events (Burst of Life etc). Players read <root>config/events; only this function writes it.
+exports.adminSaveEvents = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const events = C.normalizeEvents(d.events);
+  await db.doc(R + "config/events").set({ events, updatedAt: Date.now(), updatedBy: uid });
+  await db.collection(R + "adminlog").add({ by: uid, events: events.map((e) => e.name + ":" + e.milestones.length), at: Date.now() });
+  return { events };
+});
+// v946: a player claims an event milestone. Progress comes from their saved game (the game saves its power with every cloud save).
+exports.claimEvent = wrap(async (req, uid, R, d) => {
+  const events = await eventsConfig(R), ev = events.find((e) => e.id === String(d.event || "")), idx = Math.trunc(+d.idx), base = R + "players/" + uid + "/";
+  const [sv, mt] = await Promise.all([db.doc(base + "save/main").get(), db.doc(base + "meta/account").get()]);
+  const save = sv.exists ? sv.data() : {}, createdAt = (mt.exists && mt.data().createdAt) || save.startedAt || null;
+  const win = C.eventWindow(ev, createdAt), progress = ev ? C.eventProgress(ev.goal, save) : 0;
+  return db.runTransaction(async (tx) => {
+    const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {}, evs = wd.events || {};
+    const r = C.decideEventClaim(evs[ev ? ev.id : ""], ev, idx, progress, win, Date.now());
+    if (r.dup) return { dup: true, events: evs, gems: wd.gems || 0 };
+    const patchEvents = Object.assign({}, evs); patchEvents[ev.id] = r.claimed;
+    const patch = { events: patchEvents }, gems = Math.trunc(r.items.gems || 0), others = {}; Object.keys(r.items).forEach((k) => { if (k !== "gems") others[k] = r.items[k]; });
+    let g = wd.gems || 0; if (gems > 0) { g += gems; patch.gems = g; ledger(tx, R, uid, "gems", gems, g, "event_reward", ev.id + "#" + idx); }
+    if (Object.keys(others).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🎉 " + ev.name + " reward", "Milestone reached: " + ev.milestones[idx].target.toLocaleString() + "!", others, "events", Date.now(), "system"));
+    tx.set(walletRef(R, uid), patch, { merge: true });
+    return { dup: false, events: patchEvents, gems: g, items: r.items, progress };
+  });
+});
 // v943: shop layout - price tiers and tabs (Deals, Shop, ...). Players read <root>config/shop; only this function writes it.
 exports.adminSaveShop = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);

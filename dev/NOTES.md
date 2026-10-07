@@ -439,3 +439,22 @@
   - Admin: 🏆 Top-up rewards sub-tab (ladders, milestones with items), ⭐ points column in Price tiers. Game: 🏆 Top-up tab (last) in the
     shop with progress bar, milestones, Claim / ✓ Claimed / Locked, reset timer.
   - Tests: core.test.js, ci/integration.test.js, g191 (admin ladder), g192 (cards show points, delivery adds points, claim, twice/locked refused).
+- v946: Events (Harley: Lord Rush "Burst of Life" as the template) + troop power rebalance + speedups + earnable Neptune skin.
+  - Troop power: per unit by tier [3,4,6,9,13,20,28,38,50,66] (Kingshot-like), no longer cost x8 (~590 per T1 infantry). 1,000 T1 = 3,000 power.
+    Buildings-only power: TH5 ~143k, TH8 ~516k, TH10 ~1.19M, TH15 ~3.45M - the Burst milestones (50k..4M) fit 1:1.
+  - Speedups: items speedup_construction_1h (🔨, building upgrades only) and speedup_general_1h (⏩, builds, training, research). Saved in
+    state.speedups; game.useSpeedup(kind, what, key) takes 1 hour off; "−1h ×N" buttons on upgrading buildings, training queues and the
+    research bar; shown in the 🎒 bag.
+  - Skins: new players start on the Watchtower (OWNER_DEFAULTS city skin tower). Titan Fountain = "Neptune" is locked (CITY_SKIN_LOCKED)
+    until state.skins.city_titan is set by the skin_city_titan reward item (equipped on claim). Admins / the claude.ai copy keep every skin.
+  - Events: <root>config/events written by adminSaveEvents (players read). Event: name, icon, tag, desc, banner, goal power|townhall|conquest,
+    schedule newplayer (N days from meta/account.createdAt, falls back to save.startedAt) or dates, milestones [{target, worth, items}],
+    the biggest = 🏆 grand prize. The game now saves `power` with every cloud save; claimEvent reads save/main + meta, checks window +
+    progress, once per milestone (wallet.events[id] = {k: window start, c: [idx]}); gems to wallet, other items by mail.
+  - Admin: 🎉 Events card (editor, + Burst of Life template with 9 milestones 50k..4M, Worth labels from Lord Rush, banner, 👁 Preview).
+    Game: More > 🎉 Events (banner/title/timer/tag, progress bar, grand prize row with Go, milestone rows with Worth + Claim/✓/🔒).
+    Card code shared between game and admin between /* KSE-CARD-BEGIN */ .. /* KSE-CARD-END */ (g194 checks they match).
+  - Burst rewards: 50k/300k 1:1 (iron -> gold); 500k-3M my fill on their gem-value curve with construction/general speedups; 2M's "Go!" emote
+    replaced by general speedups (we have no emotes); 4M = Neptune skin + 2,000 gems + 2M food + 2M wood (their skin's +5% gathering not added).
+  - Tests: core.test.js, ci/integration.test.js (events), g194_events_admin, g195_events_game (Watchtower default, troop power, claim, server
+    refuses grand prize, Neptune earned + equipped, speedup button).

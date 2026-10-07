@@ -224,6 +224,20 @@ const P = (s) => R + s;
     await fnErr(ADM.call("adminDeletePack", { id: "test_gems_100" }), /can't delete/);
     const dl = await ADM.call("adminDeletePack", { id: "daily_deal" }); assert.ok(!dl.packs.daily_deal && dl.shop.tabs[0].items.length === 1, "deleted + removed from tabs");
   });
+  await t("events (v946): admins make events; claims checked against the saved power and the player's own window", async () => {
+    await fnErr(A.call("adminSaveEvents", { events: [] }), /admin only|permission/);
+    const r = await ADM.call("adminSaveEvents", { events: [{ name: "Burst of Life", tag: "Beginner", goal: "power", schedule: { type: "newplayer", days: 7 }, milestones: [{ target: 50000, worth: 300, items: { gems: 100, wood: 1000 } }, { target: 4000000, worth: 54000, items: { skin_city_titan: 1 } }] }] });
+    assert.strictEqual(r.events[0].id, "burst_of_life");
+    const cfg = await getDoc(doc(A.db, P("config/events"))); assert.strictEqual(cfg.data().events[0].milestones.length, 2, "players can read events");
+    await denied(setDoc(doc(A.db, P("config/events")), { events: [] }));
+    await A.call("touch"); /* account created now -> the 7-day window is open */
+    await setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { power: 20000 });
+    await fnErr(A.call("claimEvent", { event: "burst_of_life", idx: 0 }), /not reached/);
+    await setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { power: 60000 });
+    const c = await A.call("claimEvent", { event: "burst_of_life", idx: 0 }); assert.ok(!c.dup && c.items.gems === 100);
+    assert.ok((await A.call("claimEvent", { event: "burst_of_life", idx: 0 })).dup, "once");
+    await fnErr(A.call("claimEvent", { event: "burst_of_life", idx: 1 }), /not reached/);
+  });
   await t("maintenance (v942): admin switch; players locked out of saves and server calls; admins and the other env unaffected", async () => {
     await fnErr(A.call("adminMaintenance", { set: { on: true } }), /admin only|permission/);
     let m = await ADM.call("adminMaintenance", { set: { on: true, msg: "Upgrading the forge", until: 1893456000000 } }); assert.strictEqual(m.on, true); assert.strictEqual(m.msg, "Upgrading the forge");

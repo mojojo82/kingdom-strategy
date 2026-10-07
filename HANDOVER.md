@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (8 Oct 2026, game v945):** everything below is built, tested and deployed. The live game link still serves the
+**State at handover (8 Oct 2026, game v946):** everything below is built, tested and deployed. The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -73,7 +73,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 ## How to work on it
 
 1. **Game changes:** edit the single game file. In the original session it was `/home/claude/game.html`; in a new session use `test/index.html` from this repo as the source.
-   - Backups were `game_vNNN.html` (latest v945). Git history now does that job: commit each version with its number.
+   - Backups were `game_vNNN.html` (latest v946). Git history now does that job: commit each version with its number.
    - Add a `dev/NOTES.md` entry per version (`## vNNN` + bullet points).
    - **Bump `KS_BUILD` in `test/index.html` and run `node tools/stamp-version.js`** (writes `test/version.json`). Players' games compare the two and show a "New version ready - Update" banner; CI fails if they don't match. When copying to live, run it again so the root `version.json` is written too.
    - Every now and then (not every version - Harley: it slows things down), publish to the claude.ai artifact (`Artifact` tool, `url` above, a short `label`, **don't pass `capabilities`**; the `db` capability carries forward). Last published: v933.
@@ -99,6 +99,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **No player tracking/analytics.** Only what's needed: purchase audit, item ledger, account created / last seen. Chat is not auto-deleted (his call, for now).
 
 ## Open items / to-dos
+- **Events (v946):** admin panel > 🎉 Events; Burst of Life template there (Harley to add a banner and Save). Event progress is checked against the `power` the game writes into each cloud save - client-reported like the rest of the save (anti-cheat flags apply). Neptune (Titan Fountain) skin is now earn-only.
 - **Shop (v943):** admin panel > 🛒 Shop & packs (library, tabs, price tiers). In-game: More > Shop, buy button says payments coming soon. Next: connect a payment provider (Stripe recommended for now; see the chat notes on Apple Pay / tax / Xsolla), then the buy button calls it and the webhook calls deliverPurchase(). MXN/EUR/TRY tier prices are suggestions - Harley to check.
 - **Maintenance mode (v942):** admin panel > 🛠️ Maintenance mode, per environment. Server doc `<root>config/maintenance`; while on, rules refuse player writes and Cloud Functions refuse non-admin calls; the game shows a lock screen (admins get a red bar and can play); turning it off reloads everyone onto the newest version. Live game (root, still v901) has no lock screen yet, but the server lock already applies to it.
 - **Before a public launch:** move the images out of the single 14 MB game file into separate cached files, so an update doesn't make every player re-download all the art.
