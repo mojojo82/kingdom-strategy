@@ -103,6 +103,12 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   claude.ai db (readable with the `ArtifactData` tool on the artifact URL) into Firebase (admin seed import path or an admin function), then `adminSetWallet` his gems.
   The legacy "owner" save is at `save/main` + root `assetitems/` in the claude db.
 - **Go live:** copy `test/index.html` → root `index.html` when approved (the live world then imports `seed-world.json` the first time an admin opens it).
+- **Kingdoms (servers), planned, build closer to launch:** (1) The public test (a small group of friends) should NOT be in Atlantis
+  (server0): needs a way to put the testers in their own kingdom. Today every new signup goes to Atlantis until it has 1,000 players. (2) At real launch Harley
+  may move all testers to a new kingdom: an admin-only "move players to kingdom X". Account, progress, heroes, items, gems and mail stay; they get a fresh
+  spot on the new map, and the city starts clean (no HP/fire carried over). Alliances belong to the kingdom they were made in (`allyPath` uses the server
+  prefix), so they stay behind unless moved with the members: Harley undecided. (3) Later a player "transfer event" (rules TBD) reusing the same move.
+  Prerequisite for any second kingdom: the Cloud Functions (`relocateCity`, base hits/fires) use `R + "cities/"` with no server prefix, i.e. Atlantis only.
 - Anti-cheat stage 2: server-checking normal progress (resources, buildings, troops) and battles. Only gems/premium are server-side now.
   Level-claim speed floor is the game's physical minimum (~350k gems/day if faked nonstop); tighten if Harley wants.
 - Cost: zoomed-out world loads every city per session. Fine at 100 players; optimise (load nearby only) before ~several hundred.
