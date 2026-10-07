@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (7 Oct 2026, game v921):** everything below is built, tested and deployed. The live game link still serves the
+**State at handover (7 Oct 2026, game v922):** everything below is built, tested and deployed. The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -73,7 +73,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 ## How to work on it
 
 1. **Game changes:** edit the single game file. In the original session it was `/home/claude/game.html`; in a new session use `test/index.html` from this repo as the source.
-   - Backups were `game_vNNN.html` (latest v921). Git history now does that job: commit each version with its number.
+   - Backups were `game_vNNN.html` (latest v922). Git history now does that job: commit each version with its number.
    - Add a `dev/NOTES.md` entry per version (`## vNNN` + bullet points).
    - Publish to the claude.ai artifact (`Artifact` tool, `url` above, a short `label`, **don't pass `capabilities`**; the `db` capability carries forward).
    - Copy to `test/index.html` and push. Copy to the root `index.html` **only when Harley approves** ("test first, then live").

@@ -24080,20 +24080,28 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
   function dur(sec) { var m = Math.round(sec / 60); if (m < 60) return Math.max(1, m) + " min"; var h = Math.floor(m / 60), mm = m % 60; return h + " h" + (mm ? " " + mm + " min" : ""); }
   function show(a, fake) {
     var auto = cfg.auto;
-    if (!fake) { if (auto) { var c = game.collectBucket(); if (c.ok) { a = { sec: a.sec, en: c.energon, val: c.valor }; } } game.bucketAwayClear(); persist(); render(); try { renderForge(); } catch (e) {} updateForgeBtn(); }
+    if (!fake) { if (auto) { var c = game.collectBucket(); if (c.ok) { a = { sec: a.sec, en: c.energon, val: c.valor }; } } game.bucketAwayClear(); persist(); wbCloudSave(); render(); try { renderForge(); } catch (e) {} updateForgeBtn(); lastShownAt = Date.now(); }
     pop.innerHTML = '<div class="wb-box"><div class="wb-t">Welcome back!</div><div class="wb-s">You were away for ' + dur(a.sec) + '</div>' +
       '<div class="wb-r"><div class="wb-i">' + ico("energon") + ' ' + fmtCompact(a.en) + '<small>Energon</small></div><div class="wb-i">' + ico("valor") + ' ' + fmtCompact(a.val) + '<small>Valor</small></div></div>' +
       '<button id="wbBtn">' + (auto ? "OK" : "Collect") + '</button></div>';
     pop.style.display = "flex";
     document.getElementById("wbBtn").onclick = function () {
       pop.style.display = "none";
-      if (!auto && !fake) { game.collectBucket(); persist(); render(); try { renderForge(); } catch (e) {} updateForgeBtn(); }
+      if (!auto && !fake) { game.collectBucket(); persist(); wbCloudSave(); render(); try { renderForge(); } catch (e) {} updateForgeBtn(); }
+      lastShownAt = Date.now();
     };
   }
+  /* v922: Harley saw it twice (collect, then it came back). Guards, whatever the cause: the cloud copy is saved the moment it is shown and collected
+     (so a reload / the phone dropping the page / another tab can't re-show the same absence from an older copy), it never shows twice within 3 minutes
+     (a new short "away" in that time just goes into the idle bucket, still collectable in the Forge), and it waits until the cloud save has loaded. */
+  var lastShownAt = 0; window.ksWelcomeBackCooldownReset = function () { lastShownAt = 0; }; /* tests fake long absences seconds apart */
+  function wbCloudSave() { try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} }
   setInterval(function () {
     if (pop.style.display === "flex") return;
+    if (window.claude && typeof window.claude.use === "function" && !cloudSyncReady) return; /* the cloud save may still replace this one */
     var a; try { a = game.bucketInfo().away; } catch (e) { return; }
     if (!a) return;
+    if (Date.now() - lastShownAt < 180000) { game.bucketAwayClear(); return; }
     if (!cfg.on || a.sec < cfg.minSec || (a.en < 1 && a.val < 1)) { game.bucketAwayClear(); return; }
     show(a, false);
   }, 700);

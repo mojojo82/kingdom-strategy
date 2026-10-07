@@ -292,3 +292,10 @@
 - g181_bossalone.js, chapter 2, Gareth + Lyra + all damage weapons, 5 min: v917 = 151 frames with horde bodies still on screen while the boss walked in
   (enemies already dead in the engine, held on screen for the shots still flying at them); v921 = 0 frames (8 bosses). The engine never had a horde
   enemy alive next to the boss in either version. Fixed by v918: the boss phase starts only when the last kill is SEEN (body down).
+
+## v922 (TEST game only): Welcome back popup can't show twice
+- Harley: collect, then the Welcome back window appeared again. NOT reproduced headless: fresh load (phone copy older/newer than cloud copy, cloud
+  arriving 4 s late), switching back after 2 h in the background, dev-tools speed x30 — all showed it once and paid once (g182_welcomeonce.js).
+- Guards added (whatever the cause): the cloud save is written the moment the popup is shown and on Collect (a reload, the phone discarding the page,
+  or another tab can't re-show the same absence from an older copy); no second popup within 3 minutes (a new short "away" goes into the idle bucket,
+  still collectable in the Forge); the popup waits until the cloud save has loaded. Test hook: window.ksWelcomeBackCooldownReset().
