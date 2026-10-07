@@ -359,3 +359,9 @@
 - v930: home bubble hid under the phone chat bar when home was below the view (Harley screenshot). Cause: the bottom limit used the X/Y pill's
   offsetParent, which is null for position:fixed elements, so the limit fell back to the full map height (map runs under the chat bar). Now
   uses the pill's bounding box. g186 adds a "home below" case (bubble bottom must be above the pill).
+- Conquest "one area only" sims (v930, dev/simfork/areasim/run.js, results_v930.jsonl; engine-only, 3 seeds, wall = 20,000 s with no new level).
+  New player: 3-15/3-16 (~5h). Heroes: Lv20 G+L 5-11, 5x Lv40 8-5, 5x max 12-5. Weapons (missiles/laser/railgun) Lv1 5-1 .. Lv50 5-5 (weapon dmg is
+  flat BASE_ATK x dmgPct, so levels barely help). Buildings max 4-17 (only Town Hall +5 fortress HP/level matters). Buildings + research
+  (fortress tree) half or max 5-11 (normal tech tree has no conquest effect). Equipment 10x Common 4-7, Elite 5-1, Epic 5-3, Legendary 5-5
+  (it's % on hero stats, so tiny on Lv1 heroes). Everything max: 23-18 .. 25-11+. The pile-up at 5-1..5-11 is IDLE_EASE ending (levels 1-80
+  eased to 15% enemy HP/ATK, blend to full by L100).
