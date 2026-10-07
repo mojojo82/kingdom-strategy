@@ -158,7 +158,7 @@
   <section class="card" id="eventsCard">
     <h2>🎉 Events</h2>
     <div class="muted">Goal events with a reward at each milestone; the last milestone is the grand prize (shown on top, like Burst of Life). "New players" events run for each player from the day their account was made; dated events run for everyone between two dates. Progress is checked by the server against the player's saved game.</div>
-    <div class="row" style="margin-top:10px"><button class="b ghost" id="evAdd">+ New event</button><button class="b ghost" id="evTpl">+ Burst of Life (template)</button><button class="b" id="evSave">Save events</button></div>
+    <div class="row" style="margin-top:10px"><button class="b ghost" id="evAdd">+ New event</button><button class="b ghost" id="evTpl">+ Burst of Life (template)</button><button class="b ghost" id="evTpl2">+ 7-Day Sign-in (template)</button><button class="b" id="evSave">Save events</button></div>
     <div id="evEd" style="margin-top:10px"></div>
   </section>
 
@@ -451,34 +451,50 @@
 
   // ---- v946: events. The block below is an exact copy of the game's (test/index.html); g194 checks they match. ----
   /* KSE-CARD-BEGIN - an event card (Burst of Life etc). The admin panel's Preview uses an identical copy (admin/index.html); a test keeps them the same. */
-  var KSE_CSS = ".kse .ecard{border:1px dashed #33445e;border-radius:10px;background:#161f2e;color:#f3e9d2;overflow:hidden;text-align:left}"
-    + ".kse .eban{position:relative;height:0;padding-bottom:52%;background:#0a1224 center/cover no-repeat}.kse .eban:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,9,20,.6) 0%,rgba(5,9,20,0) 40%,rgba(5,9,20,0) 55%,rgba(5,9,20,.85) 100%)}"
-    + ".kse .etitle{position:absolute;left:10px;top:8px;right:10px;z-index:1;font-size:24px;font-weight:800;color:#fff;text-shadow:0 2px 4px #000,0 0 2px #000}.kse .etime{position:absolute;left:10px;top:44px;z-index:1;background:rgba(5,9,20,.75);border:1px dashed #c9a24a;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:700}"
-    + ".kse .etag{position:absolute;left:0;bottom:30px;z-index:1;background:linear-gradient(90deg,#c9a24a,#f0c95f);color:#2a1d05;font-weight:800;font-size:13px;padding:3px 14px 3px 10px;clip-path:polygon(0 0,92% 0,100% 50%,92% 100%,0 100%)}"
-    + ".kse .edesc{position:absolute;left:10px;right:10px;bottom:6px;z-index:1;font-size:13px;font-weight:700;color:#f0c95f;text-shadow:0 1px 3px #000}.kse .enoban{padding:12px 12px 0}.kse .enoban .etitle,.kse .enoban .etime,.kse .enoban .etag,.kse .enoban .edesc{position:static;display:inline-block;margin:0 6px 6px 0}"
-    + ".kse .ebar{position:relative;margin:10px;height:20px;border:1px dashed #5d6f93;border-radius:10px;background:#0f1520;overflow:hidden}.kse .ebar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#c9a24a,#f0c95f)}.kse .ebar b{position:absolute;inset:0;text-align:center;font-size:12px;line-height:18px;color:#fff;text-shadow:0 1px 2px #000}"
-    + ".kse .erow{margin:0 10px 10px;border:1px dashed #33445e;border-radius:8px;background:#0f1520}.kse .erow.grand{border-color:#c9a24a;background:#1d1a10}.kse .ehead{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-bottom:1px dotted #33445e;font-size:13px;font-weight:700}.kse .ehead .w{color:#f0c95f;white-space:nowrap}"
-    + ".kse .ebody{display:flex;align-items:center;gap:8px;padding:8px 10px}.kse .eitems{display:flex;flex-wrap:wrap;gap:4px;flex:1}.kse .eit{border:1px dashed #5d6f93;border-radius:6px;padding:2px 7px;font-size:12px;background:#161f2e}"
-    + ".kse .ebtn{border:0;border-radius:8px;padding:8px 14px;font-weight:800;font-size:14px;cursor:pointer;background:#2bb3d9;color:#06131c;white-space:nowrap}.kse .ebtn.go{background:#1f6fae;color:#fff}.kse .edone{color:#7fd07f;font-size:24px;font-weight:800;padding:0 8px}.kse .elock{color:#5d6f93;font-size:12px;white-space:nowrap}";
-  function ksEvNum(n) { n = +n || 0; return n >= 1e6 ? (n / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 }) + "M" : n >= 1e4 ? (n / 1e3).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "K" : n.toLocaleString(); }
-  function ksEvLeft(ms) { ms = Math.max(0, ms); var d = Math.floor(ms / 86400e3), h = Math.floor(ms / 3600e3) % 24, m = Math.floor(ms / 60e3) % 60, sec = Math.floor(ms / 1000) % 60, z = function (x) { return (x < 10 ? "0" : "") + x; }; return (d ? d + "d " : "") + z(h) + ":" + z(m) + ":" + z(sec); }
-  function ksEvGoalText(goal, target) { return goal === "townhall" ? "Town Hall level " + target : goal === "conquest" ? "Clear Conquest level " + target : "Reach Total Power: " + (+target).toLocaleString(); }
-  /* ev = event, prog = player's progress, claimed = [milestone indexes claimed], end = when it ends (ms), now */
-  function ksEvCardHtml(ev, prog, claimed, end, now, esc) {
-    claimed = claimed || []; var ms = ev.milestones || [], last = ms.length - 1, top = last >= 0 ? ms[last].target : 1, ban = typeof ev.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(ev.banner);
-    var head = '<div class="etitle">' + esc(ev.name) + '</div>' + (end ? '<div class="etime">⏱ ' + esc(ksEvLeft(end - now)) + "</div>" : "") + (ev.tag ? '<div class="etag">' + esc(ev.tag) + "</div>" : "") + (ev.desc ? '<div class="edesc">' + esc(ev.desc) + "</div>" : "");
-    function items(m) { var lab = m.labels || {}; return Object.keys(m.items || {}).map(function (k) { return '<span class="eit">' + esc((lab[k] || k) + " × " + ksEvNum(m.items[k])) + "</span>"; }).join(""); }
-    function btn(i, grand) { var m = ms[i]; if (claimed.indexOf(i) >= 0) return '<span class="edone">✓</span>'; if (prog >= m.target) return '<button type="button" class="ebtn" data-evc="' + esc(ev.id) + '" data-evi="' + i + '">Claim</button>'; return grand ? '<button type="button" class="ebtn go" data-evgo="' + esc(ev.goal) + '">Go</button>' : '<span class="elock">🔒 ' + esc(ksEvNum(m.target)) + "</span>"; }
-    var rows = ms.map(function (m, i) { return { m: m, i: i }; }).filter(function (x) { return x.i !== last; }).map(function (x) {
-      return '<div class="erow"><div class="ehead"><span>' + esc(ksEvGoalText(ev.goal, x.m.target)) + "</span>" + (x.m.worth ? '<span class="w">Worth ' + esc(ksEvNum(x.m.worth)) + " Gems</span>" : "") + '</div><div class="ebody"><div class="eitems">' + items(x.m) + "</div>" + btn(x.i) + "</div></div>"; }).join("");
+var KSE_CSS = ".kse .ecard{border:1px dashed #33445e;border-radius:10px;background:#161f2e;color:#f3e9d2;overflow:hidden;text-align:left}"
+  + ".kse .eban{position:relative;height:0;padding-bottom:52%;background:#0a1224 center/cover no-repeat}.kse .eban:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,9,20,.6) 0%,rgba(5,9,20,0) 40%,rgba(5,9,20,0) 55%,rgba(5,9,20,.85) 100%)}"
+  + ".kse .etitle{position:absolute;left:10px;top:8px;right:10px;z-index:1;font-size:24px;font-weight:800;color:#fff;text-shadow:0 2px 4px #000,0 0 2px #000}.kse .etime{position:absolute;left:10px;top:44px;z-index:1;background:rgba(5,9,20,.75);border:1px dashed #c9a24a;border-radius:6px;padding:2px 8px;font-size:13px;font-weight:700}"
+  + ".kse .etag{position:absolute;left:0;bottom:30px;z-index:1;background:linear-gradient(90deg,#c9a24a,#f0c95f);color:#2a1d05;font-weight:800;font-size:13px;padding:3px 14px 3px 10px;clip-path:polygon(0 0,92% 0,100% 50%,92% 100%,0 100%)}"
+  + ".kse .edesc{position:absolute;left:10px;right:10px;bottom:6px;z-index:1;font-size:13px;font-weight:700;color:#f0c95f;text-shadow:0 1px 3px #000}.kse .enoban{padding:12px 12px 0}.kse .enoban .etitle,.kse .enoban .etime,.kse .enoban .etag,.kse .enoban .edesc{position:static;display:inline-block;margin:0 6px 6px 0}"
+  + ".kse .ebar{position:relative;margin:10px;height:20px;border:1px dashed #5d6f93;border-radius:10px;background:#0f1520;overflow:hidden}.kse .ebar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#c9a24a,#f0c95f)}.kse .ebar b{position:absolute;inset:0;text-align:center;font-size:12px;line-height:18px;color:#fff;text-shadow:0 1px 2px #000}"
+  + ".kse .erow{margin:0 10px 10px;border:1px dashed #33445e;border-radius:8px;background:#0f1520}.kse .erow.grand{border-color:#c9a24a;background:#1d1a10}.kse .ehead{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-bottom:1px dotted #33445e;font-size:13px;font-weight:700}.kse .ehead .w{color:#f0c95f;white-space:nowrap}"
+  + ".kse .ebody{display:flex;align-items:center;gap:8px;padding:8px 10px}.kse .eitems{display:flex;flex-wrap:wrap;gap:4px;flex:1}.kse .eit{border:1px dashed #5d6f93;border-radius:6px;padding:2px 7px;font-size:12px;background:#161f2e}"
+  + ".kse .ebtn{border:0;border-radius:8px;padding:8px 14px;font-weight:800;font-size:14px;cursor:pointer;background:#2bb3d9;color:#06131c;white-space:nowrap}.kse .ebtn.go{background:#1f6fae;color:#fff}.kse .edone{color:#7fd07f;font-size:24px;font-weight:800;padding:0 8px}.kse .elock{color:#5d6f93;font-size:12px;white-space:nowrap}"
+  + ".kse .esnext{margin:10px 10px 0;text-align:center;font-size:13px;font-weight:700;color:#f0c95f}.kse .esg{display:grid;grid-template-columns:repeat(3,1fr) 1.15fr;gap:6px;margin:10px}"
+  + ".kse .esd{position:relative;display:flex;flex-direction:column;border:1px dashed #33445e;border-radius:8px;background:#0f1520;overflow:hidden;min-height:96px;font:inherit;color:inherit;padding:0;text-align:center}.kse .esd.grand{border-color:#c9a24a;background:#1d1a10}"
+  + ".kse .esd .si{flex:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px 6px;padding:6px 4px 2px}.kse .esd .sx{display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:700;line-height:1.2}.kse .esd .sx i{font-style:normal;font-size:26px;line-height:1.1}.kse .esd.grand .sx i{font-size:34px}"
+  + ".kse .esd .sd{border-top:1px dotted #33445e;padding:3px 0;font-size:12px;font-weight:800;color:#a9b4c8}.kse .esd.now{border:2px solid #f0c95f;cursor:pointer;box-shadow:0 0 10px rgba(240,201,95,.45)}.kse .esd.now .sd{background:#2bb3d9;color:#06131c}"
+  + ".kse .esd.got .si{opacity:.35}.kse .esd .sok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7fd07f;font-size:34px;font-weight:800;text-shadow:0 1px 3px #000}";
+function ksEvNum(n) { n = +n || 0; return n >= 1e6 ? (n / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 }) + "M" : n >= 1e4 ? (n / 1e3).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "K" : n.toLocaleString(); }
+function ksEvLeft(ms) { ms = Math.max(0, ms); var d = Math.floor(ms / 86400e3), h = Math.floor(ms / 3600e3) % 24, m = Math.floor(ms / 60e3) % 60, sec = Math.floor(ms / 1000) % 60, z = function (x) { return (x < 10 ? "0" : "") + x; }; return (d ? d + "d " : "") + z(h) + ":" + z(m) + ":" + z(sec); }
+function ksEvGoalText(goal, target) { return goal === "signin" ? "Day " + target : goal === "townhall" ? "Town Hall level " + target : goal === "conquest" ? "Clear Conquest level " + target : "Reach Total Power: " + (+target).toLocaleString(); }
+/* ev = event, prog = player's progress, claimed = [milestone indexes claimed], end = when it ends (ms), now */
+function ksEvCardHtml(ev, prog, claimed, end, now, esc) {
+  claimed = claimed || []; var ms = ev.milestones || [], last = ms.length - 1, top = last >= 0 ? ms[last].target : 1, ban = typeof ev.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(ev.banner);
+  if (end && end - now > 3650 * 86400e3) end = 0; /* v947: no time limit - no countdown */
+  var head = '<div class="etitle">' + esc(ev.name) + '</div>' + (end ? '<div class="etime">⏱ ' + esc(ksEvLeft(end - now)) + "</div>" : "") + (ev.tag ? '<div class="etag">' + esc(ev.tag) + "</div>" : "") + (ev.desc ? '<div class="edesc">' + esc(ev.desc) + "</div>" : "");
+  function items(m) { var lab = m.labels || {}; return Object.keys(m.items || {}).map(function (k) { return '<span class="eit">' + esc((lab[k] || k) + " × " + ksEvNum(m.items[k])) + "</span>"; }).join(""); }
+  function btn(i, grand) { var m = ms[i]; if (claimed.indexOf(i) >= 0) return '<span class="edone">✓</span>'; if (prog >= m.target) return '<button type="button" class="ebtn" data-evc="' + esc(ev.id) + '" data-evi="' + i + '">Claim</button>'; return grand ? '<button type="button" class="ebtn go" data-evgo="' + esc(ev.goal) + '">Go</button>' : '<span class="elock">🔒 ' + esc(ksEvNum(m.target)) + "</span>"; }
+  if (ev.goal === "signin") { /* v947: daily sign-in - a grid of days, the last one big on the right (like Kingshot's 7-day sign-in) */
+    var rowsN = Math.max(1, Math.ceil(last / 3)), nextAt = (Math.floor(now / 86400e3) + 1) * 86400e3, done = claimed.length >= ms.length, today = !done && prog > claimed.length;
+    var tile = function (m, i) { var got = claimed.indexOf(i) >= 0, cur = !got && today && i === claimed.length, lab = m.labels || {};
+      var its = Object.keys(m.items || {}).map(function (k) { var l = String(lab[k] || k), sp = l.indexOf(" "), ic = sp > 0 && sp <= 4 ? l.slice(0, sp) : "🎁"; return '<span class="sx" title="' + esc(l) + '"><i>' + esc(ic) + "</i>×" + esc(ksEvNum(m.items[k])) + "</span>"; }).join("");
+      return (cur ? '<button type="button"' : "<div") + ' class="esd' + (i === last ? " grand" : "") + (got ? " got" : "") + (cur ? " now" : "") + '"' + (cur ? ' data-evc="' + esc(ev.id) + '" data-evi="' + i + '"' : "")
+        + (i === last && last > 0 ? ' style="grid-column:4;grid-row:1 / span ' + rowsN + '"' : "") + '><div class="si">' + its + '</div><div class="sd">' + (cur ? "Claim" : "Day " + (i + 1)) + "</div>" + (got ? '<span class="sok">✓</span>' : "") + (cur ? "</button>" : "</div>"); };
     return '<div class="ecard">' + (ban ? '<div class="eban" style="background-image:url(' + ev.banner + ')">' + head + "</div>" : '<div class="enoban">' + head + "</div>")
-      + '<div class="ebar"><i style="width:' + Math.min(100, prog / top * 100).toFixed(1) + '%"></i><b>' + esc((+prog).toLocaleString() + " / " + (+top).toLocaleString()) + "</b></div>"
-      + (last >= 0 ? '<div class="erow grand"><div class="ehead"><span>🏆 ' + esc(ksEvGoalText(ev.goal, top)) + "</span>" + (ms[last].worth ? '<span class="w">Worth ' + esc(ksEvNum(ms[last].worth)) + " Gems</span>" : "") + '</div><div class="ebody"><div class="eitems">' + items(ms[last]) + "</div>" + btn(last, true) + "</div></div>" : "")
-      + rows + "</div>";
+      + '<div class="esnext">' + (done ? "All rewards claimed - thanks for playing!" : today ? "Day " + (claimed.length + 1) + " reward is ready - tap it!" : "Next reward in " + esc(ksEvLeft(nextAt - now))) + "</div>"
+      + '<div class="esg">' + ms.map(tile).join("") + "</div></div>";
   }
-  /* KSE-CARD-END */
+  var rows = ms.map(function (m, i) { return { m: m, i: i }; }).filter(function (x) { return x.i !== last; }).map(function (x) {
+    return '<div class="erow"><div class="ehead"><span>' + esc(ksEvGoalText(ev.goal, x.m.target)) + "</span>" + (x.m.worth ? '<span class="w">Worth ' + esc(ksEvNum(x.m.worth)) + " Gems</span>" : "") + '</div><div class="ebody"><div class="eitems">' + items(x.m) + "</div>" + btn(x.i) + "</div></div>"; }).join("");
+  return '<div class="ecard">' + (ban ? '<div class="eban" style="background-image:url(' + ev.banner + ')">' + head + "</div>" : '<div class="enoban">' + head + "</div>")
+    + '<div class="ebar"><i style="width:' + Math.min(100, prog / top * 100).toFixed(1) + '%"></i><b>' + esc((+prog).toLocaleString() + " / " + (+top).toLocaleString()) + "</b></div>"
+    + (last >= 0 ? '<div class="erow grand"><div class="ehead"><span>🏆 ' + esc(ksEvGoalText(ev.goal, top)) + "</span>" + (ms[last].worth ? '<span class="w">Worth ' + esc(ksEvNum(ms[last].worth)) + " Gems</span>" : "") + '</div><div class="ebody"><div class="eitems">' + items(ms[last]) + "</div>" + btn(last, true) + "</div></div>" : "")
+    + rows + "</div>";
+}
+/* KSE-CARD-END */
   (function () { var st = document.createElement("style"); st.textContent = KSE_CSS; document.head.appendChild(st); })();
-  var EV_GOALS = [["power", "Total power"], ["townhall", "Town Hall level"], ["conquest", "Conquest levels cleared"]];
+  var EV_GOALS = [["power", "Total power"], ["townhall", "Town Hall level"], ["conquest", "Conquest levels cleared"], ["signin", "Daily sign-in (1 day per milestone)"]];
   var BURST_TPL = { name: "Burst of Life", icon: "🎉", tag: "Beginner", desc: "Boost your power and win a limited skin reward!", goal: "power", schedule: { type: "newplayer", days: 7 }, active: true, milestones: [
     { target: 50000, worth: 300, items: { gems: 100, wood: 100000, stone: 20000, gold: 10000 } },
     { target: 300000, worth: 700, items: { gems: 300, wood: 200000, stone: 40000, gold: 20000 } },
@@ -489,12 +505,20 @@
     { target: 2500000, worth: 7500, items: { gems: 1500, speedup_construction_1h: 5, food: 1500000, wood: 1500000 } },
     { target: 3000000, worth: 12500, items: { gems: 2500, speedup_general_1h: 8, stone: 400000, gold: 200000 } },
     { target: 4000000, worth: 54000, items: { skin_city_titan: 1, gems: 2000, food: 2000000, wood: 2000000 } } ] };
+  var SIGNIN_TPL = { name: "7-Day Sign-in", icon: "📅", tag: "New player", desc: "Sign in each day to claim a reward!", goal: "signin", schedule: { type: "newplayer", days: 0 }, active: true, milestones: [ /* v947: from Kingshot's 7-day sign-in (Jabel). Day 7 is a placeholder */
+    { target: 1, worth: 500, items: { gems: 500 } },
+    { target: 2, worth: 0, items: { hero_roran: 1 } },
+    { target: 3, worth: 0, items: { weapon_tickets: 10 } },
+    { target: 4, worth: 0, items: { shards_roran: 15 } },
+    { target: 5, worth: 0, items: { conquest_books: 20 } },
+    { target: 6, worth: 0, items: { valor: 2000, speedup_general_1h: 3 } },
+    { target: 7, worth: 0, items: { shards_roran: 30, gems: 1000 } } ] };
   function evSync() { /* copy the form back into the draft */
     (S.evDraft || []).forEach(function (ev, ei) {
       var q = function (f) { return document.querySelector('[data-ef2="' + f + '"][data-ei2="' + ei + '"]'); }; if (!q("name")) return;
       ev.icon = q("icon").value; ev.name = q("name").value; ev.tag = q("tag").value; ev.desc = q("desc").value; ev.goal = q("goal").value; ev.active = q("active").checked;
-      var t = q("stype").value; ev.schedule = t === "dates" ? { type: "dates", start: q("start") && q("start").value ? new Date(q("start").value).getTime() : null, end: q("end") && q("end").value ? new Date(q("end").value).getTime() : null } : { type: "newplayer", days: +(q("days") ? q("days").value : 7) || 7 };
-      ev.milestones.forEach(function (m, mi) { var tt = document.querySelector('[data-emt="' + ei + "_" + mi + '"]'), ww = document.querySelector('[data-emw="' + ei + "_" + mi + '"]'); if (tt) m.target = +tt.value || 0; if (ww) m.worth = +ww.value || 0; try { m.items = readItems("em_" + ei + "_" + mi); } catch (e) {} });
+      var t = q("stype").value; ev.schedule = t === "dates" ? { type: "dates", start: q("start") && q("start").value ? new Date(q("start").value).getTime() : null, end: q("end") && q("end").value ? new Date(q("end").value).getTime() : null } : { type: "newplayer", days: ev.goal === "signin" ? 0 : (+(q("days") ? q("days").value : 7) || 7) };
+      ev.milestones.forEach(function (m, mi) { var tt = ev.goal === "signin" ? null : document.querySelector('[data-emt="' + ei + "_" + mi + '"]'), ww = document.querySelector('[data-emw="' + ei + "_" + mi + '"]'); if (tt) m.target = +tt.value || 0; if (ww) m.worth = +ww.value || 0; try { m.items = readItems("em_" + ei + "_" + mi); } catch (e) {} });
     });
   }
   function renderEvEd() {
@@ -505,17 +529,18 @@
         + '<div class="row" style="margin-top:6px"><span class="muted">Goal</span><select data-ef2="goal" data-ei2="' + ei + '">' + EV_GOALS.map(function (g) { return '<option value="' + g[0] + '"' + (ev.goal === g[0] ? " selected" : "") + ">" + g[1] + "</option>"; }).join("") + "</select>"
         + '<span class="muted">Runs</span><select data-ef2="stype" data-ei2="' + ei + '"><option value="newplayer"' + (sc.type !== "dates" ? " selected" : "") + '>for new players</option><option value="dates"' + (sc.type === "dates" ? " selected" : "") + ">between dates (everyone)</option></select>"
         + (sc.type === "dates" ? '<span class="muted">from</span><input type="datetime-local" data-ef2="start" data-ei2="' + ei + '" value="' + toLocalInput(sc.start) + '"><span class="muted">until</span><input type="datetime-local" data-ef2="end" data-ei2="' + ei + '" value="' + toLocalInput(sc.end) + '">'
+          : ev.goal === "signin" ? '<span class="muted">until they have claimed every day (no time limit - a missed day just waits)</span>'
           : '<span class="muted">for</span><input type="number" min="1" max="365" data-ef2="days" data-ei2="' + ei + '" value="' + (sc.days || 7) + '" style="width:70px"><span class="muted">days after they sign up</span>')
         + '<label><input type="checkbox" data-ef2="active" data-ei2="' + ei + '"' + (ev.active !== false ? " checked" : "") + "> Active</label></div>"
         + '<div class="row" style="margin-top:6px"><span class="muted">Banner</span>' + (ev.banner ? '<img src="' + ev.banner + '" style="height:44px;border-radius:6px;border:1px dashed var(--line)">' : "") + '<label class="b ghost mini" style="cursor:pointer">🖼️ Upload banner<input type="file" accept="image/*" data-evban="' + ei + '" style="display:none"></label>' + (ev.banner ? '<button class="b ghost mini" data-evbandel="' + ei + '">Remove</button>' : "") + '<button class="b ghost mini" data-evprev="' + ei + '">👁 Preview</button><button class="b ghost mini" data-evdel="' + ei + '">Remove event</button></div>'
-        + '<div class="muted" style="margin-top:8px">Milestones (the biggest one is the 🏆 grand prize):</div>'
-        + ev.milestones.map(function (m, mi) { return '<div class="tabent" style="align-items:flex-start"><span class="muted" style="padding-top:8px">🎯</span><input type="number" min="1" data-emt="' + ei + "_" + mi + '" value="' + (m.target || "") + '" placeholder="Target" style="width:120px" title="Goal to reach"><input type="number" min="0" data-emw="' + ei + "_" + mi + '" value="' + (m.worth || "") + '" placeholder="Worth (gems)" style="width:110px" title="\'Worth X Gems\' label"><div class="grow" style="flex:1 1 300px"><div id="em_' + ei + "_" + mi + '"></div><button class="b ghost mini" data-emadd="' + ei + "_" + mi + '" style="margin-top:4px">+ item</button></div><button class="b ghost mini" data-emdel="' + ei + "_" + mi + '">✕</button></div>'; }).join("")
+        + '<div class="muted" style="margin-top:8px">' + (ev.goal === "signin" ? "Days (one claim per day, in order - the last day is the big 🏆 one):" : "Milestones (the biggest one is the 🏆 grand prize):") + '</div>'
+        + ev.milestones.map(function (m, mi) { return '<div class="tabent" style="align-items:flex-start"><span class="muted" style="padding-top:8px">🎯</span>' + (ev.goal === "signin" ? '<b style="width:120px;padding-top:8px">Day ' + (mi + 1) + '</b>' : '<input type="number" min="1" data-emt="' + ei + "_" + mi + '" value="' + (m.target || "") + '" placeholder="Target" style="width:120px" title="Goal to reach">') + '<input type="number" min="0" data-emw="' + ei + "_" + mi + '" value="' + (m.worth || "") + '" placeholder="Worth (gems)" style="width:110px" title="\'Worth X Gems\' label"><div class="grow" style="flex:1 1 300px"><div id="em_' + ei + "_" + mi + '"></div><button class="b ghost mini" data-emadd="' + ei + "_" + mi + '" style="margin-top:4px">+ item</button></div><button class="b ghost mini" data-emdel="' + ei + "_" + mi + '">✕</button></div>'; }).join("")
         + '<div class="row" style="margin-top:8px"><button class="b ghost mini" data-emnew="' + ei + '">+ Add milestone</button></div></div>';
     }).join("") || '<div class="muted">No events yet. Start from the Burst of Life template or a blank one.</div>';
     D.forEach(function (ev, ei) { ev.milestones.forEach(function (m, mi) { fillRows("em_" + ei + "_" + mi, m.items || {}); }); });
   }
   $("evEd").onchange = function (e) {
-    var t = e.target; if (t.getAttribute("data-ef2") === "stype") { evSync(); renderEvEd(); return; }
+    var t = e.target; if (t.getAttribute("data-ef2") === "stype" || t.getAttribute("data-ef2") === "goal") { evSync(); renderEvEd(); return; }
     var bi = t.getAttribute("data-evban"); if (bi != null) { var f = t.files && t.files[0]; if (!f) return; evSync(); var img = new Image(), url = URL.createObjectURL(f);
       img.onload = function () { var W = 800, H = 416, r = W / H, sw = img.width, sh = img.height, sx = 0, sy = 0; if (sw / sh > r) { sw = sh * r; sx = (img.width - sw) / 2; } else { sh = sw / r; sy = (img.height - sh) / 2; }
         var c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, W, H); URL.revokeObjectURL(url); var q = 0.82, d = c.toDataURL("image/jpeg", q); while (d.length > 600000 && q > 0.4) { q -= 0.1; d = c.toDataURL("image/jpeg", q); }
@@ -526,7 +551,7 @@
     if ((v = t.getAttribute("data-emadd"))) { addItemRow("em_" + v); return; }
     if (t.closest && t.closest("label")) return;
     evSync();
-    if ((v = t.getAttribute("data-emnew")) != null && v !== "") { var E = D[+v]; E.milestones.push({ target: ((E.milestones[E.milestones.length - 1] || {}).target || 0) + 100000, worth: 0, items: {} }); renderEvEd(); }
+    if ((v = t.getAttribute("data-emnew")) != null && v !== "") { var E = D[+v]; E.milestones.push({ target: E.goal === "signin" ? E.milestones.length + 1 : ((E.milestones[E.milestones.length - 1] || {}).target || 0) + 100000, worth: 0, items: {} }); renderEvEd(); }
     else if ((v = t.getAttribute("data-emdel"))) { var a = v.split("_"); D[+a[0]].milestones.splice(+a[1], 1); renderEvEd(); }
     else if ((v = t.getAttribute("data-evdel")) != null && v !== "") { if (confirm("Remove this event? (Saved only when you tap Save events.)")) { D.splice(+v, 1); renderEvEd(); } }
     else if ((v = t.getAttribute("data-evbandel")) != null && v !== "") { D[+v].banner = null; renderEvEd(); }
@@ -534,12 +559,13 @@
   };
   function evPreview(ev) {
     var e2 = JSON.parse(JSON.stringify(ev)); e2.id = e2.id || "preview"; e2.milestones.forEach(function (m) { m.labels = {}; Object.keys(m.items || {}).forEach(function (k) { m.labels[k] = itemLabel(k); }); }); e2.milestones.sort(function (a, b) { return a.target - b.target; });
-    var mid = e2.milestones.length > 3 ? e2.milestones[3].target * 1.0012 : 0; /* show it part-way through, like a real player */
-    S.pv = null; $("pvCur").innerHTML = ""; $("pvCur").style.display = "none"; $("pvPhone").innerHTML = '<div style="font-size:18px;font-weight:700;color:#f0c95f;margin-bottom:10px">🎉 Events</div>' + ksEvCardHtml(e2, Math.round(mid), [0, 1, 2], Date.now() + (e2.schedule && e2.schedule.type === "dates" ? Math.max(0, e2.schedule.end - Date.now()) : (e2.schedule.days || 7) * 86400e3 * 0.35), Date.now(), esc);
+    var mid = e2.goal === "signin" ? Math.min(4, e2.milestones.length) : e2.milestones.length > 3 ? e2.milestones[3].target * 1.0012 : 0; /* sign-in: days 1-3 claimed, day 4 ready */ /* show it part-way through, like a real player */
+    S.pv = null; $("pvCur").innerHTML = ""; $("pvCur").style.display = "none"; $("pvPhone").innerHTML = '<div style="font-size:18px;font-weight:700;color:#f0c95f;margin-bottom:10px">🎉 Events</div>' + ksEvCardHtml(e2, Math.round(mid), [0, 1, 2], e2.goal === "signin" && (!e2.schedule || e2.schedule.type !== "dates") ? 0 : Date.now() + (e2.schedule && e2.schedule.type === "dates" ? Math.max(0, e2.schedule.end - Date.now()) : (e2.schedule.days || 7) * 86400e3 * 0.35), Date.now(), esc);
     $("pvOv").classList.remove("hide");
   }
   $("evAdd").onclick = function () { evSync(); S.evDraft.push({ name: "New event", icon: "🎉", tag: "", desc: "", goal: "power", schedule: { type: "newplayer", days: 7 }, active: true, milestones: [{ target: 50000, worth: 0, items: {} }] }); renderEvEd(); };
   $("evTpl").onclick = function () { evSync(); S.evDraft.push(JSON.parse(JSON.stringify(BURST_TPL))); renderEvEd(); toast("Burst of Life added - check it, add a banner, then Save events"); };
+  $("evTpl2").onclick = function () { evSync(); S.evDraft.push(JSON.parse(JSON.stringify(SIGNIN_TPL))); renderEvEd(); toast("7-Day Sign-in added - check it, add a banner, then Save events"); };
   $("evSave").onclick = function () { evSync(); if (!confirmEnv("Save events? Players see the change straight away.")) return;
     call("adminSaveEvents", { events: S.evDraft }).then(function (r) { S.evDraft = JSON.parse(JSON.stringify(r.events)); renderEvEd(); toast("Events saved"); }, function (e) { toast(errText(e), true); }); };
 

@@ -458,3 +458,11 @@
     replaced by general speedups (we have no emotes); 4M = Neptune skin + 2,000 gems + 2M food + 2M wood (their skin's +5% gathering not added).
   - Tests: core.test.js, ci/integration.test.js (events), g194_events_admin, g195_events_game (Watchtower default, troop power, claim, server
     refuses grand prize, Neptune earned + equipped, speedup button).
+- v947: 7-Day Sign-in event (Harley: Kingshot's new-player sign-in, Jabel version, as the template).
+  - New event goal "signin": milestone N = day N. One day claimable per UTC day (daily reset 00:00 UTC = 1pm NZDT), in order.
+    A missed day just waits (Harley: "pause it, no limit"); new-player sign-in events have no end date and vanish once every day is claimed.
+    Server: core.js signinProgress/utcDay + decideEventClaim branch (wallet events[id] = {k, c, d = UTC day of last claim}).
+  - New item hero_roran (path heroes.roran.unlock): the game turns it into an owned hero (level 1); a duplicate gives 30 Roran shards.
+  - Admin: goal "Daily sign-in", "+ 7-Day Sign-in (template)": 500 gems / Roran / 10 weapon tickets / 15 Roran shards / 20 conquest books /
+    2,000 valor + 3x 1h speedups / day 7 = 30 Roran shards + 1,000 gems (placeholder - Kingshot's day 7 is Jabel's exclusive weapon).
+  - Card: grid of day tiles, big last day on the right (shared KSE block, admin copy identical). Tests: core.test.js, g196_signin.

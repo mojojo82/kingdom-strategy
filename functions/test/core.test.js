@@ -132,6 +132,17 @@ t("item catalogue + mail", () => {
   assert.ok(C.decideEventClaim(ec.claimed, evs[0], 0, 61234, W, 5000).dup);
   assert.throws(() => C.decideEventClaim(ec.claimed, evs[0], 1, 61234, W, 5000), /not reached/);
   assert.throws(() => C.decideEventClaim(null, evs[0], 0, 61234, W, W.end + 1), /isn't running/);
+  // v947: daily sign-in - one day per UTC day, in order, no time limit, a missed day just waits
+  const si = C.normalizeEvents([{ name: "7-Day Sign-in", goal: "signin", schedule: { type: "newplayer", days: 9 }, milestones: [{ target: 99, items: { gems: 500 } }, { items: { hero_roran: 1 } }, { items: { shards_roran: 30 } }] }])[0];
+  assert.deepStrictEqual(si.milestones.map((m) => m.target), [1, 2, 3]); assert.strictEqual(si.schedule.days, 0);
+  const D = 86400000, SW = C.eventWindow(si, 5 * D); assert.ok(SW.end > 1e15);
+  const s1 = C.decideEventClaim(null, si, 0, 0, SW, 5 * D + 100); assert.strictEqual(s1.claimed.d, 5); assert.strictEqual(s1.items.gems, 500);
+  assert.throws(() => C.decideEventClaim(s1.claimed, si, 1, 0, SW, 5 * D + 200), /tomorrow/);
+  assert.throws(() => C.decideEventClaim(s1.claimed, si, 2, 0, SW, 9 * D), /in order/);
+  const s2 = C.decideEventClaim(s1.claimed, si, 1, 0, SW, 400 * D); assert.deepStrictEqual(s2.claimed.c, [0, 1]); /* a year later still fine */
+  assert.strictEqual(C.signinProgress(s2.claimed, SW, 400 * D + 5), 2); assert.strictEqual(C.signinProgress(s2.claimed, SW, 401 * D), 3);
+  assert.ok(C.decideEventClaim(s2.claimed, si, 1, 0, SW, 401 * D).dup);
+  assert.ok(C.ITEMS.hero_roran && C.ITEMS.hero_roran.path === "heroes.roran.unlock");
   const daily = C.normalizePack({ name: "Daily", items: { gems: 10 }, tier: 1, limit: 1, reset: "daily" }); assert.strictEqual(daily.reset, "daily");
   assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, reset: "weekly" }).reset, "none", "no limit = no reset");
   assert.throws(() => C.normalizePack({ name: "x", items: { gems: 1 }, limit: 1, reset: "hourly" }), /reset/);

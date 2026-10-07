@@ -313,7 +313,7 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
     const patchEvents = Object.assign({}, evs); patchEvents[ev.id] = r.claimed;
     const patch = { events: patchEvents }, gems = Math.trunc(r.items.gems || 0), others = {}; Object.keys(r.items).forEach((k) => { if (k !== "gems") others[k] = r.items[k]; });
     let g = wd.gems || 0; if (gems > 0) { g += gems; patch.gems = g; ledger(tx, R, uid, "gems", gems, g, "event_reward", ev.id + "#" + idx); }
-    if (Object.keys(others).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🎉 " + ev.name + " reward", "Milestone reached: " + ev.milestones[idx].target.toLocaleString() + "!", others, "events", Date.now(), "system"));
+    if (Object.keys(others).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🎉 " + ev.name + " reward", ev.goal === "signin" ? "Day " + (idx + 1) + " reward!" : "Milestone reached: " + ev.milestones[idx].target.toLocaleString() + "!", others, "events", Date.now(), "system"));
     tx.set(walletRef(R, uid), patch, { merge: true });
     return { dup: false, events: patchEvents, gems: g, items: r.items, progress };
   });

@@ -230,7 +230,7 @@ function decideTopupClaim(topup, ladder, idx, now) {
   return { dup: false, topup: t, items: m.items };
 }
 // ---- v946: events (e.g. Burst of Life: reach a total power, claim a reward at each milestone; the last one is the grand prize) ----
-const EVENT_GOALS = ["power", "townhall", "conquest"];
+const EVENT_GOALS = ["power", "townhall", "conquest", "signin"]; /* v947: signin = daily sign-in (milestone target = day number) */
 function normalizeEvents(list) {
   list = Array.isArray(list) ? list : []; if (list.length > 20) throw new GameError("invalid-argument", "max 20 events");
   const seen = {};
@@ -239,11 +239,13 @@ function normalizeEvents(list) {
     let id = packIdFrom(ev.id || name); while (seen[id]) id += "_2"; seen[id] = 1;
     const goal = String(ev.goal || "power"); if (EVENT_GOALS.indexOf(goal) < 0) throw new GameError("invalid-argument", "bad event goal");
     const sc = ev.schedule || {}, type = sc.type === "dates" ? "dates" : "newplayer", schedule = { type };
-    if (type === "newplayer") { const days = +sc.days; if (!(days > 0 && days <= 365)) throw new GameError("invalid-argument", "new-player event needs 1-365 days (" + name + ")"); schedule.days = days; }
+    if (type === "newplayer" && goal === "signin") schedule.days = 0; /* v947: no time limit - it stays until every day is claimed */
+    else if (type === "newplayer") { const days = +sc.days; if (!(days > 0 && days <= 365)) throw new GameError("invalid-argument", "new-player event needs 1-365 days (" + name + ")"); schedule.days = days; }
     else { const st = Math.trunc(+sc.start || 0), en = Math.trunc(+sc.end || 0); if (!(st > 0 && en > st)) throw new GameError("invalid-argument", "dated event needs a start and an end (" + name + ")"); schedule.start = st; schedule.end = en; }
     let banner = null; if (ev.banner) { banner = String(ev.banner); if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(banner) || banner.length > 700000) throw new GameError("invalid-argument", "bad banner picture (" + name + ")"); }
     const ms = Array.isArray(ev.milestones) ? ev.milestones : []; if (!ms.length || ms.length > 30) throw new GameError("invalid-argument", "1-30 milestones (" + name + ")");
-    const milestones = ms.map((m) => { const target = Math.trunc(+(m && m.target) || 0); if (!(target > 0 && target <= 1e12)) throw new GameError("invalid-argument", "milestone target must be more than 0 (" + name + ")");
+    if (goal === "signin" && ms.length > 30) throw new GameError("invalid-argument", "max 30 days (" + name + ")");
+    const milestones = ms.map((m, mi) => { const target = goal === "signin" ? mi + 1 : Math.trunc(+(m && m.target) || 0); if (!(target > 0 && target <= 1e12)) throw new GameError("invalid-argument", "milestone target must be more than 0 (" + name + ")");
       const list2 = normalizeItems(m.items), items = {}, labels = {}; list2.forEach((x) => { items[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
       return { target, worth: Math.max(0, Math.trunc(+m.worth || 0)), items, labels }; }).sort((a, b) => a.target - b.target);
     return { id, name, icon: Array.from(String(ev.icon || "🎉").trim()).slice(0, 4).join("") || "🎉", tag: String(ev.tag || "").trim().slice(0, 20), desc: String(ev.desc || "").trim().slice(0, 200),
@@ -253,7 +255,7 @@ function normalizeEvents(list) {
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {
   if (!ev || ev.active === false) return null;
-  if (ev.schedule.type === "newplayer") { const c = +createdAt || 0; return c ? { start: c, end: c + ev.schedule.days * 86400000 } : null; }
+  if (ev.schedule.type === "newplayer") { const c = +createdAt || 0; return c ? { start: c, end: ev.schedule.days ? c + ev.schedule.days * 86400000 : 8.64e15 } : null; }
   return { start: ev.schedule.start, end: ev.schedule.end };
 }
 /* the player's progress on the goal, from their saved game */
@@ -264,7 +266,22 @@ function eventProgress(goal, save) {
   if (goal === "conquest") { const i = save.idle || {}; return Math.max(0, globalLevel(+i.chapter || 1, +i.levelNum || 1) - 1); } /* levels cleared */
   return 0;
 }
+/* v947: daily sign-in. One day can be claimed per calendar day (UTC, like the daily reset), in order. Missing days just pauses it. */
+function utcDay(t) { return Math.floor(t / 86400000); }
+function signinProgress(rec, win, now) { /* days unlocked = days claimed + 1 if today's claim is still free */
+  const c = (rec && win && rec.k === win.start) ? (rec.c || []) : [], last = rec && win && rec.k === win.start ? rec.d : null;
+  return c.length + ((last == null || utcDay(now) > last) ? 1 : 0);
+}
 function decideEventClaim(claimed, ev, idx, progress, win, now) {
+  if (ev && ev.goal === "signin") {
+    if (!win || now < win.start || now >= win.end) throw new GameError("failed-precondition", "this event isn't running for you");
+    if (!ev.milestones[idx]) throw new GameError("not-found", "no such milestone");
+    const c = (claimed && claimed.k === win.start) ? (claimed.c || []) : [];
+    if (c.indexOf(idx) >= 0) return { dup: true };
+    if (idx !== c.length) throw new GameError("failed-precondition", "claim the days in order", { next: c.length });
+    if (signinProgress(claimed, win, now) <= c.length) throw new GameError("failed-precondition", "not reached yet - come back tomorrow", { next: (utcDay(now) + 1) * 86400000 });
+    return { dup: false, claimed: { k: win.start, c: c.concat([idx]), d: utcDay(now) }, items: ev.milestones[idx].items };
+  }
   if (!ev) throw new GameError("not-found", "no such event");
   if (!win || now < win.start || now >= win.end) throw new GameError("failed-precondition", "this event isn't running for you");
   const m = ev.milestones[idx]; if (!m) throw new GameError("not-found", "no such milestone");
@@ -377,4 +394,4 @@ function checkSave(before, after, dtSec, allow) {
 }
 
 module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

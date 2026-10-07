@@ -10308,7 +10308,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v946"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v947"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14454,6 +14454,9 @@ function ksAddAtPath(path, qty) {
 function ksMailApply(id, items) {
   var st = game.state; st.mailApplied = st.mailApplied || {}; if (st.mailApplied[id]) return false;
   (items || []).forEach(function (x) { if (x.kind === "save" && x.path) ksAddAtPath(x.path, x.qty); });
+  (items || []).forEach(function (x) { var hm = /^heroes\.([a-z0-9_]+)\.unlock$/.exec(x.path || ""), h = hm && st.heroes && st.heroes[hm[1]]; if (!hm) return; if (h) { delete h.unlock; /* v947: a free hero. Already have them? Their shards instead */
+    if (!h.owned) { h.owned = true; h.level = Math.max(1, h.level | 0); if (HERO_DEFS[hm[1]] && HERO_DEFS[hm[1]].class !== "governor") h.skillLevels = h.skillLevels || { conquest: [1, 1, 1], expedition: [1, 1, 1] }; game.log("🦸 New hero: " + (HERO_DEFS[hm[1]] || {}).name + "!"); }
+    else { h.fragments = (h.fragments | 0) + 30 * (x.qty | 0); game.log("🦸 Already had " + (HERO_DEFS[hm[1]] || {}).name + " - got " + 30 * (x.qty | 0) + " shards instead."); } } });
   (items || []).forEach(function (x) { if (x.path === "skins.city_titan") { game.state.skins.city_titan = 1; setTimeout(function () { try { setMapCitySkin("titan"); } catch (e) {} }, 0); } }); /* v946: an earned skin is put on straight away */
   st.mailApplied[id] = Date.now(); persist(); if (cloudSyncReady) cloudSyncNow(true); /* saved straight away */
   try { render(); } catch (e) {} return true;
@@ -14495,16 +14498,32 @@ var KSE_CSS = ".kse .ecard{border:1px dashed #33445e;border-radius:10px;backgrou
   + ".kse .ebar{position:relative;margin:10px;height:20px;border:1px dashed #5d6f93;border-radius:10px;background:#0f1520;overflow:hidden}.kse .ebar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#c9a24a,#f0c95f)}.kse .ebar b{position:absolute;inset:0;text-align:center;font-size:12px;line-height:18px;color:#fff;text-shadow:0 1px 2px #000}"
   + ".kse .erow{margin:0 10px 10px;border:1px dashed #33445e;border-radius:8px;background:#0f1520}.kse .erow.grand{border-color:#c9a24a;background:#1d1a10}.kse .ehead{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-bottom:1px dotted #33445e;font-size:13px;font-weight:700}.kse .ehead .w{color:#f0c95f;white-space:nowrap}"
   + ".kse .ebody{display:flex;align-items:center;gap:8px;padding:8px 10px}.kse .eitems{display:flex;flex-wrap:wrap;gap:4px;flex:1}.kse .eit{border:1px dashed #5d6f93;border-radius:6px;padding:2px 7px;font-size:12px;background:#161f2e}"
-  + ".kse .ebtn{border:0;border-radius:8px;padding:8px 14px;font-weight:800;font-size:14px;cursor:pointer;background:#2bb3d9;color:#06131c;white-space:nowrap}.kse .ebtn.go{background:#1f6fae;color:#fff}.kse .edone{color:#7fd07f;font-size:24px;font-weight:800;padding:0 8px}.kse .elock{color:#5d6f93;font-size:12px;white-space:nowrap}";
+  + ".kse .ebtn{border:0;border-radius:8px;padding:8px 14px;font-weight:800;font-size:14px;cursor:pointer;background:#2bb3d9;color:#06131c;white-space:nowrap}.kse .ebtn.go{background:#1f6fae;color:#fff}.kse .edone{color:#7fd07f;font-size:24px;font-weight:800;padding:0 8px}.kse .elock{color:#5d6f93;font-size:12px;white-space:nowrap}"
+  + ".kse .esnext{margin:10px 10px 0;text-align:center;font-size:13px;font-weight:700;color:#f0c95f}.kse .esg{display:grid;grid-template-columns:repeat(3,1fr) 1.15fr;gap:6px;margin:10px}"
+  + ".kse .esd{position:relative;display:flex;flex-direction:column;border:1px dashed #33445e;border-radius:8px;background:#0f1520;overflow:hidden;min-height:96px;font:inherit;color:inherit;padding:0;text-align:center}.kse .esd.grand{border-color:#c9a24a;background:#1d1a10}"
+  + ".kse .esd .si{flex:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px 6px;padding:6px 4px 2px}.kse .esd .sx{display:flex;flex-direction:column;align-items:center;font-size:11px;font-weight:700;line-height:1.2}.kse .esd .sx i{font-style:normal;font-size:26px;line-height:1.1}.kse .esd.grand .sx i{font-size:34px}"
+  + ".kse .esd .sd{border-top:1px dotted #33445e;padding:3px 0;font-size:12px;font-weight:800;color:#a9b4c8}.kse .esd.now{border:2px solid #f0c95f;cursor:pointer;box-shadow:0 0 10px rgba(240,201,95,.45)}.kse .esd.now .sd{background:#2bb3d9;color:#06131c}"
+  + ".kse .esd.got .si{opacity:.35}.kse .esd .sok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7fd07f;font-size:34px;font-weight:800;text-shadow:0 1px 3px #000}";
 function ksEvNum(n) { n = +n || 0; return n >= 1e6 ? (n / 1e6).toLocaleString(undefined, { maximumFractionDigits: 2 }) + "M" : n >= 1e4 ? (n / 1e3).toLocaleString(undefined, { maximumFractionDigits: 1 }) + "K" : n.toLocaleString(); }
 function ksEvLeft(ms) { ms = Math.max(0, ms); var d = Math.floor(ms / 86400e3), h = Math.floor(ms / 3600e3) % 24, m = Math.floor(ms / 60e3) % 60, sec = Math.floor(ms / 1000) % 60, z = function (x) { return (x < 10 ? "0" : "") + x; }; return (d ? d + "d " : "") + z(h) + ":" + z(m) + ":" + z(sec); }
-function ksEvGoalText(goal, target) { return goal === "townhall" ? "Town Hall level " + target : goal === "conquest" ? "Clear Conquest level " + target : "Reach Total Power: " + (+target).toLocaleString(); }
+function ksEvGoalText(goal, target) { return goal === "signin" ? "Day " + target : goal === "townhall" ? "Town Hall level " + target : goal === "conquest" ? "Clear Conquest level " + target : "Reach Total Power: " + (+target).toLocaleString(); }
 /* ev = event, prog = player's progress, claimed = [milestone indexes claimed], end = when it ends (ms), now */
 function ksEvCardHtml(ev, prog, claimed, end, now, esc) {
   claimed = claimed || []; var ms = ev.milestones || [], last = ms.length - 1, top = last >= 0 ? ms[last].target : 1, ban = typeof ev.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(ev.banner);
+  if (end && end - now > 3650 * 86400e3) end = 0; /* v947: no time limit - no countdown */
   var head = '<div class="etitle">' + esc(ev.name) + '</div>' + (end ? '<div class="etime">⏱ ' + esc(ksEvLeft(end - now)) + "</div>" : "") + (ev.tag ? '<div class="etag">' + esc(ev.tag) + "</div>" : "") + (ev.desc ? '<div class="edesc">' + esc(ev.desc) + "</div>" : "");
   function items(m) { var lab = m.labels || {}; return Object.keys(m.items || {}).map(function (k) { return '<span class="eit">' + esc((lab[k] || k) + " × " + ksEvNum(m.items[k])) + "</span>"; }).join(""); }
   function btn(i, grand) { var m = ms[i]; if (claimed.indexOf(i) >= 0) return '<span class="edone">✓</span>'; if (prog >= m.target) return '<button type="button" class="ebtn" data-evc="' + esc(ev.id) + '" data-evi="' + i + '">Claim</button>'; return grand ? '<button type="button" class="ebtn go" data-evgo="' + esc(ev.goal) + '">Go</button>' : '<span class="elock">🔒 ' + esc(ksEvNum(m.target)) + "</span>"; }
+  if (ev.goal === "signin") { /* v947: daily sign-in - a grid of days, the last one big on the right (like Kingshot's 7-day sign-in) */
+    var rowsN = Math.max(1, Math.ceil(last / 3)), nextAt = (Math.floor(now / 86400e3) + 1) * 86400e3, done = claimed.length >= ms.length, today = !done && prog > claimed.length;
+    var tile = function (m, i) { var got = claimed.indexOf(i) >= 0, cur = !got && today && i === claimed.length, lab = m.labels || {};
+      var its = Object.keys(m.items || {}).map(function (k) { var l = String(lab[k] || k), sp = l.indexOf(" "), ic = sp > 0 && sp <= 4 ? l.slice(0, sp) : "🎁"; return '<span class="sx" title="' + esc(l) + '"><i>' + esc(ic) + "</i>×" + esc(ksEvNum(m.items[k])) + "</span>"; }).join("");
+      return (cur ? '<button type="button"' : "<div") + ' class="esd' + (i === last ? " grand" : "") + (got ? " got" : "") + (cur ? " now" : "") + '"' + (cur ? ' data-evc="' + esc(ev.id) + '" data-evi="' + i + '"' : "")
+        + (i === last && last > 0 ? ' style="grid-column:4;grid-row:1 / span ' + rowsN + '"' : "") + '><div class="si">' + its + '</div><div class="sd">' + (cur ? "Claim" : "Day " + (i + 1)) + "</div>" + (got ? '<span class="sok">✓</span>' : "") + (cur ? "</button>" : "</div>"); };
+    return '<div class="ecard">' + (ban ? '<div class="eban" style="background-image:url(' + ev.banner + ')">' + head + "</div>" : '<div class="enoban">' + head + "</div>")
+      + '<div class="esnext">' + (done ? "All rewards claimed - thanks for playing!" : today ? "Day " + (claimed.length + 1) + " reward is ready - tap it!" : "Next reward in " + esc(ksEvLeft(nextAt - now))) + "</div>"
+      + '<div class="esg">' + ms.map(tile).join("") + "</div></div>";
+  }
   var rows = ms.map(function (m, i) { return { m: m, i: i }; }).filter(function (x) { return x.i !== last; }).map(function (x) {
     return '<div class="erow"><div class="ehead"><span>' + esc(ksEvGoalText(ev.goal, x.m.target)) + "</span>" + (x.m.worth ? '<span class="w">Worth ' + esc(ksEvNum(x.m.worth)) + " Gems</span>" : "") + '</div><div class="ebody"><div class="eitems">' + items(x.m) + "</div>" + btn(x.i) + "</div></div>"; }).join("");
   return '<div class="ecard">' + (ban ? '<div class="eban" style="background-image:url(' + ev.banner + ')">' + head + "</div>" : '<div class="enoban">' + head + "</div>")
@@ -14624,7 +14643,11 @@ function ksShopRender() {
 /* ---- v946: Events screen (More > 🎉 Events) ---- */
 var KSE = { list: null, sub: false, tab: null, busy: {}, timer: null, created: null };
 function ksEvCreatedAt() { return KSE.created || game.state.startedAt || null; }
-function ksEvLive() { var now = Date.now(), c = ksEvCreatedAt(); return (KSE.list || []).filter(function (ev) { if (ev.active === false) return false; var st = ev.schedule.type === "newplayer" ? c : ev.schedule.start, en = ev.schedule.type === "newplayer" ? (c ? c + ev.schedule.days * 86400e3 : 0) : ev.schedule.end; ev._end = en; ev._start = st; return st && now >= st && now < en; }); }
+function ksEvLive() { var now = Date.now(), c = ksEvCreatedAt(); return (KSE.list || []).filter(function (ev) { if (ev.active === false) return false; var st = ev.schedule.type === "newplayer" ? c : ev.schedule.start, en = ev.schedule.type === "newplayer" ? (c ? (ev.schedule.days ? c + ev.schedule.days * 86400e3 : 8.64e15) : 0) : ev.schedule.end; ev._end = en; ev._start = st;
+  if (ev.goal === "signin" && ksEvClaimed(ev).length >= (ev.milestones || []).length) return false; /* v947: finished sign-in events disappear */
+  return st && now >= st && now < en; }); }
+function ksEvClaimed(ev) { var W = (typeof KSW !== "undefined" && KSW.events) || {}, r = W[ev.id]; return r && r.k === ev._start ? r.c || [] : []; }
+function ksEvSigninProg(ev, now) { var W = (typeof KSW !== "undefined" && KSW.events) || {}, r = W[ev.id], ok = r && r.k === ev._start, c = ok ? r.c || [] : []; return c.length + ((!ok || r.d == null || Math.floor(now / 86400e3) > r.d) ? 1 : 0); } /* same rule as the server */
 function ksEvProgress(goal) { try { if (goal === "townhall") return game.state.buildings.townhall.level; if (goal === "conquest") return Math.max(0, (game.state.idle.chapter - 1) * 20 + game.state.idle.levelNum - 1); return game.governorPower(); } catch (e) { return 0; } }
 function ksEvSubscribe() {
   if (KSE.sub || !window.claude || typeof window.claude.use !== "function") return; KSE.sub = true;
@@ -14657,8 +14680,8 @@ function ksEvRender() {
   document.getElementById("ksEvTabs").innerHTML = live.length > 1 ? live.map(function (e) { return '<button type="button" class="etab' + (e.id === KSE.tab ? " on" : "") + '" data-evtab="' + escapeHtml(e.id) + '">' + escapeHtml((e.icon ? e.icon + " " : "") + e.name) + "</button>"; }).join("") : "";
   var ev = live.filter(function (e) { return e.id === KSE.tab; })[0], el = document.getElementById("ksEvList");
   if (!ev) { el.innerHTML = '<div class="eempty">' + (KSE.list ? "No events running right now. Check back soon!" : "Loading events…") + "</div>"; return; }
-  var W = (typeof KSW !== "undefined" && KSW.events) || {}, c = W[ev.id] && W[ev.id].k === ev._start ? W[ev.id].c || [] : [];
-  var keep = el.scrollTop; el.innerHTML = ksEvCardHtml(ev, ksEvProgress(ev.goal), c, ev._end, now, escapeHtml); el.scrollTop = keep;
+  var c = ksEvClaimed(ev);
+  var keep = el.scrollTop; el.innerHTML = ksEvCardHtml(ev, ev.goal === "signin" ? ksEvSigninProg(ev, now) : ksEvProgress(ev.goal), c, ev._end, now, escapeHtml); el.scrollTop = keep;
   [].forEach.call(el.querySelectorAll("[data-evc]"), function (b) { if (KSE.busy[b.getAttribute("data-evc") + "#" + b.getAttribute("data-evi")]) { b.disabled = true; b.textContent = "…"; } });
 }
 function ksEvNote(t) { var n = document.getElementById("ksEvNote"); if (n) { n.textContent = t; clearTimeout(KSE.nt); KSE.nt = setTimeout(function () { n.textContent = ""; }, 4000); } }
@@ -14669,7 +14692,7 @@ function ksEvClaim(id, i) {
     KS_BACKEND.call("claimEvent", { event: id, idx: i }).then(function (r) {
       if (r && r.events) KSW.events = r.events; if (r && typeof r.gems === "number") { KSW.gems = r.gems; game.state.gems = r.gems; } try { render(); } catch (e) {}
       if (!r.dup) ksEvNote("🎉 Claimed!" + (Object.keys(r.items || {}).some(function (k) { return k !== "gems"; }) ? " Items are in your mail." : ""));
-    }, function (e) { ksEvNote(/not reached/.test(String(e && e.message)) ? "Not quite yet - your saved progress hasn't reached it. Try again in a moment." : ksErrText(e)); })
+    }, function (e) { ksEvNote(/come back tomorrow/.test(String(e && e.message)) ? "Already claimed today - come back tomorrow!" : /not reached/.test(String(e && e.message)) ? "Not quite yet - your saved progress hasn't reached it. Try again in a moment." : ksErrText(e)); })
       .then(function () { delete KSE.busy[key]; ksEvRender(); });
   }, 1500);
 }
