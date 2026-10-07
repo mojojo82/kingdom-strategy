@@ -466,3 +466,8 @@
   - Admin: goal "Daily sign-in", "+ 7-Day Sign-in (template)": 500 gems / Roran / 10 weapon tickets / 15 Roran shards / 20 conquest books /
     2,000 valor + 3x 1h speedups / day 7 = 30 Roran shards + 1,000 gems (placeholder - Kingshot's day 7 is Jabel's exclusive weapon).
   - Card: grid of day tiles, big last day on the right (shared KSE block, admin copy identical). Tests: core.test.js, g196_signin.
+- v948: Event + Deals shortcuts on the World map (Harley: "special events and deals need to be highly visible, not hidden in More").
+  - #ksEvDock: one button per running event (sign-in = a little calendar with "7" on it, others use their own icon), then 🛒 Deals.
+    Red dot + gold pulse when a reward is ready to claim. Tap = Events opens on that event's tab / the shop opens.
+  - Phones: right side under the TEST chip (mail + recon stay bottom right). PC: left side of the map. World screen only.
+  - Test: g197_event_dock (phone 430 + PC 1280: shows, no overlap, dot clears after claiming, taps open the right thing).
