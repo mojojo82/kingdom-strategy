@@ -17864,7 +17864,7 @@ function stepIdleAnim(dtSec, w, h) {
       if (inReach) vis.atkStart = performance.now();
     })();
     if (re.heroHitKey && !IDLE_ENEMY_TYPE_MELEE[re.type] && idleAnim.heroVis[re.heroHitKey]) { // ranged hit aimed at a grounded hero: the arrow flies to him
-      if (idleAnim.pendingProjectileLaunches.length < IDLE_PROJECTILE_QUEUE_CAP) idleAnim.pendingProjectileLaunches.push({ id: re.id, isLancer: re.type === "lancer", isBoss: false, dmg: hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)), heroKey: re.heroHitKey });
+      if (idleAnim.pendingProjectileLaunches.length < IDLE_PROJECTILE_QUEUE_CAP) idleAnim.pendingProjectileLaunches.push({ id: re.id, isLancer: re.type === "lancer", isBoss: re.type === "boss", dmg: hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)), heroKey: re.heroHitKey });
       return;
     }
     if (re.heroHitKey) { // v527: this hit landed on a grounded hero, not the fortress — show it on him (no arrow to the fortress, no fortress HP accounting)
@@ -17872,24 +17872,7 @@ function stepIdleAnim(dtSec, w, h) {
       if (hv) { spawnDamageNumber(hv.x, hv.y - 34 * (heroSpriteVisualScale / 100), hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)), false, true); vis.hitSpark = null; }
       return;
     }
-    if (re.type === "boss") {
-      var meleeHero = findMeleeHeroNear(vis.x);
-      if (meleeHero) {
-        // Bosses are always solo (one per level) so there's no clustering
-        // possible here — no need to queue this branch, it can fire as soon
-        // as it lands, same as before.
-        idleAnim.bossMeleeFlash = 1;
-        idleAnim.bossMeleeFlashX = (vis.x + meleeHero.x) / 2;
-        idleAnim.bossMeleeFlashY = meleeHero.y;
-        idleAnim.particles.push({ x: meleeHero.x, y: meleeHero.y - 10, text: "💥", life: 0.35, maxLife: 0.35, big: true });
-        idleAnim.squadHitFlash = 1;
-        spawnDamageNumber(w * 0.16, getFortressTopY(h) - 24, hitDmg, false, true);
-        idleAnim.playerHpLossAccounted += hitDmg;
-        idleAnim.displayedPlayerHp = Math.max(0, idleAnim.displayedPlayerHp - hitDmg);
-        if (!playedMeleeSound) { sfxBossMelee(); playedMeleeSound = true; }
-        return;
-      }
-    }
+    /* v916: the boss ALWAYS shoots its green orb. It used to swap the orb for a ⚔️/💥 "swing" whenever a melee hero stood within 30px, which at chapter 1 is nearly every hit (Gareth walks up to it), so the HP dropped with no projectile on screen (repro: 1 orb to 7 swings in 30s). */
     // Track by id, not a snapshotted x — a large horde's hit-arrival rate
     // can exceed the drain throttle's rate below, so an item can sit queued
     // for a while; looking up the enemy's LIVE position at drain time (and
@@ -17942,7 +17925,7 @@ function stepIdleAnim(dtSec, w, h) {
         // Boss fires a glowing green orb from its hand (offsets are fractions of the boss sprite size; tune here).
         var BOSS_HAND_DX = -0.30, BOSS_HAND_DY = 0.58;
         var bSize = 58 * bossSpriteScale, bFeetY = groundYFor(h) + 15;
-        spawnEnemyProjectile(launchVis.x + bSize * BOSS_HAND_DX, bFeetY - bSize * BOSS_HAND_DY, w, h, false, launch.dmg, true);
+        spawnEnemyProjectile(launchVis.x + bSize * BOSS_HAND_DX, bFeetY - bSize * BOSS_HAND_DY, w, h, false, launch.dmg, true, launch.heroKey); /* v916: a boss shot aimed at a hero is the orb too */
       } else {
         spawnEnemyProjectile(launchVis.x, groundYFor(h) - 16, w, h, launch.isLancer, launch.dmg, false, launch.heroKey);
       }
@@ -24100,6 +24083,17 @@ function musicStart() {
 }
 // starts on the first tap (browsers only allow audio after a user gesture)
 ["pointerdown", "touchend", "keydown"].forEach(function (ev) { document.addEventListener(ev, function () { musicStart(); }, { capture: true, passive: true }); });
+/* v916: when the page is hidden (tab closed/swiped away on a phone, which only hides it, or another app on top) the music and sound effects stop; coming back resumes them (sfxEnsureRunning on visible, above; the streamed fallback <audio> is restarted here) */
+document.addEventListener("visibilitychange", function () {
+  try {
+    if (document.hidden) {
+      if (sfxCtx && sfxCtx.state === "running") { sfxCtx.suspend(); }
+      if (music.el && !music.el.paused) { music.el.pause(); music.pausedHidden = true; }
+    } else if (music.pausedHidden) {
+      music.pausedHidden = false; if (music.el && musicVol > 0) { var pr = music.el.play(); if (pr && pr.catch) pr.catch(function () {}); }
+    }
+  } catch (e) {}
+});
 function musicStatusText() { var c = sfxCtx; return (music.status || "waiting for a tap") + " · audio " + (c ? c.state : "off") + (music.cur && c ? " · playing " + Math.round(c.currentTime - music.cur.at) + "s" : "") + (music.el ? (music.el.paused ? " · paused" : " · playing") : ""); }
 setInterval(function () { var e = document.getElementById("opMusicSt"); if (e && e.offsetParent) e.textContent = "Music status: " + musicStatusText(); }, 1000);
 function renderOptionsScreen() {

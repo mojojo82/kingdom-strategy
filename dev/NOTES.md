@@ -213,3 +213,8 @@
 - Parchment loads Cinzel + EB Garamond from Google Fonts (one extra `<link>`); Game UI uses Chakra Petch as before.
 - Round red badges/seals stay red (the live game's mail badge was already red). Harley tried yellow in the mockups and went back to red.
 - Tests: simfork/g171_mailskins.js (both looks, list/open/back, Save, Claim all incl. wallet gems, claimed state, look survives reload, Esc, desktop + phone screenshots); g170 still passes; CI e2e selectors (`#mailList .mi.new [data-claim]`) still match. Not tested on a real phone.
+
+## v916 (TEST game only): boss always shoots its orb; audio stops while the page is hidden
+- **Boss projectile:** the chapter-1 boss showed HP loss with no shot because `findMeleeHeroNear` (a melee hero within 30px of the boss, which is nearly always true at chapter 1: Gareth walks up to it) swapped the orb for a ⚔️/💥 swing. Repro (headless, 30s, fresh player): 8 hits -> 1 orb, 7 swings. That branch is removed; hero-aimed boss shots are orbs too. After: 8 orbs, 0 swings. (`findMeleeHeroNear` and `bossMeleeFlash` drawing code are now unused, left in place.)
+- **Music kept playing after closing the game on a phone:** closing the link there only HIDES the page. A `visibilitychange` handler now suspends the audio context (music + sfx) when hidden and pauses the streamed fallback `<audio>`; coming back resumes (existing `sfxEnsureRunning` + the fallback play). Headless check only (context running -> suspended -> running); NOT tested on a real phone.
+- Test: simfork/g172_bosshidden.js. g171 still passes.
