@@ -339,3 +339,8 @@
   tile (no transform / will-change — the v926 composited layer moved ~50,000 px per frame is what iPhone didn't show), covering the view + 25% each
   side, moved only when the view nears its edge, so it scrolls natively with the islands. dpr capped 1.5. Sea colour is the map's own gradient
   again (no see-through window); sea pixels identical to v925. Still to confirm on the iPhone: visible + smooth.
+- v926d: v926c still showed nothing / jittered on iPhone. Canvas dropped entirely. Foam is now ~up to 60 small DOM streaks (SVG data-URI
+  backgrounds) in #mapSeaFoam, first child of #mapworld, placed with left/top in map pixels so they scroll natively with the islands; each fades
+  in, drifts a few px and fades out via a CSS keyframe (GPU-animated by the phone). JS only recycles finished/off-view streaks every 500ms (≤12
+  per tick, ~0.04 ms), only on the World screen with the page visible. Streaks only go where the tile and all 8 neighbours are sea. Sea colour
+  unchanged. FPS badge shows "v926d · 🌊 N" on World as a version/diagnostic check (remove once Harley confirms). Test g185 rewritten.
