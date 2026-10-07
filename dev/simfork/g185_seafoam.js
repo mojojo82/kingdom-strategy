@@ -37,14 +37,16 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     /* cost of one foam frame */
     const vp2 = vp; let tot = 0; for (let i = 0; i < 60; i++) { seaFoam.last = 0; const a = performance.now(); seaFoamFrame(performance.now() + i * 40); tot += performance.now() - a; } out.msPerFrame = Math.round(tot / 60 * 100) / 100; seaFoam.last = 0;
     /* drag the map: foam keeps its map position (canvas follows the view) */
-    const f0 = seaFoam.list[0], fx = f0 && f0.x; vp.scrollLeft += 120; await new Promise((r) => setTimeout(r, 200)); out.dragKeepsFoam = !f0 || Math.abs(f0.x - fx) < 3; out.layerOutsideMap = !document.getElementById("mapworld").contains(seaFoam.cv) && seaFoam.cv.parentNode === vp.parentNode;
-    out.layerBg = getComputedStyle(seaFoam.cv).backgroundImage.slice(0, 60); out.windowBg = getComputedStyle(vp).backgroundColor + " " + getComputedStyle(vp).backgroundImage.slice(0, 20);
+    const f0 = seaFoam.list[0], fx = f0 && f0.x, left0 = seaFoam.cv.style.left; vp.scrollLeft += 60; vp.scrollTop += 60; await new Promise((r) => setTimeout(r, 200));
+    out.dragKeepsFoam = !f0 || Math.abs(f0.x - fx) < 3; out.canvasStillDuringSmallDrag = seaFoam.cv.style.left === left0; /* it scrolls natively with the map, not redrawn into place */
+    out.insideMap = document.getElementById("mapworld").firstChild === seaFoam.cv && !seaFoam.cv.style.transform && getComputedStyle(seaFoam.cv).willChange === "auto";
+    out.windowBg = getComputedStyle(vp).backgroundImage.slice(0, 60);
     /* off the World map it stops */
     setScreen("conquest"); await new Promise((r) => setTimeout(r, 300)); const lastA = seaFoam.last; await new Promise((r) => setTimeout(r, 600)); out.stopsOffMap = seaFoam.last === lastA; setScreen("world");
     return out;
   }, hasFoam);
   await P.waitForTimeout(1500); await P.screenshot({ path: OUT + "seafoam_phone.png" });
   console.log(JSON.stringify(r)); console.log("errs", errs.slice(0, 3));
-  if (!process.env.NOASSERT) { assert.ok(r.maxN >= 10, "foam shows"); assert.strictEqual(r.onLand, 0, "never on land"); assert.ok(r.moves > 0, "drifts"); assert.ok(r.dragKeepsFoam, "stays on the water when dragging"); assert.ok(r.layerOutsideMap, "layer behind the map window, not inside the scrolling map"); assert.strictEqual(r.layerBg, "linear-gradient(rgb(47, 107, 147), rgb(53, 117, 155))", "same sea gradient as the map always had"); assert.ok(r.stopsOffMap, "stops off the map"); assert.ok(r.msPerFrame < 2, "cheap"); assert.deepStrictEqual(errs, []); console.log("ALL OK"); }
+  if (!process.env.NOASSERT) { assert.ok(r.maxN >= 10, "foam shows"); assert.strictEqual(r.onLand, 0, "never on land"); assert.ok(r.moves > 0, "drifts"); assert.ok(r.dragKeepsFoam, "stays on the water when dragging"); assert.ok(r.canvasStillDuringSmallDrag, "scrolls natively"); assert.ok(r.insideMap, "inside the map, no transform"); assert.strictEqual(r.windowBg, "linear-gradient(rgb(47, 107, 147), rgb(53, 117, 155))", "sea is the map's own gradient"); assert.ok(r.stopsOffMap, "stops off the map"); assert.ok(r.msPerFrame < 2, "cheap"); assert.deepStrictEqual(errs, []); console.log("ALL OK"); }
   await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

@@ -334,3 +334,8 @@
   never moves, carries the map's exact sea gradient, and draws the foam at (map position - scroll); the map window gets .sea-under (see-through)
   only once the layer exists. Scroll events trigger an immediate redraw so the foam keeps up while dragging. Sea pixels before/after: identical
   ((50,112,151) etc.). Still unverified on a real iPhone.
+- v926c: foam worked on iPhone but jittered while scrolling (v926b redrew it into place on scroll events; iPhone's native scrolling runs ahead of
+  the page's scroll values). Now the foam canvas is back INSIDE #mapworld (first child, under land/tiles), positioned with plain left/top like a
+  tile (no transform / will-change — the v926 composited layer moved ~50,000 px per frame is what iPhone didn't show), covering the view + 25% each
+  side, moved only when the view nears its edge, so it scrolls natively with the islands. dpr capped 1.5. Sea colour is the map's own gradient
+  again (no see-through window); sea pixels identical to v925. Still to confirm on the iPhone: visible + smooth.
