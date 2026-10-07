@@ -376,3 +376,7 @@
 - Harley's old owner settings (claude.ai artifact Mt8BNeiwSBBu83VaSbAGbW, db collection "assetitems", read with ArtifactData): 57 of 71
   match OWNER_DEFAULTS. Real differences: 3D march ships ON, Orbit Shield trail 12, ooze blobs ON, terrain painter ON (dev tool, left off).
 - v933: 3D march ships ON by default (march3dOn = stored !== "0"), Orbit Shield trail default 12 (ORBIT_SHIELD_DEFAULTS + OWNER_DEFAULTS).
+- v934: hero skills that fired while you were on another screen (World map etc.) no longer play when you come back to Conquest (Harley: Gareth's
+  charge went off on return instead of while away). The engine always fired on time; the visual layer diffed skillFireCounts against a stale
+  lastSkillFireCounts. startIdleAnim now syncs lastSkillFireCounts/lastSkillLandCounts and clears skillFlash. Test g187_skillaway (reproduced:
+  9 flash frames on return before, 0 after; a skill fired on screen still plays). g172-g175, g181 still pass.

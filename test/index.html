@@ -14916,7 +14916,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v933 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v934 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;
@@ -22356,6 +22356,9 @@ function startIdleAnim() {
   (game.state.conquestRoster).forEach(function (aid) { // no more "garrison" entry — see BASE_ATK's comment
     idleAnim.lastKnownAttackHitCounts[aid] = game.state.idle.attackHitCounts[aid] || 0;
   });
+  /* v934: skills that fired while you were on another screen already did their damage there - don't play them on return (Gareth's charge did) */
+  (game.state.conquestRoster).forEach(function (aid) { idleAnim.lastSkillFireCounts[aid] = game.state.idle.skillFireCounts[aid] || 0; idleAnim.lastSkillLandCounts[aid] = game.state.idle.skillLandCounts[aid] || 0; });
+  idleAnim.skillFlash = {};
   idleAnim.lastKnownPlayerHp = null;
   idleAnim.playerHpLossAccounted = 0;
   idleAnim.displayedPlayerHp = game.state.idle.playerHp == null ? game.idlePlayerMaxHp() : game.state.idle.playerHp;
