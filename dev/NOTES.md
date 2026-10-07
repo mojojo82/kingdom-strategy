@@ -471,3 +471,8 @@
     Red dot + gold pulse when a reward is ready to claim. Tap = Events opens on that event's tab / the shop opens.
   - Phones: right side under the TEST chip (mail + recon stay bottom right). PC: left side of the map. World screen only.
   - Test: g197_event_dock (phone 430 + PC 1280: shows, no overlap, dot clears after claiming, taps open the right thing).
+- v949: World chat empty on first open (Harley: blank until tapping Alliance then World).
+  - Cause: new messages are only drawn while the chat is on screen; opening chat (setScreen more/chat) never redrew it, so it kept the
+    "No messages yet" drawn at start-up. The bottom chat bar already had the messages (reproduced: preview 5 msgs, chat 0).
+  - Fix: opening chat redraws it right after the screen shows, starting at the newest message. Test: g198_chat_first_open (40 msgs, at bottom, live msg).
+  - Note: old tests g156_worldchat / g167_chatolder point at a removed /home/claude/tests/mockdb.js - already broken before this.
