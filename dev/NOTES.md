@@ -385,3 +385,7 @@
   then threw them away. Fix: setScreen("world") runs the layout at once (window.worldOverlayLayoutNow), and renderVisibleTiles never treats
   the view as bigger than the window. CPU x4, phone size: World first paint 3.2-3.6 s -> 0.18-0.23 s; tiles built 1,979 -> 80.
   Test g188_worldswitch (fails on v934, passes now). Map/conquest tests g176, g181, g183-g187 pass.
+- v936: Harley says the World freeze is still there (possibly still on v934). Bisected World-open time (CPU x4, phone size) by version:
+  v922 fast (~80 ms once warm), v923 slow (2.5-3 s; the "keep map spot" restore renders while the map box is still unsized), v926d 4.5 s,
+  v933 3.3-3.9 s, v935 0.15-0.27 s. Extra: sea foam streaks restart by swapping between twin keyframes (sfLife/sfLife2) instead of
+  animation:none + offsetWidth (one forced page layout per streak). g185 now picks a mid-view streak with life left for the scroll check (was flaky).

@@ -617,6 +617,7 @@
   #mapSeaFoam { position:absolute; left:0; top:0; width:0; height:0; pointer-events:none; z-index:0; }
   #mapSeaFoam .sf { position:absolute; height:6px; opacity:0; background-repeat:no-repeat; background-size:100% 100%; animation:sfLife var(--life,4s) linear forwards; }
   @keyframes sfLife { 0% { opacity:0; transform:translate(0,0) rotate(var(--rot,0deg)); } 25% { opacity:var(--op,.55); } 65% { opacity:var(--op,.55); } 100% { opacity:0; transform:translate(var(--dx,8px), var(--dy,2px)) rotate(var(--rot,0deg)); } }
+  @keyframes sfLife2 { 0% { opacity:0; transform:translate(0,0) rotate(var(--rot,0deg)); } 25% { opacity:var(--op,.55); } 65% { opacity:var(--op,.55); } 100% { opacity:0; transform:translate(var(--dx,8px), var(--dy,2px)) rotate(var(--rot,0deg)); } } /* v936: same as sfLife; switching name restarts a streak without forcing a page re-layout */
   @media (prefers-reduced-motion: reduce) { #mapSeaFoam .sf { animation:none; opacity:.45; transform:rotate(var(--rot,0deg)); } }
   #mapworld { contain:layout style; } /* v863: no scroll indicators on the map - iOS flashed them as thin dark lines while zooming */
   #mapviewport::-webkit-scrollbar { display:none; width:0; height:0; }
@@ -13822,7 +13823,7 @@ function seaFoamPlace(el, vp, scale) { /* (re)start one streak somewhere on open
     el.style.setProperty("--rot", (-7 + Math.random() * 14).toFixed(1) + "deg");
     el.style.setProperty("--life", life.toFixed(2) + "s"); el.style.setProperty("--dx", Math.round((6 + Math.random() * 6) * scale) + "px"); el.style.setProperty("--dy", Math.round((1 + Math.random() * 2) * scale) + "px");
     el.style.setProperty("--op", (0.4 + Math.random() * 0.25).toFixed(2));
-    el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; /* restart the fade/drift */
+    el.style.animationName = el.style.animationName === "sfLife2" ? "sfLife" : "sfLife2"; /* v936: restart the fade/drift by swapping to the twin keyframes - no forced layout (was 1 per streak) */
     el.dataset.x = X; el.dataset.y = Y; el.dataset.end = String(performance.now() + life * 1000);
     el.style.display = ""; return true;
   }
@@ -14917,7 +14918,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v935 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v936 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;

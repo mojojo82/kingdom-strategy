@@ -33,7 +33,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     out.onLand = onLand; out.maxLive = maxLive;
     const e0 = seaFoam.els.find((e) => e.style.display !== "none"); const tr1 = getComputedStyle(e0).transform; await new Promise((r) => setTimeout(r, 600)); out.drifts = getComputedStyle(e0).transform !== tr1;
     out.inside = document.getElementById("mapworld").firstChild === seaFoam.box;
-    const l0 = e0.style.left; vp.scrollLeft += 80; await new Promise((r) => setTimeout(r, 120)); out.scrollsNatively = e0.style.left === l0;
+    const e1 = seaFoam.els.filter((e) => e.style.display !== "none" && +e.dataset.end - performance.now() > 1500).sort((a, b) => Math.abs(+a.dataset.x - vp.scrollLeft - vp.clientWidth / 2) - Math.abs(+b.dataset.x - vp.scrollLeft - vp.clientWidth / 2))[0] || e0; /* a streak mid-view with life left, so the next tick can't recycle it */
+    const l0 = e1.style.left; vp.scrollLeft += 80; await new Promise((r) => setTimeout(r, 120)); out.scrollsNatively = e1.style.left === l0;
     let tot = 0; for (let i = 0; i < 40; i++) { const a = performance.now(); seaFoamTick(); tot += performance.now() - a; } out.msPerTick = Math.round(tot / 40 * 100) / 100;
     out.badge = document.getElementById("fpsCounter").textContent;
     setScreen("conquest"); const snap = seaFoam.els.map((e) => e.dataset.end).join(); await new Promise((r) => setTimeout(r, 1200)); out.idleOffMap = seaFoam.els.map((e) => e.dataset.end).join() === snap; setScreen("world");
