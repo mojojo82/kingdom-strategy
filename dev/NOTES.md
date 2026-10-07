@@ -368,3 +368,4 @@
   Follow-up: weapons DO use the ATK bonus (weaponDmgFor = BASE_ATK x (1 + ATK bonus%) x dmgPct; bonus = equipment ATK% + Dev Tools), railgun = % enemy
   max HP, drone = % of ranged hero power. Weapons max + Legendary equip: 5-15. Everything except heroes maxed (weapons, equip, buildings,
   research): 8-20 / 9-2 (~20-32h) - beats 5 heroes at Lv40 (8-5).
+- v931: Ooze hit blobs ON by default (oozeBlobsOn = stored value !== "0"; sync apply the same). Only an explicit Off turns them off.

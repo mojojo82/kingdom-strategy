@@ -3013,7 +3013,7 @@
                   <button class="dev-btn" id="devTerrainBtn">🖌️ Terrain painter: Off</button>
                   <button class="dev-btn" id="devBurnBtn">🔥 Test: hit my base (-1,000 HP)</button>
                   <button class="dev-btn" id="devMarch3dBtn">🚢 3D march ships: Off</button>
-                  <button class="dev-btn" id="devOozeBlobBtn">🫧 Ooze hit blobs: Off</button>
+                  <button class="dev-btn" id="devOozeBlobBtn">🫧 Ooze hit blobs: On</button>
                   <button class="dev-btn" id="devGarethChangerBtn">🎲 Gareth attack changer: Off</button>
                   <button class="dev-btn" id="devRunBlendBtn">🏃 Gareth run dissolve: Off</button>
                   <button class="dev-btn active" id="devPerfBgBtn">🖼️ Backgrounds: On</button>
@@ -4174,7 +4174,7 @@ function initDeviceLock(db) {
             var n = parseFloat(v); if (n > 0) { march3dSize = n; try { localStorage.setItem(MARCH3D_SIZE_KEY, v); var el = document.getElementById("devMarch3dSize"), lb = document.getElementById("devMarch3dSizeVal"); if (el) el.value = n; if (lb) lb.textContent = n + " tiles"; } catch (e) {} }
           } },
         { key: OOZE_BLOB_KEY, apply: function (v) {
-            oozeBlobsOn = v === "1";
+            oozeBlobsOn = v !== "0";
             try { localStorage.setItem(OOZE_BLOB_KEY, v); } catch (e) {}
             try { renderOozeBlobBtn(); } catch (e) {}
           } },
@@ -14915,7 +14915,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v930 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v931 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;
@@ -19136,8 +19136,8 @@ function spawnWeldSparks(x, y, dir, n, hue) {
   if (weldSparks.length > 400) weldSparks.splice(0, weldSparks.length - 400);
 }
 // v820 Dev Tools toggle: Gareth's hits on OOZE enemies throw shiny black blobs instead of sparks (nothing else is affected).
-var OOZE_BLOB_KEY = "kingdom_prototype_oozeblobs_v1", oozeBlobsOn = false;
-try { oozeBlobsOn = localStorage.getItem(OOZE_BLOB_KEY) === "1"; } catch (e) {}
+var OOZE_BLOB_KEY = "kingdom_prototype_oozeblobs_v1", oozeBlobsOn = true;
+try { oozeBlobsOn = localStorage.getItem(OOZE_BLOB_KEY) !== "0"; } catch (e) {} /* v931: on by default; only an explicit Off ("0") turns it off */
 function spawnOozeBlobs(x, y, dir, n) {
   n = Math.max(6, Math.min(16, Math.round((n || 24) * 0.5)));
   for (var i = 0; i < n; i++) {
