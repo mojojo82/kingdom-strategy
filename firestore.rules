@@ -11,12 +11,13 @@ service cloud.firestore {
     function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail']; }
 
     // ===== live =====
+    function liveOpen() { return isAdmin() || !(exists(/databases/$(database)/documents/config/maintenance) && get(/databases/$(database)/documents/config/maintenance).data.on == true); } // v942: maintenance locks player writes
 
       // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
       //      are written by the server only, and readable only by that player and admins. ----
       match /players/{pid}/{coll}/{docId} {
         allow read: if signedIn() && (!(coll in serverOnly()) || isMe(pid) || isAdmin());
-        allow write: if !(coll in serverOnly()) && (isMe(pid) || (isAdmin() && pid.matches('bot_.*')));
+        allow write: if !(coll in serverOnly()) && (isMe(pid) || (isAdmin() && pid.matches('bot_.*'))) && liveOpen();
       }
       // ---- purchases: written by the server only; a player can read their own, admins all ----
       match /purchases/{id} {
@@ -32,9 +33,9 @@ service cloud.firestore {
       // ---- cities: anyone signed in can claim an empty tile as their own; HP / fire fields are server-only ----
       match /cities/{cid} {
         allow read: if signedIn();
-        allow create: if signedIn() && (request.resource.data.owner == request.auth.uid || (isAdmin() && request.resource.data.owner.matches('bot_.*')))
+        allow create: if liveOpen() && signedIn() && (request.resource.data.owner == request.auth.uid || (isAdmin() && request.resource.data.owner.matches('bot_.*')))
                       && !request.resource.data.keys().hasAny(hpKeys());
-        allow update: if signedIn() && (resource.data.owner == request.auth.uid || isAdmin())
+        allow update: if liveOpen() && signedIn() && (resource.data.owner == request.auth.uid || isAdmin())
                       && request.resource.data.owner == resource.data.owner
                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(hpKeys());
         allow delete: if isAdmin() || (resource.data.owner == request.auth.uid && !resource.data.keys().hasAny(hpKeys()));
@@ -43,7 +44,7 @@ service cloud.firestore {
       // ---- world chat: post as yourself only, max 500 characters, no edits ----
       match /worldchat/{mid} {
         allow read: if signedIn();
-        allow create: if signedIn() && request.resource.data.pid == request.auth.uid
+        allow create: if liveOpen() && signedIn() && request.resource.data.pid == request.auth.uid
                       && request.resource.data.text is string && request.resource.data.text.size() <= 500
                       && request.resource.data.ts is number;
         allow update, delete: if isAdmin();
@@ -53,16 +54,19 @@ service cloud.firestore {
       match /terrain/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
       match /mapdecor/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
 
+      // ---- maintenance switch (v942): anyone may read it (shown before sign-in too), only the server writes it ----
+      match /config/{d} { allow read: if true; allow write: if false; }
+
       // ---- server bookkeeping ----
       match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
       match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
 
       // ---- shared world state used by every client (stage 2 will move these behind the server too) ----
-      match /alliances/{aid} { allow read, write: if signedIn(); }
-      match /alliances/{aid}/{sub}/{d} { allow read, write: if signedIn(); }
-      match /allyindex/{pid} { allow read: if signedIn(); allow write: if signedIn(); }
-      match /chunks/{d} { allow read, write: if signedIn(); }
-      match /marches/{d} { allow read, write: if signedIn(); }
+      match /alliances/{aid} { allow read: if signedIn(); allow write: if signedIn() && liveOpen(); }
+      match /alliances/{aid}/{sub}/{d} { allow read: if signedIn(); allow write: if signedIn() && liveOpen(); }
+      match /allyindex/{pid} { allow read: if signedIn(); allow write: if signedIn() && liveOpen(); }
+      match /chunks/{d} { allow read: if signedIn(); allow write: if signedIn() && liveOpen(); }
+      match /marches/{d} { allow read: if signedIn(); allow write: if signedIn() && liveOpen(); }
       match /servers/{d} { allow read, write: if signedIn(); }
       match /world/{d} { allow read, write: if signedIn(); }
       match /_leases/{d} { allow read, write: if signedIn(); }
@@ -70,12 +74,13 @@ service cloud.firestore {
     // ===== test (same rules) =====
     match /envs/{env} {
       allow read, write: if false;
+      function testOpen() { return isAdmin() || !(exists(/databases/$(database)/documents/envs/$(env)/config/maintenance) && get(/databases/$(database)/documents/envs/$(env)/config/maintenance).data.on == true); }
 
         // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
         //      are written by the server only, and readable only by that player and admins. ----
         match /players/{pid}/{coll}/{docId} {
           allow read: if signedIn() && (!(coll in serverOnly()) || isMe(pid) || isAdmin());
-          allow write: if !(coll in serverOnly()) && (isMe(pid) || (isAdmin() && pid.matches('bot_.*')));
+          allow write: if !(coll in serverOnly()) && (isMe(pid) || (isAdmin() && pid.matches('bot_.*'))) && testOpen();
         }
         // ---- purchases: written by the server only; a player can read their own, admins all ----
         match /purchases/{id} {
@@ -91,9 +96,9 @@ service cloud.firestore {
         // ---- cities: anyone signed in can claim an empty tile as their own; HP / fire fields are server-only ----
         match /cities/{cid} {
           allow read: if signedIn();
-          allow create: if signedIn() && (request.resource.data.owner == request.auth.uid || (isAdmin() && request.resource.data.owner.matches('bot_.*')))
+          allow create: if testOpen() && signedIn() && (request.resource.data.owner == request.auth.uid || (isAdmin() && request.resource.data.owner.matches('bot_.*')))
                         && !request.resource.data.keys().hasAny(hpKeys());
-          allow update: if signedIn() && (resource.data.owner == request.auth.uid || isAdmin())
+          allow update: if testOpen() && signedIn() && (resource.data.owner == request.auth.uid || isAdmin())
                         && request.resource.data.owner == resource.data.owner
                         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(hpKeys());
           allow delete: if isAdmin() || (resource.data.owner == request.auth.uid && !resource.data.keys().hasAny(hpKeys()));
@@ -102,7 +107,7 @@ service cloud.firestore {
         // ---- world chat: post as yourself only, max 500 characters, no edits ----
         match /worldchat/{mid} {
           allow read: if signedIn();
-          allow create: if signedIn() && request.resource.data.pid == request.auth.uid
+          allow create: if testOpen() && signedIn() && request.resource.data.pid == request.auth.uid
                         && request.resource.data.text is string && request.resource.data.text.size() <= 500
                         && request.resource.data.ts is number;
           allow update, delete: if isAdmin();
@@ -112,16 +117,19 @@ service cloud.firestore {
         match /terrain/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
         match /mapdecor/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
 
+        // ---- maintenance switch (v942): anyone may read it (shown before sign-in too), only the server writes it ----
+        match /config/{d} { allow read: if true; allow write: if false; }
+
         // ---- server bookkeeping ----
         match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
         match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
 
         // ---- shared world state used by every client (stage 2 will move these behind the server too) ----
-        match /alliances/{aid} { allow read, write: if signedIn(); }
-        match /alliances/{aid}/{sub}/{d} { allow read, write: if signedIn(); }
-        match /allyindex/{pid} { allow read: if signedIn(); allow write: if signedIn(); }
-        match /chunks/{d} { allow read, write: if signedIn(); }
-        match /marches/{d} { allow read, write: if signedIn(); }
+        match /alliances/{aid} { allow read: if signedIn(); allow write: if signedIn() && testOpen(); }
+        match /alliances/{aid}/{sub}/{d} { allow read: if signedIn(); allow write: if signedIn() && testOpen(); }
+        match /allyindex/{pid} { allow read: if signedIn(); allow write: if signedIn() && testOpen(); }
+        match /chunks/{d} { allow read: if signedIn(); allow write: if signedIn() && testOpen(); }
+        match /marches/{d} { allow read: if signedIn(); allow write: if signedIn() && testOpen(); }
         match /servers/{d} { allow read, write: if signedIn(); }
         match /world/{d} { allow read, write: if signedIn(); }
         match /_leases/{d} { allow read, write: if signedIn(); }

@@ -108,6 +108,15 @@
   </section>
 
   <section class="card">
+    <h2>🛠️ Maintenance mode</h2>
+    <div class="muted">While ON, players in the selected environment see a maintenance screen and nothing they do is saved; the server refuses their saves and claims. You (admin) can still play. Turning it OFF reloads everyone's game onto the newest version.</div>
+    <div id="mtStatus" style="margin-top:8px;font-weight:700">…</div>
+    <textarea id="mtMsg" placeholder="Message players see (e.g. Upgrading the forge - back soon!)" style="margin-top:6px" maxlength="300"></textarea>
+    <div class="row" style="margin-top:6px;align-items:center;gap:8px"><span class="muted">Back around (optional):</span><input id="mtUntil" type="datetime-local"></div>
+    <div class="row" style="margin-top:8px"><button class="b warn" id="mtOn">Turn ON</button><button class="b ghost" id="mtOff">Turn OFF</button></div>
+  </section>
+
+  <section class="card">
     <h2>📣 Mail to ALL players</h2>
     <div class="muted">Compensation, events, gifts. Goes to every player in the selected environment.</div>
     <select id="aCat" style="width:100%;margin-top:8px" title="Which mailbox tab the players see it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
@@ -268,6 +277,23 @@
     var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (String(typed || "").trim().toUpperCase() !== "SEND") { toast(typed == null ? "Cancelled - nothing sent" : "Not sent - type the word SEND to confirm", true); return; } /* v941: send/Send/ SEND also accepted */
     call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items, category: $("aCat").value }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
   };
+  // ---- v942: maintenance mode ----
+  function mtShow(m) {
+    var on = m && m.on === true, el = $("mtStatus");
+    el.textContent = on ? "🔴 ON in " + S.env.toUpperCase() + (m.until ? " · back around " + new Date(m.until).toLocaleString() : "") : "🟢 OFF in " + S.env.toUpperCase() + " (players can play)";
+    el.style.color = on ? "#ff8080" : "#7fd07f"; if (on && m.msg && !$("mtMsg").value) $("mtMsg").value = m.msg;
+  }
+  function mtLoad() { $("mtStatus").textContent = "…"; call("adminMaintenance", {}).then(mtShow, function (e) { $("mtStatus").textContent = errText(e); }); }
+  $("mtOn").onclick = function () {
+    var msg = $("mtMsg").value.trim(), u = $("mtUntil").value ? new Date($("mtUntil").value).getTime() : null;
+    if (!confirmEnv("Turn maintenance ON? Players will be locked out until you turn it off.\n\nMessage: " + (msg || "(default message)"))) return;
+    call("adminMaintenance", { set: { on: true, msg: msg, until: u } }).then(function (m) { mtShow(m); toast("Maintenance is ON"); }, function (e) { toast(errText(e), true); });
+  };
+  $("mtOff").onclick = function () {
+    if (!confirmEnv("Turn maintenance OFF? Everyone's game reloads and they can play again.")) return;
+    call("adminMaintenance", { set: { on: false } }).then(function (m) { mtShow(m); $("mtMsg").value = ""; $("mtUntil").value = ""; toast("Maintenance is OFF"); }, function (e) { toast(errText(e), true); });
+  };
+  var renderEnv0 = renderEnv; renderEnv = function () { renderEnv0(); if (S.catalog) mtLoad(); };
   renderEnv();
 })();
 </script>

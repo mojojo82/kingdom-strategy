@@ -29,6 +29,7 @@ jobs:
           mkdir -p ci-out
           cp functions/admins.json /tmp/admins.real.json
           {
+            echo "== version.json matches the game"; node tools/stamp-version.js --check &&
             echo "== unit tests"; node functions/test/core.test.js &&
             echo '["ciadmin0001"]' > functions/admins.json && CI_ADMIN_ANY_PROVIDER=1 node tools/build-rules.js &&
             echo "== emulator tests" &&

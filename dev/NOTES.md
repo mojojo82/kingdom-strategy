@@ -399,3 +399,13 @@
   Tests: core.test.js (message-only mail), g189_mailmsg; g170/g171/g184 still pass.
 - v940 (admin page): item picker starts on "— No item (message only) —"; rows left on it (or with no amount) are skipped.
 - v941 (admin page): "Send to everyone" confirm accepts send/Send/ SEND (was exact "SEND" only - Harley typed it differently and got "Cancelled", nothing sent); clearer messages.
+- v942: "new version" check + maintenance mode.
+  - Version: `var KS_BUILD` in the game; tools/stamp-version.js writes version.json beside the page (CI checks they match). The game fetches
+    version.json (no-store) 15 s after load, every 3 min and on returning to the tab; if it differs: banner "✨ New version ready [Update] ✕"
+    (gold dashed, under the header). Update saves, then reloads with ?u=<version> so no cached copy is used. ✕ = ask again in 30 min.
+  - Maintenance: admin panel card (status, message, optional "back around" time, Turn ON / OFF) -> adminMaintenance function -> <root>config/maintenance.
+    Server: wrap() refuses every non-admin call while on (10 s cache per instance); rules: config readable by anyone, server-only write;
+    liveOpen()/testOpen() gate all player writes (players/*, cities, worldchat, alliances, allyindex, chunks, marches). Game: listens to the doc;
+    non-admin -> full-screen lock (message + time), saveLoadFailed=true; admin -> red top bar, keeps playing; on -> off = automatic fresh reload.
+  - Tests: ci/integration.test.js (maintenance lock + admin bypass + other env unaffected; message-only mail), g190_updmaint (banner, update
+    reload, lock screen, admin bar, auto reload). g170, g176, g179, g184, g187-g189 pass.

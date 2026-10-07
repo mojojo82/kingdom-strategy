@@ -75,6 +75,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 1. **Game changes:** edit the single game file. In the original session it was `/home/claude/game.html`; in a new session use `test/index.html` from this repo as the source.
    - Backups were `game_vNNN.html` (latest v939). Git history now does that job: commit each version with its number.
    - Add a `dev/NOTES.md` entry per version (`## vNNN` + bullet points).
+   - **Bump `KS_BUILD` in `test/index.html` and run `node tools/stamp-version.js`** (writes `test/version.json`). Players' games compare the two and show a "New version ready - Update" banner; CI fails if they don't match. When copying to live, run it again so the root `version.json` is written too.
    - Every now and then (not every version - Harley: it slows things down), publish to the claude.ai artifact (`Artifact` tool, `url` above, a short `label`, **don't pass `capabilities`**; the `db` capability carries forward). Last published: v933.
    - Copy to `test/index.html` and push. Copy to the root `index.html` **only when Harley approves** ("test first, then live").
 2. **Server changes** (`functions/`, `tools/`, `ci/`, `admin/`, `test/index.html`): push to `main`. The `firebase` workflow then:
@@ -98,6 +99,9 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **No player tracking/analytics.** Only what's needed: purchase audit, item ledger, account created / last seen. Chat is not auto-deleted (his call, for now).
 
 ## Open items / to-dos
+- **Maintenance mode (v942):** admin panel > 🛠️ Maintenance mode, per environment. Server doc `<root>config/maintenance`; while on, rules refuse player writes and Cloud Functions refuse non-admin calls; the game shows a lock screen (admins get a red bar and can play); turning it off reloads everyone onto the newest version. Live game (root, still v901) has no lock screen yet, but the server lock already applies to it.
+- **Before a public launch:** move the images out of the single 14 MB game file into separate cached files, so an update doesn't make every player re-download all the art.
+- **App stores (later):** thin store app that loads the game from the web (updates skip review); needs Apple/Google in-app payments for gems, a native extra (e.g. push notifications) for Apple, and a "minimum shell version" check.
 
 - **Switch-over:** when Harley wants to play on GitHub, copy his real save + custom art (hero art, card art, avatar; `assetitems`, ~47 docs incl. large images) from the
   claude.ai db (readable with the `ArtifactData` tool on the artifact URL) into Firebase (admin seed import path or an admin function), then `adminSetWallet` his gems.

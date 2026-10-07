@@ -181,6 +181,28 @@ const P = (s) => R + s;
     const c = await ADM.call("adminCatalog"); assert.ok(c.items.gems && c.items.food && c.packs.test_gems_100);
     const all = await ADM.call("adminSendMail", { all: true, title: "Event", items: { wood: 10 } }); assert.ok(all.sent >= 3, "sent " + all.sent);
   });
+  await t("message-only mail (v939): no items, claiming just marks it read", async () => {
+    await ADM.call("adminSendMail", { uid: Cc.uid, title: "Server news", body: "Maintenance at 9pm" });
+    const { getDocs, collection } = require("firebase/firestore");
+    const ms = await getDocs(collection(Cc.db, P("players/" + Cc.uid + "/mail"))); const m = ms.docs.find((d) => d.data().title === "Server news");
+    assert.ok(m); assert.deepStrictEqual(m.data().items, {});
+    const r = await Cc.call("claimMail", { id: m.id }); assert.ok(!r.dup); assert.deepStrictEqual(r.items, []); assert.ok(r.claimedAt > 0);
+  });
+  await t("maintenance (v942): admin switch; players locked out of saves and server calls; admins and the other env unaffected", async () => {
+    await fnErr(A.call("adminMaintenance", { set: { on: true } }), /admin only|permission/);
+    let m = await ADM.call("adminMaintenance", { set: { on: true, msg: "Upgrading the forge", until: 1893456000000 } }); assert.strictEqual(m.on, true); assert.strictEqual(m.msg, "Upgrading the forge");
+    const cfg = await getDoc(doc(A.db, P("config/maintenance"))); assert.strictEqual(cfg.data().on, true, "players can read the switch");
+    await denied(setDoc(doc(A.db, P("config/maintenance")), { on: false }));
+    await denied(setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { x: 2 }));
+    await fnErr(A.call("claimLevel", { chapter: 1, levelNum: 2 }), /maintenance|unavailable/);
+    await fnErr(A.call("claimMail", { id: "x" }), /maintenance|unavailable/);
+    const f = await ADM.call("adminFindPlayers", { q: A.uid }); assert.strictEqual(f.players[0].uid, A.uid, "admins still work");
+    await setDoc(doc(ADM.db, P("players/" + ADM.uid + "/save/main")), { x: 1 }); /* admin can still save */
+    await setDoc(doc(A.db, "players/" + A.uid + "/save/main"), { x: 3 }); /* live env is not in maintenance */
+    m = await ADM.call("adminMaintenance", { set: { on: false } }); assert.strictEqual(m.on, false);
+    await setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { x: 4 });
+    m = await ADM.call("adminMaintenance", {}); assert.strictEqual(m.on, false, "read without changing");
+  });
   await t("live env is separate from test env", async () => {
     ENV = "live"; R = "";
     const r = await B.call("claimLevel", { chapter: 1, levelNum: 1 }); assert.strictEqual(r.gems, 50);

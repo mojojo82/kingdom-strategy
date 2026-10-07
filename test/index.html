@@ -10278,6 +10278,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
+var KS_BUILD = "v942"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13846,6 +13847,58 @@ function seaFoamTick() {
   seaFoam.diag = "🌊 " + live;
 }
 setInterval(seaFoamTick, 500);
+/* ---- v942: "new version" check + maintenance mode (Firebase builds only: GitHub Pages / test) ---- */
+var KS_UPD = { latest: null, shown: false };
+function ksFreshReload(tag) { /* reload past any cached copy of the page (a different query = a fresh download) */
+  try { location.replace(location.pathname + "?u=" + encodeURIComponent(tag || String(Date.now()))); } catch (e) { location.reload(); }
+}
+function ksUpdBanner() {
+  if (KS_UPD.shown || document.getElementById("ksUpdBanner")) return; KS_UPD.shown = true;
+  var b = document.createElement("div"); b.id = "ksUpdBanner";
+  b.style.cssText = "position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 72px);transform:translateX(-50%);z-index:2147483300;display:flex;white-space:nowrap;align-items:center;gap:10px;padding:8px 10px 8px 14px;border:2px dashed #c9a24a;border-radius:10px;background:rgba(10,16,32,.95);color:#f3e9d2;font:600 13px/1.2 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.55);max-width:calc(100vw - 24px)";
+  b.innerHTML = '<span>✨ New version ready</span><button type="button" style="border:0;border-radius:6px;padding:7px 12px;background:#2bb3d9;color:#06131c;font-weight:700;font-size:13px;cursor:pointer">Update</button><button type="button" aria-label="Later" style="border:0;background:none;color:#93a2ba;font-size:16px;cursor:pointer;padding:2px 4px">✕</button>';
+  b.children[1].onclick = function () { try { if (typeof cloudSyncNow === "function") cloudSyncNow(true); } catch (e) {} setTimeout(function () { ksFreshReload(KS_UPD.latest); }, 600); }; /* save first */
+  b.children[2].onclick = function () { b.remove(); setTimeout(function () { KS_UPD.shown = false; }, 30 * 60 * 1000); }; /* ask again in 30 min */
+  document.body.appendChild(b);
+}
+function ksCheckVersion() {
+  if (!window.KS_BACKEND || window.KS_BACKEND.kind !== "firebase" || typeof fetch !== "function") return;
+  fetch("version.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (!j || typeof j.v !== "string") return; KS_UPD.latest = j.v;
+    if (j.v !== KS_BUILD) ksUpdBanner();
+  }).catch(function () {});
+}
+setTimeout(ksCheckVersion, 15000); setInterval(ksCheckVersion, 3 * 60 * 1000);
+document.addEventListener("visibilitychange", function () { if (!document.hidden) ksCheckVersion(); });
+
+var KS_MAINT = { on: false, locked: false, data: null };
+function ksMaintRender() {
+  var m = KS_MAINT.data || {}, on = m.on === true, admin = !!(window.KS_BACKEND && window.KS_BACKEND.isAdmin);
+  var ov = document.getElementById("ksMaint"), bar = document.getElementById("ksMaintBar");
+  if (on && !admin) {
+    if (!ov) { ov = document.createElement("div"); ov.id = "ksMaint"; ov.style.cssText = "position:fixed;inset:0;z-index:2147483500;background:rgba(5,9,20,.96);display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,sans-serif"; document.body.appendChild(ov); }
+    var when = m.until ? new Date(m.until).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
+    ov.innerHTML = '<div style="max-width:360px;width:100%;background:#121c33;border:2px dashed #c9a24a;border-radius:12px;padding:22px 18px;color:#f3e9d2;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.6)">'
+      + '<div style="font-size:40px;line-height:1">🛠️</div><div style="font-size:20px;font-weight:700;color:#f0c95f;margin:8px 0 6px">Maintenance</div>'
+      + '<div style="font-size:14px;line-height:1.45;white-space:pre-wrap">' + escapeHtml(m.msg || "The kingdom is being upgraded. Back soon!") + '</div>'
+      + (when ? '<div style="margin-top:10px;font-size:13px;color:#8fd3ea">Back around ' + escapeHtml(when) + '</div>' : "")
+      + '<div style="margin-top:14px;font-size:12px;color:#93a2ba">Your progress is safe. The game will reload by itself when it\'s done.</div></div>';
+    if (!KS_MAINT.locked) { KS_MAINT.locked = true; saveLoadFailed = true; } /* nothing is saved while the server is being worked on */
+  } else if (ov) ov.remove();
+  if (on && admin) {
+    if (!bar) { bar = document.createElement("div"); bar.id = "ksMaintBar"; bar.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:2147483400;background:#8a1f1f;color:#fff;font:700 12px/1.2 system-ui,sans-serif;text-align:center;padding:4px 8px;pointer-events:none"; document.body.appendChild(bar); }
+    bar.textContent = "🛠️ MAINTENANCE ON (" + (window.KS_BACKEND.env || "") + ") - players are locked out, you can still play";
+  } else if (bar) bar.remove();
+  if (!on && KS_MAINT.locked) { KS_MAINT.locked = false; ksFreshReload(); } /* maintenance over: come back on the newest version */
+}
+(function ksMaintWatch() {
+  if (!window.KS_BACKEND || window.KS_BACKEND.kind !== "firebase" || !window.claude || typeof window.claude.use !== "function") return;
+  window.claude.use("db").then(function (db) {
+    if (!db || !db.doc) return;
+    db.doc("config/maintenance").onSnapshot(function (s) { KS_MAINT.data = s.exists ? s.data() : null; ksMaintRender(); }, function () {});
+    setTimeout(ksMaintRender, 3000); /* admin status arrives a moment after sign-in */
+  }).catch(function () {});
+})();
 function mapCenterTile() { /* tile under the middle of the view */
   var vp = document.getElementById("mapviewport"); if (!vp || !vp.clientWidth) return null;
   var t = seaFoamTileAt(vp.scrollLeft + vp.clientWidth / 2, vp.scrollTop + vp.clientHeight / 2), n = mapSizeTiles() || terrainN || 1;
@@ -14920,7 +14973,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v939 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · " + KS_BUILD + " · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;

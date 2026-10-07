@@ -22,9 +22,22 @@ function uidOf(req) {
 }
 /* Admin = on the admin list AND signed in with Google (2-step verification is enforced by Google). The local emulator (tests) accepts any sign-in. */
 function isAdmin(uid, req) { const prov = req && req.auth && req.auth.token && req.auth.token.firebase ? req.auth.token.firebase.sign_in_provider : null; return ADMIN_UIDS.indexOf(uid) !== -1 && (prov === "google.com" || process.env.FUNCTIONS_EMULATOR === "true"); }
+/* v942: maintenance mode. <root>config/maintenance { on, msg, until, by, at }. While on, every call from a non-admin is refused
+   (saves to Firestore are refused by the rules too). Read at most every 10 s per server instance. */
+const maintCache = {};
+async function maintOn(R) {
+  const c = maintCache[R], now = Date.now();
+  if (c && now - c.t < 10000) return c.on;
+  let on = false; try { const s = await db.doc(R + "config/maintenance").get(); on = !!(s.exists && s.data().on === true); } catch (e) { on = c ? c.on : false; }
+  maintCache[R] = { on, t: now }; return on;
+}
 function wrap(fn) {
   return onCall(async (req) => {
-    try { return await fn(req, uidOf(req), C.envRoot((req.data || {}).env), req.data || {}); }
+    try {
+      const uid = uidOf(req), R = C.envRoot((req.data || {}).env);
+      if (!isAdmin(uid, req) && await maintOn(R)) throw new HttpsError("unavailable", "maintenance");
+      return await fn(req, uid, R, req.data || {});
+    }
     catch (e) {
       if (e instanceof HttpsError) throw e;
       if (e instanceof C.GameError) throw new HttpsError(e.code, e.message, e.extra);
@@ -221,6 +234,17 @@ exports.claimMail = wrap(async (req, uid, R, d) => {
 });
 
 // ---- admin panel lookups ----
+// v942: maintenance switch. { set: { on, msg, until } } changes it; always returns the current state.
+exports.adminMaintenance = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const ref = db.doc(R + "config/maintenance");
+  if (d.set && typeof d.set === "object") {
+    const m = { on: d.set.on === true, msg: String(d.set.msg || "").trim().slice(0, 300), until: Number.isFinite(+d.set.until) && +d.set.until > 0 ? +d.set.until : null, by: uid, at: Date.now() };
+    await ref.set(m); maintCache[R] = { on: m.on, t: Date.now() };
+    await db.collection(R + "adminlog").add({ by: uid, maintenance: { on: m.on, msg: m.msg, until: m.until }, at: m.at });
+  }
+  const s = await ref.get(); return s.exists ? s.data() : { on: false, msg: "", until: null };
+});
 exports.adminCatalog = wrap(async (req, uid) => { adminOnly(uid, req); return { items: C.ITEMS, packs: PACKS }; });
 
 const NAME_DOC = "assetitems/kingdom_prototype_playername_v1";
