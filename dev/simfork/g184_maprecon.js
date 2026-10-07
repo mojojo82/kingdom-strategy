@@ -22,7 +22,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     await P.fill("#ksE", email); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
     await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Scout"); await P.click("#ksGo"); await P.waitForTimeout(5000);
     await P.evaluate(() => setScreen("world")); await P.waitForTimeout(1200);
-    const geo = await P.evaluate(() => { const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), shown: getComputedStyle(e).display !== "none" }; }; return { recon: r("mapReconBtn"), mail: r("mapMailBtn") }; });
+    const geo = await P.evaluate(() => { const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), shown: getComputedStyle(e).display !== "none" }; }; return { recon: r("mapReconBtn"), mail: r("mapMailBtn"), top: r("mailBtn"), mailOn: document.documentElement.classList.contains("ks-mail-on") }; });
     await P.screenshot({ path: OUT + "map_recon_" + tag + ".png" });
     const before = await P.evaluate(() => { const v = document.getElementById("mapviewport"); return [v.scrollLeft, v.scrollTop]; });
     await P.click("#mapReconBtn"); await P.waitForTimeout(800);
@@ -31,7 +31,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const after = await P.evaluate(() => { const v = document.getElementById("mapviewport"); return [v.scrollLeft, v.scrollTop]; });
     console.log(tag, "| recon button", JSON.stringify(geo.recon), "| mail button", JSON.stringify(geo.mail), "| tap ->", opened, "| map spot kept:", before[0] === after[0] && before[1] === after[1]);
     assert.ok(geo.recon && geo.recon.shown && geo.recon.w === 46); assert.ok(!geo.mail.shown || Math.abs(geo.mail.y - geo.recon.y) >= 50, "not on top of the mailbox");
+    assert.ok(geo.mailOn && geo.mail.shown && geo.mail.y + 46 <= geo.recon.y, "v929: mailbox above recon"); assert.ok(!geo.top.shown, "v929: no top-bar mail");
     assert.strictEqual(opened, "more/recon mode=recon"); assert.ok(before[0] === after[0] && before[1] === after[1]);
+    await P.click("#mapMailBtn"); await P.waitForTimeout(600); assert.ok(await P.evaluate(() => document.body.classList.contains("mail-open")), "map mailbox opens mail");
     await ctx.close();
   }
   await run({ width: 430, height: 932 }, "phone", "g184a@test.dev");

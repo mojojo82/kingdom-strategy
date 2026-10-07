@@ -122,7 +122,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await sleep(2000);
     const badge = await A.evaluate(() => document.getElementById("mailBadge").textContent); check(+badge >= 1, "mail badge " + badge);
     const g0 = await A.evaluate(() => ({ food: game.state.resources.food, gems: game.state.gems }));
-    await A.click("#mailBtn"); await A.waitForSelector("#mailList [data-claim]"); await A.click("#mailList .mi.new [data-claim]"); await sleep(3500);
+    await A.evaluate(() => setScreen("world")); await sleep(500); await A.click("#mapMailBtn"); await A.waitForSelector("#mailList [data-claim]"); await A.click("#mailList .mi.new [data-claim]"); await sleep(3500);
     const g1 = await A.evaluate(() => ({ food: game.state.resources.food, gems: game.state.gems }));
     check(g1.food === g0.food + 2500 && g1.gems === g0.gems + 10, JSON.stringify({ g0, g1 }));
     await P.click("#refreshBtn"); await sleep(2500); await P.click('#tabs [data-t="ledger"]'); const hist = await P.textContent("#tabBody"); check(/Food/.test(hist) && /\+2,500/.test(hist), "admin history: " + hist.slice(0, 300));

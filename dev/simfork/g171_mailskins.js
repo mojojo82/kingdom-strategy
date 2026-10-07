@@ -34,7 +34,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     count: (document.querySelector("#mailBar .mcount") || {}).textContent, allDisabled: (document.querySelector("#mailBar .mall") || {}).disabled, detail: (document.querySelector(".mdet .dtitle") || {}).textContent || null }));
   const click = async (sel) => { await P.click(sel); await P.waitForTimeout(300); };
 
-  await click("#mailBtn"); let s = await S(); console.log("1. open (Game UI) ->", JSON.stringify(s));
+  await P.evaluate(() => setScreen("world")); await P.waitForTimeout(400); await click("#mapMailBtn"); let s = await S(); console.log("1. open (Game UI) ->", JSON.stringify(s));
   assert.ok(/sk-a/.test(s.cls) && /v-list/.test(s.cls)); assert.strictEqual(s.tab, "wars", "opens on Wars (first tab with unclaimed mail)");
   await click('[data-tab="system"]'); s = await S(); console.log("2. System ->", JSON.stringify([s.titles, s.count, s.tabs]));
   assert.deepStrictEqual(s.titles, ["Sorry for the downtime", "Harvest weekend reward", "Welcome to the kingdom", "Compensation for the bug"]); assert.strictEqual(s.count, "2 unclaimed in System");
@@ -64,7 +64,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const claimedDetail = await (async () => { await click('[data-open="a1"]'); return P.evaluate(() => document.querySelector(".dclaim").disabled + "|" + document.querySelector(".dclaim").textContent); })(); console.log("8. claimed mail detail button ->", claimedDetail); assert.strictEqual(claimedDetail, "true|Claimed");
 
   /* the look survives a reload; Esc closes */
-  await P.reload(); await P.waitForTimeout(6000); await click("#mailBtn"); s = await S(); console.log("9. after reload ->", s.cls); assert.ok(/sk-b/.test(s.cls));
+  await P.reload(); await P.waitForTimeout(6000); await P.evaluate(() => setScreen("world")); await P.waitForTimeout(400); await click("#mapMailBtn"); s = await S(); console.log("9. after reload ->", s.cls); assert.ok(/sk-b/.test(s.cls));
   await P.keyboard.press("Escape"); assert.strictEqual(await P.evaluate(() => document.body.classList.contains("mail-open")), false);
 
   /* desktop */

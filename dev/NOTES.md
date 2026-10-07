@@ -353,3 +353,6 @@
   X/Y pill so it clears the phone chat bar), gold tail points at home, shows straight-line distance from the view-centre tile in "km"
   (1 tile = 1 km, flavour only). Tap -> centerMapOnHome. Updates on scroll + 500ms. "🏠 Center on Home" button hidden (display:none, kept for
   the onclick binding). g186 extended.
+- v929: top-bar ✉️ mail button hidden (CSS); mail now opens from the World map 📪 only. Phones: 📪 stacked ABOVE 🛰️ (recon bottom, just above
+  the chat bar); PC already had 📪 on top. g184 checks order + no top-bar mail + 📪 opens mail; g170/g171 and ci/e2e.test.js now open mail via
+  setScreen("world") + #mapMailBtn. (g168_mail.js is a stale early test - wrong paths + old markup; superseded by g170/g171.)

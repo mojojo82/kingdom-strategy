@@ -34,7 +34,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     titles: [].map.call(document.querySelectorAll("#mailList .mtt"), (x) => x.textContent.replace(/[★☆]/, "")), empty: (document.querySelector("#mailList .me") || {}).textContent || null }));
   const click = async (sel) => { await A.click(sel); await A.waitForTimeout(250); };
 
-  await click("#mailBtn"); let s = await S(); console.log("1. open ->", JSON.stringify(s));
+  await A.evaluate(() => setScreen("world")); await A.waitForTimeout(400); await click("#mapMailBtn"); let s = await S(); console.log("1. open ->", JSON.stringify(s));
   assert.deepStrictEqual(s.tabs, ["wars*:1", "alliance:0", "system:2", "reports:1", "saved:0"], "5 tabs, unread counts (claimed ally mail doesn't count, old mail counts as System)");
   assert.strictEqual(s.tab, "wars", "opens on the first tab with unread mail"); assert.deepStrictEqual(s.titles, ["Raid report"]);
   await A.screenshot({ path: OUT + "mailtabs_desktop.png", clip: { x: 420, y: 40, width: 560, height: 420 } });
