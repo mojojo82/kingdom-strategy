@@ -373,3 +373,6 @@
   map that differs from OWNER_DEFAULTS (what a fresh test-link player gets), images shown as type/size only; Copy button. Read-only.
   Why: Harley asked which of his owner-account settings differ from defaults; there are no Firestore credentials in this workspace and
   reading his data via the CI service account was refused, so the check runs on his own device.
+- Harley's old owner settings (claude.ai artifact Mt8BNeiwSBBu83VaSbAGbW, db collection "assetitems", read with ArtifactData): 57 of 71
+  match OWNER_DEFAULTS. Real differences: 3D march ships ON, Orbit Shield trail 12, ooze blobs ON, terrain painter ON (dev tool, left off).
+- v933: 3D march ships ON by default (march3dOn = stored !== "0"), Orbit Shield trail default 12 (ORBIT_SHIELD_DEFAULTS + OWNER_DEFAULTS).
