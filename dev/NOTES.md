@@ -404,7 +404,7 @@
     version.json (no-store) 15 s after load, every 3 min and on returning to the tab; if it differs: banner "✨ New version ready [Update] ✕"
     (gold dashed, under the header). Update saves, then reloads with ?u=<version> so no cached copy is used. ✕ = ask again in 30 min.
   - Maintenance: admin panel card (status, message, optional "back around" time, Turn ON / OFF) -> adminMaintenance function -> <root>config/maintenance.
-    Server: wrap() refuses every non-admin call while on (10 s cache per instance); rules: config readable by anyone, server-only write;
+    Server: wrap() refuses every non-admin call while on (each instance re-reads the switch at most every 10 s, so calls follow within 10 s; the rules lock on saves is instant); rules: config readable by anyone, server-only write;
     liveOpen()/testOpen() gate all player writes (players/*, cities, worldchat, alliances, allyindex, chunks, marches). Game: listens to the doc;
     non-admin -> full-screen lock (message + time), saveLoadFailed=true; admin -> red top bar, keeps playing; on -> off = automatic fresh reload.
   - Tests: ci/integration.test.js (maintenance lock + admin bypass + other env unaffected; message-only mail), g190_updmaint (banner, update

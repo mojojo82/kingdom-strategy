@@ -194,6 +194,7 @@ const P = (s) => R + s;
     const cfg = await getDoc(doc(A.db, P("config/maintenance"))); assert.strictEqual(cfg.data().on, true, "players can read the switch");
     await denied(setDoc(doc(A.db, P("config/maintenance")), { on: false }));
     await denied(setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { x: 2 }));
+    await sleep(11000); /* each server instance re-reads the switch at most every 10 s (the save lock in the rules is instant) */
     await fnErr(A.call("claimLevel", { chapter: 1, levelNum: 2 }), /maintenance|unavailable/);
     await fnErr(A.call("claimMail", { id: "x" }), /maintenance|unavailable/);
     const f = await ADM.call("adminFindPlayers", { q: A.uid }); assert.strictEqual(f.players[0].uid, A.uid, "admins still work");
