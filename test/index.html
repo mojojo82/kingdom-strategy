@@ -228,6 +228,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"> <!-- v915: parchment mailbox look -->
 <style>
   :root {
     --bg: #0b0f16; --panel: #161f2e; --panel2: #1f2a3d; --panel3: #263349; --border: #33445e;
@@ -1937,29 +1938,155 @@
   #mailBadge { display:none; position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#d9412b; color:#fff; font:700 10px/16px system-ui,sans-serif; text-align:center; }
   #mailBadge.on { display:block; }
   #mailBackdrop { display:none; position:fixed; inset:0; z-index:100049; background:rgba(0,0,0,.5); }
-  #mailPanel { display:none; position:fixed; z-index:100050; left:50%; top:max(70px, 8vh); transform:translateX(-50%); width:min(440px, calc(100vw - 24px)); max-height:min(78vh, 680px); overflow:hidden; flex-direction:column;
-    background:#121c33; color:#f3e9d2; border:2px dashed #c9a24a; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.6); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; }
+  /* v915: mailbox redesign. One markup, two looks: #mailPanel.sk-a = game UI (navy / gold / cyan, dashed), #mailPanel.sk-b = parchment scroll (ribbon tabs, wax seals).
+     .v-list / .v-detail say which view is showing. The look is a per-device choice (localStorage ksMailSkin). */
+  #mailPanel { display:none; position:fixed; z-index:100050; flex-direction:column; box-sizing:border-box; font-family:'Chakra Petch',system-ui,-apple-system,'Segoe UI',sans-serif; }
   body.mail-open #mailPanel { display:flex; } body.mail-open #mailBackdrop { display:block; }
-  #mailPanel .mh { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px dashed #3b4a6b; font-weight:700; color:#f0c95f; font-size:16px; }
-  #mailPanel .mh .x { margin-left:auto; cursor:pointer; color:#a9b4c8; font-size:18px; }
-  #mailPanel .ml { overflow-y:auto; padding:8px 10px 12px; }
-  /* v914: mailbox tabs (flat, dashed; the open one goes gold) */
-  #mailPanel .mtabs { display:flex; gap:4px; padding:8px 10px 0; }
-  #mailPanel .mtab { position:relative; flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px; padding:5px 2px 4px; border:1px dashed #3b4a6b; border-radius:6px; background:#0e1629; color:#a9b4c8; cursor:pointer; font:600 10.5px/1.2 system-ui,sans-serif; }
-  #mailPanel .mtab .ti { font-size:16px; line-height:1; } #mailPanel .mtab .tl { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
-  #mailPanel .mtab.on { border:1px solid #c9a24a; color:#f0c95f; background:#16223d; }
-  #mailPanel .mtab .tn { position:absolute; top:-5px; right:-3px; min-width:15px; height:15px; padding:0 3px; border-radius:8px; background:#d9412b; color:#fff; font:700 9.5px/15px system-ui,sans-serif; text-align:center; }
-  #mailPanel .mtt { display:flex; align-items:flex-start; gap:6px; min-width:0; }
-  #mailPanel .ms { flex:none; border:0; background:none; padding:0 2px; font-size:17px; line-height:1.1; color:#8f9bb3; cursor:pointer; } #mailPanel .ms.on { color:#f0c95f; }
-  #mailPanel .mi { border:1px dotted #3b4a6b; border-radius:8px; padding:10px; margin-top:8px; background:#0e1629; }
-  #mailPanel .mi.new { border-color:#c9a24a; }
-  #mailPanel .mt { display:flex; justify-content:space-between; gap:8px; font-weight:600; } #mailPanel .md { color:#8f9bb3; font-size:11px; white-space:nowrap; }
-  #mailPanel .mb { margin-top:6px; font-size:13px; line-height:1.4; color:#d6dbe6; white-space:pre-wrap; }
-  #mailPanel .mx { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-  #mailPanel .mx span { border:1px dashed #5d6f93; border-radius:6px; padding:3px 7px; font-size:12px; background:#16223d; }
-  #mailPanel .mc { margin-top:9px; width:100%; border:0; border-radius:6px; padding:9px; font-weight:700; font-size:14px; background:#2bb3d9; color:#06131c; cursor:pointer; }
-  #mailPanel .mc[disabled] { background:#2a3550; color:#8f9bb3; cursor:default; }
-  #mailPanel .me { text-align:center; color:#8f9bb3; padding:40px 10px; font-size:13px; }
+  #mailPanel *, #mailPanel *::before, #mailPanel *::after { box-sizing:border-box; }
+  #mailPanel button { font-family:inherit; cursor:pointer; white-space:nowrap; transition:none; }
+  #mailPanel svg { flex:none; display:block; }
+  #mailPanel i { font-style:normal; display:flex; }
+  #mailPanel .mh { display:flex; align-items:center; gap:8px; flex:none; }
+  #mailPanel .mhb { min-width:44px; min-height:44px; padding:0 12px; display:flex; align-items:center; justify-content:center; gap:4px; font-size:14px; font-weight:600; }
+  #mailPanel .mht { flex:1; min-width:0; display:flex; align-items:center; gap:10px; }
+  #mailPanel #mailBack { display:none; margin-right:auto; }
+  #mailPanel.v-detail #mailBack { display:flex; } #mailPanel.v-detail .mht { display:none; }
+  #mailPanel .mbar { display:flex; align-items:center; justify-content:space-between; gap:8px; flex:none; }
+  #mailPanel .mall { min-height:44px; }
+  #mailPanel .mtabs { flex:none; }
+  #mailPanel .ml { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; }
+  #mailPanel .ml > * { flex:none; }
+  #mailPanel.v-detail .mbar, #mailPanel.v-detail .mtabs { display:none !important; }
+  #mailPanel.v-list .mfoot { display:none; }
+  #mailPanel .mfoot { flex:none; display:flex; }
+  #mailPanel .mi { display:flex; cursor:pointer; }
+  #mailPanel .mbd { flex:1; min-width:0; display:flex; flex-direction:column; }
+  #mailPanel .mrow1 { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  #mailPanel .mtt { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #mailPanel .md { flex:none; white-space:nowrap; }
+  #mailPanel .mpv { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #mailPanel .mx { display:flex; flex-wrap:wrap; }
+  #mailPanel .mx span { display:inline-flex; align-items:center; white-space:nowrap; }
+  #mailPanel .mcl { display:flex; align-items:center; gap:6px; }
+  #mailPanel .ms { flex:none; width:44px; height:44px; padding:0; display:flex; align-items:center; justify-content:center; align-self:flex-start; }
+  #mailPanel .ms.on svg, #mailPanel .dsave.on svg { fill:currentColor; }
+  #mailPanel.sk-a .i-mark, #mailPanel.sk-b .i-star { display:none; }
+  #mailPanel .me { text-align:center; padding:40px 10px; font-size:14px; }
+  #mailPanel .mdet { display:flex; flex-direction:column; }
+  #mailPanel .dh { display:flex; align-items:center; flex-wrap:wrap; }
+  #mailPanel .dtag { display:inline-flex; align-items:center; gap:6px; }
+  #mailPanel .dbody { white-space:pre-wrap; }
+  #mailPanel .dtiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  #mailPanel .dtile { display:flex; flex-direction:column; align-items:center; }
+  #mailPanel .dtl { display:contents; }
+  #mailPanel .dti { order:1; font-size:28px; line-height:1; } #mailPanel .dtq { order:2; } #mailPanel .dtn { order:3; }
+  #mailPanel .dtd { display:none; }
+  #mailPanel .dsave { display:flex; align-items:center; }
+
+  /* ---- A: game UI ---- */
+  #mailPanel.sk-a { left:50%; top:max(16px,4vh); transform:translateX(-50%); width:min(440px,calc(100vw - 24px)); height:min(88vh,780px); overflow:hidden; background:#0e1629; color:#eef2f8; border:2px dashed #c9a24a; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+  @media (max-width:560px) { #mailPanel.sk-a { left:0; transform:none; top:52px; width:100vw; height:calc(100vh - 52px); height:calc(100dvh - 52px); border-bottom:0; border-radius:16px 16px 0 0; } }
+  #mailPanel.sk-a .mh { min-height:56px; padding:6px 8px 0 16px; }
+  #mailPanel.sk-a .mht { color:#f0c95f; font-size:22px; font-weight:700; }
+  #mailPanel.sk-a .mhb { border:1px dashed #5d6f93; border-radius:8px; background:#16223d; color:#a9b4c8; }
+  #mailPanel.sk-a #mailBack { color:#d6dbe6; padding:0 14px 0 8px; }
+  #mailPanel.sk-a .mskin { font-size:12px; padding:0 10px; }
+  #mailPanel.sk-a .mbar { padding:4px 16px 10px; }
+  #mailPanel.sk-a .mcount { font-size:13px; color:#a9b4c8; }
+  #mailPanel.sk-a .mall, #mailPanel.sk-a .mc, #mailPanel.sk-a .dclaim { border:0; border-radius:7px; background:#2bb3d9; color:#06131c; font-weight:700; font-size:14px; }
+  #mailPanel.sk-a .mall { padding:0 18px; }
+  #mailPanel.sk-a .mall[disabled], #mailPanel.sk-a .mc[disabled], #mailPanel.sk-a .dclaim[disabled] { background:#2a3550; color:#8f9bb3; cursor:default; }
+  #mailPanel.sk-a .mtabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; padding:6px 12px 0; }
+  #mailPanel.sk-a .mtab { position:relative; height:62px; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border:1px dashed #3b4a6b; border-radius:8px; background:#0b1222; color:#a9b4c8; font-size:12px; font-weight:600; }
+  #mailPanel.sk-a .mtab.on { border:2px solid #c9a24a; background:#16223d; color:#f0c95f; font-weight:700; }
+  #mailPanel.sk-a .tn { position:absolute; top:-6px; right:-4px; min-width:18px; height:18px; padding:0 4px; border-radius:9px; background:#d9412b; color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; }
+  #mailPanel.sk-a .ml { padding:14px 12px 16px; gap:10px; }
+  #mailPanel.sk-a .mi { gap:12px; padding:12px; border:1px dotted #3b4a6b; border-radius:10px; background:#0f1a30; }
+  #mailPanel.sk-a .mi.new { border:1.5px dashed #c9a24a; background:#16223d; }
+  #mailPanel.sk-a .mic { flex:none; width:44px; height:44px; display:flex; align-items:center; justify-content:center; border:1px dashed #3b4a6b; border-radius:8px; background:#121c33; color:#8f9bb3; }
+  #mailPanel.sk-a .mi.new .mic { border-color:#5d6f93; background:#1f2a3d; color:#f0c95f; }
+  #mailPanel.sk-a .mbd { gap:6px; }
+  #mailPanel.sk-a .mtt { font-size:15px; font-weight:500; color:#b4bfd3; } #mailPanel.sk-a .mi.new .mtt { font-size:16px; font-weight:600; color:#f6f8fc; white-space:normal; }
+  #mailPanel.sk-a .md { font-size:11px; color:#93a2ba; }
+  #mailPanel.sk-a .mpv { font-size:13px; color:#b4bfd3; }
+  #mailPanel.sk-a .mx { gap:6px; } #mailPanel.sk-a .mx span { height:26px; padding:0 8px; border:1px dashed #5d6f93; border-radius:6px; background:#0e1629; font-size:12px; color:#d6dbe6; }
+  #mailPanel.sk-a .mcl { font-size:12px; color:#6fd3a0; }
+  #mailPanel.sk-a .mc { height:44px; padding:0; }
+  #mailPanel.sk-a .ms { border:1px dashed #3b4a6b; border-radius:8px; background:transparent; color:#93a2ba; } #mailPanel.sk-a .ms.on { border-color:#c9a24a; color:#f0c95f; }
+  #mailPanel.sk-a .me { color:#8f9bb3; }
+  #mailPanel.sk-a .mdet { padding:2px 4px 0; gap:14px; }
+  #mailPanel.sk-a .dh { gap:8px; }
+  #mailPanel.sk-a .dtag { height:28px; padding:0 10px; border:1px dashed #c9a24a; border-radius:6px; background:#16223d; color:#f0c95f; font-size:12px; font-weight:600; }
+  #mailPanel.sk-a .dwhen { font-size:12px; color:#93a2ba; }
+  #mailPanel.sk-a .dtitle { font-size:24px; font-weight:700; line-height:1.2; color:#f6f8fc; }
+  #mailPanel.sk-a .d1, #mailPanel.sk-a .lb { display:none; }
+  #mailPanel.sk-a .dbody { font-size:15px; line-height:1.55; color:#d6dbe6; }
+  #mailPanel.sk-a .dsep { border-top:1px dashed #3b4a6b; }
+  #mailPanel.sk-a .dlab { font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#93a2ba; }
+  #mailPanel.sk-a .dtile { gap:6px; padding:14px 6px 12px; border:1.5px dashed #c9a24a; border-radius:10px; background:#16223d; }
+  #mailPanel.sk-a .dtq { font-size:18px; font-weight:700; color:#f0c95f; } #mailPanel.sk-a .dtn { font-size:12px; color:#b4bfd3; text-align:center; }
+  #mailPanel.sk-a .mfoot { gap:10px; padding:12px 16px calc(24px + env(safe-area-inset-bottom,0px)); border-top:1px dashed #3b4a6b; background:#0b1222; }
+  #mailPanel.sk-a .dsave { width:112px; height:52px; padding:0; justify-content:center; gap:8px; border:1px solid #33445e; border-radius:7px; background:#263349; color:#eef2f8; font-size:14px; font-weight:600; }
+  #mailPanel.sk-a .dclaim { flex:1; height:52px; padding:0; font-size:16px; }
+
+  /* ---- B: parchment ---- */
+  #mailPanel.sk-b { left:50%; top:max(44px,5vh); bottom:max(44px,5vh); transform:translateX(-50%); width:min(400px,calc(100vw - 64px)); max-height:780px; padding:26px 14px 0; font-family:'EB Garamond',Georgia,serif; color:#3b2716;
+    background-color:#e6d3a3; background-blend-mode:multiply,normal,normal,normal;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"),radial-gradient(ellipse at 22% 12%,#f3e5bd,transparent 55%),radial-gradient(ellipse at 85% 68%,#d8bf86,transparent 50%),radial-gradient(ellipse at 10% 90%,#d3b97c,transparent 45%);
+    box-shadow:inset 0 0 46px rgba(120,76,24,.55),0 0 18px rgba(0,0,0,.6); }
+  #mailPanel.sk-b::before, #mailPanel.sk-b::after { content:""; position:absolute; left:-24px; right:-24px; height:34px; z-index:3; pointer-events:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,.55));
+    background:radial-gradient(circle at 35% 30%,#e0b87a,#8a5a28 60%,#4d3016) left center/34px 34px no-repeat, radial-gradient(circle at 35% 30%,#e0b87a,#8a5a28 60%,#4d3016) right center/34px 34px no-repeat, linear-gradient(#d7ae6e,#9a6a32 50%,#5f3d1d) center/calc(100% - 24px) 26px no-repeat; }
+  #mailPanel.sk-b::before { top:-17px; } #mailPanel.sk-b::after { bottom:-17px; }
+  #mailPanel.sk-b .mh { align-items:flex-start; }
+  #mailPanel.sk-b .mht { font-family:'Cinzel',serif; font-size:30px; font-weight:700; line-height:1.1; color:#2f1d0e; } #mailPanel.sk-b .mht svg { display:none; }
+  #mailPanel.sk-b .mhb { border:1px solid #5a3a1c; border-radius:4px; background:rgba(90,58,28,.12); color:#3b2716; }
+  #mailPanel.sk-b #mailBack { font-family:'Cinzel',serif; font-size:13px; font-weight:700; letter-spacing:.04em; padding:0 14px 0 8px; }
+  #mailPanel.sk-b .mskin { font-family:'Cinzel',serif; font-size:11px; font-weight:700; letter-spacing:.04em; padding:0 10px; }
+  #mailPanel.sk-b .mbar { margin-top:2px; }
+  #mailPanel.sk-b .mcount { font-size:17px; font-style:italic; color:#5a4128; }
+  #mailPanel.sk-b .mall, #mailPanel.sk-b .mc { border:1px solid #2c1a0c; border-radius:4px; background:#4a2e17; color:#f6e9c9; font-family:'Cinzel',serif; font-weight:700; }
+  #mailPanel.sk-b .mall { padding:0 16px; font-size:13px; letter-spacing:.04em; }
+  #mailPanel.sk-b .mall[disabled], #mailPanel.sk-b .mc[disabled] { background:#b9a784; color:#5a4128; border-color:#8c7a58; cursor:default; }
+  #mailPanel.sk-b .mtabs { display:flex; justify-content:center; align-items:flex-start; gap:6px; margin-top:8px; }
+  #mailPanel.sk-b .mtab { position:relative; flex:1 1 0; max-width:58px; height:66px; padding:10px 0 0; border:0; clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%); background:#6f2a20; color:#f6e9c9; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:14px; font-weight:500; }
+  #mailPanel.sk-b .mtab.on { height:88px; clip-path:polygon(0 0,100% 0,100% 100%,50% 86%,0 100%); background:#a8321f; color:#fff2cf; font-weight:600; }
+  #mailPanel.sk-b .tn { position:absolute; top:3px; right:3px; min-width:17px; height:17px; padding:0 3px; border-radius:9px; background:#f6e9c9; color:#6f2a20; font-size:12px; font-weight:600; line-height:17px; text-align:center; }
+  #mailPanel.sk-b .ml { margin-top:-4px; padding:0; -webkit-mask-image:linear-gradient(#000 calc(100% - 26px),transparent); mask-image:linear-gradient(#000 calc(100% - 26px),transparent); }
+  #mailPanel.sk-b .mi { gap:10px; padding:14px 0 12px; border-top:3px double #8a6a3b; }
+  #mailPanel.sk-b .mic { flex:none; width:46px; height:46px; border-radius:48% 52% 50% 50% / 50% 50% 52% 48%; background:radial-gradient(circle at 35% 30%,#b9a784,#8c7a58 65%,#6e5f43); box-shadow:inset 0 0 0 3px rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center; color:#4a3a22; }
+  #mailPanel.sk-b .mi.new .mic { border-radius:46% 54% 50% 50% / 52% 48% 54% 46%; background:radial-gradient(circle at 35% 30%,#d9503a,#9a2616 60%,#6d170d); box-shadow:0 2px 4px rgba(60,20,10,.5),inset 0 0 0 3px rgba(255,200,180,.18); color:#f6d9c5; }
+  #mailPanel.sk-b .mbd { gap:5px; }
+  #mailPanel.sk-b .mrow1 { display:block; }
+  #mailPanel.sk-b .mtt { display:block; font-family:'Cinzel',serif; font-size:15px; font-weight:500; line-height:1.25; color:#5a4128; white-space:normal; }
+  #mailPanel.sk-b .mi.new .mtt { font-size:16px; font-weight:700; color:#2f1d0e; }
+  #mailPanel.sk-b .md { display:block; margin-top:3px; font-size:15px; font-style:italic; color:#6a5238; } #mailPanel.sk-b .mi.new .md { color:#5a4128; }
+  #mailPanel.sk-b .mpv { font-size:17px; line-height:1.3; color:#3b2716; white-space:normal; }
+  #mailPanel.sk-b .mx { gap:6px; } #mailPanel.sk-b .mx span { height:28px; padding:0 8px; border:1px dashed #6b4a28; border-radius:4px; background:rgba(120,80,30,.12); font-size:15px; font-weight:500; color:#3b2716; }
+  #mailPanel.sk-b .mcl { font-size:15px; font-style:italic; color:#6a5238; }
+  #mailPanel.sk-b .mc { height:44px; padding:0; margin-top:2px; font-size:14px; letter-spacing:.06em; }
+  #mailPanel.sk-b .ms { border:0; background:transparent; color:#5a4128; } #mailPanel.sk-b .ms.on { color:#a8321f; }
+  #mailPanel.sk-b .me { color:#5a4128; font-style:italic; font-size:17px; }
+  #mailPanel.sk-b .mdet { align-items:center; text-align:center; gap:8px; padding:14px 4px 0; }
+  #mailPanel.sk-b .dh { display:contents; }
+  #mailPanel.sk-b .dtag { order:1; font-family:'Cinzel',serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#8f2a1a; }
+  #mailPanel.sk-b .dtitle { order:2; font-family:'Cinzel',serif; font-size:25px; font-weight:700; line-height:1.2; color:#2f1d0e; }
+  #mailPanel.sk-b .dwhen { order:3; font-size:16px; font-style:italic; color:#5a4128; }
+  #mailPanel.sk-b .d1 { order:4; align-self:stretch; position:relative; border-top:1px solid #8a6a3b; margin:6px 0 2px; }
+  #mailPanel.sk-b .d1::after { content:""; position:absolute; left:50%; top:-5px; width:8px; height:8px; background:#8f2a1a; transform:translateX(-50%) rotate(45deg); box-shadow:0 0 0 4px #e6d3a3; }
+  #mailPanel.sk-b .dbody { order:5; align-self:stretch; text-align:left; font-size:21px; line-height:1.4; color:#2f1d0e; margin-top:6px; }
+  #mailPanel.sk-b .dbody::first-letter { float:left; font-family:'Cinzel',serif; font-weight:700; font-size:58px; line-height:.82; padding:6px 8px 0 0; color:#8f2a1a; }
+  #mailPanel.sk-b .d2, #mailPanel.sk-b .la { display:none; }
+  #mailPanel.sk-b .dlab { order:6; align-self:stretch; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:14px; font-family:'Cinzel',serif; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#5a4128; }
+  #mailPanel.sk-b .dlab::before, #mailPanel.sk-b .dlab::after { content:""; flex:1; border-top:1px solid #8a6a3b; }
+  #mailPanel.sk-b .dtiles { order:7; align-self:stretch; display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+  #mailPanel.sk-b .dtile { flex-direction:row; align-items:flex-end; gap:8px; font-size:21px; color:#2f1d0e; text-align:left; }
+  #mailPanel.sk-b .dtl { display:inline-flex; align-items:center; gap:8px; }
+  #mailPanel.sk-b .dti, #mailPanel.sk-b .dtq, #mailPanel.sk-b .dtn { order:0; } #mailPanel.sk-b .dti { font-size:18px; } #mailPanel.sk-b .dtq { font-weight:600; }
+  #mailPanel.sk-b .dtd { display:block; flex:1; border-bottom:2px dotted #8a6a3b; margin-bottom:7px; }
+  #mailPanel.sk-b .mfoot { flex-direction:column-reverse; align-items:center; gap:6px; padding:8px 0 18px; }
+  #mailPanel.sk-b .dclaim { width:100px; height:100px; padding:0; border:0; border-radius:46% 54% 50% 50% / 52% 48% 54% 46%; background:radial-gradient(circle at 35% 30%,#df5a42,#a02818 58%,#6d170d); box-shadow:0 5px 10px rgba(60,20,10,.55),inset 0 0 0 5px rgba(255,200,180,.16),inset 0 0 0 9px rgba(60,10,5,.18); color:#fbe6d4; font-family:'Cinzel',serif; font-size:15px; font-weight:700; letter-spacing:.08em; }
+  #mailPanel.sk-b .dclaim[disabled] { background:radial-gradient(circle at 35% 30%,#b9a784,#8c7a58 65%,#6e5f43); box-shadow:inset 0 0 0 5px rgba(255,255,255,.12); color:#4a3a22; cursor:default; }
+  #mailPanel.sk-b .dsave { min-height:44px; padding:0 14px; gap:8px; border:0; background:transparent; color:#4a2e17; font-size:18px; font-weight:500; text-decoration:underline; text-underline-offset:3px; }
   .stats-close { display:none; }
   #statsBackdrop { display:none; }
   @media (min-width:901px) {
@@ -2188,7 +2315,7 @@
 
 
 <div id="statsBackdrop"></div>
-<div id="mailBackdrop"></div><div id="mailPanel" role="dialog" aria-label="Mail"><div class="mh">✉️ Mail <span class="x" id="mailClose" title="Close">✕</span></div><div class="mtabs" id="mailTabs"></div><div class="ml" id="mailList"></div></div>
+<div id="mailBackdrop"></div><div id="mailPanel" class="sk-a v-list" role="dialog" aria-label="Mail"><div class="mh"><button type="button" class="mhb" id="mailBack" data-act="back" aria-label="Back to mail list"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"/></svg>Mail</button><span class="mht"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7 L12 13 L21 7"/></svg>Mail</span><button type="button" class="mhb mskin" id="mailSkin" data-act="skin" title="Switch look">Parchment</button><button type="button" class="mhb" id="mailClose" data-act="close" aria-label="Close mail"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div><div class="mbar" id="mailBar"></div><div class="mtabs" id="mailTabs"></div><div class="ml" id="mailList"></div><div class="mfoot" id="mailFoot"></div></div>
 <div id="topbar">
   <div id="titleWrap">
     <div id="avatarWrap" title="Click to change your avatar">
@@ -13964,10 +14091,21 @@ function ksStartWallet() {
 }
 // ---- v911: mail. The admin sends items; the player claims each mail once. The server records the claim (ledger);
 // server-held items (gems) are added there, save items are added here and marked in state.mailApplied so they're never added twice. ----
-var KSM = { list: [], unsub: null, busy: {}, tab: "system" };
-/* v914: mailbox tabs. Wars / Alliance / System / Reports come from the mail's category (none or unknown = System); Saved is the player's own star bookmarks (state.mailSaved) */
-var KSM_TABS = [["wars", "⚔️", "Wars"], ["alliance", "🛡️", "Alliance"], ["system", "⚙️", "System"], ["reports", "📜", "Reports"], ["saved", "⭐", "Saved"]];
-var KSM_EMPTY = { wars: "No war mail yet.", alliance: "No alliance mail yet.", system: "No system mail yet.", reports: "No reports yet.", saved: "Nothing saved. Tap the ☆ on a mail to keep it here." };
+var KSM = { list: [], unsub: null, busy: {}, tab: "system", open: null, allBusy: false,
+  skin: (function () { try { return localStorage.getItem("ksMailSkin") === "b" ? "b" : "a"; } catch (e) { return "a"; } })() }; /* v915: skin a = game UI, b = parchment (per device) */
+/* v914: mailbox tabs. Wars / Alliance / System / Reports come from the mail's category (none or unknown = System); Saved is the player's own bookmarks (state.mailSaved) */
+var KSM_TABS = [["wars", "Wars"], ["alliance", "Alliance"], ["system", "System"], ["reports", "Reports"], ["saved", "Saved"]];
+var KSM_CAT = { wars: "Wars", alliance: "Alliance", system: "System", reports: "Reports" };
+var KSM_EMPTY = { wars: "No war mail yet.", alliance: "No alliance mail yet.", system: "No system mail yet.", reports: "No reports yet.", saved: "Nothing saved. Tap the star on a mail to keep it here." };
+var KSM_P = { /* v915: line icons (24x24) */
+  wars: '<path d="M4 4 L17 17 M14.5 19.5 L19.5 14.5 M19 19 L20.5 20.5 M20 4 L7 17 M4.5 14.5 L9.5 19.5 M5 19 L3.5 20.5"/>',
+  alliance: '<path d="M12 3 L19 6 V12 C19 16.5 16 19.5 12 21 C8 19.5 5 16.5 5 12 V6 Z"/>',
+  system: '<circle cx="12" cy="12" r="9"/><path d="M12 11 V16.5"/><path d="M12 7.6 V7.7"/>',
+  reports: '<path d="M7 3 H15 L19 7 V21 H7 Z M15 3 V7 H19 M10 11 H16 M10 14.5 H16 M10 18 H14"/>',
+  star: '<path d="M12 3.5 L14.6 9 L20.5 9.7 L16.1 13.8 L17.3 19.6 L12 16.7 L6.7 19.6 L7.9 13.8 L3.5 9.7 L9.4 9 Z"/>',
+  mark: '<path d="M7 3 H17 V21 L12 16.5 L7 21 Z"/>',
+  check: '<path d="M5 12.5 L10 17.5 L19 7"/>' };
+function ksIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + KSM_P[n] + "</svg>"; }
 function ksMailCat(m) { var c = m && m.category; return (c === "wars" || c === "alliance" || c === "reports") ? c : "system"; }
 function ksMailUnreadIn(cat) { return KSM.list.filter(function (m) { return !m.claimedAt && ksMailCat(m) === cat; }).length; }
 function ksMailPickTab() { /* on opening: go to the first tab (Wars first) with unclaimed mail; if none has any, stay on the tab used last */
@@ -13977,6 +14115,18 @@ function ksMailToggleSave(id) {
   var st = game.state; st.mailSaved = st.mailSaved || {};
   if (st.mailSaved[id]) delete st.mailSaved[id]; else st.mailSaved[id] = Date.now();
   persist(); ksMailRender();
+}
+function ksMailWhen(t) { /* list: time today, 'Yesterday', else day + month */
+  var d = new Date(t || 0), n = new Date(), s0 = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+  if (d.getTime() >= s0) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (d.getTime() >= s0 - 864e5) return "Yesterday";
+  return d.toLocaleDateString([], { day: "numeric", month: "short" });
+}
+function ksMailItems(m) { /* [{label, icon, name, qty}]; the label from the server is 'icon name' */
+  return Object.keys(m.items || {}).map(function (k) {
+    var lab = (m.labels && m.labels[k]) || k.replace(/_/g, " "), p = /^(\S+)\s+(.+)$/.exec(lab), ic = !!(p && /[^\x00-\x7F]/.test(p[1]));
+    return { label: lab, icon: ic ? p[1] : "", name: ic ? p[2] : lab, qty: +m.items[k] || 0 };
+  });
 }
 function ksStartMail() {
   if (KSM.unsub) return; document.documentElement.classList.add("ks-mail-on");
@@ -13999,11 +14149,38 @@ function ksMailApply(id, items) {
   try { render(); } catch (e) {} return true;
 }
 function ksMailClaim(id, quiet) {
-  if (KSM.busy[id]) return; KSM.busy[id] = true; ksMailRender();
-  KS_BACKEND.call("claimMail", { id: id }).then(function (r) {
+  if (KSM.busy[id]) return Promise.resolve(false); KSM.busy[id] = true; ksMailRender();
+  return KS_BACKEND.call("claimMail", { id: id }).then(function (r) { /* v915: returns a promise (true = claimed) so 'Claim all' can go one after another */
     if (typeof r.gems === "number" && !r.dup) { KSW.gems = r.gems; game.state.gems = r.gems; }
     if (ksMailApply(id, r.items) && !quiet) game.log("✉️ Claimed: " + r.items.map(function (x) { return x.qty.toLocaleString() + " " + x.name; }).join(", "));
-  }, function (e) { if (!quiet) game.log(ksErrText(e)); }).then(function () { delete KSM.busy[id]; ksMailRender(); });
+    return true;
+  }, function (e) { if (!quiet) game.log(ksErrText(e)); return false; }).then(function (ok) { delete KSM.busy[id]; ksMailRender(); return ok; });
+}
+function ksMailShown() { var sv = game.state.mailSaved || {}; return KSM.list.filter(function (m) { return KSM.tab === "saved" ? !!sv[m.id] : ksMailCat(m) === KSM.tab; }); }
+function ksMailRow(m, sv) {
+  var cat = ksMailCat(m), it = ksMailItems(m), done = !!m.claimedAt, busy = !!KSM.busy[m.id], id = escapeHtml(m.id), on = !!sv[m.id], pv = String(m.body || "").split("\n")[0];
+  var line = done ? '<div class="mcl">' + ksIc("check", 14) + "Claimed · " + escapeHtml(it.map(function (c) { return c.label + " × " + c.qty.toLocaleString(); }).join(", ")) + "</div>"
+    : '<div class="mx">' + it.map(function (c) { return "<span>" + escapeHtml(c.label) + " × " + c.qty.toLocaleString() + "</span>"; }).join("") + '</div><button type="button" class="mc" data-claim="' + id + '"' + (busy ? " disabled" : "") + ">" + (busy ? "Claiming…" : "Claim") + "</button>";
+  return '<div class="mi' + (done ? "" : " new") + '" data-open="' + id + '" tabindex="0"><div class="mic">' + ksIc(cat, 24) + '</div><div class="mbd"><div class="mrow1"><span class="mtt">' + escapeHtml(m.title || "") + '</span><span class="md">' + escapeHtml(ksMailWhen(m.sentAt)) + "</span></div>"
+    + (pv && !done ? '<div class="mpv">' + escapeHtml(pv) + "</div>" : "") + line + '</div><button type="button" class="ms' + (on ? " on" : "") + '" data-save="' + id + '" title="' + (on ? "Remove from Saved" : "Save this mail") + '" aria-label="' + (on ? "Remove from Saved" : "Save this mail") + '"><i class="i-star">' + ksIc("star", 22) + '</i><i class="i-mark">' + ksIc("mark", 22) + "</i></button></div>";
+}
+function ksMailDetail(m) {
+  var cat = ksMailCat(m), it = ksMailItems(m), when = new Date(m.sentAt || 0).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  return '<div class="mdet"><div class="dh"><span class="dtag">' + ksIc(cat, 14) + KSM_CAT[cat] + '</span><span class="dwhen">' + escapeHtml(when + " · From " + (m.from || "Admin")) + '</span></div><div class="dtitle">' + escapeHtml(m.title || "") + '</div><div class="dsep d1"></div>'
+    + (m.body ? '<div class="dbody">' + escapeHtml(m.body) + "</div>" : "") + '<div class="dsep d2"></div><div class="dlab"><span class="la">Items in this mail</span><span class="lb">Enclosed</span></div><div class="dtiles">'
+    + it.map(function (c) { return '<div class="dtile"><span class="dtl"><i class="dti">' + escapeHtml(c.icon) + '</i><span class="dtn">' + escapeHtml(c.name) + '</span></span><span class="dtd"></span><span class="dtq">× ' + c.qty.toLocaleString() + "</span></div>"; }).join("") + "</div></div>";
+}
+function ksMailFoot(m, sv) {
+  var on = !!sv[m.id], busy = !!KSM.busy[m.id], id = escapeHtml(m.id);
+  return '<button type="button" class="dsave' + (on ? " on" : "") + '" data-save="' + id + '"><i class="i-star">' + ksIc("star", 20) + '</i><i class="i-mark">' + ksIc("mark", 20) + "</i><span>" + (on ? "Saved" : "Save") + "</span></button>"
+    + (m.claimedAt ? '<button type="button" class="dclaim" disabled>Claimed</button>' : '<button type="button" class="dclaim" data-claim="' + id + '"' + (busy ? " disabled" : "") + ">" + (busy ? "Claiming…" : "Claim") + "</button>");
+}
+function ksMailClaimAll() { /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
+  var ids = ksMailShown().filter(function (m) { return !m.claimedAt; }).map(function (m) { return m.id; }); if (!ids.length || KSM.allBusy) return;
+  KSM.allBusy = true; ksMailRender(); var done = 0;
+  ids.reduce(function (p, id) { return p.then(function () { return ksMailClaim(id, true).then(function (ok) { if (ok) done++; }); }); }, Promise.resolve()).then(function () {
+    KSM.allBusy = false; if (done) game.log("✉️ Claimed " + done + " mail" + (done > 1 ? "s" : "")); ksMailRender();
+  });
 }
 function ksMailRender() {
   var unread = KSM.list.filter(function (m) { return !m.claimedAt; }).length, b = document.getElementById("mailBadge");
@@ -14011,30 +14188,40 @@ function ksMailRender() {
   var mb = document.getElementById("mapMailBadge"), mbt = document.getElementById("mapMailBtn"); /* v912: map mailbox mirrors it */
   if (mb) { mb.textContent = unread > 9 ? "9+" : String(unread); mb.classList.toggle("on", unread > 0); }
   if (mbt) { mbt.classList.toggle("has", unread > 0); var ic = mbt.querySelector(".mmi"); if (ic) ic.textContent = unread > 0 ? "📬" : "📪"; mbt.title = unread > 0 ? unread + " unclaimed mail" : "Mail"; }
-  var el = document.getElementById("mailList"); if (!el || !document.body.classList.contains("mail-open")) return;
-  var saved = game.state.mailSaved || {}, tabsEl = document.getElementById("mailTabs");
-  if (tabsEl) {
-    tabsEl.innerHTML = KSM_TABS.map(function (t) { var n = t[0] === "saved" ? 0 : ksMailUnreadIn(t[0]);
-      return '<button type="button" class="mtab' + (KSM.tab === t[0] ? " on" : "") + '" data-tab="' + t[0] + '"><span class="ti">' + t[1] + '</span><span class="tl">' + t[2] + "</span>" + (n ? '<b class="tn">' + (n > 9 ? "9+" : n) + "</b>" : "") + "</button>"; }).join("");
-    [].forEach.call(tabsEl.querySelectorAll("[data-tab]"), function (x) { x.onclick = function () { KSM.tab = x.getAttribute("data-tab"); ksMailRender(); el.scrollTop = 0; }; });
-  }
-  var shown = KSM.list.filter(function (m) { return KSM.tab === "saved" ? !!saved[m.id] : ksMailCat(m) === KSM.tab; });
-  if (!shown.length) { el.innerHTML = '<div class="me">' + (KSM_EMPTY[KSM.tab] || "No mail yet.") + "</div>"; return; }
-  el.innerHTML = shown.map(function (m) {
-    var items = Object.keys(m.items || {}).map(function (k) { return "<span>" + escapeHtml((m.labels && m.labels[k]) || k.replace(/_/g, " ")) + " × " + (+m.items[k]).toLocaleString() + "</span>"; }).join("");
-    var when = new Date(m.sentAt || 0).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-    var btn = m.claimedAt ? '<button class="mc" disabled>Claimed ' + new Date(m.claimedAt).toLocaleDateString() + "</button>" : '<button class="mc" data-claim="' + escapeHtml(m.id) + '"' + (KSM.busy[m.id] ? " disabled" : "") + ">" + (KSM.busy[m.id] ? "Claiming…" : "Claim") + "</button>";
-    return '<div class="mi' + (m.claimedAt ? "" : " new") + '"><div class="mt"><span class="mtt"><button type="button" class="ms' + (saved[m.id] ? " on" : "") + '" data-save="' + escapeHtml(m.id) + '" title="' + (saved[m.id] ? "Remove from Saved" : "Save this mail") + '" aria-label="Save">' + (saved[m.id] ? "★" : "☆") + "</button>" + escapeHtml(m.title || "") + '</span><span class="md">' + when + "</span></div>" + (m.body ? '<div class="mb">' + escapeHtml(m.body) + "</div>" : "") + '<div class="mx">' + items + "</div>" + btn + "</div>";
-  }).join("");
-  [].forEach.call(el.querySelectorAll("[data-claim]"), function (x) { x.onclick = function () { ksMailClaim(x.getAttribute("data-claim")); }; });
-  [].forEach.call(el.querySelectorAll("[data-save]"), function (x) { x.onclick = function () { ksMailToggleSave(x.getAttribute("data-save")); }; });
+  var p = document.getElementById("mailPanel"), el = document.getElementById("mailList"); if (!p || !el || !document.body.classList.contains("mail-open")) return;
+  var sv = game.state.mailSaved || {}, om = null;
+  if (KSM.open) { KSM.list.forEach(function (m) { if (m.id === KSM.open) om = m; }); if (!om) KSM.open = null; }
+  p.className = "sk-" + KSM.skin + (om ? " v-detail" : " v-list");
+  var sk = document.getElementById("mailSkin"); if (sk) sk.textContent = KSM.skin === "a" ? "Parchment" : "Game UI";
+  var foot = document.getElementById("mailFoot"), keep = el.scrollTop;
+  if (om) { el.innerHTML = ksMailDetail(om); foot.innerHTML = ksMailFoot(om, sv); return; }
+  var shown = ksMailShown(), left = shown.filter(function (m) { return !m.claimedAt; }).length, nm = KSM.tab === "saved" ? "Saved" : KSM_CAT[KSM.tab];
+  document.getElementById("mailBar").innerHTML = '<span class="mcount">' + (left ? left + " unclaimed in " + nm : "Nothing waiting in " + nm) + '</span><button type="button" class="mall" data-act="all"' + (left && !KSM.allBusy ? "" : " disabled") + ">" + (KSM.allBusy ? "Claiming…" : "Claim all") + "</button>";
+  document.getElementById("mailTabs").innerHTML = KSM_TABS.map(function (t) { var n = t[0] === "saved" ? 0 : ksMailUnreadIn(t[0]);
+    return '<button type="button" class="mtab' + (KSM.tab === t[0] ? " on" : "") + '" data-tab="' + t[0] + '">' + (t[0] === "saved" ? '<i class="i-star">' + ksIc("star", 22) + '</i><i class="i-mark">' + ksIc("mark", 22) + "</i>" : ksIc(t[0], 22)) + '<span class="tl">' + t[1] + "</span>" + (n ? '<b class="tn">' + (n > 9 ? "9+" : n) + "</b>" : "") + "</button>"; }).join("");
+  el.innerHTML = shown.length ? shown.map(function (m) { return ksMailRow(m, sv); }).join("") : '<div class="me">' + KSM_EMPTY[KSM.tab] + "</div>"; el.scrollTop = keep;
 }
 (function initMailPanel() {
   function close() { document.body.classList.remove("mail-open"); }
-  var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { document.body.classList.toggle("mail-open"); ksMailPickTab(); ksMailRender(); };
-  var mb = document.getElementById("mapMailBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); document.body.classList.add("mail-open"); ksMailPickTab(); ksMailRender(); };
-  var c = document.getElementById("mailClose"); if (c) c.onclick = close;
+  function openIt() { KSM.open = null; document.body.classList.add("mail-open"); ksMailPickTab(); ksMailRender(); }
+  var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { if (document.body.classList.contains("mail-open")) close(); else openIt(); };
+  var mb = document.getElementById("mapMailBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); openIt(); };
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
+  var p = document.getElementById("mailPanel"); if (p) {
+    function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0; }
+    p.addEventListener("click", function (e) {
+      var t = e.target.closest ? e.target : e.target.parentNode, x;
+      if ((x = t.closest("[data-claim]"))) { ksMailClaim(x.getAttribute("data-claim")); return; }
+      if ((x = t.closest("[data-save]"))) { ksMailToggleSave(x.getAttribute("data-save")); return; }
+      if ((x = t.closest("[data-act]"))) { var a = x.getAttribute("data-act");
+        if (a === "all") ksMailClaimAll(); else if (a === "close") close(); else if (a === "back") { KSM.open = null; ksMailRender(); }
+        else if (a === "skin") { KSM.skin = KSM.skin === "a" ? "b" : "a"; try { localStorage.setItem("ksMailSkin", KSM.skin); } catch (er) {} ksMailRender(); }
+        return; }
+      if ((x = t.closest("[data-tab]"))) { KSM.tab = x.getAttribute("data-tab"); KSM.open = null; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0; return; }
+      if ((x = t.closest("[data-open]"))) openMail(x.getAttribute("data-open"));
+    });
+    p.addEventListener("keydown", function (e) { var o = e.target.getAttribute && e.target.getAttribute("data-open"); if (o && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openMail(o); } });
+  }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
 })();
 function ksClaimLoop() { /* claim gems for each Conquest level cleared but not yet paid, one at a time, at the pace the server allows */
