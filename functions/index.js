@@ -2,6 +2,7 @@
 // Callable from the game with firebase.functions().httpsCallable(name)({ env, ... }). env = "live" | "test".
 "use strict";
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
@@ -239,13 +240,57 @@ exports.adminFindPlayers = wrap(async (req, uid, R, d) => {
 exports.adminPlayerInfo = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);
   const t = validUid(d.uid), base = R + "players/" + t + "/";
-  const [w, m, n, led, mail, pur] = await Promise.all([
+  const [w, m, n, led, mail, pur, ac] = await Promise.all([
     db.doc(base + "wallet/main").get(), db.doc(base + "meta/account").get(), db.doc(base + NAME_DOC).get(),
     db.collection(base + "ledger").orderBy("at", "desc").limit(200).get(),
     db.collection(base + "mail").orderBy("sentAt", "desc").limit(100).get(),
-    db.collection(R + "purchases").where("uid", "==", t).get()
+    db.collection(R + "purchases").where("uid", "==", t).get(),
+    db.doc(R + "acplayers/" + t).get()
   ]);
   const purchases = pur.docs.map((x) => Object.assign({ id: x.id }, x.data())).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 100);
   return { uid: t, name: n.exists ? (n.data() || {}).data || "" : "", wallet: w.exists ? w.data() : {}, meta: m.exists ? m.data() : {},
-    ledger: led.docs.map((x) => Object.assign({ id: x.id }, x.data())), mail: mail.docs.map((x) => Object.assign({ id: x.id }, x.data())), purchases };
+    ledger: led.docs.map((x) => Object.assign({ id: x.id }, x.data())), mail: mail.docs.map((x) => Object.assign({ id: x.id }, x.data())), purchases,
+    flags: ac.exists ? ac.data() : null };
+});
+
+// ---- anti-cheat stage 2 (v920): every save write is compared with the previous one (C.checkSave). FLAG ONLY for now: a jump the game can't
+// produce is recorded in <env>acplayers/<uid> (admin-only), the save is never touched. AC_REVERT = true would also put the previous save back
+// (destructive: only once Harley has reviewed real flags and asked for it). Admins and bots are skipped (dev tools edit saves freely).
+const AC_REVERT = false;
+function acHandler(R) {
+  return async (event) => {
+    const uid = event.params.uid;
+    if (!event.data || !event.data.after || !event.data.after.exists) return;
+    if (ADMIN_UIDS.indexOf(uid) !== -1 || /^bot_/.test(uid) || uid === "owner") return;
+    const bS = event.data.before, aS = event.data.after;
+    const before = bS && bS.exists ? bS.data() : null, after = aS.data();
+    const tA = aS.updateTime ? aS.updateTime.toMillis() : Date.now(), tB = before && bS.updateTime ? bS.updateTime.toMillis() : null;
+    const dt = tB == null ? null : (tA - tB) / 1000;
+    let r = C.checkSave(before, after, dt, {});
+    if (!r.reasons.length) return;
+    if (r.mailCouldHelp && tB != null) { /* only now look up mail claimed in that window (most saves never need this read) */
+      const ms = await db.collection(R + "players/" + uid + "/mail").where("claimedAt", ">=", tB - 120000).get();
+      r = C.checkSave(before, after, dt, C.mailAllowance(ms.docs.map((x) => x.data())));
+      if (!r.reasons.length) return;
+    }
+    const ref = db.doc(R + "acplayers/" + uid), entry = { at: tA, dtSec: dt == null ? null : Math.round(dt), reasons: r.reasons.slice(0, 10) };
+    await db.runTransaction(async (tx) => {
+      const s0 = await tx.get(ref), cur = s0.exists ? s0.data() : {};
+      const recent = [entry].concat(Array.isArray(cur.recent) ? cur.recent : []).slice(0, 20);
+      tx.set(ref, { uid, count: (cur.count || 0) + 1, firstAt: cur.firstAt || tA, lastAt: tA, recent, reverted: (cur.reverted || 0) + (AC_REVERT && before ? 1 : 0) });
+    });
+    console.warn("anti-cheat flag", R || "live", uid, JSON.stringify(entry.reasons));
+    if (AC_REVERT && before) await aS.ref.set(before);
+  };
+}
+exports.onSaveWriteLive = onDocumentWritten("players/{uid}/save/main", acHandler(""));
+exports.onSaveWriteTest = onDocumentWritten("envs/test/players/{uid}/save/main", acHandler("envs/test/"));
+
+// Admin: players with anti-cheat flags, most recent first.
+exports.adminFlagged = wrap(async (req, uid, R) => {
+  adminOnly(uid, req);
+  const q = await db.collection(R + "acplayers").orderBy("lastAt", "desc").limit(50).get();
+  const rows = q.docs.map((x) => x.data());
+  if (rows.length) { const ns = await db.getAll(...rows.map((x) => db.doc(R + "players/" + x.uid + "/" + NAME_DOC))); rows.forEach((x, i) => { x.name = ns[i].exists ? String((ns[i].data() || {}).data || "") : ""; }); }
+  return { players: rows };
 });

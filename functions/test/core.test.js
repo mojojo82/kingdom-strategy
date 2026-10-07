@@ -96,4 +96,40 @@ t("item catalogue + mail", () => {
   assert.ok(C.decideMailClaim(Object.assign({}, m, { claimedAt: 9 }), 10).dup, "claim twice = no-op");
   const le = C.ledgerEntry("food", 1000, null, "mail", "m1", null, 3); assert.ok(!("balance" in le));
 });
+t("anti-cheat: save plausibility", () => {
+  const base = () => ({ resources: { food: 5000, wood: 5000, stone: 3000, gold: 1000 }, troops: { infantry: 200, archer: 100, cavalry: 0 }, energon: 50, researchPoints: 10,
+    buildings: { townhall: { level: 3 }, farm: { level: 2 } }, tech: { a: 1 }, fortressTech: {}, weaponLevels: {}, heroes: { gareth: { owned: true, level: 5, fragments: 10 } },
+    idle: { chapter: 1, levelNum: 5, valor: 100, conquestBooks: 2 } });
+  const ok = (b, a, dt, al) => C.checkSave(b, a, dt, al).reasons;
+  // normal play: a minute of income, one upgrade, one level
+  let b = base(), a = base(); a.resources.gold += 900; a.buildings.farm.level = 3; a.idle.levelNum = 6; a.troops.infantry += 300; a.heroes.gareth.level = 7;
+  assert.deepStrictEqual(ok(b, a, 60), []);
+  // nothing changed / things went down
+  assert.deepStrictEqual(ok(base(), base(), 1), []);
+  a = base(); a.resources.food = 0; a.troops.infantry = 0; assert.deepStrictEqual(ok(base(), a, 5), []);
+  // Conquest: 1-5 -> 3-1 (36 levels) in 60 s is impossible; 1 level in 10 s is fine
+  a = base(); a.idle.chapter = 3; a.idle.levelNum = 1; assert.ok(ok(base(), a, 60).some((r) => /Conquest \+36 levels/.test(r)));
+  a = base(); a.idle.levelNum = 6; assert.deepStrictEqual(ok(base(), a, 10), []);
+  // a console edit of gold
+  a = base(); a.resources.gold = 1e9; let r = C.checkSave(base(), a, 60); assert.ok(r.reasons.some((x) => /^gold \+/.test(x)) && r.mailCouldHelp);
+  // ... unless a claimed mail gave it
+  assert.deepStrictEqual(ok(base(), a, 60, C.mailAllowance([{ items: { gold: 1e9 } }])), []);
+  // broken numbers
+  a = base(); a.resources.wood = NaN; assert.ok(ok(base(), a, 60).some((x) => /not a valid amount/.test(x)));
+  a = base(); a.resources.wood = -5; assert.ok(ok(base(), a, 60).some((x) => /not a valid amount/.test(x)));
+  // buildings maxed in seconds
+  a = base(); a.buildings.townhall.level = 30; a.buildings.farm.level = 30; assert.ok(ok(base(), a, 10).some((x) => /building levels/.test(x)));
+  // hero level 5 -> 100 in 10 s
+  a = base(); a.heroes.gareth.level = 100; assert.ok(ok(base(), a, 10).some((x) => /gareth level/.test(x)));
+  // troops from nothing to a million
+  a = base(); a.troops.cavalry = 1e6; assert.ok(ok(base(), a, 60).some((x) => /^troops/.test(x)));
+  // a long time away is allowed more
+  a = base(); a.buildings.farm.level = 12; assert.deepStrictEqual(ok(base(), a, 3600), []);
+  // brand-new save: defaults pass, a level-100 or rich new save is flagged
+  assert.deepStrictEqual(ok(null, base(), null), []);
+  a = base(); a.idle.chapter = 6; assert.ok(ok(null, a, null).some((x) => /new save already at Conquest level/.test(x)));
+  a = base(); a.resources.gold = 5e6; assert.ok(ok(null, a, null).some((x) => /new save with/.test(x)));
+  // mail allowance only counts save items
+  assert.deepStrictEqual(C.mailAllowance([{ items: { gems: 50, food: 10, infantry: 5 } }, { items: { food: 5 } }]), { "resources.food": 15, "troops.infantry": 5 });
+});
 console.log(n + " tests passed");

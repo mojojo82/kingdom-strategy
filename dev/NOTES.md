@@ -254,3 +254,23 @@
 - Not changed: cities (all cities of the kingdom stay live: needed for the zoomed-out markers and occupancy; bounded by the 1,000-player kingdom cap),
   marches, alliances, terrain/decor (tiny).
 - g172's boss window now only counts hits while the boss is up (the next wave's arrows aren't orbs; it was flaky).
+
+## v920: anti-cheat stage 2 — save plausibility checks (server, FLAG ONLY)
+- Harley chose "plausibility checks" (not a server-run economy). Every write of `players/{uid}/save/main` (live) and `envs/test/players/{uid}/save/main`
+  (test) runs a Firestore trigger (`onSaveWriteLive` / `onSaveWriteTest`, functions/index.js) that compares the new save with the previous one using
+  the server's own write times (`C.checkSave`, functions/core.js, pure + unit-tested). A jump the game can't make in that time = a flag in
+  `<env>acplayers/{uid}` {count, firstAt, lastAt, recent[20] {at, dtSec, reasons}} (rules: admin read, nobody writes but the server).
+- Checks (generous on purpose; tighten from real flags): Conquest levels vs the game's measured per-level minimum (levelFloorSec x 0.9, + 30 s slack);
+  building levels (3 + 1 per 20 s), research + fortress tech (same), weapon levels (3 + 1 per 30 s), hero level (30 + 1 per 5 s), hero fragments
+  (500 + 2/s), troops (3,000 + what you had + 30/s), each of food/wood/stone/gold (100,000 + 2x what you had + 200/s), energon / research points /
+  weapon tickets / valor / books (50,000 + 2x + 100/s); broken numbers (NaN, negative); a brand-new save above level 5 / 200k of a resource /
+  40 building levels / 5,000 troops. Mail claimed in the window is allowed on top (looked up only when it could matter).
+- Skipped: admins (dev tools edit saves freely), bot_ accounts, the legacy "owner" save.
+- FLAG ONLY: `AC_REVERT = false` in functions/index.js. Turning it on puts the previous save back on a flagged write — destructive, only after
+  Harley has reviewed real flags and asks.
+- Admin site: "⚑ Flagged players" button (list, newest first) + per-player "Anti-cheat" tab + red flag count (adminFlagged, adminPlayerInfo.flags).
+- CI: the Cloud Run invoker loop skips `on*` functions (save triggers must never be publicly callable). Integration test checks a cheat is flagged,
+  the player can't read/erase the flag, and the save is untouched.
+- Verified: g177 plays the real game 120 s (66 saves) -> 0 flags, then a console cheat -> flagged (Conquest +100 levels in 2 s, gold +99.9M);
+  g178 runs the real trigger (normal/cheat/mail-excused/admin/live); g179 admin page. NOT yet verified with late-game saves (Harley's real save is
+  still in the claude.ai db) — the flag-only mode is what makes that safe.

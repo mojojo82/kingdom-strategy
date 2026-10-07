@@ -51,6 +51,7 @@ const BODY = `
 
       // ---- server bookkeeping ----
       match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
+      match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
 
       // ---- shared world state used by every client (stage 2 will move these behind the server too) ----
       match /alliances/{aid} { allow read, write: if signedIn(); }

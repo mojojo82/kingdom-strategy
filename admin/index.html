@@ -69,7 +69,7 @@
 
   <section class="card">
     <h2>Find a player</h2>
-    <div class="row"><input class="grow" id="q" placeholder="Name or player id"><button class="b" id="findBtn">Search</button></div>
+    <div class="row"><input class="grow" id="q" placeholder="Name or player id"><button class="b" id="findBtn">Search</button><button class="b ghost" id="flaggedBtn" title="Players the anti-cheat check flagged (saves that jumped further than the game allows)">⚑ Flagged players</button></div>
     <div id="results" style="margin-top:10px"></div>
   </section>
 
@@ -102,7 +102,7 @@
     </div>
 
     <div class="card" style="margin-top:14px;background:var(--panel2)">
-      <div class="tabs" id="tabs"><button data-t="ledger" class="on">History</button><button data-t="mail">Mail</button><button data-t="purchases">Purchases</button></div>
+      <div class="tabs" id="tabs"><button data-t="ledger" class="on">History</button><button data-t="mail">Mail</button><button data-t="purchases">Purchases</button><button data-t="flags">Anti-cheat</button></div>
       <div id="tabBody"></div>
     </div>
   </section>
@@ -192,6 +192,18 @@
       [].forEach.call($("results").querySelectorAll("[data-uid]"), function (tr) { tr.onclick = function () { openPlayer(tr.getAttribute("data-uid")); }; });
     }, function (e) { $("results").innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; });
   }
+  // ---- anti-cheat flags (v920): saves that jumped further than the game allows. Flag only: nothing is changed in the player's save. ----
+  function flagged() {
+    $("results").innerHTML = '<div class="muted">Loading flagged players…</div>';
+    call("adminFlagged", {}).then(function (r) {
+      if (!r.players.length) { $("results").innerHTML = '<div class="muted">No flagged players on ' + S.env.toUpperCase() + '. Nobody\'s save has jumped further than the game allows.</div>'; return; }
+      $("results").innerHTML = '<div class="muted" style="margin-bottom:6px">Flag only: these saves are NOT changed. Each flag = one save that jumped further than the game allows.</div><table><tr><th>Name</th><th>Flags</th><th>Last</th><th>Latest reason</th></tr>' + r.players.map(function (p) {
+        var why = (p.recent && p.recent[0] && p.recent[0].reasons && p.recent[0].reasons[0]) || "";
+        return '<tr class="click" data-uid="' + esc(p.uid) + '"><td>' + esc(p.name || p.uid) + '</td><td><b>' + (p.count || 0) + "</b></td><td>" + when(p.lastAt) + "</td><td>" + esc(why) + "</td></tr>"; }).join("") + "</table>";
+      [].forEach.call($("results").querySelectorAll("[data-uid]"), function (tr) { tr.onclick = function () { S.tab = "flags"; [].forEach.call($("tabs").children, function (x) { x.classList.toggle("on", x.getAttribute("data-t") === "flags"); }); openPlayer(tr.getAttribute("data-uid")); }; });
+    }, function (e) { $("results").innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; });
+  }
+  $("flaggedBtn").onclick = flagged;
   $("findBtn").onclick = find; $("q").onkeydown = function (e) { if (e.key === "Enter") find(); };
 
   // ---- player ----
@@ -200,7 +212,7 @@
     call("adminPlayerInfo", { uid: uid }).then(function (info) {
       if (S.player !== uid) return; S.info = info;
       $("pName").textContent = info.name || "(no name)";
-      $("pStats").innerHTML = '<span class="stat">Gems <b>' + ((info.wallet && info.wallet.gems) || 0).toLocaleString() + '</b></span><span class="stat">Paid level <b>' + ((info.wallet && info.wallet.lvl) || 0) + '</b></span><span class="stat muted">Created ' + when(info.meta && info.meta.createdAt) + '</span><span class="stat muted">Last seen ' + when(info.meta && info.meta.lastSeen) + "</span>";
+      $("pStats").innerHTML = '<span class="stat">Gems <b>' + ((info.wallet && info.wallet.gems) || 0).toLocaleString() + '</b></span><span class="stat">Paid level <b>' + ((info.wallet && info.wallet.lvl) || 0) + '</b></span><span class="stat muted">Created ' + when(info.meta && info.meta.createdAt) + '</span><span class="stat muted">Last seen ' + when(info.meta && info.meta.lastSeen) + "</span>" + (info.flags && info.flags.count ? '<span class="stat" style="color:#ff8a6a">⚑ Anti-cheat flags <b>' + info.flags.count + "</b></span>" : "");
       renderTab();
     }, function (e) { $("pName").textContent = "Error"; toast(errText(e), true); });
   }
@@ -215,6 +227,11 @@
     } else if (S.tab === "mail") {
       el.innerHTML = i.mail.length ? '<table><tr><th>Sent</th><th>Title</th><th>Items</th><th>Claimed</th></tr>' + i.mail.map(function (m) {
         return "<tr><td>" + when(m.sentAt) + "</td><td>" + esc(m.title) + "</td><td>" + Object.keys(m.items || {}).map(function (k) { return '<span class="pill">' + esc(itemLabel(k)) + " × " + (+m.items[k]).toLocaleString() + "</span>"; }).join("") + "</td><td>" + (m.claimedAt ? '<span class="ok">' + when(m.claimedAt) + "</span>" : '<span class="muted">not yet</span>') + "</td></tr>"; }).join("") + "</table>" : '<div class="muted">No mail sent to this player.</div>';
+    } else if (S.tab === "flags") {
+      var F = i.flags;
+      el.innerHTML = !F ? '<div class="muted">No anti-cheat flags for this player.</div>'
+        : '<div class="muted" style="margin:6px 0">' + (F.count || 0) + ' flag(s) since ' + when(F.firstAt) + '. Flag only: the save was not changed.</div><table><tr><th>When</th><th>Time between saves</th><th>Why</th></tr>' + (F.recent || []).map(function (r) {
+          return "<tr><td>" + when(r.at) + "</td><td>" + (r.dtSec == null ? "first save" : r.dtSec + " s") + "</td><td>" + (r.reasons || []).map(function (x) { return '<div>' + esc(x) + "</div>"; }).join("") + "</td></tr>"; }).join("") + "</table>";
     } else {
       el.innerHTML = i.purchases.length ? '<table><tr><th>When</th><th>Pack</th><th>Price</th><th>Receipt</th><th>Status</th><th></th></tr>' + i.purchases.map(function (p) {
         return "<tr><td>" + when(p.at) + "</td><td>" + esc(p.packName || p.pack) + "</td><td>" + esc(p.price) + " " + esc(p.currency || "") + '</td><td class="muted">' + esc(p.provider) + " " + esc(p.receiptId) + "</td><td>" + esc(p.status) + (p.statusNote ? ' <span class="muted">(' + esc(p.statusNote) + ")</span>" : "") +

@@ -74,7 +74,7 @@ jobs:
           set -o pipefail
           echo "$SA" > /tmp/sa.json
           gcloud auth activate-service-account --key-file=/tmp/sa.json --quiet 2>&1 | tee -a ci-out/deploy.log
-          for f in $(grep -oE '^exports\.[A-Za-z0-9_]+' functions/index.js | sed 's/exports\.//' | tr 'A-Z' 'a-z'); do
+          for f in $(grep -oE '^exports\.[A-Za-z0-9_]+' functions/index.js | sed 's/exports\.//' | grep -v '^on[A-Z]' | tr 'A-Z' 'a-z'); do  # on* = save triggers: never public
             gcloud run services add-iam-policy-binding $f --project kingdom-strategy --region us-central1 --member=allUsers --role=roles/run.invoker --quiet >/dev/null 2>/tmp/err.txt && echo "invoker ok: $f" | tee -a ci-out/deploy.log || { echo "invoker FAILED: $f"; cat /tmp/err.txt; } 2>&1 | tee -a ci-out/deploy.log
           done
       - name: Smoke test (functions reachable by the game, refuse signed-out calls)

@@ -44,6 +44,17 @@ const P = (s) => R + s;
     await denied(setDoc(doc(A.db, P("players/" + A.uid + "/wallet/main")), { gems: 1e9 }));
     await denied(getDoc(doc(A.db, P("players/" + B.uid + "/wallet/main"))));
   });
+  await t("anti-cheat: an impossible save jump is flagged (admins can read it, the player can't read or erase it, the save is untouched)", async () => {
+    await setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 100 }, idle: { chapter: 1, levelNum: 1 } });
+    await sleep(1500);
+    await setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 1e9 }, idle: { chapter: 9, levelNum: 1 } });
+    let f = null; for (let i = 0; i < 20 && !(f && f.exists()); i++) { await sleep(1000); f = await getDoc(doc(ADM.db, P("acplayers/" + A.uid))); }
+    assert.ok(f && f.exists(), "flag written by the save trigger");
+    const reasons = (f.data().recent || [])[0].reasons.join(" | "); assert.ok(/Conquest/.test(reasons) && /gold/.test(reasons), reasons);
+    await denied(getDoc(doc(A.db, P("acplayers/" + A.uid))));
+    await denied(setDoc(doc(A.db, P("acplayers/" + A.uid)), { count: 0 }));
+    const sv = await getDoc(doc(A.db, P("players/" + A.uid + "/save/main"))); assert.strictEqual(sv.data().resources.gold, 1e9, "flag only: save untouched");
+  });
   await t("guest (anonymous) accounts can't write or use the server", async () => {
     await denied(setDoc(doc(ANON.db, P("players/" + ANON.uid + "/save/main")), { x: 1 }));
     await fnErr(ANON.call("claimLevel", { chapter: 1, levelNum: 1 }), /permission-denied|guest/);
