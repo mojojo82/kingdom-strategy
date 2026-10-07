@@ -356,3 +356,6 @@
 - v929: top-bar ✉️ mail button hidden (CSS); mail now opens from the World map 📪 only. Phones: 📪 stacked ABOVE 🛰️ (recon bottom, just above
   the chat bar); PC already had 📪 on top. g184 checks order + no top-bar mail + 📪 opens mail; g170/g171 and ci/e2e.test.js now open mail via
   setScreen("world") + #mapMailBtn. (g168_mail.js is a stale early test - wrong paths + old markup; superseded by g170/g171.)
+- v930: home bubble hid under the phone chat bar when home was below the view (Harley screenshot). Cause: the bottom limit used the X/Y pill's
+  offsetParent, which is null for position:fixed elements, so the limit fell back to the full map height (map runs under the chat bar). Now
+  uses the pill's bounding box. g186 adds a "home below" case (bubble bottom must be above the pill).

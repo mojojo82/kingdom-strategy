@@ -13858,7 +13858,7 @@ function updateHomeBubble() { /* city off screen -> bubble on the map edge in it
   var home = appScreen === "world" && game.state.homeTileId ? mapTileById(game.state.map, game.state.homeTileId) : null;
   if (!home || !vp.offsetParent || !vp.clientWidth) { hb.classList.remove("on"); return; }
   var R = vp.getBoundingClientRect(), top = R.top + 70, bot = Math.min(R.bottom, innerHeight), co = document.getElementById("mapCoords");
-  if (co && co.offsetParent) bot = Math.min(bot, co.getBoundingClientRect().top - 4); /* phones: stay above the chat bar like the X/Y pill */
+  var cr = co && co.getBoundingClientRect(); if (cr && cr.height) bot = Math.min(bot, cr.top - 4); /* v930: was offsetParent, which is null for the fixed pill on phones -> bubble went under the chat bar */ /* phones: stay above the chat bar like the X/Y pill */
   var L = R.left, Rt = R.left + vp.clientWidth, c = tileCenterPx(home), hx = R.left + c.x - vp.scrollLeft, hy = R.top + c.y - vp.scrollTop;
   if (hx > L && hx < Rt && hy > top && hy < bot) { hb.classList.remove("on"); return; } /* city is on screen */
   var m = 42, cx = (L + Rt) / 2, cy = (top + bot) / 2, hw = (Rt - L) / 2 - m, hh = (bot - top) / 2 - m, dx = hx - cx, dy = hy - cy;
@@ -14915,7 +14915,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v929 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v930 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;

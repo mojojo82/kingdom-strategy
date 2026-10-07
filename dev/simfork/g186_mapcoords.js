@@ -48,6 +48,12 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     await P.click("#mapHomeBubble"); await P.waitForTimeout(500);
     const hb2 = await P.evaluate(() => ({ on: document.getElementById("mapHomeBubble").classList.contains("on"), t: document.getElementById("mapCoords").textContent }));
     assert.ok(!hb2.on && hb2.t === r.text, "tap bubble -> back home"); 
+    /* v930: home BELOW the view -> bubble must sit above the X/Y pill (phones: above the chat bar) */
+    await P.evaluate(() => { centerMapOnHome(); const v = document.getElementById("mapviewport"); v.scrollTop -= 1400; }); await P.waitForTimeout(400);
+    const hb3 = await P.evaluate(() => { const e = document.getElementById("mapHomeBubble").getBoundingClientRect(), c = document.getElementById("mapCoords").getBoundingClientRect(); return { on: document.getElementById("mapHomeBubble").classList.contains("on"), bb: e.bottom, pillTop: c.top }; });
+    console.log(tag, "home below:", JSON.stringify(hb3)); await P.screenshot({ path: OUT + "map_home_below_" + tag + ".png" });
+    assert.ok(hb3.on && hb3.bb <= hb3.pillTop, "bubble above the X/Y pill / chat bar");
+    await P.evaluate(() => centerMapOnHome()); await P.waitForTimeout(300);
     /* scroll changes the coords */
     const t0 = r.text; await P.evaluate(() => { const v = document.getElementById("mapviewport"); v.scrollLeft += 400; v.scrollTop += 300; }); await P.waitForTimeout(300);
     const t1 = await P.evaluate(() => document.getElementById("mapCoords").textContent); assert.notStrictEqual(t0, t1, "coords follow scrolling");
