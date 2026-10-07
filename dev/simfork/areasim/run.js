@@ -42,6 +42,8 @@ const FILTER = process.argv[2] || "", SEEDS = +(process.env.SEEDS || 3), STABLE 
       ["E2 Equipment: 10x Elite", (s) => setEquipBonus(equipSet(2))],
       ["E3 Equipment: 10x Epic", (s) => setEquipBonus(equipSet(4))],
       ["E4 Equipment: 10x Legendary (max)", (s) => setEquipBonus(equipSet(5))],
+      ["WE Weapons max + Legendary equipment", (s) => { weapons(s, W3, 50); setEquipBonus(equipSet(5)); }],
+      ["NH Everything except heroes (max)", (s) => { weapons(s, W3, 50); buildingsMax(s); researchMax(s, 1); setEquipBonus(equipSet(5)); }],
       ["X Everything max (reference)", (s) => { heroes(s, FIVE, 80, 5, 25); weapons(s, W3, 50); buildingsMax(s); researchMax(s, 1); setEquipBonus(equipSet(5)); }]
     ].filter((x) => x[0].indexOf(FILTER) === 0 || !FILTER);
     const res = [];

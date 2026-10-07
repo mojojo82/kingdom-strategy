@@ -365,3 +365,6 @@
   (fortress tree) half or max 5-11 (normal tech tree has no conquest effect). Equipment 10x Common 4-7, Elite 5-1, Epic 5-3, Legendary 5-5
   (it's % on hero stats, so tiny on Lv1 heroes). Everything max: 23-18 .. 25-11+. The pile-up at 5-1..5-11 is IDLE_EASE ending (levels 1-80
   eased to 15% enemy HP/ATK, blend to full by L100).
+  Follow-up: weapons DO use the ATK bonus (weaponDmgFor = BASE_ATK x (1 + ATK bonus%) x dmgPct; bonus = equipment ATK% + Dev Tools), railgun = % enemy
+  max HP, drone = % of ranged hero power. Weapons max + Legendary equip: 5-15. Everything except heroes maxed (weapons, equip, buildings,
+  research): 8-20 / 9-2 (~20-32h) - beats 5 heroes at Lv40 (8-5).
