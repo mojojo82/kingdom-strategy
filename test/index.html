@@ -4401,6 +4401,7 @@ var TECH_DEFS_RAW = {
   efficientBuilders:  { name: "Efficient Builders",  icon: "👷", category: "growth",  maxLevel: 5, baseCost: 70,  costMult: 1.55, effectType: "buildSpeedMult",   effectTarget: null,   perLevel: 0.05, unit: "pct",  statLabel: "Construction Speed" },
   drillSergeant:      { name: "Drill Sergeant",      icon: "📯", category: "growth",  maxLevel: 5, baseCost: 70,  costMult: 1.55, effectType: "trainSpeedMult",   effectTarget: null,   perLevel: 0.05, unit: "pct",  statLabel: "Troop Training Speed" },
   scholarlyPursuit:   { name: "Scholarly Pursuit",   icon: "🧠", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "rpProductionMult", effectTarget: null,   perLevel: 0.06, unit: "pct",  statLabel: "Research Point Production", reqBuilding: "academy", reqBuildingLevel: 1 },
+  energonSiphon:      { name: "Energon Siphon",      icon: "🔋", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "idleEnergonFlat",  effectTarget: null,   perLevel: 40,   unit: "flat", statLabel: "Idle Energon per hour" }, /* v921: +20/h per level (10 levels, +200/h) */
   logistics:          { name: "Logistics",           icon: "📦", category: "growth",  maxLevel: 5, baseCost: 80,  costMult: 1.55, effectType: "gatherBonusMult",  effectTarget: null,   perLevel: 0.06, unit: "pct",  statLabel: "Gathering Yield" },
 
   // ---- ECONOMY ----
@@ -6585,11 +6586,13 @@ function createGame(opts) {
   var EQ_SLOTS = 10, EQ_INV_MAX = 60, EQ_ICON_COUNT = 24;
   var EQ_DISMANTLE = [1, 2, 4, 7, 11, 16];           // Energon refunded per rarity
   var FORGE_MAX_LEVEL = 30;
-  var FORGE_ODDS_POINTS = [[1, [75, 25, 0, 0, 0, 0]], [3, [55, 33, 12, 0, 0, 0]], [6, [38, 32, 20, 10, 0, 0]], [10, [24, 28, 24, 16, 8, 0]], [15, [15, 22, 24, 20, 14, 5]], [30, [5, 12, 20, 25, 25, 13]]];
+  /* v921 (Harley: Elite came far too easily): odds tuned by time for a player who puts every Energon into the Forge (dev/simfork/forge pacing sim):
+     first Elite ~3 h, Super Rare ~2 days, Epic ~12 days, Legendary ~2 months (never before ~5 weeks, up to ~4 months). Was: Elite in ~12 min, SR ~2 h. */
+  var FORGE_ODDS_POINTS = [[1, [80, 20, 0, 0, 0, 0]], [3, [69, 26, 5, 0, 0, 0]], [6, [56, 28, 8, 8, 0, 0]], [10, [48, 29, 13, 7.5, 2.5, 0]], [15, [40, 30, 16, 9.6, 4, 0.4]], [30, [28, 31, 22, 12, 5.5, 1.5]]];
   var ENERGON_PER_KILL = 1, ENERGON_PER_BOSS = 25;
   var BUCKET_CAP_HOURS = 8, BUCKET_RATE_FRAC = 0.25, BUCKET_MIN_GAP_SEC = 20, BUCKET_LIVE_WINDOW_SEC = 60;
   // v742: cost points tuned for pacing (extremely active player ~9k Energon/day): Epic (lvl 10) ~7 days, Legendary (lvl 15) ~1 month; log-interpolated between points
-  var FORGE_COST_POINTS = [[1, 20], [3, 25], [6, 250], [10, 1500], [15, 1650], [20, 2200], [30, 3600]];
+  var FORGE_COST_POINTS = [[1, 60], [2, 250], [3, 250], [6, 330], [10, 1200], [15, 1650], [20, 2200], [30, 3600]]; /* v921: reaching Forge 3 (Elite) costs ~3,600 Energon (was 464) */
   function forgeCost(L) {
     var P = FORGE_COST_POINTS; L = Math.max(1, L);
     if (L >= P[P.length - 1][0]) return P[P.length - 1][1];
@@ -6683,7 +6686,10 @@ function createGame(opts) {
     var lr = state.idle.levelRewards || (state.idle.levelRewards = { valor: 0, energon: 0, fragments: 0, fragHero: null });
     lr.valor += v; lr.energon += n;
   }
-  function bucketCapEn() { return state.bucket.enHr * BUCKET_RATE_FRAC * BUCKET_CAP_HOURS; }
+  /* v921: idle Energon is a small fixed trickle (40/h) that research raises (Energon Siphon, up to +200/h); it no longer follows how fast you farm while playing. Idle Valor is unchanged. */
+  var IDLE_ENERGON_BASE_HR = 40;
+  function idleEnergonHr() { return IDLE_ENERGON_BASE_HR + techBonusSum("idleEnergonFlat"); }
+  function bucketCapEn() { return idleEnergonHr() * BUCKET_CAP_HOURS; }
   function bucketCapVal() { return state.bucket.valHr * BUCKET_RATE_FRAC * BUCKET_CAP_HOURS; }
   function tickBucket(t) {
     var b = state.bucket; if (b.at == null) { b.at = t; return; }
@@ -6691,7 +6697,7 @@ function createGame(opts) {
     if (gap < 0) return;
     if (gap > BUCKET_MIN_GAP_SEC) { // we were away: bank it (capped at 8h worth), don't treat as live play
       var hrs = Math.min(gap / 3600, BUCKET_CAP_HOURS), en0 = b.en, val0 = b.val;
-      b.en = Math.min(bucketCapEn(), b.en + hrs * b.enHr * BUCKET_RATE_FRAC);
+      b.en = b.en >= bucketCapEn() ? b.en : Math.min(bucketCapEn(), b.en + hrs * idleEnergonHr()); /* v921: fixed trickle; an older, bigger bucket isn't cut down */
       b.val = Math.min(bucketCapVal(), b.val + hrs * b.valHr * BUCKET_RATE_FRAC);
       var aw = b.away || (b.away = { sec: 0, en: 0, val: 0, id: 0 }); // welcome-back popup reads this
       aw.sec += gap; aw.en += Math.max(0, b.en - en0); aw.val += Math.max(0, b.val - val0); aw.id++;
@@ -6712,7 +6718,7 @@ function createGame(opts) {
   function idleSetSkillAuto(on) { state.idle.skillAuto = !!on; if (on) state.idle.skillCast = {}; }
   function idleCastSkill(key) { if (state.idle.skillAuto !== false) return false; var cd = state.heroCooldowns[key]; if (cd != null && cd > 0.05) return false; if (!state.idle.skillCast) state.idle.skillCast = {}; state.idle.skillCast[key] = true; return true; }
   function bucketAwayClear() { delete state.bucket.away; }
-  function bucketInfo() { var b = state.bucket; return { away: b.away ? { sec: b.away.sec, en: Math.floor(b.away.en), val: Math.floor(b.away.val), id: b.away.id } : null, energon: Math.floor(b.en), valor: Math.floor(b.val), capEn: Math.floor(bucketCapEn()), capVal: Math.floor(bucketCapVal()), enHr: b.enHr * BUCKET_RATE_FRAC, valHr: b.valHr * BUCKET_RATE_FRAC }; }
+  function bucketInfo() { var b = state.bucket; return { away: b.away ? { sec: b.away.sec, en: Math.floor(b.away.en), val: Math.floor(b.away.val), id: b.away.id } : null, energon: Math.floor(b.en), valor: Math.floor(b.val), capEn: Math.floor(bucketCapEn()), capVal: Math.floor(bucketCapVal()), enHr: idleEnergonHr(), valHr: b.valHr * BUCKET_RATE_FRAC }; }
   function forgeInfo() { var F = state.forge; return { level: F.level, progress: F.progress, need: forgeNeed(F.level), cost: forgeCost(F.level), odds: forgeOdds(F.level), maxLevel: FORGE_MAX_LEVEL, unlock: EQ_UNLOCK.slice(), invMax: EQ_INV_MAX }; }
   // ================= end v727 =================
   function idleMarkMult(e, aid) { return ((e && e.markT > 0 && !idleAttackerIsMelee(aid)) ? 1 + (e.markPct || 0) : 1) * ((e && e.type === "boss") ? 1 + (equipBonus.boss || 0) / 100 : 1); } // Kessa's Storm Mark: marked enemies take extra damage from ranged heroes

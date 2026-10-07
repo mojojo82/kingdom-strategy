@@ -274,3 +274,16 @@
 - Verified: g177 plays the real game 120 s (66 saves) -> 0 flags, then a console cheat -> flagged (Conquest +100 levels in 2 s, gold +99.9M);
   g178 runs the real trigger (normal/cheat/mail-excused/admin/live); g179 admin page. NOT yet verified with late-game saves (Harley's real save is
   still in the claude.ai db) — the flag-only mode is what makes that safe.
+
+## v921 (TEST game only): Forge pacing — Elite no longer in the first minutes; idle Energon is a research-raised trickle
+- Harley: Elite came far too easily (reference: an idle game where the top tier takes 1 to several months; its maxed idle Forge income is 72/h).
+  Chosen: keep our few, expensive pulls ("option 1") and set the odds by TIME. Simulator: dev/simfork/forge_pacing_sim.js (reads the live table).
+- Before (sim, player spending every Energon on the Forge, median first piece): Elite 12 min, Super Rare 2 h, Epic 7.5 d, Legendary 36 d (all within ~42 d).
+- After: Elite ~3 h (10%: 1.5 h), Super Rare ~2.2 d, Epic ~12 d, Legendary ~61 d (10%: 37 d, 90%: 108 d).
+- FORGE_COST_POINTS [[1,60],[2,250],[3,250],[6,330],[10,1200],[15,1650],[20,2200],[30,3600]] (reaching Forge 3 = Elite: 3,600 Energon, was 464).
+  FORGE_ODDS_POINTS L1 80/20, L3 69/26/5, L6 56/28/8/8, L10 48/29/13/7.5/2.5, L15 40/30/16/9.6/4/0.4, L30 28/31/22/12/5.5/1.5 (unlock levels unchanged 1/1/3/6/10/15).
+- Idle Energon: fixed IDLE_ENERGON_BASE_HR = 40/h (8 h cap) + new research "Energon Siphon" (Growth, 10 levels, +20/h each -> 240/h). It used to be 25%
+  of your live farming rate (~690/h after 5 minutes of play). Idle Valor unchanged. An existing bigger bucket isn't cut down.
+- Time model assumptions (sim): day 1 = 4 h active (3,000/h measured early, falling to 1,500/h) + idle; later days 9,000/day (the game's own note).
+  Real late-game Energon income was NOT measured — re-check against real play.
+- Test: g180_forgepacing.js.
