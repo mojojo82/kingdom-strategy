@@ -85,6 +85,7 @@
         <select id="mCat" style="width:100%;margin-top:8px" title="Which mailbox tab the player sees it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
         <input id="mTitle" placeholder="Title (e.g. Sorry for the bug)" style="width:100%;margin-top:6px" maxlength="80">
         <textarea id="mBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
+        <select id="mGift" class="giftSel" data-box="mItems" data-title="mTitle" style="width:100%;margin-top:6px"></select>
         <div id="mItems"></div>
         <div class="row" style="margin-top:8px"><button class="b ghost" id="addItem">+ Add item</button><button class="b" id="sendMail">Send to this player</button></div>
       </div>
@@ -108,6 +109,22 @@
   </section>
 
   <section class="card">
+    <h2>📦 Packs</h2>
+    <div class="muted">One list for both: <b>🛒 Shop</b> = what players can buy (shown in the game's shop once payments are connected); <b>🎁 Mail gift</b> = a ready-made bundle you can pick when sending mail. Packs belong to the selected environment (test or live). Editing a pack never changes purchases already made.</div>
+    <div id="pkList" style="margin-top:10px"></div>
+    <div class="card" style="background:var(--panel2);margin-top:12px">
+      <h2 id="pkFormTitle">➕ New pack</h2>
+      <input type="hidden" id="pkId">
+      <div class="row"><input class="grow" id="pkName" placeholder="Name (e.g. Starter Pack, Bug apology)" maxlength="60"><input id="pkPrice" type="number" min="0" step="0.01" placeholder="Price (0 = free)" style="width:170px"><input id="pkCur" value="NZD" maxlength="3" style="width:64px"></div>
+      <input id="pkDesc" placeholder="Short description (optional, shown in the shop)" style="width:100%;margin-top:6px" maxlength="200">
+      <div id="pkItems"></div>
+      <div class="row" style="margin-top:8px"><button class="b ghost" id="pkAdd">+ Add item</button>
+        <label><input type="checkbox" id="pkShop"> 🛒 Shop</label><label><input type="checkbox" id="pkMail" checked> 🎁 Mail gift</label><label><input type="checkbox" id="pkActive" checked> Active</label></div>
+      <div class="row" style="margin-top:8px"><button class="b" id="pkSave">Save pack</button><button class="b ghost" id="pkNew">Clear / new</button></div>
+    </div>
+  </section>
+
+  <section class="card">
     <h2>🛠️ Maintenance mode</h2>
     <div class="muted">While ON, players in the selected environment see a maintenance screen and nothing they do is saved; the server refuses their saves and claims. You (admin) can still play. Turning it OFF reloads everyone's game onto the newest version.</div>
     <div id="mtStatus" style="margin-top:8px;font-weight:700">…</div>
@@ -122,6 +139,7 @@
     <select id="aCat" style="width:100%;margin-top:8px" title="Which mailbox tab the players see it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
     <input id="aTitle" placeholder="Title" style="width:100%;margin-top:6px" maxlength="80">
     <textarea id="aBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
+    <select id="aGift" class="giftSel" data-box="aItems" data-title="aTitle" style="width:100%;margin-top:6px"></select>
     <div id="aItems"></div>
     <div class="row" style="margin-top:8px"><button class="b ghost" id="aAddItem">+ Add item</button><button class="b warn" id="aSend">Send to everyone</button></div>
   </section>
@@ -170,7 +188,7 @@
     $("so").onclick = function () { auth.signOut(); };
     call("adminCatalog").then(function (c) {
       S.catalog = c; $("signin").classList.add("hide"); $("app").classList.remove("hide"); renderEnv();
-      $("packSel").innerHTML = Object.keys(c.packs).filter(function (k) { return k[0] !== "_"; }).map(function (k) { var p = c.packs[k]; return '<option value="' + esc(k) + '">' + esc(p.name) + " (" + Object.keys(p.items).map(function (i) { return p.items[i] + " " + i; }).join(", ") + ")</option>"; }).join("");
+      setPacks(c.packs); pkClear();
       $("mItems").innerHTML = ""; $("aItems").innerHTML = ""; addItemRow("mItems"); addItemRow("aItems");
     }, function (e) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); u.getIdTokenResult().then(function (t) { $("siMsg").textContent = !/admin only|permission/i.test(errText(e)) ? errText(e) : (t.signInProvider !== "google.com" && !EMU) ? "Admin needs Google sign-in. Sign out and use Continue with Google." : "This account isn't an admin."; }); });
   });
@@ -277,6 +295,35 @@
     var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (String(typed || "").trim().toUpperCase() !== "SEND") { toast(typed == null ? "Cancelled - nothing sent" : "Not sent - type the word SEND to confirm", true); return; } /* v941: send/Send/ SEND also accepted */
     call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items, category: $("aCat").value }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
   };
+  // ---- v943: packs (shop + mail gifts) ----
+  function packItemsText(p) { return Object.keys(p.items || {}).map(function (i) { return (+p.items[i]).toLocaleString() + " × " + itemLabel(i); }).join(", "); }
+  function setPacks(packs) {
+    S.catalog.packs = packs || {}; var ids = Object.keys(S.catalog.packs).filter(function (k) { return k[0] !== "_"; }).sort(function (a, b) { var x = S.catalog.packs[a], y = S.catalog.packs[b]; return ((x.order || 0) - (y.order || 0)) || String(x.name).localeCompare(String(y.name)); });
+    var P = S.catalog.packs;
+    $("packSel").innerHTML = ids.filter(function (k) { return P[k].builtIn || P[k].shop; }).map(function (k) { return '<option value="' + esc(k) + '">' + esc(P[k].name) + (P[k].price ? " · " + P[k].price + " " + (P[k].currency || "") : "") + " (" + esc(packItemsText(P[k])) + ")</option>"; }).join("") || '<option value="">No shop packs yet</option>';
+    var gifts = ids.filter(function (k) { return P[k].mail && P[k].active !== false; });
+    [].forEach.call(document.querySelectorAll(".giftSel"), function (sel) { sel.innerHTML = '<option value="">🎁 Fill from a gift pack… (optional)</option>' + gifts.map(function (k) { return '<option value="' + esc(k) + '">' + esc(P[k].name) + " — " + esc(packItemsText(P[k])) + "</option>"; }).join(""); sel.disabled = !gifts.length; });
+    $("pkList").innerHTML = !ids.length ? '<div class="muted">No packs yet.</div>' : '<table><thead><tr><th>Pack</th><th>Contents</th><th>Price</th><th>Use</th><th></th></tr></thead><tbody>' + ids.map(function (k) { var p = P[k];
+      return "<tr" + (p.active === false ? ' style="opacity:.5"' : "") + "><td><b>" + esc(p.name) + "</b>" + (p.desc ? '<div class="muted">' + esc(p.desc) + "</div>" : "") + '<div class="muted">' + esc(k) + (p.builtIn ? " · built-in" : "") + (p.active === false ? " · inactive" : "") + "</div></td><td>" + Object.keys(p.items || {}).map(function (i) { return '<span class="pill">' + esc((+p.items[i]).toLocaleString() + " × " + itemLabel(i)) + "</span>"; }).join("") + "</td><td>" + (p.price ? esc(p.price + " " + (p.currency || "")) : '<span class="muted">—</span>') + "</td><td>" + (p.shop ? "🛒 " : "") + (p.mail ? "🎁" : "") + "</td><td>" + (p.builtIn ? "" : '<button class="b ghost" data-pkedit="' + esc(k) + '" style="padding:3px 9px">Edit</button> <button class="b ghost" data-pkdel="' + esc(k) + '" style="padding:3px 9px">Delete</button>') + "</td></tr>"; }).join("") + "</tbody></table>";
+  }
+  function fillRows(box, items) { $(box).innerHTML = ""; Object.keys(items || {}).forEach(function (k) { addItemRow(box); var r = $(box).lastChild; r.querySelector("select").value = k; r.querySelector("input").value = items[k]; }); if (!Object.keys(items || {}).length) addItemRow(box); }
+  [].forEach.call(document.querySelectorAll(".giftSel"), function (sel) { sel.onchange = function () { var p = S.catalog.packs[sel.value]; if (!p) return; fillRows(sel.getAttribute("data-box"), p.items); var t = $(sel.getAttribute("data-title")); if (!t.value.trim()) t.value = p.name; sel.value = ""; toast("Filled with “" + p.name + "” - you can still change it"); }; });
+  function pkClear() { $("pkId").value = ""; $("pkName").value = ""; $("pkPrice").value = ""; $("pkCur").value = "NZD"; $("pkDesc").value = ""; $("pkShop").checked = false; $("pkMail").checked = true; $("pkActive").checked = true; $("pkFormTitle").textContent = "➕ New pack"; fillRows("pkItems", {}); }
+  $("pkNew").onclick = pkClear; $("pkAdd").onclick = function () { addItemRow("pkItems"); };
+  $("pkList").onclick = function (e) {
+    var t = e.target, id;
+    if ((id = t.getAttribute("data-pkedit"))) { var p = S.catalog.packs[id]; $("pkId").value = id; $("pkName").value = p.name; $("pkPrice").value = p.price || ""; $("pkCur").value = p.currency || "NZD"; $("pkDesc").value = p.desc || ""; $("pkShop").checked = !!p.shop; $("pkMail").checked = !!p.mail; $("pkActive").checked = p.active !== false; fillRows("pkItems", p.items); $("pkFormTitle").textContent = "✏️ Edit pack: " + p.name; $("pkName").scrollIntoView({ block: "center" }); }
+    if ((id = t.getAttribute("data-pkdel"))) { if (!confirmEnv("Delete pack “" + S.catalog.packs[id].name + "”? Purchases already made are not affected.")) return; call("adminDeletePack", { id: id }).then(function (r) { setPacks(r.packs); toast("Pack deleted"); }, function (e) { toast(errText(e), true); }); }
+  };
+  $("pkSave").onclick = function () {
+    var items; try { items = readItems("pkItems"); } catch (e) { toast(e.message, true); return; }
+    if (!Object.keys(items).length) { toast("A pack needs at least one item.", true); return; }
+    var pack = { name: $("pkName").value.trim(), price: +$("pkPrice").value || 0, currency: $("pkCur").value.trim(), desc: $("pkDesc").value.trim(), items: items, shop: $("pkShop").checked, mail: $("pkMail").checked, active: $("pkActive").checked };
+    if (!pack.name) { toast("Give the pack a name.", true); return; }
+    if (!pack.shop && !pack.mail) { toast("Tick 🛒 Shop, 🎁 Mail gift, or both.", true); return; }
+    call("adminSavePack", { id: $("pkId").value || null, pack: pack }).then(function (r) { setPacks(r.packs); toast("Saved “" + r.pack.name + "”"); pkClear(); }, function (e) { toast(errText(e), true); });
+  };
+
   // ---- v942: maintenance mode ----
   function mtShow(m) {
     var on = m && m.on === true, el = $("mtStatus");
@@ -293,7 +340,7 @@
     if (!confirmEnv("Turn maintenance OFF? Everyone's game reloads and they can play again.")) return;
     call("adminMaintenance", { set: { on: false } }).then(function (m) { mtShow(m); $("mtMsg").value = ""; $("mtUntil").value = ""; toast("Maintenance is OFF"); }, function (e) { toast(errText(e), true); });
   };
-  var renderEnv0 = renderEnv; renderEnv = function () { renderEnv0(); if (S.catalog) mtLoad(); };
+  var renderEnv0 = renderEnv; renderEnv = function () { renderEnv0(); if (S.catalog) { mtLoad(); call("adminCatalog").then(function (c) { setPacks(c.packs); }, function () {}); } };
   renderEnv();
 })();
 </script>

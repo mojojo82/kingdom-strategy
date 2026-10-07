@@ -188,6 +188,21 @@ const P = (s) => R + s;
     assert.ok(m); assert.deepStrictEqual(m.data().items, {});
     const r = await Cc.call("claimMail", { id: m.id }); assert.ok(!r.dup); assert.deepStrictEqual(r.items, []); assert.ok(r.claimedAt > 0);
   });
+  await t("packs (v943): admin makes shop/gift packs; players read only; a shop pack delivers gems + other items by mail", async () => {
+    await fnErr(A.call("adminSavePack", { pack: { name: "Free gems", items: { gems: 999 }, shop: true } }), /admin only|permission/);
+    const sv = await ADM.call("adminSavePack", { pack: { name: "Starter Pack", items: { gems: 300, wood: 5000 }, price: 4.99, shop: true } }); assert.strictEqual(sv.id, "starter_pack");
+    const pd = await getDoc(doc(A.db, P("packs/starter_pack"))); assert.strictEqual(pd.data().price, 4.99, "players can read packs (for the shop)");
+    await denied(setDoc(doc(A.db, P("packs/starter_pack")), { name: "x", items: { gems: 1e6 } }));
+    const c = await ADM.call("adminCatalog"); assert.ok(c.packs.starter_pack && c.packs.test_gems_100, "catalog = built-in + admin packs");
+    const before = ((await getDoc(doc(B.db, P("players/" + B.uid + "/wallet/main")))).data() || {}).gems || 0;
+    const r = await ADM.call("adminDeliverPurchase", { uid: B.uid, pack: "starter_pack", receiptId: "ci-pack-0001" }); assert.strictEqual(r.gems, before + 300);
+    const { getDocs, collection } = require("firebase/firestore");
+    const ms = await getDocs(collection(B.db, P("players/" + B.uid + "/mail"))); const m = ms.docs.find((d) => d.id === r.record.mailId);
+    assert.ok(m && m.data().items.wood === 5000 && !m.data().items.gems, "wood comes by mail");
+    const again = await ADM.call("adminDeliverPurchase", { uid: B.uid, pack: "starter_pack", receiptId: "ci-pack-0001" }); assert.ok(again.dup, "same receipt never twice");
+    await fnErr(ADM.call("adminDeletePack", { id: "test_gems_100" }), /can't delete/);
+    const dl = await ADM.call("adminDeletePack", { id: "starter_pack" }); assert.ok(!dl.packs.starter_pack);
+  });
   await t("maintenance (v942): admin switch; players locked out of saves and server calls; admins and the other env unaffected", async () => {
     await fnErr(A.call("adminMaintenance", { set: { on: true } }), /admin only|permission/);
     let m = await ADM.call("adminMaintenance", { set: { on: true, msg: "Upgrading the forge", until: 1893456000000 } }); assert.strictEqual(m.on, true); assert.strictEqual(m.msg, "Upgrading the forge");

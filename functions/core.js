@@ -111,11 +111,24 @@ function purchaseId(provider, receiptId) {
 function decidePurchase(existing, pack, packId, wallet, uid, now) {
   if (existing) return { dup: true, record: existing };
   if (!pack || !pack.items) throw new GameError("not-found", "unknown pack " + packId);
-  const gems0 = (wallet && wallet.gems) || 0, add = Math.trunc(pack.items.gems || 0);
-  if (!(add > 0)) throw new GameError("failed-precondition", "pack has no deliverable items");
-  return { dup: false, gems: gems0 + add, add,
-    record: { uid, pack: packId, packName: pack.name || packId, price: pack.price, currency: pack.currency, items: { gems: add }, status: "delivered", at: now, deliveredAt: now } };
+  const gems0 = (wallet && wallet.gems) || 0, add = Math.max(0, Math.trunc(pack.items.gems || 0));
+  const others = {}; Object.keys(pack.items).forEach((k) => { if (k !== "gems" && +pack.items[k] > 0) others[k] = Math.trunc(+pack.items[k]); }); /* v943: non-gem items go to the player by mail */
+  if (!(add > 0) && !Object.keys(others).length) throw new GameError("failed-precondition", "pack has no deliverable items");
+  const items = Object.assign(add > 0 ? { gems: add } : {}, others);
+  return { dup: false, gems: gems0 + add, add, others,
+    record: { uid, pack: packId, packName: pack.name || packId, price: pack.price, currency: pack.currency, items, status: "delivered", at: now, deliveredAt: now } };
 }
+// v943: packs made in the admin panel (shop packs and/or quick-pick mail bundles). Returns the clean pack or throws.
+function normalizePack(p) {
+  if (!p || typeof p !== "object") throw new GameError("invalid-argument", "no pack");
+  const name = String(p.name || "").trim().slice(0, 60); if (!name) throw new GameError("invalid-argument", "pack needs a name");
+  const list = normalizeItems(p.items), items = {}; list.forEach((x) => { items[x.id] = x.qty; });
+  const price = +p.price || 0; if (!(price >= 0 && price <= 10000)) throw new GameError("invalid-argument", "bad price");
+  const currency = String(p.currency || "NZD").toUpperCase(); if (!/^[A-Z]{3}$/.test(currency)) throw new GameError("invalid-argument", "bad currency");
+  return { name, desc: String(p.desc || "").trim().slice(0, 200), items, price: Math.round(price * 100) / 100, currency,
+    shop: p.shop === true, mail: p.mail === true, active: p.active !== false, order: Math.trunc(+p.order || 0) };
+}
+function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
 const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle)?\.?[a-zA-Z0-9_]+$/;
@@ -218,4 +231,4 @@ function checkSave(before, after, dtSec, allow) {
 }
 
 module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

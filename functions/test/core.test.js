@@ -94,6 +94,14 @@ t("item catalogue + mail", () => {
   assert.throws(() => C.makeMail("x", "", { gems: 1 }, "a", 1, "spam"), /unknown mail category/);
   const c1 = C.decideMailClaim(m, 9); assert.ok(!c1.dup); assert.strictEqual(c1.list.length, 2); assert.strictEqual(c1.list[1].path, "resources.food");
   assert.ok(C.decideMailClaim(Object.assign({}, m, { claimedAt: 9 }), 10).dup, "claim twice = no-op");
+  /* v943: packs made in the admin panel */
+  const pk = C.normalizePack({ name: " Starter Pack ", items: { gems: 300, wood: 5000 }, price: "4.99", currency: "nzd", shop: true, mail: true });
+  assert.deepStrictEqual([pk.name, pk.price, pk.currency, pk.shop, pk.mail, pk.active], ["Starter Pack", 4.99, "NZD", true, true, true]);
+  assert.strictEqual(C.packIdFrom("Starter Pack!"), "starter_pack");
+  assert.throws(() => C.normalizePack({ name: "", items: { gems: 1 } }), /name/); assert.throws(() => C.normalizePack({ name: "x", items: {} }), /1-20|no items/);
+  assert.throws(() => C.normalizePack({ name: "x", items: { gems: 1 }, price: -1 }), /price/);
+  const dp = C.decidePurchase(null, pk, "starter_pack", { gems: 10 }, "u1", 5); assert.strictEqual(dp.gems, 310); assert.deepStrictEqual(dp.others, { wood: 5000 }); assert.deepStrictEqual(dp.record.items, { gems: 300, wood: 5000 });
+  const dw = C.decidePurchase(null, { name: "Wood", items: { wood: 9 } }, "w", { gems: 10 }, "u1", 5); assert.strictEqual(dw.add, 0); assert.strictEqual(dw.gems, 10, "no-gem pack leaves gems alone");
   /* v939: message-only mail (no items) */
   const mo = C.makeMail("Server news", "Maintenance at 5pm", {}, "adm", 7); assert.deepStrictEqual(mo.items, {}); assert.strictEqual(mo.body, "Maintenance at 5pm");
   assert.deepStrictEqual(C.makeMail("Hi", "", null, "adm", 7).items, {}, "no items given = message only");

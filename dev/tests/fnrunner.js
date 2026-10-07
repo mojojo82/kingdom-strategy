@@ -8,7 +8,7 @@ module.exports = function makeRunner(store) {
   const db = {
     doc: docRef,
     getAll: async (...refs) => refs.map((r) => snap(r.path)), /* v920 */
-    collection: (c) => ({ orderBy: (f, dir) => ({ limit: (n) => ({ get: async () => ({ docs: Object.keys(store).filter((k) => k.indexOf(c + "/") === 0 && k.slice(c.length + 1).indexOf("/") < 0).map((k) => ({ id: k.split("/").pop(), data: () => clone(store[k]) })).sort((x, y) => ((y.data() || {})[f] || 0) - ((x.data() || {})[f] || 0)).slice(0, n) }) }) }), where: (f, op, v) => ({ get: async () => ({ docs: Object.keys(store).filter((k) => k.indexOf(c + "/") === 0 && k.slice(c.length + 1).indexOf("/") < 0).map((k) => ({ id: k.split("/").pop(), data: () => clone(store[k]) })).filter((d) => { const x = (d.data() || {})[f]; return op === ">=" ? x >= v : op === "==" ? x === v : true; }) }) }), doc: (id) => { const p = c + "/" + (id || ("auto" + Math.random().toString(36).slice(2, 10))); return Object.assign(docRef(p), { set: async (d) => { store[p] = clone(d); } }); }, add: async (d) => { store[c + "/auto" + Math.random().toString(36).slice(2, 10)] = clone(d); } }),
+    collection: (c) => ({ get: async () => ({ docs: Object.keys(store).filter((k) => k.indexOf(c + "/") === 0 && k.slice(c.length + 1).indexOf("/") < 0).map((k) => ({ id: k.split("/").pop(), data: () => clone(store[k]) })) }), /* v943 */ orderBy: (f, dir) => ({ limit: (n) => ({ get: async () => ({ docs: Object.keys(store).filter((k) => k.indexOf(c + "/") === 0 && k.slice(c.length + 1).indexOf("/") < 0).map((k) => ({ id: k.split("/").pop(), data: () => clone(store[k]) })).sort((x, y) => ((y.data() || {})[f] || 0) - ((x.data() || {})[f] || 0)).slice(0, n) }) }) }), where: (f, op, v) => ({ get: async () => ({ docs: Object.keys(store).filter((k) => k.indexOf(c + "/") === 0 && k.slice(c.length + 1).indexOf("/") < 0).map((k) => ({ id: k.split("/").pop(), data: () => clone(store[k]) })).filter((d) => { const x = (d.data() || {})[f]; return op === ">=" ? x >= v : op === "==" ? x === v : true; }) }) }), doc: (id) => { const p = c + "/" + (id || ("auto" + Math.random().toString(36).slice(2, 10))); return Object.assign(docRef(p), { set: async (d) => { store[p] = clone(d); } }); }, add: async (d) => { store[c + "/auto" + Math.random().toString(36).slice(2, 10)] = clone(d); } }),
     runTransaction: async (fn) => {
       const writes = [];
       const tx = { get: async (r) => snap(r.path), set: (r, d, o) => writes.push(["set", r, d, o]), update: (r, d) => writes.push(["update", r, d]), delete: (r) => writes.push(["delete", r]) };
@@ -22,7 +22,7 @@ module.exports = function makeRunner(store) {
     }
   };
   // give docRef a .set for adminSetWallet
-  const origDoc = db.doc; db.doc = (p) => Object.assign(origDoc(p), { get: async () => snap(p), set: async (d, o) => { store[p] = o && o.merge ? Object.assign({}, store[p] || {}, clone(d)) : clone(d); } });
+  const origDoc = db.doc; db.doc = (p) => Object.assign(origDoc(p), { get: async () => snap(p), delete: async () => { delete store[p]; }, set: async (d, o) => { store[p] = o && o.merge ? Object.assign({}, store[p] || {}, clone(d)) : clone(d); } });
   const fakes = {
     "firebase-functions/v2/https": { onCall: (h) => h, HttpsError },
     "firebase-functions/v2": { setGlobalOptions: () => {} },
