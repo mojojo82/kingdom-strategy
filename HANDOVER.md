@@ -110,6 +110,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - Chat: message limit is 500 but the input box allows 1500 (silently cut), and alliance chat has no server-side length rule. Harley was asked what limit he wants.
 - Earlier backlog (from the artifact era): march troop cap (City Guard uncapped until then), hero exclusivity guard vs attack, burning marker when zoomed out,
   per-skin flame spots, alliance gifts/help/rallies/reinforcements/province capture, Grass 2 still a trial in the paint menu.
+- Parked idea (Harley: "leave it for now"): a "recent accounts on this device" list on the sign-in screen (name + partly hidden email, tap to sign in, ✕ to forget, max ~5, never stores passwords).
 - Firebase warning seen in deploys: "Unhandled error cleaning up build images". Harmless, but old images in Artifact Registry may cost a few cents; clean up occasionally.
 
 ## Repo layout
