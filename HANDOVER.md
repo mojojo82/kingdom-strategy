@@ -81,7 +81,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 2. **Server changes** (`functions/`, `tools/`, `ci/`, `admin/`, `test/index.html`): push to `main`. The `firebase` workflow then:
    - runs unit tests (`functions/test/core.test.js`), emulator security/function tests (`ci/integration.test.js`) and a real-browser end-to-end test of the game + admin site (`ci/e2e.test.js`);
    - only if all pass, deploys rules + functions, makes every exported function callable (`gcloud run services add-iam-policy-binding … allUsers`), and smoke-tests them.
-   - Read results on the `ci-logs` branch: `git fetch origin ci-logs && git show origin/ci-logs:test.log`.
+   - Read results on the `ci-logs` branch: `git fetch origin ci-logs && git show FETCH_HEAD:test.log` (origin/ci-logs may be stale - use FETCH_HEAD).
 3. **The session's own sandbox can't reach Firebase, npm's `firebase` package or github.io.** Everything Firebase-side is verified through GitHub Actions.
    Local headless tests use stand-ins: `dev/tests/mockdb.js` (claude db), `dev/tests/fakefb.js` (Firebase compat SDK), `dev/tests/fnrunner.js` (runs the real `functions/index.js` against the stand-in store).
    `dev/simfork/*.js` are the test scripts by topic (paths inside assume the original `/home/claude/` layout; adjust).
