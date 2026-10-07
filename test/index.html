@@ -1930,8 +1930,14 @@
   #mapMailBadge { display:none; position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 4px; border-radius:9px; background:#d9412b; color:#fff; font:700 11px/18px system-ui,sans-serif; text-align:center; }
   #mapMailBadge.on { display:block; }
   @media (prefers-reduced-motion: reduce) { #mapMailBtn.has { animation:none; } }
+  /* v925: Intel & Recon on the world map, same look as the map mailbox, stacked with it (below it on PC, above it on phones) */
+  #mapReconBtn { display:flex; position:absolute; right:10px; top:10px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
+  #mapReconBtn .mmi { font-size:24px; line-height:1; }
+  html.ks-mail-on #mapReconBtn { top:66px; }
   @media (max-width:900px) { /* phones: sit just above the chat bar (it covers the bottom of the map), and keep the 🔥 server chip off the bottom nav */
     body[data-screen="world"] #mapMailBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
+    body[data-screen="world"] #mapReconBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
+    html.ks-mail-on body[data-screen="world"] #mapReconBtn { bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); }
     #ksFbBadge { bottom:calc(var(--bnH,86px) + 54px) !important; z-index:39 !important; }
   }
   html.ks-mail-on #mailBtn { display:inline-flex; align-items:center; justify-content:center; font-size:18px; padding:6px 10px; }
@@ -2610,6 +2616,7 @@
             </div>
             <div id="fpsCounter">-- FPS</div>
             <button id="mapMailBtn" type="button" title="Mail" aria-label="Mail"><span class="mmi">📪</span><span id="mapMailBadge"></span></button>
+            <button id="mapReconBtn" type="button" title="Intel &amp; Recon" aria-label="Intel and Recon"><span class="mmi">🛰️</span></button>
             <div id="mapviewport">
               <div id="mapworld">
                 <div id="mapMarchLayer"></div>
@@ -14276,6 +14283,7 @@ function ksMailRender() {
   function openIt() { KSM.open = null; document.body.classList.add("mail-open"); ksMailPickTab(); ksMailRender(); }
   var b = document.getElementById("mailBtn"); if (b) b.onclick = function () { if (document.body.classList.contains("mail-open")) close(); else openIt(); };
   var mb = document.getElementById("mapMailBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); openIt(); };
+  var rb = document.getElementById("mapReconBtn"); if (rb) rb.onclick = function (e) { e.stopPropagation(); setScreen("more", "recon"); }; /* v925 */
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   var p = document.getElementById("mailPanel"); if (p) {
     function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0; }

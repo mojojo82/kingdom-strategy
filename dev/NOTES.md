@@ -314,3 +314,9 @@
   the air but not their "owed" counts (pendingArrows), so enemies that died while you were away stayed on screen up to 2.5 s waiting for them.
 - Fix: on return, owed counts / melee queues / queued launches are cleared, every enemy that died while you were away is removed (its kill already
   counted), and the alive enemies' HP bars catch up to their real HP. After: 0 frames (hopping and normal play).
+
+## v925 (TEST game only): Intel & Recon button on the World map
+- Harley: of the More items, put Recon on the World map first (Marches already have a presence there). #mapReconBtn 🛰️, same look as the map mailbox
+  (46 px, dashed gold, dark glass), stacked with it: above it on phones, below it on PC; takes the mailbox's spot if mail is off. Tap -> More > Recon;
+  going back to the World map keeps your spot (v923). Test: g184_maprecon.js (phone + PC).
+- Next candidates discussed: Reports (with an unread dot), Alliance. World chat already shows on the map.
