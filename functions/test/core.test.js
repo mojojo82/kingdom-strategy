@@ -110,6 +110,18 @@ t("item catalogue + mail", () => {
   assert.strictEqual(C.normalizePack({ name: "b", items: { gems: 1 } }).banner, null);
   assert.throws(() => C.normalizePack({ name: "b", items: { gems: 1 }, banner: "javascript:alert(1)" }), /banner/);
   assert.throws(() => C.normalizePack({ name: "b", items: { gems: 1 }, banner: "data:image/jpeg;base64," + "A".repeat(800000) }), /too big/);
+  /* v945: top-up points + reward ladders */
+  const shT = C.normalizeShop({ topups: [{ name: "Daily Top-up", period: "daily", tiers: [{ points: 2500, items: { gems: 500 } }, { points: 500, items: { wood: 1000 } }] }, { name: "Lifetime", period: "lifetime", tiers: [{ points: 50000, items: { gems: 9999 } }] }] }, []);
+  assert.strictEqual(shT.tiers[8].points, 50000, "NZ$169.99 = 50,000 pts"); assert.strictEqual(shT.tiers[1].points, 500);
+  assert.deepStrictEqual(shT.topups[0].tiers.map((m) => m.points), [500, 2500], "milestones sorted");
+  assert.throws(() => C.normalizeShop({ topups: [{ name: "E", period: "event", tiers: [{ points: 1, items: { gems: 1 } }] }] }, []), /start and an end/);
+  const T0 = Date.UTC(2026, 9, 8, 10); let tp = C.addTopup(null, shT.topups, 2500, T0);
+  assert.strictEqual(tp.life, 2500); assert.strictEqual(tp.l.daily_top_up.n, 2500);
+  const tc1 = C.decideTopupClaim(tp, shT.topups[0], 0, T0); assert.ok(!tc1.dup); assert.deepStrictEqual(tc1.items, { wood: 1000 });
+  assert.ok(C.decideTopupClaim(tc1.topup, shT.topups[0], 0, T0).dup, "claim once");
+  assert.throws(() => C.decideTopupClaim(tc1.topup, shT.topups[1], 0, T0), /not enough/);
+  tp = C.addTopup(tc1.topup, shT.topups, 500, T0 + 86400e3); assert.strictEqual(tp.l.daily_top_up.n, 500, "next day starts again"); assert.deepStrictEqual(tp.l.daily_top_up.c, []);
+  assert.strictEqual(tp.l.lifetime.n, 3000, "lifetime keeps counting");
   const daily = C.normalizePack({ name: "Daily", items: { gems: 10 }, tier: 1, limit: 1, reset: "daily" }); assert.strictEqual(daily.reset, "daily");
   assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, reset: "weekly" }).reset, "none", "no limit = no reset");
   assert.throws(() => C.normalizePack({ name: "x", items: { gems: 1 }, limit: 1, reset: "hourly" }), /reset/);

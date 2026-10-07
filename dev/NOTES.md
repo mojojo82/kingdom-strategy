@@ -429,3 +429,13 @@
   - 👁 Preview (pack editor = unsaved form, library card, each tab row = with its timer/badge): phone-width modal showing exactly the game's card,
     with a currency switcher. The card code lives between /* KSS-CARD-BEGIN */ and /* KSS-CARD-END */ in BOTH test/index.html and
     admin/index.html - edit both; g193_banner fails if they differ.
+- v945: top-up points + top-up reward ladders (Harley: NZ$169.99 = 50,000 points).
+  - Points per price tier (config/shop.tiers[n].points; default 500 per US$: 500/1,000/1,500/2,500/5,000/10,000/25,000/50,000). Shown on
+    pack cards ("⭐ +2,500 top-up pts"), in the library and tier table. A delivered purchase records .points and adds them to the wallet:
+    wallet.topup = { life, l: { ladderId: { k: window key, n, c: [claimed milestones] } } } (server-only doc).
+  - Ladders (config/shop.topups): name, icon, period daily|weekly|monthly|lifetime|event(start..end), active, milestones [{points, items}].
+    Windows match buy limits (00:00 UTC, weeks Monday); an event counts only purchases inside its dates; a new window starts at 0.
+  - claimTopup({ladder, idx}): once per milestone per window, needs the points; gems to wallet (ledger "topup_reward"), other items by mail.
+  - Admin: 🏆 Top-up rewards sub-tab (ladders, milestones with items), ⭐ points column in Price tiers. Game: 🏆 Top-up tab (last) in the
+    shop with progress bar, milestones, Claim / ✓ Claimed / Locked, reset timer.
+  - Tests: core.test.js, ci/integration.test.js, g191 (admin ladder), g192 (cards show points, delivery adds points, claim, twice/locked refused).

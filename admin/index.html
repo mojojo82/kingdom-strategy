@@ -120,7 +120,7 @@
   <section class="card" id="shopCard">
     <h2>🛒 Shop &amp; packs</h2>
     <div class="muted">Make each pack once in the library, then place it in shop tabs (Deals, Shop…). Packs ticked 🎁 also appear in the mail boxes' gift picker. Everything here belongs to the selected environment (test or live). Payments aren't connected yet, so players see the shop with a "coming soon" buy button.</div>
-    <div class="tabs" id="shTabs" style="margin-top:10px"><button data-s="lib" class="on">📦 Pack library</button><button data-s="tabs">🗂️ Shop tabs</button><button data-s="tiers">💲 Price tiers</button></div>
+    <div class="tabs" id="shTabs" style="margin-top:10px"><button data-s="lib" class="on">📦 Pack library</button><button data-s="tabs">🗂️ Shop tabs</button><button data-s="tiers">💲 Price tiers</button><button data-s="topups">🏆 Top-up rewards</button></div>
     <div id="shLib">
       <div class="row"><input class="grow" id="pkSearch" placeholder="Search packs…"><select id="pkFilter"><option value="">All packs</option><option value="gift">🎁 Mail gifts</option><option value="shown">Shown in a tab</option><option value="hidden">Not shown anywhere</option><option value="inactive">Inactive</option></select></div>
       <div id="pkGrid" class="pkgrid" style="margin-top:10px"></div>
@@ -142,6 +142,11 @@
       <div class="muted">Each tab is a row of packs in the order players see them. Optional start/end times make timed deals (they appear and disappear by themselves); a badge shows on the pack (e.g. "-50%", "Best value").</div>
       <div id="tabEd" style="margin-top:10px"></div>
       <div class="row" style="margin-top:10px"><button class="b ghost" id="tabAdd">+ Add tab</button><button class="b" id="tabSave">Save tabs</button></div>
+    </div>
+    <div id="shTops" class="hide">
+      <div class="muted">Every purchase gives top-up points (set per price tier). Each ladder adds them up over its period - daily, weekly, monthly (reset 00:00 UTC; weeks start Monday), lifetime, or an event between two dates - and players claim a reward at each milestone. Gems go straight to the player; other items arrive by mail.</div>
+      <div id="topEd" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="b ghost" id="topAdd">+ Add ladder</button><button class="b" id="topSave">Save top-up rewards</button></div>
     </div>
     <div id="shTiers" class="hide">
       <div class="muted">One row per price tier; each pack picks a tier. Change a row and every pack on that tier changes. Tier 0 = free. The MXN / EUR / TRY numbers were filled in as rough suggestions - check them (Turkish lira prices usually need a refresh every few months).</div>
@@ -331,7 +336,7 @@
   var CUR_SYM = { USD: "US$", NZD: "NZ$", MXN: "MX$", EUR: "€", TRY: "₺" }, CURS = ["USD", "NZD", "MXN", "EUR", "TRY"];
   function fmtPrice(c, v) { return v ? (CUR_SYM[c] || c + " ") + (+v).toLocaleString(undefined, { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }) : "Free"; }
   function tierRow(t) { return (S.shop && S.shop.tiers && S.shop.tiers[t]) || null; }
-  function tierText(t, short) { var r = tierRow(t); if (!r) return "Tier " + t + " (missing)"; if (!+t) return "Free"; return CURS.map(function (c) { return fmtPrice(c, r[c]); }).join(short ? " · " : "  ·  "); }
+  function tierText(t, short) { var r = tierRow(t); if (!r) return "Tier " + t + " (missing)"; if (!+t) return "Free"; return CURS.map(function (c) { return fmtPrice(c, r[c]); }).join(short ? " · " : "  ·  ") + (r.points ? (short ? " · ⭐" : "  ·  ⭐ ") + (+r.points).toLocaleString() + " pts" : ""); }
   function itemChips(items) { /* v943: what's inside, at a glance: icon + amount (hover for the name) */
     return Object.keys(items || {}).map(function (i) { var d = (S.catalog.items || {})[i] || {}; return '<span class="ichip" title="' + esc(itemLabel(i)) + '">' + esc(d.icon || "•") + " " + esc((+items[i]).toLocaleString()) + '<span class="inm"> ' + esc(d.name || i) + "</span></span>"; }).join("");
   }
@@ -340,13 +345,13 @@
   function packTabs(id) { return ((S.shop && S.shop.tabs) || []).filter(function (t) { return t.items.some(function (e) { return e.pack === id; }); }); }
   function packIds() { var P = S.catalog.packs || {}; return Object.keys(P).filter(function (k) { return k[0] !== "_"; }).sort(function (a, b) { return ((P[a].order || 0) - (P[b].order || 0)) || String(P[a].name).localeCompare(String(P[b].name)); }); }
   function setShop(packs, shop) {
-    if (packs) S.catalog.packs = packs; if (shop) { S.shop = shop; S.shopDraft = JSON.parse(JSON.stringify(shop)); if (!S.shopDraft.tabs.length) S.shopDraft.tabs = [{ id: "deals", name: "Deals", icon: "🔥", items: [] }, { id: "shop", name: "Shop", icon: "🛒", items: [] }]; }
+    if (packs) S.catalog.packs = packs; if (shop) { S.shop = shop; S.shopDraft = JSON.parse(JSON.stringify(shop)); S.shopDraft.topups = S.shopDraft.topups || []; if (!S.shopDraft.tabs.length) S.shopDraft.tabs = [{ id: "deals", name: "Deals", icon: "🔥", items: [] }, { id: "shop", name: "Shop", icon: "🛒", items: [] }]; }
     var P = S.catalog.packs, ids = packIds();
     $("packSel").innerHTML = ids.map(function (k) { return '<option value="' + esc(k) + '">' + esc((P[k].icon || "") + " " + P[k].name) + " (" + esc(packItemsText(P[k])) + ")</option>"; }).join("") || '<option value="">No packs yet</option>';
     var gifts = ids.filter(function (k) { return P[k].mail && P[k].active !== false; });
     [].forEach.call(document.querySelectorAll(".giftSel"), function (sel) { sel.innerHTML = '<option value="">🎁 Fill from a gift pack… (optional)</option>' + gifts.map(function (k) { return '<option value="' + esc(k) + '">' + esc((P[k].icon || "") + " " + P[k].name) + " — " + esc(packItemsText(P[k])) + "</option>"; }).join(""); sel.disabled = !gifts.length; });
     var tsel = $("pkTier"), keep = tsel.value; tsel.innerHTML = Object.keys((S.shop && S.shop.tiers) || { 0: 1 }).sort(function (a, b) { return a - b; }).map(function (t) { return '<option value="' + t + '">' + (+t ? "Tier " + t + " — " : "") + esc(tierText(t, true)) + "</option>"; }).join(""); if (keep) tsel.value = keep;
-    renderLib(); renderTabEd(); renderTierEd();
+    renderLib(); renderTabEd(); renderTierEd(); renderTopEd();
   }
   function renderLib() {
     var P = S.catalog.packs, q = $("pkSearch").value.trim().toLowerCase(), f = $("pkFilter").value;
@@ -366,7 +371,7 @@
   function pkClear() { $("pkId").value = ""; $("pkIcon").value = "📦"; $("pkName").value = ""; $("pkDesc").value = ""; $("pkTier").value = "1"; $("pkLimit").value = "0"; $("pkReset").value = "none"; $("pkMail").checked = false; $("pkActive").checked = true; $("pkFormTitle").textContent = "➕ New pack"; fillRows("pkItems", {}); setBanner(null); }
   $("pkNew").onclick = pkClear; $("pkAdd").onclick = function () { addItemRow("pkItems"); };
   $("pkSearch").oninput = renderLib; $("pkFilter").onchange = renderLib;
-  [].forEach.call($("shTabs").children, function (b) { b.onclick = function () { [].forEach.call($("shTabs").children, function (x) { x.classList.toggle("on", x === b); }); var v = b.getAttribute("data-s"); $("shLib").classList.toggle("hide", v !== "lib"); $("shTabsView").classList.toggle("hide", v !== "tabs"); $("shTiers").classList.toggle("hide", v !== "tiers"); }; });
+  [].forEach.call($("shTabs").children, function (b) { b.onclick = function () { [].forEach.call($("shTabs").children, function (x) { x.classList.toggle("on", x === b); }); var v = b.getAttribute("data-s"); $("shLib").classList.toggle("hide", v !== "lib"); $("shTabsView").classList.toggle("hide", v !== "tabs"); $("shTiers").classList.toggle("hide", v !== "tiers"); $("shTops").classList.toggle("hide", v !== "topups"); }; });
   $("pkGrid").onclick = function (e) {
     var t = e.target, id;
     if ((id = t.getAttribute("data-pkprev"))) { showPreview(JSON.parse(JSON.stringify(S.catalog.packs[id])), placementOf(id)); return; }
@@ -397,6 +402,7 @@
     if (reset === "monthly") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1); return null; }
   function ksShopCardHtml(p, e, priceText, now, esc) { /* p = pack, e = its place in a tab ({end, badge}) */
     e = e || {}; var lab = p.labels || {}, meta = [], ban = typeof p.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(p.banner);
+    if (+p.points > 0) meta.push("⭐ +" + (+p.points).toLocaleString() + " top-up pts");
     if (e.end && !ban) meta.push("⏳ Ends in " + ksShopLeft(e.end - now));
     if (p.limit) { var pe = ksShopPeriodEnd(p.reset, now); meta.push("🔒 " + (p.reset === "daily" ? p.limit + " per day" : p.reset === "weekly" ? p.limit + " per week" : p.reset === "monthly" ? p.limit + " per month" : p.limit + " per player") + (pe ? " · resets in " + ksShopLeft(pe - now) : "")); }
     var head = ban ? '<div class="sban" style="background-image:url(' + p.banner + ')"><div class="sbt"><div class="snm">' + esc(p.name) + "</div>" + (p.desc ? '<div class="sds">' + esc(p.desc) + "</div>" : "") + "</div>" + (e.end ? '<div class="stime">⏳ ' + esc(ksShopLeft(e.end - now)) + "</div>" : "") + "</div>"
@@ -414,7 +420,7 @@
   function placementOf(id) { var e = null; ((S.shop && S.shop.tabs) || []).forEach(function (t) { t.items.forEach(function (x) { if (!e && x.pack === id) e = x; }); }); return e; }
   function showPreview(pack, entry) {
     S.pv = { pack: pack, entry: entry }; $("pvCur").innerHTML = CURS.map(function (c) { return '<option value="' + c + '">' + c + "</option>"; }).join(""); $("pvCur").value = S.pvCur || "NZD";
-    var lab = pack.labels || {}; Object.keys(pack.items || {}).forEach(function (k) { if (!lab[k]) lab[k] = itemLabel(k); }); pack.labels = lab;
+    var lab = pack.labels || {}; Object.keys(pack.items || {}).forEach(function (k) { if (!lab[k]) lab[k] = itemLabel(k); }); pack.labels = lab; pack.points = (tierRow(pack.tier || 0) || {}).points || 0;
     $("pvPhone").innerHTML = '<div style="font-size:18px;font-weight:700;color:#f0c95f;margin-bottom:10px">🛒 Shop</div>' + ksShopCardHtml(pack, entry || {}, pvPrice(pack.tier, $("pvCur").value), Date.now(), esc);
     $("pvOv").classList.remove("hide");
   }
@@ -435,6 +441,42 @@
     };
     img.onerror = function () { toast("Couldn't read that picture.", true); }; img.src = url;
   };
+
+  // ---- v945: top-up reward ladders ----
+  var PERIODS = [["daily", "Daily"], ["weekly", "Weekly"], ["monthly", "Monthly"], ["lifetime", "Lifetime"], ["event", "Event (dates)"]];
+  function syncTops() { /* copy what's typed back into the draft before any re-draw */
+    var D = S.shopDraft; if (!D || !D.topups) return;
+    D.topups.forEach(function (l, li) {
+      var q = function (f) { return document.querySelector('[data-lf="' + f + '"][data-li="' + li + '"]'); }; if (!q("name")) return;
+      l.icon = q("icon").value; l.name = q("name").value; l.period = q("period").value; l.active = q("active").checked;
+      l.start = q("start") && q("start").value ? new Date(q("start").value).getTime() : null; l.end = q("end") && q("end").value ? new Date(q("end").value).getTime() : null;
+      l.tiers.forEach(function (m, mi) { var pi = document.querySelector('[data-mp="' + li + '_' + mi + '"]'); if (pi) m.points = +pi.value || 0; try { m.items = readItems("tm_" + li + "_" + mi); } catch (e) {} });
+    });
+  }
+  function renderTopEd() {
+    var D = S.shopDraft; if (!D) return;
+    $("topEd").innerHTML = D.topups.map(function (l, li) {
+      return '<div class="tabbox"><div class="row"><input data-lf="icon" data-li="' + li + '" value="' + esc(l.icon || "🏆") + '" maxlength="4" style="width:56px;text-align:center"><input data-lf="name" data-li="' + li + '" value="' + esc(l.name || "") + '" class="grow" maxlength="40" placeholder="Ladder name (e.g. Daily Top-up)">'
+        + '<select data-lf="period" data-li="' + li + '">' + PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (l.period === p[0] ? " selected" : "") + ">" + p[1] + "</option>"; }).join("") + "</select>"
+        + '<label><input type="checkbox" data-lf="active" data-li="' + li + '"' + (l.active !== false ? " checked" : "") + "> Active</label><button class=\"b ghost mini\" data-ldel=\"" + li + '">Remove</button></div>'
+        + (l.period === "event" ? '<div class="row" style="margin-top:6px"><span class="muted">from</span><input type="datetime-local" data-lf="start" data-li="' + li + '" value="' + toLocalInput(l.start) + '"><span class="muted">until</span><input type="datetime-local" data-lf="end" data-li="' + li + '" value="' + toLocalInput(l.end) + '"></div>' : "")
+        + l.tiers.map(function (m, mi) { return '<div class="tabent" style="align-items:flex-start"><span class="muted" style="padding-top:8px">⭐</span><input type="number" min="1" data-mp="' + li + "_" + mi + '" value="' + (m.points || "") + '" placeholder="Points" style="width:110px"><div class="grow" style="flex:1 1 300px"><div id="tm_' + li + "_" + mi + '"></div><button class="b ghost mini" data-madd="' + li + "_" + mi + '" style="margin-top:4px">+ item</button></div><button class="b ghost mini" data-mdel="' + li + "_" + mi + '">✕</button></div>'; }).join("")
+        + '<div class="row" style="margin-top:8px"><button class="b ghost mini" data-mnew="' + li + '">+ Add milestone</button></div></div>';
+    }).join("") || '<div class="muted">No top-up ladders yet.</div>';
+    D.topups.forEach(function (l, li) { l.tiers.forEach(function (m, mi) { fillRows("tm_" + li + "_" + mi, m.items || {}); }); });
+  }
+  $("topEd").onchange = function (e) { if (e.target.getAttribute("data-lf") === "period") { syncTops(); renderTopEd(); } };
+  $("topEd").onclick = function (e) {
+    var t = e.target, v, D = S.shopDraft;
+    if ((v = t.getAttribute("data-madd"))) { addItemRow("tm_" + v); return; }
+    syncTops();
+    if ((v = t.getAttribute("data-mnew")) != null && v !== "") { var L = D.topups[+v]; L.tiers.push({ points: ((L.tiers[L.tiers.length - 1] || {}).points || 0) + 1000, items: {} }); renderTopEd(); }
+    else if ((v = t.getAttribute("data-mdel"))) { var a = v.split("_"); D.topups[+a[0]].tiers.splice(+a[1], 1); renderTopEd(); }
+    else if ((v = t.getAttribute("data-ldel")) != null && v !== "") { if (confirm("Remove this ladder?")) { D.topups.splice(+v, 1); renderTopEd(); } }
+  };
+  $("topAdd").onclick = function () { syncTops(); S.shopDraft.topups.push({ name: "Daily Top-up", icon: "🏆", period: "daily", active: true, tiers: [{ points: 500, items: {} }] }); renderTopEd(); };
+  $("topSave").onclick = function () { syncTops(); if (!confirmEnv("Save top-up rewards? Players see the change straight away.")) return;
+    call("adminSaveShop", { topups: S.shopDraft.topups }).then(function (r) { setShop(r.packs, r.shop); toast("Top-up rewards saved"); }, function (e) { toast(errText(e), true); }); };
 
   // tabs editor (works on a draft; "Save tabs" sends it)
   function toLocalInput(ms) { if (!ms) return ""; var d = new Date(ms), z = function (n) { return (n < 10 ? "0" : "") + n; }; return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); }
@@ -468,12 +510,12 @@
   // price tiers
   function renderTierEd() {
     var D = S.shopDraft; if (!D) return; var ts = Object.keys(D.tiers).sort(function (a, b) { return a - b; });
-    $("tierEd").innerHTML = "<table><thead><tr><th>Tier</th>" + CURS.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "<th>Packs</th></tr></thead><tbody>" + ts.map(function (t) {
+    $("tierEd").innerHTML = "<table><thead><tr><th>Tier</th>" + CURS.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "<th>⭐ Top-up pts</th><th>Packs</th></tr></thead><tbody>" + ts.map(function (t) {
       var n = packIds().filter(function (k) { return (S.catalog.packs[k].tier || 0) === +t && !S.catalog.packs[k].builtIn; }).length;
-      return "<tr><td><b>" + (+t ? t : "0 (free)") + "</b></td>" + CURS.map(function (c) { return '<td><input type="number" min="0" step="0.01" data-tier="' + t + '" data-cur="' + c + '" value="' + (D.tiers[t][c] != null ? D.tiers[t][c] : "") + '"' + (+t ? "" : " disabled") + "></td>"; }).join("") + '<td class="muted">' + n + "</td></tr>"; }).join("") + "</tbody></table>";
+      return "<tr><td><b>" + (+t ? t : "0 (free)") + "</b></td>" + CURS.map(function (c) { return '<td><input type="number" min="0" step="0.01" data-tier="' + t + '" data-cur="' + c + '" value="' + (D.tiers[t][c] != null ? D.tiers[t][c] : "") + '"' + (+t ? "" : " disabled") + "></td>"; }).join("") + '<td><input type="number" min="0" step="1" data-tier="' + t + '" data-cur="points" value="' + (D.tiers[t].points || 0) + '"' + (+t ? "" : " disabled") + "></td>" + '<td class="muted">' + n + "</td></tr>"; }).join("") + "</tbody></table>";
   }
   $("tierEd").oninput = function (e) { var t = e.target; if (t.getAttribute("data-tier") != null) S.shopDraft.tiers[t.getAttribute("data-tier")][t.getAttribute("data-cur")] = t.value === "" ? 0 : +t.value; };
-  $("tierAdd").onclick = function () { var ts = Object.keys(S.shopDraft.tiers).map(Number), n = Math.max.apply(null, ts) + 1, last = S.shopDraft.tiers[n - 1] || {}; S.shopDraft.tiers[n] = {}; CURS.forEach(function (c) { S.shopDraft.tiers[n][c] = last[c] || 0; }); renderTierEd(); };
+  $("tierAdd").onclick = function () { var ts = Object.keys(S.shopDraft.tiers).map(Number), n = Math.max.apply(null, ts) + 1, last = S.shopDraft.tiers[n - 1] || {}; S.shopDraft.tiers[n] = {}; CURS.forEach(function (c) { S.shopDraft.tiers[n][c] = last[c] || 0; }); S.shopDraft.tiers[n].points = last.points || 0; renderTierEd(); };
   $("tierSave").onclick = function () { if (!confirmEnv("Save price tiers? Every pack on a changed tier shows the new price straight away.")) return;
     call("adminSaveShop", { tiers: S.shopDraft.tiers }).then(function (r) { setShop(r.packs, r.shop); toast("Prices saved"); }, function (e) { toast(errText(e), true); }); };
 

@@ -165,6 +165,7 @@ async function allPacks(R) {
 }
 async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
   const id = C.purchaseId(provider, receiptId), pref = db.doc(R + "purchases/" + id), pack = await loadPack(R, packId);
+  const shop = await shopConfig(R, null), points = pack ? (((shop.tiers || {})[pack.tier || 0] || {}).points || 0) : 0; /* v945: top-up points */
   if (pack && pack.limit) { /* v943: buy limits (once ever, or N per day/week/month) */
     const ex = await pref.get();
     if (!ex.exists) {
@@ -182,7 +183,10 @@ async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
       const mref = mailCol(R, uid).doc(); rec.mailId = mref.id;
       tx.set(mref, C.makeMail("🛒 " + (pack.name || packId), "Thanks for your purchase! Here are your items.", r.others, "shop", Date.now(), "system"));
     }
-    tx.set(pref, rec); if (r.add > 0) { tx.set(walletRef(R, uid), { gems: r.gems }, { merge: true }); ledger(tx, R, uid, "gems", r.add, r.gems, "purchase", id, by); }
+    rec.points = points; const wd = ws.data() || {}, wpatch = {};
+    if (r.add > 0) { wpatch.gems = r.gems; ledger(tx, R, uid, "gems", r.add, r.gems, "purchase", id, by); }
+    if (points > 0) { wpatch.topup = C.addTopup(wd.topup, shop.topups, points, Date.now()); } /* the purchase record keeps .points */
+    tx.set(pref, rec); if (Object.keys(wpatch).length) tx.set(walletRef(R, uid), wpatch, { merge: true });
     return { dup: false, id, gems: r.gems, record: rec };
   });
 }
@@ -190,6 +194,20 @@ exports.adminDeliverPurchase = wrap(async (req, uid, R, d) => {
   if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only");
   const target = String(d.uid || ""); if (!/^[A-Za-z0-9_-]{6,128}$/.test(target)) throw new HttpsError("invalid-argument", "bad uid");
   return deliverPurchase(R, target, String(d.pack || ""), String(d.provider || "manual"), String(d.receiptId || ""), uid);
+});
+// v945: a player claims a top-up milestone they've reached. Gems go to the wallet, everything else arrives by mail (like packs).
+exports.claimTopup = wrap(async (req, uid, R, d) => {
+  const shop = await shopConfig(R, null), ladder = (shop.topups || []).find((l) => l.id === String(d.ladder || "")), idx = Math.trunc(+d.idx);
+  return db.runTransaction(async (tx) => {
+    const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {};
+    const r = C.decideTopupClaim(wd.topup, ladder, idx, Date.now());
+    if (r.dup) return { dup: true, topup: wd.topup || null, gems: wd.gems || 0 };
+    const patch = { topup: r.topup }, gems = Math.trunc(r.items.gems || 0), others = {}; Object.keys(r.items).forEach((k) => { if (k !== "gems") others[k] = r.items[k]; });
+    let g = wd.gems || 0; if (gems > 0) { g += gems; patch.gems = g; ledger(tx, R, uid, "gems", gems, g, "topup_reward", ladder.id + "#" + idx); }
+    if (Object.keys(others).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🏆 " + ladder.name + " reward", "You reached " + ladder.tiers[idx].points.toLocaleString() + " top-up points!", others, "topup", Date.now(), "system"));
+    tx.set(walletRef(R, uid), patch, { merge: true });
+    return { dup: false, topup: r.topup, gems: g, items: r.items };
+  });
 });
 // Mark a purchase refunded / charged back. Records it (and who did it); what to do about the gems is your call, so nothing is taken back automatically.
 exports.adminMarkPurchase = wrap(async (req, uid, R, d) => {
@@ -269,7 +287,7 @@ exports.adminMaintenance = wrap(async (req, uid, R, d) => {
 });
 async function shopConfig(R, packIds) {
   const s = await db.doc(R + "config/shop").get(); const d = s.exists ? s.data() : {};
-  try { return C.normalizeShop({ tiers: d.tiers, tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
+  try { return C.normalizeShop({ tiers: d.tiers, topups: d.topups, tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
   catch (e) { return C.normalizeShop({}, null); }
 }
 exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const packs = await allPacks(R); return { items: C.ITEMS, packs, shop: await shopConfig(R, Object.keys(packs)), currencies: C.SHOP_CURRENCIES, resets: C.PACK_RESETS }; });
@@ -277,10 +295,10 @@ exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const 
 exports.adminSaveShop = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);
   const packs = await allPacks(R), cur = await shopConfig(R, Object.keys(packs));
-  const shop = C.normalizeShop({ tiers: d.tiers || cur.tiers, tabs: d.tabs || cur.tabs }, Object.keys(packs));
+  const shop = C.normalizeShop({ tiers: d.tiers || cur.tiers, tabs: d.tabs || cur.tabs, topups: d.topups || cur.topups }, Object.keys(packs));
   shop.updatedAt = Date.now(); shop.updatedBy = uid;
   await db.doc(R + "config/shop").set(shop);
-  await db.collection(R + "adminlog").add({ by: uid, shop: { tabs: shop.tabs.map((t) => t.name + ":" + t.items.length), tiers: Object.keys(shop.tiers).length }, at: shop.updatedAt });
+  await db.collection(R + "adminlog").add({ by: uid, shop: { tabs: shop.tabs.map((t) => t.name + ":" + t.items.length), tiers: Object.keys(shop.tiers).length, topups: shop.topups.map((l) => l.name + ":" + l.period) }, at: shop.updatedAt });
   return { shop, packs };
 });
 // v943: create / edit / delete packs (shop packs and quick-pick mail bundles). Purchases already made keep what they delivered.

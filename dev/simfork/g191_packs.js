@@ -71,5 +71,17 @@ const STUB = `window.firebase = { initializeApp: function () {}, auth: Object.as
   assert.strictEqual(store["envs/test/packs/bug_apology"].items.gems, 150);
   await P.click('[data-pkdel="starter_pack"]'); await P.waitForTimeout(500);
   assert.ok(!store["envs/test/packs/starter_pack"]); assert.ok(!JSON.stringify(store["envs/test/config/shop"].tabs).includes("starter_pack"), "removed from tabs too");
+  /* v945: tier points column + a top-up ladder */
+  await P.click('#shTabs [data-s="tiers"]'); assert.strictEqual(await P.inputValue('[data-tier="8"][data-cur="points"]'), "50000", "NZ$169.99 tier = 50,000 pts");
+  await P.click('#shTabs [data-s="topups"]'); await P.click("#topAdd"); await P.waitForTimeout(150);
+  await P.fill('[data-lf="name"][data-li="0"]', "Daily Top-up");
+  await (await P.$('#tm_0_0 .itemrow select')).selectOption("gems"); await (await P.$('#tm_0_0 .itemrow input')).fill("100");
+  await P.click('[data-mnew="0"]'); await P.waitForTimeout(150); await P.fill('[data-mp="0_1"]', "2500");
+  await (await P.$('#tm_0_1 .itemrow select')).selectOption("wood"); await (await P.$('#tm_0_1 .itemrow input')).fill("5000");
+  await P.click('[data-madd="0_1"]'); const rr = await P.$$('#tm_0_1 .itemrow'); await (await rr[1].$("select")).selectOption("gems"); await (await rr[1].$("input")).fill("250");
+  await P.click("#topSave"); await P.waitForTimeout(500);
+  const L = store["envs/test/config/shop"].topups; console.log("ladder:", JSON.stringify(L));
+  assert.ok(L && L[0].name === "Daily Top-up" && L[0].period === "daily" && L[0].tiers.length === 2 && L[0].tiers[1].points === 2500 && L[0].tiers[1].items.wood === 5000 && L[0].tiers[1].items.gems === 250, "ladder saved");
+  await P.screenshot({ path: OUT + "admin_topups.png", fullPage: true });
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

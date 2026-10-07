@@ -210,6 +210,17 @@ const P = (s) => R + s;
     await fnErr(ADM.call("adminDeliverPurchase", { uid: Cc.uid, pack: "starter_pack", receiptId: "ci-pack-0002" }), /limit/);
     await ADM.call("adminDeliverPurchase", { uid: Cc.uid, pack: "daily_deal", receiptId: "ci-pack-0003" });
     await fnErr(ADM.call("adminDeliverPurchase", { uid: Cc.uid, pack: "daily_deal", receiptId: "ci-pack-0004" }), /limit/);
+    /* v945: top-up points from the purchases above (tier 4 = 2,500, tier 1 = 500) + a ladder to claim from */
+    await ADM.call("adminSaveShop", { topups: [{ name: "Daily Top-up", period: "daily", tiers: [{ points: 3000, items: { gems: 70, wood: 100 } }, { points: 9000, items: { gems: 1 } }] }] });
+    await ADM.call("adminDeliverPurchase", { uid: Cc.uid, pack: "starter_pack", receiptId: "ci-pack-0009" }).catch(() => {}); /* one-time pack: refused, adds nothing */
+    const w1 = (await getDoc(doc(Cc.db, P("players/" + Cc.uid + "/wallet/main")))).data(); assert.strictEqual(w1.topup.life, 3000, "2,500 + 500 lifetime points");
+    await denied(setDoc(doc(Cc.db, P("players/" + Cc.uid + "/wallet/main")), { topup: { life: 1e9 } }));
+    /* the ladder was saved after those purchases, so its daily counter starts empty: buy something now */
+    await ADM.call("adminSavePack", { pack: { name: "Gem Chest", items: { gems: 10 }, tier: 5 } });
+    await ADM.call("adminDeliverPurchase", { uid: Cc.uid, pack: "gem_chest", receiptId: "ci-pack-0010" });
+    const cl = await Cc.call("claimTopup", { ladder: "daily_top_up", idx: 0 }); assert.ok(!cl.dup && cl.items.gems === 70);
+    assert.ok((await Cc.call("claimTopup", { ladder: "daily_top_up", idx: 0 })).dup, "once");
+    await fnErr(Cc.call("claimTopup", { ladder: "daily_top_up", idx: 1 }), /not enough/);
     await fnErr(ADM.call("adminDeletePack", { id: "test_gems_100" }), /can't delete/);
     const dl = await ADM.call("adminDeletePack", { id: "daily_deal" }); assert.ok(!dl.packs.daily_deal && dl.shop.tabs[0].items.length === 1, "deleted + removed from tabs");
   });

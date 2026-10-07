@@ -122,15 +122,15 @@ function decidePurchase(existing, pack, packId, wallet, uid, now) {
 const SHOP_CURRENCIES = ["USD", "NZD", "MXN", "EUR", "TRY"];
 /* Suggested starting tiers (Harley: US$0.99 is NZ$1.69). MXN/EUR/TRY are rough suggestions to check and adjust in the admin panel. Tier 0 = free. */
 const DEFAULT_TIERS = {
-  0: { USD: 0, NZD: 0, MXN: 0, EUR: 0, TRY: 0 },
-  1: { USD: 0.99, NZD: 1.69, MXN: 19, EUR: 0.99, TRY: 44.99 },
-  2: { USD: 1.99, NZD: 3.49, MXN: 39, EUR: 1.99, TRY: 89.99 },
-  3: { USD: 2.99, NZD: 4.99, MXN: 59, EUR: 2.99, TRY: 134.99 },
-  4: { USD: 4.99, NZD: 8.49, MXN: 99, EUR: 4.99, TRY: 224.99 },
-  5: { USD: 9.99, NZD: 16.99, MXN: 199, EUR: 9.99, TRY: 449.99 },
-  6: { USD: 19.99, NZD: 33.99, MXN: 379, EUR: 19.99, TRY: 899.99 },
-  7: { USD: 49.99, NZD: 84.99, MXN: 949, EUR: 49.99, TRY: 2249.99 },
-  8: { USD: 99.99, NZD: 169.99, MXN: 1899, EUR: 99.99, TRY: 4499.99 }
+  0: { USD: 0, NZD: 0, MXN: 0, EUR: 0, TRY: 0, points: 0 },
+  1: { USD: 0.99, NZD: 1.69, MXN: 19, EUR: 0.99, TRY: 44.99, points: 500 },
+  2: { USD: 1.99, NZD: 3.49, MXN: 39, EUR: 1.99, TRY: 89.99, points: 1000 },
+  3: { USD: 2.99, NZD: 4.99, MXN: 59, EUR: 2.99, TRY: 134.99, points: 1500 },
+  4: { USD: 4.99, NZD: 8.49, MXN: 99, EUR: 4.99, TRY: 224.99, points: 2500 },
+  5: { USD: 9.99, NZD: 16.99, MXN: 199, EUR: 9.99, TRY: 449.99, points: 5000 },
+  6: { USD: 19.99, NZD: 33.99, MXN: 379, EUR: 19.99, TRY: 899.99, points: 10000 },
+  7: { USD: 49.99, NZD: 84.99, MXN: 949, EUR: 49.99, TRY: 2249.99, points: 25000 },
+  8: { USD: 99.99, NZD: 169.99, MXN: 1899, EUR: 99.99, TRY: 4499.99, points: 50000 }
 };
 function normalizePack(p) {
   if (!p || typeof p !== "object") throw new GameError("invalid-argument", "no pack");
@@ -171,6 +171,7 @@ function normalizeShop(shop, packIds) {
   Object.keys(tiers).forEach((t) => {
     const n = Math.trunc(+t); if (!(n >= 0 && n <= 50) || String(n) !== String(t)) throw new GameError("invalid-argument", "bad tier " + t);
     const row = {}; SHOP_CURRENCIES.forEach((c) => { const v = +((tiers[t] || {})[c]); if (!(v >= 0 && v <= 1e6)) throw new GameError("invalid-argument", "bad price for tier " + t + " " + c); row[c] = Math.round(v * 100) / 100; });
+    const pts = Math.trunc(+((tiers[t] || {}).points) || 0); if (!(pts >= 0 && pts <= 1e7)) throw new GameError("invalid-argument", "bad top-up points for tier " + t); row.points = pts;
     out.tiers[n] = row;
   });
   const tabs = Array.isArray(shop.tabs) ? shop.tabs : [];
@@ -187,7 +188,46 @@ function normalizeShop(shop, packIds) {
       return { pack, start, end, badge: String(e.badge || "").trim().slice(0, 20) };
     }) });
   });
+  /* v945: top-up reward ladders. period: daily | weekly | monthly | lifetime | event (event = between start and end). */
+  const tops = Array.isArray(shop.topups) ? shop.topups : []; if (tops.length > 10) throw new GameError("invalid-argument", "max 10 top-up ladders");
+  const seenL = {}; out.topups = tops.map((l) => {
+    const name = String((l && l.name) || "").trim().slice(0, 40); if (!name) throw new GameError("invalid-argument", "top-up ladder needs a name");
+    let id = packIdFrom(l.id || name); while (seenL[id]) id += "_2"; seenL[id] = 1;
+    const period = String(l.period || "daily"); if (TOPUP_PERIODS.indexOf(period) < 0) throw new GameError("invalid-argument", "bad top-up period");
+    const start = +l.start > 0 ? Math.trunc(+l.start) : null, end = +l.end > 0 ? Math.trunc(+l.end) : null;
+    if (period === "event" && !(start && end && end > start)) throw new GameError("invalid-argument", "an event ladder needs a start and an end (" + name + ")");
+    const ms = Array.isArray(l.tiers) ? l.tiers : []; if (!ms.length || ms.length > 30) throw new GameError("invalid-argument", "1-30 milestones per ladder (" + name + ")");
+    const tiersOut = ms.map((m) => { const pts = Math.trunc(+(m && m.points) || 0); if (!(pts > 0 && pts <= 1e9)) throw new GameError("invalid-argument", "milestone points must be more than 0 (" + name + ")");
+      const list = normalizeItems(m.items), items = {}, labels = {}; list.forEach((x) => { items[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; }); return { points: pts, items, labels }; })
+      .sort((a, b) => a.points - b.points);
+    return { id, name, icon: Array.from(String(l.icon || "🏆").trim()).slice(0, 4).join("") || "🏆", period, start, end, active: l.active !== false, tiers: tiersOut };
+  });
   return out;
+}
+const TOPUP_PERIODS = ["daily", "weekly", "monthly", "lifetime", "event"];
+/* which counting window a ladder is in right now (null = not running) */
+function topupKey(l, now) {
+  if (!l || l.active === false) return null;
+  if (l.period === "event") return now >= l.start && now < l.end ? "e" + l.start : null;
+  if (l.period === "lifetime") return "life";
+  return l.period[0] + limitPeriodStart(l.period, now);
+}
+function topupEnd(l, now) { return l.period === "event" ? l.end : l.period === "lifetime" ? null : limitPeriodEnd(l.period, now); }
+/* add a purchase's points to the player's counters (wallet.topup = { life, l: { ladderId: { k, n, c: [claimed milestone indexes] } } }) */
+function addTopup(topup, ladders, points, now) {
+  const t = JSON.parse(JSON.stringify(topup || {})); t.life = (t.life || 0) + points; t.l = t.l || {};
+  (ladders || []).forEach((l) => { const k = topupKey(l, now); if (!k) return; const c = t.l[l.id]; t.l[l.id] = c && c.k === k ? { k, n: c.n + points, c: c.c || [] } : { k, n: points, c: [] }; });
+  return t;
+}
+function decideTopupClaim(topup, ladder, idx, now) {
+  if (!ladder) throw new GameError("not-found", "no such top-up ladder");
+  const k = topupKey(ladder, now); if (!k) throw new GameError("failed-precondition", "this top-up event isn't running");
+  const m = ladder.tiers[idx]; if (!m) throw new GameError("not-found", "no such milestone");
+  const c = (topup && topup.l && topup.l[ladder.id]) || null, n = c && c.k === k ? c.n : 0, claimed = c && c.k === k ? (c.c || []) : [];
+  if (claimed.indexOf(idx) >= 0) return { dup: true };
+  if (n < m.points) throw new GameError("failed-precondition", "not enough top-up points yet", { have: n, need: m.points });
+  const t = JSON.parse(JSON.stringify(topup || {})); t.l = t.l || {}; t.l[ladder.id] = { k, n, c: claimed.concat([idx]) };
+  return { dup: false, topup: t, items: m.items };
 }
 function shopEntryLive(e, now) { return (!e.start || now >= e.start) && (!e.end || now < e.end); }
 function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
@@ -293,4 +333,4 @@ function checkSave(before, after, dtSec, allow) {
 }
 
 module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

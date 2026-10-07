@@ -10278,7 +10278,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v944"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v945"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14347,7 +14347,7 @@ function ksStartWallet() {
   try { ksStartMail(); } catch (e) { console.error(e); }
   var touch = function () { KS_BACKEND.call("touch", {}).catch(function () {}); }; touch(); setInterval(touch, 3600000); /* v910: account 'last seen' date (server-side, nothing else recorded) */
   KSW.unsub = cloudDb.doc("players/" + PLAYER_ID + "/wallet/main").onSnapshot(function (s) {
-    var d = (s.exists && s.data()) || {}; KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
+    var d = (s.exists && s.data()) || {}; KSW.topup = d.topup || null; try { ksShopRender(); } catch (e) {} KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
     game.state.gems = KSW.gems; try { render(); } catch (e) {} ksClaimLoop();
   }, function (e) { console.error("wallet sync", e && e.message); });
   setInterval(function () { if (KSW.loaded && game.state.gems !== KSW.gems) { game.state.gems = KSW.gems; try { render(); } catch (e) {} } ksClaimLoop(); }, 5000); /* the wallet is the only truth: undo any local edit of gems */
@@ -14455,6 +14455,7 @@ function ksShopPeriodEnd(reset, now) { var d = new Date(now), s0; if (reset === 
   if (reset === "monthly") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1); return null; }
 function ksShopCardHtml(p, e, priceText, now, esc) { /* p = pack, e = its place in a tab ({end, badge}) */
   e = e || {}; var lab = p.labels || {}, meta = [], ban = typeof p.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(p.banner);
+  if (+p.points > 0) meta.push("⭐ +" + (+p.points).toLocaleString() + " top-up pts");
   if (e.end && !ban) meta.push("⏳ Ends in " + ksShopLeft(e.end - now));
   if (p.limit) { var pe = ksShopPeriodEnd(p.reset, now); meta.push("🔒 " + (p.reset === "daily" ? p.limit + " per day" : p.reset === "weekly" ? p.limit + " per week" : p.reset === "monthly" ? p.limit + " per month" : p.limit + " per player") + (pe ? " · resets in " + ksShopLeft(pe - now) : "")); }
   var head = ban ? '<div class="sban" style="background-image:url(' + p.banner + ')"><div class="sbt"><div class="snm">' + esc(p.name) + "</div>" + (p.desc ? '<div class="sds">' + esc(p.desc) + "</div>" : "") + "</div>" + (e.end ? '<div class="stime">⏳ ' + esc(ksShopLeft(e.end - now)) + "</div>" : "") + "</div>"
@@ -14478,7 +14479,30 @@ function ksShopCurrency() { /* the player's currency: their choice, else their t
   return reg === "NZ" ? "NZD" : reg === "MX" ? "MXN" : reg === "TR" ? "TRY" : KSS_EURO[reg] ? "EUR" : "USD";
 }
 function ksShopPrice(tier) { var row = KSS.shop && KSS.shop.tiers && KSS.shop.tiers[tier || 0], c = KSS.cur || "USD", v = row ? +row[c] : 0; if (!v) return "Free"; return (KSS_SYM[c] || c + " ") + v.toLocaleString(undefined, { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }); }
-function ksShopTabs() { var now = Date.now(), P = KSS.packs; return ((KSS.shop && KSS.shop.tabs) || []).map(function (t) { return { id: t.id, name: t.name, icon: t.icon, items: (t.items || []).filter(function (e) { var p = P[e.pack]; return p && p.active !== false && (!e.start || now >= e.start) && (!e.end || now < e.end); }) }; }); }
+function ksTopKey(l, now) { /* same windows as the server (functions/core.js topupKey) */
+  if (!l || l.active === false) return null; if (l.period === "event") return now >= l.start && now < l.end ? "e" + l.start : null; if (l.period === "lifetime") return "life";
+  var d = new Date(now), s0 = l.period === "daily" ? Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) : l.period === "weekly" ? Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - ((d.getUTCDay() + 6) % 7) * 86400e3 : Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+  return l.period[0] + s0;
+}
+function ksTopLadders() { var now = Date.now(); return ((KSS.shop && KSS.shop.topups) || []).filter(function (l) { return !!ksTopKey(l, now); }); }
+function ksTopRender(el) {
+  var now = Date.now(), T = (typeof KSW !== "undefined" && KSW.topup) || {}, busy = KSS.topBusy || {};
+  el.innerHTML = ksTopLadders().map(function (l) {
+    var k = ksTopKey(l, now), c = (T.l && T.l[l.id] && T.l[l.id].k === k) ? T.l[l.id] : { n: 0, c: [] }, top = l.tiers[l.tiers.length - 1].points, end = l.period === "event" ? l.end : l.period === "lifetime" ? null : ksShopPeriodEnd(l.period, now);
+    return '<div class="scard"><div class="shead"><span class="sic">' + escapeHtml(l.icon || "🏆") + '</span><div style="flex:1"><div class="snm">' + escapeHtml(l.name) + '</div><div class="sds">' + escapeHtml((l.period === "lifetime" ? "All-time" : l.period === "event" ? "Event" : l.period.charAt(0).toUpperCase() + l.period.slice(1)) + " top-up points" + (end ? " · resets in " + ksShopLeft(end - now) : "")) + "</div></div></div>"
+      + '<div style="position:relative;height:16px;border:1px dashed #5d6f93;border-radius:8px;background:#0f1520;overflow:hidden"><div style="position:absolute;left:0;top:0;bottom:0;width:' + Math.min(100, c.n / top * 100).toFixed(1) + '%;background:linear-gradient(90deg,#c9a24a,#f0c95f)"></div><div style="position:absolute;inset:0;text-align:center;font-size:11px;font-weight:700;line-height:14px;color:#fff;text-shadow:0 1px 2px #000">⭐ ' + c.n.toLocaleString() + " / " + top.toLocaleString() + "</div></div>"
+      + l.tiers.map(function (m, i) { var got = (c.c || []).indexOf(i) >= 0, can = c.n >= m.points && !got, b = busy[l.id + "#" + i], lab = m.labels || {};
+        return '<div style="display:flex;align-items:center;gap:8px;border-top:1px dotted #33445e;padding-top:6px"><div style="width:70px;font-weight:700;color:' + (c.n >= m.points ? "#f0c95f" : "#93a2ba") + '">⭐ ' + m.points.toLocaleString() + '</div><div class="sitems" style="flex:1">' + Object.keys(m.items || {}).map(function (it) { return '<span class="sit">' + escapeHtml((lab[it] || it) + " × " + (+m.items[it]).toLocaleString()) + "</span>"; }).join("") + "</div>"
+          + '<button type="button" class="sbuy" data-topc="' + escapeHtml(l.id) + '" data-topi="' + i + '" style="width:auto;padding:6px 12px;font-size:13px' + (can ? "" : ";background:#26324d;color:#93a2ba") + '"' + (can && !b ? "" : " disabled") + ">" + (got ? "✓ Claimed" : b ? "…" : can ? "Claim" : "Locked") + "</button></div>"; }).join("") + "</div>";
+  }).join("") || '<div class="sempty">No top-up rewards running right now.</div>';
+}
+function ksTopClaim(id, i) {
+  if (!window.KS_BACKEND || !KS_BACKEND.call) return; KSS.topBusy = KSS.topBusy || {}; var key = id + "#" + i; if (KSS.topBusy[key]) return; KSS.topBusy[key] = 1; ksShopRender();
+  KS_BACKEND.call("claimTopup", { ladder: id, idx: i }).then(function (r) { if (r && r.topup) KSW.topup = r.topup; if (r && typeof r.gems === "number") { KSW.gems = r.gems; game.state.gems = r.gems; } try { render(); } catch (e) {}
+    var nt = document.getElementById("ksShopNote"); if (nt && !r.dup) { nt.textContent = "🏆 Claimed! " + (Object.keys(r.items || {}).some(function (k) { return k !== "gems"; }) ? "Items are in your mail" : ""); clearTimeout(KSS.nt); KSS.nt = setTimeout(function () { nt.textContent = "💳 Payments coming soon"; }, 3000); } },
+    function (e) { try { game.log(ksErrText(e)); } catch (er) {} }).then(function () { delete KSS.topBusy[key]; ksShopRender(); });
+}
+function ksShopTabs() { var now = Date.now(), P = KSS.packs; return ((KSS.shop && KSS.shop.tabs) || []).map(function (t) { return { id: t.id, name: t.name, icon: t.icon, items: (t.items || []).filter(function (e) { var p = P[e.pack]; return p && p.active !== false && (!e.start || now >= e.start) && (!e.end || now < e.end); }) }; }).concat(ksTopLadders().length ? [{ id: "__topup", name: "Top-up", icon: "🏆", items: [], top: true }] : []); } /* 🏆 Top-up is the last tab */
 function ksShopSubscribe() {
   if (KSS.subs || !window.claude || typeof window.claude.use !== "function") return; KSS.subs = true;
   window.claude.use("db").then(function (db) {
@@ -14504,6 +14528,7 @@ function ksShopOpen() {
     ov.addEventListener("click", function (e) {
       var t = e.target; if (t === ov || t.getAttribute("data-sx")) { ksShopClose(); return; }
       var tb = t.closest && t.closest("[data-stab]"); if (tb) { KSS.tab = tb.getAttribute("data-stab"); ksShopRender(); return; }
+      var tc = t.closest && t.closest("[data-topc]"); if (tc) { ksTopClaim(tc.getAttribute("data-topc"), +tc.getAttribute("data-topi")); return; }
       var by = t.closest && t.closest("[data-sbuy]"); if (by) { var nt = ov.querySelector("#ksShopNote"); if (nt) { nt.textContent = "💳 Not connected yet - nothing was charged"; nt.style.color = "#ffd27a"; clearTimeout(KSS.nt); KSS.nt = setTimeout(function () { nt.textContent = "💳 Payments coming soon"; nt.style.color = ""; }, 2500); } try { game.log("🛒 Shop: \"" + by.getAttribute("data-sbuy") + "\" - payments coming soon."); } catch (er) {} }
     });
     ov.querySelector("#ksShopCur").onchange = function () { KSS.cur = this.value; try { localStorage.setItem("ksShopCur", KSS.cur); } catch (e) {} ksShopRender(); };
@@ -14518,8 +14543,9 @@ function ksShopRender() {
   var tabs = ksShopTabs(), now = Date.now(); if (!tabs.some(function (t) { return t.id === KSS.tab; })) KSS.tab = tabs.length ? tabs[0].id : null;
   document.getElementById("ksShopTabs").innerHTML = tabs.map(function (t) { return '<button type="button" class="stab' + (t.id === KSS.tab ? " on" : "") + '" data-stab="' + escapeHtml(t.id) + '">' + escapeHtml((t.icon ? t.icon + " " : "") + t.name) + (t.items.length ? " · " + t.items.length : "") + "</button>"; }).join("");
   var tab = tabs.filter(function (t) { return t.id === KSS.tab; })[0], el = document.getElementById("ksShopList");
+  if (tab && tab.top) { ksTopRender(el); return; }
   if (!tab || !tab.items.length) { el.innerHTML = '<div class="sempty">' + (KSS.shop ? "Nothing here right now - check back soon!" : "The shop is being stocked. Check back soon!") + "</div>"; return; }
-  el.innerHTML = tab.items.map(function (e) { var p = KSS.packs[e.pack]; return ksShopCardHtml(p, e, ksShopPrice(p.tier), now, escapeHtml); }).join("");
+  el.innerHTML = tab.items.map(function (e) { var p = Object.assign({}, KSS.packs[e.pack]), row = KSS.shop && KSS.shop.tiers && KSS.shop.tiers[p.tier || 0]; p.points = (row && row.points) || 0; return ksShopCardHtml(p, e, ksShopPrice(p.tier), now, escapeHtml); }).join("");
 }
 function ksMailClaimAll() { /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
   var ids = ksMailShown().filter(function (m) { return !m.claimedAt; }).map(function (m) { return m.id; }); if (!ids.length || KSM.allBusy) return;
