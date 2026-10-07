@@ -369,3 +369,7 @@
   max HP, drone = % of ranged hero power. Weapons max + Legendary equip: 5-15. Everything except heroes maxed (weapons, equip, buildings,
   research): 8-20 / 9-2 (~20-32h) - beats 5 heroes at Lv40 (8-5).
 - v931: Ooze hit blobs ON by default (oozeBlobsOn = stored value !== "0"; sync apply the same). Only an explicit Off turns them off.
+- v932: Dev Tools "🧾 My settings vs test-link defaults" (admin only): lists every kingdom* setting in this device's storage + the synced cloud
+  map that differs from OWNER_DEFAULTS (what a fresh test-link player gets), images shown as type/size only; Copy button. Read-only.
+  Why: Harley asked which of his owner-account settings differ from defaults; there are no Firestore credentials in this workspace and
+  reading his data via the CI service account was refused, so the check runs on his own device.

@@ -3013,6 +3013,7 @@
                   <button class="dev-btn" id="devTerrainBtn">🖌️ Terrain painter: Off</button>
                   <button class="dev-btn" id="devBurnBtn">🔥 Test: hit my base (-1,000 HP)</button>
                   <button class="dev-btn" id="devMarch3dBtn">🚢 3D march ships: Off</button>
+                  <button class="dev-btn" id="devSettingsDiffBtn">🧾 My settings vs test-link defaults</button>
                   <button class="dev-btn" id="devOozeBlobBtn">🫧 Ooze hit blobs: On</button>
                   <button class="dev-btn" id="devGarethChangerBtn">🎲 Gareth attack changer: Off</button>
                   <button class="dev-btn" id="devRunBlendBtn">🏃 Gareth run dissolve: Off</button>
@@ -14915,7 +14916,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v931 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v932 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;
@@ -21686,6 +21687,43 @@ renderGarethChangerBtn();
 function renderOozeBlobBtn() { var b = document.getElementById("devOozeBlobBtn"); if (!b) return; b.textContent = "🫧 Ooze hit blobs: " + (oozeBlobsOn ? "On" : "Off"); b.className = "dev-btn" + (oozeBlobsOn ? " active" : ""); }
 document.getElementById("devOozeBlobBtn").onclick = function () { oozeBlobsOn = !oozeBlobsOn; var v = oozeBlobsOn ? "1" : "0"; try { localStorage.setItem(OOZE_BLOB_KEY, v); } catch (e) {} assetSyncUpload(OOZE_BLOB_KEY, v); renderOozeBlobBtn(); };
 renderOozeBlobBtn();
+/* v932: list every Dev Tools setting on THIS device/account that differs from what a fresh test-link player gets (OWNER_DEFAULTS), with a Copy button. Read-only. */
+function settingsDiffList() {
+  var skip = /^(kingdom_prototype_save_v1|ks_|__fake|kingdom_prototype_playername|kingdom_prototype_bookmarks|kingdom_prototype_ownerDefaultsSeeded|kingdom_prototype_worldchat)|__ts$|_lastwrite$/;
+  var keys = {}, out = [], k;
+  try { for (var i = 0; i < localStorage.length; i++) { k = localStorage.key(i); if (k) keys[k] = 1; } } catch (e) {}
+  Object.keys(cloudAssetMap || {}).forEach(function (x) { keys[x] = 1; });
+  Object.keys(OWNER_DEFAULTS).forEach(function (x) { keys[x] = 1; });
+  Object.keys(keys).sort().forEach(function (key) {
+    if (skip.test(key) || !/^kingdom/i.test(key)) return;
+    var v = null; try { v = localStorage.getItem(key); } catch (e) {} if (v == null && cloudAssetMap[key] != null) v = cloudAssetMap[key];
+    var d = Object.prototype.hasOwnProperty.call(OWNER_DEFAULTS, key) ? OWNER_DEFAULTS[key] : null;
+    if (v === d || (d == null && (v === "{}" || v === "[]" || v === ""))) return;
+    var img = function (x) { return x != null && /^data:/.test(x); };
+    var show = function (x) { return x == null ? "(not set = built-in default)" : img(x) ? "[" + (x.slice(5, x.indexOf(";")) || "file") + ", " + Math.round(x.length / 1024) + " KB]" : x.length > 160 ? x.slice(0, 160) + "…" : x; };
+    out.push(key.replace(/^kingdom_prototype_/, "") + "\n   yours: " + show(v) + "\n   default: " + show(d));
+  });
+  return out;
+}
+document.getElementById("devSettingsDiffBtn").onclick = function () {
+  var L = settingsDiffList(), txt = "Settings that differ from test-link defaults (" + L.length + ")" + (KS_BACKEND_ID() ? " - " + KS_BACKEND_ID() : "") + "\n\n" + (L.join("\n") || "None - everything matches the defaults.");
+  var ov = document.getElementById("settingsDiffOv"); if (ov) ov.remove();
+  ov = document.createElement("div"); ov.id = "settingsDiffOv";
+  ov.style.cssText = "position:fixed;inset:0;z-index:2147483600;background:rgba(5,8,16,.88);display:flex;align-items:center;justify-content:center;padding:14px";
+  ov.innerHTML = '<div style="background:#0f1520;border:2px dashed #c9a24a;border-radius:12px;max-width:640px;width:100%;max-height:86vh;display:flex;flex-direction:column;color:#f3e9d2">' +
+    '<div style="padding:10px 12px;font-weight:700;color:#f0c95f">🧾 My settings vs test-link defaults</div>' +
+    '<pre id="settingsDiffTxt" style="margin:0;padding:0 12px 10px;overflow:auto;flex:1;white-space:pre-wrap;word-break:break-all;font:11px/1.4 ui-monospace,monospace"></pre>' +
+    '<div style="display:flex;gap:8px;padding:10px 12px;border-top:1px dashed #5a4a20"><button class="dev-btn" id="settingsDiffCopy">📋 Copy</button><button class="dev-btn" id="settingsDiffClose">Close</button></div></div>';
+  document.body.appendChild(ov);
+  document.getElementById("settingsDiffTxt").textContent = txt;
+  document.getElementById("settingsDiffClose").onclick = function () { ov.remove(); };
+  document.getElementById("settingsDiffCopy").onclick = function () {
+    var b = this; function ok() { b.textContent = "✅ Copied"; }
+    try { navigator.clipboard.writeText(txt).then(ok, function () { fallback(); }); } catch (e) { fallback(); }
+    function fallback() { var t = document.createElement("textarea"); t.value = txt; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); ok(); } catch (e) {} t.remove(); }
+  };
+};
+function KS_BACKEND_ID() { try { var K = window.KS_BACKEND; return K ? (K.env + " · " + (K.email || K.name || "")) : ""; } catch (e) { return ""; } }
 function renderMapIsoBtn() { var b = document.getElementById("devMapIsoBtn"); if (!b) return; b.textContent = "🗺️ Isometric map (35°): " + (mapIso ? "On" : "Off"); b.className = "dev-btn" + (mapIso ? " active" : ""); }
 document.getElementById("devMapIsoBtn").onclick = function () {
   mapIso = !mapIso; try { localStorage.setItem(MAP_ISO_KEY, mapIso ? "1" : "0"); } catch (e) {} assetSyncUpload(MAP_ISO_KEY, mapIso ? "1" : "0");
