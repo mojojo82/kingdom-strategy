@@ -22150,6 +22150,17 @@ function startIdleAnim() {
   // Laser Beam visuals: release their owed-shot counts and drop them, along with any backlog (v461).
   Object.keys(idleAnim.laserVis || {}).forEach(function (k) { var lvr = idleAnim.laserVis[k]; for (var q = lvr.next; q < lvr.chunks.length; q++) { var qid = lvr.chunks[q].id; if (qid != null) idleAnim.pendingArrows[qid] = Math.max(0, (idleAnim.pendingArrows[qid] || 0) - 1); } });
   idleAnim.laserVis = {}; game.state.idle.laserChunkLog = [];
+  /* v924: coming back to Conquest. The shots in the air were just dropped, so nothing is "owed" to any enemy any more — and an enemy that died while
+     you were elsewhere (World map, City...) is simply gone, not held on screen waiting for a shot that will never land (it used to stand next to the
+     boss for up to 2.5 s). Enemies still alive keep their place. */
+  idleAnim.pendingArrows = {}; idleAnim.meleeQ = {}; idleAnim.timedHolds = [];
+  if (idleAnim.pendingBasicShots) idleAnim.pendingBasicShots = [];
+  if (idleAnim.pendingCannonLaunches) idleAnim.pendingCannonLaunches = [];
+  (function () {
+    var alive = {}; (game.state.idle.enemies || []).forEach(function (e) { alive[e.id] = 1; });
+    Object.keys(idleAnim.enemyById || {}).forEach(function (id) { if (!alive[id]) { try { game.idleConfirmDeath(id); } catch (e) {} delete idleAnim.enemyById[id]; delete idleAnim.displayedHp[id]; } });
+    (game.state.idle.enemies || []).forEach(function (e) { var d = idleAnim.displayedHp[e.id]; if (d) d.hp = Math.min(d.hp, Math.max(0, e.hp)); }); /* bars catch up on what happened while you were away */
+  })();
   idleAnim.lastKnownDefeated = game.state.idle.defeated;
   idleAnim.lastKnownEnemyHitCount = {};
   idleAnim.pendingProjectileLaunches = [];

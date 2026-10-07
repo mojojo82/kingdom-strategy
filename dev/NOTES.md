@@ -307,3 +307,10 @@
   back and holds it for 6 frames (a first try at 120 ms was flaky: the map sometimes takes longer to reappear). A drag/wheel/touch by the player
   cancels it; explicit moves (Center on Home, jump to a march / tile) clear it and win. Zoom changed meanwhile -> same centre.
 - After: Conquest/City/Heroes/More round trips 0 px off (4 runs); an explicit jump still lands where asked.
+
+## v924 (TEST game only): no dead enemies next to the boss after hopping back from the World map
+- Harley saw enemies + boss again while testing the World map fix (switching World <-> Conquest). Reproduced with g181 HOP=1 (hop to the World map
+  and back every few seconds): 142 frames with leftover bodies next to the boss. Cause: returning to Conquest (startIdleAnim) dropped the shots in
+  the air but not their "owed" counts (pendingArrows), so enemies that died while you were away stayed on screen up to 2.5 s waiting for them.
+- Fix: on return, owed counts / melee queues / queued launches are cleared, every enemy that died while you were away is removed (its kill already
+  counted), and the alive enemies' HP bars catch up to their real HP. After: 0 frames (hopping and normal play).

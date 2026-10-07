@@ -27,14 +27,17 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const iv = setInterval(() => {
       if (st.playerHp != null && st.playerHp < 60) st.playerHp = 1e6;
       const eng = st.enemies || [], bossE = eng.some((e) => e.type === "boss"), othersE = eng.filter((e) => e.type !== "boss").length;
-      const vis = Object.values(idleAnim.enemyById || {}), bossV = vis.some((v) => v.type === "boss"), othersV = vis.filter((v) => v.type !== "boss");
+      const vis = Object.values(idleAnim.enemyById || {}), onConq = appScreen === "conquest", bossV = onConq && vis.some((v) => v.type === "boss"), othersV = vis.filter((v) => v.type !== "boss");
       if (bossE && !lastBoss) ev.bosses++; lastBoss = bossE;
       if (bossE && othersE) { ev.engineMix++; if (ev.samples.length < 6) ev.samples.push({ where: "engine", level: st.chapter + "-" + st.levelNum, others: othersE, phase: st.bossPhase, killed: st.enemiesKilledInLevel }); }
       if (bossV && othersV.length) { ev.screenMix++; if (ev.samples.length < 12) ev.samples.push({ where: "screen", level: st.chapter + "-" + st.levelNum, others: othersV.map((v) => v.type + (v.dying ? "(dying)" : "") + "@" + Math.round(v.x) + " gone:" + (v.goneT ? v.goneT.toFixed(2) : 0) + " owed:" + (idleAnim.pendingArrows[v.id] || 0)).join(","), engineOthers: othersE }); }
     }, 20);
-    await new Promise((res) => setTimeout(res, SECS * 1000)); clearInterval(iv);
+    if (A[2]) { /* Harley's way: hop to the World map and back now and then (the fight carries on unseen) */
+      const t0 = Date.now(); while (Date.now() - t0 < SECS * 1000) { await new Promise((res) => setTimeout(res, 2500 + Math.random() * 3000)); setScreen("world"); await new Promise((res) => setTimeout(res, 1500 + Math.random() * 4000)); setScreen("conquest"); }
+    } else await new Promise((res) => setTimeout(res, SECS * 1000));
+    clearInterval(iv);
     ev.reached = st.chapter + "-" + st.levelNum; return ev;
-  }, [SECS, (process.env.W || "missile_barrage").split(",")]);
+  }, [SECS, (process.env.W || "missile_barrage").split(","), !!process.env.HOP]);
   console.log("bosses seen:", r.bosses, "| reached", r.reached, "| frames boss + other enemies IN THE FIGHT:", r.engineMix, "| ON SCREEN:", r.screenMix);
   r.samples.forEach((s) => console.log("  ", JSON.stringify(s)));
   console.log("errs", errs.slice(0, 3));
