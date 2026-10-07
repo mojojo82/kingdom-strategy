@@ -299,3 +299,11 @@
 - Guards added (whatever the cause): the cloud save is written the moment the popup is shown and on Collect (a reload, the phone discarding the page,
   or another tab can't re-show the same absence from an older copy); no second popup within 3 minutes (a new short "away" goes into the idle bucket,
   still collectable in the Forge); the popup waits until the cloud save has loaded. Test hook: window.ksWelcomeBackCooldownReset().
+
+## v923 (TEST game only): World map keeps its spot when you leave and come back
+- Harley: leave the World map (Conquest), come back -> the view is somewhere far away. Reproduced (g183_mapkeep.js), also in v918, so not from v919:
+  the browser resets the map's up-down scroll to the top edge the moment the map is hidden (left-right was kept) -> ~30,000 px off.
+- Fix: setScreen remembers the exact scroll (and zoom) when leaving World; on return it waits until the map is really shown again (up to 3 s), puts it
+  back and holds it for 6 frames (a first try at 120 ms was flaky: the map sometimes takes longer to reappear). A drag/wheel/touch by the player
+  cancels it; explicit moves (Center on Home, jump to a march / tile) clear it and win. Zoom changed meanwhile -> same centre.
+- After: Conquest/City/Heroes/More round trips 0 px off (4 runs); an explicit jump still lands where asked.

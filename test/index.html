@@ -13344,7 +13344,7 @@ function goToWorldTile(tileId) {
   var vp = document.getElementById("mapviewport"); if (!vp) return;
   ["pointerdown", "touchstart", "wheel", "mousedown"].forEach(function (ev) { vp.addEventListener(ev, function () { mapUserMovedMap = true; }, { passive: true, capture: true }); });
 })();
-function centerMapOnHome() {
+function centerMapOnHome() { worldMapKeep = null; /* v923: an explicit move beats 'back to where you left it' */
   var viewport = document.getElementById("mapviewport");
   var home = mapTileById(game.state.map, game.state.homeTileId);
   if (!viewport || !home) return false;
@@ -22584,12 +22584,12 @@ function marchNowPx(m) { /* same path/timing as the map's march markers */
   else if (m.status === "returning") { var c = a; a = b; b = c; t = m.travelSec > 0 ? clamp01((now - (m.returnAt - m.travelSec * 1000)) / (m.travelSec * 1000)) : 1; }
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
-function centerMapOnMarch(mid) {
+function centerMapOnMarch(mid) { worldMapKeep = null; /* v923: an explicit move beats 'back to where you left it' */
   var m = (game.state.marches || []).find(function (q) { return q.id === mid; }), vp = document.getElementById("mapviewport"); if (!m || !vp) return;
   var p = marchNowPx(m); if (!p) return;
   vp.scrollTo({ left: Math.max(0, p.x - vp.clientWidth / 2), top: Math.max(0, p.y - vp.clientHeight / 2), behavior: "smooth" });
 }
-function centerMapOnTile(tileId) {
+function centerMapOnTile(tileId) { worldMapKeep = null; /* v923: an explicit move beats 'back to where you left it' */
   var vp = document.getElementById("mapviewport"), xy = tileXY(tileId); if (!vp || isNaN(xy[0])) return;
   var c = tileCenterPx({ x: xy[0], y: xy[1] });
   vp.scrollTo({ left: Math.max(0, c.x - vp.clientWidth / 2), top: Math.max(0, c.y - vp.clientHeight / 2), behavior: "smooth" });
@@ -23766,7 +23766,12 @@ function preloadArenaAssets() {
   })();
 }
 function ensureConquestStarted() { if (game.openConquest()) { try { persist(); } catch (e) {} } }
+/* v923: leaving the World map and coming back used to land far away (the browser reset the map's up-down scroll while it was hidden). Remember the
+   exact spot on the way out, put it back on the way in. */
+var worldMapKeep = null;
 function setScreen(screen, sub) {
+  try { var vpK = document.getElementById("mapviewport"); if (appScreen === "world" && screen !== "world" && vpK && vpK.offsetParent) worldMapKeep = { L: vpK.scrollLeft, T: vpK.scrollTop, z: typeof mapZoom !== "undefined" ? mapZoom : null }; } catch (e) {}
+  var wasWorld = appScreen === "world";
   if (screen === "conquest") ensureConquestStarted();
   if (screen === "city" && !sub) sub = (appScreen === "city" && appSub) || "buildings";
   if (screen === "more" && !sub) sub = "menu";
@@ -23789,6 +23794,24 @@ function setScreen(screen, sub) {
   if (screen === "more" && sub === "skins") { try { renderSkinsScreen(); } catch (e) { console.error(e); } }
   if (screen === "more" && sub === "options") { try { renderOptionsScreen(); } catch (e) { console.error(e); } }
   if (screen === "more" && sub === "alliance") { ALLY.msg = ""; try { renderAlliancePanel(); } catch (e) { console.error(e); } }
+  if (screen === "world" && !wasWorld && worldMapKeep) { /* v923: back to where you left it, once the map is laid out again */
+    /* the map can take a few frames to be shown again; wait for it (up to 3 s), then hold the spot for a few frames while it settles. A drag or
+       wheel by the player in the meantime wins. */
+    var keep = worldMapKeep, tries = 0, held = 0, userMoved = false, vp0 = document.getElementById("mapviewport");
+    var stop = function () { userMoved = true; };
+    if (vp0) { vp0.addEventListener("pointerdown", stop, { once: true }); vp0.addEventListener("wheel", stop, { once: true, passive: true }); vp0.addEventListener("touchstart", stop, { once: true, passive: true }); }
+    (function put() {
+      if (userMoved || appScreen !== "world" || worldMapKeep !== keep) return;
+      var v = document.getElementById("mapviewport");
+      if (v && v.offsetParent && v.clientHeight > 0) {
+        var r = (keep.z != null && typeof mapZoom !== "undefined" && mapZoom !== keep.z && keep.z > 0) ? mapZoom / keep.z : 1; /* zoom changed meanwhile: keep the same centre */
+        var L = r === 1 ? keep.L : (keep.L + v.clientWidth / 2) * r - v.clientWidth / 2, T = r === 1 ? keep.T : (keep.T + v.clientHeight / 2) * r - v.clientHeight / 2;
+        if (Math.abs(v.scrollLeft - L) > 1 || Math.abs(v.scrollTop - T) > 1) { v.scrollLeft = L; v.scrollTop = T; try { renderVisibleTiles(); } catch (e) {} held = 0; } else held++;
+        if (held >= 6) return; /* it has stayed put for 6 frames */
+      }
+      if (++tries < 180) requestAnimationFrame(put);
+    })();
+  }
 }
 
 // ---- More > Skins (v485) ----
