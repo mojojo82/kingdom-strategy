@@ -287,3 +287,8 @@
 - Time model assumptions (sim): day 1 = 4 h active (3,000/h measured early, falling to 1,500/h) + idle; later days 9,000/day (the game's own note).
   Real late-game Energon income was NOT measured — re-check against real play.
 - Test: g180_forgepacing.js.
+
+## Boss + other enemies on screen (Harley, chapter 2) — already fixed by v918, test added
+- g181_bossalone.js, chapter 2, Gareth + Lyra + all damage weapons, 5 min: v917 = 151 frames with horde bodies still on screen while the boss walked in
+  (enemies already dead in the engine, held on screen for the shots still flying at them); v921 = 0 frames (8 bosses). The engine never had a horde
+  enemy alive next to the boss in either version. Fixed by v918: the boss phase starts only when the last kill is SEEN (body down).
