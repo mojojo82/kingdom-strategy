@@ -397,3 +397,4 @@
   purchases still need 1-20); claiming an empty mail just sets claimedAt. Admin: items optional ("(message only, no items)" in the confirm).
   Game: no Claim button / no "Items in this mail" for it; opening it calls claimMail quietly = marked read, unread badge clears, row shows "✓ Read".
   Tests: core.test.js (message-only mail), g189_mailmsg; g170/g171/g184 still pass.
+- v940 (admin page): item picker starts on "— No item (message only) —"; rows left on it (or with no amount) are skipped.

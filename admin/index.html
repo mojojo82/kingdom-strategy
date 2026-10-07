@@ -170,13 +170,13 @@
   function addItemRow(box) {
     var ids = Object.keys(S.catalog.items).filter(function (k) { return k[0] !== "_"; });
     var r = document.createElement("div"); r.className = "itemrow";
-    r.innerHTML = '<select>' + ids.map(function (k) { return '<option value="' + esc(k) + '">' + esc(itemLabel(k)) + "</option>"; }).join("") + '</select><input type="number" min="1" placeholder="Amount"><button class="b ghost" title="Remove">✕</button>';
+    r.innerHTML = '<select><option value="">— No item (message only) —</option>' + ids.map(function (k) { return '<option value="' + esc(k) + '">' + esc(itemLabel(k)) + "</option>"; }).join("") + '</select><input type="number" min="1" placeholder="Amount"><button class="b ghost" title="Remove">✕</button>';
     r.querySelector("button").onclick = function () { r.remove(); };
     $(box).appendChild(r);
   }
   function readItems(box) {
     var out = {}, bad = null;
-    [].forEach.call($(box).querySelectorAll(".itemrow"), function (r) { var id = r.querySelector("select").value, q = Math.trunc(+r.querySelector("input").value); if (!r.querySelector("input").value) return; if (!(q >= 1)) bad = "Amounts must be 1 or more."; out[id] = (out[id] || 0) + q; });
+    [].forEach.call($(box).querySelectorAll(".itemrow"), function (r) { var id = r.querySelector("select").value, q = Math.trunc(+r.querySelector("input").value); if (!id || !r.querySelector("input").value) return; /* v940: "No item" row, or no amount = skipped */ if (!(q >= 1)) bad = "Amounts must be 1 or more."; out[id] = (out[id] || 0) + q; });
     if (bad) throw new Error(bad); return out; /* v939: no items = a message-only mail */
   }
   function itemsText(items) { if (!Object.keys(items).length) return "(message only, no items)"; return Object.keys(items).map(function (k) { return items[k].toLocaleString() + " × " + itemLabel(k); }).join("\n"); }
