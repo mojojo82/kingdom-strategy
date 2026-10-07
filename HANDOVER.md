@@ -105,11 +105,11 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Go live:** copy `test/index.html` → root `index.html` when approved (the live world then imports `seed-world.json` the first time an admin opens it).
 - **Kingdoms (servers), planned, MUST happen before the public test:** Harley's model: kingdoms are like the observable universe. **Atlantis
   (server0) is Harley's private kingdom beyond the edge: players never reach it, never see it as a neighbour, never see its name.** Players start in
-  Kingdom 1, 2, ... TODAY THE OPPOSITE HAPPENS: every new signup is assigned to Atlantis (until 1,000 players). So: new signups must go to Kingdom 1
+  Kingdom 1, 2, ... TODAY every new signup is assigned to Atlantis (until 1,000 players): fine for now (Harley, 7 Oct: only he is testing), must change before the public test. So: new signups must go to Kingdom 1
   (made real, not the placeholder drawing) or a playtest kingdom; Atlantis is never assigned/drawn/named to players; existing Atlantis accounts stay
   unless moved. Earlier notes: (1) Public test (a small group of friends): Harley UNDECIDED between a separate
   playtest kingdom or "Kingdom 1" (NOTE: "Kingdom 1" is the shaded placeholder neighbour drawn top-left of the world map, NEIGHBOUR_KINGDOMS,
-  not a real server yet; Atlantis = server0 = the only real kingdom). Either way = making a second kingdom real. Options were: a (keeps Atlantis clean for launch; needs pre-launch signups routed there) or Atlantis (works today: every new signup goes
+  not a real server yet; Atlantis = server0 = the only real kingdom). Either way = making a second kingdom real. Options: a separate playtest kingdom / Kingdom 1 (keeps Atlantis clean; needs pre-launch signups routed there) or Atlantis (works today: every new signup goes
   to Atlantis until it has 1,000 players). Deciding question: should the testers get a head start in the public kingdom? (2) At real launch Harley
   may move all testers to a new kingdom: an admin-only "move players to kingdom X". Account, progress, heroes, items, gems and mail stay; they get a fresh
   spot on the new map, and the city starts clean (no HP/fire carried over). Alliances belong to the kingdom they were made in (`allyPath` uses the server
