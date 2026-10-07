@@ -75,7 +75,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 1. **Game changes:** edit the single game file. In the original session it was `/home/claude/game.html`; in a new session use `test/index.html` from this repo as the source.
    - Backups were `game_vNNN.html` (latest v933). Git history now does that job: commit each version with its number.
    - Add a `dev/NOTES.md` entry per version (`## vNNN` + bullet points).
-   - Publish to the claude.ai artifact (`Artifact` tool, `url` above, a short `label`, **don't pass `capabilities`**; the `db` capability carries forward).
+   - Every now and then (not every version - Harley: it slows things down), publish to the claude.ai artifact (`Artifact` tool, `url` above, a short `label`, **don't pass `capabilities`**; the `db` capability carries forward). Last published: v933.
    - Copy to `test/index.html` and push. Copy to the root `index.html` **only when Harley approves** ("test first, then live").
 2. **Server changes** (`functions/`, `tools/`, `ci/`, `admin/`, `test/index.html`): push to `main`. The `firebase` workflow then:
    - runs unit tests (`functions/test/core.test.js`), emulator security/function tests (`ci/integration.test.js`) and a real-browser end-to-end test of the game + admin site (`ci/e2e.test.js`);
