@@ -1939,11 +1939,20 @@
   #mapReconBtn { display:flex; position:absolute; right:10px; top:10px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
   #mapReconBtn .mmi { font-size:24px; line-height:1; }
   html.ks-mail-on #mapReconBtn { top:66px; }
+  /* v927: server chip sits top-right of the map on World; X/Y of the view centre at the bottom middle */
+  #mapviewportWrap > #ksFbBadge { position:absolute !important; top:6px !important; right:6px !important; left:auto !important; bottom:auto !important; z-index:7 !important; max-width:52% !important; }
+  body[data-screen="world"] #mapMailBtn { top:36px; }
+  body[data-screen="world"] #mapReconBtn { top:36px; }
+  html.ks-mail-on body[data-screen="world"] #mapReconBtn { top:92px; }
+  #mapCoords { display:none; position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:7; padding:4px 12px; border:1px dashed #c9a24a; border-radius:8px; background:rgba(15,21,32,.78); color:#f0c95f; font:700 13px/1.2 system-ui,sans-serif; letter-spacing:.5px; white-space:nowrap; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,.45); }
+  body[data-screen="world"] #mapCoords { display:block; }
   @media (max-width:900px) { /* phones: sit just above the chat bar (it covers the bottom of the map), and keep the 🔥 server chip off the bottom nav */
     body[data-screen="world"] #mapMailBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
     body[data-screen="world"] #mapReconBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
     html.ks-mail-on body[data-screen="world"] #mapReconBtn { bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); }
     #ksFbBadge { bottom:calc(var(--bnH,86px) + 54px) !important; z-index:39 !important; }
+    body[data-screen="world"] #mapCoords { position:fixed; bottom:calc(var(--bnH,86px) + 46px + 10px); z-index:39; }
+    body[data-screen="world"] #mapMailBtn, body[data-screen="world"] #mapReconBtn, html.ks-mail-on body[data-screen="world"] #mapReconBtn { top:auto; }
   }
   html.ks-mail-on #mailBtn { display:inline-flex; align-items:center; justify-content:center; font-size:18px; padding:6px 10px; }
   #mailBadge { display:none; position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#d9412b; color:#fff; font:700 10px/16px system-ui,sans-serif; text-align:center; }
@@ -2621,6 +2630,7 @@
             </div>
             <div id="fpsCounter">-- FPS</div>
             <button id="mapMailBtn" type="button" title="Mail" aria-label="Mail"><span class="mmi">📪</span><span id="mapMailBadge"></span></button>
+            <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
             <button id="mapReconBtn" type="button" title="Intel &amp; Recon" aria-label="Intel and Recon"><span class="mmi">🛰️</span></button>
             <div id="mapviewport">
               <div id="mapworld">
@@ -13827,6 +13837,31 @@ function seaFoamTick() {
   seaFoam.diag = "🌊 " + live;
 }
 setInterval(seaFoamTick, 500);
+function mapCenterTile() { /* tile under the middle of the view */
+  var vp = document.getElementById("mapviewport"); if (!vp || !vp.clientWidth) return null;
+  var t = seaFoamTileAt(vp.scrollLeft + vp.clientWidth / 2, vp.scrollTop + vp.clientHeight / 2), n = mapSizeTiles() || terrainN || 1;
+  return [Math.max(0, Math.min(n - 1, t[0])), Math.max(0, Math.min(n - 1, t[1]))];
+}
+function updateMapCoords() {
+  if (typeof appScreen === "undefined" || appScreen !== "world") return;
+  var el = document.getElementById("mapCoords"), t = el && mapCenterTile(); if (!t) return;
+  var txt = "X:" + t[0] + "  Y:" + t[1]; if (el.textContent !== txt) el.textContent = txt;
+}
+function ksBadgeDock() { /* World: server chip goes top-right of the map; elsewhere back to its usual corner */
+  var b = document.getElementById("ksFbBadge"), w = document.getElementById("mapviewportWrap"); if (!b || !w) return;
+  var want = typeof appScreen !== "undefined" && appScreen === "world" ? w : document.body;
+  if (b.parentNode !== want) want.appendChild(b);
+}
+setInterval(function () { ksBadgeDock(); updateMapCoords(); }, 500);
+(function () {
+  var el = document.getElementById("mapCoords"); if (!el) return;
+  el.onclick = function () {
+    var t = mapCenterTile() || [0, 0], a = prompt("Go to coordinates (X Y):", t[0] + " " + t[1]); if (a == null) return;
+    var m = String(a).match(/-?\d+/g); if (!m || m.length < 2) return;
+    var n = mapSizeTiles(), x = Math.max(0, Math.min(n - 1, +m[0])), y = Math.max(0, Math.min(n - 1, +m[1]));
+    centerMapOnTile(x + "," + y); setTimeout(updateMapCoords, 50);
+  };
+})();
 function terrainLayer() {
   var L = document.getElementById("mapTerrainLayer"); if (L) return L;
   var world = document.getElementById("mapworld"); if (!world) return null;
@@ -14515,6 +14550,7 @@ function baseFireReposition() { Object.keys(baseFireEls).forEach(function (id) {
       var key = Math.floor(viewport.scrollLeft / step) + "|" + Math.floor(viewport.scrollTop / step) + "|" + mapZoom + "|" + (mapIso ? 1 : 0) + "|" + viewport.clientWidth + "x" + viewport.clientHeight;
       if (key !== lastWindowKey) { lastWindowKey = key; renderVisibleTiles(); }
       try { placeTileInfo(); } catch (e) {}
+      try { updateMapCoords(); } catch (e) {}
     });
   });
   var lastWindowKey = null;
@@ -14856,7 +14892,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v926d · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · v927 · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;
@@ -23871,6 +23907,7 @@ function setScreen(screen, sub) {
   if (sub !== "chat") chatReturn = null;
   appScreen = screen; appSub = sub;
   document.body.setAttribute("data-screen", screen); document.body.setAttribute("data-sub", sub);
+  try { ksBadgeDock(); } catch (e) {}
   var want = null;
   if (screen === "world") want = "world";
   else if (screen === "conquest") want = "conquest";

@@ -344,3 +344,7 @@
   in, drifts a few px and fades out via a CSS keyframe (GPU-animated by the phone). JS only recycles finished/off-view streaks every 500ms (≤12
   per tick, ~0.04 ms), only on the World screen with the page visible. Streaks only go where the tile and all 8 neighbours are sea. Sea colour
   unchanged. FPS badge shows "v926d · 🌊 N" on World as a version/diagnostic check (remove once Harley confirms). Test g185 rewritten.
+- v927: Harley confirmed the v926d foam works on iPhone. World map: the 🔥 server chip now docks top-right of the map (moved into
+  #mapviewportWrap while on World, back to body elsewhere; PC mail/recon buttons shifted down 26px to clear it). New #mapCoords pill at the
+  bottom middle shows "X:.. Y:.." of the tile under the view centre (seaFoamTileAt inverse, updates on scroll + every 500ms); on phones it sits
+  above the chat bar, level with the mailbox. Tap it -> prompt "X Y" -> centerMapOnTile. Test g186_mapcoords (phone + PC).

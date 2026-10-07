@@ -42,7 +42,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForTimeout(2500); await P.screenshot({ path: OUT + "seafoam_phone.png" });
   console.log(JSON.stringify(r)); console.log("errs", errs.slice(0, 3));
   if (!process.env.NOASSERT) { assert.ok(r.maxLive >= 10, "foam shows"); assert.strictEqual(r.onLand, 0, "never on land"); assert.ok(r.drifts, "drifts"); assert.ok(r.inside && r.scrollsNatively, "inside the map, scrolls with it");
-    assert.strictEqual(r.seaBg, "linear-gradient(rgb(47, 107, 147), rgb(53, 117, 155))", "sea colour unchanged"); assert.ok(/v926d/.test(r.badge) && /🌊/.test(r.badge), "badge readout"); assert.ok(r.idleOffMap, "nothing recycled off the map"); assert.ok(r.msPerTick < 3, "cheap");
+    assert.strictEqual(r.seaBg, "linear-gradient(rgb(47, 107, 147), rgb(53, 117, 155))", "sea colour unchanged"); assert.ok(/v92[6-9]/.test(r.badge) && /🌊/.test(r.badge), "badge readout"); assert.ok(r.idleOffMap, "nothing recycled off the map"); assert.ok(r.msPerTick < 3, "cheap");
     assert.deepStrictEqual(errs, []); console.log("ALL OK"); }
   await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
