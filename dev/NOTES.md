@@ -422,3 +422,10 @@
     from time zone then phone region (switcher in the footer, remembered), live updates, buy button = "payments coming soon" note.
   - Tests: core.test.js (tiers, limits, periods), ci/integration.test.js (shop), g191_packs (admin), g192_shop (game).
   - Admin: shop tab rows and library cards show each item as icon + amount chips (e.g. 💎 300 Gems, 🪵 5,000 Wood) so contents are visible at a glance.
+- v944: pack banner + Preview (Harley; full offer types - pack series, buy-all grand prize, fund/pass, subscription card - planned for a later shop update).
+  - Pack editor: 🖼️ Upload banner (centre-cropped to 2.27:1, 800x352 JPEG, shrunk under ~450 KB), shown as thumbnail; Remove. Server validates
+    data:image/(jpeg|png|webp) base64, max 700k chars, stored on the pack doc.
+  - Shop card with a banner: picture across the top, title + description over it, countdown chip bottom-left, badge top-right; items + price below.
+  - 👁 Preview (pack editor = unsaved form, library card, each tab row = with its timer/badge): phone-width modal showing exactly the game's card,
+    with a currency switcher. The card code lives between /* KSS-CARD-BEGIN */ and /* KSS-CARD-END */ in BOTH test/index.html and
+    admin/index.html - edit both; g193_banner fails if they differ.

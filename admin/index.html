@@ -129,12 +129,13 @@
         <input type="hidden" id="pkId">
         <div class="row"><input id="pkIcon" value="📦" maxlength="4" style="width:56px;text-align:center" title="Icon (an emoji)"><input class="grow" id="pkName" placeholder="Name (e.g. Starter Pack, Daily Deal, Bug apology)" maxlength="60"></div>
         <input id="pkDesc" placeholder="Short description (optional, shown in the shop)" style="width:100%;margin-top:6px" maxlength="200">
+        <div class="row" style="margin-top:8px"><span class="muted">Banner</span><img id="pkBanThumb" alt="" style="display:none;height:44px;border-radius:6px;border:1px dashed var(--line)"><label class="b ghost mini" style="cursor:pointer">🖼️ Upload banner<input type="file" id="pkBanFile" accept="image/*" style="display:none"></label><button class="b ghost mini" id="pkBanDel" style="display:none">Remove</button><span class="muted">Wide picture, about 2.3 : 1 (it's cropped to fit and shrunk automatically)</span></div>
         <div id="pkItems"></div>
         <div class="row" style="margin-top:8px"><button class="b ghost" id="pkAdd">+ Add item</button></div>
         <div class="row" style="margin-top:8px"><span class="muted">Price</span><select id="pkTier" class="grow"></select></div>
         <div class="row" style="margin-top:8px"><span class="muted">Buy limit</span><input id="pkLimit" type="number" min="0" value="0" style="width:80px" title="0 = no limit"><select id="pkReset"><option value="none">ever (one-time)</option><option value="daily">per day</option><option value="weekly">per week</option><option value="monthly">per month</option></select><span class="muted">0 = no limit · resets at 00:00 UTC (weeks start Monday)</span></div>
         <div class="row" style="margin-top:8px"><label><input type="checkbox" id="pkMail"> 🎁 Use as a mail gift</label><label><input type="checkbox" id="pkActive" checked> Active</label></div>
-        <div class="row" style="margin-top:8px"><button class="b" id="pkSave">Save pack</button><button class="b ghost" id="pkNew">Clear / new</button></div>
+        <div class="row" style="margin-top:8px"><button class="b" id="pkSave">Save pack</button><button class="b ghost" id="pkPrev">👁 Preview</button><button class="b ghost" id="pkNew">Clear / new</button></div>
       </div>
     </div>
     <div id="shTabsView" class="hide">
@@ -169,6 +170,12 @@
     <div class="row" style="margin-top:8px"><button class="b ghost" id="aAddItem">+ Add item</button><button class="b warn" id="aSend">Send to everyone</button></div>
   </section>
 </main>
+<div id="pvOv" class="hide" style="position:fixed;inset:0;z-index:50;background:rgba(5,9,20,.85);display:flex;align-items:center;justify-content:center;padding:12px">
+  <div style="display:flex;flex-direction:column;gap:8px;align-items:center;max-height:100%">
+    <div class="row" style="color:var(--dim);font-size:12px">👁 What a player sees (phone width) · prices in <select id="pvCur"></select><button class="b ghost mini" id="pvClose">Close</button></div>
+    <div id="pvPhone" class="kss" style="width:380px;max-width:calc(100vw - 24px);max-height:calc(100vh - 80px);overflow-y:auto;background:#0f1520;border:2px dashed #c9a24a;border-radius:12px;padding:12px;font-family:system-ui,-apple-system,sans-serif"></div>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -347,31 +354,88 @@
       if (q && (p.name + " " + (p.desc || "") + " " + packItemsText(p)).toLowerCase().indexOf(q) < 0) return false;
       return !f || (f === "gift" && p.mail) || (f === "shown" && shown) || (f === "hidden" && !shown) || (f === "inactive" && p.active === false); });
     $("pkGrid").innerHTML = ids.map(function (k) { var p = P[k], tabs = packTabs(k);
-      return '<div class="pkc' + (p.active === false ? " off" : "") + '"><div class="pkh"><span class="pki">' + esc(p.icon || "📦") + '</span><div><div class="pkn">' + esc(p.name) + '</div><div class="pkt">' + esc(k) + (p.builtIn ? " · built-in" : "") + (p.active === false ? " · inactive" : "") + "</div></div></div>"
+      return '<div class="pkc' + (p.active === false ? " off" : "") + '">' + (p.banner ? '<div style="height:70px;border-radius:7px;background:#0a1224 center/cover no-repeat url(' + p.banner + ')"></div>' : "") + '<div class="pkh"><span class="pki">' + esc(p.icon || "📦") + '</span><div><div class="pkn">' + esc(p.name) + '</div><div class="pkt">' + esc(k) + (p.builtIn ? " · built-in" : "") + (p.active === false ? " · inactive" : "") + "</div></div></div>"
         + (p.desc ? '<div class="muted">' + esc(p.desc) + "</div>" : "")
         + '<div class="tabitems">' + itemChips(p.items) + "</div>"
         + '<div class="pkp">' + (p.tier != null ? (+p.tier ? "Tier " + p.tier + ": " : "") + esc(tierText(p.tier || 0, true)) : esc(p.price ? p.price + " " + (p.currency || "") : "Free")) + "</div>"
         + '<div class="pkt">' + [limitText(p) ? "🔒 " + limitText(p) : "", tabs.map(function (t) { return (t.icon || "") + " " + t.name; }).join(", "), p.mail ? "🎁 mail gift" : "", !tabs.length && !p.mail ? "not shown anywhere" : ""].filter(Boolean).map(esc).join(" · ") + "</div>"
-        + (p.builtIn ? "" : '<div class="pka"><button class="b ghost mini" data-pkedit="' + esc(k) + '">Edit</button><button class="b ghost mini" data-pkdel="' + esc(k) + '">Delete</button></div>') + "</div>"; }).join("") || '<div class="muted">No packs match.</div>';
+        + (p.builtIn ? "" : '<div class="pka"><button class="b ghost mini" data-pkprev="' + esc(k) + '">👁 Preview</button><button class="b ghost mini" data-pkedit="' + esc(k) + '">Edit</button><button class="b ghost mini" data-pkdel="' + esc(k) + '">Delete</button></div>') + "</div>"; }).join("") || '<div class="muted">No packs match.</div>';
   }
   function fillRows(box, items) { $(box).innerHTML = ""; Object.keys(items || {}).forEach(function (k) { addItemRow(box); var r = $(box).lastChild; r.querySelector("select").value = k; r.querySelector("input").value = items[k]; }); if (!Object.keys(items || {}).length) addItemRow(box); }
   [].forEach.call(document.querySelectorAll(".giftSel"), function (sel) { sel.onchange = function () { var p = S.catalog.packs[sel.value]; if (!p) return; fillRows(sel.getAttribute("data-box"), p.items); var t = $(sel.getAttribute("data-title")); if (!t.value.trim()) t.value = p.name; sel.value = ""; toast("Filled with “" + p.name + "” - you can still change it"); }; });
-  function pkClear() { $("pkId").value = ""; $("pkIcon").value = "📦"; $("pkName").value = ""; $("pkDesc").value = ""; $("pkTier").value = "1"; $("pkLimit").value = "0"; $("pkReset").value = "none"; $("pkMail").checked = false; $("pkActive").checked = true; $("pkFormTitle").textContent = "➕ New pack"; fillRows("pkItems", {}); }
+  function pkClear() { $("pkId").value = ""; $("pkIcon").value = "📦"; $("pkName").value = ""; $("pkDesc").value = ""; $("pkTier").value = "1"; $("pkLimit").value = "0"; $("pkReset").value = "none"; $("pkMail").checked = false; $("pkActive").checked = true; $("pkFormTitle").textContent = "➕ New pack"; fillRows("pkItems", {}); setBanner(null); }
   $("pkNew").onclick = pkClear; $("pkAdd").onclick = function () { addItemRow("pkItems"); };
   $("pkSearch").oninput = renderLib; $("pkFilter").onchange = renderLib;
   [].forEach.call($("shTabs").children, function (b) { b.onclick = function () { [].forEach.call($("shTabs").children, function (x) { x.classList.toggle("on", x === b); }); var v = b.getAttribute("data-s"); $("shLib").classList.toggle("hide", v !== "lib"); $("shTabsView").classList.toggle("hide", v !== "tabs"); $("shTiers").classList.toggle("hide", v !== "tiers"); }; });
   $("pkGrid").onclick = function (e) {
     var t = e.target, id;
-    if ((id = t.getAttribute("data-pkedit"))) { var p = S.catalog.packs[id]; $("pkId").value = id; $("pkIcon").value = p.icon || "📦"; $("pkName").value = p.name; $("pkDesc").value = p.desc || ""; $("pkTier").value = String(p.tier || 0); $("pkLimit").value = p.limit || 0; $("pkReset").value = p.reset || "none"; $("pkMail").checked = !!p.mail; $("pkActive").checked = p.active !== false; fillRows("pkItems", p.items); $("pkFormTitle").textContent = "✏️ Edit pack: " + p.name; $("pkName").scrollIntoView({ block: "center" }); }
+    if ((id = t.getAttribute("data-pkprev"))) { showPreview(JSON.parse(JSON.stringify(S.catalog.packs[id])), placementOf(id)); return; }
+    if ((id = t.getAttribute("data-pkedit"))) { var p = S.catalog.packs[id]; $("pkId").value = id; $("pkIcon").value = p.icon || "📦"; $("pkName").value = p.name; $("pkDesc").value = p.desc || ""; $("pkTier").value = String(p.tier || 0); $("pkLimit").value = p.limit || 0; $("pkReset").value = p.reset || "none"; $("pkMail").checked = !!p.mail; $("pkActive").checked = p.active !== false; fillRows("pkItems", p.items); setBanner(p.banner || null); $("pkFormTitle").textContent = "✏️ Edit pack: " + p.name; $("pkName").scrollIntoView({ block: "center" }); }
     if ((id = t.getAttribute("data-pkdel"))) { if (!confirmEnv("Delete pack “" + S.catalog.packs[id].name + "”? It's removed from every shop tab. Purchases already made are not affected.")) return; call("adminDeletePack", { id: id }).then(function (r) { setShop(r.packs, r.shop); toast("Pack deleted"); }, function (e) { toast(errText(e), true); }); }
   };
   $("pkSave").onclick = function () {
     var items; try { items = readItems("pkItems"); } catch (e) { toast(e.message, true); return; }
     if (!Object.keys(items).length) { toast("A pack needs at least one item.", true); return; }
-    var pack = { icon: $("pkIcon").value.trim(), name: $("pkName").value.trim(), desc: $("pkDesc").value.trim(), items: items, tier: +$("pkTier").value || 0, limit: +$("pkLimit").value || 0, reset: $("pkReset").value, mail: $("pkMail").checked, active: $("pkActive").checked };
+    var pack = { icon: $("pkIcon").value.trim(), name: $("pkName").value.trim(), desc: $("pkDesc").value.trim(), items: items, tier: +$("pkTier").value || 0, limit: +$("pkLimit").value || 0, reset: $("pkReset").value, mail: $("pkMail").checked, active: $("pkActive").checked, banner: S.pkBanner || null };
     if (!pack.name) { toast("Give the pack a name.", true); return; }
     call("adminSavePack", { id: $("pkId").value || null, pack: pack }).then(function (r) { setShop(r.packs, r.shop); toast("Saved “" + r.pack.name + "”"); pkClear(); }, function (e) { toast(errText(e), true); });
   };
+  // ---- v944: banner + preview. The block below is an exact copy of the game's (test/index.html); dev/simfork/g193 checks they match. ----
+  /* KSS-CARD-BEGIN - the shop's pack card. The admin panel's Preview uses an identical copy of this block (admin/index.html); a test keeps the two the same. */
+  var KSS_CARD_CSS = ".kss .scard{position:relative;border:1px dashed #33445e;border-radius:10px;background:#161f2e;padding:12px;display:flex;flex-direction:column;gap:8px;color:#f3e9d2;text-align:left}"
+    + ".kss .scard.hb{padding-top:0;overflow:visible}.kss .sban{position:relative;margin:0 -12px;height:0;padding-bottom:44%;border-radius:9px 9px 0 0;background:#0a1224 center/cover no-repeat;overflow:hidden}"
+    + ".kss .sban:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,9,20,.55) 0%,rgba(5,9,20,0) 45%,rgba(5,9,20,0) 70%,rgba(15,21,32,.9) 100%)}"
+    + ".kss .sbt{position:absolute;left:10px;right:10px;top:8px;z-index:1}.kss .sbt .snm{font-size:20px;color:#fff;text-shadow:0 2px 4px #000,0 0 2px #000}.kss .sbt .sds{color:#f3e9d2;text-shadow:0 1px 3px #000;font-size:12px;margin-top:2px}"
+    + ".kss .stime{position:absolute;left:10px;bottom:8px;z-index:1;background:rgba(5,9,20,.75);border:1px dashed #c9a24a;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;color:#f3e9d2}"
+    + ".kss .sbadge{position:absolute;top:-8px;right:10px;z-index:2;background:#d9412b;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:6px}"
+    + ".kss .shead{display:flex;gap:10px;align-items:center}.kss .sic{font-size:34px;line-height:1}.kss .snm{font-weight:700;color:#f0c95f;font-size:16px}.kss .sds{font-size:12px;color:#a9b4c8}"
+    + ".kss .sitems{display:flex;flex-wrap:wrap;gap:4px}.kss .sit{border:1px dashed #5d6f93;border-radius:6px;padding:2px 7px;font-size:12px;background:#0f1520}.kss .smeta{font-size:11px;color:#8fd3ea}"
+    + ".kss .sbuy{margin-top:auto;border:0;border-radius:8px;padding:10px;background:#2bb3d9;color:#06131c;font-weight:800;font-size:15px;cursor:pointer;width:100%}.kss .sbuy:active{transform:scale(.97)}";
+  function ksShopLeft(ms) { ms = Math.max(0, ms); var d = Math.floor(ms / 86400e3), h = Math.floor(ms / 3600e3) % 24, m = Math.floor(ms / 60e3) % 60; return d ? d + "d " + h + "h" : h ? h + "h " + m + "m" : Math.max(1, m) + "m"; }
+  function ksShopPeriodEnd(reset, now) { var d = new Date(now), s0; if (reset === "daily") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) + 86400e3;
+    if (reset === "weekly") { s0 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - ((d.getUTCDay() + 6) % 7) * 86400e3; return s0 + 7 * 86400e3; }
+    if (reset === "monthly") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1); return null; }
+  function ksShopCardHtml(p, e, priceText, now, esc) { /* p = pack, e = its place in a tab ({end, badge}) */
+    e = e || {}; var lab = p.labels || {}, meta = [], ban = typeof p.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(p.banner);
+    if (e.end && !ban) meta.push("⏳ Ends in " + ksShopLeft(e.end - now));
+    if (p.limit) { var pe = ksShopPeriodEnd(p.reset, now); meta.push("🔒 " + (p.reset === "daily" ? p.limit + " per day" : p.reset === "weekly" ? p.limit + " per week" : p.reset === "monthly" ? p.limit + " per month" : p.limit + " per player") + (pe ? " · resets in " + ksShopLeft(pe - now) : "")); }
+    var head = ban ? '<div class="sban" style="background-image:url(' + p.banner + ')"><div class="sbt"><div class="snm">' + esc(p.name) + "</div>" + (p.desc ? '<div class="sds">' + esc(p.desc) + "</div>" : "") + "</div>" + (e.end ? '<div class="stime">⏳ ' + esc(ksShopLeft(e.end - now)) + "</div>" : "") + "</div>"
+      : '<div class="shead"><span class="sic">' + esc(p.icon || "📦") + '</span><div><div class="snm">' + esc(p.name) + "</div>" + (p.desc ? '<div class="sds">' + esc(p.desc) + "</div>" : "") + "</div></div>";
+    return '<div class="scard' + (ban ? " hb" : "") + '">' + (e.badge ? '<span class="sbadge">' + esc(e.badge) + "</span>" : "") + head
+      + '<div class="sitems">' + Object.keys(p.items || {}).map(function (k) { return '<span class="sit">' + esc((lab[k] || k) + " × " + (+p.items[k]).toLocaleString()) + "</span>"; }).join("") + "</div>"
+      + (meta.length ? '<div class="smeta">' + esc(meta.join("  ·  ")) + "</div>" : "")
+      + '<button type="button" class="sbuy" data-sbuy="' + esc(p.name) + '">' + esc(priceText) + "</button></div>";
+  }
+  /* KSS-CARD-END */
+  (function () { var st = document.createElement("style"); st.textContent = KSS_CARD_CSS; document.head.appendChild(st); })();
+  function pvPrice(tier, cur) { var row = tierRow(tier || 0); return row && +row[cur] ? fmtPrice(cur, +row[cur]) : "Free"; }
+  function formPack() { var items = {}; try { items = readItems("pkItems"); } catch (e) {} var lab = {}; Object.keys(items).forEach(function (k) { lab[k] = itemLabel(k); });
+    return { icon: $("pkIcon").value.trim() || "📦", name: $("pkName").value.trim() || "(no name yet)", desc: $("pkDesc").value.trim(), items: items, labels: lab, banner: S.pkBanner || null, tier: +$("pkTier").value || 0, limit: +$("pkLimit").value || 0, reset: $("pkReset").value }; }
+  function placementOf(id) { var e = null; ((S.shop && S.shop.tabs) || []).forEach(function (t) { t.items.forEach(function (x) { if (!e && x.pack === id) e = x; }); }); return e; }
+  function showPreview(pack, entry) {
+    S.pv = { pack: pack, entry: entry }; $("pvCur").innerHTML = CURS.map(function (c) { return '<option value="' + c + '">' + c + "</option>"; }).join(""); $("pvCur").value = S.pvCur || "NZD";
+    var lab = pack.labels || {}; Object.keys(pack.items || {}).forEach(function (k) { if (!lab[k]) lab[k] = itemLabel(k); }); pack.labels = lab;
+    $("pvPhone").innerHTML = '<div style="font-size:18px;font-weight:700;color:#f0c95f;margin-bottom:10px">🛒 Shop</div>' + ksShopCardHtml(pack, entry || {}, pvPrice(pack.tier, $("pvCur").value), Date.now(), esc);
+    $("pvOv").classList.remove("hide");
+  }
+  $("pvCur").onchange = function () { S.pvCur = this.value; if (S.pv) showPreview(S.pv.pack, S.pv.entry); };
+  $("pvClose").onclick = function () { $("pvOv").classList.add("hide"); }; $("pvOv").onclick = function (e) { if (e.target === this) this.classList.add("hide"); };
+  $("pkPrev").onclick = function () { showPreview(formPack(), $("pkId").value ? placementOf($("pkId").value) : null); };
+  function setBanner(b) { S.pkBanner = b || null; $("pkBanThumb").style.display = b ? "" : "none"; if (b) $("pkBanThumb").src = b; $("pkBanDel").style.display = b ? "" : "none"; }
+  $("pkBanDel").onclick = function () { setBanner(null); };
+  $("pkBanFile").onchange = function () {
+    var f = this.files && this.files[0]; this.value = ""; if (!f) return; if (!/^image\//.test(f.type)) { toast("That isn't a picture.", true); return; }
+    var img = new Image(), url = URL.createObjectURL(f);
+    img.onload = function () { /* crop to 2.27:1 (centre) and shrink to 800 px wide, JPEG */
+      var W = 800, H = 352, r = W / H, sw = img.width, sh = img.height, sx = 0, sy = 0;
+      if (sw / sh > r) { sw = sh * r; sx = (img.width - sw) / 2; } else { sh = sw / r; sy = (img.height - sh) / 2; }
+      var c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, W, H); URL.revokeObjectURL(url);
+      var q = 0.82, d = c.toDataURL("image/jpeg", q); while (d.length > 600000 && q > 0.4) { q -= 0.1; d = c.toDataURL("image/jpeg", q); }
+      setBanner(d); toast("Banner ready (" + Math.round(d.length * 0.75 / 1024) + " KB) - tap Save pack to keep it");
+    };
+    img.onerror = function () { toast("Couldn't read that picture.", true); }; img.src = url;
+  };
+
   // tabs editor (works on a draft; "Save tabs" sends it)
   function toLocalInput(ms) { if (!ms) return ""; var d = new Date(ms), z = function (n) { return (n < 10 ? "0" : "") + n; }; return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); }
   function renderTabEd() {
@@ -384,7 +448,7 @@
             + '<span class="tabitems">' + itemChips(p.items) + "</span></span>"
             + '<span class="muted">from</span><input type="datetime-local" data-ef="start" data-ti="' + ti + '" data-ei="' + ei + '" value="' + toLocalInput(e.start) + '" title="Starts (optional)"><span class="muted">until</span><input type="datetime-local" data-ef="end" data-ti="' + ti + '" data-ei="' + ei + '" value="' + toLocalInput(e.end) + '" title="Ends (optional)">'
             + '<input class="bdg" data-ef="badge" data-ti="' + ti + '" data-ei="' + ei + '" value="' + esc(e.badge || "") + '" maxlength="20" placeholder="Badge">'
-            + '<button class="b ghost mini" data-emv="-1" data-ti="' + ti + '" data-ei="' + ei + '">↑</button><button class="b ghost mini" data-emv="1" data-ti="' + ti + '" data-ei="' + ei + '">↓</button><button class="b ghost mini" data-edel="1" data-ti="' + ti + '" data-ei="' + ei + '">✕</button></div>'; }).join("") : '<div class="muted" style="margin-top:6px">No packs in this tab yet.</div>')
+            + '<button class="b ghost mini" data-epv="1" data-ti="' + ti + '" data-ei="' + ei + '" title="Preview">👁</button><button class="b ghost mini" data-emv="-1" data-ti="' + ti + '" data-ei="' + ei + '">↑</button><button class="b ghost mini" data-emv="1" data-ti="' + ti + '" data-ei="' + ei + '">↓</button><button class="b ghost mini" data-edel="1" data-ti="' + ti + '" data-ei="' + ei + '">✕</button></div>'; }).join("") : '<div class="muted" style="margin-top:6px">No packs in this tab yet.</div>')
         + '<div class="row" style="margin-top:8px"><select data-tadd="' + ti + '" class="grow"><option value="">+ Add a pack to ' + esc(tb.name) + "…</option>" + ids.filter(function (k) { return !P[k].builtIn; }).map(function (k) { return '<option value="' + esc(k) + '">' + esc((P[k].icon || "") + " " + P[k].name) + "</option>"; }).join("") + "</select></div></div>";
     }).join("") || '<div class="muted">No tabs. Add one.</div>';
   }
@@ -396,7 +460,8 @@
     if ((mv = t.getAttribute("data-tmv"))) { swap(D.tabs, ti, ti + +mv); renderTabEd(); }
     else if (t.getAttribute("data-tdel") != null) { var k = +t.getAttribute("data-tdel"); if (confirm("Remove the tab “" + D.tabs[k].name + "”? (The packs stay in the library.)")) { D.tabs.splice(k, 1); renderTabEd(); } }
     else if ((mv = t.getAttribute("data-emv"))) { swap(D.tabs[ti].items, ei, ei + +mv); renderTabEd(); }
-    else if (t.getAttribute("data-edel")) { D.tabs[ti].items.splice(ei, 1); renderTabEd(); } };
+    else if (t.getAttribute("data-edel")) { D.tabs[ti].items.splice(ei, 1); renderTabEd(); }
+    else if (t.getAttribute("data-epv")) { var en = D.tabs[ti].items[ei], pk = S.catalog.packs[en.pack]; if (pk) showPreview(JSON.parse(JSON.stringify(pk)), en); } };
   $("tabAdd").onclick = function () { S.shopDraft.tabs.push({ id: "", name: "New tab", icon: "⭐", items: [] }); renderTabEd(); };
   $("tabSave").onclick = function () { if (!confirmEnv("Save the shop tabs? Players see the change straight away.")) return;
     call("adminSaveShop", { tabs: S.shopDraft.tabs }).then(function (r) { setShop(r.packs, r.shop); toast("Shop tabs saved"); }, function (e) { toast(errText(e), true); }); };

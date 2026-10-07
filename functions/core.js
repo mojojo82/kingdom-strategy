@@ -139,7 +139,9 @@ function normalizePack(p) {
   const tier = Math.trunc(+p.tier || 0); if (!(tier >= 0 && tier <= 50)) throw new GameError("invalid-argument", "bad price tier");
   const limit = Math.trunc(+p.limit || 0); if (!(limit >= 0 && limit <= 999)) throw new GameError("invalid-argument", "bad buy limit");
   const reset = String(p.reset || "none"); if (PACK_RESETS.indexOf(reset) < 0) throw new GameError("invalid-argument", "bad reset");
-  return { name, desc: String(p.desc || "").trim().slice(0, 200), icon: Array.from(String(p.icon || "📦").trim()).slice(0, 4).join("") || "📦", items, labels, tier, limit, reset: limit ? reset : "none",
+  let banner = null; /* v944: optional banner picture (the admin page shrinks it to a small JPEG first) */
+  if (p.banner) { banner = String(p.banner); if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(banner)) throw new GameError("invalid-argument", "banner must be a JPEG, PNG or WebP picture"); if (banner.length > 700000) throw new GameError("invalid-argument", "banner picture is too big (max ~500 KB)"); }
+  return { name, desc: String(p.desc || "").trim().slice(0, 200), icon: Array.from(String(p.icon || "📦").trim()).slice(0, 4).join("") || "📦", items, labels, banner, tier, limit, reset: limit ? reset : "none",
     mail: p.mail === true, active: p.active !== false, order: Math.trunc(+p.order || 0) };
 }
 /* Repeating buy limits: "daily" resets at 00:00 UTC, "weekly" on Monday 00:00 UTC, "monthly" on the 1st 00:00 UTC. Returns when the current period began. */

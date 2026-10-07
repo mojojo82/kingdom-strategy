@@ -106,6 +106,10 @@ t("item catalogue + mail", () => {
   assert.throws(() => C.normalizeShop({ tabs: [{ name: "Deals", items: [{ pack: "nope" }] }] }, ["starter_pack"]), /unknown pack/);
   assert.throws(() => C.normalizeShop({ tiers: { 1: { USD: -1 } } }, []), /bad price/);
   assert.throws(() => C.normalizeShop({ tabs: [{ name: "D", items: [{ pack: "starter_pack", start: 200, end: 100 }] }] }, ["starter_pack"]), /ends before/);
+  assert.strictEqual(C.normalizePack({ name: "b", items: { gems: 1 }, banner: "data:image/jpeg;base64,AAAA" }).banner, "data:image/jpeg;base64,AAAA");
+  assert.strictEqual(C.normalizePack({ name: "b", items: { gems: 1 } }).banner, null);
+  assert.throws(() => C.normalizePack({ name: "b", items: { gems: 1 }, banner: "javascript:alert(1)" }), /banner/);
+  assert.throws(() => C.normalizePack({ name: "b", items: { gems: 1 }, banner: "data:image/jpeg;base64," + "A".repeat(800000) }), /too big/);
   const daily = C.normalizePack({ name: "Daily", items: { gems: 10 }, tier: 1, limit: 1, reset: "daily" }); assert.strictEqual(daily.reset, "daily");
   assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, reset: "weekly" }).reset, "none", "no limit = no reset");
   assert.throws(() => C.normalizePack({ name: "x", items: { gems: 1 }, limit: 1, reset: "hourly" }), /reset/);
