@@ -398,3 +398,4 @@
   Game: no Claim button / no "Items in this mail" for it; opening it calls claimMail quietly = marked read, unread badge clears, row shows "✓ Read".
   Tests: core.test.js (message-only mail), g189_mailmsg; g170/g171/g184 still pass.
 - v940 (admin page): item picker starts on "— No item (message only) —"; rows left on it (or with no amount) are skipped.
+- v941 (admin page): "Send to everyone" confirm accepts send/Send/ SEND (was exact "SEND" only - Harley typed it differently and got "Cancelled", nothing sent); clearer messages.

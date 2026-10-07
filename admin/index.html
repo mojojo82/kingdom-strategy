@@ -265,7 +265,7 @@
     var items; try { items = readItems("aItems"); } catch (e) { toast(e.message, true); return; }
     var title = $("aTitle").value.trim(); if (!title) { toast("Give the mail a title.", true); return; }
     if (!confirmEnv("Mail \"" + title + "\" to EVERY player:\n" + itemsText(items))) return;
-    var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (typed !== "SEND") { toast("Cancelled"); return; }
+    var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (String(typed || "").trim().toUpperCase() !== "SEND") { toast(typed == null ? "Cancelled - nothing sent" : "Not sent - type the word SEND to confirm", true); return; } /* v941: send/Send/ SEND also accepted */
     call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items, category: $("aCat").value }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
   };
   renderEnv();
