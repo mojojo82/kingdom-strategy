@@ -6401,14 +6401,46 @@ function createGame(opts) {
       if (!freshStrike) { lt.id = tgt.id; return; }
       lt.id = tgt.id; lt.at = nowMs;
       var hitDmg = idleAttackerHitDamage(aid);
-      idleLogBasicHit(aid, tgt, hitDmg);
-      tgt.hp -= hitDmg * idleEnemyDefTake(tgt, hitDmg);
+      var nowHit = idleMeleeStrike(aid, tgt, hitDmg, false); /* v917: owed to the sword while the scene is drawn */
+      idleLogBasicHit(aid, tgt, hitDmg, !nowHit);
       state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1;
       state.idle.attackCooldowns[aid] = heroAttackSec(aid);
       if (tgt.hp <= 0) { if (state.idle.enemies[0] === tgt) idleCheckFrontDeath(); else idleRemoveDeadEnemyAt(state.idle.enemies.indexOf(tgt)); }
     });
   }
-  function idleLogBasicHit(aid, e, dmg) { var L = state.idle.basicHitLog || (state.idle.basicHitLog = []); if (e && L.length < IDLE_PROJECTILE_QUEUE_CAP) L.push({ aid: aid, id: e.id, dmg: dmg }); } // engine-side record of WHO a hero's basic hit landed on, so the visuals can show it on that enemy
+  /* v917: a melee hero's sword only deals damage when it lands. While the Conquest scene is really being drawn (the UI pings every frame) a hero with an
+     impact-frame animation (Gareth) does NOT take HP off when his attack timer fires: the hit is OWED, and the UI lands it on the sword's impact frame on
+     whichever enemy is at the blade (idleMeleeLand). HP loss, the kill, the reward and the level clear all happen then. Nothing at the blade = a miss.
+     No drawing (another tab, phone locked, sims/estimators) = the old instant hit, so nothing stalls. */
+  var idleMeleeVis = { t: 0, heroes: {} }, idleMeleeOwed = [], IDLE_MELEE_OWED_SEC = 1.5;
+  function idleMeleeLive() { return Date.now() - idleMeleeVis.t < 400; }
+  function idleMeleeDefers(aid) { return idleMeleeLive() && !!idleMeleeVis.heroes[aid]; }
+  function idleMeleeKillCheck(e) { if (e.hp > 0) return; var ix = state.idle.enemies.indexOf(e); if (ix === 0) idleCheckFrontDeath(); else if (ix > 0) idleRemoveDeadEnemyAt(ix); }
+  function idleMeleeStrike(aid, tgt, dmg, useMark) { /* returns true when the HP came off now, false when the hit is owed to the sword */
+    if (idleMeleeDefers(aid)) { idleMeleeOwed.push({ aid: aid, id: tgt.id, dmg: dmg, at: Date.now() }); return false; }
+    tgt.hp -= dmg * (useMark ? idleMarkMult(tgt, aid) : 1) * idleEnemyDefTake(tgt, dmg); return true;
+  }
+  function idleMeleeLand(aid, bladeId) { /* the sword's impact frame: every hit this hero owes lands on the enemy at his blade; returns [{id, dmg}] actually dealt */
+    var mine = idleMeleeOwed.filter(function (o) { return o.aid === aid; }); if (!mine.length) return [];
+    idleMeleeOwed = idleMeleeOwed.filter(function (o) { return o.aid !== aid; });
+    if (state.idle.pending || bladeId == null) return [];
+    var out = [];
+    mine.forEach(function (o) {
+      var e = idleFindEnemy(bladeId); if (!e || e.hp <= 0) return;
+      idleMeleeLast[aid] = { id: e.id, at: Date.now() };
+      e.hp -= o.dmg * idleMarkMult(e, aid) * idleEnemyDefTake(e, o.dmg); out.push({ id: e.id, dmg: o.dmg });
+      idleMeleeKillCheck(e);
+    });
+    return out;
+  }
+  function idleMeleeSettle() { /* engine side, every combat slice: not drawn any more -> owed hits land the old way on their target; drawn -> a hit the sword never delivered expires (a miss) */
+    if (!idleMeleeOwed.length) return;
+    var live = idleMeleeLive(), nowMs = Date.now(), keep = [], due = [];
+    idleMeleeOwed.forEach(function (o) { if (!live) due.push(o); else if (nowMs - o.at <= IDLE_MELEE_OWED_SEC * 1000) keep.push(o); });
+    idleMeleeOwed = keep;
+    due.forEach(function (o) { var e = idleFindEnemy(o.id); if (!e || e.hp <= 0 || state.idle.pending) return; e.hp -= o.dmg * idleMarkMult(e, o.aid) * idleEnemyDefTake(e, o.dmg); idleMeleeKillCheck(e); });
+  }
+  function idleLogBasicHit(aid, e, dmg, owed) { var L = state.idle.basicHitLog || (state.idle.basicHitLog = []); if (e && L.length < IDLE_PROJECTILE_QUEUE_CAP) L.push({ aid: aid, id: e.id, dmg: dmg, owed: !!owed }); } // engine-side record of WHO a hero's basic hit landed on, so the visuals can show it on that enemy
   var IDLE_ARRIVE_DELAY = 4.5;       // (v766: 4.5 brings the pace back near v764, whose whole-second step rounded arrivals up) seconds an enemy is "still arriving" — nothing can damage it yet, at any range
   var IDLE_CORNERED_SECONDS = 4;  // a ranged enemy that survives this long becomes point-blank-reachable too, so a melee-only squad is never permanently stuck
   var IDLE_LEVELS_PER_CHAPTER = 20; // v747: chapters are 20 levels long (was 10); the last level of each chapter is the boss
@@ -7075,7 +7107,7 @@ function createGame(opts) {
       var ivl = heroAttackSec(aid), hitDmg = idleAttackerHitDamage(aid), nHits = 0;
       while (state.idle.attackCooldowns[aid] <= 0 && nHits < 6) {
         state.idle.attackCooldowns[aid] += ivl;
-        if (nHits === 0) { if (isMelA) idleMeleeLast[aid] = { id: tgt.id, at: Date.now() }; idleLogBasicHit(aid, tgt, hitDmg); tgt.hp -= hitDmg * idleMarkMult(tgt, aid) * idleEnemyDefTake(tgt, hitDmg); state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1; }
+        if (nHits === 0) { if (isMelA) { idleMeleeLast[aid] = { id: tgt.id, at: Date.now() }; var nowHitM = idleMeleeStrike(aid, tgt, hitDmg, true); idleLogBasicHit(aid, tgt, hitDmg, !nowHitM); } else { idleLogBasicHit(aid, tgt, hitDmg); tgt.hp -= hitDmg * idleMarkMult(tgt, aid) * idleEnemyDefTake(tgt, hitDmg); } state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1; } /* v917: melee = owed to the sword while drawn */
         else idlePendingHits.push({ aid: aid, t: nHits * ivl, dmg: hitDmg, eid: isMelA ? tgt.id : null }); // 2nd, 3rd… hit of this second land one interval apart
         nHits++;
       }
@@ -7110,6 +7142,8 @@ function createGame(opts) {
         if (state.idle.playerHp <= 0) { idleResetLevel(); break; }
       }
     }
+    idleMeleeSettle(); /* v917: owed sword hits — expire when the sword never delivered them, or land the old way when the scene is no longer drawn */
+    if (state.idle.pending) return;
     if (idlePendingHits.length) { // delayed extra basic hits (see idleCombatStep's attacker loop)
       var keepPh = [];
       idlePendingHits.forEach(function (ph) {
@@ -7118,8 +7152,8 @@ function createGame(opts) {
         var fr = (ph.eid != null) ? idleFindEnemy(ph.eid) : state.idle.enemies[0];
         if (!fr || fr.hp <= 0 || !fr.arrived || state.conquestRoster.indexOf(ph.aid) === -1 || idleHeroIsKo(ph.aid)) return;
         if (idleAttackerIsMelee(ph.aid)) { var mt2 = idleMeleeTargetFor(ph.aid, state.idle.enemies[0]); if (!mt2 || mt2.id !== fr.id) return; } // a delayed melee swing finds nothing if that enemy is no longer at his sword // target gone / hero left or KO'd — the swing finds nothing
-        idleLogBasicHit(ph.aid, fr, ph.dmg);
-        fr.hp -= ph.dmg * idleMarkMult(fr, ph.aid) * idleEnemyDefTake(fr, ph.dmg);
+        if (idleAttackerIsMelee(ph.aid)) { var nowHitP = idleMeleeStrike(ph.aid, fr, ph.dmg, true); idleLogBasicHit(ph.aid, fr, ph.dmg, !nowHitP); } /* v917 */
+        else { idleLogBasicHit(ph.aid, fr, ph.dmg); fr.hp -= ph.dmg * idleMarkMult(fr, ph.aid) * idleEnemyDefTake(fr, ph.dmg); }
         state.idle.attackHitCounts[ph.aid] = (state.idle.attackHitCounts[ph.aid] || 0) + 1;
         if (state.idle.enemies[0] === fr) idleCheckFrontDeath(); else idleRemoveDeadEnemyAt(state.idle.enemies.indexOf(fr));
       });
@@ -8400,6 +8434,8 @@ function createGame(opts) {
     idleLevelLabel: function () { return state.idle.chapter + "-" + state.idle.levelNum; },
     idleIsBossLevel: idleIsBossLevel, idleStartBossAttempt: idleStartBossAttempt, idleResolveResult: idleResolveResult, idleArriveDelay: IDLE_ARRIVE_DELAY, idleIsChapterBossLevel: idleIsChapterBossLevel, idleBossName: idleBossName, idleEnvironment: idleEnvironment,
     setIdleMeleeTargets: function (map) { idleMeleeReach.map = map; idleMeleeReach.t = Date.now(); idleMeleeFirstStrikes(); },
+    idleMeleeVisPing: function (heroes) { idleMeleeVis.t = Date.now(); idleMeleeVis.heroes = heroes || {}; }, /* v917: the scene was really drawn this frame */
+    idleMeleeLand: idleMeleeLand, idleMeleeOwedCount: function (aid) { return idleMeleeOwed.filter(function (o) { return o.aid === aid; }).length; },
     setIdleFrontOnScreen: function (ok, id) { idleFrontScreen.ok = !!ok; idleFrontScreen.id = (id == null ? null : id); idleFrontScreen.t = Date.now(); },
     resetConquestProgress: resetConquestProgress,
     heroSkillLevel: heroSkillLevel, heroSkillCost: heroSkillCost,
@@ -17529,7 +17565,7 @@ function stepIdleAnim(dtSec, w, h) {
       if (!HERO_ANIMS[bhl.aid]) { meleeVisualHit(bhl.aid, bhl.dmg, bhVis, bhl.id, h); continue; }
       (idleAnim.lastMeleeHitAt || (idleAnim.lastMeleeHitAt = {}))[bhl.aid] = performance.now();
       var mq = (idleAnim.meleeQ || (idleAnim.meleeQ = {}))[bhl.aid] || (idleAnim.meleeQ[bhl.aid] = []);
-      mq.push({ dmg: bhl.dmg, id: bhl.id, t: performance.now() });
+      mq.push({ dmg: bhl.dmg, id: bhl.id, t: performance.now(), owed: !!bhl.owed });
       idleAnim.pendingArrows[bhl.id] = (idleAnim.pendingArrows[bhl.id] || 0) + 1;
       continue;
     }
@@ -17546,11 +17582,32 @@ function stepIdleAnim(dtSec, w, h) {
       var ev = idleAnim.enemyById[e.id];
       if (ev && game.state.conquestRoster.indexOf(aid) !== -1) meleeVisualHit(aid, e.dmg, ev, e.id, h);
     }
+    function bladeEnemy(aid, preferId) { /* v917: the enemy really at his blade right now (the one he swung at if it's still there, else the nearest in reach) */
+      var hv = idleAnim.heroVis[aid]; if (!hv) return null;
+      var best = null, bestD = 1e9;
+      Object.keys(idleAnim.enemyById).forEach(function (id) {
+        var ev = idleAnim.enemyById[id]; if (ev.dying) return;
+        var d = meleeD(hv, ev), reach = ev.type === "boss" ? 50 : IDLE_BLOCK_GAP + meleeReachExtra + meleeStagger(aid);
+        if (d < -8 || d > reach) return;
+        if (String(id) === String(preferId)) { best = id; bestD = -1e9; } else if (d < bestD) { bestD = d; best = id; }
+      });
+      return best;
+    }
     Object.keys(mqs).forEach(function (aid) {
       var q = mqs[aid]; if (!q.length) return;
       var an = HERO_ANIMS[aid], sw = idleAnim.swingRun && idleAnim.swingRun[aid];
-      if (an && sw && nowM < sw.until && sw.landedFor !== sw.t0 && (nowM - sw.t0) >= (an.impact || 5) / an.fps.attack * 1000) { sw.landedFor = sw.t0; land(aid, q.shift()); }
-      while (q.length && (q.length > 3 || nowM - q[0].t > 900)) land(aid, q.shift());
+      if (an && sw && nowM < sw.until && sw.landedFor !== sw.t0 && (nowM - sw.t0) >= (an.impact || 5) / an.fps.attack * 1000) {
+        sw.landedFor = sw.t0;
+        var owedQ = q.filter(function (x) { return x.owed; });
+        if (owedQ.length) { /* v917: the real damage happens HERE, on the impact frame, to whoever is at the blade */
+          var bl = bladeEnemy(aid, owedQ[0].id), res = game.idleMeleeLand(aid, bl == null ? null : Number(bl));
+          owedQ.forEach(function (x) { idleAnim.pendingArrows[x.id] = Math.max(0, (idleAnim.pendingArrows[x.id] || 0) - 1); });
+          q = mqs[aid] = q.filter(function (x) { return !x.owed; });
+          res.forEach(function (r) { var ev = idleAnim.enemyById[r.id]; if (ev && game.state.conquestRoster.indexOf(aid) !== -1) meleeVisualHit(aid, r.dmg, ev, r.id, h); });
+        } else land(aid, q.shift());
+      }
+      for (var oi = q.length - 1; oi >= 0; oi--) if (q[oi].owed && nowM - q[oi].t > 1500) { idleAnim.pendingArrows[q[oi].id] = Math.max(0, (idleAnim.pendingArrows[q[oi].id] || 0) - 1); q.splice(oi, 1); } /* a swing that never came: the engine expires it too (a miss) */
+      while (q.length && !q[0].owed && (q.length > 3 || nowM - q[0].t > 900)) land(aid, q.shift()); /* old instant hits (scene not drawn when they happened) */
     });
   })();
   var real = game.state.idle.enemies || [];
@@ -22083,6 +22140,7 @@ function startIdleAnim() {
         ctx.scale(dpr, dpr);
         drawIdleAnim(ctx, w, h);
         ctx.restore();
+        if (!document.hidden) { var mvH = {}; game.state.conquestRoster.forEach(function (k) { var an = HERO_ANIMS[k]; if (HERO_DEFS[k] && HERO_DEFS[k].class === "infantry" && an && an.impact && !(an.once && an.once.attack)) mvH[k] = true; }); game.idleMeleeVisPing(mvH); } /* v917: drawn this frame -> melee hits wait for the sword */
         renderIdleHeader();
         updateIdleSkillbarDom();
       } catch (err) {
