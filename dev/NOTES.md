@@ -389,3 +389,5 @@
   v922 fast (~80 ms once warm), v923 slow (2.5-3 s; the "keep map spot" restore renders while the map box is still unsized), v926d 4.5 s,
   v933 3.3-3.9 s, v935 0.15-0.27 s. Extra: sea foam streaks restart by swapping between twin keyframes (sfLife/sfLife2) instead of
   animation:none + offsetWidth (one forced page layout per streak). g185 now picks a mid-view streak with life left for the scroll check (was flaky).
+- v937: bottom nav buttons sit 10px higher (extra bottom padding, on top of the iPhone safe-area inset) so taps stay clear of the iPhone home bar
+  (Harley: tapping near the bottom brought up the white swipe line). --bnH follows automatically, so chat bar / map buttons / X-Y pill move with it.
