@@ -115,7 +115,11 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   spot on the new map, and the city starts clean (no HP/fire carried over). Alliances belong to the kingdom they were made in (`allyPath` uses the server
   prefix), so they stay behind unless moved with the members: Harley undecided. (3) Later a player "transfer event" (rules TBD) reusing the same move.
   Prerequisite for any second kingdom: the Cloud Functions (`relocateCity`, base hits/fires) use `R + "cities/"` with no server prefix, i.e. Atlantis only.
-- Anti-cheat stage 2 (v920): save plausibility checks run on every save, FLAG ONLY (admin site: "⚑ Flagged players"). Next: review real flags,
+- **Anti-cheat save check is built but SWITCHED OFF in deploys** (`functions/features.json` saveTriggers=false): the first deploy failed because the
+  save trigger needs 3 one-time IAM grants that only the project owner (Harley) can make (Google Cloud console > IAM > Grant access):
+  `service-862432836712@gcp-sa-pubsub.iam.gserviceaccount.com` -> Service Account Token Creator; `862432836712-compute@developer.gserviceaccount.com`
+  -> Cloud Run Invoker AND Eventarc Event Receiver. After that set saveTriggers=true and push. (Emulator/CI tests always run it.)
+- Anti-cheat stage 2 (v920): save plausibility checks run on every save (once switched on), FLAG ONLY (admin site: "⚑ Flagged players"). Next: review real flags,
   tighten the bounds (functions/core.js AC), then decide whether to switch on AC_REVERT (puts the previous save back; destructive). Battles are not checked.
   Level-claim speed floor is the game's physical minimum (~350k gems/day if faked nonstop); tighten if Harley wants.
 - (Fixed v918: cannon/weapon kills now wait for the killing shot; drone/railgun drawn.)

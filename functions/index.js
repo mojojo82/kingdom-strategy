@@ -283,8 +283,11 @@ function acHandler(R) {
     if (AC_REVERT && before) await aS.ref.set(before);
   };
 }
-exports.onSaveWriteLive = onDocumentWritten("players/{uid}/save/main", acHandler(""));
-exports.onSaveWriteTest = onDocumentWritten("envs/test/players/{uid}/save/main", acHandler("envs/test/"));
+const FEATURES = require("./features.json");
+if (FEATURES.saveTriggers || process.env.FUNCTIONS_EMULATOR === "true") { /* the save triggers need 3 one-time IAM grants on the project (HANDOVER) */
+  exports.onSaveWriteLive = onDocumentWritten("players/{uid}/save/main", acHandler(""));
+  exports.onSaveWriteTest = onDocumentWritten("envs/test/players/{uid}/save/main", acHandler("envs/test/"));
+}
 
 // Admin: players with anti-cheat flags, most recent first.
 exports.adminFlagged = wrap(async (req, uid, R) => {

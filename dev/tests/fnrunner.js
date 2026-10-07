@@ -30,6 +30,7 @@ module.exports = function makeRunner(store) {
     "firebase-admin/app": { initializeApp: () => {} },
     "firebase-admin/firestore": { getFirestore: () => db }
   };
+  process.env.FUNCTIONS_EMULATOR = "true"; /* v920: like the emulator, so the save triggers are defined */
   const orig = Module._load;
   Module._load = function (req, parent, isMain) { return fakes[req] || orig.apply(this, arguments); };
   const repoFile = path.join(__dirname, "../../functions/index.js"); /* repo layout; the original session had tests/ next to kingdom-strategy/ */
