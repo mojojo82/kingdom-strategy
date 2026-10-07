@@ -348,3 +348,8 @@
   #mapviewportWrap while on World, back to body elsewhere; PC mail/recon buttons shifted down 26px to clear it). New #mapCoords pill at the
   bottom middle shows "X:.. Y:.." of the tile under the view centre (seaFoamTileAt inverse, updates on scroll + every 500ms); on phones it sits
   above the chat bar, level with the mailbox. Tap it -> prompt "X Y" -> centerMapOnTile. Test g186_mapcoords (phone + PC).
+- v928: home bubble (#mapHomeBubble, Harley's High Seas Hero reference video): when your city is off screen a round 🏠 bubble sits on the
+  map edge in the city's direction (ray from view centre clipped to the visible map, 42px in; top 70px kept for controls, bottom stops at the
+  X/Y pill so it clears the phone chat bar), gold tail points at home, shows straight-line distance from the view-centre tile in "km"
+  (1 tile = 1 km, flavour only). Tap -> centerMapOnHome. Updates on scroll + 500ms. "🏠 Center on Home" button hidden (display:none, kept for
+  the onclick binding). g186 extended.

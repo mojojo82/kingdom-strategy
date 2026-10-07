@@ -35,6 +35,19 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert.ok(Math.abs((r.coords.x + r.coords.r) / 2 - (r.map.x + r.map.r) / 2) <= 2, "coords centred");
     assert.ok(r.coords.b < r.map.b, "coords on the map");
     if (r.recon.shown) assert.ok(r.recon.y >= r.chip.b || r.recon.x >= r.chip.r || r.recon.r <= r.chip.x, "recon not under chip");
+    /* home bubble: hidden while home is on screen; shows on the edge toward home once you scroll away; tap goes home */
+    const hb0 = await P.evaluate(() => ({ on: document.getElementById("mapHomeBubble").classList.contains("on"), centerBtn: getComputedStyle(document.getElementById("mapCenterHomeBtn")).display }));
+    assert.deepStrictEqual(hb0, { on: false, centerBtn: "none" });
+    await P.evaluate(() => { const v = document.getElementById("mapviewport"); v.scrollLeft += 1500; v.scrollTop += 900; }); await P.waitForTimeout(400);
+    const hb1 = await P.evaluate(() => { const e = document.getElementById("mapHomeBubble"), b = e.getBoundingClientRect(), v = document.getElementById("mapviewport").getBoundingClientRect(); return { on: e.classList.contains("on"), x: b.left + b.width / 2, y: b.top + b.height / 2, txt: e.textContent, v: { l: v.left, r: v.left + document.getElementById("mapviewport").clientWidth, t: v.top, b: Math.min(v.bottom, innerHeight) } }; });
+    console.log(tag, "bubble after scrolling right/down:", JSON.stringify(hb1));
+    await P.screenshot({ path: OUT + "map_home_" + tag + ".png" });
+    assert.ok(hb1.on && /\d+ km/.test(hb1.txt), "bubble shows distance");
+    assert.ok(hb1.x > hb1.v.l && hb1.x < hb1.v.r && hb1.y > hb1.v.t && hb1.y < hb1.v.b, "bubble inside the map");
+    assert.ok(hb1.x < (hb1.v.l + hb1.v.r) / 2 + 1 || hb1.y < (hb1.v.t + hb1.v.b) / 2 + 1, "bubble on the home side (up/left)");
+    await P.click("#mapHomeBubble"); await P.waitForTimeout(500);
+    const hb2 = await P.evaluate(() => ({ on: document.getElementById("mapHomeBubble").classList.contains("on"), t: document.getElementById("mapCoords").textContent }));
+    assert.ok(!hb2.on && hb2.t === r.text, "tap bubble -> back home"); 
     /* scroll changes the coords */
     const t0 = r.text; await P.evaluate(() => { const v = document.getElementById("mapviewport"); v.scrollLeft += 400; v.scrollTop += 300; }); await P.waitForTimeout(300);
     const t1 = await P.evaluate(() => document.getElementById("mapCoords").textContent); assert.notStrictEqual(t0, t1, "coords follow scrolling");
@@ -45,7 +58,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     /* leaving World puts the chip back and hides coords */
     await P.evaluate(() => setScreen("city")); await P.waitForTimeout(700);
     const off = await P.evaluate(() => ({ parent: document.getElementById("ksFbBadge").parentNode.tagName, coords: getComputedStyle(document.getElementById("mapCoords")).display }));
-    assert.deepStrictEqual(off, { parent: "BODY", coords: "none" });
+    assert.deepStrictEqual(off, { parent: "BODY", coords: "none" }); assert.ok(!(await P.evaluate(() => document.getElementById("mapHomeBubble").classList.contains("on"))), "bubble gone off World");
     await ctx.close();
   }
   await run({ width: 430, height: 932 }, "phone", "g186a@test.dev");
