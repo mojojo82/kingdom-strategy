@@ -51,6 +51,7 @@ const BODY = `
 
       // ---- maintenance switch (v942): anyone may read it (shown before sign-in too), only the server writes it ----
       match /config/{d} { allow read: if true; allow write: if false; }
+      match /packs/{d} { allow read: if signedIn(); allow write: if false; } // v943: shop packs / mail bundles - made in the admin panel (server writes)
 
       // ---- server bookkeeping ----
       match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }

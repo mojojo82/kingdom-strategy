@@ -111,11 +111,84 @@ function purchaseId(provider, receiptId) {
 function decidePurchase(existing, pack, packId, wallet, uid, now) {
   if (existing) return { dup: true, record: existing };
   if (!pack || !pack.items) throw new GameError("not-found", "unknown pack " + packId);
-  const gems0 = (wallet && wallet.gems) || 0, add = Math.trunc(pack.items.gems || 0);
-  if (!(add > 0)) throw new GameError("failed-precondition", "pack has no deliverable items");
-  return { dup: false, gems: gems0 + add, add,
-    record: { uid, pack: packId, packName: pack.name || packId, price: pack.price, currency: pack.currency, items: { gems: add }, status: "delivered", at: now, deliveredAt: now } };
+  const gems0 = (wallet && wallet.gems) || 0, add = Math.max(0, Math.trunc(pack.items.gems || 0));
+  const others = {}; Object.keys(pack.items).forEach((k) => { if (k !== "gems" && +pack.items[k] > 0) others[k] = Math.trunc(+pack.items[k]); }); /* v943: non-gem items go to the player by mail */
+  if (!(add > 0) && !Object.keys(others).length) throw new GameError("failed-precondition", "pack has no deliverable items");
+  const items = Object.assign(add > 0 ? { gems: add } : {}, others);
+  return { dup: false, gems: gems0 + add, add, others,
+    record: { uid, pack: packId, packName: pack.name || packId, tier: pack.tier == null ? null : pack.tier, price: pack.price == null ? null : pack.price, currency: pack.currency || null, items, status: "delivered", at: now, deliveredAt: now } };
 }
+// v943: packs made in the admin panel (one library: shop packs placed in shop tabs, and/or quick-pick mail gifts).
+const SHOP_CURRENCIES = ["USD", "NZD", "MXN", "EUR", "TRY"];
+/* Suggested starting tiers (Harley: US$0.99 is NZ$1.69). MXN/EUR/TRY are rough suggestions to check and adjust in the admin panel. Tier 0 = free. */
+const DEFAULT_TIERS = {
+  0: { USD: 0, NZD: 0, MXN: 0, EUR: 0, TRY: 0 },
+  1: { USD: 0.99, NZD: 1.69, MXN: 19, EUR: 0.99, TRY: 44.99 },
+  2: { USD: 1.99, NZD: 3.49, MXN: 39, EUR: 1.99, TRY: 89.99 },
+  3: { USD: 2.99, NZD: 4.99, MXN: 59, EUR: 2.99, TRY: 134.99 },
+  4: { USD: 4.99, NZD: 8.49, MXN: 99, EUR: 4.99, TRY: 224.99 },
+  5: { USD: 9.99, NZD: 16.99, MXN: 199, EUR: 9.99, TRY: 449.99 },
+  6: { USD: 19.99, NZD: 33.99, MXN: 379, EUR: 19.99, TRY: 899.99 },
+  7: { USD: 49.99, NZD: 84.99, MXN: 949, EUR: 49.99, TRY: 2249.99 },
+  8: { USD: 99.99, NZD: 169.99, MXN: 1899, EUR: 99.99, TRY: 4499.99 }
+};
+function normalizePack(p) {
+  if (!p || typeof p !== "object") throw new GameError("invalid-argument", "no pack");
+  const name = String(p.name || "").trim().slice(0, 60); if (!name) throw new GameError("invalid-argument", "pack needs a name");
+  const list = normalizeItems(p.items), items = {}, labels = {}; list.forEach((x) => { items[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
+  const tier = Math.trunc(+p.tier || 0); if (!(tier >= 0 && tier <= 50)) throw new GameError("invalid-argument", "bad price tier");
+  const limit = Math.trunc(+p.limit || 0); if (!(limit >= 0 && limit <= 999)) throw new GameError("invalid-argument", "bad buy limit");
+  const reset = String(p.reset || "none"); if (PACK_RESETS.indexOf(reset) < 0) throw new GameError("invalid-argument", "bad reset");
+  return { name, desc: String(p.desc || "").trim().slice(0, 200), icon: Array.from(String(p.icon || "📦").trim()).slice(0, 4).join("") || "📦", items, labels, tier, limit, reset: limit ? reset : "none",
+    mail: p.mail === true, active: p.active !== false, order: Math.trunc(+p.order || 0) };
+}
+/* Repeating buy limits: "daily" resets at 00:00 UTC, "weekly" on Monday 00:00 UTC, "monthly" on the 1st 00:00 UTC. Returns when the current period began. */
+const PACK_RESETS = ["none", "daily", "weekly", "monthly"];
+function limitPeriodStart(reset, now) {
+  const d = new Date(now);
+  if (reset === "daily") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  if (reset === "weekly") { const day0 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); return day0 - ((d.getUTCDay() + 6) % 7) * 86400000; }
+  if (reset === "monthly") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+  return 0;
+}
+function limitPeriodEnd(reset, now) {
+  const s0 = limitPeriodStart(reset, now), d = new Date(s0);
+  if (reset === "daily") return s0 + 86400000; if (reset === "weekly") return s0 + 7 * 86400000;
+  if (reset === "monthly") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1); return null;
+}
+/* how many more the player may buy right now; purchases = that player's delivered purchase records of this pack */
+function packBuysLeft(pack, purchases, now) {
+  if (!pack || !pack.limit) return Infinity;
+  const from = limitPeriodStart(pack.reset || "none", now);
+  return Math.max(0, pack.limit - (purchases || []).filter((r) => r && r.status !== "refunded" && (r.at || 0) >= from).length);
+}
+/* Shop layout: price tiers (tier -> price per currency) and tabs (Deals, Shop, ...) each holding an ordered list of packs with optional start/end time and badge. */
+function normalizeShop(shop, packIds) {
+  shop = shop || {}; const ok = packIds || null, out = { tiers: {}, tabs: [] };
+  const tiers = shop.tiers && typeof shop.tiers === "object" ? shop.tiers : DEFAULT_TIERS;
+  Object.keys(tiers).forEach((t) => {
+    const n = Math.trunc(+t); if (!(n >= 0 && n <= 50) || String(n) !== String(t)) throw new GameError("invalid-argument", "bad tier " + t);
+    const row = {}; SHOP_CURRENCIES.forEach((c) => { const v = +((tiers[t] || {})[c]); if (!(v >= 0 && v <= 1e6)) throw new GameError("invalid-argument", "bad price for tier " + t + " " + c); row[c] = Math.round(v * 100) / 100; });
+    out.tiers[n] = row;
+  });
+  const tabs = Array.isArray(shop.tabs) ? shop.tabs : [];
+  if (tabs.length > 10) throw new GameError("invalid-argument", "max 10 tabs");
+  const seen = {};
+  tabs.forEach((tb) => {
+    const name = String((tb && tb.name) || "").trim().slice(0, 24); if (!name) throw new GameError("invalid-argument", "tab needs a name");
+    let id = packIdFrom(tb.id || name); while (seen[id]) id += "_2"; seen[id] = 1;
+    const entries = Array.isArray(tb.items) ? tb.items : []; if (entries.length > 60) throw new GameError("invalid-argument", "max 60 packs per tab");
+    out.tabs.push({ id, name, icon: Array.from(String(tb.icon || "").trim()).slice(0, 4).join(""), items: entries.map((e) => {
+      const pack = String((e && e.pack) || ""); if (!pack || (ok && ok.indexOf(pack) < 0)) throw new GameError("invalid-argument", "unknown pack " + pack + " in tab " + name);
+      const start = +e.start > 0 ? Math.trunc(+e.start) : null, end = +e.end > 0 ? Math.trunc(+e.end) : null;
+      if (start && end && end <= start) throw new GameError("invalid-argument", "deal ends before it starts (" + pack + ")");
+      return { pack, start, end, badge: String(e.badge || "").trim().slice(0, 20) };
+    }) });
+  });
+  return out;
+}
+function shopEntryLive(e, now) { return (!e.start || now >= e.start) && (!e.end || now < e.end); }
+function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
 const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle)?\.?[a-zA-Z0-9_]+$/;
@@ -218,4 +291,4 @@ function checkSave(before, after, dtSec, allow) {
 }
 
 module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

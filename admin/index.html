@@ -44,6 +44,14 @@
   #signin button.b { width:100%; margin-top:8px; padding:11px; }
   #toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1b2a4d; border:1px dashed var(--gold2); padding:9px 14px; border-radius:8px; display:none; max-width:90vw; z-index:9; }
   .hide { display:none !important; }
+  .pkgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:10px; max-height:560px; overflow-y:auto; padding-right:4px; }
+  .pkc { border:1px dashed var(--line); border-radius:10px; padding:10px; background:var(--panel2); display:flex; flex-direction:column; gap:6px; }
+  .pkc.off { opacity:.5; } .pkc .pkh { display:flex; gap:8px; align-items:center; } .pkc .pki { font-size:26px; line-height:1; } .pkc .pkn { font-weight:700; color:var(--gold); }
+  .pkc .pkp { font-size:12px; color:#cfe6ff; } .pkc .pkt { font-size:11px; color:var(--dim); } .pkc .pka { display:flex; gap:6px; margin-top:auto; }
+  .tabbox { border:1px dashed var(--line); border-radius:10px; padding:10px; margin-top:10px; background:var(--panel2); }
+  .tabent { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:6px 0; border-bottom:1px dotted #26324d; } .tabent .nm { flex:1 1 200px; }
+  .tabent input[type=datetime-local] { width:190px; } .tabent .bdg { width:110px; } .mini { padding:3px 8px !important; font-size:12px !important; }
+  #tierEd input { width:90px; }
   @media (max-width:600px) { main { padding:10px; } .who { width:100%; margin-left:0; } td, th { padding:5px 4px; } }
 </style>
 </head>
@@ -85,6 +93,7 @@
         <select id="mCat" style="width:100%;margin-top:8px" title="Which mailbox tab the player sees it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
         <input id="mTitle" placeholder="Title (e.g. Sorry for the bug)" style="width:100%;margin-top:6px" maxlength="80">
         <textarea id="mBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
+        <select id="mGift" class="giftSel" data-box="mItems" data-title="mTitle" style="width:100%;margin-top:6px"></select>
         <div id="mItems"></div>
         <div class="row" style="margin-top:8px"><button class="b ghost" id="addItem">+ Add item</button><button class="b" id="sendMail">Send to this player</button></div>
       </div>
@@ -107,6 +116,38 @@
     </div>
   </section>
 
+  <section class="card" id="shopCard">
+    <h2>🛒 Shop &amp; packs</h2>
+    <div class="muted">Make each pack once in the library, then place it in shop tabs (Deals, Shop…). Packs ticked 🎁 also appear in the mail boxes' gift picker. Everything here belongs to the selected environment (test or live). Payments aren't connected yet, so players see the shop with a "coming soon" buy button.</div>
+    <div class="tabs" id="shTabs" style="margin-top:10px"><button data-s="lib" class="on">📦 Pack library</button><button data-s="tabs">🗂️ Shop tabs</button><button data-s="tiers">💲 Price tiers</button></div>
+    <div id="shLib">
+      <div class="row"><input class="grow" id="pkSearch" placeholder="Search packs…"><select id="pkFilter"><option value="">All packs</option><option value="gift">🎁 Mail gifts</option><option value="shown">Shown in a tab</option><option value="hidden">Not shown anywhere</option><option value="inactive">Inactive</option></select></div>
+      <div id="pkGrid" class="pkgrid" style="margin-top:10px"></div>
+      <div class="card" style="background:var(--panel2);margin-top:12px">
+        <h2 id="pkFormTitle">➕ New pack</h2>
+        <input type="hidden" id="pkId">
+        <div class="row"><input id="pkIcon" value="📦" maxlength="4" style="width:56px;text-align:center" title="Icon (an emoji)"><input class="grow" id="pkName" placeholder="Name (e.g. Starter Pack, Daily Deal, Bug apology)" maxlength="60"></div>
+        <input id="pkDesc" placeholder="Short description (optional, shown in the shop)" style="width:100%;margin-top:6px" maxlength="200">
+        <div id="pkItems"></div>
+        <div class="row" style="margin-top:8px"><button class="b ghost" id="pkAdd">+ Add item</button></div>
+        <div class="row" style="margin-top:8px"><span class="muted">Price</span><select id="pkTier" class="grow"></select></div>
+        <div class="row" style="margin-top:8px"><span class="muted">Buy limit</span><input id="pkLimit" type="number" min="0" value="0" style="width:80px" title="0 = no limit"><select id="pkReset"><option value="none">ever (one-time)</option><option value="daily">per day</option><option value="weekly">per week</option><option value="monthly">per month</option></select><span class="muted">0 = no limit · resets at 00:00 UTC (weeks start Monday)</span></div>
+        <div class="row" style="margin-top:8px"><label><input type="checkbox" id="pkMail"> 🎁 Use as a mail gift</label><label><input type="checkbox" id="pkActive" checked> Active</label></div>
+        <div class="row" style="margin-top:8px"><button class="b" id="pkSave">Save pack</button><button class="b ghost" id="pkNew">Clear / new</button></div>
+      </div>
+    </div>
+    <div id="shTabsView" class="hide">
+      <div class="muted">Each tab is a row of packs in the order players see them. Optional start/end times make timed deals (they appear and disappear by themselves); a badge shows on the pack (e.g. "-50%", "Best value").</div>
+      <div id="tabEd" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="b ghost" id="tabAdd">+ Add tab</button><button class="b" id="tabSave">Save tabs</button></div>
+    </div>
+    <div id="shTiers" class="hide">
+      <div class="muted">One row per price tier; each pack picks a tier. Change a row and every pack on that tier changes. Tier 0 = free. The MXN / EUR / TRY numbers were filled in as rough suggestions - check them (Turkish lira prices usually need a refresh every few months).</div>
+      <div id="tierEd" style="margin-top:10px;overflow-x:auto"></div>
+      <div class="row" style="margin-top:10px"><button class="b ghost" id="tierAdd">+ Add tier</button><button class="b" id="tierSave">Save prices</button></div>
+    </div>
+  </section>
+
   <section class="card">
     <h2>🛠️ Maintenance mode</h2>
     <div class="muted">While ON, players in the selected environment see a maintenance screen and nothing they do is saved; the server refuses their saves and claims. You (admin) can still play. Turning it OFF reloads everyone's game onto the newest version.</div>
@@ -122,6 +163,7 @@
     <select id="aCat" style="width:100%;margin-top:8px" title="Which mailbox tab the players see it under"><option value="system">Tab: System</option><option value="wars">Tab: Wars</option><option value="alliance">Tab: Alliance</option><option value="reports">Tab: Reports</option></select>
     <input id="aTitle" placeholder="Title" style="width:100%;margin-top:6px" maxlength="80">
     <textarea id="aBody" placeholder="Message (optional)" style="margin-top:6px" maxlength="1000"></textarea>
+    <select id="aGift" class="giftSel" data-box="aItems" data-title="aTitle" style="width:100%;margin-top:6px"></select>
     <div id="aItems"></div>
     <div class="row" style="margin-top:8px"><button class="b ghost" id="aAddItem">+ Add item</button><button class="b warn" id="aSend">Send to everyone</button></div>
   </section>
@@ -170,7 +212,7 @@
     $("so").onclick = function () { auth.signOut(); };
     call("adminCatalog").then(function (c) {
       S.catalog = c; $("signin").classList.add("hide"); $("app").classList.remove("hide"); renderEnv();
-      $("packSel").innerHTML = Object.keys(c.packs).filter(function (k) { return k[0] !== "_"; }).map(function (k) { var p = c.packs[k]; return '<option value="' + esc(k) + '">' + esc(p.name) + " (" + Object.keys(p.items).map(function (i) { return p.items[i] + " " + i; }).join(", ") + ")</option>"; }).join("");
+      setShop(c.packs, c.shop); pkClear();
       $("mItems").innerHTML = ""; $("aItems").innerHTML = ""; addItemRow("mItems"); addItemRow("aItems");
     }, function (e) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); u.getIdTokenResult().then(function (t) { $("siMsg").textContent = !/admin only|permission/i.test(errText(e)) ? errText(e) : (t.signInProvider !== "google.com" && !EMU) ? "Admin needs Google sign-in. Sign out and use Continue with Google." : "This account isn't an admin."; }); });
   });
@@ -277,6 +319,94 @@
     var typed = prompt("Type SEND to confirm sending to all players on " + S.env.toUpperCase()); if (String(typed || "").trim().toUpperCase() !== "SEND") { toast(typed == null ? "Cancelled - nothing sent" : "Not sent - type the word SEND to confirm", true); return; } /* v941: send/Send/ SEND also accepted */
     call("adminSendMail", { all: true, title: title, body: $("aBody").value, items: items, category: $("aCat").value }).then(function (r) { toast("Sent to " + r.sent + " players"); $("aTitle").value = ""; $("aBody").value = ""; $("aItems").innerHTML = ""; addItemRow("aItems"); }, function (e) { toast(errText(e), true); });
   };
+  // ---- v943: shop & packs ----
+  var CUR_SYM = { USD: "US$", NZD: "NZ$", MXN: "MX$", EUR: "€", TRY: "₺" }, CURS = ["USD", "NZD", "MXN", "EUR", "TRY"];
+  function fmtPrice(c, v) { return v ? (CUR_SYM[c] || c + " ") + (+v).toLocaleString(undefined, { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }) : "Free"; }
+  function tierRow(t) { return (S.shop && S.shop.tiers && S.shop.tiers[t]) || null; }
+  function tierText(t, short) { var r = tierRow(t); if (!r) return "Tier " + t + " (missing)"; if (!+t) return "Free"; return CURS.map(function (c) { return fmtPrice(c, r[c]); }).join(short ? " · " : "  ·  "); }
+  function packItemsText(p) { return Object.keys(p.items || {}).map(function (i) { return (+p.items[i]).toLocaleString() + " × " + itemLabel(i); }).join(", "); }
+  function limitText(p) { if (!p.limit) return ""; return p.limit + (p.reset === "daily" ? " per day" : p.reset === "weekly" ? " per week" : p.reset === "monthly" ? " per month" : " per player (one-time)"); }
+  function packTabs(id) { return ((S.shop && S.shop.tabs) || []).filter(function (t) { return t.items.some(function (e) { return e.pack === id; }); }); }
+  function packIds() { var P = S.catalog.packs || {}; return Object.keys(P).filter(function (k) { return k[0] !== "_"; }).sort(function (a, b) { return ((P[a].order || 0) - (P[b].order || 0)) || String(P[a].name).localeCompare(String(P[b].name)); }); }
+  function setShop(packs, shop) {
+    if (packs) S.catalog.packs = packs; if (shop) { S.shop = shop; S.shopDraft = JSON.parse(JSON.stringify(shop)); if (!S.shopDraft.tabs.length) S.shopDraft.tabs = [{ id: "deals", name: "Deals", icon: "🔥", items: [] }, { id: "shop", name: "Shop", icon: "🛒", items: [] }]; }
+    var P = S.catalog.packs, ids = packIds();
+    $("packSel").innerHTML = ids.map(function (k) { return '<option value="' + esc(k) + '">' + esc((P[k].icon || "") + " " + P[k].name) + " (" + esc(packItemsText(P[k])) + ")</option>"; }).join("") || '<option value="">No packs yet</option>';
+    var gifts = ids.filter(function (k) { return P[k].mail && P[k].active !== false; });
+    [].forEach.call(document.querySelectorAll(".giftSel"), function (sel) { sel.innerHTML = '<option value="">🎁 Fill from a gift pack… (optional)</option>' + gifts.map(function (k) { return '<option value="' + esc(k) + '">' + esc((P[k].icon || "") + " " + P[k].name) + " — " + esc(packItemsText(P[k])) + "</option>"; }).join(""); sel.disabled = !gifts.length; });
+    var tsel = $("pkTier"), keep = tsel.value; tsel.innerHTML = Object.keys((S.shop && S.shop.tiers) || { 0: 1 }).sort(function (a, b) { return a - b; }).map(function (t) { return '<option value="' + t + '">' + (+t ? "Tier " + t + " — " : "") + esc(tierText(t, true)) + "</option>"; }).join(""); if (keep) tsel.value = keep;
+    renderLib(); renderTabEd(); renderTierEd();
+  }
+  function renderLib() {
+    var P = S.catalog.packs, q = $("pkSearch").value.trim().toLowerCase(), f = $("pkFilter").value;
+    var ids = packIds().filter(function (k) { var p = P[k], shown = packTabs(k).length > 0;
+      if (q && (p.name + " " + (p.desc || "") + " " + packItemsText(p)).toLowerCase().indexOf(q) < 0) return false;
+      return !f || (f === "gift" && p.mail) || (f === "shown" && shown) || (f === "hidden" && !shown) || (f === "inactive" && p.active === false); });
+    $("pkGrid").innerHTML = ids.map(function (k) { var p = P[k], tabs = packTabs(k);
+      return '<div class="pkc' + (p.active === false ? " off" : "") + '"><div class="pkh"><span class="pki">' + esc(p.icon || "📦") + '</span><div><div class="pkn">' + esc(p.name) + '</div><div class="pkt">' + esc(k) + (p.builtIn ? " · built-in" : "") + (p.active === false ? " · inactive" : "") + "</div></div></div>"
+        + (p.desc ? '<div class="muted">' + esc(p.desc) + "</div>" : "")
+        + "<div>" + Object.keys(p.items || {}).map(function (i) { return '<span class="pill">' + esc((+p.items[i]).toLocaleString() + " × " + itemLabel(i)) + "</span>"; }).join("") + "</div>"
+        + '<div class="pkp">' + (p.tier != null ? (+p.tier ? "Tier " + p.tier + ": " : "") + esc(tierText(p.tier || 0, true)) : esc(p.price ? p.price + " " + (p.currency || "") : "Free")) + "</div>"
+        + '<div class="pkt">' + [limitText(p) ? "🔒 " + limitText(p) : "", tabs.map(function (t) { return (t.icon || "") + " " + t.name; }).join(", "), p.mail ? "🎁 mail gift" : "", !tabs.length && !p.mail ? "not shown anywhere" : ""].filter(Boolean).map(esc).join(" · ") + "</div>"
+        + (p.builtIn ? "" : '<div class="pka"><button class="b ghost mini" data-pkedit="' + esc(k) + '">Edit</button><button class="b ghost mini" data-pkdel="' + esc(k) + '">Delete</button></div>') + "</div>"; }).join("") || '<div class="muted">No packs match.</div>';
+  }
+  function fillRows(box, items) { $(box).innerHTML = ""; Object.keys(items || {}).forEach(function (k) { addItemRow(box); var r = $(box).lastChild; r.querySelector("select").value = k; r.querySelector("input").value = items[k]; }); if (!Object.keys(items || {}).length) addItemRow(box); }
+  [].forEach.call(document.querySelectorAll(".giftSel"), function (sel) { sel.onchange = function () { var p = S.catalog.packs[sel.value]; if (!p) return; fillRows(sel.getAttribute("data-box"), p.items); var t = $(sel.getAttribute("data-title")); if (!t.value.trim()) t.value = p.name; sel.value = ""; toast("Filled with “" + p.name + "” - you can still change it"); }; });
+  function pkClear() { $("pkId").value = ""; $("pkIcon").value = "📦"; $("pkName").value = ""; $("pkDesc").value = ""; $("pkTier").value = "1"; $("pkLimit").value = "0"; $("pkReset").value = "none"; $("pkMail").checked = false; $("pkActive").checked = true; $("pkFormTitle").textContent = "➕ New pack"; fillRows("pkItems", {}); }
+  $("pkNew").onclick = pkClear; $("pkAdd").onclick = function () { addItemRow("pkItems"); };
+  $("pkSearch").oninput = renderLib; $("pkFilter").onchange = renderLib;
+  [].forEach.call($("shTabs").children, function (b) { b.onclick = function () { [].forEach.call($("shTabs").children, function (x) { x.classList.toggle("on", x === b); }); var v = b.getAttribute("data-s"); $("shLib").classList.toggle("hide", v !== "lib"); $("shTabsView").classList.toggle("hide", v !== "tabs"); $("shTiers").classList.toggle("hide", v !== "tiers"); }; });
+  $("pkGrid").onclick = function (e) {
+    var t = e.target, id;
+    if ((id = t.getAttribute("data-pkedit"))) { var p = S.catalog.packs[id]; $("pkId").value = id; $("pkIcon").value = p.icon || "📦"; $("pkName").value = p.name; $("pkDesc").value = p.desc || ""; $("pkTier").value = String(p.tier || 0); $("pkLimit").value = p.limit || 0; $("pkReset").value = p.reset || "none"; $("pkMail").checked = !!p.mail; $("pkActive").checked = p.active !== false; fillRows("pkItems", p.items); $("pkFormTitle").textContent = "✏️ Edit pack: " + p.name; $("pkName").scrollIntoView({ block: "center" }); }
+    if ((id = t.getAttribute("data-pkdel"))) { if (!confirmEnv("Delete pack “" + S.catalog.packs[id].name + "”? It's removed from every shop tab. Purchases already made are not affected.")) return; call("adminDeletePack", { id: id }).then(function (r) { setShop(r.packs, r.shop); toast("Pack deleted"); }, function (e) { toast(errText(e), true); }); }
+  };
+  $("pkSave").onclick = function () {
+    var items; try { items = readItems("pkItems"); } catch (e) { toast(e.message, true); return; }
+    if (!Object.keys(items).length) { toast("A pack needs at least one item.", true); return; }
+    var pack = { icon: $("pkIcon").value.trim(), name: $("pkName").value.trim(), desc: $("pkDesc").value.trim(), items: items, tier: +$("pkTier").value || 0, limit: +$("pkLimit").value || 0, reset: $("pkReset").value, mail: $("pkMail").checked, active: $("pkActive").checked };
+    if (!pack.name) { toast("Give the pack a name.", true); return; }
+    call("adminSavePack", { id: $("pkId").value || null, pack: pack }).then(function (r) { setShop(r.packs, r.shop); toast("Saved “" + r.pack.name + "”"); pkClear(); }, function (e) { toast(errText(e), true); });
+  };
+  // tabs editor (works on a draft; "Save tabs" sends it)
+  function toLocalInput(ms) { if (!ms) return ""; var d = new Date(ms), z = function (n) { return (n < 10 ? "0" : "") + n; }; return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); }
+  function renderTabEd() {
+    var D = S.shopDraft; if (!D) return; var P = S.catalog.packs, ids = packIds(), now = Date.now();
+    $("tabEd").innerHTML = D.tabs.map(function (tb, ti) {
+      return '<div class="tabbox"><div class="row"><input data-tf="icon" data-ti="' + ti + '" value="' + esc(tb.icon || "") + '" maxlength="4" style="width:56px;text-align:center" title="Tab icon"><input data-tf="name" data-ti="' + ti + '" value="' + esc(tb.name) + '" maxlength="24" class="grow" placeholder="Tab name">'
+        + '<button class="b ghost mini" data-tmv="-1" data-ti="' + ti + '">◀</button><button class="b ghost mini" data-tmv="1" data-ti="' + ti + '">▶</button><button class="b ghost mini" data-tdel="' + ti + '">Remove tab</button></div>'
+        + (tb.items.length ? tb.items.map(function (e, ei) { var p = P[e.pack] || { name: e.pack + " (missing)" }, live = (!e.start || now >= e.start) && (!e.end || now < e.end);
+          return '<div class="tabent"><span class="nm">' + (ei + 1) + ". " + esc((p.icon || "") + " " + p.name) + ' <span class="muted">' + esc(p.tier != null ? tierText(p.tier || 0, true).split(" · ").slice(0, 2).join(" · ") : "") + "</span>" + (live ? "" : ' <span class="pill">' + (e.start && now < e.start ? "starts later" : "ended") + "</span>") + "</span>"
+            + '<span class="muted">from</span><input type="datetime-local" data-ef="start" data-ti="' + ti + '" data-ei="' + ei + '" value="' + toLocalInput(e.start) + '" title="Starts (optional)"><span class="muted">until</span><input type="datetime-local" data-ef="end" data-ti="' + ti + '" data-ei="' + ei + '" value="' + toLocalInput(e.end) + '" title="Ends (optional)">'
+            + '<input class="bdg" data-ef="badge" data-ti="' + ti + '" data-ei="' + ei + '" value="' + esc(e.badge || "") + '" maxlength="20" placeholder="Badge">'
+            + '<button class="b ghost mini" data-emv="-1" data-ti="' + ti + '" data-ei="' + ei + '">↑</button><button class="b ghost mini" data-emv="1" data-ti="' + ti + '" data-ei="' + ei + '">↓</button><button class="b ghost mini" data-edel="1" data-ti="' + ti + '" data-ei="' + ei + '">✕</button></div>'; }).join("") : '<div class="muted" style="margin-top:6px">No packs in this tab yet.</div>')
+        + '<div class="row" style="margin-top:8px"><select data-tadd="' + ti + '" class="grow"><option value="">+ Add a pack to ' + esc(tb.name) + "…</option>" + ids.filter(function (k) { return !P[k].builtIn; }).map(function (k) { return '<option value="' + esc(k) + '">' + esc((P[k].icon || "") + " " + P[k].name) + "</option>"; }).join("") + "</select></div></div>";
+    }).join("") || '<div class="muted">No tabs. Add one.</div>';
+  }
+  $("tabEd").oninput = function (e) { var t = e.target, D = S.shopDraft, ti = +t.getAttribute("data-ti"); if (t.getAttribute("data-tf")) D.tabs[ti][t.getAttribute("data-tf")] = t.value;
+    if (t.getAttribute("data-ef")) { var en = D.tabs[ti].items[+t.getAttribute("data-ei")], f = t.getAttribute("data-ef"); en[f] = f === "badge" ? t.value : (t.value ? new Date(t.value).getTime() : null); } };
+  $("tabEd").onchange = function (e) { var t = e.target; if (t.getAttribute("data-tadd") != null && t.value) { S.shopDraft.tabs[+t.getAttribute("data-tadd")].items.push({ pack: t.value, start: null, end: null, badge: "" }); renderTabEd(); } else if (t.getAttribute("data-ef") === "start" || t.getAttribute("data-ef") === "end") renderTabEd(); };
+  $("tabEd").onclick = function (e) { var t = e.target, D = S.shopDraft, ti = +t.getAttribute("data-ti"), ei = +t.getAttribute("data-ei"), mv;
+    function swap(a, i, j) { if (j < 0 || j >= a.length) return; var x = a[i]; a[i] = a[j]; a[j] = x; }
+    if ((mv = t.getAttribute("data-tmv"))) { swap(D.tabs, ti, ti + +mv); renderTabEd(); }
+    else if (t.getAttribute("data-tdel") != null) { var k = +t.getAttribute("data-tdel"); if (confirm("Remove the tab “" + D.tabs[k].name + "”? (The packs stay in the library.)")) { D.tabs.splice(k, 1); renderTabEd(); } }
+    else if ((mv = t.getAttribute("data-emv"))) { swap(D.tabs[ti].items, ei, ei + +mv); renderTabEd(); }
+    else if (t.getAttribute("data-edel")) { D.tabs[ti].items.splice(ei, 1); renderTabEd(); } };
+  $("tabAdd").onclick = function () { S.shopDraft.tabs.push({ id: "", name: "New tab", icon: "⭐", items: [] }); renderTabEd(); };
+  $("tabSave").onclick = function () { if (!confirmEnv("Save the shop tabs? Players see the change straight away.")) return;
+    call("adminSaveShop", { tabs: S.shopDraft.tabs }).then(function (r) { setShop(r.packs, r.shop); toast("Shop tabs saved"); }, function (e) { toast(errText(e), true); }); };
+  // price tiers
+  function renderTierEd() {
+    var D = S.shopDraft; if (!D) return; var ts = Object.keys(D.tiers).sort(function (a, b) { return a - b; });
+    $("tierEd").innerHTML = "<table><thead><tr><th>Tier</th>" + CURS.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "<th>Packs</th></tr></thead><tbody>" + ts.map(function (t) {
+      var n = packIds().filter(function (k) { return (S.catalog.packs[k].tier || 0) === +t && !S.catalog.packs[k].builtIn; }).length;
+      return "<tr><td><b>" + (+t ? t : "0 (free)") + "</b></td>" + CURS.map(function (c) { return '<td><input type="number" min="0" step="0.01" data-tier="' + t + '" data-cur="' + c + '" value="' + (D.tiers[t][c] != null ? D.tiers[t][c] : "") + '"' + (+t ? "" : " disabled") + "></td>"; }).join("") + '<td class="muted">' + n + "</td></tr>"; }).join("") + "</tbody></table>";
+  }
+  $("tierEd").oninput = function (e) { var t = e.target; if (t.getAttribute("data-tier") != null) S.shopDraft.tiers[t.getAttribute("data-tier")][t.getAttribute("data-cur")] = t.value === "" ? 0 : +t.value; };
+  $("tierAdd").onclick = function () { var ts = Object.keys(S.shopDraft.tiers).map(Number), n = Math.max.apply(null, ts) + 1, last = S.shopDraft.tiers[n - 1] || {}; S.shopDraft.tiers[n] = {}; CURS.forEach(function (c) { S.shopDraft.tiers[n][c] = last[c] || 0; }); renderTierEd(); };
+  $("tierSave").onclick = function () { if (!confirmEnv("Save price tiers? Every pack on a changed tier shows the new price straight away.")) return;
+    call("adminSaveShop", { tiers: S.shopDraft.tiers }).then(function (r) { setShop(r.packs, r.shop); toast("Prices saved"); }, function (e) { toast(errText(e), true); }); };
+
   // ---- v942: maintenance mode ----
   function mtShow(m) {
     var on = m && m.on === true, el = $("mtStatus");
@@ -293,7 +423,7 @@
     if (!confirmEnv("Turn maintenance OFF? Everyone's game reloads and they can play again.")) return;
     call("adminMaintenance", { set: { on: false } }).then(function (m) { mtShow(m); $("mtMsg").value = ""; $("mtUntil").value = ""; toast("Maintenance is OFF"); }, function (e) { toast(errText(e), true); });
   };
-  var renderEnv0 = renderEnv; renderEnv = function () { renderEnv0(); if (S.catalog) mtLoad(); };
+  var renderEnv0 = renderEnv; renderEnv = function () { renderEnv0(); if (S.catalog) { mtLoad(); call("adminCatalog").then(function (c) { setShop(c.packs, c.shop); }, function () {}); } };
   renderEnv();
 })();
 </script>

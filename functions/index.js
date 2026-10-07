@@ -152,15 +152,37 @@ exports.relocateCity = wrap(async (req, uid, R, d) => db.runTransaction(async (t
 // Delivers a paid pack exactly once per payment receipt: purchases/<provider>_<receipt> + wallet + ledger, all in one transaction.
 // For now only an admin can call it (testing, or fixing a payment that didn't come through). When a payment provider is connected,
 // its server-to-server webhook will call the same deliverPurchase() after verifying the payment.
+/* v943: packs live in <root>packs/<id> (made in the admin panel); packs.json keeps the built-in test pack. */
+async function loadPack(R, packId) {
+  const id = String(packId || "").replace(/[^A-Za-z0-9_-]/g, ""); if (!id) return null;
+  const s = await db.doc(R + "packs/" + id).get(); if (s.exists) return s.data();
+  return PACKS[id] && id[0] !== "_" ? PACKS[id] : null;
+}
+async function allPacks(R) {
+  const out = {}; Object.keys(PACKS).forEach((k) => { if (k[0] !== "_") out[k] = Object.assign({ builtIn: true, shop: false, mail: false, active: true }, PACKS[k]); });
+  const qs = await db.collection(R + "packs").get(); qs.docs.forEach((d) => { out[d.id] = d.data(); });
+  return out;
+}
 async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
-  const id = C.purchaseId(provider, receiptId), pref = db.doc(R + "purchases/" + id);
+  const id = C.purchaseId(provider, receiptId), pref = db.doc(R + "purchases/" + id), pack = await loadPack(R, packId);
+  if (pack && pack.limit) { /* v943: buy limits (once ever, or N per day/week/month) */
+    const ex = await pref.get();
+    if (!ex.exists) {
+      const qs = await db.collection(R + "purchases").where("uid", "==", uid).get();
+      const mine = qs.docs.map((d) => d.data()).filter((r) => r.pack === packId);
+      if (C.packBuysLeft(pack, mine, Date.now()) <= 0) throw new C.GameError("failed-precondition", "buy limit reached for " + (pack.name || packId), { resetsAt: C.limitPeriodEnd(pack.reset, Date.now()) });
+    }
+  }
   return db.runTransaction(async (tx) => {
     const [ps, ws] = await Promise.all([tx.get(pref), tx.get(walletRef(R, uid))]);
-    const r = C.decidePurchase(ps.exists ? ps.data() : null, PACKS[packId], packId, ws.data(), uid, Date.now());
+    const r = C.decidePurchase(ps.exists ? ps.data() : null, pack, packId, ws.data(), uid, Date.now());
     if (r.dup) return { dup: true, id, record: r.record };
     const rec = Object.assign({ provider, receiptId: String(receiptId) }, r.record); if (by) rec.deliveredBy = by;
-    tx.set(pref, rec); tx.set(walletRef(R, uid), { gems: r.gems }, { merge: true });
-    ledger(tx, R, uid, "gems", r.add, r.gems, "purchase", id, by);
+    if (Object.keys(r.others).length) { /* resources, shards etc. live in the player's save: they arrive as a mail to claim */
+      const mref = mailCol(R, uid).doc(); rec.mailId = mref.id;
+      tx.set(mref, C.makeMail("🛒 " + (pack.name || packId), "Thanks for your purchase! Here are your items.", r.others, "shop", Date.now(), "system"));
+    }
+    tx.set(pref, rec); if (r.add > 0) { tx.set(walletRef(R, uid), { gems: r.gems }, { merge: true }); ledger(tx, R, uid, "gems", r.add, r.gems, "purchase", id, by); }
     return { dup: false, id, gems: r.gems, record: rec };
   });
 }
@@ -245,7 +267,41 @@ exports.adminMaintenance = wrap(async (req, uid, R, d) => {
   }
   const s = await ref.get(); return s.exists ? s.data() : { on: false, msg: "", until: null };
 });
-exports.adminCatalog = wrap(async (req, uid) => { adminOnly(uid, req); return { items: C.ITEMS, packs: PACKS }; });
+async function shopConfig(R, packIds) {
+  const s = await db.doc(R + "config/shop").get(); const d = s.exists ? s.data() : {};
+  try { return C.normalizeShop({ tiers: d.tiers, tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
+  catch (e) { return C.normalizeShop({}, null); }
+}
+exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const packs = await allPacks(R); return { items: C.ITEMS, packs, shop: await shopConfig(R, Object.keys(packs)), currencies: C.SHOP_CURRENCIES, resets: C.PACK_RESETS }; });
+// v943: shop layout - price tiers and tabs (Deals, Shop, ...). Players read <root>config/shop; only this function writes it.
+exports.adminSaveShop = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const packs = await allPacks(R), cur = await shopConfig(R, Object.keys(packs));
+  const shop = C.normalizeShop({ tiers: d.tiers || cur.tiers, tabs: d.tabs || cur.tabs }, Object.keys(packs));
+  shop.updatedAt = Date.now(); shop.updatedBy = uid;
+  await db.doc(R + "config/shop").set(shop);
+  await db.collection(R + "adminlog").add({ by: uid, shop: { tabs: shop.tabs.map((t) => t.name + ":" + t.items.length), tiers: Object.keys(shop.tiers).length }, at: shop.updatedAt });
+  return { shop, packs };
+});
+// v943: create / edit / delete packs (shop packs and quick-pick mail bundles). Purchases already made keep what they delivered.
+exports.adminSavePack = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const pack = C.normalizePack(d.pack), id = d.id ? String(d.id).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40) : C.packIdFrom(pack.name);
+  if (!id || PACKS[id]) throw new HttpsError("invalid-argument", "that pack id is taken by a built-in pack");
+  pack.updatedAt = Date.now(); pack.updatedBy = uid;
+  await db.doc(R + "packs/" + id).set(pack);
+  await db.collection(R + "adminlog").add({ by: uid, pack: { id, name: pack.name, items: pack.items, price: pack.price }, at: pack.updatedAt });
+  const packs = await allPacks(R); return { id, pack, packs, shop: await shopConfig(R, Object.keys(packs)) };
+});
+exports.adminDeletePack = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const id = String(d.id || "").replace(/[^A-Za-z0-9_-]/g, ""); if (!id || PACKS[id]) throw new HttpsError("invalid-argument", "can't delete that pack");
+  await db.doc(R + "packs/" + id).delete();
+  const packs = await allPacks(R), shop = await shopConfig(R, Object.keys(packs)); /* drop it from every tab */
+  await db.doc(R + "config/shop").set(Object.assign(shop, { updatedAt: Date.now(), updatedBy: uid }));
+  await db.collection(R + "adminlog").add({ by: uid, packDeleted: id, at: Date.now() });
+  return { packs, shop };
+});
 
 const NAME_DOC = "assetitems/kingdom_prototype_playername_v1";
 exports.adminFindPlayers = wrap(async (req, uid, R, d) => {

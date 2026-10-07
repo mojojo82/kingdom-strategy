@@ -409,3 +409,15 @@
     non-admin -> full-screen lock (message + time), saveLoadFailed=true; admin -> red top bar, keeps playing; on -> off = automatic fresh reload.
   - Tests: ci/integration.test.js (maintenance lock + admin bypass + other env unaffected; message-only mail), g190_updmaint (banner, update
     reload, lock screen, admin bar, auto reload). g170, g176, g179, g184, g187-g189 pass.
+- v943: Shop & packs (Harley: a pack library; Deals / Shop tabs pick packs from it; regional prices; timed + repeating deals; mail gift packs).
+  - Data (per env, server-written via admin functions): packs/<id> {name, icon, desc, items, labels, tier, limit, reset none|daily|weekly|monthly,
+    mail (gift picker), active}; config/shop {tiers {n: {USD,NZD,MXN,EUR,TRY}}, tabs [{id,name,icon,items:[{pack,start,end,badge}]}]}. Built-in
+    test_gems_100 stays in functions/packs.json. Default tiers seeded from Harley's US$0.99 = NZ$1.69; MXN/EUR/TRY are rough suggestions.
+  - Server: adminSavePack / adminDeletePack (also drops it from tabs) / adminSaveShop / adminCatalog (packs + shop). Delivery: gems to wallet,
+    every other item as a "🛒 <pack>" mail; buy limits enforced (packBuysLeft, periods start 00:00 UTC, weeks Monday). Rules: packs read by
+    signed-in players, config/* read by anyone, both server-write only.
+  - Admin: 🛒 Shop & packs card with Pack library (search/filter, cards with price in all 5 currencies, limits, where shown), Shop tabs editor
+    (order, from/until, badge, add/remove/reorder tabs), Price tiers grid; 🎁 gift picker in both mail boxes.
+  - Game: More > 🛒 Shop overlay: tabs, cards (icon, name, desc, items, badge, "Ends in", "1 per day · resets in"), local currency picked
+    from time zone then phone region (switcher in the footer, remembered), live updates, buy button = "payments coming soon" note.
+  - Tests: core.test.js (tiers, limits, periods), ci/integration.test.js (shop), g191_packs (admin), g192_shop (game).
