@@ -6461,7 +6461,7 @@ function createGame(opts) {
   function idleHordeSize() { return Math.min(10, 5 + Math.floor((idleGlobalLevelNum() - 1) / 25)); }
   function idleHordeCount() { return Math.min(8, 4 + Math.floor((idleGlobalLevelNum() - 1) / 30)); }
   function idleHordeQuota() { return idleHordeSize() * idleHordeCount(); }
-  function idleSpawnHorde() { var left = idleHordeQuota() - state.idle.enemiesKilledInLevel - state.idle.enemies.length, n = Math.min(idleHordeSize(), left); for (var i = 0; i < n; i++) { idleSpawnEnemy(); var he = state.idle.enemies[state.idle.enemies.length - 1]; he.horde = true; he.arriveRemaining = IDLE_ARRIVE_DELAY + i * 0.45; } /* staggered: a stream, not a clump */ }
+  function idleSpawnHorde() { var left = idleHordeQuota() - state.idle.enemiesKilledInLevel - idleDying.length - state.idle.enemies.length, n = Math.min(idleHordeSize(), left); for (var i = 0; i < n; i++) { idleSpawnEnemy(); var he = state.idle.enemies[state.idle.enemies.length - 1]; he.horde = true; he.arriveRemaining = IDLE_ARRIVE_DELAY + i * 0.45; } /* staggered: a stream, not a clump */ }
   function idleEnemiesPerLevel() { return idleIsBossLevel() ? 1 : idleHordeQuota(); }
   function idleIsChapterBossLevel() { return state.idle.levelNum === IDLE_LEVELS_PER_CHAPTER; }
   // Difficulty balancing note (added after simulation testing found new/early
@@ -6761,7 +6761,7 @@ function createGame(opts) {
     if (!manualResults) { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } // v811: with the Defeat screen up HP stays at 0 (refilled on Confirm) so a player who glances back doesn't see "Defeated" with a full bar
     state.idle.shieldOn = false;
     if (!manualResults) { state.idle.enemies = []; state.idle.spawnTimer = null; } // v810: with the Defeat screen up the enemies (boss included) stay frozen on the field; Confirm clears them (idleResolveResult)
-    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null;
+    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; idleDying = [];
     state.idle.resetCount = (state.idle.resetCount || 0) + 1;
     state.idle.levelElapsedSec = 0;
     state.idle.levelRewards = null;
@@ -6769,7 +6769,7 @@ function createGame(opts) {
   }
   function idleStartBossAttempt() { return false; } // v748: the skull/retry button is gone (every level has its boss)
   // The result screen was confirmed (or the victory timer ran out): fade is done by the UI, this just lets combat run again.
-  function idleResolveResult() { var p = state.idle.pending; state.idle.pending = null; if (p && p.type === "defeat") { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } if (p) { state.idle.enemies = []; state.idle.spawnTimer = null; idleEnemyPendingHits = []; } return p; } // v781: whatever spawned behind the result screen is cleared — the next attempt starts from a clean field
+  function idleResolveResult() { var p = state.idle.pending; state.idle.pending = null; idleDying = []; if (p && p.type === "defeat") { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } if (p) { state.idle.enemies = []; state.idle.spawnTimer = null; idleEnemyPendingHits = []; } return p; } // v781: whatever spawned behind the result screen is cleared — the next attempt starts from a clean field
   var LEVEL_CLEAR_GEMS = 50; // every cleared level pays 50 gems
   function idleClearLevel() {
     idleEnemyPendingHits = []; state.idle.guardShield = 0;
@@ -6816,22 +6816,21 @@ function createGame(opts) {
     var e = state.idle.enemies[idx];
     if (!e || e.hp > 0) return false;
     if (idx === 0) return idleCheckFrontDeath();
-    var wasBossE = e.type === "boss";
     state.idle.enemies.splice(idx, 1);
-    state.idle.defeated++;
-    state.idle.enemiesKilledInLevel++;
-    idleGrantKill(wasBossE);
-    if (wasBossE) {
-      state.idle.bossesDefeated = (state.idle.bossesDefeated || 0) + 1;
-      idleBossFragments();
-    }
-    return idleAfterKill();
+    return idleKillOrDefer(e);
   }
   function idleCheckFrontDeath() {
     var front = state.idle.enemies[0];
     if (!front || front.hp > 0) return false;
-    var wasBoss = front.type === "boss";
     state.idle.enemies.shift();
+    return idleKillOrDefer(front);
+  }
+  /* v918: a kill only COUNTS when it is seen. While the Conquest scene is really drawn, a dead enemy leaves the fight at once (nothing targets it, it
+     stops attacking) but its kill — the defeated count, the level progress, the rewards, the boss / level clear — waits in idleDying until the shot
+     that killed it visibly lands and the body goes down (the UI calls game.idleConfirmDeath). Not drawn (other tab, hidden page, sims) = credited at
+     once, exactly as before. A kill the UI never confirms is credited after 3 s, so nothing can get stuck. */
+  var idleDying = [];
+  function idleCreditKill(wasBoss) {
     state.idle.defeated++; // lifetime counter, never rolled back by a level reset
     state.idle.enemiesKilledInLevel++;
     idleGrantKill(wasBoss);
@@ -6840,6 +6839,25 @@ function createGame(opts) {
       idleBossFragments();
     }
     return idleAfterKill();
+  }
+  function idleKillOrDefer(e) {
+    var wasBoss = e.type === "boss";
+    if (idleMeleeLive()) { idleDying.push({ id: e.id, boss: wasBoss, at: Date.now(), rc: state.idle.resetCount || 0 }); return false; }
+    return idleCreditKill(wasBoss);
+  }
+  function idleConfirmDeath(id) {
+    for (var i = 0; i < idleDying.length; i++) {
+      if (String(idleDying[i].id) !== String(id)) continue;
+      var d = idleDying.splice(i, 1)[0];
+      if (d.rc !== (state.idle.resetCount || 0) || state.idle.pending) return false; /* the level was lost/reset meanwhile: that kill no longer counts */
+      return idleCreditKill(d.boss);
+    }
+    return false;
+  }
+  function idleDyingSettle() {
+    if (!idleDying.length) return;
+    var live = idleMeleeLive(), nowMs = Date.now();
+    while (idleDying.length && (!live || nowMs - idleDying[0].at > 3000) && !state.idle.pending) idleConfirmDeath(idleDying[0].id);
   }
   // v748: horde quota reached -> boss phase (the boss walks in); boss killed -> level cleared. Returns true when the field was reset (clear).
   function idleAfterKill() {
@@ -6882,9 +6900,9 @@ function createGame(opts) {
     // the once-per-call continuous block below can't see a reset that
     // happens between those iterations.
     if (idleIsBossLevel()) {
-      if (state.idle.enemies.length === 0 && state.idle.enemiesKilledInLevel === 0) idleSpawnBoss();
+      if (state.idle.enemies.length === 0 && state.idle.enemiesKilledInLevel === 0 && !idleDying.length) idleSpawnBoss();
     } else {
-      if (state.idle.enemies.length === 0 && state.idle.enemiesKilledInLevel === 0) idleSpawnHorde(); // level start: first horde right away
+      if (state.idle.enemies.length === 0 && state.idle.enemiesKilledInLevel === 0 && !idleDying.length) idleSpawnHorde(); // level start: first horde right away
     }
 
     // every alive enemy: arrival countdown (nothing can damage it until this clears — fixes
@@ -7142,6 +7160,7 @@ function createGame(opts) {
         if (state.idle.playerHp <= 0) { idleResetLevel(); break; }
       }
     }
+    idleDyingSettle(); /* v918: kills waiting to be seen */
     idleMeleeSettle(); /* v917: owed sword hits — expire when the sword never delivered them, or land the old way when the scene is no longer drawn */
     if (state.idle.pending) return;
     if (idlePendingHits.length) { // delayed extra basic hits (see idleCombatStep's attacker loop)
@@ -7177,7 +7196,7 @@ function createGame(opts) {
     // the same horde-size cap the old code relied on, so a huge deltaSec
     // (e.g. the tab was backgrounded a while) still can't spawn unbounded.
     if (!idleIsBossLevel()) {
-      if (state.idle.enemies.length === 0 && state.idle.enemiesKilledInLevel < idleEnemiesPerLevel()) {
+      if (state.idle.enemies.length === 0 && state.idle.enemiesKilledInLevel + idleDying.length < idleEnemiesPerLevel()) {
         if (state.idle.spawnTimer == null) state.idle.spawnTimer = HORDE_GAP_SEC;
         state.idle.spawnTimer -= deltaSec;
         if (state.idle.spawnTimer <= 0) { idleSpawnHorde(); state.idle.spawnTimer = null; }
@@ -7536,6 +7555,7 @@ function createGame(opts) {
     });
     return f;
   }
+  function idleFxShot(x) { var L = state.idle.fxShotLog || (state.idle.fxShotLog = []); if (L.length < 60) L.push(x); } /* v918: drone / railgun shots for the visuals */
   function idleFxWeaponTick(dt) {
     var I = state.idle, list = idleFxList();
     if (!list.length) return;
@@ -7557,7 +7577,9 @@ function createGame(opts) {
         T.t -= dt;
         if (T.t <= 0) {
           if (!anyArrived) { T.t = 0; return; }
-          for (var ri = enemies.length - 1; ri >= 0; ri--) { var en = enemies[ri]; if (!en.arrived || en.hp <= 0) continue; en.hp -= en.maxHp * (P.fortPct || 0) / 100 * o.mag; if (en.hp <= 0) idleRemoveDeadEnemyAt(ri); }
+          var railHits = []; /* v918: logged so the rail shot is drawn (it used to hit with nothing on screen) */
+          for (var ri = enemies.length - 1; ri >= 0; ri--) { var en = enemies[ri]; if (!en.arrived || en.hp <= 0) continue; var rd = en.maxHp * (P.fortPct || 0) / 100 * o.mag; en.hp -= rd; railHits.push({ id: en.id, dmg: rd }); if (en.hp <= 0) idleRemoveDeadEnemyAt(ri); }
+          idleFxShot({ kind: "rail", hits: railHits });
           T.t += cd;
         }
       } else if (o.fx === "drone") {
@@ -7565,7 +7587,12 @@ function createGame(opts) {
         if (!nr) return;
         var dps = idleRangedPower() / nr * (P.pct || 0) / 100 * o.mag, bi = -1, bd = Infinity;
         for (var di = 0; di < enemies.length; di++) { if (!enemies[di].arrived || enemies[di].hp <= 0) continue; var dd = idleEnemyDistFrac(enemies[di]); if (dd < bd) { bd = dd; bi = di; } }
-        if (bi >= 0) { var tgt = enemies[bi]; tgt.hp -= dps * dt * (P.pierce ? 1 : idleEnemyDefTake(tgt, dps)); if (tgt.hp <= 0) idleRemoveDeadEnemyAt(bi); }
+        if (bi >= 0) { var tgt = enemies[bi], dd2 = dps * dt * (P.pierce ? 1 : idleEnemyDefTake(tgt, dps)); tgt.hp -= dd2;
+          /* v918: the drone's steady fire is drawn as a bolt every 0.35 s carrying what it dealt since the last one (it used to deal damage with nothing on screen) */
+          if (T.accId != null && T.accId !== tgt.id && T.acc > 0) { idleFxShot({ kind: "drone", id: T.accId, dmg: T.acc }); T.acc = 0; T.shotT = 0.35; }
+          T.accId = tgt.id; T.acc = (T.acc || 0) + dd2; T.shotT = (T.shotT == null ? 0.35 : T.shotT) - dt;
+          if (T.shotT <= 0 || tgt.hp <= 0) { idleFxShot({ kind: "drone", id: tgt.id, dmg: T.acc }); T.acc = 0; T.shotT = 0.35; }
+          if (tgt.hp <= 0) idleRemoveDeadEnemyAt(bi); }
       } else if (o.fx === "emp") {
         T.t -= dt;
         if (T.t <= 0) {
@@ -8435,7 +8462,7 @@ function createGame(opts) {
     idleIsBossLevel: idleIsBossLevel, idleStartBossAttempt: idleStartBossAttempt, idleResolveResult: idleResolveResult, idleArriveDelay: IDLE_ARRIVE_DELAY, idleIsChapterBossLevel: idleIsChapterBossLevel, idleBossName: idleBossName, idleEnvironment: idleEnvironment,
     setIdleMeleeTargets: function (map) { idleMeleeReach.map = map; idleMeleeReach.t = Date.now(); idleMeleeFirstStrikes(); },
     idleMeleeVisPing: function (heroes) { idleMeleeVis.t = Date.now(); idleMeleeVis.heroes = heroes || {}; }, /* v917: the scene was really drawn this frame */
-    idleMeleeLand: idleMeleeLand, idleMeleeOwedCount: function (aid) { return idleMeleeOwed.filter(function (o) { return o.aid === aid; }).length; },
+    idleMeleeLand: idleMeleeLand, idleConfirmDeath: idleConfirmDeath, idleDyingCount: function () { return idleDying.length; }, idleMeleeOwedCount: function (aid) { return idleMeleeOwed.filter(function (o) { return o.aid === aid; }).length; },
     setIdleFrontOnScreen: function (ok, id) { idleFrontScreen.ok = !!ok; idleFrontScreen.id = (id == null ? null : id); idleFrontScreen.t = Date.now(); },
     resetConquestProgress: resetConquestProgress,
     heroSkillLevel: heroSkillLevel, heroSkillCost: heroSkillCost,
@@ -17534,6 +17561,21 @@ function stepIdleAnim(dtSec, w, h) {
     idleAnim.pendingCannonLaunches.push({ id: loggedCannonId, dmg: loggedCannonDmg });
     idleAnim.pendingArrows[loggedCannonId] = (idleAnim.pendingArrows[loggedCannonId] || 0) + 1;
   }
+  // v918: Droid Call / Railgun shots (they used to deal damage with nothing drawn). A drone bolt flies from above the fortress to the enemy it hit
+  // and its damage shows when it lands (the kill waits for it, like any shot); the railgun is an instant beam along the lane hitting every enemy at once.
+  while (game.state.idle.fxShotLog && game.state.idle.fxShotLog.length) {
+    var fxs = game.state.idle.fxShotLog.shift();
+    if (fxs.kind === "drone") {
+      var dv = idleAnim.enemyById[fxs.id]; if (!dv) continue;
+      var dFromX = w * 0.16, dFromY = getFortressTopY(h) - 18;
+      spawnProjectile(w, h, dFromX, dFromY, dv.x - 4, groundYFor(h) - 18, false, fxs.id, fxs.dmg, false, "drone");
+      idleAnim.pendingArrows[fxs.id] = (idleAnim.pendingArrows[fxs.id] || 0) + 1;
+    } else if (fxs.kind === "rail") {
+      idleAnim.railFx = { life: 0.35, maxLife: 0.35, y: groundYFor(h) - 18, x0: getFortressNoseX(w) };
+      (fxs.hits || []).forEach(function (rh) { var rv = idleAnim.enemyById[rh.id]; if (!rv) return; applyDisplayedHit(rh.id, rh.dmg); rv.hitFlash = 0.3; spawnDamageNumber(rv.x, rv.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 10 : groundYFor(h) - 30, rh.dmg, false); });
+    }
+  }
+  if (idleAnim.railFx) { idleAnim.railFx.life -= dtSec; if (idleAnim.railFx.life <= 0) idleAnim.railFx = null; }
   // Laser Beam chunk drain (v461) — same early spot as the cannon drain
   // above, for the same reason: every chunk's target is counted as owed
   // (pendingArrows) before the dead-body cleanup below runs, so an enemy the
@@ -17699,6 +17741,7 @@ function stepIdleAnim(dtSec, w, h) {
         try { chargeShakeKick(); } catch (e) {}
         idleAnim.bossDownAt = performance.now();
       }
+      game.idleConfirmDeath(id); /* v918: the body just went down: now the kill counts */
       delete idleAnim.enemyById[id];
       delete idleAnim.displayedHp[id];
       delete idleAnim.pendingArrows[id];
@@ -18435,7 +18478,7 @@ function stepIdleAnim(dtSec, w, h) {
       p.x += 260 * dtSec * Math.max(1, devSpeedMult) * pBoost;
       var oSpan = p.toX - p.startX, oFrac = oSpan > 0 ? Math.min(1, Math.max(0, (p.x - p.startX) / oSpan)) : 1;
       p.y = p.startY + (p.toY - p.startY) * oFrac;
-    } else if (p.isCannon) {
+    } else if (p.isCannon || p.style === "drone") { /* v918: drone bolts fly the same straight line */
       // Straight diagonal line from origin to target — deliberately its own
       // branch rather than folded into the shared flat-shot case below,
       // since every other non-arc shot in this file relies on staying
@@ -18476,6 +18519,7 @@ function stepIdleAnim(dtSec, w, h) {
     if (!stillReal && (idleAnim.pendingArrows[p.targetId] || 0) === 0) {
       var deadVis = idleAnim.enemyById[p.targetId];
       if (deadVis && deadVis.type !== "boss") spawnDeathBurst(deadVis.x, groundYFor(h) - 16);
+      game.idleConfirmDeath(p.targetId); /* v918: the killing shot just landed: now the kill counts */
       delete idleAnim.enemyById[p.targetId];
       delete idleAnim.displayedHp[p.targetId];
       delete idleAnim.pendingArrows[p.targetId];
@@ -20368,6 +20412,12 @@ function drawIdleAnim(ctx, w, h) {
       var s = getCavalryArcSprite();
       ctx.drawImage(s.canvas, -s.ox, -s.oy);
       ctx.restore();
+    } else if (p.style === "drone") { /* v918: Droid Call bolt: small cyan streak */
+      var dAng = Math.atan2(p.toY - p.startY, p.toX - p.startX);
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(dAng);
+      ctx.strokeStyle = "rgba(80,220,255,0.55)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(0, 0); ctx.stroke();
+      ctx.fillStyle = "#c8f6ff"; ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
     } else if (p.isCannon) {
       // Fortress Cannon bullets — same thin line as the squad-ranged arrow
       // below, minus its triangular arrowhead (per user request: they liked
@@ -20610,6 +20660,13 @@ function drawIdleAnim(ctx, w, h) {
     if (b.pts.extra) b.pts.extra.forEach(function (ex) { drawBolt(ex, 0.6); });
     ctx.restore();
   });
+  if (idleAnim.railFx) { /* v918: Railgun beam */
+    var rf = idleAnim.railFx, ra = Math.max(0, rf.life / rf.maxLife);
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    ctx.strokeStyle = "rgba(120,200,255," + (0.35 * ra).toFixed(3) + ")"; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(rf.x0, rf.y); ctx.lineTo(w, rf.y); ctx.stroke();
+    ctx.strokeStyle = "rgba(235,250,255," + (0.95 * ra).toFixed(3) + ")"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(rf.x0, rf.y); ctx.lineTo(w, rf.y); ctx.stroke();
+    ctx.restore();
+  }
   idleAnim.enemyProjectiles.forEach(function (p) {
     if (p.orb) {
       // Glowing green sphere: additive radial glow + bright core + short fading trail.

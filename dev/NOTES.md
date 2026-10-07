@@ -225,3 +225,18 @@
 - **After (g173):** every Gareth HP loss is a sword landing, 230-240 ms into the swing (impact frame 227 ms), enemy -2..12 px from the blade; 0 off-blade hits. 89-94% of attacks land (the rest: the enemy had moved off the blade = miss). Kill speed in the test (enemies x6 HP, Gareth alone, cannon on): 17 kills / 40 s vs 20 before. Hidden page still kills.
 - His skill (charge) is untouched (Harley: nothing wrong with it). Gareth's "attack changer" thrust mode (off by default) still lands on the normal swing timing.
 - Remaining instant damage that is NOT Gareth: the fortress cannon (and weapons) take HP off when they fire.
+
+## v918 (TEST game only): kills count only when the killing shot is seen; drone + railgun are drawn
+- **Problem (g174, before):** the HP bar and damage numbers were already drawn on landing, but the KILL happened at the engine moment: the "+1 🎖️" reward,
+  defeated count, level progress, boss/level clear came while the enemy was still standing with the shot in the air (10/15 rewards early with
+  cannon+missiles, 4/10 with beams, 8/9 with drone+railgun). Droid Call and Railgun dealt damage with NOTHING drawn in Border Skirmish (drone damage only
+  became visible up to 3.2 s later, when some other hit dropped the bar).
+- **Fix:** while the scene is drawn (same per-frame ping as v917), a dead enemy leaves the fight at once (no targeting, no attacks — balance unchanged)
+  but its kill waits in `idleDying` until the UI sees the body go down (`game.idleConfirmDeath` at both body-removal spots: the killing projectile's
+  arrival, and the dead-body cleanup once no shot is owed). Then: defeated++, rewards, progress, boss phase / clear. Unconfirmed after 3 s, or not
+  drawn (other tab / hidden / sims) = credited at once. Resets drop waiting kills. Horde spawning counts waiting kills (no extra enemies).
+  Railgun: logged (`fxShotLog`) and drawn as an instant beam along the lane with bar drop + numbers. Drone: its steady damage is drawn as a cyan bolt
+  every 0.35 s carrying what it dealt; the bolt is a normal owed shot (bar/number/kill on arrival).
+- **After:** rewards popping with no body going down: 0 / 0 / 1 (of 15/10/9). Level pace unchanged (g175: clears at 24.8/49.7/84.3 s vs 24.5/49.5/82.8).
+  Note: the engine's internal HP number still moves when a shot is fired (invisible); everything the player sees moves on landing.
+- Tests: g174_weaponhits.js (SET=a|b|c), g175_progress.js.

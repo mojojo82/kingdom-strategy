@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (7 Oct 2026, game v917):** everything below is built, tested and deployed. The live game link still serves the
+**State at handover (7 Oct 2026, game v918):** everything below is built, tested and deployed. The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -73,7 +73,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 ## How to work on it
 
 1. **Game changes:** edit the single game file. In the original session it was `/home/claude/game.html`; in a new session use `test/index.html` from this repo as the source.
-   - Backups were `game_vNNN.html` (latest v917). Git history now does that job: commit each version with its number.
+   - Backups were `game_vNNN.html` (latest v918). Git history now does that job: commit each version with its number.
    - Add a `dev/NOTES.md` entry per version (`## vNNN` + bullet points).
    - Publish to the claude.ai artifact (`Artifact` tool, `url` above, a short `label`, **don't pass `capabilities`**; the `db` capability carries forward).
    - Copy to `test/index.html` and push. Copy to the root `index.html` **only when Harley approves** ("test first, then live").
@@ -117,6 +117,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   Prerequisite for any second kingdom: the Cloud Functions (`relocateCity`, base hits/fires) use `R + "cities/"` with no server prefix, i.e. Atlantis only.
 - Anti-cheat stage 2: server-checking normal progress (resources, buildings, troops) and battles. Only gems/premium are server-side now.
   Level-claim speed floor is the game's physical minimum (~350k gems/day if faked nonstop); tighten if Harley wants.
+- (Fixed v918: cannon/weapon kills now wait for the killing shot; drone/railgun drawn.)
 - Cost: zoomed-out world loads every city per session. Fine at 100 players; optimise (load nearby only) before ~several hundred.
 - Payment provider for packs: not chosen. `deliverPurchase()` is ready for a verified webhook.
 - Chat: message limit is 500 but the input box allows 1500 (silently cut), and alliance chat has no server-side length rule. Harley was asked what limit he wants.
