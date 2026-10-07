@@ -391,3 +391,5 @@
   animation:none + offsetWidth (one forced page layout per streak). g185 now picks a mid-view streak with life left for the scroll check (was flaky).
 - v937: bottom nav buttons sit 10px higher (extra bottom padding, on top of the iPhone safe-area inset) so taps stay clear of the iPhone home bar
   (Harley: tapping near the bottom brought up the white swipe line). --bnH follows automatically, so chat bar / map buttons / X-Y pill move with it.
+- v938: nav buttons 16px above the bottom edge (was 10). Harley suspects the World "freeze" is the iPhone holding taps near the home bar
+  (iOS defers touches at the screen edge while it checks for a home-bar swipe), which fits: it only shows when tapping the bottom nav.
