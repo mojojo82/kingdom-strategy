@@ -21,7 +21,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const r = await P.evaluate(() => {
     const o = {}, wd = WEAPON_DEFS_BY_ID.salvo_loader;
     o.def = !!wd && wd.kind === "fx" && /super burst/.test(wd.desc(wd, game.weaponStatsAtLevel(wd, 1)));
-    o.notDrawn = !WEAPON_DEFS.filter((w) => !w.visualOnly && !w.noDraw).some((w) => w.id === "salvo_loader");
+    o.notDrawn = wd.rarity === "Elite" && WEAPON_DEFS.filter((w) => !w.visualOnly && !w.noDraw && w.rarity === "Elite").some((w) => w.id === "salvo_loader"); /* v958: in the draws, lowest rarity */
     o.othersSame = WEAPON_DEFS.filter((w) => w.id !== "salvo_loader").length === 16;
     o.lv50 = JSON.stringify(game.weaponStatsAtLevel(wd, 50).p); o.lv1 = JSON.stringify(game.weaponStatsAtLevel(wd, 1).p);
     /* Arena: same teams, Fortress I maxed, with / without the weapon; and a Fortress III with it (cannot super-burst -> nothing) */
@@ -43,7 +43,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     return o;
   });
   console.log(JSON.stringify(r));
-  assert.ok(r.def && r.notDrawn && r.othersSame, "weapon defined, kept out of draws, 16 others unchanged");
+  assert.ok(r.def && r.notDrawn && r.othersSame, "weapon defined, in the Elite draws, 16 others unchanged");
   assert.strictEqual(r.arenaF1, r.critMult, "Arena: Fortress I opens with a super burst"); assert.ok(r.arenaF1noW === 1 || r.arenaF1noW === r.critMult);
   assert.strictEqual(r.arenaF3, 1, "Fortress III gains nothing (cannot super-burst)");
   assert.ok(Math.abs(r.arenaLv50 - r.critMult * 1.5) < 1e-9, "Lv50: +50% super-burst damage"); assert.strictEqual(r.pattern50, "1,4,7", "Lv50: every 3rd burst after the opener");

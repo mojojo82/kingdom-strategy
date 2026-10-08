@@ -568,3 +568,8 @@
   With fortress HP 100 per hero power: F1+Salvo kills an unresearched fortress in 1.4-4 s at every level; vs Fortress III it wins at
   Lv20/Lv40 (2-7 s, even vs EMP), Deflector Dome counters it at Lv40, and Fortress III wins at Lv80 (7/8). Conquest with Fortress I maxed:
   Salvo Lv50 pushes walls +0.4 (duo Lv20), +0.6 (Lv40), +2.1 (Lv80) chapters.
+- v958 (9 Oct) Salvo Loader joins the normal weapon draws like any other weapon, deliberately at the lowest rarity (Elite) - Harley wants it
+  to look unremarkable ("a hidden monster weapon"). Elite pool is now 5 weapons instead of 4.
+  Harley on Fortress I vs III: fine for Fortress I to dominate for roughly the first two weeks of two F2P players; Fortress III should
+  catch up before Lv80 (a whale maxing Fortress III fast is fine). Next: fortress HP per hero power (pending his OK) and an earlier
+  Fortress III answer to the opening super burst.
