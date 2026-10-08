@@ -582,3 +582,7 @@
   Kit v959 vs v955: Conquest identical. Arena fights now ~30-40 s (were 0.5-3 s); with time to act, Sera now matters (team without her
   wins 35-44%), Gareth and Torvald are the weakest picks (teams without them win 85-90%) -> buff candidates. Test g204 (real Arena battle
   still running after 6 s, fortress = 100 x power).
+- v960 (9 Oct) Torvald Epic -> Rare (Harley: leave him weak for now - "not every hero needs to be a winner"; a starter / backup-tank hero,
+  rework later). Rarity is cosmetic only (card colour, tag, slot border) - added the Rare tag/slot styles (blue; the card style existed).
+  Design notes from Harley: Sera is meant to be good in Arena and useless in Conquest. Torvald has a normal basic attack but no attack
+  animation art (only Gareth and Kessa have animated battle sprites).

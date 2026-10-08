@@ -999,6 +999,7 @@
 
   .rarity { font-size:10px; padding:1px 6px; border-radius:20px; font-weight:800; }
   .rarity.Epic { background:#5a3ad1; color:#fff; }
+  .rarity.Rare { background:#2f6fbf; color:#fff; }
   .rarity.Legendary { background:linear-gradient(135deg,#f0a83c,#f0c95f); color:#3a2600; }
 
   .stagecard { background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:9px; cursor:pointer; transition:border-color .12s; }
@@ -1024,6 +1025,7 @@
   .hd-badge.role { background:#2d4a73; }
   .hd-badge.combat { background:#7a2e35; }
   .hd-rarity-tag { display:inline-block; margin:6px auto 0; padding:3px 14px; border-radius:20px; font-weight:800; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  .hd-rarity-tag.Rare { background:linear-gradient(135deg,#4f8fd9,#2f5fa3); color:#fff; box-shadow:0 0 10px #4f8fd966; }
   .hd-rarity-tag.Epic { background:linear-gradient(135deg,#7a4fd1,#5a35a8); color:#fff; box-shadow:0 0 10px #7a4fd166; }
   .hd-rarity-tag.Legendary { background:linear-gradient(135deg,#f0c95f,#e08a1e); color:#3a2600; box-shadow:0 0 10px #f0c95f66; }
   .save-overlay { position:fixed; inset:0; background:rgba(6,8,12,.82); z-index:150; display:none; align-items:center; justify-content:center; padding:20px; }
@@ -4826,7 +4828,7 @@ var HERO_DEFS = {
       { name: "Gentle Pace", icon: "🕊️", kind: "passive", desc: "Increases march speed on marches she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 },
       { name: "Hospitaller", icon: "⚕️", kind: "passive", desc: "Boosts Archer Attack while leading.", effectType: "leadTroopAtkMult", perLevel: 0.02 }
     ] },
-  torvald: { name: "Torvald", title: "The Warden", class: "infantry", icon: "🏰", rarity: "Epic",
+  torvald: { name: "Torvald", title: "The Warden", class: "infantry", icon: "🏰", rarity: "Rare", /* v960: Epic -> Rare (Harley: not worthy of Epic for now - a starter hero / backup tank) */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 220, stone: 80 }, levelBaseCost: { gold: 60, food: 60, stone: 40 }, levelCostMult: 1.35,
     conquestSkills: [
       // Opening cover: first cast comes at 5s (firstCd) so the fortress has a cushion before a slow support heal lands. Modest on purpose.
@@ -10391,7 +10393,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v959"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v960"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12231,7 +12233,7 @@ function renderFormations() {
         var slot = document.createElement("div");
         slot.className = "formation-hero-slot";
         slot.title = hdef.name;
-        slot.style.borderColor = hdef.rarity === "Legendary" ? "#f0c95f" : hdef.rarity === "Epic" ? "#7a4fd1" : "";
+        slot.style.borderColor = hdef.rarity === "Legendary" ? "#f0c95f" : hdef.rarity === "Epic" ? "#7a4fd1" : hdef.rarity === "Rare" ? "#4f8fd9" : "";
         var art = getHeroArt(hkey);
         if (art) {
           var img = document.createElement("img");
