@@ -10397,7 +10397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v967"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v968"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26368,6 +26368,7 @@ function arenaPlayerRosterAndHeroes() {
 // (and every fortress upgrade) never fired. FIRST_TICKS = how soon the opening burst starts; DMG_SCALE multiplies base bullet damage.
 var ARENA_CANNON_FIRST_TICKS = 1; // first burst on the first tick (all-ready start). null = original timing (first burst after one full cooldown)
 var ARENA_CANNON_DMG_SCALE = 1;
+var ARENA_WEAPON_FLIGHT_TICKS = Math.max(1, Math.round(IDLE_WEAPON_FLIGHT_SEC * 1000 / ARENA_TICK_MS)); // v968: every weapon shot (Missile, Scatter, EMP, Railgun...) flies for Conquest's real flight time (1.8s = 4 ticks) and only does its damage / stun / knockout when it lands. Nothing a weapon fires is instant.
 var ARENA_CANNON_FLIGHT_TICKS = 2; // a cannon bullet's damage lands this many ticks after it is fired (the on-screen bullet flies for exactly this long, so HP drops when it hits)
 function arenaCannonTimings() {
   var interval = Math.max(0.05, game.idleFortressCannonBulletInterval());
@@ -26468,7 +26469,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // (already after armor / dmgTakenMult) drains the pool first; only the overflow costs HP. Regen never refills it; once at 0 it stays down.
   var playerShieldMax = (opts.shieldPct > 0) ? playerStats.maxHp * opts.shieldPct / 100 : 0, aiShieldMax = (opts.aiShieldPct > 0) ? aiStats.maxHp * opts.aiShieldPct / 100 : 0;
   var playerShield = playerShieldMax, aiShield = aiShieldMax;
-  var playerCd = {}, aiCd = {}, cannonQ = [];
+  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = []; /* v968: weapon shots in flight */
   var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {};
   (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first; }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first; });
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
@@ -26746,27 +26747,34 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     }
     // delayed stuns (EMP Aftershock)
     ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S, keep = []; S.pend.forEach(function (q) { if (q.at <= fxNowS + 1e-9) fxStunTry(q.tgt, q.sec); else keep.push(q); }); S.pend = keep; });
-    // v967: EMPs that come due in the same tick all fire together (EMP vs EMP = both fortresses stunned), instead of the
-    // attacker's going first and stunning/resetting the defender's before it could fire.
+    // v967/v968: EMP pulses fly (ARENA_WEAPON_FLIGHT_TICKS) and act when they land. All pulses landing in the same tick act together,
+    // so EMP vs EMP stuns both fortresses (no attacker-goes-first win). A pulse already in the air still lands if its sender gets stunned.
     function fxEmpTick() {
-      var due = [];
-      ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S; if (S.stun > 0) return; S.inst.forEach(function (ins) { if (ins.k !== 'emp') return; ins.t -= dtS; if (ins.t <= 1e-9) due.push([sd, ins]); }); });
-      due.forEach(function (d) {
-        var sd = d[0], ins = d[1], c = fxCtx(sd), S = c.S, O = c.O, cd = ins.cd, P = ins.p, m = ins.mag;
-        ins.t = Math.min(ins.t, 0) + cd; S.casts.emp = (S.casts.emp || 0) + 1;
-        var tgt = sd === 'P' ? 'A' : 'P', blocked0 = O.blocked;
-        fxStunTry(tgt, (P.stun || 2) * m);
-        if (P.aftershock > 0) O.pend.push({ at: fxNowS + (P.aftershockDelay || 3), tgt: tgt, sec: P.aftershock * m });
-        if (O.blocked > blocked0) return; // Status Wave soaked the pulse: no cancel / reset either
-        // EMP: cancel the target's running beams + buffs and reset every weapon reload (a same-tick EMP of theirs still fires: it is already in `due`)
-        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; if (x.k === 'emp' && due.some(function (q) { return q[1] === x; })) return; x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
+      ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S; if (S.stun > 0) return; S.inst.forEach(function (ins) { if (ins.k !== 'emp') return; ins.t -= dtS; if (ins.t > 1e-9) return;
+        ins.t += ins.cd; S.casts.emp = (S.casts.emp || 0) + 1; empQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: sd, p: ins.p, m: ins.mag }); }); });
+      var land = empQ.filter(function (q) { return q.at <= tick; }); if (!land.length) return; empQ = empQ.filter(function (q) { return q.at > tick; });
+      var hit = land.map(function (q) { var c = fxCtx(q.sd), O = c.O, tgt = q.sd === 'P' ? 'A' : 'P', b0 = O.blocked; fxStunTry(tgt, (q.p.stun || 2) * q.m);
+        if (q.p.aftershock > 0) O.pend.push({ at: fxNowS + (q.p.aftershockDelay || 3), tgt: tgt, sec: q.p.aftershock * q.m }); return O.blocked > b0 ? null : q; });
+      hit.forEach(function (q) { if (!q) return; var O = fxCtx(q.sd).O; // landed (not soaked by Status Wave): cancel the target's running beams + buffs and reset every weapon reload
+        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
         O.wall = 0; O.repLeft = 0;
-        if (sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
+        if (q.sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
         else { activeBeams = []; (opts.weapons || []).forEach(function (wp) { weaponCd[wp.id] = wcd(wp); }); }
+      });
+    }
+    // v968: Railgun shots fly too: fortress damage, hero knockouts, drone switch-off and Clone delay all happen when the shot lands.
+    function fxRailLand() {
+      var land = railQ.filter(function (q) { return q.at <= tick; }); if (!land.length) return; railQ = railQ.filter(function (q) { return q.at > tick; });
+      land.forEach(function (q) { var c = fxCtx(q.sd), O = c.O, P = q.p, m = q.m, ost = c.ost, fortRaw = ost.maxHp * (P.fortPct || 0) / 100 * m / (ost.dmgTakenMult || 1);
+        if (q.sd === 'P') playerDmg += fortRaw; else aiDmg += fortRaw;
+        c.ohh && c.ohh.list.forEach(function (h) { if (h.ko) return; h.hp = 0; h.ko = true; h.reviveT = koCfg.reviveSec; h.kos++; h.d = 0; });
+        O.droneOff = Math.max(O.droneOff, (P.droneOff || 0));
+        O.inst.forEach(function (x) { if (x.k === 'clone') x.t = Math.max(x.t, (P.cloneDelay || 0) * m); });
       });
     }
     ['sw', 'wall', 'dome', 'emp', 'clone', 'io', 'rail'].forEach(function (kind) {
       if (kind === 'emp') { fxEmpTick(); return; }
+      if (kind === 'rail') fxRailLand();
       ['P', 'A'].forEach(function (sd) {
         var c = fxCtx(sd), S = c.S, O = c.O;
         S.inst.forEach(function (ins) {
@@ -26790,15 +26798,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
             if (fxHp(sd) > c.st.maxHp * 0.85) { ins.t = 0; return; }
             S.repLeft = c.st.maxHp * (P.heal || 0) / 100 * m; S.repRate = S.repLeft / (P.dur || 4); ins.t += cd; S.casts.io = (S.casts.io || 0) + 1; return;
           }
-          if (kind === 'rail') {
-            ins.t += cd; S.casts.rail = (S.casts.rail || 0) + 1;
-            var ost = c.ost, fortRaw = ost.maxHp * (P.fortPct || 0) / 100 * m / (ost.dmgTakenMult || 1);
-            if (sd === 'P') playerDmg += fortRaw; else aiDmg += fortRaw;
-            c.ohh && c.ohh.list.forEach(function (h) { if (h.ko) return; h.hp = 0; h.ko = true; h.reviveT = koCfg.reviveSec; h.kos++; h.d = 0; });
-            O.droneOff = Math.max(O.droneOff, (P.droneOff || 0));
-            O.inst.forEach(function (x) { if (x.k === 'clone') x.t = Math.max(x.t, (P.cloneDelay || 0) * m); });
-            return;
-          }
+          if (kind === 'rail') { ins.t += cd; S.casts.rail = (S.casts.rail || 0) + 1; railQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: sd, p: P, m: m }); return; } // v968: lands in fxRailLand
         });
       });
     });
@@ -26837,8 +26837,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         playerBeamFires.push({ id: wp.id, beamSec: wp.beamSec });
         return;
       }
-      playerDmg += wp.dmgPerShot; projP += wp.dmgPerShot;
-      trAdd('weapon:' + wp.id, wp.dmgPerShot);
+      shotQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: 'P', id: wp.id, dmg: wp.dmgPerShot }); /* v968: lands below when it arrives */
       playerWeaponFires.push({ id: wp.id, count: wp.count });
     });
     // v461: active Laser Beams deal this tick's share of their damage.
@@ -26856,9 +26855,12 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       aiWeaponCd[wp.id] += wcd(wp);
       if (wp.kind === "beam") { aiActiveBeams.push({ id: wp.id, left: wp.beamSec, dps: wp.totalDmg / wp.beamSec }); aiWeaponFires.push({ id: wp.id, count: 1 }); return; }
       aiWeaponFires.push({ id: wp.id, count: wp.count || 1 }); /* v962: so the Arena can draw the opponent's shots too */
-      aiDmg += wp.dmgPerShot; projA += wp.dmgPerShot;
-      trAddAi('weapon:' + wp.id, wp.dmgPerShot);
+      shotQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: 'A', id: wp.id, dmg: wp.dmgPerShot });
     });
+    // v968: weapon shots that land this tick (fired ARENA_WEAPON_FLIGHT_TICKS ago)
+    shotQ = shotQ.filter(function (q) { if (q.at > tick) return true;
+      if (q.sd === 'P') { playerDmg += q.dmg; projP += q.dmg; trAdd('weapon:' + q.id, q.dmg); } else { aiDmg += q.dmg; projA += q.dmg; trAddAi('weapon:' + q.id, q.dmg); }
+      return false; });
     aiActiveBeams = aiActiveBeams.filter(function (bm) {
       var part = Math.min(beamTickSec, bm.left);
       if (part > 0) { var bd = bm.dps * part; aiDmg += bd; trAddAi('weapon:' + bm.id, bd); }
@@ -27819,7 +27821,7 @@ function stepArenaAnim(dtSec, w, h) {
     });
     m.trail.push({ x: m.x, y: m.y, age: 0, driftX: (Math.random() - 0.5) * 14, driftY: -(4 + Math.random() * 7) });
     if (m.trail.length > 40) m.trail.shift();
-    m.t += dtSec / 1.1;
+    m.t += dtSec / (ARENA_WEAPON_FLIGHT_TICKS * ARENA_TICK_MS / 1000); /* v968: the volley lands when the sim's shot lands */
     var mtt = Math.min(1, m.t);
     m.x = m.startX + (m.toX - m.startX) * mtt;
     m.y = m.startY + (m.toY - m.startY) * mtt - missileArcShape(mtt) * (m.arcLift != null ? m.arcLift : IDLE_WEAPON_MISSILE_ARC_LIFT);

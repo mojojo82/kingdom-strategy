@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (9 Oct 2026, TEST game v967):** everything below is built and tested; TEST is deployed (v951-v967 are TEST only). The live game link still serves the
+**State at handover (9 Oct 2026, TEST game v968):** everything below is built and tested; TEST is deployed (v951-v968 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -107,10 +107,13 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Not every hero has to be a winner.** Weak heroes are fine - rate them honestly (e.g. Torvald is Rare).
 - **The meta build must stay the strongest overall weapon build.** Not unbeatable - it should win a high % of fights unless the opponent
   sets up specifically to counter it. No combat change or new weapon/system may accidentally beat it. Check often: `node dev/balance/run.js --only meta`
-  (round robin of builds; prints a WARNING if the meta isn't on top). Meta build = missile + laser + railgun (to be confirmed by Harley - see NOTES 9 Oct).
+  (round robin of builds; prints a WARNING if the meta isn't on top) and `node dev/balance/loop.js` (every build incl. each Duplicate copy choice).
+  Loop (from Harley's memory): META = EMP + Railgun + Clone Task; COUNTER = EMP + Status Wave + any; COUNTER-COUNTER = Hex Shield + Railgun + Duplicate (copying Hex). Not on top yet - see NOTES v966-v968.
+- **Nothing a weapon fires is instant** - every projectile travels (Conquest and Arena, sims included). Damage / stun / knockout happens when it lands.
+- **EMP vs EMP stuns both sides.** Same-moment effects resolve for both sides together - no attacker-goes-first wins.
 
 ## Open items / to-dos
-- **Balance (9 Oct, v954-v967)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,
+- **Balance (9 Oct, v954-v968)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,
   swap test, Arena round-robin). Done: one ranged-on-hero rule for both modes; boss "tank rule"; deterministic combat; Death Strike (Gareth slot 2,
   fires with Shield Slam); Arena fortress HP = +100 per hero power (fights ~30-40 s, were <1 s); Fortress III braced hull (super bursts x0.6);
   Salvo Loader (Elite weapon, amplifies Fortress I's super burst - useless without Fortress I research by design); bots carry weapons /
