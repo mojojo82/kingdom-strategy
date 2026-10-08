@@ -633,3 +633,11 @@
   per pairing, both ways). First run - FAILS: missile+laser+railgun is 29-71% (best on Fortress III), behind Clone+railgun+Hex (F3) 74-100%,
   Hex+Dome+railgun (F3) 86-98% and the Salvo builds. Cause: missiles/laser are flat damage (don't grow with heroes) and fights are now long
   (fortress HP per power), so %-of-max-HP tools (Railgun, Hex) and Clone Task dominate. Waiting on Harley: confirm the meta build and how to restore it.
+- (9 Oct, analysis only - no game change) Reconstructing the lost weapon "loop" (meta / counter / counter-counter, set up in an earlier
+  claude.ai chat that isn't in the repo). Harley's clues: the meta used "radar" (= EMP Gun 📡) and Legendary rarity was given to the best
+  weapons (EMP, Railgun, Clone Task). Test: every 3-weapon build (560, Salvo excluded) vs each other, 5 heroes Lv40 2*, weapons Lv30, no
+  research, current rules (fortress HP per power). Result - a clean loop:
+  META = EMP + Railgun + Clone Task: beats 90% of all builds; only 15 builds beat it, ALL of them EMP + Status Wave + any (Status Wave shields
+  the meta's opening stun while their own EMP lands) = COUNTER. COUNTER-COUNTER = Hex Shield + Railgun + any: beats 14/15 counters and loses
+  to the meta -> loop closed. Hole: Hex + Railgun + Status Wave beats the counters AND the meta (2/2).
+  Under the old rules (no HP per power, 2,000 base HP) the meta was much weaker (rank 64 of 560, beaten by 53 builds - Hex/Orbit/Dome builds).
