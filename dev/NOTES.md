@@ -485,3 +485,5 @@
   phone size and scaled up). In-game art is small: default fortress 170x67, Gareth battle frames 111x66 - blurry on PC. Harley will send
   originals; make HD copies for PC ONLY (phones keep the current small ones - he thinks bigger art would slow Conquest), and show a
   mockup before putting anything in the game. Layout (A/B/C) not chosen yet.
+  - Harley leaning towards: World = A (full-screen HUD); Conquest = C with A's matching pieces (mockup "ConquestC2": same top HUD, events
+    column and bottom nav as World A; battle 5:3 at phone zoom; chat as a full column on the right). Arena must follow whatever Conquest gets.
