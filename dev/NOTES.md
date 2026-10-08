@@ -480,3 +480,8 @@
   sparingly for reward moments (Harley: "here and there, mildly"): event Claim buttons (KSE block, admin copy updated), the ready sign-in
   day's Claim footer, and the mailbox "Claim all" (Game UI skin only; single mail Claim stays cyan, Parchment skin untouched).
   - Also made 3 PC-layout mockups (claude.ai Design canvas "Kingdom Strategy PC Redesign", brown/gold, real icons) - nothing built yet.
+- (no version) PC redesign planning, 8 Oct: mockups on the claude.ai Design canvas "Kingdom Strategy PC Redesign" (World A/B/C + Conquest A/B/C).
+  Harley's rules for it: PC-only (mobile unchanged); screens open as a window over the map; Conquest keeps the phone zoom (battle drawn at
+  phone size and scaled up). In-game art is small: default fortress 170x67, Gareth battle frames 111x66 - blurry on PC. Harley will send
+  originals; make HD copies for PC ONLY (phones keep the current small ones - he thinks bigger art would slow Conquest), and show a
+  mockup before putting anything in the game. Layout (A/B/C) not chosen yet.
