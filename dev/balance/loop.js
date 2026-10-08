@@ -69,6 +69,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     ARENA_FORT_HP_PER_POWER = keepPer;
     return JSON.stringify({ cond: COND, entries: E.length, fieldSize: field.length,
       meta: { name: E[M].name, score: score[M], rank: rank(M) },
+      watch: ["emp+railgun+clone", "emp+railgun+wave", "hex+railgun+wave", "hex+railgun+dup>hex", "railgun+dup>railgun+wave"].map((n) => { const i = idx(n); return [n, score[i], rank(i)]; }),
       top15: order.slice(0, 15).map((i) => [rank(i), E[i].name, score[i]]),
       beatMeta: beatMeta.map((i) => E[i].name),
       counterCounter: ccRows.sort((a, b2) => b2.score - a.score),
@@ -78,6 +79,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
   const pr = (s) => console.log(s);
   pr("WEAPON LOOP  (heroes Lv" + COND.lvl + ", weapons Lv" + COND.wl + ", no research; " + R.entries + " builds incl. every Duplicate copy choice; field sample " + R.fieldSize + ")");
   pr("\nMETA " + R.meta.name + ": score " + R.meta.score + ", rank " + R.meta.rank + (R.meta.rank === 1 ? "  OK" : "  !! not on top"));
+  pr("\nWatch list:"); R.watch.forEach((r) => pr("  " + r[0].padEnd(28) + "score " + r[1] + "  rank " + r[2]));
   pr("\nTop 15:"); R.top15.forEach((r) => pr("  " + String(r[0]).padStart(3) + ". " + r[1].padEnd(28) + r[2]));
   pr("\nBuilds that beat the meta both ways (" + R.beatMeta.length + "): " + R.beatMeta.join(", "));
   pr("\nCounter-counter candidates (Hex + Railgun + X): counters beaten / beat-meta? (vsMeta 2 = wins both ways, 0 = loses both)");
