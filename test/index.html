@@ -10397,7 +10397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v966"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v967"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26746,7 +26746,27 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     }
     // delayed stuns (EMP Aftershock)
     ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S, keep = []; S.pend.forEach(function (q) { if (q.at <= fxNowS + 1e-9) fxStunTry(q.tgt, q.sec); else keep.push(q); }); S.pend = keep; });
+    // v967: EMPs that come due in the same tick all fire together (EMP vs EMP = both fortresses stunned), instead of the
+    // attacker's going first and stunning/resetting the defender's before it could fire.
+    function fxEmpTick() {
+      var due = [];
+      ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S; if (S.stun > 0) return; S.inst.forEach(function (ins) { if (ins.k !== 'emp') return; ins.t -= dtS; if (ins.t <= 1e-9) due.push([sd, ins]); }); });
+      due.forEach(function (d) {
+        var sd = d[0], ins = d[1], c = fxCtx(sd), S = c.S, O = c.O, cd = ins.cd, P = ins.p, m = ins.mag;
+        ins.t = Math.min(ins.t, 0) + cd; S.casts.emp = (S.casts.emp || 0) + 1;
+        var tgt = sd === 'P' ? 'A' : 'P', blocked0 = O.blocked;
+        fxStunTry(tgt, (P.stun || 2) * m);
+        if (P.aftershock > 0) O.pend.push({ at: fxNowS + (P.aftershockDelay || 3), tgt: tgt, sec: P.aftershock * m });
+        if (O.blocked > blocked0) return; // Status Wave soaked the pulse: no cancel / reset either
+        // EMP: cancel the target's running beams + buffs and reset every weapon reload (a same-tick EMP of theirs still fires: it is already in `due`)
+        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; if (x.k === 'emp' && due.some(function (q) { return q[1] === x; })) return; x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
+        O.wall = 0; O.repLeft = 0;
+        if (sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
+        else { activeBeams = []; (opts.weapons || []).forEach(function (wp) { weaponCd[wp.id] = wcd(wp); }); }
+      });
+    }
     ['sw', 'wall', 'dome', 'emp', 'clone', 'io', 'rail'].forEach(function (kind) {
+      if (kind === 'emp') { fxEmpTick(); return; }
       ['P', 'A'].forEach(function (sd) {
         var c = fxCtx(sd), S = c.S, O = c.O;
         S.inst.forEach(function (ins) {
@@ -26758,19 +26778,6 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           if (kind === 'sw') { S.sw = Math.max(S.sw, (P.dur || 0) * m); ins.t += cd; S.casts.sw = (S.casts.sw || 0) + 1; return; }
           if (kind === 'wall') { S.wall = Math.max(S.wall, (P.dur || 0) * m); ins.t += cd; S.casts.wall = (S.casts.wall || 0) + 1; return; }
           if (kind === 'dome') { ins.up = (P.dur || 0); ins.red = Math.min(0.95, (P.red || 0) / 100 * m); ins.t += cd; S.casts.dome = (S.casts.dome || 0) + 1; return; }
-          if (kind === 'emp') {
-            ins.t += cd; S.casts.emp = (S.casts.emp || 0) + 1;
-            var tgt = sd === 'P' ? 'A' : 'P', blocked0 = O.blocked;
-            fxStunTry(tgt, (P.stun || 2) * m);
-            if (P.aftershock > 0) O.pend.push({ at: fxNowS + (P.aftershockDelay || 3), tgt: tgt, sec: P.aftershock * m });
-            if (O.blocked > blocked0) return; // Status Wave soaked the pulse: no cancel / reset either
-            // EMP: cancel the target's running beams + buffs and reset every weapon reload
-            O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
-            O.wall = 0; O.repLeft = 0;
-            if (sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
-            else { activeBeams = []; (opts.weapons || []).forEach(function (wp) { weaponCd[wp.id] = wcd(wp); }); }
-            return;
-          }
           if (kind === 'clone') {
             if (ins.droid && !ins.droid.ko) { ins.t = 0; return; }
             var T = S.tmpl; if (!T.g || !T.ga) { ins.t += cd; return; }
