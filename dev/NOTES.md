@@ -514,3 +514,6 @@
   took the lowest 16% of the art as "touching the water", which on Watchtower II / Mecha only reaches the front corner. Now it uses the
   base's whole ground plate (widest row in the lower part x ISO_K tall, same measure as cityArtGet), and ripples may spread above it, so the
   side and back edges get foam + ripples too (anything behind the building is hidden by the building itself).
+- v953 (9 Oct) Base water starts at the widest line. Harley: v952 put foam/ripples too high - only the part below the base's widest
+  horizontal line (its side corners) is in the water. Now the contact band runs from the lowest row that is >=97% of the widest row
+  down to the bottom, and nothing (foam or ripples) is drawn above that row.

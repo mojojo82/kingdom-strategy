@@ -10335,7 +10335,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v952"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v953"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13510,11 +13510,14 @@ function baseWaterBuild(m, im) {
   var a = x.getImageData(0, 0, R, Hs).data, first = -1, maxb = -1, i, X, Y;
   for (i = 0; i < R * Hs; i++) if (a[i * 4 + 3] > 40) { Y = (i / R) | 0; if (first < 0) first = Y; maxb = Y; }
   if (maxb < 0) return;
-  /* v952: where the base meets the water = its whole ground plate (same measure as cityArtGet): as wide as the widest row in the art's lower part,
-     ISO_K times as tall, resting on the lowest row. v951 used the lowest 16% only, which missed the side corners of square bases. */
+  /* where the base meets the water: everything from its widest row (the side corners) down. v951 used the lowest 16% (missed the side corners
+     of square bases); v952 the whole ground plate (too high - foam on parts that sit above the water). */
   var from = Math.floor(maxb - (maxb - first) * 0.45), pw = 0, r, q;
-  for (r = from; r <= maxb; r++) { var lo = -1, hi = -1; for (q = 0; q < R; q++) if (a[(r * R + q) * 4 + 3] > 40) { if (lo < 0) lo = q; hi = q; } if (lo >= 0) pw = Math.max(pw, hi - lo + 1); }
-  var bandTop = Math.max(first, Math.round(maxb + 1 - pw * ISO_K)), pad = Math.ceil(reach + 2), padB = Math.ceil(reach / V + 3), y0 = Math.max(0, Math.floor(bandTop - reach / V - 2));
+  var rw = [];
+  for (r = from; r <= maxb; r++) { var lo = -1, hi = -1; for (q = 0; q < R; q++) if (a[(r * R + q) * 4 + 3] > 40) { if (lo < 0) lo = q; hi = q; } rw[r] = lo >= 0 ? hi - lo + 1 : 0; pw = Math.max(pw, rw[r]); }
+  /* v953 (Harley): only what's below the base's widest line (its side corners) is in the water - nothing above it gets foam or ripples */
+  var bandTop = from; for (r = maxb; r >= from; r--) if (rw[r] >= pw * 0.97) { bandTop = r; break; }
+  var pad = Math.ceil(reach + 2), padB = Math.ceil(reach / V + 3), y0 = Math.max(0, bandTop - 2);
   var FW = R + 2 * pad, FH = maxb + padB - y0 + 1, N = C.frames;
   /* distance from the base's lower band, measured with the map's 35deg squash (up/down counts ~1.74x), in this frame's own pixels */
   var full = new Uint8Array(FW * FH), dist = new Float32Array(FW * FH);
@@ -13530,7 +13533,7 @@ function baseWaterBuild(m, im) {
   var sheet = document.createElement("canvas"); sheet.width = FW * N; sheet.height = FH; var sx2 = sheet.getContext("2d"), out = sx2.createImageData(FW * N, FH), o = out.data;
   var gap = reach / 2.2, period = gap / C.speed;
   for (Y = 0; Y < FH; Y++) for (X = 0; X < FW; X++) {
-    i = Y * FW + X; var dd = dist[i]; if (full[i] || dd >= reach) continue;
+    i = Y * FW + X; var dd = dist[i]; if (full[i] || dd >= reach || Y + y0 < bandTop) continue;
     var gx = X / 6, gy = Y / 6, x0 = gx | 0, yy0 = gy | 0, fx = gx - x0, fy = gy - yy0;
     var n = g[yy0 * gw + x0] * (1 - fx) * (1 - fy) + g[yy0 * gw + x0 + 1] * fx * (1 - fy) + g[(yy0 + 1) * gw + x0] * (1 - fx) * fy + g[(yy0 + 1) * gw + x0 + 1] * fx * fy;
     var base = 0; if (dd <= 2.2) base = (0.45 + 0.4 * n) * (1 - (dd - 1) / 2.2 * 0.5); if (dd <= 4.5) base = Math.max(base, 0.12 * (1 - dd / 4.5));
