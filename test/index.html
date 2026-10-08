@@ -4499,6 +4499,7 @@ var BASE_HP_FLAT = 150;
 var FORTRESS1_INNATE_CANNON = 0.10;
 // Fortress type 3 ("Bulwark", working name): the tank type. Innate = more max HP and less damage taken; no cannon bonus and no super bursts. Its tech tree is not built yet.
 // The chosen type lives inside the fortressTech map as map._type (missing = type 1), so every place that already receives the map gets it for free.
+var FORTRESS_TREE_HP_MULT = { 1: 1, 3: 1 }; /* v956 knob: multiplies the HP nodes of Fortress I / Fortress III research (sims) */
 var FORTRESS3_INNATE_HP = 0.25;      // +25% max HP (same multiplier slot as the tree's HP bonus)
 var FORTRESS3_INNATE_DMGRED = 0.15;  // -15% damage taken, in every fight
 var FORTRESS1_BASE_CRIT_RATE = 0.20;   // chance that a cannon BURST is a super burst (fixed pattern per battle, see fortressCritRoll)
@@ -4594,12 +4595,12 @@ function fortressBonusFrom(map) {
   if (!map) return { cannon: 0, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1 };
   if (fortressTypeOf(map) === 3) {
     var b3 = { cannon: 0, hp: FORTRESS3_INNATE_HP, dmgRed: FORTRESS3_INNATE_DMGRED, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1 };
-    for (var k3 in FORTRESS3_TREE) { var d3 = FORTRESS3_TREE[k3]; b3[d3.stat] += d3.perLevel * Math.min(d3.maxLevel, map[k3] || 0); }
+    for (var k3 in FORTRESS3_TREE) { var d3 = FORTRESS3_TREE[k3]; b3[d3.stat] += d3.perLevel * (d3.stat === "hp" ? FORTRESS_TREE_HP_MULT[3] : 1) * Math.min(d3.maxLevel, map[k3] || 0); }
     b3.dmgRed = Math.min(0.6, b3.dmgRed); // same 60% ceiling as troop armor
     return b3;
   }
   var b = { cannon: FORTRESS1_INNATE_CANNON, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0 };
-  for (var k in FORTRESS1_TREE) { var d = FORTRESS1_TREE[k]; b[d.stat] += d.perLevel * (d.stat === "cannon" ? FORTRESS_CANNON_TREE_MULT : d.stat === "critDmg" ? FORTRESS_CRIT_TREE_MULT : 1) * Math.min(d.maxLevel, map[k] || 0); }
+  for (var k in FORTRESS1_TREE) { var d = FORTRESS1_TREE[k]; b[d.stat] += d.perLevel * (d.stat === "cannon" ? FORTRESS_CANNON_TREE_MULT : d.stat === "critDmg" ? FORTRESS_CRIT_TREE_MULT : d.stat === "hp" ? FORTRESS_TREE_HP_MULT[1] : 1) * Math.min(d.maxLevel, map[k] || 0); }
   b.haste = Math.min(0.9, b.haste); // cooldown + opening delay can shrink by at most 90%
   b.critRate = FORTRESS1_BASE_CRIT_RATE; b.critMult = FORTRESS1_BASE_CRIT_MULT + b.critDmg;
   return b;
@@ -10369,7 +10370,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v955"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v956"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26245,6 +26246,7 @@ function renderArenaSharedTimingBtn() { var b = document.getElementById("devAren
 (function () { var b = document.getElementById("devArenaSharedTimingBtn"); if (b) b.onclick = function () { arenaSharedTiming = !arenaSharedTiming; try { localStorage.setItem(ARENA_SHARED_TIMING_KEY, arenaSharedTiming ? "1" : "0"); } catch (e) {} assetSyncUpload(ARENA_SHARED_TIMING_KEY, arenaSharedTiming ? "1" : "0"); renderArenaSharedTimingBtn(); }; renderArenaSharedTimingBtn(); })();
 // esperOverride (optional): undefined = the old behaviour (the real player's equipped Esper on the player side, none on the AI
 // side); null = no Esper; an Esper key = that Esper's bonuses, whichever side this is. World PvP and the PvP Simulator pass it explicitly.
+var ARENA_FORT_HP_PER_POWER = 0; /* v956 knob: Arena/PvP fortress gets this much HP per point of its team's hero power (heroPowerLevel summed) */
 function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayerSide, esperOverride, fortressMap, atkPerPower, bonus) {
   var bn = bonus !== undefined ? (bonus || ZERO_BONUS) : ((isPlayerSide && atkPerPower == null) ? { atk: heroBonusTotal("atk"), hp: heroBonusTotal("hp"), def: heroBonusTotal("def"), skill: heroBonusTotal("skill") } : ZERO_BONUS); // this side's own ATK / HP / DEF bonus % (real player = Dev Tools value; bots / other saves bring their own)
   var bnA = 1 + (bn.atk || 0) / 100, bnH = 1 + (bn.hp || 0) / 100, bnD = 1 + (bn.def || 0) / 100;
@@ -26271,6 +26273,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     if (!h || !h.owned) return;
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1), melee: isInfantry });
+    hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
     if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNet(h, bnD) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {

@@ -554,3 +554,8 @@
   hero damage by the same %, so fights stay short: median ~3.2s at Lv40 2*, ~0.5s (one tick) at Lv80 5*, with no bonus, +48%/+96% bonuses,
   or maxed fortress research + max bonuses (2.7s / 0.5s). The fortress base (150 + Town Hall x5) never grows with hero levels. The Dev
   "extra base HP" is a test tool only (not a fix). Kit: arena prints fight length; --cfg arenaBonus {atk,hp,def}, arenaFortMax.
+- v956 (9 Oct) Arena fortress knobs (both OFF, no change in play yet): ARENA_FORT_HP_PER_POWER (fortress gets N HP per point of its team's
+  hero power, Arena + world PvP) and FORTRESS_TREE_HP_MULT {1, 3} (scales the HP nodes of Fortress I / III research). Sim (8 fights each):
+  today every matchup from Lv20 up ends in 0-1 s; with 100 HP per power equal teams last ~28-33 s at every level, Lv40 vs Lv30 ~22 s
+  (stronger side wins 8/8), Fortress III maxed beats none 8/8, HP-only items vs ATK-only items ~even, tank team vs burst team: burst 8/8.
+  Waiting on Harley to pick the number.
