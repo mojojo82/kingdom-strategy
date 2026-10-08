@@ -4625,6 +4625,9 @@ function fortressMaxMap(type) { var m = {}, T = type === 3 ? FORTRESS3_TREE : FO
 function fortressTreeTotalCost() { var t = 0; for (var k in FORTRESS1_TREE) for (var l = 1; l <= FORTRESS1_TREE[k].maxLevel; l++) t += fortressNodeCost(k, l); return t; }
 // Deterministic "random-looking" number in [0,1) from (seed, side, burst number). A pure function: same battle -> same result, and
 // one side's rolls never depend on anything else in the fight (FNV-1a hash + integer mix).
+/* v957: Salvo Loader - {every, bonus} from an equipped weapon list (or null); salvoForces = is burst n a guaranteed super burst */
+function salvoSpec(ids, statsOf) { var sp = null; (ids || []).forEach(function (wid) { var wd = WEAPON_DEFS_BY_ID[wid]; if (wd && wd.fx === "salvo") { var st = statsOf(wd); sp = { every: st.p.every || 0, bonus: st.p.bonus || 0 }; } }); return sp; }
+function salvoForces(sp, n) { return !!sp && (n === 1 || (sp.every > 0 && n > 1 && (n - 1) % sp.every === 0)); }
 function fortressCritRoll(seed, side, n) {
   var str = String(seed) + "|" + side + "|" + n, h = 2166136261;
   for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
@@ -5379,6 +5382,20 @@ WEAPON_DEFS.push({
     { atLevel: 10, p: { heal: 10 } },
     { atLevel: 30, p: { heal: 12 } },
     { atLevel: 50, p: { heal: 15 } }
+  ]
+});
+/* v957: Salvo Loader - the first weapon that buffs YOUR OWN fortress cannon. Passive (no cooldown): the first cannon burst of every fight
+   (each Conquest level attempt / each Arena battle) is a super burst; later levels add a guaranteed super burst every Nth burst and extra
+   super-burst damage. Only fortresses that can super-burst at all (Fortress I's crit lane) gain anything, so it is a Fortress I weapon by
+   nature. No dice: a fixed pattern. noDraw: not in weapon draws yet (testing). */
+WEAPON_DEFS.push({
+  id: "salvo_loader", name: "Salvo Loader", icon: "🧨", kind: "fx", fx: "salvo", rarity: "Epic", cooldown: 0, count: 0, dmgPct: 0, noDraw: true, p: { every: 0, bonus: 0 },
+  desc: function (d, st) { return "Your fortress cannon opens every fight with a super burst." + (st.p.every ? " After that, every " + st.p.every + "th burst is a super burst too." : "") + (st.p.bonus ? " Super bursts deal +" + st.p.bonus + "% damage." : "") + " Needs a fortress that can super-burst (Fortress I)."; },
+  rows: function (st) { return [["Opening burst", "Super burst"], ["Repeat", st.p.every ? "every " + st.p.every + " bursts" : "—"], ["Super burst dmg", st.p.bonus ? "+" + st.p.bonus + "%" : "—"]]; },
+  levelMods: [
+    { atLevel: 10, p: { bonus: 25 } },
+    { atLevel: 30, p: { every: 4 } },
+    { atLevel: 50, p: { every: 3, bonus: 50 } }
   ]
 });
 WEAPON_DEFS.push({
@@ -6600,7 +6617,7 @@ function createGame(opts) {
     return e;
   }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
-  function idleResetHeroHp() { state.idle.heroHp = {}; idleReseedCombat(); } /* runs at the start of every level attempt */
+  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
     var r = state.conquestRoster.slice(0, 5);
     for (var i = 0; i < r.length; i++) {
@@ -7544,8 +7561,10 @@ function createGame(opts) {
         state.idle.fortressCannonBulletTimer = 0; // fire the first bullet right away
         state.idle.fortressCannonBurstNo = (state.idle.fortressCannonBurstNo || 0) + 1;
         var fbI = fortressBonusFrom(state.fortressTech || {});
-        var isCritBurstI = fortressCritRoll('idle', 'p', state.idle.fortressCannonBurstNo) < fbI.critRate;
-        state.idle.fortressCannonCritMult = isCritBurstI ? (fbI.critMult || 1) : 1;
+        state.idle.salvoBurstNo = (state.idle.salvoBurstNo || 0) + 1; /* v957: burst number within this level attempt (reset in idleResetHeroHp) */
+        var svI = salvoSpec(state.equippedWeapons, function (wd) { return weaponLevelStats(wd); });
+        var isCritBurstI = fbI.critRate > 0 && (salvoForces(svI, state.idle.salvoBurstNo) || fortressCritRoll('idle', 'p', state.idle.fortressCannonBurstNo) < fbI.critRate);
+        state.idle.fortressCannonCritMult = isCritBurstI ? (fbI.critMult || 1) * (svI ? 1 + svI.bonus / 100 : 1) : 1;
         // Critical Mass (dmgRamp): flat bullet-damage multiplier, entirely separate from crit chance/damage above.
         // x10 the moment the cannon fires its first burst, then x10 again (compounding) on every further burst
         // that initializes: burst #1 -> x10, burst #2 -> x100, burst #3 -> x1000, etc.
@@ -7644,6 +7663,7 @@ function createGame(opts) {
       var wd = WEAPON_DEFS_BY_ID[wid]; if (!wd || wd.kind !== "fx") return;
       var st = weaponLevelStats(wd);
       if (wd.fx === "dup") { dupEff = st.p.eff; return; }
+      if (wd.fx === "salvo") return; /* v957: passive cannon buff, handled at the cannon (idleSalvo) */
       out.push({ key: wid, wd: wd, fx: wd.fx, st: st, mag: 1, lag: false });
     });
     if (dupEff != null) {
@@ -8000,7 +8020,7 @@ function createGame(opts) {
       for (var r = 0; r < WEAPON_DRAW_ROLLS_PER_TICKET; r++) {
         var x = Math.random() * tot, tier = odds[odds.length - 1].rarity;
         for (var i = 0; i < odds.length; i++) { if (x < odds[i].weight) { tier = odds[i].rarity; break; } x -= odds[i].weight; }
-        var cands = WEAPON_DEFS.filter(function (w) { return !w.visualOnly && w.rarity === tier; });
+        var cands = WEAPON_DEFS.filter(function (w) { return !w.visualOnly && !w.noDraw && w.rarity === tier; });
         var wd = cands[Math.floor(Math.random() * cands.length)], fr = WEAPON_DRAW_FRAGS[tier], n = fr[0] + Math.floor(Math.random() * (fr[1] - fr[0] + 1));
         if (!got[wd.id]) { got[wd.id] = 0; order.push(wd.id); }
         got[wd.id] += n; state.weaponFrags[wd.id] = (state.weaponFrags[wd.id] || 0) + n;
@@ -10370,7 +10390,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v956"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v957"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11251,7 +11271,7 @@ function renderWeaponInfo() {
     if (ms.length) h += '<div class="wi-sec"><h4>Level Bonuses</h4>' + ms.map(function (m) { return '<div class="wi-ms' + (st.level >= m.atLevel ? '' : ' locked') + '"><span class="lv">Lv.' + m.atLevel + '</span><span>' + m.html + '</span></div>'; }).join("") + '</div>';
   }
   if (w.fx === "dup") {
-    var dEl = eq.filter(function (id) { var d = WEAPON_DEFS_BY_ID[id]; return d && !d.visualOnly && d.fx !== "dup" && d.fx !== "orbit"; }), dCur = simDupTarget(eq, game.state.duplicateTarget);
+    var dEl = eq.filter(function (id) { var d = WEAPON_DEFS_BY_ID[id]; return d && !d.visualOnly && d.fx !== "dup" && d.fx !== "orbit" && d.fx !== "salvo"; }), dCur = simDupTarget(eq, game.state.duplicateTarget);
     h += '<div class="wi-sec"><h4>Copies</h4>' + (dEl.length ? dEl.map(function (id) { var d = WEAPON_DEFS_BY_ID[id]; return '<button class="wi-dup' + (id === dCur ? ' on' : '') + '" data-dup="' + id + '" style="margin:3px 4px 3px 0;padding:6px 10px;border-radius:8px;border:1px solid ' + (id === dCur ? '#f0c95f' : '#555') + ';background:' + (id === dCur ? '#3a3216' : 'transparent') + ';color:inherit;">' + d.icon + ' ' + d.name + '</button>'; }).join("") : '<div class="wi-desc">Equip another weapon to copy it.</div>') + '</div>';
   }
   if (!w.visualOnly) {
@@ -26811,8 +26831,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     function beginBurst(c, st, side) {
         c.startTick = tick;
         c.burstNo = (c.burstNo || 0) + 1;
-        var isCritThisBurst = st.critRate > 0 && fortressCritRoll(opts.critSeed || "arena", side, c.burstNo) < st.critRate;
-        c.mult = isCritThisBurst ? (st.critMult || 1) : 1;
+        var svA = side === "p" ? opts.salvoP : opts.salvoA; /* v957: Salvo Loader */
+        var isCritThisBurst = st.critRate > 0 && (salvoForces(svA, c.burstNo) || fortressCritRoll(opts.critSeed || "arena", side, c.burstNo) < st.critRate);
+        c.mult = isCritThisBurst ? (st.critMult || 1) * (svA ? 1 + svA.bonus / 100 : 1) : 1;
         // Optional legacy crit-damage ramp (Boss Simulator dev tool only — "everySec" mode): the player's crit
         // damage grows by pct% per elapsed-time window, additive or compounding. Not used by any card.
         if (isCritThisBurst && side === "p" && opts.critRamp && opts.critRamp.pct > 0 && opts.critRamp.everySec > 0) {
@@ -26934,7 +26955,7 @@ function simSpecOf(wdef, st, dmg) {
 }
 // v777: Duplicate — which equipped weapon it copies. `ids` = the equipped weapon ids; `want` = the player's pick (state.duplicateTarget). Orbit (a passive) and shields can't be copied as specs; a Hex Shield copy is handled in the shield-pool functions below.
 function simDupTarget(ids, want) {
-  var el = ids.filter(function (id) { var d = WEAPON_DEFS_BY_ID[id]; return d && !d.visualOnly && d.fx !== "dup" && d.fx !== "orbit"; });
+  var el = ids.filter(function (id) { var d = WEAPON_DEFS_BY_ID[id]; return d && !d.visualOnly && d.fx !== "dup" && d.fx !== "orbit" && d.fx !== "salvo"; });
   return el.indexOf(want) >= 0 ? want : (el[0] || null);
 }
 function simApplyDup(specs, ids, dupEff, want) {
@@ -26954,6 +26975,7 @@ function arenaPlayerWeaponsForSim() {
     if (!wdef || wdef.visualOnly || wdef.kind === "shield") return;
     var st = game.weaponLevelStats(wdef);
     if (wdef.fx === "dup") { dupEff = st.p.eff; return; }
+    if (wdef.fx === "salvo") return; /* v957: passive, passed to arenaMakeSim as opts.salvoP */
     specs.push(simSpecOf(wdef, st, wdef.kind === "fx" ? 0 : game.weaponDmgFor(wdef)));
   });
   return simApplyDup(specs, ids, dupEff, game.state.duplicateTarget);
@@ -26969,6 +26991,7 @@ function simWeaponsFromCfg(map) {
     ids.push(wdef.id);
     var st = game.weaponStatsAtLevel(wdef, map[wdef.id]);
     if (wdef.fx === "dup") { dupEff = st.p.eff; return; }
+    if (wdef.fx === "salvo") return; /* v957: passive */
     specs.push(simSpecOf(wdef, st, wdef.kind === "fx" ? 0 : st.dmg));
   });
   return simApplyDup(specs, ids, dupEff, null);
@@ -27012,7 +27035,7 @@ function runArenaBattle(onTick, onDone) {
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
-  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one

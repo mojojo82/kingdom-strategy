@@ -559,3 +559,12 @@
   today every matchup from Lv20 up ends in 0-1 s; with 100 HP per power equal teams last ~28-33 s at every level, Lv40 vs Lv30 ~22 s
   (stronger side wins 8/8), Fortress III maxed beats none 8/8, HP-only items vs ATK-only items ~even, tank team vs burst team: burst 8/8.
   Waiting on Harley to pick the number.
+- v957 (9 Oct) Salvo Loader 🧨 - new weapon (Harley's idea: an equippable cannon buff instead of a tree node). Passive fx "salvo": the first
+  cannon burst of every fight (each Conquest level attempt / each Arena battle) is a super burst; Lv10 +25% super-burst dmg, Lv30 also every
+  4th burst, Lv50 every 3rd burst + 50%. Only fortresses that can super-burst gain anything (Fortress I crit lane; Fortress III has 0 crit
+  rate) - no dice, fixed pattern. noDraw: true (kept out of weapon draws while testing). Other weapons untouched (Duplicate just can't
+  target it; it is skipped as an fx unit). Test g203.
+  Headless sims (8 fights each, Lv20/40/80, +48% gear): with today's fortress HP every arena fight still ends in 0.5s, Salvo or not.
+  With fortress HP 100 per hero power: F1+Salvo kills an unresearched fortress in 1.4-4 s at every level; vs Fortress III it wins at
+  Lv20/Lv40 (2-7 s, even vs EMP), Deflector Dome counters it at Lv40, and Fortress III wins at Lv80 (7/8). Conquest with Fortress I maxed:
+  Salvo Lv50 pushes walls +0.4 (duo Lv20), +0.6 (Lv40), +2.1 (Lv80) chapters.
