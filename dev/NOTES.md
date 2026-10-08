@@ -602,3 +602,8 @@
   Weapon-build round robin (Lv20/40/80 heroes, weapons Lv10/30/50, 4 fights per pairing): the old "meta" (missile+laser+railgun) is no
   longer on top. Lv20: Salvo+EMP+missile (F1) 100%, Salvo+railgun+laser 83%. Lv40: Hex+Dome+railgun (F3) 94%, Salvo+EMP+missile 90%.
   Lv80: Hex+Dome+railgun (F3) 100%, meta on F3 79%, Salvo builds 54-67%. Flak+scatter+missile last everywhere (8-13%).
+- v963 (9 Oct) Salvo Loader card: Level Bonuses rows were blank (no FX_P_LABELS entry) - now "Extra super burst damage 0% -> 25%" (Lv10),
+  "Every 4th burst..." (Lv30), "25% -> 50% / Every 3rd burst..." (Lv50); description says "3rd" not "3th".
+  PvP single-weapon ranking (one weapon + its better fortress, Lv20/40/80): Railgun 91, Clone Task 87, Hex Shield 85, Salvo Loader 79
+  (#1 at Lv20 with 97%, 84% at Lv40, 56% at Lv80), Orbit 73, Dome 72, IO Repair 71, EMP 64, Droid 62, Scatter 56, Flak 55, Missiles 54,
+  Laser 52, Pulse 52, Projection Wall 50, Status Wave 45 (Duplicate not ranked - it only copies).
