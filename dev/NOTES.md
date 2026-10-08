@@ -499,3 +499,5 @@
   - Admin panel card "Import a save into my account" (summary first, ~1.5 MB art chunks). Game must be closed on all devices while importing
     (an open game keeps saving its own copy). Tests: core.test.js (merge), g199_import_save (real file: game -> admin import -> game reopens
     on TH8 with map spot kept, art loaded, survives the next save). fnrunner gained db.batch().
+- (8 Oct night) Harley: focus on mobile; PC stays as is (he uses PC only for checking/testing). PC layout work parked on branch wip/pc-layout.
+  New rule: keep every art asset twice - original in art/originals/ (never shrunk) + phone-size copy in the game. Saved today's originals there.

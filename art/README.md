@@ -1,0 +1,15 @@
+# Art originals
+
+Full-size art exactly as Harley made it. **Never shrink these.** The game uses smaller phone-size copies made from them
+(kept small so the single game file stays light and Conquest stays fast). A future PC / HD version would use these originals.
+
+Rule (Harley, 8 Oct 2026): every new art asset is kept twice - the original here, and a phone-size copy in the game.
+
+| File | What it is | Size | In-game copy |
+|---|---|---|---|
+| gareth_run_4x4.png | Gareth run cycle, 16 frames (4x4 grid, ~317x310 per frame) | 1269x1240 | HERO_ANIMS.gareth run row (111x66 frames). Note: arms barely move - Harley may redraw |
+| gareth_charge.png | Gareth charge / skill lunge | 1536x1024 | HERO_CHARGE.gareth (303x145) |
+| fortress_default.png | Default fortress ship, cropped, sparrow removed | 1034x409 | fortress cq image (170x67) |
+| fortress_default_with_sparrow.png | The same, as sent (with the small sparrow ship) | 1344x768 | - |
+
+Still missing originals: Gareth idle (8 frames) and attack (11 frames).
