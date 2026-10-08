@@ -501,3 +501,12 @@
     on TH8 with map spot kept, art loaded, survives the next save). fnrunner gained db.batch().
 - (8 Oct night) Harley: focus on mobile; PC stays as is (he uses PC only for checking/testing). PC layout work parked on branch wip/pc-layout.
   New rule: keep every art asset twice - original in art/originals/ (never shrunk) + phone-size copy in the game. Saved today's originals there.
+- v951 (9 Oct) Water round bases + new Watchtower II skin.
+  - World map: bases on open sea get a thin broken foam line where they meet the water + thin white ripple lines moving outwards
+    (tuned with Harley in a live preview: speed 7, strength 80, reach 18, in units of a 270px-wide base). Built once per skin from its own
+    outline (lowest 16% of the art; distance squashed 1.74x up/down for the 35deg map) into a 14-frame strip (blob: link), played by a CSS
+    steps() animation behind the base image (.city-water) - no per-frame code. All skins, on by default; Dev Tools switch "World map: foam +
+    ripples round bases on the sea" (localStorage kingdom_baseWater_v1). Skipped when any tile within 2 of the base centre is land (no
+    half-on-land clipping yet). Only at full detail (lod 0).
+  - New skin "Watchtower II" (tower2), added after Watchtower (not a replacement), unlocked for everyone. Original in art/originals/watchtower2.png.
+  - Test: g200_base_water (layer lined up behind the base, animates, tower2 unlocked + drawn, off next to land, Dev switch).

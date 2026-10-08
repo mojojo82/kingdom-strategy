@@ -11,5 +11,6 @@ Rule (Harley, 8 Oct 2026): every new art asset is kept twice - the original here
 | gareth_charge.png | Gareth charge / skill lunge | 1536x1024 | HERO_CHARGE.gareth (303x145) |
 | fortress_default.png | Default fortress ship, cropped, sparrow removed | 1034x409 | fortress cq image (170x67) |
 | fortress_default_with_sparrow.png | The same, as sent (with the small sparrow ship) | 1344x768 | - |
+| watchtower2.png | Watchtower II city skin (lighthouse base), as sent | 1254x1254 | CITY_SKINS.tower2: trimmed, squashed to 88.6% height (its ground was ~33deg, our map is 35deg-from-flat ISO_K), 560x466 webp, map scale 1.15 |
 
 Still missing originals: Gareth idle (8 frames) and attack (11 frames).
