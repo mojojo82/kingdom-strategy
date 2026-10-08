@@ -487,3 +487,6 @@
   mockup before putting anything in the game. Layout (A/B/C) not chosen yet.
   - Harley leaning towards: World = A (full-screen HUD); Conquest = C with A's matching pieces (mockup "ConquestC2": same top HUD, events
     column and bottom nav as World A; battle 5:3 at phone zoom; chat as a full column on the right). Arena must follow whatever Conquest gets.
+  - Conquest bottom strip contents (Harley): weapons max 3 (+ Espers), cards 5 equipped (show all 5 or just 1 - undecided; mockup has a
+    Tweaks switch), a Backpack is coming, plus another combat mechanic still being designed (reserved spot). Don't make the ChatGPT
+    "deluxe PC UI" art list until the layout is locked (he liked the ChatGPT ornate-frame concept).
