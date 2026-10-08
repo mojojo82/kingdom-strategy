@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (8 Oct 2026, game v966):** everything below is built, tested and deployed. The live game link still serves the
+**State at handover (9 Oct 2026, TEST game v966):** everything below is built and tested; TEST is deployed (v951-v966 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -100,6 +100,14 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **No player tracking/analytics.** Only what's needed: purchase audit, item ledger, account created / last seen. Chat is not auto-deleted (his call, for now).
 
 ## Open items / to-dos
+- **Balance (9 Oct, v954-v966)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,
+  swap test, Arena round-robin). Done: one ranged-on-hero rule for both modes; boss "tank rule"; deterministic combat; Death Strike (Gareth slot 2,
+  fires with Shield Slam); Arena fortress HP = +100 per hero power (fights ~30-40 s, were <1 s); Fortress III braced hull (super bursts x0.6);
+  Salvo Loader (Elite weapon, amplifies Fortress I's super burst - useless without Fortress I research by design); bots carry weapons /
+  Fortress III / Esper; world PvP uses both sides' weapons; Torvald -> Rare. Open: with PARTIAL research Fortress III beats Fortress I at
+  every stage (Harley to pick a fix); plain damage weapons are flat (don't grow with heroes) so they're weak in PvP; empty skill slots:
+  Roran 2, Torvald 2, Gareth 1, Lyra 1; Salvo Lv50 is a plain +200% for now (any opener boost at Lv50 flips the maxed F1-vs-F3 endgame);
+  Gareth/Torvald weak in Arena (Harley: fine for now). Planned: energy-wave bosses (hit all heroes + fortress) -> re-tune with the kit.
 - **Events (v946):** admin panel > 🎉 Events; Burst of Life template there (Harley to add a banner and Save). Event progress is checked against the `power` the game writes into each cloud save - client-reported like the rest of the save (anti-cheat flags apply). Neptune (Titan Fountain) skin is now earn-only.
 - **Shop (v943):** admin panel > 🛒 Shop & packs (library, tabs, price tiers). In-game: More > Shop, buy button says payments coming soon. Next: connect a payment provider (Stripe recommended for now; see the chat notes on Apple Pay / tax / Xsolla), then the buy button calls it and the webhook calls deliverPurchase(). MXN/EUR/TRY tier prices are suggestions - Harley to check.
 - **Maintenance mode (v942):** admin panel > 🛠️ Maintenance mode, per environment. Server doc `<root>config/maintenance`; while on, rules refuse player writes and Cloud Functions refuse non-admin calls; the game shows a lock screen (admins get a red bar and can play); turning it off reloads everyone onto the newest version. Live game (root, still v901) has no lock screen yet, but the server lock already applies to it.
