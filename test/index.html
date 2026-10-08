@@ -4751,8 +4751,12 @@ var HERO_DEFS = {
       // he's the only one who has to physically close to melee range to
       // land it, putting the team's HP on the line to do so. Rebuilt from
       // a flat burstBase/burstPerLevel formula to this %-based one 2026-09-28.
-      { name: "Shield Slam", icon: "🛡️💥", kind: "active", cooldown: 10, desc: "Every 10s, slams the current enemy for a burst of bonus damage.", pctByLevel: [0.70, 0.80, 0.90, 1.00, 1.10] }
-      // Slots 2 and 3 intentionally blank for now (unique per-hero skills to come).
+      { name: "Shield Slam", icon: "🛡️💥", kind: "active", cooldown: 10, desc: "Every 10s, slams the current enemy for a burst of bonus damage.", pctByLevel: [0.70, 0.80, 0.90, 1.00, 1.10] },
+      // v954: a "limit" skill - no timer; a bar that fills by 1 per swing he lands and takenPts per hit he takes (Conquest and Arena alike), emptied by a KO.
+      // Replaces Shield Slam's old hidden 20% coin-flip execute (combat has no dice now). Same rules in both modes (see HANDOVER).
+      { name: "Death Strike", icon: "💀⚔️", kind: "limit", hitsToFill: 40, takenPts: 3, targetsByLevel: [2, 2, 3, 3, 4], executePct: 0.3, pctByLevel: [0.8, 0.9, 1.0, 1.1, 1.2],
+        desc: "Fills as Gareth fights: every swing he lands, and three times as much for every hit he takes (a KO empties it). When full, he cleaves the nearest enemies (2, up to 4 at level 5): any below 30% HP fall at once, the rest take a heavy hit. Bosses and fortresses can't be finished off." }
+      // Slot 3 intentionally blank for now.
     ],
     expeditionSkills: [
       { name: "Vanguard's Resolve", icon: "⚔️", kind: "passive", desc: "Boosts Infantry Attack while leading.", effectType: "leadTroopAtkMult", perLevel: 0.04 },
@@ -5127,7 +5131,7 @@ function clearSkillOverrides(heroKey, skillIdx) {
 // skill (pctByLevel), unused/ignored for a passive or a not-yet-converted
 // legacy flat skill (burstBase/burstPerLevel), so it's fine to omit for those.
 function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
-  if (skill.kind === "active") {
+  if (skill.kind === "active" || skill.kind === "limit") {
     if (skill.pctByLevel) {
       var pct = skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0;
       return skillDamageBaseFor(heroKey, h, basicAtkDmg) * pct;
@@ -5538,7 +5542,11 @@ function createGame(opts) {
   // unlucky draw and get reported as a "confirmed stable" wall, even though
   // a differently-seeded run (or real play, with its own random draws over
   // real hours) could sail straight through the same level.
-  var combatRng = (typeof opts.combatSeed === "number") ? seededRandom(opts.combatSeed) : Math.random;
+  // v954: no true randomness in combat any more (Harley: keep it deterministic). Live play used Math.random here; now every attempt at a level
+  // gets its own fixed seed (level number + attempt count, see idleResetHeroHp), so the same attempt always plays out the same way.
+  var combatBaseSeed = (typeof opts.combatSeed === "number") ? opts.combatSeed : 7177, combatRngFn = seededRandom(combatBaseSeed);
+  function combatRng() { return combatRngFn(); }
+  function idleReseedCombat() { combatRngFn = seededRandom((combatBaseSeed + idleGlobalLevelNum() * 7919 + (state.idle.resetCount || 0) * 104729) % 2147483646 + 1); }
 
   var state = {
     resources: { food: 500, wood: 500, stone: 300, gold: 100 },
@@ -6591,7 +6599,7 @@ function createGame(opts) {
     return e;
   }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
-  function idleResetHeroHp() { state.idle.heroHp = {}; }
+  function idleResetHeroHp() { state.idle.heroHp = {}; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
     var r = state.conquestRoster.slice(0, 5);
     for (var i = 0; i < r.length; i++) {
@@ -6605,6 +6613,7 @@ function createGame(opts) {
   function idleKoHero(key) {
     var e = idleHeroEntry(key);
     e.hp = 0; e.ko = true; e.reviveT = HERO_KO_CFG.reviveSec;
+    if (state.idle.limit) state.idle.limit[key] = 0; /* v954: a KO empties his limit bar */
     if (!state.idle.heroKoCount) state.idle.heroKoCount = {};
     state.idle.heroKoCount[key] = (state.idle.heroKoCount[key] || 0) + 1;
     var def = HERO_DEFS[key], s1 = def && def.conquestSkills && def.conquestSkills[0];
@@ -7045,14 +7054,13 @@ function createGame(opts) {
           return;
         }
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
-        var skTgt = front; if (def.class === "infantry") { var skSword = idleMeleeTargetFor(key, front); /* v844: an enemy at his sword gets slammed first */ var skPool = state.idle.enemies.filter(function (e0) { return e0.hp > 0; }); /* v845: his skill has no range or arrival limit - any live enemy on the field (only his basic attack needs reach) */ skTgt = skSword || (skPool.length ? skPool[Math.floor(Math.random() * skPool.length)] : null); if (skTgt && !skTgt.arrived) { skTgt.arrived = true; skTgt.arriveRemaining = 0; } } /* v841: the slam is a charge at ANY arrived enemy, picked at random (not just the front one or one at his sword) */
+        var skTgt = front; if (def.class === "infantry") { var skSword = idleMeleeTargetFor(key, front); /* v844: an enemy at his sword gets slammed first */ var skPool = state.idle.enemies.filter(function (e0) { return e0.hp > 0; }); /* v845: his skill has no range or arrival limit - any live enemy on the field (only his basic attack needs reach) */ skTgt = skSword || (skPool.length ? skPool[Math.floor(combatRng() * skPool.length)] : null); if (skTgt && !skTgt.arrived) { skTgt.arrived = true; skTgt.arriveRemaining = 0; } } /* v841: the slam is a charge at ANY arrived enemy, picked at random (not just the front one or one at his sword) */
         var canHit = def.class === "infantry" ? !!skTgt : (frontTargetable && (!meleeRangeOnly || frontPointBlank || (skill1.requiresClose && front.type === "boss"))); // requiresClose skills (Kessa's Arc Burst) can always reach a boss
         if (!canHit) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; } // v839: nothing in reach (manual tap OR the auto cooldown running out between enemies): keep the skill ready and fire the moment something is, instead of burning the whole cooldown on a miss
         if (canHit) {
           var front0 = front; front = skTgt; // the skill hits the enemy at his sword (melee) or the front enemy
           var skDmgE = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
-          // v578: Gareth's charge has a 20% chance to execute a normal enemy outright (bosses excluded)
-          var gExec = false; if (key === "gareth" && front.type !== "boss" && Math.random() < 0.2) { skDmgE = Math.max(skDmgE, front.hp); gExec = true; }
+          var gExec = false; // v954: the old 20% coin-flip execute is gone - Death Strike (a limit skill, no dice) took its place
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = skDmgE;
           front.hp -= (gExec ? skDmgE : skDmgE * idleMarkMult(front, key) * idleEnemyDefTake(front, skDmgE));
           if (key === "kessa") { var smSk = def.conquestSkills[2]; if (smSk && smSk.effectType === "stormMark") { front.markT = smSk.durSec; front.markPct = smSk.perLevel * heroSkillLevel(key, "conquest", 2); } } // Storm Mark
@@ -7061,6 +7069,24 @@ function createGame(opts) {
           var skHit = front; front = front0; if (skHit !== front0 && skHit.hp <= 0) idleRemoveDeadEnemyAt(state.idle.enemies.indexOf(skHit));
         }
       }
+    });
+
+    // v954: limit skills (Death Strike). Full bar + something on the field -> cleave the nearest N enemies: below executePct of their max HP
+    // they fall at once (never a boss), the rest take the skill's hit. No timer and no dice. Same rule as the Arena version (arenaMakeSim).
+    state.conquestRoster.slice(0, 5).forEach(function (key) {
+      var L = idleLimitSkill(key), h = state.heroes[key]; if (!L || !h || !h.owned || idleHeroIsKo(key)) return;
+      var lm = state.idle.limit || (state.idle.limit = {}); if ((lm[key] || 0) < L.sk.hitsToFill) return;
+      var live = state.idle.enemies.filter(function (e0) { return e0.hp > 0 && e0.arrived; }); if (!live.length) return; // stays full until something is there
+      var lv = heroSkillLevel(key, "conquest", L.idx), n = L.sk.targetsByLevel[Math.max(1, Math.min(L.sk.targetsByLevel.length, lv)) - 1];
+      var dmgL = skillValueAtLevel(key, L.idx, lv, L.sk, h, idleAttackerDamage(key)), ids = [];
+      lm[key] = 0; state.idle.limitFires = (state.idle.limitFires || 0) + 1;
+      live.slice(0, n).forEach(function (t) {
+        if (t.type !== "boss" && t.hp <= (t.maxHp || t.hp) * L.sk.executePct) { t.limitExec = true; t.hp = 0; state.idle.limitKills = (state.idle.limitKills || 0) + 1; }
+        else t.hp -= dmgL * idleMarkMult(t, key) * idleEnemyDefTake(t, dmgL);
+        ids.push(t.id);
+      });
+      (state.idle.limitLog || (state.idle.limitLog = [])).length < 20 && state.idle.limitLog.push({ key: key, ids: ids, dmg: dmgL });
+      for (var di = state.idle.enemies.length - 1; di >= 1; di--) if (state.idle.enemies[di].hp <= 0 && ids.indexOf(state.idle.enemies[di].id) >= 0) idleRemoveDeadEnemyAt(di); // a dead FRONT enemy is left to the usual front-death check, same as Shield Slam
     });
 
     // Equipped weapons (state.equippedWeapons, up to WEAPON_EQUIP_MAX — see
@@ -7201,7 +7227,7 @@ function createGame(opts) {
       if (state.idle.attackCooldowns[aid] > 0) return;
       var ivl = heroAttackSec(aid), hitDmg = idleAttackerHitDamage(aid), nHits = 0;
       while (state.idle.attackCooldowns[aid] <= 0 && nHits < 6) {
-        state.idle.attackCooldowns[aid] += ivl;
+        state.idle.attackCooldowns[aid] += ivl; idleLimitAdd(aid, false); /* v954: every swing fills his limit bar */
         if (nHits === 0) { if (isMelA) { idleMeleeLast[aid] = { id: tgt.id, at: Date.now() }; var nowHitM = idleMeleeStrike(aid, tgt, hitDmg, true); idleLogBasicHit(aid, tgt, hitDmg, !nowHitM); } else { idleLogBasicHit(aid, tgt, hitDmg); tgt.hp -= hitDmg * idleMarkMult(tgt, aid) * idleEnemyDefTake(tgt, hitDmg); } state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1; } /* v917: melee = owed to the sword while drawn */
         else idlePendingHits.push({ aid: aid, t: nHits * ivl, dmg: hitDmg, eid: isMelA ? tgt.id : null }); // 2nd, 3rd… hit of this second land one interval apart
         nHits++;
@@ -7700,6 +7726,10 @@ function createGame(opts) {
   }
   function idleHeroBaseAtk(key) { var h = state.heroes[key]; return (h && h.owned) ? Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective()) : 0; } // base ATK stat = power level × attack constant (no skill bonuses)
   function idleHeroDefMult(key, A) { return defReduce(A, heroDefNet(state.heroes[key], heroBonusMult("def"))); }
+  /* v954: limit skills (Death Strike) - a bar per hero that fills one step for every hit he takes; a KO empties it. Kept across levels. */
+  function idleLimitSkill(key) { var d = HERO_DEFS[key], cs = d && d.conquestSkills; if (!cs) return null; for (var i = 0; i < cs.length; i++) if (cs[i].kind === "limit") return { sk: cs[i], idx: i }; return null; }
+  function idleLimitAdd(key, taken) { var L = idleLimitSkill(key); if (!L) return; var lm = state.idle.limit || (state.idle.limit = {}); lm[key] = Math.min(L.sk.hitsToFill, (lm[key] || 0) + (taken ? L.sk.takenPts || 1 : 1)); }
+  function idleLimitFrac(key) { var L = idleLimitSkill(key); if (!L) return null; return Math.min(1, ((state.idle.limit || {})[key] || 0) / L.sk.hitsToFill); }
   function idleHeroHitMult(type) { return (HERO_KO_CFG.heroDmgMult || 1) * (type === "boss" ? (HERO_KO_CFG.bossVsHero || 1) : 1); } /* v954: extra multipliers on a hit that lands on a hero (shown numbers use it too) */
   function idleFortressDef() { return FORTRESS_DEF_POWER * defNetMult(heroBonusMult("def")); }
   function idleHeroDmgRed() { return fortressBonusFrom(state.fortressTech || {}).dmgRed || 0; }
@@ -7719,6 +7749,7 @@ function createGame(opts) {
       var tgtEnt = idleHeroEntry(tgtHeroKey);
       if (!tgtEnt || tgtEnt.hp <= 0) return;
       tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type); /* bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
+      idleLimitAdd(tgtHeroKey, true);
       if (tgtEnt.hp <= 0) idleKoHero(tgtHeroKey);
       return;
     }
@@ -8566,7 +8597,7 @@ function createGame(opts) {
     idleEnemyHitRadius: function (type) { return (IDLE_ENEMY_TYPES[type] || {}).hitRadius || 0.05; },
     idleFortressCannonBulletInterval: idleFortressCannonBulletInterval, setFortressCannonTargetMode: setFortressCannonTargetMode,
     getHeroPosOffset: getHeroPosOffset, setHeroPosOffset: setHeroPosOffset, resetAllHeroPosOffsets: resetAllHeroPosOffsets,
-    idleEnemyAtk: idleEnemyAtk, idleHeroHitMult: idleHeroHitMult,
+    idleEnemyAtk: idleEnemyAtk, idleHeroHitMult: idleHeroHitMult, idleLimitFrac: idleLimitFrac, idleLimitSkill: idleLimitSkill,
     forgeOnce: forgeOnce, equipPiece: equipPiece, unequipSlot: unequipSlot, dismantlePiece: dismantlePiece, dismantleUpTo: dismantleUpTo, equipBest: equipBest,
     tickCombat: tickCombat, idleSetSkillAuto: idleSetSkillAuto, idleCastSkill: idleCastSkill, collectBucket: collectBucket, bucketAwayClear: bucketAwayClear, bucketInfo: bucketInfo, forgeInfo: forgeInfo, forgeOdds: forgeOdds, forgeCost: forgeCost, recomputeEquipBonus: recomputeEquipBonus, equipTotals: equipTotals,
     EQ_RARITIES: EQ_RARITIES, EQ_DISMANTLE: EQ_DISMANTLE, EQ_SLOTS: EQ_SLOTS,
@@ -10338,7 +10369,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v954"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v955"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17346,8 +17377,9 @@ function spawnMissileVolley(fromX, fromY, toX, toY, count, targetId, speed, shot
 // heavier than a regular auto-attack tick. `loss` (per user request) is for
 // damage the PLAYER takes rather than deals — red instead of white/gold, so
 // it reads distinctly as "we're losing HP" vs "we just hit something".
+function spawnSkillText(x, y, text) { idleAnim.damageNumbers.push({ x: x, y: y, amount: 1, text: text, life: 1.1, maxLife: 1.1, big: true }); } /* v954 */
 function spawnDamageNumber(x, y, amount, big, loss) {
-  if (!amount || amount <= 0) return;
+  if (!amount || amount < 0.5) return; /* v954: no "-0" for a tiny hit */
   if (loss) fortLifeHit(); // v567
   idleAnim.damageNumbers.push({
     x: x + (Math.random() - 0.5) * 10, y: y, amount: Math.round(amount),
@@ -18230,6 +18262,11 @@ function stepIdleAnim(dtSec, w, h) {
   }
   // v651: skill hits — the skill's target body is held on screen briefly (and the skill visual aims at it, not at whoever is front by then)
   idleAnim.timedHolds = (idleAnim.timedHolds || []).filter(function (th) { th.t -= dtSec; if (th.t > 0) return true; idleAnim.pendingArrows[th.id] = Math.max(0, (idleAnim.pendingArrows[th.id] || 0) - 1); return false; });
+  while (game.state.idle.limitLog && game.state.idle.limitLog.length) { /* v954: Death Strike - word over the hero, a big number on every target, bodies held for a moment */
+    var lml = game.state.idle.limitLog.shift(), lhv = lml && idleAnim.heroVis[lml.key], lsk = lml && game.idleLimitSkill(lml.key);
+    if (lhv && lsk) spawnSkillText(lhv.x, lhv.y - 52 * (heroSpriteVisualScale / 100), lsk.sk.icon + " " + lsk.sk.name.toUpperCase());
+    (lml ? lml.ids : []).forEach(function (lid) { var ev = idleAnim.enemyById[lid]; if (!ev) return; spawnDamageNumber(ev.x, ev.y - 30, lml.dmg, true); idleAnim.pendingArrows[lid] = (idleAnim.pendingArrows[lid] || 0) + 1; (idleAnim.timedHolds || (idleAnim.timedHolds = [])).push({ id: lid, t: 0.35 }); });
+  }
   while (game.state.idle.skillHitLog && game.state.idle.skillHitLog.length) {
     var skh = game.state.idle.skillHitLog.shift();
     if (!skh || skh.id == null || !idleAnim.enemyById[skh.id]) continue;
@@ -19901,6 +19938,12 @@ function drawHeroHpBar(ctx, w, h, key) {
   ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x0 - 1, top - 1, bw + 2, bh + 2);
   ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.fillRect(x0, top, bw * f, bh); // eased "ghost" of what was just lost
   ctx.fillStyle = fr > 0.5 ? "#59d67a" : fr > 0.25 ? "#e8c54a" : "#e2533f"; ctx.fillRect(x0, top, bw * fr, bh);
+  var lf = game.idleLimitFrac ? game.idleLimitFrac(key) : null; /* v954: Death Strike bar - gold, glows when full */
+  if (lf != null) {
+    var ly = top + bh + 2; ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x0 - 1, ly - 1, bw + 2, 4);
+    if (lf >= 1) { ctx.shadowColor = "#f0c95f"; ctx.shadowBlur = 4 + 3 * Math.sin(now / 140); ctx.fillStyle = "#ffe08a"; } else ctx.fillStyle = "#c98f1e";
+    ctx.fillRect(x0, ly, bw * lf, 2);
+  }
   ctx.restore();
 }
 var heroAnimMem = {};
@@ -20946,7 +20989,8 @@ function drawIdleAnim(ctx, w, h) {
     // and the white/gold damage-dealt numbers, same floating/fade mechanic.
     ctx.fillStyle = n.heal ? "#5fd97e" : n.loss ? "#ff6b5c" : (n.big ? "#f0c95f" : "#ffe2e2");
     ctx.strokeStyle = "rgba(0,0,0,0.55)"; ctx.lineWidth = 3; ctx.lineJoin = "round";
-    var label = (n.heal ? "+" : "-") + fmt(n.amount);
+    var label = n.text ? n.text : (n.heal ? "+" : "-") + fmt(n.amount);
+    if (n.text) { ctx.font = "800 13px sans-serif"; ctx.fillStyle = "#f0c95f"; } /* v954: a word (Death Strike) */
     ctx.strokeText(label, n.x, n.y);
     ctx.fillText(label, n.x, n.y);
     ctx.restore();
@@ -23971,6 +24015,11 @@ function skillValueText(skill, level, heroKey, group, idx) {
     var arrS = skill.healPctByLevel || skill.guardPctByLevel, pS = arrS[Math.max(1, Math.min(arrS.length, level)) - 1] || 0;
     return (skill.support === "heal" ? "Heals " : "Guard shield ") + Math.round(pS * 1000) / 10 + "% max HP / " + skill.cooldown + "s";
   }
+  if (skill.kind === "limit") { /* v954: Death Strike style */
+    var pL = skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0, nL = skill.targetsByLevel[Math.max(1, Math.min(skill.targetsByLevel.length, level)) - 1];
+    var dmgL = ov != null ? ov : skillDamageBaseFor(heroKey, game.state.heroes[heroKey], game.idleAttackerDamage(heroKey)) * pL;
+    return nL + " targets · " + Math.round(dmgL) + " dmg · finishes below " + Math.round(skill.executePct * 100) + "%";
+  }
   if (skill.kind === "active") {
     var burst;
     if (ov != null) burst = ov;
@@ -23991,7 +24040,7 @@ function renderHeroSkillsTabCombat(content, key, def, h) {
   function skillBlock(skill, group, idx) {
     var level = h.owned ? game.heroSkillLevel(key, group, idx) : 0;
     var maxed = level >= 5;
-    var kindTag = skill.kind === "active" ? '<span class="tag max">ACTIVE</span>' : '<span class="tag">PASSIVE</span>';
+    var kindTag = skill.kind === "limit" ? '<span class="tag max">LIMIT</span>' : skill.kind === "active" ? '<span class="tag max">ACTIVE</span>' : '<span class="tag">PASSIVE</span>';
     var lvlTag = h.owned ? '<span class="tag' + (maxed ? ' max' : '') + '">Lv ' + level + '/5</span>' : '';
     var b = '<div class="' + (h.owned && !maxed ? 'hd-skill-row clickable' : 'hd-skill-row') + '"' + (h.owned && !maxed ? (' data-hero="' + key + '" data-group="' + group + '" data-idx="' + idx + '"') : '') + '>';
     b += '<div class="hd-row"><span class="hd-label">' + skill.icon + ' ' + skill.name + ' ' + kindTag + ' ' + lvlTag + '</span><span class="hd-val good">' + (h.owned ? skillValueText(skill, level, key, group, idx) : "—") + '</span></div>';
@@ -26207,7 +26256,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
   var esperBonusHp = ek ? esperStatValue(ek, "bonusHp") : 0;
   var hp = BASE_HP_FLAT + (baseHp != null ? baseHp : ARENA_BASE_HP_DEFAULT) + townhallLevel * 5 + esperBonusHp; // baseHp = EXTRA (Dev Tools slider), on top of the Conquest formula
   var dmgMultSum = 0;
-  var activesRaw = []; // {key, cooldown, pctByLevel/burstBase/burstPerLevel, lvl, requiresClose} — finalized into `actives` below, once dmgMult (and each hero's real basic-attack number) is known
+  var activesRaw = [], limitsRaw = []; // {key, cooldown, pctByLevel/burstBase/burstPerLevel, lvl, requiresClose} — finalized into `actives` below, once dmgMult (and each hero's real basic-attack number) is known
   // Individual attacker raw (pre-multiplier) damage — same "one attacker
   // per hero, plus garrison" model as Border Skirmish (idleAttackerDamage/
   // idleAttackerIsMelee). Replaces the old flatDps/infantryFlatDps pair
@@ -26228,6 +26277,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
       if (skill.kind === "passive" && skill.effectType === "conquestDamageMult") dmgMultSum += lvl * skill.perLevel;
       if (skill.kind === "active" && skill.support) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel)[Math.min(5, lvl) - 1] || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
+      if (skill.kind === "limit") limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest */
       if (skill.kind === "active" && !skill.support) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skill.cooldown, skill: skill, lvl: lvl, requiresClose: isInfantry, /* Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
     });
   });
@@ -26248,8 +26298,9 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
       : (skill.burstBase || 0) + (skill.burstPerLevel || 0) * a.lvl; // legacy fallback for any skill not yet converted to pctByLevel
     return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, visualStyle: a.visualStyle };
   });
+  var limits = limitsRaw.map(function (a) { var sk = a.skill, L = Math.max(1, Math.min(sk.pctByLevel.length, a.lvl)); return { key: a.key, fill: sk.hitsToFill, taken: sk.takenPts || 1, n: sk.targetsByLevel[Math.min(sk.targetsByLevel.length, L) - 1], exec: sk.executePct, value: skillDamageBaseFor(a.key, heroesState[a.key], attackerDmgById[a.key], bn.skill || 0) * (sk.pctByLevel[L - 1] || 0) }; });
   var refAtk = 0; Object.keys(attackerDmgById).forEach(function (k) { refAtk = Math.max(refAtk, attackerDmgById[k]); }); if (!(refAtk > 0)) refAtk = game.idleFortressCannonBulletDmgBase() * bnA; // the attacker's own typical hit — what the other side's DEF is measured against
-  return { supports: supportsRaw, bnA: bnA, bnH: bnH, refAtk: refAtk, fortDef: FORTRESS_DEF_POWER * defNetMult(bnD), maxHp: Math.round(hp * (1 + fb.hp) * bnH), heroHp: arenaHeroHp ? heroHpList : null, actives: actives, attackers: attackers, dmgMult: dmgMult, cannonMult: (1 + fb.cannon) * bnA, fortressHpMult: 1 + fb.hp, dmgTakenMult: 1 - fb.dmgRed, critRate: fb.critRate, critMult: fb.critMult, cannonHaste: fb.haste, cannonBurst: fb.burst };
+  return { supports: supportsRaw, bnA: bnA, bnH: bnH, refAtk: refAtk, fortDef: FORTRESS_DEF_POWER * defNetMult(bnD), maxHp: Math.round(hp * (1 + fb.hp) * bnH), heroHp: arenaHeroHp ? heroHpList : null, actives: actives, limits: limits, attackers: attackers, dmgMult: dmgMult, cannonMult: (1 + fb.cannon) * bnA, fortressHpMult: 1 + fb.hp, dmgTakenMult: 1 - fb.dmgRed, critRate: fb.critRate, critMult: fb.critMult, cannonHaste: fb.haste, cannonBurst: fb.burst };
 }
 
 function arenaPlayerRosterAndHeroes() {
@@ -26422,11 +26473,12 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // infantry hero instead of the fortress; ranged damage goes to the fortress (except HERO_KO_CFG.rangedPct); a hero at 0 HP is KO'd (stops attacking,
   // skill timer reset and frozen) and revives after reviveSec. The fortress pool is still the lose condition.
   var koCfg = game.heroKoCfg;
-  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
+  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
   var pHH = mkHeroHp(playerStats, aRefA), aHH = mkHeroHp(aiStats, pRefA);
   function isKo(hh, id) { return !!(hh && hh.by[id] && hh.by[id].ko); }
   function tickRevive(hh) { if (!hh) return; hh.list.forEach(function (e) { if (e.ko && e.droid) { e.dead = true; return; } if (e.ko) { e.reviveT -= dtS; if (e.reviveT <= 0) { e.ko = false; e.reviveT = 0; e.hp = e.max; } } }); }
-  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach }; }) : null; }
+  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null }; }) : null; }
+  function heroHitTaken(e) { if (e.limMax && !e.ko) e.lim = Math.min(e.limMax, e.lim + e.limTaken); if (e.ko) e.lim = 0; } /* v954: every hit a hero takes fills his limit bar (Death Strike), a KO empties it - same as Conquest */
   // Applies `dmg` (already after armor) to the first standing infantry heroes; returns what is left over for the fortress.
   function hitHeroes(hh, dmg) {
     if (!hh || dmg <= 0) return dmg;
@@ -26434,6 +26486,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var e = hh.list[i]; if (!e.infantry || e.ko) continue;
       var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1), take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
       if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; }
+      heroHitTaken(e);
     }
     return dmg;
   }
@@ -26474,6 +26527,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (!t || t.fort) return true;
     var e = t.hero; e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
     if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
+    heroHitTaken(e);
     return false;
   }
   // Ranged hit (basic or skill from a non-infantry hero): a share of them (arenaRangedHeroPct, spread evenly) go to the nearest standing enemy infantry hero that is within
@@ -26490,6 +26544,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     map[tag + id] = best.id;
     best.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
     if (best.hp <= 1e-9) { best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
+    heroHitTaken(best);
     return false;
   }
   var engaged = false;
@@ -26536,6 +26591,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           cd[a.id] += iv; hitsNow++;
           applyDmg(a.dmg, a.id, a.melee);
           hitList.push(a.id);
+          var lme = hh && hh.by[a.id]; if (lme && lme.limMax) lme.lim = Math.min(lme.limMax, lme.lim + 1); /* v954: every swing fills a limit bar, same as Conquest */
         }
       });
     }
@@ -26562,6 +26618,24 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, a.value, 'a_')) aiDmg += a.value; } else if (posMode) { if (rangedHit(aHH, pHH, playerStats, a.key, a.value, skTgt, 'a_')) { aiDmg += a.value; projA += a.value; } } else { aiDmg += a.value; if (a.requiresClose) aiMeleeDmg += a.value; } trAddAi('skill:' + a.key + '|' + a.name, a.value); }
       }
     });
+    // v954: limit skills (Death Strike), same rule as Conquest: full bar + an enemy in sword reach -> cleave the nearest N standing enemy heroes
+    // (below exec x max HP they are KO'd at once, the rest take the hit); nothing but the fortress in reach -> it takes the hit (never finished off).
+    function fireLimits(st, hh, oh, oppStats, flash, tagP) {
+      var out = 0; if (!posMode || !st.limits || !st.limits.length) return 0;
+      st.limits.forEach(function (L) {
+        var me = hh.by[L.key]; if (!me || me.ko || me.lim < L.fill || !me.reach) return;
+        var tg = oh.list.filter(function (o) { return !o.ko && !o.droid && me.d + o.d >= 1 - ARENA_REACH; }).sort(function (a, b) { return b.d - a.d; }).slice(0, L.n);
+        me.lim = 0; limTgt[tagP + L.key] = tg.map(function (o) { return o.id; });
+        if (!tg.length) { out += L.value; return; }
+        tg.forEach(function (o) {
+          if (o.hp <= o.max * L.exec) o.hp = 0; else o.hp -= L.value * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
+          if (o.hp <= 1e-9) { o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; }
+          heroHitTaken(o);
+        });
+      });
+      return out;
+    }
+    var limTgt = {}; playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, playerFlash, "p_"); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, aiFlash, "a_");
     // Support skills: heal the fortress / raise a guard shield, on their own cooldown (Sera's Rally trims the other heroes' skill timers).
     function stepSupports(list, cdMap, actCd, getHp, setHp, getG, setG, maxHp, hhh) {
       list.forEach(function (u) {
@@ -26832,7 +26906,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     }
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
-    var info = { fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
+    var info = { limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
       landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
     var winner = done ? (playerHp + playerShield > aiHp + aiShield ? "player" : (aiHp + aiShield > playerHp + playerShield ? "ai" : "draw")) : null;
@@ -26934,7 +27008,8 @@ function runArenaBattle(onTick, onDone) {
       (aiStats.heroHp || []).forEach(function (e) { var ix = arenaOpponent.roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(rw, rh, ix, false); });
     }
   } catch (e) {}
-  var sim = arenaMakeSim(playerStats, aiStats, { critSeed: "arena|" + Date.now() + "|" + Math.random(), dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
+  var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one
@@ -27402,6 +27477,7 @@ function drawArenaFrame(ctx, w, h) {
         var bw = 22, bx = lastSlot.x - bw / 2, by = lastSlot.y + 24;
         ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by - 1, bw + 2, 5);
         ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3);
+        if (hh.lim != null) { ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by + 4, bw + 2, 4); ctx.fillStyle = hh.lim >= 1 ? "#ffe08a" : "#c98f1e"; ctx.fillRect(bx, by + 5, bw * Math.max(0, Math.min(1, hh.lim)), 2); } /* v954: Death Strike bar, same as Conquest */
         ctx.restore();
       }
     });

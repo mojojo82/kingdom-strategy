@@ -535,3 +535,18 @@
     Gareth, so more ranged hits / lower hero HP / x12 hero damage never killed him. Arena: Lyra is the must-pick; at Lv80 leaving out
     Gareth, Sera or Torvald changes nothing.
   - Standing rule (Harley): a hero/skill works exactly the same in Conquest and Arena - no per-mode rules or stats.
+- v955 (9 Oct) Deterministic combat + Death Strike (Gareth skill 2).
+  - No dice in combat: Conquest's random bits (enemy attack offsets, Gareth's skill target pick) now come from a seed per level attempt
+    (level number + attempt count, idleReseedCombat via idleResetHeroHp); each Arena battle runs on its own seed (rng + critSeed). Shield
+    Slam's hidden 20% coin-flip execute is gone. Test g201: two live-style Conquest runs from the same state match; same Arena seed = same fight.
+  - Death Strike ("limit" skill, conquestSkills[1]): bar fills +1 per swing Gareth lands and +3 per hit he takes (40 to fill), a KO empties it,
+    kept across levels. Full + something in reach -> cleaves the nearest 2 (3 at Lv3, 4 at Lv5) enemies: below 30% max HP they fall at once
+    (never a boss / fortress), the rest take 80%..120% of his attack. Same rule in Arena (arenaSideStats -> limits, arenaMakeSim fireLimits,
+    heroHitTaken). Gold bar under his HP bar in both modes (glows when full); "💀⚔️ DEATH STRIKE" + big numbers on targets in Conquest.
+    Skill card shows a LIMIT tag. Test g202.
+  - Kit (v955 vs v954): walls and swap unchanged (<=0.1 ch). Death Strike fires a lot for weak teams (Gareth is in melee), rarely for strong
+    ones (enemies die before reaching him) -> not a must-pick. Arena: no change - see next point.
+  - Finding (Arena): fights at Lv40+ end in ~3 seconds (6 ticks) - hero basic attacks (~1,000 dmg/s for a Lv40 team) vs a fortress of
+    150 + Town Hall x5 (+ Dev "extra base HP", default 0; Harley's owner copy 1,870). Skills, supports and tanks barely get to act, which is
+    why leaving out Gareth/Sera/Torvald changes nothing there. Needs a design call before hero buffs.
+  - Small: no "-0" damage numbers. Kit: Death Strike fire counts per setup; --cfg arenaBaseHp.

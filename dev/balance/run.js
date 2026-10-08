@@ -3,7 +3,7 @@
    - conquest: each player setup climbs Conquest until stuck -> where they get stuck ("wall") and Gareth's first KO.
    - swap:     6 heroes owned, each one left out in turn -> how far the other 5 get (who is a must-pick in Conquest).
    - arena:    teams = 6 heroes minus one, every pair fights both ways -> wins (who is a must-pick in Arena).
-   --cfg sets hero rules (game.heroKoCfg keys) for BOTH modes. Results: dev/balance/results/<name>.json; --vs prints the change against a saved run. */
+   --cfg sets hero rules (game.heroKoCfg keys) for BOTH modes; enemyScale:{..} = Conquest enemy scaling; arenaBaseHp = extra Arena fortress HP (game default 0, Harley's owner copy 1870). Results: dev/balance/results/<name>.json; --vs prints the change against a saved run. */
 const fs = require("fs"), path = require("path"), cp = require("child_process");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
@@ -35,7 +35,7 @@ function summarise(res) {
   res.forEach((r) => {
     if (r.kind === "arena") { R.arena = r.arena; return; }
     const k = r.out ? r.setup + "|" + r.out : r.setup, box = r.out ? R.swap : R.conquest;
-    (box[k] = box[k] || { walls: [], kos: [], koCount: [] }); box[k].walls.push(r.wall); box[k].kos.push(r.firstKo); box[k].koCount.push(r.koCount);
+    (box[k] = box[k] || { walls: [], kos: [], koCount: [] }); box[k].walls.push(r.wall); box[k].kos.push(r.firstKo); box[k].koCount.push(r.koCount); (box[k].ds = box[k].ds || []).push(r.ds);
   });
   [R.conquest, R.swap].forEach((box) => Object.keys(box).forEach((k) => { const b = box[k]; b.wall = med(b.walls); const ks = b.kos.filter((x) => x != null); b.firstKo = ks.length ? Math.min.apply(null, ks) : null; }));
   return R;
@@ -46,7 +46,7 @@ function print(R, B) {
   if (Object.keys(R.conquest).length) {
     console.log("\nCONQUEST           stuck at      Gareth first KO   (chapters before stuck)");
     Object.keys(SETUPS).forEach((s) => { const c = R.conquest[s]; if (!c) return; const b = B && B.conquest[s];
-      console.log("  " + SETUPS[s].padEnd(30) + lab(c.wall).padEnd(6) + d(c.wall, b && b.wall).padEnd(10) + lab(c.firstKo).padEnd(7) + (c.firstKo != null ? ((c.wall - c.firstKo) / 20).toFixed(1) : "")); });
+      console.log("  " + SETUPS[s].padEnd(30) + lab(c.wall).padEnd(6) + d(c.wall, b && b.wall).padEnd(10) + lab(c.firstKo).padEnd(7) + (c.firstKo != null ? ((c.wall - c.firstKo) / 20).toFixed(1) : "").padEnd(6) + (c.ds && c.ds[0] ? "  Death Strike: " + c.ds[0][0] + " fires, " + c.ds[0][1] + " finished off" : "")); });
   }
   if (Object.keys(R.swap).length) {
     console.log("\nCONQUEST SWAP (6 owned, one left out -> where the other 5 get stuck; lower = that hero matters more)");
@@ -79,7 +79,7 @@ async function worker() {
   const out = [];
   for (const job of JSON.parse(process.env.KS_JOBS)) {
     out.push(await P.evaluate(async ({ job, CFG, HEROES }) => {
-      const applyCfg = (c) => Object.keys(CFG).forEach((k) => { if (k !== "enemyScale") c[k] = CFG[k]; });
+      const applyCfg = (c) => Object.keys(CFG).forEach((k) => { if (k !== "enemyScale" && k !== "arenaBaseHp") c[k] = CFG[k]; });
       if (CFG.enemyScale) Object.keys(CFG.enemyScale).forEach((k) => { enemyScale[k] = CFG.enemyScale[k]; }); /* Conquest enemy scaling (a global the sims share) */
       const W3 = ["missile_barrage", "laser_beam", "railgun"], FIVE = HEROES.slice(0, 5);
       if (job.kind === "arena") { /* every pair of "6 minus one" teams, both sides, 10 seeds, same levels, no bonuses */
@@ -88,7 +88,7 @@ async function worker() {
         for (const [tag, lvl, arms, sk] of [["Lv40 2*", 40, 10, 3], ["Lv80 5*", 80, 25, 5]]) {
           const hs = {}; HEROES.forEach((k) => { hs[k] = { owned: true, level: lvl, stars: arms, skillLevels: { conquest: [sk, sk, sk], expedition: [sk, sk, sk] } }; });
           const teams = HEROES.map((x) => ({ out: x, roster: HEROES.filter((k) => k !== x) })), score = {}; HEROES.forEach((x) => { score[x] = { w: 0, l: 0, d: 0 }; });
-          const mk = (roster, isP) => { const st = arenaSideStats(roster, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { const ix = roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 240, ix, isP); }); return st; };
+          const mk = (roster, isP) => { const st = arenaSideStats(roster, hs, 20, CFG.arenaBaseHp != null ? CFG.arenaBaseHp : arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { const ix = roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 240, ix, isP); }); return st; };
           for (let i = 0; i < teams.length; i++) for (let j = 0; j < teams.length; j++) { if (i === j) continue;
             for (let s = 0; s < 10; s++) { const seed = tag + "|" + i + "|" + j + "|" + s; const sim = arenaMakeSim(mk(teams[i].roster, true), mk(teams[j].roster, false), { rng: worldPvpSeededRng(seed), critSeed: seed });
               const w = sim.runToEnd(), A = score[teams[i].out], B = score[teams[j].out]; if (w === "player") { A.w++; B.l++; } else if (w === "ai") { A.l++; B.w++; } else { A.d++; B.d++; } } }
@@ -120,7 +120,7 @@ async function worker() {
         if (i % 5000 === 0) await new Promise((r) => setTimeout(r, 0));
       }
       setEquipBonus({});
-      return Object.assign({}, job, { wall: (s.idle.chapter - 1) * 20 + s.idle.levelNum, firstKo, koCount });
+      return Object.assign({}, job, { wall: (s.idle.chapter - 1) * 20 + s.idle.levelNum, firstKo, koCount, ds: [s.idle.limitFires || 0, s.idle.limitKills || 0, i] });
     }, { job, CFG, HEROES }));
   }
   await b.close();
