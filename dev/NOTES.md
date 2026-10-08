@@ -586,3 +586,9 @@
   rework later). Rarity is cosmetic only (card colour, tag, slot border) - added the Rare tag/slot styles (blue; the card style existed).
   Design notes from Harley: Sera is meant to be good in Arena and useless in Conquest. Torvald has a normal basic attack but no attack
   animation art (only Gareth and Kessa have animated battle sprites).
+- v961 (9 Oct) Death Strike rides on Shield Slam (Harley): a full bar stays loaded and fires together with Gareth's next Shield Slam, in
+  Conquest (idleFireLimit, called where Shield Slam lands - so in Manual mode it waits for that tap) and Arena (fireLimits called from the
+  active-skill blocks). Test g202 + manual-mode check.
+  Checked (no bug): Flak Burst / Scatter Rounds do fire in Arena. All plain damage weapons (missiles, flak, scatter, laser, pulse) deal
+  BASE_ATK x dmgPct x ATK bonus - flat, not tied to hero levels - so against the new power-scaled fortress they are ~2% of a Lv40 fight
+  (e.g. missiles 720 dmg of a 30,000 HP fortress). Railgun (% of fortress max HP) still scales.

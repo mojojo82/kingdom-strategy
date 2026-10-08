@@ -4762,7 +4762,7 @@ var HERO_DEFS = {
       // v954: a "limit" skill - no timer; a bar that fills by 1 per swing he lands and takenPts per hit he takes (Conquest and Arena alike), emptied by a KO.
       // Replaces Shield Slam's old hidden 20% coin-flip execute (combat has no dice now). Same rules in both modes (see HANDOVER).
       { name: "Death Strike", icon: "💀⚔️", kind: "limit", hitsToFill: 40, takenPts: 3, targetsByLevel: [2, 2, 3, 3, 4], executePct: 0.3, pctByLevel: [0.8, 0.9, 1.0, 1.1, 1.2],
-        desc: "Fills as Gareth fights: every swing he lands, and three times as much for every hit he takes (a KO empties it). When full, he cleaves the nearest enemies (2, up to 4 at level 5): any below 30% HP fall at once, the rest take a heavy hit. Bosses and fortresses can't be finished off." }
+        desc: "Fills as Gareth fights: every swing he lands, and three times as much for every hit he takes (a KO empties it). Once full it fires with his next Shield Slam: he cleaves the nearest enemies (2, up to 4 at level 5): any below 30% HP fall at once, the rest take a heavy hit. Bosses and fortresses can't be finished off." }
       // Slot 3 intentionally blank for now.
     ],
     expeditionSkills: [
@@ -7088,26 +7088,9 @@ function createGame(opts) {
           state.idle.skillLandCounts[key] = (state.idle.skillLandCounts[key] || 0) + 1;
           (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: key, id: front.id }); // which enemy the skill hit, for the visuals
           var skHit = front; front = front0; if (skHit !== front0 && skHit.hp <= 0) idleRemoveDeadEnemyAt(state.idle.enemies.indexOf(skHit));
+          idleFireLimit(key); /* v961: a loaded Death Strike rides along with Shield Slam */
         }
       }
-    });
-
-    // v954: limit skills (Death Strike). Full bar + something on the field -> cleave the nearest N enemies: below executePct of their max HP
-    // they fall at once (never a boss), the rest take the skill's hit. No timer and no dice. Same rule as the Arena version (arenaMakeSim).
-    state.conquestRoster.slice(0, 5).forEach(function (key) {
-      var L = idleLimitSkill(key), h = state.heroes[key]; if (!L || !h || !h.owned || idleHeroIsKo(key)) return;
-      var lm = state.idle.limit || (state.idle.limit = {}); if ((lm[key] || 0) < L.sk.hitsToFill) return;
-      var live = state.idle.enemies.filter(function (e0) { return e0.hp > 0 && e0.arrived; }); if (!live.length) return; // stays full until something is there
-      var lv = heroSkillLevel(key, "conquest", L.idx), n = L.sk.targetsByLevel[Math.max(1, Math.min(L.sk.targetsByLevel.length, lv)) - 1];
-      var dmgL = skillValueAtLevel(key, L.idx, lv, L.sk, h, idleAttackerDamage(key)), ids = [];
-      lm[key] = 0; state.idle.limitFires = (state.idle.limitFires || 0) + 1;
-      live.slice(0, n).forEach(function (t) {
-        if (t.type !== "boss" && t.hp <= (t.maxHp || t.hp) * L.sk.executePct) { t.limitExec = true; t.hp = 0; state.idle.limitKills = (state.idle.limitKills || 0) + 1; }
-        else t.hp -= dmgL * idleMarkMult(t, key) * idleEnemyDefTake(t, dmgL);
-        ids.push(t.id);
-      });
-      (state.idle.limitLog || (state.idle.limitLog = [])).length < 20 && state.idle.limitLog.push({ key: key, ids: ids, dmg: dmgL });
-      for (var di = state.idle.enemies.length - 1; di >= 1; di--) if (state.idle.enemies[di].hp <= 0 && ids.indexOf(state.idle.enemies[di].id) >= 0) idleRemoveDeadEnemyAt(di); // a dead FRONT enemy is left to the usual front-death check, same as Shield Slam
     });
 
     // Equipped weapons (state.equippedWeapons, up to WEAPON_EQUIP_MAX — see
@@ -7754,6 +7737,24 @@ function createGame(opts) {
   function idleLimitSkill(key) { var d = HERO_DEFS[key], cs = d && d.conquestSkills; if (!cs) return null; for (var i = 0; i < cs.length; i++) if (cs[i].kind === "limit") return { sk: cs[i], idx: i }; return null; }
   function idleLimitAdd(key, taken) { var L = idleLimitSkill(key); if (!L) return; var lm = state.idle.limit || (state.idle.limit = {}); lm[key] = Math.min(L.sk.hitsToFill, (lm[key] || 0) + (taken ? L.sk.takenPts || 1 : 1)); }
   function idleLimitFrac(key) { var L = idleLimitSkill(key); if (!L) return null; return Math.min(1, ((state.idle.limit || {})[key] || 0) / L.sk.hitsToFill); }
+  // v954/v961: limit skills (Death Strike). A full bar stays loaded and fires together with the hero's next active skill (Shield Slam) -
+  // so in Manual mode it waits for that tap too. Cleaves the nearest N enemies: below executePct of max HP they fall at once (never a boss),
+  // the rest take the skill's hit. No dice. Same rule as the Arena version (arenaMakeSim fireLimits).
+  function idleFireLimit(key) {
+    var L = idleLimitSkill(key), h = state.heroes[key]; if (!L || !h || !h.owned || idleHeroIsKo(key)) return;
+    var lm = state.idle.limit || (state.idle.limit = {}); if ((lm[key] || 0) < L.sk.hitsToFill) return;
+    var live = state.idle.enemies.filter(function (e0) { return e0.hp > 0 && e0.arrived; }); if (!live.length) return;
+    var lv = heroSkillLevel(key, "conquest", L.idx), n = L.sk.targetsByLevel[Math.max(1, Math.min(L.sk.targetsByLevel.length, lv)) - 1];
+    var dmgL = skillValueAtLevel(key, L.idx, lv, L.sk, h, idleAttackerDamage(key)), ids = [];
+    lm[key] = 0; state.idle.limitFires = (state.idle.limitFires || 0) + 1;
+    live.slice(0, n).forEach(function (t) {
+      if (t.type !== "boss" && t.hp <= (t.maxHp || t.hp) * L.sk.executePct) { t.limitExec = true; t.hp = 0; state.idle.limitKills = (state.idle.limitKills || 0) + 1; }
+      else t.hp -= dmgL * idleMarkMult(t, key) * idleEnemyDefTake(t, dmgL);
+      ids.push(t.id);
+    });
+    (state.idle.limitLog || (state.idle.limitLog = [])).length < 20 && state.idle.limitLog.push({ key: key, ids: ids, dmg: dmgL });
+    for (var di = state.idle.enemies.length - 1; di >= 1; di--) if (state.idle.enemies[di].hp <= 0 && ids.indexOf(state.idle.enemies[di].id) >= 0) idleRemoveDeadEnemyAt(di); // a dead FRONT enemy is left to the usual front-death check
+  }
   function idleHeroHitMult(type) { return (HERO_KO_CFG.heroDmgMult || 1) * (type === "boss" ? (HERO_KO_CFG.bossVsHero || 1) : 1); } /* v954: extra multipliers on a hit that lands on a hero (shown numbers use it too) */
   function idleFortressDef() { return FORTRESS_DEF_POWER * defNetMult(heroBonusMult("def")); }
   function idleHeroDmgRed() { return fortressBonusFrom(state.fortressTech || {}).dmgRed || 0; }
@@ -10393,7 +10394,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v960"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v961"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26573,7 +26574,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     heroHitTaken(best);
     return false;
   }
-  var engaged = false;
+  var engaged = false, limTgt = {};
   var sim = { fxState: FXS, tick: 0, playerHp: playerHp, aiHp: aiHp, maxTicks: maxTicks, shared: shared, pHH: pHH, aHH: aHH };
   // optional damage log — tr.src[source] = damage dealt BY the player side (after the target's armor), tr.perTick[]
   // (used by the Boss Simulator); tr.aiSrc[source] = damage dealt BY the opposing side (after the player's own
@@ -26585,7 +26586,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   sim.step = function () {
     tick++;
     engaged = tick >= ARENA_ENGAGE_TICKS; // has infantry finished walking over yet (the whole-army fallback when hero positions aren't simulated)
-    skTgt = {}; hitTgt = {};
+    skTgt = {}; hitTgt = {}; limTgt = {};
     var playerFlash = [], aiFlash = [];
     var playerHitAttackers = [], aiHitAttackers = [];
     var playerDmg = 0, aiDmg = 0, playerMeleeDmg = 0, aiMeleeDmg = 0, playerRangedAtk = 0, aiRangedAtk = 0, projP = 0, projA = 0;
@@ -26631,7 +26632,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       playerCd[a.key] -= cdStep;
       if (playerCd[a.key] <= 0) {
         if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
-        playerCd[a.key] += a.cooldown; playerFlash.push(a.key);
+        playerCd[a.key] += a.cooldown; playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, a.value, 'p_')) playerDmg += a.value; } else if (posMode) { if (rangedHit(pHH, aHH, aiStats, a.key, a.value, skTgt, 'p_')) { playerDmg += a.value; projP += a.value; } } else { playerDmg += a.value; if (a.requiresClose) playerMeleeDmg += a.value; } trAdd('skill:' + a.key + '|' + a.name, a.value); }
       }
     });
@@ -26640,15 +26641,16 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       aiCd[a.key] -= cdStep;
       if (aiCd[a.key] <= 0) {
         if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
-        aiCd[a.key] += a.cooldown; aiFlash.push(a.key);
+        aiCd[a.key] += a.cooldown; aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, a.value, 'a_')) aiDmg += a.value; } else if (posMode) { if (rangedHit(aHH, pHH, playerStats, a.key, a.value, skTgt, 'a_')) { aiDmg += a.value; projA += a.value; } } else { aiDmg += a.value; if (a.requiresClose) aiMeleeDmg += a.value; } trAddAi('skill:' + a.key + '|' + a.name, a.value); }
       }
     });
     // v954: limit skills (Death Strike), same rule as Conquest: full bar + an enemy in sword reach -> cleave the nearest N standing enemy heroes
     // (below exec x max HP they are KO'd at once, the rest take the hit); nothing but the fortress in reach -> it takes the hit (never finished off).
-    function fireLimits(st, hh, oh, oppStats, flash, tagP) {
+    function fireLimits(st, hh, oh, oppStats, key, tagP) { /* v961: called when that hero's own active skill fires - a full bar rides along with it */
       var out = 0; if (!posMode || !st.limits || !st.limits.length) return 0;
       st.limits.forEach(function (L) {
+        if (L.key !== key) return;
         var me = hh.by[L.key]; if (!me || me.ko || me.lim < L.fill || !me.reach) return;
         var tg = oh.list.filter(function (o) { return !o.ko && !o.droid && me.d + o.d >= 1 - ARENA_REACH; }).sort(function (a, b) { return b.d - a.d; }).slice(0, L.n);
         me.lim = 0; limTgt[tagP + L.key] = tg.map(function (o) { return o.id; });
@@ -26661,7 +26663,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       });
       return out;
     }
-    var limTgt = {}; playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, playerFlash, "p_"); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, aiFlash, "a_");
+    // (fired from the active-skill blocks above)
     // Support skills: heal the fortress / raise a guard shield, on their own cooldown (Sera's Rally trims the other heroes' skill timers).
     function stepSupports(list, cdMap, actCd, getHp, setHp, getG, setG, maxHp, hhh) {
       list.forEach(function (u) {

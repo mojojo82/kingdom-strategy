@@ -39,11 +39,11 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const mkE = (id, hp, mx) => ({ id, type: "infantry", hp, maxHp: mx, def: 0, arrived: true, engaged: true, arriveRemaining: 0, closeRemaining: 0, aliveSeconds: 5, atkCooldown: 9, hitCount: 0 });
     s.idle.enemies.unshift(mkE(9001, 50, 50), mkE(9002, 1e6, 1e6)); const live = s.idle.enemies.slice(0, 2);
     live[0].hp = live[0].maxHp * 0.2; live[1].hp = live[1].maxHp; const id0 = live[0].id, id1 = live[1].id, hp1 = live[1].hp;
-    s.idle.limit = { gareth: HERO_DEFS.gareth.conquestSkills[1].hitsToFill }; const f0 = s.idle.limitFires || 0; t += 1000; sim.tick();
+    s.idle.limit = { gareth: HERO_DEFS.gareth.conquestSkills[1].hitsToFill }; const f0 = s.idle.limitFires || 0; s.heroCooldowns.gareth = 0.5; s.idle.skillAuto = false; t += 1000; sim.tick(); const manualWaits = (s.idle.limitFires || 0) === f0; /* v961: Manual mode - it waits for the Shield Slam tap */ s.idle.skillCast = { gareth: true }; t += 1000; sim.tick();
     const e1 = s.idle.enemies.find((e) => e.id === id1);
-    return { staged: true, fired: (s.idle.limitFires || 0) === f0 + 1, weakGone: !s.idle.enemies.some((e) => e.id === id0 && e.hp > 0), strongHit: !e1 || e1.hp < hp1, emptied: s.idle.limit.gareth < HERO_DEFS.gareth.conquestSkills[1].hitsToFill };
+    return { staged: true, manualWaits, fired: (s.idle.limitFires || 0) === f0 + 1, weakGone: !s.idle.enemies.some((e) => e.id === id0 && e.hp > 0), strongHit: !e1 || e1.hp < hp1, emptied: s.idle.limit.gareth < HERO_DEFS.gareth.conquestSkills[1].hitsToFill };
   });
-  console.log("cleave:", JSON.stringify(r2)); assert.ok(r2.staged && r2.fired && r2.weakGone && r2.strongHit && r2.emptied, JSON.stringify(r2));
+  console.log("cleave:", JSON.stringify(r2)); assert.ok(r2.staged && r2.manualWaits && r2.fired && r2.weakGone && r2.strongHit && r2.emptied, JSON.stringify(r2));
   const r3 = await P.evaluate(() => {
     /* Arena: same rule - full bar in reach finishes an enemy hero under 30%, hits the others */
     const hs = {}; ["gareth", "lyra", "torvald", "roran"].forEach((k) => { hs[k] = { owned: true, level: 40, stars: 10, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
@@ -51,7 +51,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const sim = arenaMakeSim(mk(["gareth", "lyra"], true), mk(["torvald", "roran"], false), { rng: worldPvpSeededRng("ds"), critSeed: "ds" });
     let r, met = false; for (let i = 0; i < 120 && !met; i++) { r = sim.step(); const g = sim.pHH.by.gareth; met = g.reach && !g.ko; }
     if (!met) return { met: false };
-    const g = sim.pHH.by.gareth, tv = sim.aHH.by.torvald; tv.hp = tv.max * 0.2; g.lim = g.limMax; r = sim.step();
+    const g = sim.pHH.by.gareth, tv = sim.aHH.by.torvald; let fired = false; for (let k = 0; k < 40 && !fired; k++) { if (!tv.ko) tv.hp = tv.max * 0.2; g.lim = g.limMax; r = sim.step(); fired = !!(r.info.limitTargets && r.info.limitTargets.p_gareth); if (g.ko) break; } /* v961: fires with his next Shield Slam */
     return { met: true, limitStats: !!(sim.pHH.by.gareth.limMax), fired: !!(r.info.limitTargets && r.info.limitTargets.p_gareth), torvaldKo: tv.ko, emptied: g.lim < g.limMax, shownBar: (r.info.playerHeroes.find((e) => e.id === "gareth") || {}).lim != null };
   });
   console.log("arena:", JSON.stringify(r3)); assert.ok(r3.met && r3.fired && r3.torvaldKo && r3.emptied && r3.shownBar, JSON.stringify(r3));
