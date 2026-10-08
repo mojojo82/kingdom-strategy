@@ -510,3 +510,7 @@
     half-on-land clipping yet). Only at full detail (lod 0).
   - New skin "Watchtower II" (tower2), added after Watchtower (not a replacement), unlocked for everyone. Original in art/originals/watchtower2.png.
   - Test: g200_base_water (layer lined up behind the base, animates, tower2 unlocked + drawn, off next to land, Dev switch).
+- v952 (9 Oct) Base water now goes all the way round. Harley (iPhone): foam/ripples only showed at the front corner of square bases. Cause: v951
+  took the lowest 16% of the art as "touching the water", which on Watchtower II / Mecha only reaches the front corner. Now it uses the
+  base's whole ground plate (widest row in the lower part x ISO_K tall, same measure as cityArtGet), and ripples may spread above it, so the
+  side and back edges get foam + ripples too (anything behind the building is hidden by the building itself).
