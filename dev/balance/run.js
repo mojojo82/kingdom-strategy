@@ -79,7 +79,8 @@ async function worker() {
   const out = [];
   for (const job of JSON.parse(process.env.KS_JOBS)) {
     out.push(await P.evaluate(async ({ job, CFG, HEROES }) => {
-      const applyCfg = (c) => Object.keys(CFG).forEach((k) => { c[k] = CFG[k]; });
+      const applyCfg = (c) => Object.keys(CFG).forEach((k) => { if (k !== "enemyScale") c[k] = CFG[k]; });
+      if (CFG.enemyScale) Object.keys(CFG.enemyScale).forEach((k) => { enemyScale[k] = CFG.enemyScale[k]; }); /* Conquest enemy scaling (a global the sims share) */
       const W3 = ["missile_barrage", "laser_beam", "railgun"], FIVE = HEROES.slice(0, 5);
       if (job.kind === "arena") { /* every pair of "6 minus one" teams, both sides, 10 seeds, same levels, no bonuses */
         const saved = Object.assign({}, game.heroKoCfg); applyCfg(game.heroKoCfg);

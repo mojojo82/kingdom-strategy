@@ -3654,7 +3654,7 @@ var ASSET_SYNC_KEY_PREFIXES = [
   "kingdom_prototype_heroAtkPerPowerOverride_v1",
   "kingdom_prototype_heroBaseDef_v1",
   "kingdom_prototype_heroBonus_v1",
-  "kingdom_prototype_enemyScale_v7",
+  "kingdom_prototype_enemyScale_v8",
   "kingdom_prototype_arenasharedtiming_v1",
   "kingdom_prototype_arenaherohp_v1",
   "kingdom_prototype_arenadmgnum_v1",
@@ -6577,7 +6577,7 @@ function createGame(opts) {
   // Melee enemies hit the first standing infantry hero instead of the fortress; ranged enemies and bosses still hit the fortress
   // (riders are untouchable for now). A hero at 0 HP is KO'd: skills/attacks stop, the skill timer resets and stays frozen,
   // and he revives after reviveSec. The fortress HP pool is still the lose condition. All three numbers are Dev Tools sliders.
-  var HERO_KO_CFG = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 50, heroDmgMult: 1, bossHeroEvery: 0, bossHeroMode: "copy" }; /* v954: heroDmgMult = every hit on a HERO (Conquest and Arena alike) x this; bossHeroEvery = every Nth boss attack also hits the front infantry hero (fortress still takes it) */ // rangedPct: % of archer/lancer hits that go to the standing infantry hero instead of the fortress (0 = ranged always hit the fortress)
+  var HERO_KO_CFG = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 50, heroDmgMult: 1, bossHeroEvery: 1, bossHeroMode: "redirect", bossVsHero: 3 }; /* v954 tank rule (Harley): the boss shoots the front infantry hero while one stands, the fortress once he is KO'd; its shot hits a hero x3. Tuned with dev/balance (walls within ~0.5 ch, Gareth first dies ~2 ch before the wall) */ /* v954: heroDmgMult = every hit on a HERO (Conquest and Arena alike) x this; bossHeroEvery = every Nth boss attack also hits the front infantry hero (fortress still takes it) */ // rangedPct: % of archer/lancer hits that go to the standing infantry hero instead of the fortress (0 = ranged always hit the fortress)
   function idleHeroMaxHp(key) {
     var h = state.heroes[key];
     if (!h || !h.owned) return 0;
@@ -7700,6 +7700,7 @@ function createGame(opts) {
   }
   function idleHeroBaseAtk(key) { var h = state.heroes[key]; return (h && h.owned) ? Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective()) : 0; } // base ATK stat = power level × attack constant (no skill bonuses)
   function idleHeroDefMult(key, A) { return defReduce(A, heroDefNet(state.heroes[key], heroBonusMult("def"))); }
+  function idleHeroHitMult(type) { return (HERO_KO_CFG.heroDmgMult || 1) * (type === "boss" ? (HERO_KO_CFG.bossVsHero || 1) : 1); } /* v954: extra multipliers on a hit that lands on a hero (shown numbers use it too) */
   function idleFortressDef() { return FORTRESS_DEF_POWER * defNetMult(heroBonusMult("def")); }
   function idleHeroDmgRed() { return fortressBonusFrom(state.fortressTech || {}).dmgRed || 0; }
   // Damage of ONE basic hit (full 1s-equivalent hit × per-hero interval share). Skills keep using idleAttackerDamage (the full number).
@@ -7717,7 +7718,7 @@ function createGame(opts) {
     if (tgtHeroKey) {
       var tgtEnt = idleHeroEntry(tgtHeroKey);
       if (!tgtEnt || tgtEnt.hp <= 0) return;
-      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * (HERO_KO_CFG.heroDmgMult || 1);
+      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type); /* bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
       if (tgtEnt.hp <= 0) idleKoHero(tgtHeroKey);
       return;
     }
@@ -8565,7 +8566,7 @@ function createGame(opts) {
     idleEnemyHitRadius: function (type) { return (IDLE_ENEMY_TYPES[type] || {}).hitRadius || 0.05; },
     idleFortressCannonBulletInterval: idleFortressCannonBulletInterval, setFortressCannonTargetMode: setFortressCannonTargetMode,
     getHeroPosOffset: getHeroPosOffset, setHeroPosOffset: setHeroPosOffset, resetAllHeroPosOffsets: resetAllHeroPosOffsets,
-    idleEnemyAtk: idleEnemyAtk,
+    idleEnemyAtk: idleEnemyAtk, idleHeroHitMult: idleHeroHitMult,
     forgeOnce: forgeOnce, equipPiece: equipPiece, unequipSlot: unequipSlot, dismantlePiece: dismantlePiece, dismantleUpTo: dismantleUpTo, equipBest: equipBest,
     tickCombat: tickCombat, idleSetSkillAuto: idleSetSkillAuto, idleCastSkill: idleCastSkill, collectBucket: collectBucket, bucketAwayClear: bucketAwayClear, bucketInfo: bucketInfo, forgeInfo: forgeInfo, forgeOdds: forgeOdds, forgeCost: forgeCost, recomputeEquipBonus: recomputeEquipBonus, equipTotals: equipTotals,
     EQ_RARITIES: EQ_RARITIES, EQ_DISMANTLE: EQ_DISMANTLE, EQ_SLOTS: EQ_SLOTS,
@@ -10277,8 +10278,8 @@ function bonusOf(simLike) { if (!simLike || simLike === game) return heroBonus; 
 function defReduce(A, def) { return (def > 0 && A > 0) ? A / (A + def) : 1; }
 // A bot/opponent's bonus: the real player's current bonus scaled by how strong that bot is (factor) with a little per-stat jitter, so bots mimic players with roughly equal ATK/HP/DEF bonuses.
 function botBonusFrom(factor) { var o = { atk: 0, hp: 0, def: 0, skill: 0 }; ["atk", "hp", "def", "skill"].forEach(function (k) { o[k] = Math.max(0, Math.round(heroBonusTotal(k) * factor * (0.92 + Math.random() * 0.16))); }); return o; }
-var ENEMY_SCALE_KEY = "kingdom_prototype_enemyScale_v7";
-var ENEMY_SCALE_DEFAULT = { start: 60, growth: 0.064, exp: 1.5, boss: 1.5, def: 20 }; // v748: boss on every level, retuned so a maxed player reaches ~Chapter 21 (key v5)
+var ENEMY_SCALE_KEY = "kingdom_prototype_enemyScale_v8";
+var ENEMY_SCALE_DEFAULT = { start: 60, growth: 0.064, exp: 1.5, boss: 2.2, def: 20 }; /* v954: boss 1.5 -> 2.2 to win back the ground the tank rule gives players (key v8) */ // v748: boss on every level, retuned so a maxed player reaches ~Chapter 21 (key v5)
 var enemyScale = (function () { var o = {}; Object.keys(ENEMY_SCALE_DEFAULT).forEach(function (k) { o[k] = ENEMY_SCALE_DEFAULT[k]; }); try { var r = JSON.parse(localStorage.getItem(ENEMY_SCALE_KEY) || "null"); if (r) Object.keys(o).forEach(function (k) { if (typeof r[k] === "number" && isFinite(r[k]) && r[k] >= 0) o[k] = r[k]; }); } catch (e) {} return o; })();
 function setEnemyScale(k, v) {
   if (!(k in ENEMY_SCALE_DEFAULT)) return;
@@ -18604,12 +18605,12 @@ function stepIdleAnim(dtSec, w, h) {
       if (inReach) vis.atkStart = performance.now();
     })();
     if (re.heroHitKey && !IDLE_ENEMY_TYPE_MELEE[re.type] && idleAnim.heroVis[re.heroHitKey]) { // ranged hit aimed at a grounded hero: the arrow flies to him
-      if (idleAnim.pendingProjectileLaunches.length < IDLE_PROJECTILE_QUEUE_CAP) idleAnim.pendingProjectileLaunches.push({ id: re.id, isLancer: re.type === "lancer", isBoss: re.type === "boss", dmg: hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)), heroKey: re.heroHitKey });
+      if (idleAnim.pendingProjectileLaunches.length < IDLE_PROJECTILE_QUEUE_CAP) idleAnim.pendingProjectileLaunches.push({ id: re.id, isLancer: re.type === "lancer", isBoss: re.type === "boss", dmg: hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)) * game.idleHeroHitMult(re.type), heroKey: re.heroHitKey });
       return;
     }
     if (re.heroHitKey) { // v527: this hit landed on a grounded hero, not the fortress — show it on him (no arrow to the fortress, no fortress HP accounting)
       var hv = idleAnim.heroVis[re.heroHitKey];
-      if (hv) { spawnDamageNumber(hv.x, hv.y - 34 * (heroSpriteVisualScale / 100), hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)), false, true); vis.hitSpark = null; }
+      if (hv) { spawnDamageNumber(hv.x, hv.y - 34 * (heroSpriteVisualScale / 100), hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)) * game.idleHeroHitMult(re.type), false, true); vis.hitSpark = null; }
       return;
     }
     /* v916: the boss ALWAYS shoots its green orb. It used to swap the orb for a ⚔️/💥 "swing" whenever a melee hero stood within 30px, which at chapter 1 is nearly every hit (Gareth walks up to it), so the HP dropped with no projectile on screen (repro: 1 orb to 7 swings in 30s). */
@@ -22095,8 +22096,8 @@ document.getElementById("devRunBlendBtn").onclick = function () { var on = !(HER
 var HERO_KO_CFG_KEY = "kingdom_prototype_herokocfg_v2"; /* v954: v2 - ranged % is now ONE setting for Conquest and Arena (default 50, was 0 in Conquest / 50 in Arena), so old saved values start fresh */
 (function () {
   var cfg = game.heroKoCfg;
-  try { var r = JSON.parse(localStorage.getItem(HERO_KO_CFG_KEY) || "null"); if (r && typeof r === "object") ["reviveSec", "baseHp", "hpPerPower", "rangedPct", "heroDmgMult", "bossHeroEvery"].forEach(function (k) { if (typeof r[k] === "number" && isFinite(r[k])) cfg[k] = r[k]; }); } catch (e) {}
-  var defs = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 50, heroDmgMult: 1, bossHeroEvery: 0 };
+  try { var r = JSON.parse(localStorage.getItem(HERO_KO_CFG_KEY) || "null"); if (r && typeof r === "object") ["reviveSec", "baseHp", "hpPerPower", "rangedPct", "heroDmgMult", "bossHeroEvery", "bossVsHero"].forEach(function (k) { if (typeof r[k] === "number" && isFinite(r[k])) cfg[k] = r[k]; }); } catch (e) {}
+  var defs = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 50, heroDmgMult: 1, bossHeroEvery: 1, bossVsHero: 3 };
   var map = [["reviveSec", "heroKoReviveSlider", "heroKoReviveVal", "s"], ["baseHp", "heroKoBaseSlider", "heroKoBaseVal", ""], ["hpPerPower", "heroKoPerSlider", "heroKoPerVal", ""], ["rangedPct", "heroKoRangedSlider", "heroKoRangedVal", "%"]];
   function sync() { map.forEach(function (m) { var sl = document.getElementById(m[1]), vl = document.getElementById(m[2]); if (sl) sl.value = cfg[m[0]]; if (vl) vl.textContent = cfg[m[0]] + m[3]; }); try { renderRangedHeroBtn(); } catch (e) {} }
   function save() { try { localStorage.setItem(HERO_KO_CFG_KEY, JSON.stringify(cfg)); } catch (e) {} assetSyncUpload(HERO_KO_CFG_KEY, JSON.stringify(cfg)); }

@@ -523,9 +523,14 @@
     round-robin (teams of 6-minus-one). Results in dev/balance/results/ (baseline_v953 = before, v954_unified = now).
   - Ranged hits on infantry heroes are now ONE setting for both modes (HERO_KO_CFG.rangedPct, default 50; was 0 in Conquest, 50 in Arena).
     Conquest walls unchanged; Arena plays as before. The Arena Dev button now edits the same setting. Hero KO Dev settings key bumped to v2.
-  - New knobs, all OFF by default: heroDmgMult (every hit on a hero, both modes), bossHeroEvery + bossHeroMode ("redirect" = boss shoots
-    the front infantry hero instead of the fortress, "copy" = both). Harley picked the tank ("redirect") idea; tuning parked until the
-    planned energy-wave bosses (they hit all heroes + fortress) arrive, then a full re-tune with the kit.
+  - Tank rule (Harley's pick): the boss shoots the front standing infantry hero (Gareth, or Torvald if Gareth isn't fielded) instead of the
+    fortress; once he is KO'd its shots hit the fortress until he revives. Boss shots hit a hero x3 (bossVsHero - a Conquest boss stat, not a
+    hero rule; Arena has no bosses). Boss enemy scaling 1.5 -> 2.2 (enemyScale key v8) wins back the ground the tank gives.
+    Kit result vs v953: walls -0.1..+0.6 ch; Gareth first KO 2.0-2.6 ch before the wall (duo Lv20: 0.3 ch); Arena unchanged; swap test:
+    leaving Gareth out costs nothing because Torvald tanks instead (tank = infantry role, not a Gareth must-pick).
+    Knobs (game.heroKoCfg): bossHeroEvery 1, bossHeroMode "redirect" ("copy" = both), bossVsHero 3, heroDmgMult 1 (every hit on a hero, both modes).
+    Boss orb visuals already fly to the hero; shown damage numbers now include the multipliers. Energy-wave bosses (hit all heroes + fortress)
+    are planned later -> re-tune with the kit then.
   - Findings: every Conquest wall is the boss one-shotting the fortress (fortress ~155 HP, max Gareth 1,380). Normal enemies barely touch
     Gareth, so more ranged hits / lower hero HP / x12 hero damage never killed him. Arena: Lyra is the must-pick; at Lv80 leaving out
     Gareth, Sera or Torvald changes nothing.
