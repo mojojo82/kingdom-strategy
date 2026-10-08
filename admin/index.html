@@ -163,6 +163,14 @@
   </section>
 
   <section class="card">
+    <h2>📦 Import a save into my account</h2>
+    <div class="muted">For moving your old claude.ai save into Firebase. Pick the save file, check the summary, then Import. It goes into <b>your own account</b> in the environment selected above. Your current save is backed up first. Your kingdom, map position and marches are kept from your current account (the old map no longer exists). <b>Close the game on every device first</b>, then open it again after importing.</div>
+    <div class="row" style="margin-top:8px;align-items:center;gap:8px"><label class="b ghost" style="cursor:pointer">📁 Choose save file<input type="file" id="impFile" accept=".json,application/json" style="display:none"></label><span id="impName" class="muted"></span></div>
+    <div id="impSum" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:8px"><button class="b" id="impGo" disabled>Import</button></div>
+  </section>
+
+  <section class="card">
     <h2>🛠️ Maintenance mode</h2>
     <div class="muted">While ON, players in the selected environment see a maintenance screen and nothing they do is saved; the server refuses their saves and claims. You (admin) can still play. Turning it OFF reloads everyone's game onto the newest version.</div>
     <div id="mtStatus" style="margin-top:8px;font-weight:700">…</div>
@@ -315,6 +323,30 @@
   }
 
   // ---- actions (every one asks to confirm, naming the environment) ----
+  // ---- save import (old claude.ai owner save -> my Firebase account) ----
+  var IMP = null;
+  $("impFile").onchange = function (e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return; $("impName").textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
+    f.text().then(function (t) {
+      var b = JSON.parse(t); if (!b || !b.save || !b.save.buildings) throw new Error("not a save file");
+      IMP = b; var sv = b.save, owned = Object.keys(sv.heroes || {}).filter(function (k) { return sv.heroes[k] && sv.heroes[k].owned; }), idle = sv.idle || {};
+      $("impSum").innerHTML = '<div class="tabbox"><b>Town Hall ' + esc(String(((sv.buildings || {}).townhall || {}).level || 0)) + '</b> · Conquest ' + esc((idle.chapter || 1) + "-" + (idle.levelNum || 1)) + ' · ' + owned.length + ' heroes (' + esc(owned.join(", ")) + ')<br>Gems: <b>' + esc(String(b.gems != null ? b.gems : sv.gems || 0)) + '</b> · ' + Object.keys(b.assets || {}).length + ' art/setting items</div>';
+      $("impGo").disabled = false;
+    }).catch(function (er) { IMP = null; $("impGo").disabled = true; $("impSum").textContent = ""; toast("Couldn't read that file: " + er.message, true); });
+  };
+  $("impGo").onclick = function () {
+    if (!IMP || !confirmEnv("Import this save into YOUR account? Your current save is backed up first.\nMake sure the game is closed on all your devices.")) return;
+    var btn = $("impGo"); btn.disabled = true; btn.textContent = "Importing save…";
+    var keys = Object.keys(IMP.assets || {}), chunks = [], cur = {}, size = 0;
+    keys.forEach(function (k) { var a = IMP.assets[k], n = String(a.data || "").length + 64; if (size + n > 1500000 && Object.keys(cur).length) { chunks.push(cur); cur = {}; size = 0; } cur[k] = a; size += n; });
+    if (Object.keys(cur).length) chunks.push(cur);
+    var done = 0;
+    call("adminImportSave", { part: "save", save: IMP.save, gems: IMP.gems != null ? IMP.gems : IMP.save.gems }).then(function (r) {
+      return chunks.reduce(function (p, c) { return p.then(function () { btn.textContent = "Importing art " + (done + 1) + "/" + chunks.length + "…"; return call("adminImportSave", { part: "assets", assets: c }).then(function () { done++; }); }); }, Promise.resolve()).then(function () { return r; });
+    }).then(function (r) {
+      btn.textContent = "Imported ✓"; toast("Imported: Town Hall " + r.th + ", " + r.gems + " gems, " + keys.length + " art/setting items" + (r.backup ? " (old save backed up as " + r.backup + ")" : "") + ". Now open the game.");
+    }, function (e) { btn.disabled = false; btn.textContent = "Import"; toast(errText(e) + (done ? " (art part " + (done + 1) + " failed - the save itself is in)" : ""), true); });
+  };
   function confirmEnv(what) { return confirm((S.env === "live" ? "⚠️ LIVE SERVER\n\n" : "TEST server\n\n") + what + "\n\nGo ahead?"); }
   $("sendMail").onclick = function () {
     var items; try { items = readItems("mItems"); } catch (e) { toast(e.message, true); return; }

@@ -143,6 +143,12 @@ t("item catalogue + mail", () => {
   assert.strictEqual(C.signinProgress(s2.claimed, SW, 400 * D + 5), 2); assert.strictEqual(C.signinProgress(s2.claimed, SW, 401 * D), 3);
   assert.ok(C.decideEventClaim(s2.claimed, si, 1, 0, SW, 401 * D).dup);
   assert.ok(C.ITEMS.hero_roran && C.ITEMS.hero_roran.path === "heroes.roran.unlock");
+  // save import: old save + the current world's parts kept, mail claims merged, gems from the wallet
+  const oldS = { buildings: { townhall: { level: 8 } }, heroes: { gareth: { owned: true } }, idle: { chapter: 6, levelNum: 5 }, serverId: "server0", homeTileId: "59,19", marches: [{ id: 1 }], mailApplied: { a: 1 }, gems: 5 };
+  const curS = { serverId: "server0", homeTileId: "817,571", worldVersion: 7, marches: [], nextMarchId: 3, mailApplied: { b: 2 } };
+  const im = C.prepareImportSave(oldS, curS, 11900);
+  assert.strictEqual(im.homeTileId, "817,571"); assert.deepStrictEqual(im.marches, []); assert.strictEqual(im.worldVersion, 7); assert.deepStrictEqual(im.mailApplied, { a: 1, b: 2 }); assert.strictEqual(im.gems, 11900); assert.strictEqual(im.buildings.townhall.level, 8);
+  assert.throws(() => C.prepareImportSave({ foo: 1 }, curS, 0), /doesn't look like/);
   const daily = C.normalizePack({ name: "Daily", items: { gems: 10 }, tier: 1, limit: 1, reset: "daily" }); assert.strictEqual(daily.reset, "daily");
   assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, reset: "weekly" }).reset, "none", "no limit = no reset");
   assert.throws(() => C.normalizePack({ name: "x", items: { gems: 1 }, limit: 1, reset: "hourly" }), /reset/);

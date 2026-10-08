@@ -290,6 +290,19 @@ function decideEventClaim(claimed, ev, idx, progress, win, now) {
   if (progress < m.target) throw new GameError("failed-precondition", "not reached yet", { have: progress, need: m.target });
   return { dup: false, claimed: { k: win.start, c: c.concat([idx]) }, items: m.items };
 }
+/* admin save import (moving Harley's claude.ai owner save into Firebase): the old save, with the parts that belong to the CURRENT world kept
+   from the account's current save (its kingdom, map position, world version, marches), mail claims merged, gems from the wallet. */
+const IMPORT_KEEP = ["serverId", "homeTileId", "worldVersion", "marches", "nextMarchId"];
+function prepareImportSave(oldSave, current, gems) {
+  if (!oldSave || typeof oldSave !== "object" || Array.isArray(oldSave)) throw new GameError("invalid-argument", "no save in the file");
+  if (!oldSave.buildings || !oldSave.heroes || !oldSave.idle) throw new GameError("invalid-argument", "that file doesn't look like a game save");
+  const out = JSON.parse(JSON.stringify(oldSave)); current = current || {};
+  IMPORT_KEEP.forEach((k) => { if (current[k] !== undefined) out[k] = JSON.parse(JSON.stringify(current[k])); else if (k === "marches") out.marches = []; else delete out[k]; });
+  out.mailApplied = Object.assign({}, oldSave.mailApplied || {}, current.mailApplied || {});
+  if (gems != null) out.gems = gems;
+  const size = JSON.stringify(out).length; if (size > 900000) throw new GameError("invalid-argument", "save too big (" + size + ")");
+  return out;
+}
 function shopEntryLive(e, now) { return (!e.start || now >= e.start) && (!e.end || now < e.end); }
 function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
 
@@ -394,4 +407,4 @@ function checkSave(before, after, dtSec, allow) {
 }
 
 module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
-  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
+  decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

@@ -135,6 +135,44 @@ exports.adminSetWallet = wrap(async (req, uid, R, d) => {
   });
 });
 
+// Admin: import a save into the caller's OWN account (Harley moving his claude.ai owner save into Firebase). Two kinds of call:
+//  part "save":   { save, gems } -> backs up the current save to save/backup_<time>, writes the merged save, sets wallet gems + paid level
+//  part "assets": { assets: { key: { data, ts } } } -> writes players/<uid>/assetitems/<key> and adds the keys to the art index
+exports.adminImportSave = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const base = R + "players/" + uid + "/";
+  if (d.part === "save") {
+    const cur = await db.doc(base + "save/main").get(), current = cur.exists ? cur.data() : null;
+    const gems = d.gems == null ? null : Math.trunc(+d.gems); if (gems != null && !(gems >= 0 && gems <= 1e9)) throw new HttpsError("invalid-argument", "bad gems");
+    const merged = C.prepareImportSave(d.save, current, gems), now = Date.now();
+    const lvl = Math.max(0, C.globalLevel(+((merged.idle || {}).chapter) || 1, +((merged.idle || {}).levelNum) || 1) - 1);
+    if (current) await db.doc(base + "save/backup_" + now).set({ save: current, at: now, by: uid });
+    await db.doc(base + "save/main").set(merged);
+    if (gems != null) await db.runTransaction(async (tx) => {
+      const ws = await tx.get(walletRef(R, uid)), before = (ws.data() || {}).gems || 0;
+      tx.set(walletRef(R, uid), { gems, lvl, lvlAt: now }, { merge: true });
+      ledger(tx, R, uid, "gems", gems - before, gems, "admin_import", "save import", uid);
+    });
+    await db.collection(R + "adminlog").add({ by: uid, importSave: { backup: current ? "backup_" + now : null, gems, lvl, kept: C.IMPORT_KEEP }, at: now });
+    return { ok: true, backup: current ? "backup_" + now : null, gems, lvl, th: ((merged.buildings || {}).townhall || {}).level || 0 };
+  }
+  if (d.part === "assets") {
+    const assets = d.assets || {}, keys = Object.keys(assets);
+    if (!keys.length || keys.length > 60) throw new HttpsError("invalid-argument", "1-60 items per call");
+    const batch = db.batch();
+    keys.forEach((k) => {
+      if (!/^[A-Za-z0-9_.-]{1,120}$/.test(k)) throw new HttpsError("invalid-argument", "bad key " + k);
+      const a = assets[k] || {}, data = typeof a.data === "string" ? a.data : null; if (data == null || data.length > 900000) throw new HttpsError("invalid-argument", "bad item " + k);
+      batch.set(db.doc(base + "assetitems/" + k), { data, ts: Math.trunc(+a.ts) || Date.now() });
+    });
+    const idx = await db.doc(base + "assets/overrides_index").get(), have = (idx.exists && idx.data().keys) || [];
+    batch.set(db.doc(base + "assets/overrides_index"), { keys: Array.from(new Set(have.concat(keys))) });
+    await batch.commit();
+    return { ok: true, written: keys.length };
+  }
+  throw new HttpsError("invalid-argument", "part must be save or assets");
+});
+
 // Move my city to another tile. Done on the server so damage and fire move with it (teleporting can't be used as a free repair).
 exports.relocateCity = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
   const fromRef = cityRef(R, d.from), toRef = cityRef(R, d.to);

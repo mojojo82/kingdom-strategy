@@ -490,3 +490,12 @@
   - Conquest bottom strip contents (Harley): weapons max 3 (+ Espers), cards 5 equipped (show all 5 or just 1 - undecided; mockup has a
     Tweaks switch), a Backpack is coming, plus another combat mechanic still being designed (reserved spot). Don't make the ChatGPT
     "deluxe PC UI" art list until the layout is locked (he liked the ChatGPT ornate-frame concept).
+- (functions/admin, 8 Oct evening) Save import - moving Harley's claude.ai owner save into Firebase.
+  - Exported from the claude.ai artifact db with ArtifactData (read only): save/main (TH8, 7 heroes, Conquest 6-5, 11,900 gems) + 47 assetitems
+    (hero/card art, avatar, boss sprite, Dev Tools values) -> one file kingdom_owner_save.json (~2.5 MB), sent to Harley.
+  - New admin callable adminImportSave (caller's OWN account only): part "save" backs up the current save to save/backup_<time>, writes the old
+    save but keeps serverId/homeTileId/worldVersion/marches/nextMarchId from the current account (core.prepareImportSave), merges mailApplied,
+    sets wallet gems + paid Conquest level (lvl = levels cleared); part "assets" writes players/<uid>/assetitems/* + the art index.
+  - Admin panel card "Import a save into my account" (summary first, ~1.5 MB art chunks). Game must be closed on all devices while importing
+    (an open game keeps saving its own copy). Tests: core.test.js (merge), g199_import_save (real file: game -> admin import -> game reopens
+    on TH8 with map spot kept, art loaded, survives the next save). fnrunner gained db.batch().

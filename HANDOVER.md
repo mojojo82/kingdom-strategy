@@ -105,7 +105,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Before a public launch:** move the images out of the single 14 MB game file into separate cached files, so an update doesn't make every player re-download all the art.
 - **App stores (later):** thin store app that loads the game from the web (updates skip review); needs Apple/Google in-app payments for gems, a native extra (e.g. push notifications) for Apple, and a "minimum shell version" check.
 
-- **Switch-over:** when Harley wants to play on GitHub, copy his real save + custom art (hero art, card art, avatar; `assetitems`, ~47 docs incl. large images) from the
+- **Switch-over (tool built 8 Oct):** admin panel > 📦 Import a save into my account, with the file kingdom_owner_save.json (made from the claude.ai db). Original note: when Harley wants to play on GitHub, copy his real save + custom art (hero art, card art, avatar; `assetitems`, ~47 docs incl. large images) from the
   claude.ai db (readable with the `ArtifactData` tool on the artifact URL) into Firebase (admin seed import path or an admin function), then `adminSetWallet` his gems.
   The legacy "owner" save is at `save/main` + root `assetitems/` in the claude db.
 - **Go live:** copy `test/index.html` → root `index.html` when approved (the live world then imports `seed-world.json` the first time an admin opens it).
