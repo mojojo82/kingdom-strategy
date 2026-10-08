@@ -98,6 +98,13 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - Fixes must not noticeably change the established look.
 - Ask before doing anything expensive or irreversible. When he says stop or wait, stop.
 - **No player tracking/analytics.** Only what's needed: purchase audit, item ledger, account created / last seen. Chat is not auto-deleted (his call, for now).
+- **Mobile first.** Don't change the mobile layout unless asked. PC is only for Harley's checking/testing; the PC redesign is parked (branch `wip/pc-layout`).
+- **Art:** keep every asset twice - the full-size original in `art/originals/` (never shrunk) and a phone-size copy in the game. Show a mockup before new art goes into the game.
+- **Combat is deterministic:** no dice in fights (fixed patterns / seeds instead of random rolls).
+- **Bots are equal to players:** a bot gets the same combat kit a player of its level could have (heroes, weapons, fortress research of either type, Esper, gear bonus).
+- **World PvP = Arena + troops:** the same fight rules as Arena (including both sides' weapons), just with troops and resolved instantly.
+- **Don't add new stats.** Solve balance with the stats/systems that already exist.
+- **Not every hero has to be a winner.** Weak heroes are fine - rate them honestly (e.g. Torvald is Rare).
 
 ## Open items / to-dos
 - **Balance (9 Oct, v954-v966)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,
