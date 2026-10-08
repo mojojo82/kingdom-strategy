@@ -4631,7 +4631,7 @@ function fortressTreeTotalCost() { var t = 0; for (var k in FORTRESS1_TREE) for 
 // one side's rolls never depend on anything else in the fight (FNV-1a hash + integer mix).
 /* v957: Salvo Loader - {every, bonus} from an equipped weapon list (or null); salvoForces = is burst n a guaranteed super burst */
 function salvoSpec(ids, statsOf) { var sp = null; (ids || []).forEach(function (wid) { var wd = WEAPON_DEFS_BY_ID[wid]; if (wd && wd.fx === "salvo") { var st = statsOf(wd); sp = { every: st.p.every || 0, bonus: st.p.bonus || 0, open: st.p.open || 0 }; } }); return sp; }
-/* v964: the OPENING burst hits at least x sp.open (the weapon's own power, grows with its level) or the fortress's super-burst multiplier if bigger */
+/* v964/v965: super-burst multiplier with Salvo's bonus. sp.open (a floor for the opener) is unused since v965 - Harley: no Fortress I tech = Salvo does nothing, it amplifies the tree */
 function salvoBurstMult(sp, n, critMult) { var m = critMult || 1; if (sp && n === 1 && sp.open > m) m = sp.open; return sp ? m * (1 + sp.bonus / 100) : m; }
 function salvoForces(sp, n) { return !!sp && (n === 1 || (sp.every > 0 && n > 1 && (n - 1) % sp.every === 0)); }
 function fortressCritRoll(seed, side, n) {
@@ -5395,13 +5395,13 @@ WEAPON_DEFS.push({
    super-burst damage. Only fortresses that can super-burst at all (Fortress I's crit lane) gain anything, so it is a Fortress I weapon by
    nature. No dice: a fixed pattern. v958: in the normal weapon draws like any other weapon, at the lowest rarity (Elite) on purpose - a quiet monster. */
 WEAPON_DEFS.push({
-  id: "salvo_loader", name: "Salvo Loader", icon: "🧨", kind: "fx", fx: "salvo", rarity: "Elite", cooldown: 0, count: 0, dmgPct: 0, p: { every: 0, bonus: 0, open: 4 },
-  desc: function (d, st) { return "Your fortress cannon opens every fight with a super burst that hits at least x" + st.p.open + " (or your fortress's own super-burst power, if higher)." + (st.p.every ? " After that, every " + (st.p.every === 3 ? "3rd" : st.p.every + "th") + " burst is a super burst too." : "") + (st.p.bonus ? " Super bursts deal +" + st.p.bonus + "% damage." : "") + " Needs a fortress that can super-burst (Fortress I)."; },
-  rows: function (st) { return [["Opening burst", "Super burst, at least x" + st.p.open], ["Repeat", st.p.every ? "every " + st.p.every + " bursts" : "—"], ["Super burst dmg", st.p.bonus ? "+" + st.p.bonus + "%" : "—"]]; },
+  id: "salvo_loader", name: "Salvo Loader", icon: "🧨", kind: "fx", fx: "salvo", rarity: "Elite", cooldown: 0, count: 0, dmgPct: 0, p: { every: 0, bonus: 0 },
+  desc: function (d, st) { return "Your fortress cannon opens every fight with a super burst." + (st.p.every ? " After that, every " + (st.p.every === 3 ? "3rd" : st.p.every + "th") + " burst is a super burst too." : "") + (st.p.bonus ? " Super bursts deal +" + st.p.bonus + "% damage." : "") + " Needs a fortress that can super-burst (Fortress I)."; },
+  rows: function (st) { return [["Opening burst", "Super burst"], ["Repeat", st.p.every ? "every " + st.p.every + " bursts" : "—"], ["Super burst dmg", st.p.bonus ? "+" + st.p.bonus + "%" : "—"]]; },
   levelMods: [
-    { atLevel: 10, p: { bonus: 25, open: 10 } },
-    { atLevel: 30, p: { every: 4, open: 30 }, note: "Every 4th burst is a super burst too" },
-    { atLevel: 50, p: { every: 3, bonus: 50, open: 45 }, note: "Every 3rd burst is a super burst too" }
+    { atLevel: 10, p: { bonus: 150 } },
+    { atLevel: 30, p: { every: 4, bonus: 200 }, note: "Every 4th burst is a super burst too" },
+    { atLevel: 50, p: { every: 3 }, note: "Every 3rd burst is a super burst too" }
   ]
 });
 WEAPON_DEFS.push({
@@ -10397,7 +10397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v964"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v965"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11223,7 +11223,7 @@ var FX_P_LABELS = {
   sw: { dur: ["Protection time", "s"], reflect: ["Reflect stun", "s"] },
   wall: { dur: ["Duration", "s"], mirror: ["Mirror reflect", "%"] },
   orbit: { red: ["Projectile reduction", "%"], link: ["Hex Link recharge", "% of Hex pool / s"] },
-  salvo: { open: ["Opening burst at least x", ""], bonus: ["Extra super burst damage", "%"] } /* v963 (the repeat is spelled out in each level's note) */
+  salvo: { bonus: ["Extra super burst damage", "%"] } /* v963 (the repeat is spelled out in each level's note) */
 };
 function weaponMilestoneText(w) {
   var cur = { count: w.count, dmgPct: w.dmgPct, cooldown: w.cooldown, shieldPct: w.shieldPct || 0, p: Object.assign({}, w.p || {}) }, out = [], lab = FX_P_LABELS[w.fx] || {};

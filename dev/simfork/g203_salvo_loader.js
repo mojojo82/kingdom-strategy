@@ -46,7 +46,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.def && r.notDrawn && r.othersSame, "weapon defined, in the Elite draws, 16 others unchanged");
   assert.strictEqual(r.arenaF1, r.critMult, "Arena: Fortress I opens with a super burst"); assert.ok(r.arenaF1noW === 1 || r.arenaF1noW === r.critMult);
   assert.strictEqual(r.arenaF3, 1, "Fortress III gains nothing (cannot super-burst)");
-  assert.ok(Math.abs(r.arenaLv50 - Math.max(r.critMult, 45) * 1.5) < 1e-9, "Lv50: opener at least x45, +50% super-burst damage"); assert.strictEqual(r.pattern50, "1,4,7", "Lv50: every 3rd burst after the opener"); assert.strictEqual(r.lowFort, 12.5, "Lv10 on a barely researched Fortress I: opener x10 +25%"); assert.strictEqual(r.lowFortLater, 2.5, "later super bursts use the fortress multiplier");
+  assert.ok(Math.abs(r.arenaLv50 - r.critMult * 3) < 1e-9, "Lv50: super bursts +200%"); assert.strictEqual(r.pattern50, "1,4,7", "Lv50: every 3rd burst after the opener"); assert.strictEqual(r.lowFort, 5, "Lv10 on an unresearched Fortress I: x2 base, +150% = x5 (nearly useless without tech)"); assert.strictEqual(r.lowFortLater, 5, "same multiplier on any super burst");
   assert.strictEqual(r.cqFirst, r.critMult, "Conquest: first burst of the level is a super burst");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

@@ -617,3 +617,9 @@
   Open issue: with PARTIAL research, Fortress III beats Fortress I at every stage (0/8 for F1 with or without Salvo, Lv10-40) - its HP/
   damage-reduction nodes help from the first levels while Fortress I's payoff is late. Needs Harley's call (F1 crit earlier / F3 early
   nodes softer / braced hull growing with F3 research).
+- v965 (9 Oct) Salvo Loader re-tuned (Harley: the effects SHOULD ride on Fortress I tech - no tech = useless, the "hidden monster";
+  Lv10 really good, Lv30 monster, Lv50 better but not meta-changing). Dropped v964's opener floor; it now only multiplies the fortress's own
+  super burst: Lv1 opener is a super burst; Lv10 super bursts +150%; Lv30 +200% and every 4th burst. Lv50 = every 3rd burst for now -
+  Harley wants Lv50 to be a separate, unrelated perk (options offered: Shrapnel / Shell shock / Cracked armour / Quick reload).
+  Sims (equal sides, research growing with level): no research ~coin flip; Lv10 @30% research beats F1-without 8/8 (~19 s); Lv30 @50% ~5 s,
+  @75% ~3 s and beats an equal Fortress III; both fully maxed: Fortress III wins 6/8.
