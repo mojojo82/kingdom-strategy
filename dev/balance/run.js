@@ -3,7 +3,7 @@
    - conquest: each player setup climbs Conquest until stuck -> where they get stuck ("wall") and Gareth's first KO.
    - swap:     6 heroes owned, each one left out in turn -> how far the other 5 get (who is a must-pick in Conquest).
    - arena:    teams = 6 heroes minus one, every pair fights both ways -> wins (who is a must-pick in Arena).
-   --cfg sets hero rules (game.heroKoCfg keys) for BOTH modes; enemyScale:{..} = Conquest enemy scaling; arenaBaseHp = extra Arena fortress HP (game default 0, Harley's owner copy 1870). Results: dev/balance/results/<name>.json; --vs prints the change against a saved run. */
+   --cfg sets hero rules (game.heroKoCfg keys) for BOTH modes; enemyScale:{..} = Conquest enemy scaling; arenaBaseHp = extra Arena fortress HP (Dev test tool, default 0); arenaBonus = {atk,hp,def} bonus % for both Arena sides. Results: dev/balance/results/<name>.json; --vs prints the change against a saved run. */
 const fs = require("fs"), path = require("path"), cp = require("child_process");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
@@ -54,7 +54,7 @@ function print(R, B) {
   }
   if (R.arena) {
     console.log("\nARENA ROUND-ROBIN (team = 6 minus the named hero; wins-losses-draws; a team that loses a lot = that hero matters a lot)");
-    Object.keys(R.arena).forEach((t) => console.log("  " + t + ": " + HEROES.map((h) => { const v = R.arena[t][h]; const b = B && B.arena && B.arena[t][h]; return "w/o " + h + " " + v.w + "-" + v.l + "-" + v.d + (b ? " (was " + b.w + "-" + b.l + ")" : ""); }).join(" | ")));
+    Object.keys(R.arena).forEach((t) => console.log("  " + t + " (fights last ~" + R.arena[t].__secs + "s): " + HEROES.map((h) => { const v = R.arena[t][h]; const b = B && B.arena && B.arena[t][h]; return "w/o " + h + " " + v.w + "-" + v.l + "-" + v.d + (b ? " (was " + b.w + "-" + b.l + ")" : ""); }).join(" | ")));
   }
 }
 
@@ -79,7 +79,7 @@ async function worker() {
   const out = [];
   for (const job of JSON.parse(process.env.KS_JOBS)) {
     out.push(await P.evaluate(async ({ job, CFG, HEROES }) => {
-      const applyCfg = (c) => Object.keys(CFG).forEach((k) => { if (k !== "enemyScale" && k !== "arenaBaseHp") c[k] = CFG[k]; });
+      const applyCfg = (c) => Object.keys(CFG).forEach((k) => { if (k !== "enemyScale" && k !== "arenaBaseHp" && k !== "arenaBonus" && k !== "arenaFortMax") c[k] = CFG[k]; });
       if (CFG.enemyScale) Object.keys(CFG.enemyScale).forEach((k) => { enemyScale[k] = CFG.enemyScale[k]; }); /* Conquest enemy scaling (a global the sims share) */
       const W3 = ["missile_barrage", "laser_beam", "railgun"], FIVE = HEROES.slice(0, 5);
       if (job.kind === "arena") { /* every pair of "6 minus one" teams, both sides, 10 seeds, same levels, no bonuses */
@@ -87,12 +87,12 @@ async function worker() {
         const res = {};
         for (const [tag, lvl, arms, sk] of [["Lv40 2*", 40, 10, 3], ["Lv80 5*", 80, 25, 5]]) {
           const hs = {}; HEROES.forEach((k) => { hs[k] = { owned: true, level: lvl, stars: arms, skillLevels: { conquest: [sk, sk, sk], expedition: [sk, sk, sk] } }; });
-          const teams = HEROES.map((x) => ({ out: x, roster: HEROES.filter((k) => k !== x) })), score = {}; HEROES.forEach((x) => { score[x] = { w: 0, l: 0, d: 0 }; });
-          const mk = (roster, isP) => { const st = arenaSideStats(roster, hs, 20, CFG.arenaBaseHp != null ? CFG.arenaBaseHp : arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { const ix = roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 240, ix, isP); }); return st; };
+          const ticks = [], teams = HEROES.map((x) => ({ out: x, roster: HEROES.filter((k) => k !== x) })), score = {}; HEROES.forEach((x) => { score[x] = { w: 0, l: 0, d: 0 }; });
+          const mk = (roster, isP) => { const st = arenaSideStats(roster, hs, 20, CFG.arenaBaseHp != null ? CFG.arenaBaseHp : arenaBaseHpPlayer, false, null, CFG.arenaFortMax ? fortressMaxMap(1) : null, undefined, CFG.arenaBonus || ZERO_BONUS); (st.heroHp || []).forEach((e) => { const ix = roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 240, ix, isP); }); return st; };
           for (let i = 0; i < teams.length; i++) for (let j = 0; j < teams.length; j++) { if (i === j) continue;
             for (let s = 0; s < 10; s++) { const seed = tag + "|" + i + "|" + j + "|" + s; const sim = arenaMakeSim(mk(teams[i].roster, true), mk(teams[j].roster, false), { rng: worldPvpSeededRng(seed), critSeed: seed });
-              const w = sim.runToEnd(), A = score[teams[i].out], B = score[teams[j].out]; if (w === "player") { A.w++; B.l++; } else if (w === "ai") { A.l++; B.w++; } else { A.d++; B.d++; } } }
-          res[tag] = score;
+              const w = sim.runToEnd(), A = score[teams[i].out], B = score[teams[j].out]; ticks.push(sim.tick); if (w === "player") { A.w++; B.l++; } else if (w === "ai") { A.l++; B.w++; } else { A.d++; B.d++; } } }
+          ticks.sort((a, b) => a - b); score.__secs = Math.round(ticks[ticks.length >> 1] * ARENA_TICK_MS / 100) / 10; res[tag] = score;
         }
         Object.assign(game.heroKoCfg, saved);
         return { kind: "arena", arena: res };

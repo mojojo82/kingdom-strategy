@@ -550,3 +550,7 @@
     150 + Town Hall x5 (+ Dev "extra base HP", default 0; Harley's owner copy 1,870). Skills, supports and tanks barely get to act, which is
     why leaving out Gareth/Sera/Torvald changes nothing there. Needs a design call before hero buffs.
   - Small: no "-0" damage numbers. Kit: Death Strike fire counts per setup; --cfg arenaBaseHp.
+- (9 Oct, kit only) Arena fight length check. Fortress HP does ride the HP bonus % (fortress research hp + hero HP bonus), but ATK bonus grows
+  hero damage by the same %, so fights stay short: median ~3.2s at Lv40 2*, ~0.5s (one tick) at Lv80 5*, with no bonus, +48%/+96% bonuses,
+  or maxed fortress research + max bonuses (2.7s / 0.5s). The fortress base (150 + Town Hall x5) never grows with hero levels. The Dev
+  "extra base HP" is a test tool only (not a fix). Kit: arena prints fight length; --cfg arenaBonus {atk,hp,def}, arenaFortMax.
