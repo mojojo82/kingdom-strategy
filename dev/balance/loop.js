@@ -38,6 +38,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
       specs.forEach((sp) => { const cdf = (s) => { sp.cooldownSec = s; sp.cooldownTicks = Math.max(1, Math.round(s / tick)); };
         if (sp.fx === "clone") { if (COND.cm != null) sp.p.mult = COND.cm; if (COND.ccd != null) cdf(COND.ccd); }
         if (sp.fx === "sw") { if (COND.sd != null) sp.p.dur = COND.sd; if (COND.scd != null) cdf(COND.scd); if (COND.lob != null) sp.p.lob = COND.lob; } });
+      if (COND.hex != null) hex *= COND.hex; /* sim-only Hex Shield strength multiplier */
       return { specs, shieldPct: hex };
     };
     const E = [];
@@ -66,8 +67,13 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     const ccRows = ccs.map((i) => ({ name: E[i].name, score: score[i], beatsCounters: counters.filter((c) => pair(i, c) >= 1.5).length + "/" + counters.length, vsMeta: pair(i, M) }));
     /* best copy target for each Duplicate build */
     const dupBest = {}; E.forEach((e, i) => { if (!e.dup) return; const k = e.ids.map(sh).join("+"); if (!dupBest[k] || score[i] > dupBest[k][1]) dupBest[k] = [e.name, score[i], rank(i)]; });
+    const metaLoss = E.map((_, i) => i).filter((j) => j !== M && pair(M, j) < 2).map((j) => [E[j].name, pair(M, j), field.includes(j), fight(M, j, 1)]);
+    const cBeat = counters.filter((c) => pair(c, M) >= 1.5).length;
+    const ccBest = ccRows.slice().sort((a, b2) => b2.score - a.score)[0];
+    const summary = { metaScore: score[M], metaRank: rank(M), top: [E[order[0]].name, score[order[0]]], countersBeatMeta: cBeat + "/" + counters.length, otherBeatMeta: beatMeta.filter((i) => !counters.includes(i)).map((i) => E[i].name),
+      ccBeatCounters: ccRows.filter((r) => r.vsMeta === 0).map((r) => r.beatsCounters), metaLossCount: metaLoss.length, splitsWonAsAttacker: metaLoss.filter((x) => x[1] === 1 && x[3] === 1).length + "/" + metaLoss.filter((x) => x[1] === 1).length };
     ARENA_FORT_HP_PER_POWER = keepPer;
-    return JSON.stringify({ cond: COND, entries: E.length, fieldSize: field.length,
+    return JSON.stringify({ cond: COND, summary, metaLoss, entries: E.length, fieldSize: field.length,
       meta: { name: E[M].name, score: score[M], rank: rank(M) },
       watch: ["emp+railgun+clone", "emp+railgun+wave", "hex+railgun+wave", "hex+railgun+dup>hex", "railgun+dup>railgun+wave"].map((n) => { const i = idx(n); return [n, score[i], rank(i)]; }),
       top15: order.slice(0, 15).map((i) => [rank(i), E[i].name, score[i]]),
@@ -79,6 +85,8 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
   const pr = (s) => console.log(s);
   pr("WEAPON LOOP  (heroes Lv" + COND.lvl + ", weapons Lv" + COND.wl + ", no research; " + R.entries + " builds incl. every Duplicate copy choice; field sample " + R.fieldSize + ")");
   pr("\nMETA " + R.meta.name + ": score " + R.meta.score + ", rank " + R.meta.rank + (R.meta.rank === 1 ? "  OK" : "  !! not on top"));
+  pr("\nMeta drops points to (" + R.metaLoss.length + "; 1 = split, 0 = loses both ways, * = in field sample): " + R.metaLoss.map((x) => x[0] + " " + x[1] + (x[2] ? "*" : "")).join(", "));
+  pr("\nSUMMARY " + JSON.stringify(R.summary));
   pr("\nWatch list:"); R.watch.forEach((r) => pr("  " + r[0].padEnd(28) + "score " + r[1] + "  rank " + r[2]));
   pr("\nTop 15:"); R.top15.forEach((r) => pr("  " + String(r[0]).padStart(3) + ". " + r[1].padEnd(28) + r[2]));
   pr("\nBuilds that beat the meta both ways (" + R.beatMeta.length + "): " + R.beatMeta.join(", "));
