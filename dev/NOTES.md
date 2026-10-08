@@ -641,3 +641,8 @@
   the meta's opening stun while their own EMP lands) = COUNTER. COUNTER-COUNTER = Hex Shield + Railgun + any: beats 14/15 counters and loses
   to the meta -> loop closed. Hole: Hex + Railgun + Status Wave beats the counters AND the meta (2/2).
   Under the old rules (no HP per power, 2,000 base HP) the meta was much weaker (rank 64 of 560, beaten by 53 builds - Hex/Orbit/Dome builds).
+
+### dev tool — weapon loop test (no game change)
+- New `node dev/balance/loop.js [--cond '{...}'] [--save name]`: every 3-weapon build, and every Duplicate build tried once per copy target (Duplicate copies a weapon you already have). Reports the meta (EMP + Railgun + Clone Task) score/rank, who beats it, the Hex + Railgun counter-counter checks and the best Duplicate builds. Sim-only overrides: cm/ccd (Clone), sd/scd (Status Wave).
+- First run (Lv40, weapons Lv30, no research): meta 90 / rank 44. Top: EMP + Railgun + Status Wave 100. Best Duplicate build: Hex + Railgun + Duplicate(copy Hex) 97, rank 5 — beats 14/15 counters, loses to the meta both ways (fits as counter-counter).
+- Note: bots (`botWeaponsToSim`) never choose a Duplicate copy target; they copy the first weapon in list order.
