@@ -3061,7 +3061,7 @@
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="min-width:110px;">Revive time</span><input type="range" class="dev-slider" id="heroKoReviveSlider" min="1" max="60" step="1"><span class="dev-slider-val" id="heroKoReviveVal">10s</span></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="min-width:110px;">Hero base HP</span><input type="range" class="dev-slider" id="heroKoBaseSlider" min="0" max="2000" step="10"><span class="dev-slider-val" id="heroKoBaseVal">100</span></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="min-width:110px;">HP per power</span><input type="range" class="dev-slider" id="heroKoPerSlider" min="0" max="60" step="1"><span class="dev-slider-val" id="heroKoPerVal">8</span></div>
-                <div class="dev-tools-row"><span class="dev-tools-hint" style="min-width:110px;">Ranged → infantry</span><input type="range" class="dev-slider" id="heroKoRangedSlider" min="0" max="100" step="5"><span class="dev-slider-val" id="heroKoRangedVal">0%</span></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="min-width:110px;">Ranged → infantry (Conquest + Arena)</span><input type="range" class="dev-slider" id="heroKoRangedSlider" min="0" max="100" step="5"><span class="dev-slider-val" id="heroKoRangedVal">50%</span></div>
                 <div class="dev-tools-row">
                   <button class="dev-btn" id="devHeroKoBtn">💤 KO first infantry hero now</button>
                   <button class="dev-btn" id="devHeroHealBtn">💚 Heal / revive all heroes</button>
@@ -6577,7 +6577,7 @@ function createGame(opts) {
   // Melee enemies hit the first standing infantry hero instead of the fortress; ranged enemies and bosses still hit the fortress
   // (riders are untouchable for now). A hero at 0 HP is KO'd: skills/attacks stop, the skill timer resets and stays frozen,
   // and he revives after reviveSec. The fortress HP pool is still the lose condition. All three numbers are Dev Tools sliders.
-  var HERO_KO_CFG = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 0 }; // rangedPct: % of archer/lancer hits that go to the standing infantry hero instead of the fortress (0 = ranged always hit the fortress)
+  var HERO_KO_CFG = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 50, heroDmgMult: 1, bossHeroEvery: 0, bossHeroMode: "copy" }; /* v954: heroDmgMult = every hit on a HERO (Conquest and Arena alike) x this; bossHeroEvery = every Nth boss attack also hits the front infantry hero (fortress still takes it) */ // rangedPct: % of archer/lancer hits that go to the standing infantry hero instead of the fortress (0 = ranged always hit the fortress)
   function idleHeroMaxHp(key) {
     var h = state.heroes[key];
     if (!h || !h.owned) return 0;
@@ -7454,8 +7454,10 @@ function createGame(opts) {
       var defeatedThisHit = false;
       while (e.atkCooldown <= 0 && guard < IDLE_ENEMY_ATTACK_CATCHUP_CAP) {
         var hitDmg = idleEnemyAtk(e.type) * (1 - fortressBonusFrom(state.fortressTech || {}).dmgRed); // Fortress damage-taken reduction
-        var tgtHeroKey = (base.melee || (e.type !== "boss" && idleRangedHitGoesToHero(e))) ? idleMeleeTargetHero() : null; // v527: melee enemies hit the first standing infantry hero; ranged/boss hit the fortress
+        var bossOnHero = e.type === "boss" && HERO_KO_CFG.bossHeroEvery > 0 && ((e.hitCount || 0) + 1) % HERO_KO_CFG.bossHeroEvery === 0; /* v954: every Nth boss shot */
+        var tgtHeroKey = (base.melee || (e.type !== "boss" && idleRangedHitGoesToHero(e)) || (bossOnHero && HERO_KO_CFG.bossHeroMode === "redirect")) ? idleMeleeTargetHero() : null; // v527: melee enemies hit the first standing infantry hero; ranged/boss hit the fortress
         e.heroHitKey = tgtHeroKey;
+        if (bossOnHero && HERO_KO_CFG.bossHeroMode !== "redirect") { var bhK = idleMeleeTargetHero(); if (bhK && bhK !== tgtHeroKey) idleEnemyPendingHits.push({ t: IDLE_ENEMY_SHOT_FLIGHT_SEC[e.type] || IDLE_ENEMY_SHOT_FLIGHT_DEFAULT_SEC, type: e.type, dmg: hitDmg * idleFxProjMult(), key: bhK }); } /* v954: copy mode - every Nth boss shot also hits the front hero (queued first, so he takes it even if the same shot finishes the fortress) */
         if (base.melee) idleApplyEnemyHit(e.type, hitDmg, tgtHeroKey); // melee: lands instantly
         else idleEnemyPendingHits.push({ t: IDLE_ENEMY_SHOT_FLIGHT_SEC[e.type] || IDLE_ENEMY_SHOT_FLIGHT_DEFAULT_SEC, type: e.type, dmg: hitDmg * idleFxProjMult(), key: tgtHeroKey }); // ranged: lands when the shot arrives
         state.idle.hitCount = (state.idle.hitCount || 0) + 1; // kept for anything else still reading the aggregate count
@@ -7715,7 +7717,7 @@ function createGame(opts) {
     if (tgtHeroKey) {
       var tgtEnt = idleHeroEntry(tgtHeroKey);
       if (!tgtEnt || tgtEnt.hp <= 0) return;
-      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type));
+      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * (HERO_KO_CFG.heroDmgMult || 1);
       if (tgtEnt.hp <= 0) idleKoHero(tgtHeroKey);
       return;
     }
@@ -10335,7 +10337,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v953"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v954"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22090,13 +22092,13 @@ document.getElementById("devRunBlendBtn").onclick = function () { var on = !(HER
   sync(); window.__heroDustSyncUI = sync;
 })();
 // ---- v527 hero HP / KO dev controls ----
-var HERO_KO_CFG_KEY = "kingdom_prototype_herokocfg_v1";
+var HERO_KO_CFG_KEY = "kingdom_prototype_herokocfg_v2"; /* v954: v2 - ranged % is now ONE setting for Conquest and Arena (default 50, was 0 in Conquest / 50 in Arena), so old saved values start fresh */
 (function () {
   var cfg = game.heroKoCfg;
-  try { var r = JSON.parse(localStorage.getItem(HERO_KO_CFG_KEY) || "null"); if (r && typeof r === "object") ["reviveSec", "baseHp", "hpPerPower", "rangedPct"].forEach(function (k) { if (typeof r[k] === "number" && isFinite(r[k])) cfg[k] = r[k]; }); } catch (e) {}
-  var defs = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 0 };
+  try { var r = JSON.parse(localStorage.getItem(HERO_KO_CFG_KEY) || "null"); if (r && typeof r === "object") ["reviveSec", "baseHp", "hpPerPower", "rangedPct", "heroDmgMult", "bossHeroEvery"].forEach(function (k) { if (typeof r[k] === "number" && isFinite(r[k])) cfg[k] = r[k]; }); } catch (e) {}
+  var defs = { reviveSec: 10, baseHp: 100, hpPerPower: 8, rangedPct: 50, heroDmgMult: 1, bossHeroEvery: 0 };
   var map = [["reviveSec", "heroKoReviveSlider", "heroKoReviveVal", "s"], ["baseHp", "heroKoBaseSlider", "heroKoBaseVal", ""], ["hpPerPower", "heroKoPerSlider", "heroKoPerVal", ""], ["rangedPct", "heroKoRangedSlider", "heroKoRangedVal", "%"]];
-  function sync() { map.forEach(function (m) { var sl = document.getElementById(m[1]), vl = document.getElementById(m[2]); if (sl) sl.value = cfg[m[0]]; if (vl) vl.textContent = cfg[m[0]] + m[3]; }); }
+  function sync() { map.forEach(function (m) { var sl = document.getElementById(m[1]), vl = document.getElementById(m[2]); if (sl) sl.value = cfg[m[0]]; if (vl) vl.textContent = cfg[m[0]] + m[3]; }); try { renderRangedHeroBtn(); } catch (e) {} }
   function save() { try { localStorage.setItem(HERO_KO_CFG_KEY, JSON.stringify(cfg)); } catch (e) {} assetSyncUpload(HERO_KO_CFG_KEY, JSON.stringify(cfg)); }
   map.forEach(function (m) { var sl = document.getElementById(m[1]); if (sl) sl.oninput = function () { cfg[m[0]] = Number(sl.value); sync(); save(); game.idleClampPlayerHp(); }; });
   sync(); window.__heroKoSyncUI = sync;
@@ -26179,8 +26181,10 @@ function renderArenaDmgNumBtn() { var b = document.getElementById("devArenaDmgNu
 function spawnArenaDmgNum(x, y, amount) { if (!arenaDmgNumOn || !(amount >= 1)) return; var a = arenaAnim.dmgNums || (arenaAnim.dmgNums = []); a.push({ x: x + (Math.random() - 0.5) * 10, y: y, amount: Math.round(amount), life: 0.8, maxLife: 0.8 }); if (a.length > 40) a.shift(); }
 var ARENA_HERO_HP_KEY = "kingdom_prototype_arenaherohp_v1", arenaHeroHp = true;
 try { arenaHeroHp = localStorage.getItem(ARENA_HERO_HP_KEY) !== "0"; } catch (e) {}
-function renderRangedHeroBtn() { var b = document.getElementById("devRangedHeroBtn"); if (!b) return; b.textContent = "🏹 Arena ranged hits on infantry: " + (arenaRangedHeroPct > 0 ? arenaRangedHeroPct + "% (in range)" : "Off (fortress only)"); b.className = "dev-btn" + (arenaRangedHeroPct > 0 ? " active" : ""); }
-(function () { var b = document.getElementById("devRangedHeroBtn"); if (b) b.onclick = function () { var steps = [0, 25, 50, 75, 100], i = steps.indexOf(arenaRangedHeroPct); arenaRangedHeroPct = steps[(i + 1) % steps.length]; try { localStorage.setItem(ARENA_RANGED_HERO_KEY, String(arenaRangedHeroPct)); } catch (e) {} assetSyncUpload(ARENA_RANGED_HERO_KEY, String(arenaRangedHeroPct)); renderRangedHeroBtn(); }; renderRangedHeroBtn(); })();
+function renderRangedHeroBtn() { var b = document.getElementById("devRangedHeroBtn"); if (!b) return; var pc = game.heroKoCfg.rangedPct; b.textContent = "🏹 Ranged hits on infantry (Conquest + Arena): " + (pc > 0 ? pc + "%" : "Off (fortress only)"); b.className = "dev-btn" + (pc > 0 ? " active" : ""); }
+(function () { var b = document.getElementById("devRangedHeroBtn"); if (b) b.onclick = function () { /* v954: one shared setting (the Hero HP / KO "Ranged -> infantry" slider) - same rule in both modes */
+  var c = game.heroKoCfg, steps = [0, 25, 50, 75, 100], i = steps.indexOf(c.rangedPct); c.rangedPct = steps[(i + 1) % steps.length];
+  try { localStorage.setItem(HERO_KO_CFG_KEY, JSON.stringify(c)); } catch (e) {} assetSyncUpload(HERO_KO_CFG_KEY, JSON.stringify(c)); if (window.__heroKoSyncUI) window.__heroKoSyncUI(); renderRangedHeroBtn(); }; renderRangedHeroBtn(); })();
 function renderSkillFullCdBtn() { var b = document.getElementById("devSkillFullCdBtn"); if (!b) return; b.textContent = "🛡️ Gareth first skill: " + (skillFullCdOn ? "after full cooldown" : "ready at fight start"); b.className = "dev-btn" + (skillFullCdOn ? " active" : ""); }
 (function () { var b = document.getElementById("devSkillFullCdBtn"); if (b) b.onclick = function () { skillFullCdOn = !skillFullCdOn; try { localStorage.setItem(SKILL_FULL_CD_KEY, skillFullCdOn ? "1" : "0"); } catch (e) {} assetSyncUpload(SKILL_FULL_CD_KEY, skillFullCdOn ? "1" : "0"); renderSkillFullCdBtn(); }; renderSkillFullCdBtn(); })();
 function renderHeroAtkTimingBtn() { var b = document.getElementById("devHeroAtkTimingBtn"); if (!b) return; b.textContent = "⚔️ Gareth attack: " + (heroAttackTimingOn ? "0.5s, half damage (same DPS)" : "Old (1s, full damage)"); b.className = "dev-btn" + (heroAttackTimingOn ? " active" : ""); }
@@ -26427,7 +26431,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (!hh || dmg <= 0) return dmg;
     for (var i = 0; i < hh.list.length && dmg > 0; i++) {
       var e = hh.list[i]; if (!e.infantry || e.ko) continue;
-      var dm = defReduce(e.refA, e.def), take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
+      var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1), take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
       if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; }
     }
     return dmg;
@@ -26437,7 +26441,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // fortress sit at d = 0, so they are only reachable once he has crossed to the enemy side). Infantry chase the nearest standing enemy infantry, or run
   // all the way over if there is none; a KO'd hero is parked back home (d = 0).
   var posMode = !!(pHH && aHH && shared), ARENA_REACH = 0.04, infStep = 0.5 / (ARENA_ENGAGE_TICKS * dtS) * dtS;
-  var skTgt = {}, hitTgt = {}, rangedPctLocal = arenaRangedHeroPct, ARENA_RANGED_RANGE = 0.62, rAcc = {};
+  var skTgt = {}, hitTgt = {}, rangedPctLocal = (opts.rangedPct != null ? opts.rangedPct : koCfg.rangedPct), ARENA_RANGED_RANGE = 0.62, rAcc = {};
   function pickMeleeTarget(me, oh) {
     var best = null;
     oh.list.forEach(function (o) { if (o.ko) return; if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
@@ -26467,7 +26471,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var me = hh.by[id], t = me ? pickMeleeTarget(me, oh) : null;
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
-    var e = t.hero; e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def);
+    var e = t.hero; e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
     if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     return false;
   }
@@ -26483,7 +26487,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (rAcc[tag + id] < 1 - 1e-9) return true;
     rAcc[tag + id] -= 1;
     map[tag + id] = best.id;
-    best.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def);
+    best.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
     if (best.hp <= 1e-9) { best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
     return false;
   }

@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (8 Oct 2026, game v953):** everything below is built, tested and deployed. The live game link still serves the
+**State at handover (8 Oct 2026, game v954):** everything below is built, tested and deployed. The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -93,6 +93,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Reproduce a bug before fixing it**; measure before and after. Testing is headless Chromium only, so never claim it was tested on his phone.
 - Game UI style: dark navy and gold, flat cyan buttons, dashed and dotted borders. He **dislikes round, puffy, bushy trees and bushes**.
 - Use `/* */` comments inside one-line functions.
+- **One rule set for heroes:** a hero and its skills must work exactly the same in Conquest and Arena (no per-mode rules or stats); balance as an in-between. Check every hero change with `node dev/balance/run.js --vs <saved run>` (Conquest walls, swap test, Arena round-robin). 10+ more heroes are planned before the live play test.
 - Inspiration: Shining Force 2, Ultima VII; genre references Kingshot / High Seas Hero.
 - Fixes must not noticeably change the established look.
 - Ask before doing anything expensive or irreversible. When he says stop or wait, stop.

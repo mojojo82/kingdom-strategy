@@ -517,3 +517,16 @@
 - v953 (9 Oct) Base water starts at the widest line. Harley: v952 put foam/ripples too high - only the part below the base's widest
   horizontal line (its side corners) is in the water. Now the contact band runs from the lowest row that is >=97% of the widest row
   down to the bottom, and nothing (foam or ripples) is drawn above that row.
+- v954 (9 Oct) Balance groundwork - one hero rule set for Conquest and Arena.
+  - New balance test kit: node dev/balance/run.js [--cfg '{...}'] [--only conquest,swap,arena] [--save name] [--vs name]. Real engine,
+    headless, fixed seeds, ~2 min. Conquest wall + Gareth's first KO per setup, Conquest swap test (6 heroes, one left out), Arena
+    round-robin (teams of 6-minus-one). Results in dev/balance/results/ (baseline_v953 = before, v954_unified = now).
+  - Ranged hits on infantry heroes are now ONE setting for both modes (HERO_KO_CFG.rangedPct, default 50; was 0 in Conquest, 50 in Arena).
+    Conquest walls unchanged; Arena plays as before. The Arena Dev button now edits the same setting. Hero KO Dev settings key bumped to v2.
+  - New knobs, all OFF by default: heroDmgMult (every hit on a hero, both modes), bossHeroEvery + bossHeroMode ("redirect" = boss shoots
+    the front infantry hero instead of the fortress, "copy" = both). Harley picked the tank ("redirect") idea; tuning parked until the
+    planned energy-wave bosses (they hit all heroes + fortress) arrive, then a full re-tune with the kit.
+  - Findings: every Conquest wall is the boss one-shotting the fortress (fortress ~155 HP, max Gareth 1,380). Normal enemies barely touch
+    Gareth, so more ranged hits / lower hero HP / x12 hero damage never killed him. Arena: Lyra is the must-pick; at Lv80 leaving out
+    Gareth, Sera or Torvald changes nothing.
+  - Standing rule (Harley): a hero/skill works exactly the same in Conquest and Arena - no per-mode rules or stats.
