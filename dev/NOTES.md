@@ -476,3 +476,7 @@
     "No messages yet" drawn at start-up. The bottom chat bar already had the messages (reproduced: preview 5 msgs, chat 0).
   - Fix: opening chat redraws it right after the screen shows, starting at the newest message. Test: g198_chat_first_open (40 msgs, at bottom, live msg).
   - Note: old tests g156_worldchat / g167_chatolder point at a removed /home/claude/tests/mockdb.js - already broken before this.
+- v950: gold gradient button (the old "Welcome, Overlord" code-login button: linear-gradient(135deg,#f0c95f,#c98f1e), text #3a2600) used
+  sparingly for reward moments (Harley: "here and there, mildly"): event Claim buttons (KSE block, admin copy updated), the ready sign-in
+  day's Claim footer, and the mailbox "Claim all" (Game UI skin only; single mail Claim stays cyan, Parchment skin untouched).
+  - Also made 3 PC-layout mockups (claude.ai Design canvas "Kingdom Strategy PC Redesign", brown/gold, real icons) - nothing built yet.
