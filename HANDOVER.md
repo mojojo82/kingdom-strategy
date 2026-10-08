@@ -105,6 +105,9 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **World PvP = Arena + troops:** the same fight rules as Arena (including both sides' weapons), just with troops and resolved instantly.
 - **Don't add new stats.** Solve balance with the stats/systems that already exist.
 - **Not every hero has to be a winner.** Weak heroes are fine - rate them honestly (e.g. Torvald is Rare).
+- **The meta build must stay the strongest overall weapon build.** Not unbeatable - it should win a high % of fights unless the opponent
+  sets up specifically to counter it. No combat change or new weapon/system may accidentally beat it. Check often: `node dev/balance/run.js --only meta`
+  (round robin of builds; prints a WARNING if the meta isn't on top). Meta build = missile + laser + railgun (to be confirmed by Harley - see NOTES 9 Oct).
 
 ## Open items / to-dos
 - **Balance (9 Oct, v954-v966)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,

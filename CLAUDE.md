@@ -12,3 +12,4 @@ Rules that matter most (details in HANDOVER.md):
 - Mobile first: don't touch the mobile layout unless asked (PC is only for Harley's testing).
 - Heroes/skills work the same in Conquest and Arena; combat has no dice; bots get the same kit as players; don't add new stats. Check balance changes with `node dev/balance/run.js`.
 - Art: keep the full-size original in `art/originals/` plus a phone-size copy; show a mockup before new art goes in.
+- The meta build (strongest overall weapon build) must stay on top: after any combat/weapon change run `node dev/balance/run.js --only meta`.

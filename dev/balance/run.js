@@ -3,11 +3,12 @@
    - conquest: each player setup climbs Conquest until stuck -> where they get stuck ("wall") and Gareth's first KO.
    - swap:     6 heroes owned, each one left out in turn -> how far the other 5 get (who is a must-pick in Conquest).
    - arena:    teams = 6 heroes minus one, every pair fights both ways -> wins (who is a must-pick in Arena).
+   - meta:     weapon-build round robin; warns if Harley's meta build (missile+laser+railgun) isn't the strongest overall.
    --cfg sets hero rules (game.heroKoCfg keys) for BOTH modes; enemyScale:{..} = Conquest enemy scaling; arenaBaseHp = extra Arena fortress HP (Dev test tool, default 0); arenaBonus = {atk,hp,def} bonus % for both Arena sides. Results: dev/balance/results/<name>.json; --vs prints the change against a saved run. */
 const fs = require("fs"), path = require("path"), cp = require("child_process");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
-const CFG = JSON.parse(arg("cfg", "{}")), ONLY = arg("only", "conquest,swap,arena").split(","), SEEDS = +arg("seeds", 2), SAVE = arg("save", ""), VS = arg("vs", "");
+const CFG = JSON.parse(arg("cfg", "{}")), ONLY = arg("only", "conquest,swap,arena,meta").split(","), SEEDS = +arg("seeds", 2), SAVE = arg("save", ""), VS = arg("vs", "");
 const SETUPS = { new: "New player (Gareth+Lyra Lv1)", duo20: "Gareth+Lyra Lv20", five40: "5 heroes Lv40 2*", five80: "5 heroes Lv80 5*", maxall: "Max heroes+weapons+buildings" };
 const HEROES = ["gareth", "lyra", "roran", "kessa", "sera", "torvald"];
 const lab = (gl) => gl == null ? "never" : (Math.floor((gl - 1) / 20) + 1) + "-" + (((gl - 1) % 20) + 1);
@@ -19,8 +20,9 @@ async function main() {
   if (ONLY.includes("conquest")) Object.keys(SETUPS).forEach((s) => { for (let sd = 0; sd < SEEDS; sd++) jobs.push({ kind: "cq", setup: s, seed: sd }); });
   if (ONLY.includes("swap")) ["six40", "six80"].forEach((s) => HEROES.forEach((out) => { for (let sd = 0; sd < SEEDS; sd++) jobs.push({ kind: "cq", setup: s, out, seed: sd }); }));
   if (ONLY.includes("arena")) jobs.push({ kind: "arena" });
+  if (ONLY.includes("meta")) [[20, 0, 10, 0.3], [40, 10, 30, 0.75], [80, 25, 50, 1]].forEach((x) => jobs.push({ kind: "meta", stage: x }));
   const W = Math.max(1, Math.min(+(process.env.WORKERS || 2), jobs.length)), parts = Array.from({ length: W }, () => []);
-  jobs.sort((a, b) => (b.kind === "arena") - (a.kind === "arena")).forEach((j, i) => parts[i % W].push(j));
+  jobs.sort((a, b) => ((b.kind === "arena" || b.kind === "meta") - (a.kind === "arena" || a.kind === "meta"))).forEach((j, i) => parts[i % W].push(j));
   const res = (await Promise.all(parts.map((p) => new Promise((ok, bad) => {
     const ch = cp.spawn(process.execPath, [__filename, ...args], { env: Object.assign({}, process.env, { KS_WORKER: "1", KS_JOBS: JSON.stringify(p) }), stdio: ["ignore", "pipe", "inherit"] });
     let out = ""; ch.stdout.on("data", (d) => { out += d; }); ch.on("close", (c) => { if (c) bad(new Error("worker " + c)); else { try { ok(JSON.parse(out.slice(out.lastIndexOf("@@") + 2))); } catch (e) { bad(e); } } });
@@ -34,6 +36,7 @@ function summarise(res) {
   const R = { conquest: {}, swap: {}, arena: null };
   res.forEach((r) => {
     if (r.kind === "arena") { R.arena = r.arena; return; }
+    if (r.kind === "meta") { (R.meta = R.meta || {})["Lv" + r.stage[0]] = r.rank; return; }
     const k = r.out ? r.setup + "|" + r.out : r.setup, box = r.out ? R.swap : R.conquest;
     (box[k] = box[k] || { walls: [], kos: [], koCount: [] }); box[k].walls.push(r.wall); box[k].kos.push(r.firstKo); box[k].koCount.push(r.koCount); (box[k].ds = box[k].ds || []).push(r.ds);
   });
@@ -51,6 +54,14 @@ function print(R, B) {
   if (Object.keys(R.swap).length) {
     console.log("\nCONQUEST SWAP (6 owned, one left out -> where the other 5 get stuck; lower = that hero matters more)");
     ["six40", "six80"].forEach((s) => { console.log("  " + (s === "six40" ? "Lv40 2*" : "Lv80 5*") + ": " + HEROES.map((h) => { const c = R.swap[s + "|" + h]; const b = B && B.swap[s + "|" + h]; return c ? "w/o " + h + " " + lab(c.wall) + d(c.wall, b && b.wall) : ""; }).join(" | ")); });
+  }
+  if (R.meta) {
+    console.log("\nMETA CHECK (Harley's rule: the meta build must stay the strongest overall weapon build; round robin of builds, both sides equal, research grows with level)");
+    let ok = true;
+    Object.keys(R.meta).forEach((st) => { const rk = R.meta[st], top = rk[0], meta = rk.filter((x) => /^META/.test(x[0]))[0];
+      if (!meta || meta[1] < top[1]) ok = false;
+      console.log("  " + st + ": " + rk.map((x) => x[0] + " " + x[1] + "%").join(" | ")); });
+    console.log(ok ? "  OK: the meta build is on top at every stage" : "  !! WARNING: the meta build is NOT the strongest at every stage");
   }
   if (R.arena) {
     console.log("\nARENA ROUND-ROBIN (team = 6 minus the named hero; wins-losses-draws; a team that loses a lot = that hero matters a lot)");
@@ -82,6 +93,23 @@ async function worker() {
       const applyCfg = (c) => Object.keys(CFG).forEach((k) => { if (k !== "enemyScale" && k !== "arenaBaseHp" && k !== "arenaBonus" && k !== "arenaFortMax") c[k] = CFG[k]; });
       if (CFG.enemyScale) Object.keys(CFG.enemyScale).forEach((k) => { enemyScale[k] = CFG.enemyScale[k]; }); /* Conquest enemy scaling (a global the sims share) */
       const W3 = ["missile_barrage", "laser_beam", "railgun"], FIVE = HEROES.slice(0, 5);
+      if (job.kind === "meta") { /* round robin of weapon builds (each on its natural fortress); META = Harley's meta build */
+        const [lvl, arms, wl, frac] = job.stage, FIVE = HEROES.slice(0, 5), GEAR = { atk: 48, hp: 48, def: 29, skill: 24, boss: 24, support: 24 };
+        const partial = (type, f) => { const T = type === 3 ? FORTRESS3_TREE : FORTRESS1_TREE, keys = Object.keys(T).sort((a, b) => T[a].row - T[b].row || T[a].col - T[b].col); let budget = Math.round(keys.reduce((a, k) => a + T[k].maxLevel, 0) * f); const m = type === 3 ? { _type: 3 } : {}; keys.forEach((k) => { const n = Math.min(T[k].maxLevel, budget); if (n > 0) { m[k] = n; budget -= n; } }); return m; };
+        const B = [["META missile+laser+railgun (F1)", ["missile_barrage", "laser_beam", "railgun"], 1], ["META missile+laser+railgun (F3)", ["missile_barrage", "laser_beam", "railgun"], 3],
+          ["Salvo+railgun+laser (F1)", ["salvo_loader", "railgun", "laser_beam"], 1], ["Salvo+EMP+missile (F1)", ["salvo_loader", "emp_gun", "missile_barrage"], 1],
+          ["Hex+Dome+railgun (F3)", ["hex_shield", "deflector_dome", "railgun"], 3], ["Clone+railgun+Hex (F3)", ["clone_task", "railgun", "hex_shield"], 3],
+          ["Laser+pulse+railgun (F1)", ["laser_beam", "pulse_beam", "railgun"], 1], ["IO+Dome+laser (F3)", ["io_repair", "deflector_dome", "laser_beam"], 3]];
+        const hs = {}; FIVE.forEach((k) => { hs[k] = { owned: true, level: lvl, stars: arms, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
+        const kit = B.map((b) => { const m = {}; b[1].forEach((id) => { m[id] = wl; }); return botWeaponsToSim(m); });
+        const side = (i, isP) => { const st = arenaSideStats(FIVE, hs, 20, 0, false, null, partial(B[i][2], frac), undefined, GEAR); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, FIVE.indexOf(e.id), isP); }); return st; };
+        const sc = B.map(() => 0);
+        for (let a = 0; a < B.length; a++) for (let b2 = 0; b2 < B.length; b2++) { if (a === b2) continue;
+          for (let sd = 0; sd < 3; sd++) { const seed = "meta" + a + "_" + b2 + "_" + sd, sim = arenaMakeSim(side(a, true), side(b2, false), { rng: worldPvpSeededRng(seed), critSeed: seed, weapons: kit[a].specs, aiWeapons: kit[b2].specs, shieldPct: kit[a].shieldPct, aiShieldPct: kit[b2].shieldPct, salvoP: kit[a].salvo, salvoA: kit[b2].salvo });
+            const w = sim.runToEnd(); if (w === "player") sc[a]++; else if (w === "ai") sc[b2]++; else { sc[a] += 0.5; sc[b2] += 0.5; } } }
+        const tot = (B.length - 1) * 6;
+        return { kind: "meta", stage: job.stage, rank: B.map((b, i) => [b[0], Math.round(100 * sc[i] / tot)]).sort((x, y) => y[1] - x[1]) };
+      }
       if (job.kind === "arena") { /* every pair of "6 minus one" teams, both sides, 10 seeds, same levels, no bonuses */
         const saved = Object.assign({}, game.heroKoCfg); applyCfg(game.heroKoCfg);
         const res = {};

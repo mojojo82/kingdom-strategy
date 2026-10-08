@@ -628,3 +628,8 @@
   (F3 2/8 -> 8/8) - the endgame is on a knife edge, so any opener boost at Lv50 is meta-changing. Final: Lv30 super bursts +175% (+every 4th),
   Lv50 +200% ("Fine-tuned fuses"). Sims: Lv30 @50% research ~7 s kills, @75% ~3 s (vs an equal F3 3/8); Lv50 @90% beats F3 8/8; both fully
   maxed: Fortress III still wins 6/8.
+- (9 Oct, kit) Harley's rule: the meta build must stay the strongest overall weapon build (high win %, unless specifically countered); no
+  change may accidentally beat it. New kit check `--only meta` (8 builds, natural fortress, research 30/75/100% at hero Lv20/40/80, 3 fights
+  per pairing, both ways). First run - FAILS: missile+laser+railgun is 29-71% (best on Fortress III), behind Clone+railgun+Hex (F3) 74-100%,
+  Hex+Dome+railgun (F3) 86-98% and the Salvo builds. Cause: missiles/laser are flat damage (don't grow with heroes) and fights are now long
+  (fortress HP per power), so %-of-max-HP tools (Railgun, Hex) and Clone Task dominate. Waiting on Harley: confirm the meta build and how to restore it.
