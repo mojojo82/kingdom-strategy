@@ -623,3 +623,8 @@
   Harley wants Lv50 to be a separate, unrelated perk (options offered: Shrapnel / Shell shock / Cracked armour / Quick reload).
   Sims (equal sides, research growing with level): no research ~coin flip; Lv10 @30% research beats F1-without 8/8 (~19 s); Lv30 @50% ~5 s,
   @75% ~3 s and beats an equal Fortress III; both fully maxed: Fortress III wins 6/8.
+- v966 (9 Oct) Salvo Loader Lv30/Lv50 (Harley: Lv50 better than Lv30 but must not change the meta; "make up some filler").
+  Tried Lv50 "Long Fuse" (opening burst lasts longer): +50% / +20% / even +10% flips the fully-maxed Fortress I vs Fortress III result
+  (F3 2/8 -> 8/8) - the endgame is on a knife edge, so any opener boost at Lv50 is meta-changing. Final: Lv30 super bursts +175% (+every 4th),
+  Lv50 +200% ("Fine-tuned fuses"). Sims: Lv30 @50% research ~7 s kills, @75% ~3 s (vs an equal F3 3/8); Lv50 @90% beats F3 8/8; both fully
+  maxed: Fortress III still wins 6/8.

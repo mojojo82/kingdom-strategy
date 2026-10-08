@@ -33,7 +33,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const f1 = fortressMaxMap(1), f3 = fortressMaxMap(3), cm = fortressBonusFrom(f1).critMult;
     o.arenaF1 = (firstBurst(f1, sp1) || {}).mult; o.arenaF1noW = (firstBurst(f1, null) || {}).mult; o.arenaF3 = (firstBurst(f3, sp1) || { mult: 1 }).mult; o.critMult = cm;
     o.arenaLv50 = (firstBurst(f1, sp50) || {}).mult;
-    o.pattern50 = [1, 2, 3, 4, 5, 6, 7, 8].filter((n) => salvoForces(sp50, n)).join(",");
+    o.pattern50 = [1, 2, 3, 4, 5, 6, 7].filter((n) => salvoForces(sp50, n)).join(",");
     /* Conquest: first burst of each level attempt */
     let t = 1000; const sim = createGame({ now: () => t, mapSize: 5, seed: 1, combatSeed: 4 }); const s = sim.state;
     s.fortressTech = fortressMaxMap(1); s.weaponLevels.salvo_loader = 1; s.equippedWeapons = ["salvo_loader"]; s.idle.fortressCannonEnabled = true;
@@ -46,7 +46,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.def && r.notDrawn && r.othersSame, "weapon defined, in the Elite draws, 16 others unchanged");
   assert.strictEqual(r.arenaF1, r.critMult, "Arena: Fortress I opens with a super burst"); assert.ok(r.arenaF1noW === 1 || r.arenaF1noW === r.critMult);
   assert.strictEqual(r.arenaF3, 1, "Fortress III gains nothing (cannot super-burst)");
-  assert.ok(Math.abs(r.arenaLv50 - r.critMult * 3) < 1e-9, "Lv50: super bursts +200%"); assert.strictEqual(r.pattern50, "1,4,7", "Lv50: every 3rd burst after the opener"); assert.strictEqual(r.lowFort, 5, "Lv10 on an unresearched Fortress I: x2 base, +150% = x5 (nearly useless without tech)"); assert.strictEqual(r.lowFortLater, 5, "same multiplier on any super burst");
+  assert.ok(Math.abs(r.arenaLv50 - r.critMult * 3) < 1e-9, "Lv50: super bursts +200%"); assert.strictEqual(r.pattern50, "1,5", "Lv50 keeps every 4th burst");  assert.strictEqual(r.lowFort, 5, "Lv10 on an unresearched Fortress I: x2 base, +150% = x5 (nearly useless without tech)"); assert.strictEqual(r.lowFortLater, 5, "same multiplier on any super burst");
   assert.strictEqual(r.cqFirst, r.critMult, "Conquest: first burst of the level is a super burst");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
