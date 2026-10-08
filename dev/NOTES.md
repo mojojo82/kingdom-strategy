@@ -573,3 +573,12 @@
   Harley on Fortress I vs III: fine for Fortress I to dominate for roughly the first two weeks of two F2P players; Fortress III should
   catch up before Lv80 (a whale maxing Fortress III fast is fine). Next: fortress HP per hero power (pending his OK) and an earlier
   Fortress III answer to the opening super burst.
+- v959 (9 Oct) Arena fortress HP grows with hero power - ON. ARENA_FORT_HP_PER_POWER = 100: every hero in the team adds 100 HP per point of
+  hero power (level x star multiplier) to its Arena / world-PvP fortress (no new stat - it's one more term in the existing fortress HP sum;
+  HP bonus % and research % still multiply it; Conquest untouched). A Lv40 2* team's fortress: ~250 -> ~30,000.
+  Fortress III braced hull (innate, shown in its innate line): an enemy cannon SUPER burst hits it for 60% (FORTRESS3_SUPER_TAKEN 0.6).
+  Tuned so Fortress I + Salvo Loader beats an equal Fortress III up to ~Lv40 (Harley: ~2 weeks of F2P play) and loses from ~Lv50
+  (sweep x1 / 0.7 / 0.6 / 0.5 / 0.3 / 0.15 in NOTES-era sims). F1 + Salvo still ends a fight vs an unresearched fortress in ~1-3 s.
+  Kit v959 vs v955: Conquest identical. Arena fights now ~30-40 s (were 0.5-3 s); with time to act, Sera now matters (team without her
+  wins 35-44%), Gareth and Torvald are the weakest picks (teams without them win 85-90%) -> buff candidates. Test g204 (real Arena battle
+  still running after 6 s, fortress = 100 x power).
