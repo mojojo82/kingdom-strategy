@@ -4613,10 +4613,11 @@ function fortressBonusFrom(map) {
 function randomFortressMap(strength) {
   var map = {};
   if (Math.random() < 0.2) return map;
-  var keys = Object.keys(FORTRESS1_TREE).sort(function (a, b) { return FORTRESS1_TREE[a].row - FORTRESS1_TREE[b].row; });
+  var T = FORTRESS1_TREE; if (Math.random() < 0.5) { map._type = 3; T = FORTRESS3_TREE; } /* v962: bots research Fortress III too, like players can */
+  var keys = Object.keys(T).sort(function (a, b) { return T[a].row - T[b].row; });
   var st = Math.max(0, Math.min(1, strength));
   keys.forEach(function (k) {
-    var d = FORTRESS1_TREE[k];
+    var d = T[k];
     if (!fortressNodeUnlocked(map, k)) return;
     var lvl = Math.round(d.maxLevel * Math.max(0, Math.min(1, st * (0.5 + Math.random() * 0.9) - d.row * 0.03)));
     if (lvl > 0) map[k] = Math.min(d.maxLevel, lvl);
@@ -10394,7 +10395,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v961"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v962"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15628,6 +15629,7 @@ function randomBotSaveState(tier) { // v799: same generator as the Arena (botCor
   return {
     isBot: true, generatedAt: Date.now(),
     buildings: { townhall: { level: core.townhallLevel } }, tech: {}, fortressTech: core.fortressTech, heroBonus: core.bonus, troops: troops,
+    equippedWeapons: Object.keys(core.weapons), weaponLevels: core.weapons, equippedEsper: core.esper, // v962
     heroes: heroes, conquestRoster: core.roster
   };
 }
@@ -16155,7 +16157,11 @@ function worldPvpBattle(march, def, ownerId, opts) {
   // no such override, so these are only ever non-null when the PvP Simulator dev tool passes them.
   var atkDmgRamp = opts.dmgRamp !== undefined ? opts.dmgRamp : equippedDmgRamp(asim.state);
   var atkRegen = opts.regen !== undefined ? opts.regen : equippedRegen(asim.state);
-  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: opts.atkWeapons || undefined, aiWeapons: opts.defWeapons || undefined, shieldPct: opts.atkShieldPct || 0, aiShieldPct: opts.defShieldPct || 0, trace: opts.trace });
+  /* v962: world PvP = Arena with troops, so both sides bring their weapons too (were left out unless the PvP Simulator passed them) */
+  var kitOf = function (st) { var m = {}; (st.equippedWeapons || []).forEach(function (id) { if (st.weaponLevels && st.weaponLevels[id] > 0) m[id] = st.weaponLevels[id]; }); return botWeaponsToSim(m); };
+  var atkKit = opts.atkWeapons !== undefined ? null : (asim === game ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : kitOf(asim.state));
+  var defKit = opts.defWeapons !== undefined ? null : kitOf(dsim.state);
+  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
   var winner = sim.runToEnd();
   var atkFrac = atkMax > 0 ? 1 - sim.playerHp / atkMax : 0, defFrac = defMax > 0 ? 1 - sim.aiHp / defMax : 0;
   var atkRatio = atkFrac * LOSS_FACTOR * (1 - asim.lossReductionAmt()) * (1 - asim.heroLeadLossReduction(atkKeys));
@@ -26046,6 +26052,18 @@ function arenaGovernorPowerBreakdownHtml(label, townhallLevel, roster, heroesSta
 // v799: the ONE bot generator. Arena opponents and World PvP / Gauntlet bots both come from here (world bots just add troops on top).
 // p = { avgLevel, avgArms, th }: the reference a "1.0x" bot sits at (the player's own numbers for the Arena, a map-tier curve for the world);
 // mult scales hero levels / stars / skills / Town Hall around that reference; fortressTier (0-1) sets the fortress tree depth; bonusFactor scales the ATK/HP/DEF bonus.
+/* v962: bot weapon loadouts - bots get the same combat kit a player can (Harley). Up to 3 weapons picked like a player would (the meta trio,
+   a burst build with Salvo Loader on Fortress I, a tank build on Fortress III, or a random mix), at levels around `lvl` (1-50). Returns { id: level }. */
+function botWeapons(lvl, fortType) {
+  var pool = WEAPON_DEFS.filter(function (w) { return !w.visualOnly; }).map(function (w) { return w.id; });
+  var builds = [["missile_barrage", "laser_beam", "railgun"], ["laser_beam", "pulse_beam", "railgun"], ["missile_barrage", "flak_burst", "scatter_rounds"]];
+  if (fortType === 3) builds.push(["hex_shield", "deflector_dome", "railgun"], ["io_repair", "deflector_dome", "laser_beam"]);
+  else builds.push(["salvo_loader", "railgun", "laser_beam"], ["salvo_loader", "emp_gun", "missile_barrage"]);
+  var pick = Math.random() < 0.75 ? builds[Math.floor(Math.random() * builds.length)].slice() : pool.slice().sort(function () { return Math.random() - 0.5; }).slice(0, WEAPON_EQUIP_MAX);
+  var out = {}; pick.slice(0, WEAPON_EQUIP_MAX).forEach(function (id) { if (WEAPON_DEFS_BY_ID[id]) out[id] = Math.max(1, Math.min(WEAPON_MAX_LEVEL, Math.round(lvl * (0.8 + Math.random() * 0.4)))); });
+  return out;
+}
+function botWeaponsToSim(map) { return { specs: simWeaponsFromCfg(map || null), shieldPct: simShieldPctFromCfg(map || null), salvo: salvoSpec(Object.keys(map || {}), function (wd) { return game.weaponStatsAtLevel(wd, map[wd.id]); }) }; }
 function botCore(p) {
   var tier = p.mult;
   var count = 1 + Math.floor(Math.random() * ARENA_COMBAT_HERO_KEYS.length);
@@ -26063,11 +26081,15 @@ function botCore(p) {
       skillLevels: { conquest: [1, 2, 3].map(rollSkill), expedition: [1, 2, 3].map(rollSkill) }
     };
   });
+  var fortressTech = randomFortressMap(p.fortressTier);
+  var wl = p.weaponLevel != null ? p.weaponLevel : Math.max(1, p.avgLevel * 0.6); /* weapon level that matches this bot's progress */
   return {
     roster: roster, heroes: heroes,
     townhallLevel: Math.max(1, Math.min(20, Math.round(p.th * tier * (0.9 + Math.random() * 0.2)))),
-    fortressTech: randomFortressMap(p.fortressTier),
-    bonus: botBonusFrom(p.bonusFactor)
+    fortressTech: fortressTech,
+    bonus: botBonusFrom(p.bonusFactor),
+    weapons: botWeapons(wl * tier, fortressTypeOf(fortressTech)), /* v962 */
+    esper: Math.random() < Math.min(0.9, 0.2 + 0.5 * tier) ? Object.keys(ESPER_DEFS)[0] : null /* v962: bots can bring an Esper too */
   };
 }
 function generateArenaOpponent() {
@@ -26089,7 +26111,9 @@ function generateArenaOpponent() {
   if (roll < 0.35) tier = 0.55 + Math.random() * 0.3;       // weaker:   0.55x - 0.85x
   else if (roll < 0.65) tier = 0.85 + Math.random() * 0.3;  // even:     0.85x - 1.15x
   else tier = 1.15 + Math.random() * 0.55;                  // stronger: 1.15x - 1.70x
-  var core = botCore({ avgLevel: playerAvgLevel, avgArms: playerAvgArms, th: playerTH, mult: tier, fortressTier: (tier - 0.5) / 1.2, bonusFactor: tier });
+  var pw = (game.state.equippedWeapons || []).map(function (id) { return game.state.weaponLevels[id] || 0; }).filter(function (x) { return x > 0; });
+  var playerWeaponLevel = Math.max(pw.length ? pw.reduce(function (a, b) { return a + b; }, 0) / pw.length : 0, playerAvgLevel * 0.6); /* v962: bots carry weapons even if the player has none yet */
+  var core = botCore({ avgLevel: playerAvgLevel, avgArms: playerAvgArms, th: playerTH, mult: tier, fortressTier: (tier - 0.5) / 1.2, bonusFactor: tier, weaponLevel: playerWeaponLevel });
   var roster = core.roster, heroes = core.heroes, townhallLevel = core.townhallLevel;
   // Points: this opponent's RANKING stat (see the "arena" field on the
   // default state) — reuses the same weaker/even/stronger tier roll as
@@ -26105,6 +26129,7 @@ function generateArenaOpponent() {
     heroes: heroes,
     fortressTech: core.fortressTech,
     bonus: core.bonus, // mimics a player of this strength: the real player's ATK/HP/DEF bonus scaled by the opponent's tier
+    weapons: core.weapons, esper: core.esper, // v962
     points: points
   };
 }
@@ -26791,7 +26816,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       }));
     });
     // ===== end FX engine =====
-    var playerWeaponFires = [];
+    var playerWeaponFires = [], aiWeaponFires = [];
     var playerBeamFires = [];
     (opts.weapons || []).forEach(function (wp) {
       if (FXS.P.stun > 0) return; weaponCd[wp.id] -= cdStep;
@@ -26819,7 +26844,8 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (FXS.A.stun > 0) return; aiWeaponCd[wp.id] -= cdStep;
       if (aiWeaponCd[wp.id] > 1e-9) return;
       aiWeaponCd[wp.id] += wcd(wp);
-      if (wp.kind === "beam") { aiActiveBeams.push({ id: wp.id, left: wp.beamSec, dps: wp.totalDmg / wp.beamSec }); return; }
+      if (wp.kind === "beam") { aiActiveBeams.push({ id: wp.id, left: wp.beamSec, dps: wp.totalDmg / wp.beamSec }); aiWeaponFires.push({ id: wp.id, count: 1 }); return; }
+      aiWeaponFires.push({ id: wp.id, count: wp.count || 1 }); /* v962: so the Arena can draw the opponent's shots too */
       aiDmg += wp.dmgPerShot; projA += wp.dmgPerShot;
       trAddAi('weapon:' + wp.id, wp.dmgPerShot);
     });
@@ -26936,7 +26962,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     }
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
-    var info = { limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
+    var info = { limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
       landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
     var winner = done ? (playerHp + playerShield > aiHp + aiShield ? "player" : (aiHp + aiShield > playerHp + playerShield ? "ai" : "draw")) : null;
@@ -27026,7 +27052,9 @@ function arenaPlayerShieldPct() {
 function runArenaBattle(onTick, onDone) {
   var p = arenaPlayerRosterAndHeroes();
   var playerStats = arenaSideStats(p.roster, p.heroes, game.state.buildings.townhall.level, arenaBaseHpPlayer, true);
-  var aiStats = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, undefined, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
+  if (!arenaOpponent.weapons) { var avgL0 = 0, n0 = 0; Object.keys(arenaOpponent.heroes || {}).forEach(function (k) { avgL0 += arenaOpponent.heroes[k].level || 1; n0++; }); arenaOpponent.weapons = botWeapons(Math.max(1, (n0 ? avgL0 / n0 : 1) * 0.6), fortressTypeOf(arenaOpponent.fortressTech || {})); } /* v962: older saved ladders */
+  var aiKit = botWeaponsToSim(arenaOpponent.weapons);
+  var aiStats = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
   // critSeed: without this, fortressCritRoll(opts.critSeed || "arena", side, burstNo) always fell back to the
   // literal string "arena" — the SAME seed every single real Arena battle. fortressCritRoll is a pure function
   // of (seed, side, burstNo), so with a fixed seed the player's super-burst crit landed on the exact same
@@ -27041,7 +27069,7 @@ function runArenaBattle(onTick, onDone) {
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
-  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one
@@ -28166,7 +28194,7 @@ function renderArenaBattleScreen() {
   if (p.roster.length === 0) document.getElementById("arenaLog").textContent = "Equip at least one hero in Conquest before entering the Arena.";
 
   var pStats0 = arenaSideStats(p.roster, p.heroes, game.state.buildings.townhall.level, arenaBaseHpPlayer, true);
-  var aStats0 = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, undefined, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
+  var aStats0 = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
   arenaAnim.playerRoster = p.roster; arenaAnim.playerHeroesSnap = p.heroes;
   arenaAnim.aiRoster = arenaOpponent.roster; arenaAnim.aiHeroesSnap = arenaOpponent.heroes;
   arenaAnim.opponentName = arenaOpponent.name;
@@ -28327,6 +28355,9 @@ function renderArenaBattleScreen() {
       });
       (state.playerWeaponFires || []).forEach(function (wf) {
         spawnArenaMissileVolley(pg.muzzleX, pg.muzzleY, ag.nose, groundYFor(h) - 18, wf.count);
+      });
+      (state.aiWeaponFires || []).forEach(function (wf) { /* v962: the bot's weapons fly the other way (beams shown as a short volley) */
+        spawnArenaMissileVolley(ag.muzzleX, ag.muzzleY, pg.nose, groundYFor(h) - 18, Math.min(6, wf.count));
       });
       // Same shoot/arc sfx dedup as Border Skirmish: at most one of each per
       // tick regardless of how many attackers on either side fired that

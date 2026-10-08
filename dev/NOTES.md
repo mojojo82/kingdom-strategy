@@ -592,3 +592,13 @@
   Checked (no bug): Flak Burst / Scatter Rounds do fire in Arena. All plain damage weapons (missiles, flak, scatter, laser, pulse) deal
   BASE_ATK x dmgPct x ATK bonus - flat, not tied to hero levels - so against the new power-scaled fortress they are ~2% of a Lv40 fight
   (e.g. missiles 720 dmg of a 30,000 HP fortress). Railgun (% of fortress max HP) still scales.
+- v962 (9 Oct) Bots carry a player's combat kit (Harley: bots must be equivalent to a human player). botCore -> weapons (up to 3, picked like
+  a player: the old meta trio, laser+pulse+railgun, flak+scatter+missile, Salvo builds on Fortress I, Hex+Dome / IO+Dome tank builds on
+  Fortress III, or 25% a random mix) at a level matching progress (Arena: the player's equipped weapon level or 0.6 x avg hero level, x the
+  bot's tier; world bots: 0.6 x avg hero level); bots research Fortress III half the time (randomFortressMap); ~20-70% bring the Esper.
+  Arena: opponent weapons / Hex pool / Salvo passed to the fight (older saved ladders get a loadout on first fight); the bot's shots are
+  drawn now (aiWeaponFires; beams shown as a short volley). World PvP (= Arena with troops): BOTH sides now bring their equipped weapons
+  (attacker's real kit, defender's save / bot save) - before, only the PvP Simulator passed weapons. Test g205.
+  Weapon-build round robin (Lv20/40/80 heroes, weapons Lv10/30/50, 4 fights per pairing): the old "meta" (missile+laser+railgun) is no
+  longer on top. Lv20: Salvo+EMP+missile (F1) 100%, Salvo+railgun+laser 83%. Lv40: Hex+Dome+railgun (F3) 94%, Salvo+EMP+missile 90%.
+  Lv80: Hex+Dome+railgun (F3) 100%, meta on F3 79%, Salvo builds 54-67%. Flak+scatter+missile last everywhere (8-13%).
