@@ -23,7 +23,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     o.def = !!wd && wd.kind === "fx" && /super burst/.test(wd.desc(wd, game.weaponStatsAtLevel(wd, 1)));
     o.notDrawn = wd.rarity === "Elite" && WEAPON_DEFS.filter((w) => !w.visualOnly && !w.noDraw && w.rarity === "Elite").some((w) => w.id === "salvo_loader"); /* v958: in the draws, lowest rarity */
     o.othersSame = WEAPON_DEFS.filter((w) => w.id !== "salvo_loader").length === 16;
-    o.lv50 = JSON.stringify(game.weaponStatsAtLevel(wd, 50).p); o.lv1 = JSON.stringify(game.weaponStatsAtLevel(wd, 1).p);
+    o.lv50 = JSON.stringify(game.weaponStatsAtLevel(wd, 50).p); o.lowFort = salvoBurstMult(salvoSpec(["salvo_loader"], () => game.weaponStatsAtLevel(wd, 10)), 1, 2); o.lowFortLater = salvoBurstMult(salvoSpec(["salvo_loader"], () => game.weaponStatsAtLevel(wd, 10)), 2, 2); o.lv1 = JSON.stringify(game.weaponStatsAtLevel(wd, 1).p);
     /* Arena: same teams, Fortress I maxed, with / without the weapon; and a Fortress III with it (cannot super-burst -> nothing) */
     const hs = {}; ["gareth", "lyra", "roran", "kessa", "sera"].forEach((k) => { hs[k] = { owned: true, level: 40, stars: 10, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
     const ro = ["gareth", "lyra", "roran", "kessa", "sera"];
@@ -46,7 +46,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.def && r.notDrawn && r.othersSame, "weapon defined, in the Elite draws, 16 others unchanged");
   assert.strictEqual(r.arenaF1, r.critMult, "Arena: Fortress I opens with a super burst"); assert.ok(r.arenaF1noW === 1 || r.arenaF1noW === r.critMult);
   assert.strictEqual(r.arenaF3, 1, "Fortress III gains nothing (cannot super-burst)");
-  assert.ok(Math.abs(r.arenaLv50 - r.critMult * 1.5) < 1e-9, "Lv50: +50% super-burst damage"); assert.strictEqual(r.pattern50, "1,4,7", "Lv50: every 3rd burst after the opener");
+  assert.ok(Math.abs(r.arenaLv50 - Math.max(r.critMult, 45) * 1.5) < 1e-9, "Lv50: opener at least x45, +50% super-burst damage"); assert.strictEqual(r.pattern50, "1,4,7", "Lv50: every 3rd burst after the opener"); assert.strictEqual(r.lowFort, 12.5, "Lv10 on a barely researched Fortress I: opener x10 +25%"); assert.strictEqual(r.lowFortLater, 2.5, "later super bursts use the fortress multiplier");
   assert.strictEqual(r.cqFirst, r.critMult, "Conquest: first burst of the level is a super burst");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

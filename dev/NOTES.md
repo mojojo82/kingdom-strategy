@@ -607,3 +607,13 @@
   PvP single-weapon ranking (one weapon + its better fortress, Lv20/40/80): Railgun 91, Clone Task 87, Hex Shield 85, Salvo Loader 79
   (#1 at Lv20 with 97%, 84% at Lv40, 56% at Lv80), Orbit 73, Dome 72, IO Repair 71, EMP 64, Droid 62, Scatter 56, Flak 55, Missiles 54,
   Laser 52, Pulse 52, Projection Wall 50, Status Wave 45 (Duplicate not ranked - it only copies).
+- v964 (9 Oct) Salvo Loader's own power grows with ITS level (Harley: "somewhat good" at Lv10, monster noticeable at Lv30). Finding: with
+  realistic partial research the old Salvo was mild - its punch was all Fortress I's crit lane (super burst x2 at 0-15% research, x4.5 at
+  30%, x8 at 50%, x21 at 75%, x43 maxed; the crit nodes sit deep in the tree). Now the OPENING burst hits at least x open (or the
+  fortress's own multiplier if bigger): Lv1 x4, Lv10 x10 (+25%), Lv30 x30 (+every 4th), Lv50 x45 (+50%, every 3rd). salvoBurstMult().
+  Sims (both sides equal, research grows with level): Lv10 Salvo at hero Lv20/30% research beats F1-without 8/8, ~18 s (was 6/8, 30 s);
+  Lv30 Salvo at hero Lv30/50% kills in ~4 s (was 23 s). Conquest (F1, realistic research): +0.1 ch (Lv20 duo), +0.2 ch (Lv30), +1.2 ch (Lv40),
+  +1.9 ch (Lv80 maxed).
+  Open issue: with PARTIAL research, Fortress III beats Fortress I at every stage (0/8 for F1 with or without Salvo, Lv10-40) - its HP/
+  damage-reduction nodes help from the first levels while Fortress I's payoff is late. Needs Harley's call (F1 crit earlier / F3 early
+  nodes softer / braced hull growing with F3 research).
