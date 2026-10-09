@@ -30,10 +30,13 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     eq([2]); o.c3full = +(game.idleAttackerDamage("kessa") / k0).toFixed(3);
     eq([10]); o.c11five = +(game.idleAttackerDamage("gareth") / g0).toFixed(5); st.conquestRoster = ["gareth"]; eq([]); const g1 = game.idleAttackerDamage("gareth"); eq([10]); o.c11one = +(game.idleAttackerDamage("gareth") / g1).toFixed(3); st.conquestRoster = FIVE.slice();
     o.c11zeroBonus = cardSoloBonus(eq([10]), 0);
+    eq([]); const r0 = game.idleAttackerDamage("roran"), gh0 = game.idleHeroMaxHp("gareth"), rh0 = game.idleHeroMaxHp("roran"); eq([11]); o.c12 = +(game.idleHeroMaxHp("gareth") / gh0).toFixed(2); o.c12roran = game.idleHeroMaxHp("roran") === rh0; o.c12atk = game.idleAttackerDamage("gareth") === g0;
+    eq([12]); o.c13 = +(game.idleAttackerDamage("roran") / r0).toFixed(3); o.c13gareth = game.idleAttackerDamage("gareth") === g0; o.c13arena = cardHeroDmgMul(cardModsFrom(st), "roran", 1, 5);
     /* Arena sims */
     const hs = {}; FIVE.forEach((k) => { hs[k] = { owned: true, level: 40, stars: 10, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
     const F1 = {}; Object.keys(FORTRESS1_TREE).forEach((k) => { F1[k] = FORTRESS1_TREE[k].maxLevel; }); let useF1 = false;
     const side = (isP) => { const s2 = arenaSideStats(FIVE, hs, 15, 0, false, null, useF1 ? F1 : null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, FIVE.indexOf(e.id), isP); }); return s2; };
+    { const mx = (cm, id) => { const s12 = arenaMakeSim(side(true), side(false), { rng: worldPvpSeededRng("h"), critSeed: "h", cardMods: cm }); return s12.pHH ? s12.pHH.by[id].max : -1; }; const g0a = mx(null, "gareth"), r0a = mx(null, "roran"); const c12 = eq([11]); o.c12arena = +(mx(c12, "gareth") / g0a).toFixed(2); o.c12arenaRoran = mx(c12, "roran") === r0a; eq([]); }
     const run = (slots, aiStrong, tanky) => { const cm = slots ? eq(slots) : null; const tr = { src: {}, aiSrc: {}, perTick: [] };
       const ai = side(false), pl = side(true); if (aiStrong) ai.attackers.forEach((a) => { a.dmg *= 3; }); if (tanky) { ai.maxHp *= 500; pl.maxHp *= 500; }
       const sim = arenaMakeSim(pl, ai, { rng: worldPvpSeededRng("c"), critSeed: "c", cardMods: cm, trace: tr, maxTicks: tanky ? 800 : undefined });
@@ -51,6 +54,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   console.log(JSON.stringify(r));
   assert.ok(Math.abs(r.c1 - 1.1) < 0.01, "card 1: infantry +10% ATK"); assert.ok(r.c1lyra, "card 1 leaves ranged heroes alone");
   assert.ok(Math.abs(r.c3 - 3) < 0.01, "card 3: Kessa +200% ATK under 50% health"); assert.ok(Math.abs(r.c3full - 3) < 0.01, "card 3 (v988): always on, full health too");
+  assert.ok(Math.abs(r.c12 - 1.15) < 0.01 && r.c12roran && r.c12atk, "card 12: infantry +15% max HP only"); assert.ok(Math.abs(r.c12arena - 1.15) < 0.01 && r.c12arenaRoran, "card 12: Arena infantry HP bars +15%, cavalry untouched");
+  assert.ok(Math.abs(r.c13 - 1.15) < 0.01 && r.c13gareth && Math.abs(r.c13arena - 1.15) < 1e-9, "card 13: cavalry +15% (Conquest + Arena), not infantry");
   assert.ok(r.c11five >= 1 && r.c11five < 1.001, "card 11: almost nothing with 5 heroes"); assert.ok(Math.abs(r.c11one - 3) < 0.01, "card 11 (v988): +200% with 1 hero"); assert.strictEqual(r.c11zeroBonus, 2, "card 11: +200% with no heroes");
   assert.ok(r.skillC8 > r.skillBase, "card 8: faster skills -> more skill damage");
   assert.ok(r.c9low === 0.05 && r.c9high === 0, "card 9: +5% cooldown bonus only under 90% health");

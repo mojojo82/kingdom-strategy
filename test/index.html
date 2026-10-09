@@ -5547,6 +5547,8 @@ var CARD_EFFECTS_BY_NAME = {
   "#8": { kind: "cdr", pct: 0.05 },                            // skill cooldown bonus +5% (skills recharge 5% faster)
   "#9": { kind: "cdrLow", pct: 0.05, below: 0.90 },            // +5% more skill cooldown bonus while health < 90%
   "#10": { kind: "cdrDmg", over: 0.25, pct: 0.25 },            // skill cooldown bonus above 25% -> hero damage +25%. Harley: built for the future Type 2 fortress (innate skill cooldown bonus) - can't trigger until that exists, leave as is
+  "#12": { kind: "infHp", pct: 0.15 },                         // v989: infantry heroes +15% max HP (their own HP bars - they tank melee hits)
+  "#13": { kind: "cavAtk", pct: 0.15 },                        // v989: cavalry heroes (Roran) +15% base ATK
   "#11": { kind: "soloAtk", pct: 2.0, perHero: 0.10, free: 1 } // v988: +200% ATK (heroes + fortress cannon) with 0 or 1 hero, x0.10 for every hero after the first (2 heroes +20%, 3 +2%, 5 ~+0.02%)
 };
 // v985: which effect a card slot has - its name if that matches an effect, else its slot code "#n" (cards 1-11 until they're named).
@@ -5557,10 +5559,10 @@ function cardEffectKeyAt(state, idx) {
 }
 // v985: every equipped card effect rolled into one set of combat modifiers (same rules in Conquest and Arena)
 function cardModsFrom(state) {
-  var m = { infAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, any: false };
+  var m = { infAtk: 0, infHp: 0, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, any: false };
   equippedCardEffects(state).forEach(function (fx) {
     m.any = true;
-    if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
+    if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "cavAtk") m.cavAtk += fx.pct || 0; else if (fx.kind === "infHp") m.infHp += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
     else if (fx.kind === "cdr") m.cdr += fx.pct || 0;
     else if (m.hasOwnProperty(fx.kind)) m[fx.kind] = fx;
   });
@@ -5572,6 +5574,7 @@ function cardHeroDmgMul(m, key, hpFrac, nHeroes) {
   var d = HERO_DEFS[key]; if (!m || !m.any || !d) return 1;
   var x = 1;
   if (m.infAtk && d.class === "infantry") x *= 1 + m.infAtk;
+  if (m.cavAtk && d.class === "cavalry") x *= 1 + m.cavAtk; /* v989: card 13 */
   if (m.kessaAtkLow && key === "kessa" && hpFrac < m.kessaAtkLow.below) x *= 1 + m.kessaAtkLow.pct;
   if (m.cdrDmg && cardCdBonus(m, hpFrac) > m.cdrDmg.over) x *= 1 + m.cdrDmg.pct;
   if (m.soloAtk) x *= 1 + cardSoloBonus(m, nHeroes);
@@ -5596,6 +5599,8 @@ var CARD_EFFECT_FIELD_INFO = {
     compound: { type: "boolean", label: "Compounds each burst", comment: "On: each cannon burst re-multiplies on top of the last (10, 100, 1000…). Off: every burst applies the multiplier fresh, just once (always x10, never higher)." }
   },
   infAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Infantry ATK bonus", comment: "0.10 = +10% base ATK for infantry heroes (basic attacks and skills)." } },
+  infHp: { pct: { type: "number", min: 0, step: 0.01, label: "Infantry HP bonus", comment: "0.15 = infantry heroes get +15% max HP." } },
+  cavAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Cavalry ATK bonus", comment: "0.15 = +15% base ATK for cavalry heroes (basic attacks and skills)." } },
   kessaArcLow: { pct: { type: "number", min: 0, step: 0.05, label: "Arc Burst bonus", comment: "0.30 = +30% Arc Burst damage." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.30 = while your fortress is under 30% health." } },
   kessaAtkLow: { pct: { type: "number", min: 0, step: 0.05, label: "Kessa ATK bonus", comment: "0.20 = +20% base ATK." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.50 = while your fortress is under 50% health. 1.01 = always on." } },
   lastStand: { below: { type: "number", min: 0, step: 0.01, label: "Health below", comment: "Triggers once per fight when your fortress drops under this (0.10 = 10%)." }, sec: { type: "number", min: 0, step: 0.5, label: "Invincible (s)", comment: "Seconds the fortress takes no damage." } },
@@ -6729,7 +6734,8 @@ function createGame(opts) {
   function idleHeroMaxHp(key) {
     var h = state.heroes[key];
     if (!h || !h.owned) return 0;
-    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp")));
+    var infHpC = (HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") ? (cardModsFrom(state).infHp || 0) : 0; /* v989: card 12 */
+    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC)));
   }
   function idleHeroEntry(key) {
     if (!state.idle.heroHp) state.idle.heroHp = {};
@@ -10570,7 +10576,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v988"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v989"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12096,7 +12102,7 @@ var CARD_CATALOG_DOC = "assetitems/cardcatalog";
 var CARD_CATALOG_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Drop Signal", narrative: "" };
 // v978: card text written in the code (slot index -> text). Shown to every player in any slot the shared catalog leaves empty; an admin's
 // in-game edit (saved to the catalog) takes priority. Order per slot: shared catalog > the admin's own save text > these defaults.
-var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL }; /* v981: all three effect cards on cards 28-30 */
+var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 11: { name: "Shield Brothers", type: "", effect: "All of your infantry heroes gain +15% max health", narrative: "" }, 12: { name: "Thundering Hooves", type: "", effect: "All of your cavalry heroes gain +15% to their base atk", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL }; /* v981: all three effect cards on cards 28-30 */
 // v980 (Harley): a card with an effect shows that effect's name in its description box (Regen -> "Regen"), so it's clear at a glance which
 // card it is. Fills an empty description or placeholder text (v979's "Test", the old long Drop Signal line); real text is left alone.
 var CARD_EFFECT_LABEL = { "critical mass": "Critical Mass", "regen": "Regen", "drop signal": "Drop Signal" };
@@ -26749,6 +26755,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (cm.t1Def && st.fortType === 1 && ost.fortType === 1) st.dmgTakenMult = (st.dmgTakenMult || 1) * Math.max(0, 1 - cm.t1Def); /* card 6: 30% less damage taken */
     if (cm.critDmg && st.critRate > 0) st.critMult = (st.critMult || 1) * (1 + cm.critDmg);
     if (cm.soloAtk) st.cannonMult = (st.cannonMult || 1) * (1 + cardSoloBonus(cm, nH));
+    if (cm.infHp && st.heroHp) st.heroHp = st.heroHp.map(function (e) { return e.infantry ? Object.assign({}, e, { max: Math.max(1, Math.round(e.max * (1 + cm.infHp))) }) : e; }); /* v989: card 12 */
     return st; }
   var nHeroP = playerStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length, nHeroA = aiStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length;
   var pStats0 = playerStats; playerStats = cardStatic(playerStats, cmP, aiStats, nHeroP); aiStats = cardStatic(aiStats, cmA, pStats0, nHeroA);

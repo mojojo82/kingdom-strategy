@@ -772,3 +772,10 @@
 - Sim result (Arena, same weapons both sides, opponent no cards): Kessa Lv40 alone vs a 5-hero Lv30 team wins 97%, vs Lv20 100%, vs Lv40 0%.
 - Card text defaults updated. The shared card catalog text wins if it was set, so Harley may need to edit cards 3/11 text there.
 - Test: g215 updated (c3 = x3 always, c11 one hero = x3). ALL OK.
+
+### v989 — infantry card and cavalry card (TEST)
+- Harley: one small buff card for infantry and one for lancers (= cavalry, Harley's answer). Card 12 must be something other than ATK.
+- Card 12 "Shield Brothers": infantry heroes (Gareth, Torvald) +15% max HP. Their own HP bars in Conquest (idleHeroMaxHp) and Arena (cardStatic scales heroHp). New kind `infHp`.
+- Card 13 "Thundering Hooves": cavalry heroes (Roran) +15% base ATK (basic attacks + skills, both modes). New kind `cavAtk`.
+- Placeholder names/text in CARD_TEXT_DEFAULTS; Dev Mod fields added.
+- Test: g215 checks both (Conquest + Arena, other classes untouched). g210-g212 pass.
