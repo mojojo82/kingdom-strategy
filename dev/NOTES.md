@@ -711,3 +711,6 @@
 - Conquest: `drawIdleClones` - the clone stands just in front of its template hero (Gareth), swings for 0.45s whenever it lands a hit, green HP bar. (Conquest clones have no walking of their own yet.)
 - Arena: the sim's info now carries pClones / aClones ({id, d, hp, max, reach}); arenaAnim.cloneD keeps prev/cur positions; the clone is drawn on the template hero's lane, runs / swings from where the sim puts it, green HP bar.
 - Checked with headless screenshots (Conquest + an Arena fight). Tests g200-g211 (except unchanged g203/g206/g207) pass.
+
+### v976 — clone on the heroes' ground line (TEST)
+- Harley: "the clone is too low". Conquest: feet now on the same line as Gareth (was +3px). Arena: same ground line as the heroes (was +6px) and a step (14px) behind the template hero so both stay visible when they stand together. Checked with headless screenshots.

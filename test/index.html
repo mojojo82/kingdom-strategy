@@ -10445,7 +10445,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v975"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v976"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -19985,7 +19985,7 @@ function drawIdleClones(ctx, w, h) {
     var tv = idleAnim.heroVis[cl.tpl]; if (!tv || !HERO_ANIMS[cl.tpl]) return;
     var mem = idleAnim.cloneVis || (idleAnim.cloneVis = {}), cm = mem[k] || (mem[k] = { dmg: 0, atkUntil: 0 });
     var dm = game.state.idle.cloneDmg || 0; if (dm > cm.dmg) cm.atkUntil = now + 450; cm.dmg = dm;
-    var x = tv.x + 20 + n * 10, y = tv.y + 3; n++;
+    var x = tv.x + 20 + n * 10, y = tv.y; n++; /* v976: feet on the same ground line as the heroes */
     drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? "attack" : "idle", hScale, false, 0.83 + n * 0.1, 1, CLONE_TINT);
     var a = HERO_ANIMS[cl.tpl], top = (y + 12 * hScale) - a.dispH * (a.sizeMul || 1) * hScale - 5, bw = 24, fr = Math.max(0, Math.min(1, cl.hp / cl.max));
     ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
@@ -27667,7 +27667,7 @@ function drawArenaFrame(ctx, w, h) {
       var oswN = (oImgN && oImgN.complete && oImgN.naturalWidth) ? oImgN.naturalWidth * FORTRESS_SHIP_SCALE * oppSkinN.cqScale * (24 / 22) : 120;
       var ocxN = isP ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, endX = isP ? ocxN - oswN / 2 - 6 : ocxN + oswN / 2 + 6;
       var mapDx = function (dv) { return dv <= 0.5 ? slot.x + (mX - slot.x) * (dv / 0.5) : mX + (endX - mX) * ((dv - 0.5) / 0.5); };
-      var x = mapDx(c.prev) + (mapDx(c.cur) - mapDx(c.prev)) * frD, y = slot.y + 6 + n[c.side] * 4; n[c.side]++;
+      var x = mapDx(c.prev) + (mapDx(c.cur) - mapDx(c.prev)) * frD + (isP ? -1 : 1) * (14 + n[c.side] * 10), y = slot.y; n[c.side]++; /* v976: same ground line as the heroes, a step behind the template hero so both stay visible */
       var st = (c.cur !== c.prev && frD < 1 && !arenaAnim.battleEnded) ? "run" : (c.reach && !arenaAnim.battleEnded ? "attack" : "idle");
       drawHeroAnim(ctx, tk, x, y + 13, st, heroSpriteVisualScale / 100, !isP, 0.83, 1, CLONE_TINT);
       var a = HERO_ANIMS[tk], top = (y + 13) - a.dispH * (a.sizeMul || 1) * (heroSpriteVisualScale / 100) - 5, bw = 24, fr = Math.max(0, Math.min(1, c.hp / c.max));
