@@ -950,3 +950,8 @@
 - Harley: put the alignment sliders by my base on the World map so I can see it.
 - Dev Tools > Visuals > Base skin alignment has "🗺️ Adjust on the map (by my base)": the controls move into a small panel above the bottom bar (navy, gold dashed border), the map jumps to your base, zooms in, selects it so its 3x3 squares show (its info card is hidden while the panel is open) and shows the chosen skin on your base (preview on). Change skin in the panel to preview another. "✓ Done" puts the controls back in Dev Tools, turns the preview off and brings the info card back.
 - g233 extended (panel shown with the sliders, base visible above it with 9 squares, card hidden, Done restores).
+
+### v1015 — research starts very cheap (TEST)
+- Harley: starting research levels were far too expensive - a new player couldn't do anything (level 1 cost 560k-2M RP; a level 1 Academy makes 10,800 RP/h, so 2-8 days). Wanted: a very cheap start, so a player with an Academy can start and finish many early levels.
+- techCostFor now runs from costL1 = old level 1 / TECH_L1_DIV (600) up to the unchanged old level 10, growing evenly in between (about x2.5 a level). Examples: Paved Roads 1,120 / 2,838 / 7,193 / 18,229 ... 4.83M; Elite Vanguard 3,360 ... 21.95M. Levels 1-3 of every tech together: ~279k RP (~26 h of a level 1 Academy, ~8.6 h of a level 3). The level-4+ extra resource (gold / stone / energon) follows the RP cost, so it drops too. Research times unchanged. Fortress tree unchanged.
+- Test: new g234_research_costs.js.

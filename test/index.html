@@ -4585,7 +4585,7 @@ TROOP_TYPES.forEach(function (type) {
 var PRODUCTION_SCALE = 0.6;
 // Research is split into finer steps: every tech has TECH_LEVELS levels (was 5) of half the size, so the totals are unchanged but each step is smaller and cheaper.
 // RP costs are scaled by TECH_COST_SCALE; from level TECH_EXTRA_FROM on, a level also needs a second resource (see techExtraFor).
-var TECH_LEVELS = 10, TECH_COST_SCALE = 22400, TECH_EXTRA_FROM = 4;
+var TECH_LEVELS = 10, TECH_COST_SCALE = 22400, TECH_EXTRA_FROM = 4; var TECH_L1_DIV = 600; /* v1015 */
 var TECH_EXTRA_RES = { growth: "gold", economy: "stone", battle: "energon" }; // existing resources only — gold/stone from buildings, energon from fights
 var TECH_EXTRA_RATIO = { gold: 0.9, stone: 1.8, energon: 0.003 };                 // extra amount = this x the level's RP cost
 var TECH_CATEGORIES = [
@@ -4624,6 +4624,10 @@ Object.keys(TECH_DEFS).forEach(function (k) { // v793: 5 -> TECH_LEVELS levels, 
   var d = TECH_DEFS[k], f = d.maxLevel / TECH_LEVELS;
   d.legacyBase = d.baseCost; d.legacyMult = d.costMult; // the pre-v793 cost curve — Power/USD 'invested' values still read this so splitting the tree doesn't inflate them
   d.perLevel = d.perLevel * f; d.costMult = Math.pow(d.costMult, f); d.baseCost = Math.round(d.baseCost * TECH_COST_SCALE * f); d.maxLevel = TECH_LEVELS;
+  /* v1015 (Harley: a new player couldn't research anything - level 1 cost 560k-2M RP, days of a level 1 Academy): a very cheap start that climbs
+     steeply to the SAME top level as before. Level 1 = the old level 1 / TECH_L1_DIV (about 1k-3k RP, minutes with a level 1 Academy), level 10
+     unchanged; the levels between grow evenly (about x2.5 each). */
+  d.costTop = Math.round(d.baseCost * Math.pow(d.costMult, TECH_LEVELS - 1)); d.costL1 = Math.max(100, Math.round(d.baseCost / TECH_L1_DIV));
   if (d.reqTechLevel) d.reqTechLevel = Math.round(d.reqTechLevel / f);
   d.timeBaseMin = Math.max(1, Math.min(5, Math.round(1 + (d.legacyBase - 50) / 130 * 4))); // v796: level-1 research takes 1-5 min depending on the tech (cheap -> 1, Elite Vanguard -> 5)
 });
@@ -6548,6 +6552,7 @@ function createGame(opts) {
   }
   function techCostFor(key, level) {
     var def = TECH_DEFS[key];
+    if (def.costL1 && def.costTop) return Math.round(def.costL1 * Math.pow(def.costTop / def.costL1, (Math.max(1, Math.min(def.maxLevel, level)) - 1) / (def.maxLevel - 1))); /* v1015 */
     return Math.round(def.baseCost * Math.pow(def.costMult, level - 1));
   }
   function researchSpeedMult() { return 1; } // hook for future speed bonuses
@@ -10862,7 +10867,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1014"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1015"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
