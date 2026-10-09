@@ -37,6 +37,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
       if (dupEff != null && hex > 0 && simDupTarget(used, want) === "hex_shield") hex += hex * dupEff / 100;
       specs.forEach((sp) => { const cdf = (s) => { sp.cooldownSec = s; sp.cooldownTicks = Math.max(1, Math.round(s / tick)); };
         if (sp.fx === "clone") { if (COND.cm != null) sp.p.mult = COND.cm; if (COND.ccd != null) cdf(COND.ccd); }
+        if (sp.fx === "emp" && COND.ecd != null) cdf(COND.ecd);
         if (sp.fx === "sw") { if (COND.sd != null) sp.p.dur = COND.sd; if (COND.scd != null) cdf(COND.scd); if (COND.lob != null) sp.p.lob = COND.lob; } });
       if (COND.hex != null) hex *= COND.hex; /* sim-only Hex Shield strength multiplier */
       return { specs, shieldPct: hex };
