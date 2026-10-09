@@ -917,3 +917,11 @@
 - LOD 1 (tiles 7-16 px) now draws bases with their real art (with their water ring and fire), at the map's scale; only resources become dots there. LOD 2 (under 7 px) is unchanged (dots + the "you are here" pin).
 - Alliance tags over bases hide when tiles are under 13 px, so a cluster of small bases doesn't turn into a pile of labels.
 - Test: new g229_lod1_bases.js.
+
+### v1010 — research as a tree (TEST)
+- Harley (video of another game's research tree): pretty up our research. Mockup approved; lines are decoration only for now (Harley) - the only real locks are the existing ones (buildings, Iron Discipline → Elite Vanguard).
+- Each tab (Growth / Economy / Battle) is a bronze board with hex nodes in rows of 1 and 2, joined by cyan lines (grey when the row below is all locked). Node: emoji icon in a teal hex, border gold = MAX, cyan = can research now, grey + 🔒 = locked, white-ish default; the running one glows and shows its timer. Level pill (e.g. 4/10, MAX) and name under each node.
+- Tap a node: popup (brown, like the Idle Chest) with Now / Next level / requirement, and the Research button (cost + time) or "Researching level N · time left". Research closes the popup.
+- The board is rebuilt only when something on it changes (levels, running research, affordability, width); the timer text updates on its own, so the glow doesn't restart every second.
+- The old list code is still in renderTechs (after `renderTechTree(); return;`) in case it's wanted back.
+- Test: new g230_research_tree.js.
