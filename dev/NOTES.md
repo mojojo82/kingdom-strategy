@@ -721,3 +721,7 @@
 - Not changed: card ART is still per player (assetSync under players/<uid>/ on Firebase) - a later step if Harley wants it shared too.
 - Test: new g212_card_catalog.js. g201/g204/g205/g210 pass.
 - (same day, admin + server) Harley doesn't want to import over his current save. New admin panel card "🃏 Card text from the old save": pick kingdom_owner_save.json, it lists the cards with text, "Copy card text" calls the new callable `adminCardCatalog` (admin only) which merges into assetitems/cardcatalog via core `mergeCardCatalog` - EMPTY slots only, never overwrites, Drop Signal ensured in the last free slot, no save touched; logged in adminlog. Tests: core.test.js (merge), dev/simfork/g213_card_catalog_server.js (fnrunner: admin fills, save untouched, non-admin refused).
+
+### v978 — card text can be written in the code (TEST)
+- Harley: "I'm asking you to put text there" - Claude can't edit the live database, so card text can now also live in the code: `CARD_TEXT_DEFAULTS` (slot index -> {name, type, effect, narrative}), shown to every player in any slot the shared catalog leaves empty. Priority per slot: shared catalog (admin in-game edits) > the admin's own save text > code defaults. Now: slot 1 effect "Test" (Harley's check), slot 30 Drop Signal.
+- To change card text from Claude's side: edit CARD_TEXT_DEFAULTS. Note an admin in-game edit (catalog) wins over it.

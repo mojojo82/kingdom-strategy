@@ -26,7 +26,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     K.isAdmin = false; K.adminChecked = true;
     game.state.cards[2].name = "Critical Mass"; game.state.equippedCards = [2];
     cardCatalogRaw = []; cardCatalogSettle(); await wait(50);
-    o.playerName = game.state.cards[2].name; o.playerRamp = !!equippedDmgRamp(game.state);
+    o.playerName = game.state.cards[2].name; o.playerDefault = game.state.cards[0].effect + "|" + game.state.cards[29].name; o.playerRamp = !!equippedDmgRamp(game.state);
     openCardDetailOverlay(2); o.readOnly = document.getElementById("cardDetailName").readOnly; o.devModHidden = document.getElementById("cardDevModBtn").style.display === "none"; closeCardDetailOverlay();
     game.state.cardEffectOverrides = { "critical mass": { multiplier: 999 } }; o.ovIgnored = cardEffectFor("Critical Mass").multiplier === 10;
     /* 2) the admin's own save text fills the empty slots, Drop Signal goes in the last free slot, and it's written to the shared doc */
@@ -36,7 +36,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const doc = JSON.parse(await window.__fbstore("get")); const key = Object.keys(doc).find((k) => /assetitems\/cardcatalog$/.test(k));
     const cards = key ? doc[key].cards : null;
     o.saved = !!cards; o.slot0 = cards && cards[0].name; o.slot1 = cards && cards[1].name; o.last = cards && cards[cards.length - 1].name; o.dropCount = cards ? cards.filter((c) => /drop signal/i.test(c.name)).length : 0;
-    o.adminEditable = (openCardDetailOverlay(0), !document.getElementById("cardDetailName").readOnly); closeCardDetailOverlay();
+    o.slot0Effect = cards && cards[0].effect; o.playerSlot0 = null; o.adminEditable = (openCardDetailOverlay(0), !document.getElementById("cardDetailName").readOnly); closeCardDetailOverlay();
     o.dropFound = !!equippedSummonCall({ cards: game.state.cards, equippedCards: [game.state.cards.findIndex((c) => /drop signal/i.test(c.name))] });
     return o;
   });
@@ -45,5 +45,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.playerName === "" && !r.playerRamp && r.readOnly && r.devModHidden && r.ovIgnored, "a normal player can't make or edit card text or Dev Mod card values");
   assert.ok(r.saved && r.slot0 === "Old Card" && r.slot1 === "Kept" && r.last === "Drop Signal" && r.dropCount === 1, "admin save text fills empty slots, catalog text kept, Drop Signal in the last slot, written to the shared doc");
   assert.ok(r.adminEditable && r.dropFound, "an admin can edit; Drop Signal works from the catalog");
+  assert.strictEqual(r.playerDefault, "Test|Drop Signal", "v978: text written in the code shows for every player in empty slots");
+  assert.strictEqual(r.slot0Effect, "old text from the original save", "the admin's own save text beats the code default");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
