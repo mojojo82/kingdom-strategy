@@ -892,3 +892,9 @@
 - Zoomed out far enough that cities become dots (LOD 1 and 2), a gold map pin with a crown (48x62 px, dark outline) bobs over your base and a gold ring pulses on the ground under it. Zoomed in it's hidden (your castle is visible). Always the same size on screen. Stills when the phone asks for reduced motion.
 - `#myPin`, `paintMyPin()` (called at the end of renderVisibleTiles).
 - Test: new g227_my_pin.js (hidden zoomed in, on your base at LOD 1 and 2, hides again).
+
+### v1006 — "you are here" pin: smaller, sturdier placement (TEST)
+- Harley (phone screenshot): the pin was off its base after zooming in, and too big.
+- Not reproduced in headless Chromium (pinch with real touch events stays exact). Likely the phone (WebKit) not redrawing an element with running animations when its left/top change. The pin is now placed with a translate3d transform (handled by the compositor) and re-placed every time the tiles are (repositionAllTiles), not only on a full render.
+- Size 48x62 → 32x41, ring 60x26 → 40x17.
+- g227 updated (32 px).

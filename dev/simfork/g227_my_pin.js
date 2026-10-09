@@ -30,7 +30,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.back = await at(30);
   console.log(JSON.stringify(o));
   assert.ok(o.near.lod === 0 && !o.near.shown, "zoomed in: no pin (the castle is visible)");
-  for (const k of ["mid", "far"]) assert.ok(o[k].lod > 0 && o[k].shown && o[k].w === 48 && Math.abs(o[k].tipDx) <= 2 && Math.abs(o[k].tipDy) <= 8 && o[k].onScreen, k + ": pin sits on your base");
+  for (const k of ["mid", "far"]) assert.ok(o[k].lod > 0 && o[k].shown && o[k].w === 32 && Math.abs(o[k].tipDx) <= 2 && Math.abs(o[k].tipDy) <= 8 && o[k].onScreen, k + ": pin sits on your base");
   assert.ok(!o.back.shown, "zooming back in hides it");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
