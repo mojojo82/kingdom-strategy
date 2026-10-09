@@ -659,3 +659,11 @@
 - Tests: new g207_weapon_travel.js; g206 now checks EMP mirrors end in a draw. g200-g207 pass.
 - Loop (results/loop_v968.json): meta EMP + Railgun + Clone 92 / rank 31 (v967: 88 / 52) - its first droid now gets out before the enemy EMP lands. Still beaten both ways by 67 builds, mostly EMP builds (Railgun countdown still reset by every EMP). #1 Hex + EMP + Railgun 100 (beats the meta both ways). 8/15 counters still beat it.
 - Found, not fixed: (1) hero swings resolve attacker-first each tick - a defender's hero KO'd this tick loses its swing; exact mirrors (e.g. Railgun only, EMP + Clone) don't end level. (2) Conquest's Railgun / EMP still act instantly.
+
+### v969 — both sides act at the same moment (TEST)
+- Bug: each 0.45s tick resolved the attacker's (player side's) hero swings and skills first; a defender hero KO'd by them lost his swing in that same tick. Also each attacker's first-swing offset came from one shared random stream the player side drew from first. Exact mirror fights did not draw (e.g. Railgun + Clone mirror: attacker won by ~1,700 HP on v967).
+- Fix (arenaMakeSim): `isKo` now means "already down when this tick began"; `koMark` remembers where a hero stood and his limit bar when KO'd, so a hero KO'd this tick still swings / casts / fires Death Strike this tick from that spot. Swing offsets come from `staggerOf(id)` = seeded by battle seed + hero id (droids by number), the same for either side.
+- Test: new g208_fair_mirror.js - 9 builds x 2 seeds x 3 stages, every mirror ends level (fails on v968). g200-g207 pass.
+- Balance kit `--only arena --vs v959`: hero picture unchanged (Lyra must-pick, Gareth / Torvald least missed), small shifts only.
+- Loop (results/loop_v969.json): meta 92 / rank 26; #1 Hex + EMP + Railgun 99; 7/15 counters beat the meta.
+- Railgun idea tested in scratch copies only (not in the game): "droid link" (while your Clone droid stands, EMP can't reset or freeze your Railgun) -> meta 99 / #2 at Lv40 and Lv80 with the loop working; Lv20 still broken (Railgun + shield builds beat the meta). "Charge holds through EMP" for every Railgun made all Railgun builds 100 and broke the loop. Hex nerfs (85%..30%) barely moved anything.

@@ -10397,7 +10397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v968"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v969"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26531,7 +26531,13 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var koCfg = game.heroKoCfg;
   function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
   var pHH = mkHeroHp(playerStats, aRefA), aHH = mkHeroHp(aiStats, pRefA);
-  function isKo(hh, id) { return !!(hh && hh.by[id] && hh.by[id].ko); }
+  // v969: both sides act at the same moment. A hero knocked out during this tick still makes this tick's attacks / skills (from where he stood,
+  // with the limit bar he had) - it no longer matters which side's hits are worked out first. isKo = "was already down when this tick began".
+  var staggerSeed = String(opts.critSeed || 'arena'), staggerMemo = {}; /* v969: each attacker's first-swing offset depends only on the battle seed + who he is (droids by number), not on which side he is on */
+  function staggerOf(id) { var k = String(id).replace(/^droid[PA]/, 'droid'); if (staggerMemo[k] == null) staggerMemo[k] = worldPvpSeededRng(staggerSeed + '|' + k)(); return staggerMemo[k]; }
+  function isKo(hh, id) { var e = hh && hh.by[id]; return !!(e && e.ko && e.koTick !== tick); }
+  function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; }
+  function withKoPos(me, fn) { if (!me || !(me.ko && me.koTick === tick)) return fn(); var d0 = me.d; me.d = me.koD; try { return fn(); } finally { me.d = d0; } }
   function tickRevive(hh) { if (!hh) return; hh.list.forEach(function (e) { if (e.ko && e.droid) { e.dead = true; return; } if (e.ko) { e.reviveT -= dtS; if (e.reviveT <= 0) { e.ko = false; e.reviveT = 0; e.hp = e.max; } } }); }
   function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null }; }) : null; }
   function heroHitTaken(e) { if (e.limMax && !e.ko) e.lim = Math.min(e.limMax, e.lim + e.limTaken); if (e.ko) e.lim = 0; } /* v954: every hit a hero takes fills his limit bar (Death Strike), a KO empties it - same as Conquest */
@@ -26541,7 +26547,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     for (var i = 0; i < hh.list.length && dmg > 0; i++) {
       var e = hh.list[i]; if (!e.infantry || e.ko) continue;
       var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1), take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
-      if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; }
+      if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; }
       heroHitTaken(e);
     }
     return dmg;
@@ -26578,11 +26584,11 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function canMelee(hh, id) { if (!posMode) return engaged; var e = hh && hh.by[id]; return !!(e && e.reach); }
   // One melee hit (basic or skill). Returns true if it hits the fortress pool (caller adds it to that side's damage); false if a hero absorbed it.
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
-    var me = hh.by[id], t = me ? pickMeleeTarget(me, oh) : null;
+    var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh); }) : null;
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
     var e = t.hero; e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
-    if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
+    if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     heroHitTaken(e);
     return false;
   }
@@ -26592,14 +26598,15 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (!(rangedPctLocal > 0)) return true;
     var me = hh.by[id]; if (!me) return true;
     var best = null;
-    oh.list.forEach(function (o) { if (!o.infantry || o.ko) return; var dist = (1 - o.d) - (me.infantry ? me.d : 0); if (dist <= ARENA_RANGED_RANGE && (!best || o.d > best.d)) best = o; });
+    var meD = (me.ko && me.koTick === tick) ? me.koD : me.d;
+    oh.list.forEach(function (o) { if (!o.infantry || o.ko) return; var dist = (1 - o.d) - (me.infantry ? meD : 0); if (dist <= ARENA_RANGED_RANGE && (!best || o.d > best.d)) best = o; });
     if (!best) return true;
     rAcc[tag + id] = (rAcc[tag + id] || 0) + rangedPctLocal / 100;
     if (rAcc[tag + id] < 1 - 1e-9) return true;
     rAcc[tag + id] -= 1;
     map[tag + id] = best.id;
     best.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
-    if (best.hp <= 1e-9) { best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
+    if (best.hp <= 1e-9) { koMark(best); best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
     heroHitTaken(best);
     return false;
   }
@@ -26640,7 +26647,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         var eligible = !isKo(hh, a.id) && (!a.melee || canMelee(hh, a.id)) && (!a.startTick || tick >= a.startTick); // startTick: troop stacks close the distance at their own speed
         if (!eligible) { cd[a.id] = null; return; }
         var iv = (shared && a.sec) ? a.sec : atkInt;
-        if (cd[a.id] == null) { cd[a.id] = shared ? rng() * iv : Math.floor(rng() * iv); return; }
+        if (cd[a.id] == null) { var r0 = staggerOf(a.id); cd[a.id] = shared ? r0 * iv : Math.floor(r0 * iv); return; }
         cd[a.id] -= cdStep;
         var hitsNow = 0;
         while (cd[a.id] <= 1e-9 && hitsNow < 4) { // loop only matters if the interval is ever shorter than one tick
@@ -26680,13 +26687,13 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var out = 0; if (!posMode || !st.limits || !st.limits.length) return 0;
       st.limits.forEach(function (L) {
         if (L.key !== key) return;
-        var me = hh.by[L.key]; if (!me || me.ko || me.lim < L.fill || !me.reach) return;
-        var tg = oh.list.filter(function (o) { return !o.ko && !o.droid && me.d + o.d >= 1 - ARENA_REACH; }).sort(function (a, b) { return b.d - a.d; }).slice(0, L.n);
+        var me = hh.by[L.key], kNow = me && me.ko && me.koTick === tick; if (!me || (me.ko && !kNow) || (kNow ? me.koLim : me.lim) < L.fill || !me.reach) return;
+        var myD = kNow ? me.koD : me.d, tg = oh.list.filter(function (o) { return !o.ko && !o.droid && myD + o.d >= 1 - ARENA_REACH; }).sort(function (a, b) { return b.d - a.d; }).slice(0, L.n);
         me.lim = 0; limTgt[tagP + L.key] = tg.map(function (o) { return o.id; });
         if (!tg.length) { out += L.value; return; }
         tg.forEach(function (o) {
           if (o.hp <= o.max * L.exec) o.hp = 0; else o.hp -= L.value * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
-          if (o.hp <= 1e-9) { o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; }
+          if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; }
           heroHitTaken(o);
         });
       });
@@ -26767,7 +26774,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var land = railQ.filter(function (q) { return q.at <= tick; }); if (!land.length) return; railQ = railQ.filter(function (q) { return q.at > tick; });
       land.forEach(function (q) { var c = fxCtx(q.sd), O = c.O, P = q.p, m = q.m, ost = c.ost, fortRaw = ost.maxHp * (P.fortPct || 0) / 100 * m / (ost.dmgTakenMult || 1);
         if (q.sd === 'P') playerDmg += fortRaw; else aiDmg += fortRaw;
-        c.ohh && c.ohh.list.forEach(function (h) { if (h.ko) return; h.hp = 0; h.ko = true; h.reviveT = koCfg.reviveSec; h.kos++; h.d = 0; });
+        c.ohh && c.ohh.list.forEach(function (h) { if (h.ko) return; koMark(h); h.hp = 0; h.ko = true; h.reviveT = koCfg.reviveSec; h.kos++; h.d = 0; });
         O.droneOff = Math.max(O.droneOff, (P.droneOff || 0));
         O.inst.forEach(function (x) { if (x.k === 'clone') x.t = Math.max(x.t, (P.cloneDelay || 0) * m); });
       });
