@@ -788,3 +788,7 @@
 - Card 15 "Hardy Stock": all your heroes and summons +5% max HP (`allHp`). Clones and gerbils are built from hero HP, so they get it too.
 - Sims: Conquest climb Lv40 135 -> 138 with card 14 (about 1,070 gerbils, up to 14 alive). Arena: in the first 30 s each gerbil walks out alone and the enemy's ranged volley kills it at once. Over a full fight card 14 still decides even mirrors (100% vs a same-level team, 0% vs +5 levels, like Last Bastion). Card 15 alone is a nudge (53-57%).
 - Test: new g216_gerbils.js. g209, g211, g215 pass.
+
+### v991 — Death Gerbils drawn as small green ooze (TEST)
+- Harley: "Change the art to green tinted smaller ooze enemies". drawGerbilOoze() uses the ooze enemy sheet (ENEMY_SKINS.ooze), tinted GERBIL_TINT (lighter than the clone tint so the shape still reads) at GERBIL_SCALE 0.6, facing the enemy, with a small green HP bar. Conquest (drawIdleClones) and Arena (drawArenaClones; cloneInfo passes `g`). In Arena gerbils no longer need an infantry hero in the line-up to be drawn.
+- Checked with headless screenshots: Conquest shows the ooze next to Gareth.
