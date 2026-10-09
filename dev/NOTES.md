@@ -835,3 +835,7 @@
 - Left out: device / multi-account matching (no-tracking rule).
 - Still OFF on the real server: the save trigger (features.json saveTriggers=false) needs Harley's 3 one-time IAM grants (HANDOVER). Until then the panel shows a warning and no flags arrive. Bans, rollbacks of stored snapshots, audit and config all work regardless.
 - Tests: core unit test (limits, config, summary, ban state); g218_security_server (real functions in node); g219_ban_notice (game notice/reload); g220_admin_security (admin panel, phone width); ci/integration.test.js security test (real rules + functions on the emulator, runs in GitHub CI before deploy). g179, g191, g212-g214 pass.
+
+### v996 — whiter, stronger foam line round bases on the sea (TEST)
+- Harley: the foam line round city edges is hard to notice in live play. The line was ~2 px in the 270 px reference sheet (about 1 screen pixel at normal zoom), at alpha 0.45+, blue-white.
+- Now BASE_WATER.foamW 6.5 / foamA 0.88, and the foam is pure white (ripples keep their blue-white). Checked before/after with headless screenshots at default zoom.

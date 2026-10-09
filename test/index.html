@@ -10670,7 +10670,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v995"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v996"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13888,7 +13888,7 @@ function cityArtGet(src) {
    Tuned in the preview with Harley: speed 7, strength 80, reach 18 (in units of a 270px-wide base). Dev Tools can turn it off. */
 var BASE_WATER_KEY = "kingdom_baseWater_v1", baseWaterOn = true;
 try { baseWaterOn = localStorage.getItem(BASE_WATER_KEY) !== "0"; } catch (e) {}
-var BASE_WATER = { speed: 7, strength: 0.8, reach: 18, ref: 270, frames: 14 }, baseWaterSheets = {};
+var BASE_WATER = { speed: 7, strength: 0.8, reach: 18, ref: 270, frames: 14, foamA: 0.88, foamW: 6.5 }, baseWaterSheets = {}; /* v996 (Harley: foam line hard to see in play): foam line whiter, stronger and a bit wider (was alpha 0.45+, 2.2 px, blue-white; 2.2 px shrinks to ~1 screen px at normal zoom) */
 function setBaseWaterOn(on) { baseWaterOn = !!on; try { localStorage.setItem(BASE_WATER_KEY, on ? "1" : "0"); } catch (e) {} try { renderVisibleTiles(); } catch (e) {} }
 function baseWaterAllSea(tile) {
   if (typeof terrainArr === "undefined" || !terrainArr || !terrainN) return true;
@@ -13935,12 +13935,12 @@ function baseWaterBuild(m, im) {
     i = Y * FW + X; var dd = dist[i]; if (full[i] || dd >= reach || Y + y0 < bandTop) continue;
     var gx = X / 6, gy = Y / 6, x0 = gx | 0, yy0 = gy | 0, fx = gx - x0, fy = gy - yy0;
     var n = g[yy0 * gw + x0] * (1 - fx) * (1 - fy) + g[yy0 * gw + x0 + 1] * fx * (1 - fy) + g[(yy0 + 1) * gw + x0] * (1 - fx) * fy + g[(yy0 + 1) * gw + x0 + 1] * fx * fy;
-    var base = 0; if (dd <= 2.2) base = (0.45 + 0.4 * n) * (1 - (dd - 1) / 2.2 * 0.5); if (dd <= 4.5) base = Math.max(base, 0.12 * (1 - dd / 4.5));
+    var fw = C.foamW, base = 0; if (dd <= fw) base = Math.min(1, (C.foamA + 0.25 * n) * (1 - Math.max(0, dd - 1) / fw * 0.45)); if (dd <= fw + 2.5) base = Math.max(base, 0.2 * (1 - dd / (fw + 2.5)));
     for (var f = 0; f < N; f++) {
       var al = base;
       if (dd > 1.5) { var t = f * period / N, ph = ((dd - t * C.speed) % gap + gap) % gap, w = Math.max(0, 1 - Math.abs(ph - gap / 2) / 1.1);
         if (w) { var fade = 1 - dd / reach; al = Math.max(al, w * C.strength * Math.sqrt(fade) * (0.45 + 0.7 * n) * (n > 0.28 ? 1 : 0.3)); } }
-      if (al > 0.004) { var q = (Y * FW * N + f * FW + X) * 4; o[q] = 222; o[q + 1] = 244; o[q + 2] = 252; o[q + 3] = Math.round(Math.min(1, al) * 255); }
+      if (al > 0.004) { var q = (Y * FW * N + f * FW + X) * 4, wh = al <= base + 1e-6 && dd <= fw; o[q] = wh ? 255 : 222; o[q + 1] = wh ? 255 : 244; o[q + 2] = wh ? 255 : 252; o[q + 3] = Math.round(Math.min(1, al) * 255); } /* foam pure white, ripples keep their blue-white */
     }
   }
   sx2.putImageData(out, 0, 0);
