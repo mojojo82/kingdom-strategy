@@ -873,6 +873,32 @@
   #log div { padding:5px 8px; background:var(--panel2); border-radius:6px; border-left:2px solid var(--border); }
 
   .techtabs { display:flex; gap:6px; margin-bottom:10px; }
+  /* v1010 (Harley): research as a tree - hex nodes joined by cyan lines on a bronze board; tap a node for its details + Research */
+  .rt-board { position:relative; margin:0 0 10px; border-radius:12px; border:2px solid #8a6a3a; background:radial-gradient(circle at 50% 0, rgba(255,220,150,.10), transparent 60%), repeating-linear-gradient(45deg, rgba(255,255,255,.025) 0 2px, transparent 2px 9px), linear-gradient(#5e4628,#3d2c19); box-shadow:inset 0 0 22px rgba(0,0,0,.45); overflow:hidden; }
+  .rt-lines { position:absolute; left:0; top:0; pointer-events:none; }
+  .rt-node { position:absolute; width:96px; margin-left:-48px; text-align:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .rt-hex { position:relative; width:64px; height:72px; margin:0 auto; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#c9a24a; display:flex; align-items:center; justify-content:center; }
+  .rt-hex > i { width:58px; height:66px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:radial-gradient(circle at 50% 35%, #2f7f8c, #143a44 75%); display:flex; align-items:center; justify-content:center; font-style:normal; font-size:28px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+  .rt-lv { position:relative; display:inline-block; margin-top:-10px; min-width:34px; padding:1px 6px; border-radius:7px; background:#1a120a; border:1px solid #8a6a3a; color:#f3e3c3; font-size:10.5px; font-weight:800; line-height:14px; }
+  .rt-nm { font-size:11px; font-weight:700; color:#f3e3c3; text-shadow:0 1px 2px #000; margin-top:2px; line-height:1.15; }
+  .rt-node.max .rt-hex { background:#f0c95f; } .rt-node.max .rt-lv { background:#7a5414; border-color:#f0c95f; color:#ffe9a8; }
+  .rt-node.can .rt-hex { background:#4fd1c5; }
+  .rt-node.locked .rt-hex { background:#6b6b6b; } .rt-node.locked .rt-hex > i { background:radial-gradient(circle at 50% 35%, #555, #2a2a2a 75%); filter:grayscale(1) brightness(.75); } .rt-node.locked .rt-nm { color:#a89a80; }
+  .rt-node.sel .rt-hex { background:#fff; }
+  .rt-node .rt-lock { position:absolute; right:14px; top:44px; font-size:14px; }
+  .rt-node.run .rt-hex { animation:rtGlow 1.4s ease-in-out infinite; }
+  @keyframes rtGlow { 0%,100% { filter:drop-shadow(0 0 2px #f0c95f); } 50% { filter:drop-shadow(0 0 10px #f0c95f); } }
+  @media (prefers-reduced-motion: reduce) { .rt-node.run .rt-hex { animation:none; filter:drop-shadow(0 0 6px #f0c95f); } }
+  .rt-node .rt-time { font-size:10px; font-weight:800; color:#ffd978; text-shadow:0 1px 2px #000; }
+  #rtPop { position:fixed; inset:0; z-index:9400; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); }
+  .rt-detail { position:relative; width:min(330px,90vw); padding:14px 14px 12px; border-radius:12px; border:2px solid #b98a4c; background:linear-gradient(#5a4128,#3b2a17); box-shadow:0 8px 30px rgba(0,0,0,.6); font-size:13px; color:#f3e3c3; }
+  .rt-detail .rt-x { position:absolute; top:4px; right:6px; background:none; border:0; width:auto; margin:0; padding:4px 8px; font-size:18px; color:#d8c29a; cursor:pointer; }
+  .rt-detail .rt-dh { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .rt-detail .rt-dh .rt-hex { width:40px; height:45px; margin:0; } .rt-detail .rt-dh .rt-hex > i { width:36px; height:41px; font-size:18px; }
+  .rt-detail .rt-dn { font-weight:800; font-size:14px; color:#ffd978; }
+  .rt-detail .cur { color:#7fe08a; } .rt-detail .nxt { color:#9fd8ff; } .rt-detail .locked { color:#e0a080; }
+  .rt-detail button { width:100%; margin-top:8px; }
+
   .techtab { flex:1; text-align:center; padding:6px 4px; border-radius:7px; background:var(--panel2); border:1px solid var(--border); color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; }
   /* #modeTabs specifically (the top-level World/Troops/Conquest/.../Reports
      row) now has 8 entries — too many to fit legibly on one non-wrapping
@@ -10795,7 +10821,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1009"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1010"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12541,6 +12567,7 @@ function renderTechs() {
   var tqb = document.getElementById("techQueueBar"), rqq = game.state.researchQueue;
   tqb.innerHTML = '<span>🔬 Research: <b>' + (rqq ? 1 : 0) + '/1</b>' + (rqq ? ' · ' + TECH_DEFS[rqq.key].name + ' Lv' + rqq.toLevel : ' · idle') + '</span>' + (rqq ? speedupBtnsHtml("research", null) : "") + '<a href="#" id="devRFin" style="color:#7a6a4a;">dev: finish</a>';
   tqb.querySelector("#devRFin").onclick = function (e) { e.preventDefault(); game.researchFinishNow(); persist(); render(); };
+  renderTechTree(); return;
   var el = document.getElementById("techList");
   el.innerHTML = "";
   Object.keys(TECH_DEFS).filter(function (key) { return TECH_DEFS[key].category === activeTechCategory; }).forEach(function (key) {
@@ -12592,6 +12619,72 @@ function renderTechs() {
     }
     el.appendChild(row);
   });
+}
+
+/* v1010 (Harley: "pretty up our research trees"): each category is drawn as a tree - rows of 1 and 2 hex nodes joined by cyan lines on a bronze
+   board (like the Fortress tree / the reference game). Tap a node: its details + Research button show in a panel under the board. The board is only
+   rebuilt when something on it changes (levels, the running research, what you can afford, the selection), so its glow doesn't restart every second. */
+var techSel = {}, techTreeSig = "";
+function techTreeRows(keys) { var rows = [], i = 0, two = false; while (i < keys.length) { var n = two ? 2 : 1; rows.push(keys.slice(i, i + n)); i += n; two = !two; } return rows; }
+function techNodeState(key) {
+  var def = TECH_DEFS[key], lv = game.state.tech[key] || 0, rq = game.state.researchQueue;
+  if (lv >= def.maxLevel) return "max";
+  if (!game.meetsTechRequirements(key)) return "locked";
+  if (rq && rq.key === key) return "run";
+  var cost = game.techCostFor(key, lv + 1), ex = game.techExtraFor(key, lv + 1);
+  return !rq && game.state.researchPoints >= cost && game.techExtraAffordable(ex) ? "can" : "";
+}
+function renderTechTree() {
+  var el = document.getElementById("techList"); if (!el) return;
+  var cat = activeTechCategory, keys = Object.keys(TECH_DEFS).filter(function (k) { return TECH_DEFS[k].category === cat; });
+  if (!techSel[cat] || keys.indexOf(techSel[cat]) < 0) techSel[cat] = keys[0];
+  var rq = game.state.researchQueue;
+  var sig = [cat, el.clientWidth, rq ? rq.key + rq.toLevel : ""].concat(keys.map(function (k) { return (game.state.tech[k] || 0) + techNodeState(k); })).join("|");
+  if (sig === techTreeSig && el.querySelector(".rt-board")) { techTreeTick(); return; }
+  techTreeSig = sig;
+  var W = Math.max(280, el.clientWidth || 400), ROWH = 136, TOP = 14, rows = techTreeRows(keys), H = TOP + rows.length * ROWH;
+  function pos(r, c, n) { return { x: n === 1 ? W / 2 : (c === 0 ? W * 0.27 : W * 0.73), y: TOP + r * ROWH }; } /* top of the hex */
+  var lines = "", nodes = "";
+  for (var r = 0; r + 1 < rows.length; r++) { /* parents' bottoms -> a bar -> children's tops */
+    var a = rows[r].map(function (k, c) { return pos(r, c, rows[r].length); }), b = rows[r + 1].map(function (k, c) { return pos(r + 1, c, rows[r + 1].length); });
+    var y0 = a[0].y + 106, y1 = b[0].y - 2, ym = (y0 + y1) / 2, xs = a.concat(b).map(function (p) { return p.x; }), on = rows[r + 1].some(function (k) { return techNodeState(k) !== "locked"; });
+    var d = a.map(function (p) { return "M" + p.x + " " + y0 + "V" + ym; }).join("") + "M" + Math.min.apply(null, xs) + " " + ym + "H" + Math.max.apply(null, xs) + b.map(function (p) { return "M" + p.x + " " + ym + "V" + y1; }).join("");
+    lines += '<path d="' + d + '" fill="none" stroke="' + (on ? "#4fd1c5" : "#5c6a6a") + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  rows.forEach(function (row, r) { row.forEach(function (k, c) {
+    var def = TECH_DEFS[k], lv = game.state.tech[k] || 0, st = techNodeState(k), p = pos(r, c, row.length);
+    nodes += '<div class="rt-node ' + st + '" data-k="' + k + '" style="left:' + p.x + 'px;top:' + p.y + 'px">' +
+      '<div class="rt-hex"><i>' + (def.icon || "🔬") + '</i></div>' + (st === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
+      '<div class="rt-lv">' + (st === "max" ? "MAX" : lv + "/" + def.maxLevel) + '</div><div class="rt-nm">' + escapeHtml(def.name) + '</div>' + (st === "run" ? '<div class="rt-time" data-rt-time="1"></div>' : "") + '</div>';
+  }); });
+  el.innerHTML = '<div class="rt-board" style="height:' + H + 'px"><svg class="rt-lines" width="' + W + '" height="' + H + '">' + lines + '</svg>' + nodes + '</div>';
+  el.querySelectorAll(".rt-node").forEach(function (n) { n.onclick = function () { techSel[cat] = n.getAttribute("data-k"); techTreeOpen(techSel[cat]); }; });
+  techTreeTick();
+  var pop = document.getElementById("rtPop"); if (pop && pop.style.display === "flex") techTreeDetail(pop.getAttribute("data-k")); /* keep an open popup current */
+}
+function techTreeOpen(key) {
+  var pop = document.getElementById("rtPop");
+  if (!pop) { pop = document.createElement("div"); pop.id = "rtPop"; pop.innerHTML = '<div class="rt-detail" id="rtDetail"></div>'; document.body.appendChild(pop);
+    pop.addEventListener("click", function (e) { if (e.target === pop || (e.target.closest && e.target.closest(".rt-x"))) pop.style.display = "none"; }); }
+  pop.setAttribute("data-k", key); techTreeDetail(key); pop.style.display = "flex"; techTreeTick();
+}
+function techTreeTick() { var rq = game.state.researchQueue, t = document.querySelector("#techList [data-rt-time]"); if (t && rq) t.textContent = "⏳ " + fmtTime(Math.max(0, (rq.finishAt - vnow()) / 1000)); var d = document.querySelector("#rtDetail [data-rt-left]"); if (d && rq) d.textContent = fmtTime(Math.max(0, (rq.finishAt - vnow()) / 1000)); }
+function techTreeDetail(key) {
+  var box = document.getElementById("rtDetail"); if (!box) return;
+  var def = TECH_DEFS[key], level = game.state.tech[key] || 0, maxed = level >= def.maxLevel, unlocked = game.meetsTechRequirements(key), rq = game.state.researchQueue, st = techNodeState(key);
+  var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + st + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + (def.icon || "🔬") + '</i></div></div><div><div class="rt-dn">' + escapeHtml(def.name) + '</div><div>' + (maxed ? "MAX" : "Level " + level + " / " + def.maxLevel) + '</div></div></div>';
+  var cur = techBonusText(def, level);
+  h += cur ? '<div class="cur">Now: ' + cur + '</div>' : '<div style="opacity:.8">Boosts: ' + def.statLabel + '</div>';
+  if (!maxed) h += '<div class="nxt">Next level: ' + techBonusText(def, level + 1) + '</div>';
+  if (!unlocked) h += '<div class="locked">🔒 Requires ' + (def.reqBuilding ? BUILDING_DEFS[def.reqBuilding].name + " Lv" + def.reqBuildingLevel : TECH_DEFS[def.reqTech].name + " Lv" + def.reqTechLevel) + '</div>';
+  if (rq && rq.key === key) h += '<div style="margin-top:6px;color:#ffd978;font-weight:700">⏳ Researching level ' + rq.toLevel + ' · <span data-rt-left="1"></span></div>';
+  else if (!maxed && unlocked) {
+    var cost = game.techCostFor(key, level + 1), extraC = game.techExtraFor(key, level + 1), exIc = { gold: ico("gold"), stone: ico("stone"), energon: ico("energon"), food: ico("food"), wood: ico("wood") };
+    h += '<button class="secondary" id="rtGo"' + (st === "can" ? "" : " disabled") + '>Research (' + fmt(cost) + ' RP' + Object.keys(extraC).map(function (r) { return " + " + exIc[r] + fmt(extraC[r]); }).join("") + ') ⏱ ' + fmtTime(game.techTimeFor(key, level + 1)) + '</button>';
+    if (rq) h += '<div style="opacity:.75;margin-top:4px;font-size:11px">Another research is running.</div>';
+  }
+  box.innerHTML = h;
+  var go = document.getElementById("rtGo"); if (go) go.onclick = function () { game.researchTech(key); persist(); document.getElementById("rtPop").style.display = "none"; render(); };
 }
 
 // Formation cards hold free-typed <input> values (name + per-troop counts)
