@@ -672,3 +672,9 @@
 - Harley picked option B: while your own Clone Task droid stands, enemy EMP can't stop (stun-freeze) or reset your Railgun. Only builds with Clone Task + Railgun get it (the meta). Text added to both cards ("Droid link: ..."). `fxDroidUp(S)` in arenaMakeSim. Conquest unaffected (no enemy EMP there).
 - Test: new g209_droid_link.js. g200-g208 pass.
 - Loop: Lv40 meta 97 / rank 5, only 2 non-counter builds beat it (Hex + EMP + Dup>Hex, Hex + Railgun + Wave), meta beats Hex + EMP + Railgun both ways, 7/15 counters beat it, counter-counter beats 14/15 counters and loses to the meta. Lv80 96 / rank 10, 5 others beat it. Lv20 (weapons Lv10) still broken: 94 / rank 38, Railgun + shield builds beat it both ways, 0/15 counters work.
+
+### 9 Oct — rarity check (no game change)
+- Loop builds by rarity: meta = 3 Legendaries (EMP, Railgun, Clone Task); counter = 1 Legendary (EMP + Status Wave + a cheap third); counter-counter = 1 Legendary (Hex + Railgun + Duplicate).
+- `loop.js` now prints BEATERS (who beats the meta, with Legendary count). No zero-Legendary build beats the meta at Lv20/40/80.
+- Harley's call: leave the counter at 1 Legendary (no rarity changes).
+- Open: Hex + EMP + Duplicate(copy Hex) beats the meta AND the counter-counter at Lv40/80 (rank 1-3) - a hole. Early game: EMP at weapon Lv10 fires every 13s > Railgun's 10s countdown (test copy: EMP 8s at Lv10 fixes the Lv20 loop; Lv30 would need a new upgrade).
