@@ -641,6 +641,7 @@
   @keyframes myPinRing { 0% { transform:scale(.4); opacity:1; } 100% { transform:scale(1.5); opacity:0; } }
   @keyframes myPinBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
   @media (prefers-reduced-motion: reduce) { #myPin svg, #myPin .mp-ring { animation:none; } }
+  #mapworld.notags .city-tag { display:none; }
   #mapworld .tile.lod-mine { --lsz:12px; background:#ffd36b; box-shadow:0 0 0 1px rgba(0,0,0,.75), 0 0 6px #ffd36b; z-index:5; }
   #mapworld .tile.lod-city { --lsz:9px; background:#4fd1c5; box-shadow:0 0 0 1px rgba(0,0,0,.75); z-index:4; }
   #mapworld .tile.lod.selected { outline:2px solid #fff; }
@@ -10794,7 +10795,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1008"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1009"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14119,6 +14120,7 @@ function renderVisibleTiles() {
   try { noteWorldViewChunks(minX, maxX, minY, maxY, lod); } catch (e) { console.error(e); } /* v919 */
   if (lod !== mapLodLast) { Object.keys(mapTileEls).forEach(function (id) { mapTileEls[id].remove(); }); mapTileEls = {}; tilePool.forEach(function (d) { d.remove(); }); tilePool = []; mapLodLast = lod; } /* v862: rebuild tiles when the detail level changes */
   if (lod > 0) world.style.setProperty("--lodk", String(Math.max(1, 7 / tilePxZ())));
+  world.classList.toggle("notags", lod > 0 && tilePxZ() < 13); /* v1009: bases drawn small at LOD 1 - their alliance tags would pile up, so they go below 13 px tiles */
   var wanted = {};
   // v824: footprint of the current selection (a base, or an empty tile you could teleport onto) -> {tileId: "fp" | "fp bad"}
   var fpMark = {};
@@ -14135,7 +14137,7 @@ function renderVisibleTiles() {
     var isOtherCity = !isMyCity && isTileOccupied(tile.id);
     var hiddenAsEmpty = !isMyCity && !isOtherCity &&
       ((tile.type === "resource" && mapHideResources) || (tile.type === "npc" && mapHideThreats) || ((tile.type === "resource" || tile.type === "npc") && !!baseCenterNear(tile.x, tile.y))); /* v824: tiles under a base's 3x3 block show as ground */
-    if (lod > 0) { /* v862: zoomed out - markers only */
+    if (lod > 0 && !(lod === 1 && (isMyCity || isOtherCity))) { /* v862: zoomed out - markers only. v1009 (Harley): bases keep their real art one zoom step further (LOD 1); only resources become dots there */
       var lodKind = isMyCity ? "mine" : isOtherCity ? "city" : (lod === 1 && tile.type === "resource" && !hiddenAsEmpty) ? "res " + tile.resourceType : null;
       if (!lodKind && selectedTile !== tile.id) return;
       wanted[tile.id] = true;
@@ -14219,7 +14221,7 @@ function renderVisibleTiles() {
           cityImgStyleParts.push("margin-left:" + cMl);
           cityImgStyleParts.push("bottom:calc(var(--tile-px) * " + cBot.toFixed(3) + ")");
         }
-        var waterHtml = baseWaterOn && lod === 0 && baseWaterAllSea(tile) ? baseWaterHtml(citySrc, cwMul, cBot, cMl) : ""; /* v951 */
+        var waterHtml = baseWaterOn && lod <= 1 && baseWaterAllSea(tile) ? baseWaterHtml(citySrc, cwMul, cBot, cMl) : ""; /* v951 */
         var cityImgStyle = cityImgStyleParts.length ? (' style="' + cityImgStyleParts.join(";") + '"') : "";
         var ctag = isMyCity ? (ALLY.my ? ALLY.my.tag : "") : allyTagOf(occupiedTileIds[tile.id]); /* v895: alliance tag over the base */
         setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : isAlly(occupiedTileIds[tile.id]) ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
@@ -15521,7 +15523,7 @@ function baseFirePlace(box, tileId) {
 }
 function baseFireRender(minX, maxX, minY, maxY) {
   var world = document.getElementById("mapworld"); if (!world) return;
-  var now = Date.now(), show = mapLod() === 0, M = 4;
+  var now = Date.now(), show = mapLod() <= 1, M = 4; /* v1009: bases are drawn at LOD 1 too */
   Object.keys(baseFireEls).forEach(function (id) { var xy = tileXY(id); if (!show || !isBaseBurning(id) || !isBaseTile(id) || xy[0] < minX - M || xy[0] > maxX + M || xy[1] < minY - M || xy[1] > maxY + M) { baseFireEls[id].remove(); delete baseFireEls[id]; } });
   if (!show) return;
   Object.keys(cityHp).forEach(function (id) {

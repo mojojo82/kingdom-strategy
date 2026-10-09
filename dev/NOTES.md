@@ -911,3 +911,9 @@
 - Now nothing is scrolled or re-laid-out during a pinch: #mapworld just gets a CSS transform (translate + scale around the fingers' starting point), which the phone's graphics chip draws smoothly. When the fingers lift, the transform is removed and the real zoom + scroll are applied once, keeping the spot that was under the fingers under them. Overflow is never switched off.
 - Trade-off: while zooming OUT, only the part of the map that was already drawn is shown stretched (the edges are plain sea) until you let go; then it fills in.
 - g228 updated (transform during, no scrolling during, cleared after, base follows the fingers during and after within 3 px).
+
+### v1009 — bases keep their art one zoom step further out (TEST)
+- Harley (recording): at the zoom where resources turn into dots, bases were dots too - less immersive; bases only looked like bases really close.
+- LOD 1 (tiles 7-16 px) now draws bases with their real art (with their water ring and fire), at the map's scale; only resources become dots there. LOD 2 (under 7 px) is unchanged (dots + the "you are here" pin).
+- Alliance tags over bases hide when tiles are under 13 px, so a cluster of small bases doesn't turn into a pile of labels.
+- Test: new g229_lod1_bases.js.
