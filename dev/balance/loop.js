@@ -62,7 +62,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     const order = E.map((_, i) => i).sort((x, y) => score[y] - score[x]);
     const rank = (i) => order.indexOf(i) + 1, idx = (name) => E.findIndex((e) => e.name === name);
     const has = (e, a, b2) => e.ids.includes(a) && e.ids.includes(b2);
-    const M = idx("emp+railgun+clone");
+    const M = idx(COND.meta || "emp+railgun+clone"); /* meta: another build name to treat as the meta (what-if runs) */
     if (M < 0) { ARENA_FORT_HP_PER_POWER = keepPer; return JSON.stringify({ cond: COND, noMeta: true, entries: E.length, fieldSize: field.length, top: order.slice(0, 40).map((i) => [rank(i), E[i].name, score[i]]) }); }
     const beatMeta = E.map((_, i) => i).filter((i) => i !== M && pair(i, M) >= 1.5);
     const counters = E.map((_, i) => i).filter((i) => has(E[i], "emp_gun", "status_wave"));
