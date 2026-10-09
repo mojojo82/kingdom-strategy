@@ -111,7 +111,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   Loop (from Harley's memory): META = EMP + Railgun + Clone Task; COUNTER = EMP + Status Wave + any; COUNTER-COUNTER = Hex Shield + Railgun + Duplicate (copying Hex). Not on top yet - see NOTES v966-v968.
 - **Nothing a weapon fires is instant** - every projectile travels (Conquest and Arena, sims included). Damage / stun / knockout happens when it lands.
 - **All art is an admin tool, the same for every player** (v982) - hero art, card art, skill icons, sprites, Esper art, ground/trees: stored once in `assetitems/<key>` (index `assetitems/_shared_index`), only admins upload. **The only player-controlled image is each player's own avatar.**
-- **Cards are one shared catalog, admins only edit it** (v977): names / type / effect text live in `assetitems/cardcatalog` (all read, admin write), not in each save. Card effects come from the catalog name.
+- **Cards are one shared catalog, admins only edit it** (v977): names / type / effect text live in `assetitems/cardcatalog` (all read, admin write), not in each save. Card effects come from the catalog name (or the card's ID code #n). Card IDs (1-30) are fixed; the album grid position is only each player's own visual sort order (state.cardOrder) - players move/sort freely, effects/equips follow the card ID.
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
 ## Open items / to-dos
