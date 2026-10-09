@@ -204,4 +204,11 @@ t("anti-cheat: save plausibility", () => {
   // mail allowance only counts save items
   assert.deepStrictEqual(C.mailAllowance([{ items: { gems: 50, food: 10, infantry: 5 } }, { items: { food: 5 } }]), { "resources.food": 15, "troops.infantry": 5 });
 });
+t("card catalog merge fills only empty slots, keeps Drop Signal in the last free slot", () => {
+  const m = C.mergeCardCatalog([{ name: "Kept", effect: "x" }], [{ name: "Old", effect: "no" }, { name: "Two", effect: "b" }, null, { name: "x".repeat(99) }]);
+  assert.strictEqual(m.cards.length, C.CARD_SLOTS);
+  assert.strictEqual(m.cards[0].name, "Kept"); assert.strictEqual(m.cards[1].name, "Two"); assert.strictEqual(m.cards[3].name.length, 40);
+  assert.strictEqual(m.cards[C.CARD_SLOTS - 1].name, "Drop Signal"); assert.strictEqual(m.filled, 2); assert.ok(m.drop);
+  const again = C.mergeCardCatalog(m.cards, [{ name: "Late" }]); assert.strictEqual(again.cards.filter((c) => c.name === "Drop Signal").length, 1); assert.strictEqual(again.filled, 0);
+});
 console.log(n + " tests passed");

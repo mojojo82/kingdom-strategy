@@ -171,6 +171,14 @@
   </section>
 
   <section class="card">
+    <h2>🃏 Card text from the old save</h2>
+    <div class="muted">Copies only the card names / types / effect text out of the old save file into the <b>shared card list</b> every player sees (environment selected above). Only empty slots are filled - nothing already in the list is changed - and <b>no save is touched</b>, yours included.</div>
+    <div class="row" style="margin-top:8px;align-items:center;gap:8px"><label class="b ghost" style="cursor:pointer">📁 Choose save file<input type="file" id="ccFile" accept=".json,application/json" style="display:none"></label><span id="ccName" class="muted"></span></div>
+    <div id="ccSum" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:8px"><button class="b" id="ccGo" disabled>Copy card text</button></div>
+  </section>
+
+  <section class="card">
     <h2>🛠️ Maintenance mode</h2>
     <div class="muted">While ON, players in the selected environment see a maintenance screen and nothing they do is saved; the server refuses their saves and claims. You (admin) can still play. Turning it OFF reloads everyone's game onto the newest version.</div>
     <div id="mtStatus" style="margin-top:8px;font-weight:700">…</div>
@@ -323,6 +331,26 @@
   }
 
   // ---- actions (every one asks to confirm, naming the environment) ----
+  // ---- v977: card text from the old save -> shared card catalog (empty slots only, no save touched) ----
+  var CC = null;
+  $("ccFile").onchange = function (e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return; $("ccName").textContent = f.name + " (" + Math.round(f.size / 1024) + " KB)";
+    f.text().then(function (t) {
+      var b = JSON.parse(t), cards = b && b.save && Array.isArray(b.save.cards) ? b.save.cards : null; if (!cards) throw new Error("no cards in that file");
+      CC = cards.map(function (c) { c = c || {}; return { name: String(c.name || ""), type: String(c.type || ""), effect: String(c.effect || ""), narrative: String(c.narrative || "") }; });
+      var withText = CC.map(function (c, i) { return { c: c, i: i }; }).filter(function (x) { return x.c.name || x.c.type || x.c.effect || x.c.narrative; });
+      $("ccSum").innerHTML = '<div class="tabbox">' + (withText.length ? withText.length + " card(s) with text: " + withText.map(function (x) { return '<span class="pill">' + (x.i + 1) + ". " + esc(x.c.name || "(no name)") + "</span>"; }).join(" ") : "No card text in this file.") + "</div>";
+      $("ccGo").disabled = !withText.length;
+    }).catch(function (er) { CC = null; $("ccGo").disabled = true; $("ccSum").textContent = ""; toast("Couldn't read that file: " + er.message, true); });
+  };
+  $("ccGo").onclick = function () {
+    if (!CC || !confirmEnv("Copy this card text into the shared card list? Only empty slots are filled; no save is changed.")) return;
+    var btn = $("ccGo"); btn.disabled = true; btn.textContent = "Copying…";
+    call("adminCardCatalog", { cards: CC }).then(function (r) {
+      toast("Card list updated: " + r.filled + " slot(s) filled" + (r.drop ? " + Drop Signal added" : "")); btn.textContent = "Copy card text";
+    }, function (e) { toast(errText(e), true); btn.textContent = "Copy card text"; btn.disabled = false; });
+  };
+
   // ---- save import (old claude.ai owner save -> my Firebase account) ----
   var IMP = null;
   $("impFile").onchange = function (e) {

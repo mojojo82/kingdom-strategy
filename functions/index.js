@@ -135,6 +135,18 @@ exports.adminSetWallet = wrap(async (req, uid, R, d) => {
   });
 });
 
+// Admin (v977): copy card text into the shared card catalog (assetitems/cardcatalog) - only EMPTY slots are filled, nothing is
+// overwritten, nobody's save is touched. { cards: [{ name, type, effect, narrative }] } (e.g. the cards of the old claude.ai save file).
+exports.adminCardCatalog = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  if (!Array.isArray(d.cards) || d.cards.length > 60) throw new HttpsError("invalid-argument", "cards must be a list");
+  const ref = db.doc(R + "assetitems/cardcatalog"), cur = await ref.get();
+  const m = C.mergeCardCatalog(cur.exists ? cur.data().cards : [], d.cards), now = Date.now();
+  await ref.set({ cards: m.cards, ts: now });
+  await db.collection(R + "adminlog").add({ by: uid, cardCatalog: { filled: m.filled, drop: m.drop }, at: now });
+  return { ok: true, filled: m.filled, drop: m.drop, names: m.cards.map((c) => c.name) };
+});
+
 // Admin: import a save into the caller's OWN account (Harley moving his claude.ai owner save into Firebase). Two kinds of call:
 //  part "save":   { save, gems } -> backs up the current save to save/backup_<time>, writes the merged save, sets wallet gems + paid level
 //  part "assets": { assets: { key: { data, ts } } } -> writes players/<uid>/assetitems/<key> and adds the keys to the art index

@@ -292,6 +292,27 @@ function decideEventClaim(claimed, ev, idx, progress, win, now) {
 }
 /* admin save import (moving Harley's claude.ai owner save into Firebase): the old save, with the parts that belong to the CURRENT world kept
    from the account's current save (its kingdom, map position, world version, marches), mail claims merged, gems from the wallet. */
+// v977: shared card catalog (assetitems/cardcatalog). Fill only EMPTY slots from `incoming` (e.g. the card text of an old save), never
+// overwrite a slot that already has text, and make sure a card named Drop Signal exists (in the LAST free slot). 30 slots.
+const CARD_SLOTS = 30;
+const CARD_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Each time your Railgun fires, your fallen summons are redeployed and any switched-off drones come back online.", narrative: "" };
+function cardText(c) {
+  c = c && typeof c === "object" ? c : {};
+  const s = (v, max) => (typeof v === "string" ? v : "").slice(0, max);
+  return { name: s(c.name, 40), type: s(c.type, 40), effect: s(c.effect, 300), narrative: s(c.narrative, 2000) };
+}
+function cardBlank(c) { return !(c.name || c.type || c.effect || c.narrative); }
+function mergeCardCatalog(existing, incoming) {
+  const out = [], inc = Array.isArray(incoming) ? incoming : [], cur = Array.isArray(existing) ? existing : [];
+  let filled = 0;
+  for (let i = 0; i < CARD_SLOTS; i++) {
+    const have = cardText(cur[i]), add = cardText(inc[i]);
+    if (cardBlank(have) && !cardBlank(add)) { out.push(add); filled++; } else out.push(have);
+  }
+  let drop = false;
+  if (!out.some((c) => c.name.trim().toLowerCase() === "drop signal")) { for (let i = CARD_SLOTS - 1; i >= 0; i--) if (cardBlank(out[i])) { out[i] = cardText(CARD_DROP_SIGNAL); drop = true; break; } }
+  return { cards: out, filled, drop };
+}
 const IMPORT_KEEP = ["serverId", "homeTileId", "worldVersion", "marches", "nextMarchId"];
 function prepareImportSave(oldSave, current, gems) {
   if (!oldSave || typeof oldSave !== "object" || Array.isArray(oldSave)) throw new GameError("invalid-argument", "no save in the file");
@@ -406,5 +427,5 @@ function checkSave(before, after, dtSec, allow) {
   return { reasons, mailCouldHelp };
 }
 
-module.exports = { AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
