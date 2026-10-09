@@ -115,3 +115,17 @@ Rerun: `node dev/balance/kessa_cards.js "[40,30]"`.
 - **Vs Lv20:** card 11 +100% with card 3 +100% always on → 100%.
 - **Vs equal Lv40:** best result is 38% (card 11 +400%, card 3 +200% always, card 2 +500% always). Basically not winnable.
 - With today's numbers (card 11 +20%, card 3 +20% under 50%, card 2 +30% under 30%): 0% at every gap.
+
+### Cards on a normal 5-hero team (v988)
+
+5-hero team with one card vs the same team with no cards; win %.
+
+| Card | Lv40 same level | Lv40 vs Lv45 | Lv80 same level | Lv80 vs Lv90 |
+|---|---|---|---|---|
+| none | 50 | 0 | 50 | 0 |
+| 1, 5, 7, 8, 11 | 50–63 | 0 | 50–63 | 0 |
+| 4 Last Bastion | 100 | 0 | 100 | 0 |
+| 3 Desperate Spark | 100 | 100 | 100 | 100 |
+
+**Harley: card 3 stays strong on purpose.** Future cards will compete for the slot.
+Best Kessa-only 5 cards: 11, 2, 3, 4, 5 (Lv80 vs Lv70: 95%, vs 40% without 4 and 5). Quick Study and Overclock add nothing.
