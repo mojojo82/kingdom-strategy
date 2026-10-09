@@ -10498,7 +10498,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v982"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v983"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -20153,10 +20153,24 @@ function drawHeroHpBar(ctx, w, h, key) {
   ctx.fillStyle = fr > 0.5 ? "#59d67a" : fr > 0.25 ? "#e8c54a" : "#e2533f"; ctx.fillRect(x0, top, bw * fr, bh);
   var lf = game.idleLimitFrac ? game.idleLimitFrac(key) : null; /* v954: Death Strike bar - gold, glows when full */
   if (lf != null) {
-    var ly = top + bh + 2; ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x0 - 1, ly - 1, bw + 2, 4);
-    if (lf >= 1) { ctx.shadowColor = "#f0c95f"; ctx.shadowBlur = 4 + 3 * Math.sin(now / 140); ctx.fillStyle = "#ffe08a"; } else ctx.fillStyle = "#c98f1e";
-    ctx.fillRect(x0, ly, bw * lf, 2);
+    drawLimitBar(ctx, x0, top + bh + 2, bw, 3.5, lf, now); /* v983 */
   }
+  ctx.restore();
+}
+// v983: Death Strike bar, easier to read (Harley: two yellows were hard to tell apart and the 2px bar looked like it did nothing).
+// Filling = amber on a dark track, same height as the HP bar. Loaded = bright gold, pulsing glow + a spark at the end.
+function drawLimitBar(ctx, x0, y, bw, bh, frac, now) {
+  frac = Math.max(0, Math.min(1, frac || 0));
+  ctx.save();
+  ctx.fillStyle = "rgba(6,8,14,0.9)"; ctx.fillRect(x0 - 1, y - 1, bw + 2, bh + 2);
+  ctx.fillStyle = "rgba(90,52,14,0.55)"; ctx.fillRect(x0, y, bw, bh); // empty track
+  if (frac >= 1) {
+    var pulse = 0.5 + 0.5 * Math.sin(now / 130);
+    ctx.shadowColor = "#ffd34d"; ctx.shadowBlur = 5 + 5 * pulse; ctx.fillStyle = "#ffe27a"; ctx.fillRect(x0, y, bw, bh);
+    ctx.shadowBlur = 0; ctx.fillStyle = "rgba(255,255,255," + (0.35 + 0.4 * pulse) + ")"; ctx.fillRect(x0, y, bw, Math.max(1, bh * 0.4));
+    var sx = x0 + bw + 2, sy = y + bh / 2, r = 3 + 1.5 * pulse; // spark at the end of the bar
+    ctx.fillStyle = "#fff6c8"; ctx.beginPath(); ctx.moveTo(sx, sy - r); ctx.lineTo(sx + r * 0.3, sy - r * 0.3); ctx.lineTo(sx + r, sy); ctx.lineTo(sx + r * 0.3, sy + r * 0.3); ctx.lineTo(sx, sy + r); ctx.lineTo(sx - r * 0.3, sy + r * 0.3); ctx.lineTo(sx - r, sy); ctx.lineTo(sx - r * 0.3, sy - r * 0.3); ctx.closePath(); ctx.fill();
+  } else if (frac > 0) { ctx.fillStyle = "#e0782a"; ctx.fillRect(x0, y, bw * frac, bh); }
   ctx.restore();
 }
 var heroAnimMem = {};
@@ -27754,7 +27768,7 @@ function drawArenaFrame(ctx, w, h) {
         var bw = 22, bx = lastSlot.x - bw / 2, by = lastSlot.y + 24;
         ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by - 1, bw + 2, 5);
         ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3);
-        if (hh.lim != null) { ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by + 4, bw + 2, 4); ctx.fillStyle = hh.lim >= 1 ? "#ffe08a" : "#c98f1e"; ctx.fillRect(bx, by + 5, bw * Math.max(0, Math.min(1, hh.lim)), 2); } /* v954: Death Strike bar, same as Conquest */
+        if (hh.lim != null) drawLimitBar(ctx, bx, by + 5, bw, 3, hh.lim, performance.now()); /* v954/v983: Death Strike bar, same as Conquest */
         ctx.restore();
       }
     });

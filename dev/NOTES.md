@@ -740,3 +740,6 @@
 - `SHARED_ART_PREFIXES` (hero art, card art, skill icons, combat sprites, Esper graphics, boss + enemy sprites, tree sprites, ground tile, grass overlay) -> `assetIsShared(key)`: stored at assetitems/<key> + index assetitems/_shared_index (existing rules: all read, admin write). Non-admins: uploads ignored (assetSyncUpload), hero portrait / card picture taps do nothing ("Tap to upload" hidden), getters show only the shared copy (or the built-in OWNER_DEFAULTS picture). Avatar + every small setting stay per player.
 - `assetSyncLoadShared()` after the normal load; then, for an admin (once admin status is known), art on the admin's own account fills shared keys that are still empty - Harley's existing uploads become everyone's art the next time he opens the game.
 - Test: new g214_shared_art.js. g200-g212 pass (g199 needs the real save file - not run).
+
+### v983 — Death Strike bar easier to read (TEST)
+- Harley: two yellows were hard to read; the bar looked like it did nothing. New drawLimitBar (Conquest + Arena): same height as the HP bar, filling = amber (#e0782a) on a dark brown track, loaded = bright gold with a pulsing glow, white shine and a spark at the end. Checked with headless screenshots.
