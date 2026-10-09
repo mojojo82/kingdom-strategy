@@ -839,3 +839,6 @@
 ### v996 — whiter, stronger foam line round bases on the sea (TEST)
 - Harley: the foam line round city edges is hard to notice in live play. The line was ~2 px in the 270 px reference sheet (about 1 screen pixel at normal zoom), at alpha 0.45+, blue-white.
 - Now BASE_WATER.foamW 6.5 / foamA 0.88, and the foam is pure white (ripples keep their blue-white). Checked before/after with headless screenshots at default zoom.
+
+### v997 — foam line toned down (TEST)
+- Harley: v996 "reads as a solid thick border". Now foamW 4.5, foamA 0.7, alpha broken up by the noise (0.3-1.2x) and fading outward, so it reads as patchy white foam, not an outline. Still clearly more visible than v995. Headless screenshot check.
