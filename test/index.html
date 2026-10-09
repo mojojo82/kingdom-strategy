@@ -10696,7 +10696,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v999"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1000"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15943,6 +15943,9 @@ function isTileTooCloseToCity(tileId) { return !!tileBlockReason(tileId); }
 function tileBlockReason(tileId) {
   var xy = tileXY(tileId), x = xy[0], y = xy[1], n = mapSizeTiles();
   if (x < BASE_FP_R || y < BASE_FP_R || x > n - 1 - BASE_FP_R || y > n - 1 - BASE_FP_R) return "the map edge";
+  /* v1000 (Harley): no base - player or bot - may cover a resource. A tile holding a resource is off-limits for any part of the 3x3 block until
+     it stops being a resource (mined out / gathered / moved). Every placement (claim, teleport, new-player spot, random bots, bot alliances) asks here. */
+  for (var rx = -BASE_FP_R; rx <= BASE_FP_R; rx++) for (var ry = -BASE_FP_R; ry <= BASE_FP_R; ry++) { var rt = mapTileAt(game.state.map, x + rx, y + ry); if (rt && rt.type === "resource") return "the resource at " + rt.id; }
   var R2 = BASE_FP_R * 2;
   for (var dx = -R2; dx <= R2; dx++) for (var dy = -R2; dy <= R2; dy++) {
     if (!dx && !dy) continue;
@@ -16120,22 +16123,20 @@ var botNameByOwner = {};
 var BOT_ALLY_FIRST = ["Aldric", "Brenna", "Cassian", "Dara", "Edric", "Fenna", "Garrick", "Hilde", "Ivo", "Jora", "Kael", "Lysa", "Marek", "Nessa", "Orrin", "Petra", "Quill", "Rowan", "Sable", "Tarek", "Ulla", "Varn", "Wren", "Yorik", "Zara"];
 var BOT_ALLY_LAST = ["Stone", "Vale", "Ash", "Thorn", "Reed", "Frost", "Holt", "Marsh", "Crane", "Briar", "Storm", "Flint", "Wolfe", "Ridge", "Hale"];
 function botAllyName(i, used) { for (var t = 0; t < 50; t++) { var n = BOT_ALLY_FIRST[Math.floor(Math.random() * BOT_ALLY_FIRST.length)] + " " + BOT_ALLY_LAST[Math.floor(Math.random() * BOT_ALLY_LAST.length)]; if (!used[n]) { used[n] = 1; return n; } } return "Lord " + (i + 1); }
-function botAllySpots(count, ax, ay, maxR) { /* grid spots 3 apart, nearest the anchor first; only free, buildable tiles. v999 (Harley): no room at the
-  spot (crowded, map edge, a corner like 1,1) -> keep spreading outward ring by ring until every bot has a place (or the map runs out) */
-  var n = mapSizeTiles(), G = BASE_FP_R * 2 + 1, picks = [], tried = {}, R = Math.ceil(Math.sqrt(count)) + 1, lim = maxR || Math.ceil(n / G) + 1;
-  while (picks.length < count && R <= lim + 1) {
+function botAllySpots(count, ax, ay, maxR) { /* nearest legal spots to the anchor, any tile (not a fixed grid), so bases squeeze into the gaps
+  between resources (v1000: a base may not cover one). Grows outward until every bot has a place (or the map runs out). */
+  var n = mapSizeTiles(), picks = [], R = Math.ceil(Math.sqrt(count)) * 3 + 2, lim = maxR ? maxR * 3 : n, done = -1;
+  while (picks.length < count && done < lim) {
     var cand = [];
-    for (var i = -R; i <= R; i++) for (var j = -R; j <= R; j++) { var x = ax + i * G, y = ay + j * G, key = i + "," + j; if (tried[key]) continue; tried[key] = 1;
-      if (x < 0 || y < 0 || x >= n || y >= n) continue; cand.push({ x: x, y: y, d: i * i + j * j + (Math.abs(i) + Math.abs(j)) * 0.01 }); }
+    for (var x = Math.max(0, ax - R); x <= Math.min(n - 1, ax + R); x++) for (var y = Math.max(0, ay - R); y <= Math.min(n - 1, ay + R); y++) {
+      var cheb = Math.max(Math.abs(x - ax), Math.abs(y - ay)); if (cheb <= done) continue; cand.push({ x: x, y: y, d: (x - ax) * (x - ax) + (y - ay) * (y - ay) }); }
     cand.sort(function (a, b) { return a.d - b.d; });
     for (var k = 0; k < cand.length && picks.length < count; k++) { var t = mapTileAt(game.state.map, cand[k].x, cand[k].y);
       if (!t || t.type !== "empty" || occupiedTileIds[t.id] || t.id === game.state.homeTileId || isTileTooCloseToCity(t.id)) continue;
       picks.push(t); occupiedTileIds[t.id] = "?"; }
-    R += 3;
+    done = R; R += 6;
   }
   picks.forEach(function (t) { delete occupiedTileIds[t.id]; });
-  /* nearest first overall (a later ring can hold a spot closer than an earlier ring's corner) */
-  picks.sort(function (a, b) { var p = tileXY(a.id), q = tileXY(b.id); return ((p[0] - ax) * (p[0] - ax) + (p[1] - ay) * (p[1] - ay)) - ((q[0] - ax) * (q[0] - ax) + (q[1] - ay) * (q[1] - ay)); });
   return picks;
 }
 function botAllyAnchor(count) { /* a random spot where the whole cluster fits tightly */

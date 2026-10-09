@@ -29,7 +29,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     let minGap = 99, maxSpread = 0; for (let i = 0; i < tiles.length; i++) for (let j = i + 1; j < tiles.length; j++) minGap = Math.min(minGap, Math.max(Math.abs(tiles[i][0] - tiles[j][0]), Math.abs(tiles[i][1] - tiles[j][1])));
     const cx = tiles.reduce((s, t) => s + t[0], 0) / tiles.length, cy = tiles.reduce((s, t) => s + t[1], 0) / tiles.length; tiles.forEach((t) => { maxSpread = Math.max(maxSpread, Math.abs(t[0] - cx), Math.abs(t[1] - cy)); });
     const ranks = owners.map((o) => ALLY.index[o].rank).sort((a, b) => b - a), a = ALLY.list[aid];
-    return { aid, bot: a.bot, count: a.memberCount, owners: owners.length, tiles: tiles.length, minGap, maxSpread: Math.round(maxSpread), ranks: ranks.slice(0, 4), leaderOk: ALLY.index[a.leader] && ALLY.index[a.leader].rank === 5, name: fetchOwnerProfile(a.leader).name, nearest: tiles.map((t) => t[0] + t[1]).sort((x, y) => x - y)[0] };
+    let covered = 0; tiles.forEach((t) => { for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const m = mapTileAt(game.state.map, t[0] + dx, t[1] + dy); if (m && m.type === "resource") covered++; } });
+    return { covered, aid, bot: a.bot, count: a.memberCount, owners: owners.length, tiles: tiles.length, minGap, maxSpread: Math.round(maxSpread), ranks: ranks.slice(0, 4), leaderOk: ALLY.index[a.leader] && ALLY.index[a.leader].rank === 5, name: fetchOwnerProfile(a.leader).name, nearest: tiles.map((t) => t[0] + t[1]).sort((x, y) => x - y)[0] };
   }, tag);
   const o = {};
   /* 1. a corner with no room on two sides: still all 12, spreading outward */
@@ -39,6 +40,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   /* 3. tag taken / bad tag */
   await fill(3, "Copycats", "IRT", 50, 50); await P.click("#devBaGo"); o.s3 = await waitDone();
   o.list = await P.textContent("#devBaList");
+  o.resBlock = await P.evaluate(() => { const n = mapSizeTiles(); for (let i = 0; i < 5000; i++) { const x = 5 + Math.floor(Math.random() * (n - 10)), y = 5 + Math.floor(Math.random() * (n - 10)), t = mapTileAt(game.state.map, x, y); if (t && t.type === "resource") { const nb = mapTileAt(game.state.map, x + 1, y); if (nb && nb.type === "empty") return tileBlockReason(nb.id); } } return null; });
   /* 4. map shows them */
   await P.evaluate((h) => { setScreen("world"); }, null); await P.waitForTimeout(500);
   const home = await P.evaluate(() => ALLY.list[Object.keys(ALLY.list).find((k) => ALLY.list[k].tag === "STC")].home); await P.evaluate((h) => centerMapOnTile(h), home); await P.waitForTimeout(2500);
@@ -52,7 +54,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.afterDestroy = await P.evaluate(() => ({ allies: Object.values(ALLY.list).filter((a) => a.bot).length, idx: Object.keys(ALLY.index).filter((k) => /^bot_/.test(k)).length, cities: Object.values(occupiedTileIds).filter((x) => /^bot_/.test(x)).length }));
   console.log(JSON.stringify(o));
   assert.ok(/✓ \[IRT\] made: 12 of 12/.test(o.s1) && o.c1.tiles === 12 && o.c1.owners === 12 && o.c1.minGap >= 3 && o.c1.bot && o.c1.leaderOk && o.c1.ranks[0] === 5 && o.c1.ranks[1] === 4 && o.c1.nearest <= 8, "corner: all 12 placed, spaced, spreading from 1,1");
-  assert.ok(o.c1.maxSpread <= 9, "one compact cluster");
+  assert.ok(o.c1.maxSpread <= 16, "one cluster (looser at a corner full of resources)");
+  assert.ok(o.c1.covered === 0 && o.c2.covered === 0, "no bot base covers a resource");
+  assert.ok(o.resBlock && /resource at/.test(o.resBlock), "a spot next to a resource is refused for any base: " + o.resBlock);
   assert.ok(/✓ \[STC\] made: 8 of 8/.test(o.s2) && o.c2.tiles === 8 && o.c2.minGap >= 3 && o.c2.maxSpread <= 6, "random spot: tight cluster");
   assert.ok(o.c1.name && !/^Raider/.test(o.c1.name), "bots have their own names");
   assert.ok(/taken/.test(o.s3), "taken tag refused");

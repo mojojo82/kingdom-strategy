@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (9 Oct 2026, TEST game v999):** everything below is built and tested; TEST is deployed (v951-v999 are TEST only). The live game link still serves the
+**State at handover (9 Oct 2026, TEST game v1000):** everything below is built and tested; TEST is deployed (v951-v1000 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -155,6 +155,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   save trigger needs 3 one-time IAM grants that only the project owner (Harley) can make (Google Cloud console > IAM > Grant access):
   `service-862432836712@gcp-sa-pubsub.iam.gserviceaccount.com` -> Service Account Token Creator; `862432836712-compute@developer.gserviceaccount.com`
   -> Cloud Run Invoker AND Eventarc Event Receiver. After that set saveTriggers=true and push. (Emulator/CI tests always run it.)
+- **No base may cover a resource** (Harley, v1000): any tile of a base's 3x3 block holding a resource makes the spot illegal for every placement (claim, teleport, new-player spot, random bots, bot alliances) until that tile stops being a resource (tileBlockReason). Bases placed before v1000 are not moved.
 - **Security panel (v995, admin site > 🛡️ Security):** live feed, overview stats, players, oddities (top reasons, repeat offenders), bans, limit sliders,
   auto-rollback switch, audit log. Per player (Anti-cheat tab): dismiss / watch / trust / hide from rankings & events / roll back / suspend / ban / lift.
   Data: `<env>secconfig/main` (autoRevert + limit overrides, read by the save trigger), `bans/<uid>` (kind suspend|ban|restore; rules block that player's
