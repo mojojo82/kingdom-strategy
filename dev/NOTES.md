@@ -886,3 +886,9 @@
 - On load, every time the app comes back to the front, and every 10 min, the game asks the page's web server for the time (HEAD request, Date header). If the phone is more than a minute off, the difference goes into `ksClockSkew`, which `vnow()` (the game clock everything already uses) adds. The game doesn't tick until the check answers; after 5 s with no answer it carries on with the phone clock and tries again later.
 - A clock moved forward while the app was in the background now gives only the real time that passed. Saves made with a clock that was ahead just wait (production pauses) until real time catches up.
 - Test: new g226_server_clock.js (phone 8 h ahead → game follows the server; going to the background and coming back with the clock moved 8 h gives ~10 s of chest; the game waits while checking; small differences ignored; server not answering → game still runs).
+
+### v1005 — "you are here" pin when zoomed out (TEST)
+- Harley (screenshot of another game's green pin): a better marker for your own base when zoomed out. Mockup of 3 options; Harley picked A.
+- Zoomed out far enough that cities become dots (LOD 1 and 2), a gold map pin with a crown (48x62 px, dark outline) bobs over your base and a gold ring pulses on the ground under it. Zoomed in it's hidden (your castle is visible). Always the same size on screen. Stills when the phone asks for reduced motion.
+- `#myPin`, `paintMyPin()` (called at the end of renderVisibleTiles).
+- Test: new g227_my_pin.js (hidden zoomed in, on your base at LOD 1 and 2, hides again).

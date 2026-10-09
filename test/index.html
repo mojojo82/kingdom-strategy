@@ -635,6 +635,12 @@
   #mapworld .tile.lod { --lsz:6px; border:none; background:none; box-shadow:none; border-radius:2px; width:var(--lsz); height:var(--lsz); min-width:0; min-height:0; padding:0; margin-left:calc((var(--tile-px) - var(--lsz)) / 2); margin-top:calc((var(--tile-px) - var(--lsz)) / 2); transform:none; animation:none; overflow:hidden; } /* v865: fixed on-screen marker size, centred on the tile */
   #mapworld.iso .tile.lod, #mapworld.iso .tile.lod:hover { transform:scaleY(0.5736) rotate(45deg); }
   #mapworld .tile.lod-res.gold { background:#f0c95f; } #mapworld .tile.lod-res.food { background:#8fd14f; } #mapworld .tile.lod-res.wood { background:#c08a52; } #mapworld .tile.lod-res.stone { background:#c3cad3; }
+  #myPin { position:absolute; z-index:100001; pointer-events:none; transform:translate(-50%,-100%); width:48px; height:62px; } /* v1005 */
+  #myPin svg { display:block; filter:drop-shadow(0 3px 3px rgba(0,0,0,.55)); animation:myPinBob 1.6s ease-in-out infinite; }
+  #myPin .mp-ring { position:absolute; left:50%; bottom:-12px; width:60px; height:26px; margin-left:-30px; border-radius:50%; border:3px solid #ffd36b; animation:myPinRing 1.6s ease-out infinite; }
+  @keyframes myPinRing { 0% { transform:scale(.4); opacity:1; } 100% { transform:scale(1.5); opacity:0; } }
+  @keyframes myPinBob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
+  @media (prefers-reduced-motion: reduce) { #myPin svg, #myPin .mp-ring { animation:none; } }
   #mapworld .tile.lod-mine { --lsz:12px; background:#ffd36b; box-shadow:0 0 0 1px rgba(0,0,0,.75), 0 0 6px #ffd36b; z-index:5; }
   #mapworld .tile.lod-city { --lsz:9px; background:#4fd1c5; box-shadow:0 0 0 1px rgba(0,0,0,.75); z-index:4; }
   #mapworld .tile.lod.selected { outline:2px solid #fff; }
@@ -10788,7 +10794,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1004"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1005"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14235,8 +14241,19 @@ function renderVisibleTiles() {
   Object.keys(mapTileEls).forEach(function (id) {
     if (!wanted[id]) { var od = mapTileEls[id]; delete mapTileEls[id];
       if (tilePool.length < 400 && !/mycity|othercity|lod/.test(od.className)) { od.style.display = "none"; od.classList.remove("selected"); tilePool.push(od); } else od.remove(); } /* v866: park plain tiles for reuse */
-  });
+  });  paintMyPin(world, lod);
 }
+/* v1005 (Harley): zoomed out (cities shown as dots), a gold pin with a crown bobs over your base and a ring pulses under it, so you can find yourself */
+var MYPIN_SVG = '<svg width="48" height="62" viewBox="0 0 34 44" aria-hidden="true"><path d="M17 43C17 43 3 26 3 16a14 14 0 0 1 28 0c0 10-14 27-14 27z" fill="#ffd36b" stroke="#3b2a17" stroke-width="2.5"/><path d="M10 20l2-8 3 4 2-6 2 6 3-4 2 8z" fill="#7a5414"/></svg>';
+function paintMyPin(world, lod) {
+  var el = document.getElementById("myPin"), home = game.state.homeTileId, t = home && lod > 0 ? mapTileById(game.state.map, home) : null;
+  if (!t) { if (el) el.style.display = "none"; return; }
+  if (!el) { el = document.createElement("div"); el.id = "myPin"; el.innerHTML = '<span class="mp-ring"></span>' + MYPIN_SVG; }
+  if (el.parentNode !== world) world.appendChild(el);
+  var c = tileCenterPx(t); el.style.left = c.x + "px"; el.style.top = c.y + "px"; el.style.display = "";
+}
+
+
 function renderMap() {
   ensureMapWorldSized();
   if (!mapCenteredOnHomeOnce || (mapCenteredHomeId !== game.state.homeTileId && !mapUserMovedMap)) { if (centerMapOnHome()) { mapCenteredOnHomeOnce = true; mapCenteredHomeId = game.state.homeTileId; } }

@@ -1,0 +1,36 @@
+/* v1005: zoomed out, a gold crown pin over your base (with a pulsing ring) so you can find yourself; hidden when zoomed in. Run: node dev/simfork/g227_my_pin.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g227@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => setScreen("world")); await P.waitForTimeout(800);
+  const at = async (px) => { await P.evaluate((px) => { setMapZoom(mapZoom * px / tilePxZ()); centerMapOnTile(game.state.homeTileId); }, px); await P.waitForTimeout(1500);
+    return P.evaluate(() => { const el = document.getElementById("myPin"), dot = document.querySelector("#mapworld .tile.mycity, #mapworld .tile.lod-mine");
+      const shown = !!el && el.style.display !== "none" && el.getBoundingClientRect().width > 0; if (!shown) return { lod: mapLod(), shown };
+      const r = el.getBoundingClientRect(), d = dot.getBoundingClientRect();
+      return { lod: mapLod(), shown, w: Math.round(r.width), tipDx: Math.round(r.left + r.width / 2 - (d.left + d.width / 2)), tipDy: Math.round(r.bottom - (d.top + d.height / 2)), onScreen: r.top > 0 && r.bottom < innerHeight }; }); };
+  const o = { near: await at(30), mid: await at(12) };
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "my_pin_mid.png" });
+  o.far = await at(5); await P.screenshot({ path: (process.env.OUT || "/tmp/") + "my_pin_far.png" });
+  o.back = await at(30);
+  console.log(JSON.stringify(o));
+  assert.ok(o.near.lod === 0 && !o.near.shown, "zoomed in: no pin (the castle is visible)");
+  for (const k of ["mid", "far"]) assert.ok(o[k].lod > 0 && o[k].shown && o[k].w === 48 && Math.abs(o[k].tipDx) <= 2 && Math.abs(o[k].tipDy) <= 8 && o[k].onScreen, k + ": pin sits on your base");
+  assert.ok(!o.back.shown, "zooming back in hides it");
+  console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
+})().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
