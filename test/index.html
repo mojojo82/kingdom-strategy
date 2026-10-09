@@ -5549,6 +5549,8 @@ var CARD_EFFECTS_BY_NAME = {
   "#10": { kind: "cdrDmg", over: 0.25, pct: 0.25 },            // skill cooldown bonus above 25% -> hero damage +25%. Harley: built for the future Type 2 fortress (innate skill cooldown bonus) - can't trigger until that exists, leave as is
   "#12": { kind: "infHp", pct: 0.15 },                         // v989: infantry heroes +15% max HP (their own HP bars - they tank melee hits)
   "#13": { kind: "cavAtk", pct: 0.15 },                        // v989: cavalry heroes (Roran) +15% base ATK
+  "#14": { kind: "gerbil", every: 5, pct: 0.5 },               // v990 horde card: every 5s (no cap) summon a Death Gerbil - a living summon with its own stats = 50% of your average hero (HP, hit, DEF). Not a hero copy. Doesn't count for the Railgun/clone link.
+  "#15": { kind: "allHp", pct: 0.05 },                         // v990: all your heroes AND summons (clones, gerbils) +5% max HP
   "#11": { kind: "soloAtk", pct: 2.0, perHero: 0.10, free: 1 } // v988: +200% ATK (heroes + fortress cannon) with 0 or 1 hero, x0.10 for every hero after the first (2 heroes +20%, 3 +2%, 5 ~+0.02%)
 };
 // v985: which effect a card slot has - its name if that matches an effect, else its slot code "#n" (cards 1-11 until they're named).
@@ -5559,10 +5561,10 @@ function cardEffectKeyAt(state, idx) {
 }
 // v985: every equipped card effect rolled into one set of combat modifiers (same rules in Conquest and Arena)
 function cardModsFrom(state) {
-  var m = { infAtk: 0, infHp: 0, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, any: false };
+  var m = { infAtk: 0, infHp: 0, allHp: 0, gerbil: null, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, any: false };
   equippedCardEffects(state).forEach(function (fx) {
     m.any = true;
-    if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "cavAtk") m.cavAtk += fx.pct || 0; else if (fx.kind === "infHp") m.infHp += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
+    if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "cavAtk") m.cavAtk += fx.pct || 0; else if (fx.kind === "infHp") m.infHp += fx.pct || 0; else if (fx.kind === "allHp") m.allHp += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
     else if (fx.kind === "cdr") m.cdr += fx.pct || 0;
     else if (m.hasOwnProperty(fx.kind)) m[fx.kind] = fx;
   });
@@ -5600,6 +5602,8 @@ var CARD_EFFECT_FIELD_INFO = {
   },
   infAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Infantry ATK bonus", comment: "0.10 = +10% base ATK for infantry heroes (basic attacks and skills)." } },
   infHp: { pct: { type: "number", min: 0, step: 0.01, label: "Infantry HP bonus", comment: "0.15 = infantry heroes get +15% max HP." } },
+  allHp: { pct: { type: "number", min: 0, step: 0.01, label: "HP bonus", comment: "0.05 = all your heroes and summons get +5% max HP." } },
+  gerbil: { every: { type: "number", min: 0.5, step: 0.5, label: "Every (s)", comment: "A new Death Gerbil every this many seconds (no cap)." }, pct: { type: "number", min: 0, step: 0.05, label: "Stats share", comment: "0.5 = each gerbil has 50% of your average hero's HP and hit." } },
   cavAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Cavalry ATK bonus", comment: "0.15 = +15% base ATK for cavalry heroes (basic attacks and skills)." } },
   kessaArcLow: { pct: { type: "number", min: 0, step: 0.05, label: "Arc Burst bonus", comment: "0.30 = +30% Arc Burst damage." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.30 = while your fortress is under 30% health." } },
   kessaAtkLow: { pct: { type: "number", min: 0, step: 0.05, label: "Kessa ATK bonus", comment: "0.20 = +20% base ATK." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.50 = while your fortress is under 50% health. 1.01 = always on." } },
@@ -6734,8 +6738,8 @@ function createGame(opts) {
   function idleHeroMaxHp(key) {
     var h = state.heroes[key];
     if (!h || !h.owned) return 0;
-    var infHpC = (HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") ? (cardModsFrom(state).infHp || 0) : 0; /* v989: card 12 */
-    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC)));
+    var cmH = cardModsFrom(state), infHpC = (HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") ? (cmH.infHp || 0) : 0; /* v989: card 12 */
+    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC) * (1 + (cmH.allHp || 0)))); /* v990: card 15 (clones/gerbils are built from this) */
   }
   function idleHeroEntry(key) {
     if (!state.idle.heroHp) state.idle.heroHp = {};
@@ -6745,7 +6749,7 @@ function createGame(opts) {
     return e;
   }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
-  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.cardInvulUsed = false; state.idle.cardInvulT = 0; state.idle.cardFluxUsed = false; /* v985 */ state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
+  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.gerbT = null; state.idle.cardInvulUsed = false; state.idle.cardInvulT = 0; state.idle.cardFluxUsed = false; /* v985 */ state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
     var r = state.conquestRoster.slice(0, 5);
     for (var i = 0; i < r.length; i++) {
@@ -7005,7 +7009,7 @@ function createGame(opts) {
     if (!manualResults) { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } // v811: with the Defeat screen up HP stays at 0 (refilled on Confirm) so a player who glances back doesn't see "Defeated" with a full bar
     state.idle.shieldOn = false;
     if (!manualResults) { state.idle.enemies = []; state.idle.spawnTimer = null; } // v810: with the Defeat screen up the enemies (boss included) stay frozen on the field; Confirm clears them (idleResolveResult)
-    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; state.idle.clones = null; idleDying = [];
+    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; state.idle.clones = null; state.idle.gerbT = null; idleDying = [];
     state.idle.resetCount = (state.idle.resetCount || 0) + 1;
     state.idle.levelElapsedSec = 0;
     state.idle.levelRewards = null;
@@ -7640,6 +7644,7 @@ function createGame(opts) {
 
     if (state.idle.pending) return;
     idleFxWeaponTick(deltaSec); // v777: FX weapons in Border Skirmish
+    idleGerbilTick(deltaSec); // v990: card 14
 
     // Regen card effect: heals a % of max HP on its own continuous deltaSec
     // clock (same catch-up-while-loop pattern as the per-enemy attacks and
@@ -7820,6 +7825,29 @@ function createGame(opts) {
     return f;
   }
   function idleFxShot(x) { var L = state.idle.fxShotLog || (state.idle.fxShotLog = []); if (L.length < 60) L.push(x); } /* v918: drone / railgun shots for the visuals */
+  // v990: card 14 Death Gerbils (Conquest). While enemies are on the field, every `every` s a gerbil joins (no cap - the level reset clears them).
+  // Stats = pct of your average roster hero (HP, hit, swing speed). They live in state.idle.clones (key "gerbilN"), so enemy hits land on them
+  // like on a clone (idleCloneUp / idleMeleeTargetHero), and they swing at the front engaged enemy.
+  function idleGerbilTick(dt) {
+    var gb = cardModsFrom(state).gerbil, I = state.idle; if (!gb) return;
+    var enemies = I.enemies || [], live = false, i; for (i = 0; i < enemies.length; i++) if (enemies[i].hp > 0) { live = true; break; }
+    var C = I.clones; if (C) Object.keys(C).forEach(function (k) { if (C[k] && C[k].gerbil && !(C[k].hp > 0)) delete C[k]; });
+    if (!live) return;
+    var r = state.conquestRoster.slice(0, 5).filter(function (k) { var h = state.heroes[k]; return HERO_DEFS[k] && h && h.owned; }); if (!r.length) return;
+    I.gerbT = (I.gerbT == null ? gb.every : I.gerbT) - dt;
+    if (I.gerbT <= 1e-9) {
+      I.gerbT += gb.every;
+      var hp = 0, dm = 0, iv = 0; r.forEach(function (k) { hp += idleHeroMaxHp(k); dm += idleAttackerHitDamage(k); iv += heroAttackSec(k); });
+      var n = r.length, mx = hp / n * gb.pct; C = I.clones || (I.clones = {}); I.gerbN = (I.gerbN || 0) + 1; I.gerbils = (I.gerbils || 0) + 1;
+      C["gerbil" + I.gerbN] = { tpl: r[0], max: mx, hp: mx, dmg: dm / n * gb.pct, ivl: iv / n, cd: iv / n, boom: 0, gerbil: true };
+    }
+    C = I.clones; if (!C) return;
+    Object.keys(C).forEach(function (k) { var g = C[k]; if (!g || !g.gerbil || !(g.hp > 0)) return;
+      var cf = enemies[0]; if (!(cf && cf.arrived && cf.engaged && cf.hp > 0)) { g.cd = g.ivl; return; }
+      g.cd -= dt; if (g.cd > 0) return; g.cd += g.ivl;
+      var d = g.dmg * idleEnemyDefTake(cf, g.dmg); cf.hp -= d; I.cloneDmg = (I.cloneDmg || 0) + d; I.gerbDmg = (I.gerbDmg || 0) + d;
+      if (cf.hp <= 0) idleRemoveDeadEnemyAt(0); });
+  }
   function idleFxWeaponTick(dt) {
     var I = state.idle, list = idleFxList();
     if (!list.length) return;
@@ -10576,7 +10604,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v989"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v990"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12102,7 +12130,7 @@ var CARD_CATALOG_DOC = "assetitems/cardcatalog";
 var CARD_CATALOG_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Drop Signal", narrative: "" };
 // v978: card text written in the code (slot index -> text). Shown to every player in any slot the shared catalog leaves empty; an admin's
 // in-game edit (saved to the catalog) takes priority. Order per slot: shared catalog > the admin's own save text > these defaults.
-var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 11: { name: "Shield Brothers", type: "", effect: "All of your infantry heroes gain +15% max health", narrative: "" }, 12: { name: "Thundering Hooves", type: "", effect: "All of your cavalry heroes gain +15% to their base atk", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL }; /* v981: all three effect cards on cards 28-30 */
+var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 11: { name: "Shield Brothers", type: "", effect: "All of your infantry heroes gain +15% max health", narrative: "" }, 12: { name: "Thundering Hooves", type: "", effect: "All of your cavalry heroes gain +15% to their base atk", narrative: "" }, 13: { name: "Death Gerbils", type: "Summon", effect: "Every 5 seconds summon a Death Gerbil", narrative: "" }, 14: { name: "Hardy Stock", type: "", effect: "All your heroes, including summons, gain +5% health", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL }; /* v981: all three effect cards on cards 28-30 */
 // v980 (Harley): a card with an effect shows that effect's name in its description box (Regen -> "Regen"), so it's clear at a glance which
 // card it is. Fills an empty description or placeholder text (v979's "Test", the old long Drop Signal line); real text is left alone.
 var CARD_EFFECT_LABEL = { "critical mass": "Critical Mass", "regen": "Regen", "drop signal": "Drop Signal" };
@@ -20181,8 +20209,9 @@ function drawIdleClones(ctx, w, h) {
     var mem = idleAnim.cloneVis || (idleAnim.cloneVis = {}), cm = mem[k] || (mem[k] = { dmg: 0, atkUntil: 0 });
     var dm = game.state.idle.cloneDmg || 0; if (dm > cm.dmg) cm.atkUntil = now + 450; cm.dmg = dm;
     var x = tv.x + 20 + n * 10, y = tv.y; n++; /* v976: feet on the same ground line as the heroes */
-    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? "attack" : "idle", hScale, false, 0.83 + n * 0.1, 1, CLONE_TINT);
-    var a = HERO_ANIMS[cl.tpl], top = (y + 12 * hScale) - a.dispH * (a.sizeMul || 1) * hScale - 5, bw = 24, fr = Math.max(0, Math.min(1, cl.hp / cl.max));
+    var hS = cl.gerbil ? hScale * 0.55 : hScale; /* v990: Death Gerbils - placeholder: a small tinted hero until gerbil art (mockup first) */
+    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? "attack" : "idle", hS, false, 0.83 + n * 0.1, 1, CLONE_TINT);
+    var a = HERO_ANIMS[cl.tpl], top = (y + 12 * hScale) - a.dispH * (a.sizeMul || 1) * hS - 5, bw = 24, fr = Math.max(0, Math.min(1, cl.hp / cl.max));
     ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
   });
 }
@@ -26755,7 +26784,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (cm.t1Def && st.fortType === 1 && ost.fortType === 1) st.dmgTakenMult = (st.dmgTakenMult || 1) * Math.max(0, 1 - cm.t1Def); /* card 6: 30% less damage taken */
     if (cm.critDmg && st.critRate > 0) st.critMult = (st.critMult || 1) * (1 + cm.critDmg);
     if (cm.soloAtk) st.cannonMult = (st.cannonMult || 1) * (1 + cardSoloBonus(cm, nH));
-    if (cm.infHp && st.heroHp) st.heroHp = st.heroHp.map(function (e) { return e.infantry ? Object.assign({}, e, { max: Math.max(1, Math.round(e.max * (1 + cm.infHp))) }) : e; }); /* v989: card 12 */
+    if ((cm.infHp || cm.allHp) && st.heroHp) st.heroHp = st.heroHp.map(function (e) { var f = (e.infantry ? 1 + (cm.infHp || 0) : 1) * (1 + (cm.allHp || 0)); return f !== 1 ? Object.assign({}, e, { max: Math.max(1, Math.round(e.max * f)) }) : e; }); /* v989 card 12, v990 card 15 (clones/gerbils are built from these, so they get it too) */
     return st; }
   var nHeroP = playerStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length, nHeroA = aiStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length;
   var pStats0 = playerStats; playerStats = cardStatic(playerStats, cmP, aiStats, nHeroP); aiStats = cardStatic(aiStats, cmA, pStats0, nHeroA);
@@ -27086,6 +27115,23 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         O.inst.forEach(function (x) { if (x.k === 'clone') x.t = Math.max(x.t, (P.cloneDelay || 0) * m); });
       });
     }
+    // v990: card 14 Death Gerbils (Arena). Every `every` s (no cap) this side summons a gerbil: a living summon drawn like a clone for now,
+    // stats = pct of the side's average hero at fight start (HP, DEF, hit, swing speed). Not stopped by EMP; doesn't count for the Railgun/clone link.
+    ['P', 'A'].forEach(function (sd) {
+      var gb = (sd === 'P' ? cmP : cmA); gb = gb && gb.gerbil; if (!gb) return;
+      var c = fxCtx(sd), S = c.S; if (!c.hh) return;
+      if (S.gerbT == null) {
+        var hs = c.hh.list.filter(function (e) { return !e.droid; }), as = c.st.attackers.filter(function (a) { return hs.some(function (e) { return e.id === a.id; }); });
+        if (!hs.length || !as.length) { S.gerbT = Infinity; return; }
+        var avg = function (arr, f) { return arr.reduce(function (t, x) { return t + f(x); }, 0) / arr.length; };
+        S.gerbTpl = { max: avg(hs, function (e) { return e.max; }) * gb.pct, def: avg(hs, function (e) { return e.def || 0; }), refA: hs[0].refA, runL: hs[0].runL, dmg: avg(as, function (a) { return a.dmg; }) * gb.pct, sec: avg(as, function (a) { return a.sec || atkInt; }) };
+        S.gerbT = gb.every;
+      }
+      S.gerbT -= dtS; if (S.gerbT > 1e-9) return; S.gerbT += gb.every;
+      var T = S.gerbTpl, did = 'gerbil' + sd + (++S.n);
+      var e = { refA: T.refA, id: did, infantry: true, max: T.max, def: T.def, runL: T.runL, hp: T.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, droid: true, gerbil: true, boom: 0, owner: sd };
+      c.hh.list.push(e); c.hh.by[did] = e; c.st.attackers.push({ id: did, dmg: T.dmg, melee: true, sec: T.sec }); S.gerbils = (S.gerbils || 0) + 1;
+    });
     ['sw', 'wall', 'dome', 'emp', 'clone', 'io', 'rail'].forEach(function (kind) {
       if (kind === 'emp') { fxEmpTick(); return; }
       if (kind === 'rail') fxRailLand();

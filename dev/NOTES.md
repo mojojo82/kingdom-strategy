@@ -779,3 +779,12 @@
 - Card 13 "Thundering Hooves": cavalry heroes (Roran) +15% base ATK (basic attacks + skills, both modes). New kind `cavAtk`.
 - Placeholder names/text in CARD_TEXT_DEFAULTS; Dev Mod fields added.
 - Test: g215 checks both (Conquest + Arena, other classes untouched). g210-g212 pass.
+
+### v990 — card 14 Death Gerbils, card 15 Hardy Stock (TEST)
+- Harley: card 14 "every 5 seconds summon a death gerbil", a horde build: weak at first, stronger the longer the fight goes. No cap (Conquest is protected by the level reset). Gerbils don't copy a live hero ("give them some stats"). Only the clone counts for the Railgun/EMP link, not gerbils.
+- Gerbil = living summon with 50% of your average hero's HP / hit (and that hero's DEF and swing speed). Card def `{ kind: "gerbil", every: 5, pct: 0.5 }`, editable in Dev Mod.
+  - Arena: spawned in the FX engine as droid entries (`gerbil: true`), so they're drawn like clones (placeholder), die for good when KO'd, aren't stopped by EMP, and don't count for fxDroidUp.
+  - Conquest: idleGerbilTick, which only runs while enemies are on the field. Gerbils live in state.idle.clones ("gerbilN"), so enemy hits land on them like on clones. Cleared on level reset. Drawn as a small green-tinted hero (placeholder, mockup needed for real gerbil art).
+- Card 15 "Hardy Stock": all your heroes and summons +5% max HP (`allHp`). Clones and gerbils are built from hero HP, so they get it too.
+- Sims: Conquest climb Lv40 135 -> 138 with card 14 (about 1,070 gerbils, up to 14 alive). Arena: in the first 30 s each gerbil walks out alone and the enemy's ranged volley kills it at once. Over a full fight card 14 still decides even mirrors (100% vs a same-level team, 0% vs +5 levels, like Last Bastion). Card 15 alone is a nudge (53-57%).
+- Test: new g216_gerbils.js. g209, g211, g215 pass.
