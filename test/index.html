@@ -3299,6 +3299,19 @@
             </div>
 
             <div class="dev-sub">
+              <div class="dev-sub-header" data-target="devSubSkinAlign"><span class="dev-sub-arrow">▸</span> 🏰 Base skin alignment</div>
+              <div class="dev-sub-body" id="devSubSkinAlign" style="display:none;">
+                <div class="dev-tools-hint" style="margin-bottom:6px;">Moves / resizes one base skin's picture on its 3x3 squares. The squares (grid) don't move. Saved for every player.</div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Skin</span><select id="devSaSkin"></select></div>
+                <div class="dev-tools-row"><label class="dev-tools-hint"><input type="checkbox" id="devSaPreview"> Show this skin on my base (only on this screen)</label></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Left / right</span><input type="range" class="dev-slider" id="devSaX" min="-2" max="2" step="0.02"><span class="dev-slider-val" id="devSaXVal"></span></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Up / down</span><input type="range" class="dev-slider" id="devSaY" min="-2" max="2" step="0.02"><span class="dev-slider-val" id="devSaYVal"></span></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Size</span><input type="range" class="dev-slider" id="devSaS" min="0.5" max="2" step="0.01"><span class="dev-slider-val" id="devSaSVal"></span></div>
+                <div class="dev-tools-row"><button class="dev-btn" id="devSaGo">📍 Go to my base</button><button class="dev-btn" id="devSaReset">↺ Reset this skin</button><span class="dev-tools-hint" id="devSaStatus"></span></div>
+              </div>
+            </div>
+
+            <div class="dev-sub">
               <div class="dev-sub-header" data-target="devSubBotAlly"><span class="dev-sub-arrow">▸</span> 🏳️ Bot Alliance</div>
               <div class="dev-sub-body" id="devSubBotAlly" style="display:none;">
                 <div class="dev-tools-hint" style="margin-bottom:6px;">Makes a whole alliance of bot players: their cities sit side by side in one cluster, all in the alliance (leader R5, two R4 officers, the rest members). Writes to the shared world of this server (TEST / LIVE), like the random players above.</div>
@@ -9169,6 +9182,18 @@ function myCitySkinId() { return CITY_SKINS[mapCitySkin] && citySkinOwned(mapCit
 function myCityIconSrc() { return CITY_SKINS[myCitySkinId()].src; }
 /* v1012 (Harley: other players saw the default base): every player's chosen skin is now on their city doc (field "sk"), so others draw it too */
 var citySkinByTile = {};
+/* v1013 (Harley): per-skin picture alignment - left/right and up/down in tiles, and size - set by an admin in Dev Tools > Visuals > Base skin
+   alignment and shared with every player (doc assetitems/_skinalign; anyone signed in reads it, only admins write). The 3x3 squares never move. */
+var SKIN_ALIGN = {}, SKIN_ALIGN_DOC = "assetitems/_skinalign", SKIN_ALIGN_LS = "kingdom_prototype_skinalign_v1", skinAlignPreview = null;
+try { var saL = JSON.parse(localStorage.getItem(SKIN_ALIGN_LS) || "null"); if (saL && typeof saL === "object") SKIN_ALIGN = saL; } catch (e) {}
+function skinAlign(id) { var a = SKIN_ALIGN[id] || {}; return { x: isFinite(+a.x) ? +a.x : 0, y: isFinite(+a.y) ? +a.y : 0, s: isFinite(+a.s) && +a.s > 0 ? +a.s : 1 }; }
+function skinAlignSet(v) { if (!v || typeof v !== "object") return; SKIN_ALIGN = v; try { localStorage.setItem(SKIN_ALIGN_LS, JSON.stringify(v)); } catch (e) {} try { renderVisibleTiles(); } catch (e) {} try { devSkinAlignSync(); } catch (e) {} }
+var skinAlignSyncOn = false;
+function startSkinAlignSync() { if (skinAlignSyncOn || !cloudDb) return; skinAlignSyncOn = true;
+  cloudDb.doc(SKIN_ALIGN_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data(); if (!d || typeof d.data !== "string") return; try { var v = JSON.parse(d.data); if (JSON.stringify(v) !== JSON.stringify(SKIN_ALIGN)) skinAlignSet(v); } catch (e) {} }, function () {}); }
+var skinAlignSaveT = 0;
+function skinAlignSave(cb) { clearTimeout(skinAlignSaveT); skinAlignSaveT = setTimeout(function () { if (!cloudDb) { cb && cb(false); return; }
+  cloudDb.doc(SKIN_ALIGN_DOC).set({ data: JSON.stringify(SKIN_ALIGN), ts: Date.now() }).then(function () { cb && cb(true); }, function (e) { cb && cb(false, e); }); }, 500); }
 function citySkinIdAt(tileId) { var k = citySkinByTile[tileId]; return CITY_SKINS[k] ? k : "tower"; }
 function otherCityIconSrc(tileId) { return CITY_SKINS[citySkinIdAt(tileId)].src; }
 function publishMyCitySkin() { /* write my skin onto my city doc (only when it differs from what's there) */
@@ -10831,7 +10856,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1012"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1013"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14323,13 +14348,13 @@ function renderVisibleTiles() {
         var cityImgCls = "city-icon-img" + (isFreshDropTarget ? " city-drop-anim" : "");
         var cityImgStyleParts = [];
         if (isFreshDropTarget) cityImgStyleParts.push("--drop-distance:" + (-dropAnimFallPx) + "px");
-        var cSkin = CITY_SKINS[isMyCity ? myCitySkinId() : citySkinIdAt(tile.id)]; /* v1012: other players' skins too */
-        if (cSkin && cSkin.scale) cityImgStyleParts.push("width:calc(var(--tile-px) * var(--city-w, 2.2) * " + cSkin.scale.toFixed(3) + ")");
-        var citySrc = isMyCity ? myCityIconSrc() : otherCityIconSrc(tile.id);
-        var cwMul = (cSkin && cSkin.scale) || 1, cMl = "", cBot = 0;
-        if (mapIso) { /* v827: line the art's FOUNDATION (measured from its pixels) up with the centre of the 3x3 block, whatever the skin */
+        var cSkinId = isMyCity ? (skinAlignPreview && CITY_SKINS[skinAlignPreview] ? skinAlignPreview : myCitySkinId()) : citySkinIdAt(tile.id), cSkin = CITY_SKINS[cSkinId]; /* v1012: other players' skins too */
+        var sAl = skinAlign(cSkinId), cwMul = ((cSkin && cSkin.scale) || 1) * sAl.s, cMl = "", cBot = 0; /* v1013: per-skin size / offset */
+        if (cwMul !== 1) cityImgStyleParts.push("width:calc(var(--tile-px) * var(--city-w, 2.2) * " + cwMul.toFixed(3) + ")");
+        var citySrc = cSkin ? cSkin.src : CITY_SKINS.tower.src;
+        if (mapIso) { /* v827: line the art's FOUNDATION (measured from its pixels) up with the centre of the 3x3 block, whatever the skin; v1013: plus the skin's own nudge */
           var am = cityArtGet(citySrc), acw = isoCfg.base * cwMul;
-          cMl = "calc(var(--tile-px) * " + (acw * (0.5 - am.fx)).toFixed(3) + ")"; cBot = 0.5 - isoCfg.y / 100 - acw * am.aspect * (1 - am.fy);
+          cMl = "calc(var(--tile-px) * " + (acw * (0.5 - am.fx) + sAl.x).toFixed(3) + ")"; cBot = 0.5 - isoCfg.y / 100 - acw * am.aspect * (1 - am.fy) + sAl.y;
           cityImgStyleParts.push("margin-left:" + cMl);
           cityImgStyleParts.push("bottom:calc(var(--tile-px) * " + cBot.toFixed(3) + ")");
         }
@@ -16196,6 +16221,7 @@ var citySyncStarted = false;
 function startCitySync() {
   if (citySyncStarted || !cloudDb) return;
   citySyncStarted = true;
+  try { startSkinAlignSync(); } catch (e) {}
   cloudDb.collection(serverPrefix() + "cities").onSnapshot(function (qsnap) {
     var seen = {};
     qsnap.docs.forEach(function (doc) {
@@ -22645,7 +22671,7 @@ document.querySelectorAll(".dev-sub-header").forEach(function (header) {
 // v998 (Harley): Dev Tools as tabs - category tabs on top, that category's tools as chips, the chosen tool open below. Remembers the last one.
 // Each tool is still its own .dev-sub (same ids / handlers); opening one goes through its header's click so its reveal hooks still run.
 var DEV_CATS = [["test", "🧪 Testing", ["devSubSpeed", "devSubWelcome", "devSubWorldMap", "devSubBotAlly"]], ["combat", "⚔️ Combat", ["devSubArena", "devSubBoss", "devSubEnemies", "devSubHeroes", "devSubEspers"]],
-  ["visual", "🎨 Visuals", ["devSubGround", "devSubBgLayers", "devSubFx", "devSubSfx"]], ["balance", "📊 Balance", ["devSubEstimator", "devSubUsd"]]];
+  ["visual", "🎨 Visuals", ["devSubGround", "devSubBgLayers", "devSubFx", "devSubSfx", "devSubSkinAlign"]], ["balance", "📊 Balance", ["devSubEstimator", "devSubUsd"]]];
 var devTabs = { cat: null, tool: null };
 (function devTabsInit() {
   var panel = document.getElementById("devToolsPanel"); if (!panel || panel.classList.contains("dt-tabbed")) return;
@@ -22870,6 +22896,28 @@ document.getElementById("devDestroyBotPlayersBtn").onclick = function () {
     }, function (e) { st("Couldn't make it: " + (e && e.message)); }).then(function () { b.disabled = false; });
   };
   document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubBotAlly"], .dt-chip')) setTimeout(renderDevBotAllyList, 0); });
+})();
+/* v1013: Dev Tools > Visuals > Base skin alignment */
+function devSkinAlignSync() {
+  var sel = document.getElementById("devSaSkin"); if (!sel) return;
+  if (!sel.options.length) CITY_SKIN_ORDER.forEach(function (id) { var o = document.createElement("option"); o.value = id; o.textContent = CITY_SKINS[id].label; sel.appendChild(o); });
+  if (!sel.value) sel.value = myCitySkinId();
+  var a = skinAlign(sel.value), set = function (id, v, txt) { var el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; var lb = document.getElementById(id + "Val"); if (lb) lb.textContent = txt; };
+  set("devSaX", a.x, (a.x >= 0 ? "+" : "") + a.x.toFixed(2)); set("devSaY", a.y, (a.y >= 0 ? "+" : "") + a.y.toFixed(2)); set("devSaS", a.s, "x" + a.s.toFixed(2));
+}
+(function devSkinAlignInit() {
+  var sel = document.getElementById("devSaSkin"); if (!sel) return;
+  var st = function (t) { var e = document.getElementById("devSaStatus"); if (e) e.textContent = t || ""; };
+  function edit() { var id = sel.value, a = skinAlign(id); a.x = +document.getElementById("devSaX").value; a.y = +document.getElementById("devSaY").value; a.s = +document.getElementById("devSaS").value;
+    var v = JSON.parse(JSON.stringify(SKIN_ALIGN)); if (a.x === 0 && a.y === 0 && a.s === 1) delete v[id]; else v[id] = a; skinAlignSet(v); st("Saving…");
+    skinAlignSave(function (ok, e) { st(ok ? "✓ Saved for all players" : "Not saved: " + ((e && e.message) || "no connection")); }); }
+  ["devSaX", "devSaY", "devSaS"].forEach(function (id) { document.getElementById(id).addEventListener("input", edit); });
+  sel.onchange = function () { if (document.getElementById("devSaPreview").checked) skinAlignPreview = sel.value; devSkinAlignSync(); try { renderVisibleTiles(); } catch (e) {} st(""); };
+  document.getElementById("devSaPreview").onchange = function () { skinAlignPreview = this.checked ? sel.value : null; try { renderVisibleTiles(); } catch (e) {} };
+  document.getElementById("devSaReset").onclick = function () { var v = JSON.parse(JSON.stringify(SKIN_ALIGN)); delete v[sel.value]; skinAlignSet(v); st("Saving…"); skinAlignSave(function (ok) { st(ok ? "✓ Reset for all players" : "Not saved"); }); };
+  document.getElementById("devSaGo").onclick = function () { var h = game.state.homeTileId; if (h) { goToWorldTile(h); } };
+  devSkinAlignSync();
+  document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubSkinAlign"], .dt-chip')) setTimeout(devSkinAlignSync, 0); });
 })();
 document.getElementById("devAddValor").onclick = function () { game.state.idle.valor += 5000; persist(); render(); };
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };

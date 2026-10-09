@@ -939,3 +939,9 @@
 - Avatar: other players' name + avatar were read once per session and cached forever, so a new avatar never showed until the viewer reloaded (and a failed first read stuck as "no avatar"). Now re-read after a minute (old one shown meanwhile).
 - Note: the skin field isn't checked against ownership (cosmetic only).
 - Test: new g232_shared_look.js (two players on one fake backend: doc carries the skin, the other player draws it, avatar seen, changed avatar seen without reload, switching back seen).
+
+### v1013 — per-skin base picture alignment, shared with everyone (TEST)
+- Harley (screenshots: since v1012 other players' skins show, and e.g. the Mecha Platform sat off its squares): each skin needs its own alignment, the grid stays as is.
+- New Dev Tools > 🎨 Visuals > 🏰 Base skin alignment: pick a skin, sliders Left/right and Up/down (-2..+2 tiles, steps of 0.02) and Size (x0.5..x2), "Show this skin on my base" (preview, this screen only, real skin unchanged), "Go to my base", "Reset this skin". Every change saves (0.5 s after you stop) for all players and shows "✓ Saved for all players".
+- Stored as one shared doc `assetitems/_skinalign` ({data: JSON}); rules already let anyone signed in read it and only admins write. Everyone listens to it live, and keeps a local copy. Applied on top of the existing foundation lining-up (v827) and the skin's built-in scale; the base's water ring follows. The tile / 3x3 squares never move.
+- Test: new g233_skin_align.js (admin moves Titan: saved, the other player gets it, squares unchanged, picture moved and 1.2x, preview leaves the real skin).
