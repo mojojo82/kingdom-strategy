@@ -6635,14 +6635,26 @@ function createGame(opts) {
     return e;
   }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
-  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
+  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
     var r = state.conquestRoster.slice(0, 5);
     for (var i = 0; i < r.length; i++) {
       var def = HERO_DEFS[r[i]], h = state.heroes[r[i]];
       if (def && def.class === "infantry" && h && h.owned && !idleHeroIsKo(r[i])) return r[i];
     }
+    var ck = idleCloneUp(); if (ck) return "__clone:" + ck; /* v974: with no infantry hero standing, a Clone Task clone takes the hit (same order as Arena) */
     return null;
+  }
+  // ---- v974: Clone Task in Conquest (one rule set with Arena): a living clone of the first infantry hero in the roster (Gareth) with mult x his
+  // HP and attack. Summoned while Clone Task is equipped; a new one comes `cooldown` s after the last (held while it stands). It swings at the front
+  // enemy once that enemy has closed in, and enemy hits meant for a hero land on it when no infantry hero is standing. Lv50 Death burst: a fallen
+  // clone hits the front enemy for selfDestructPct % of its max HP. Drop Signal: a Railgun shot brings a fallen clone straight back. No clone art yet.
+  function idleCloneTemplate() { var r = state.conquestRoster.slice(0, 5); for (var i = 0; i < r.length; i++) { var d = HERO_DEFS[r[i]], h = state.heroes[r[i]]; if (d && d.class === "infantry" && h && h.owned) return r[i]; } return null; }
+  function idleCloneUp() { var C = state.idle.clones; if (!C) return null; for (var k in C) if (C[k] && C[k].hp > 0) return k; return null; }
+  function idleCloneFall(k) {
+    var cl = state.idle.clones && state.idle.clones[k]; if (!cl) return;
+    cl.hp = 0; state.idle.cloneFalls = (state.idle.cloneFalls || 0) + 1;
+    if (cl.boom > 0) { var en = state.idle.enemies[0]; if (en && en.arrived && en.hp > 0) { en.hp -= en.maxHp * cl.boom / 100; if (en.hp <= 0) idleRemoveDeadEnemyAt(0); } }
   }
   // Even, RNG-free spread: hit number n of an enemy goes to the hero when floor((n+1)*p) > floor(n*p) — e.g. 50% = every other hit, 100% = all of them.
   function idleRangedHitGoesToHero(e) { var pc = HERO_KO_CFG.rangedPct / 100, n = e.hitCount || 0; return pc > 0 && Math.floor((n + 1) * pc + 1e-9) > Math.floor(n * pc + 1e-9); }
@@ -6883,7 +6895,7 @@ function createGame(opts) {
     if (!manualResults) { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } // v811: with the Defeat screen up HP stays at 0 (refilled on Confirm) so a player who glances back doesn't see "Defeated" with a full bar
     state.idle.shieldOn = false;
     if (!manualResults) { state.idle.enemies = []; state.idle.spawnTimer = null; } // v810: with the Defeat screen up the enemies (boss included) stay frozen on the field; Confirm clears them (idleResolveResult)
-    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; idleDying = [];
+    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; state.idle.clones = null; idleDying = [];
     state.idle.resetCount = (state.idle.resetCount || 0) + 1;
     state.idle.levelElapsedSec = 0;
     state.idle.levelRewards = null;
@@ -7657,7 +7669,7 @@ function createGame(opts) {
   // ---- v777: FX weapons in Border Skirmish ----
   // Works here: Orbit Shield + Deflector Dome (cut enemy ranged/boss shot damage), IO Repair (heals the fortress), Railgun (after its countdown, hits EVERY enemy for a
   // % of its max HP), Droid Call (a drone fires constantly at the nearest enemy), EMP Gun (freezes every arrived enemy's attacks for the stun time), Duplicate (copies any of those).
-  // Inert here (no stuns / no enemy fortress / no droid unit yet): Clone Task, Status Wave, Projection Wall.
+  // Clone Task: a living clone fights here too (v974, see idleCloneTemplate). Inert here (no stuns / no enemy fortress): Status Wave, Projection Wall.
   function idleFxList() {
     var ids = state.equippedWeapons || [], out = [], dupEff = null;
     ids.forEach(function (wid) {
@@ -7708,6 +7720,7 @@ function createGame(opts) {
           for (var ri = enemies.length - 1; ri >= 0; ri--) { var en = enemies[ri]; if (!en.arrived || en.hp <= 0) continue; var rd = en.maxHp * (P.fortPct || 0) / 100 * o.mag; en.hp -= rd; railHits.push({ id: en.id, dmg: rd }); if (en.hp <= 0) idleRemoveDeadEnemyAt(ri); }
           idleFxShot({ kind: "rail", hits: railHits });
           T.t += cd;
+          if (equippedSummonCall(state)) list.forEach(function (q) { if (q.fx === "clone" && I.fxT[q.key]) I.fxT[q.key].t = 0; }); /* v974: Drop Signal - a fallen clone comes straight back */
         }
       } else if (o.fx === "drone") {
         var nr = 0; state.conquestRoster.forEach(function (key) { var d = HERO_DEFS[key], h = state.heroes[key]; if (h && h.owned && d && d.class !== "infantry") nr++; });
@@ -7720,6 +7733,23 @@ function createGame(opts) {
           T.accId = tgt.id; T.acc = (T.acc || 0) + dd2; T.shotT = (T.shotT == null ? 0.35 : T.shotT) - dt;
           if (T.shotT <= 0 || tgt.hp <= 0) { idleFxShot({ kind: "drone", id: tgt.id, dmg: T.acc }); T.acc = 0; T.shotT = 0.35; }
           if (tgt.hp <= 0) idleRemoveDeadEnemyAt(bi); }
+      } else if (o.fx === "clone") { /* v974: see idleCloneTemplate */
+        var C = I.clones || (I.clones = {}), cl = C[o.key];
+        T.t -= dt;
+        if (!(cl && cl.hp > 0)) {
+          if (T.t > 0) return;
+          var tk = idleCloneTemplate(); if (!tk) { T.t = 0; return; }
+          var km = (P.mult || 1) * o.mag, cmx = idleHeroMaxHp(tk) * km;
+          C[o.key] = { tpl: tk, max: cmx, hp: cmx, dmg: idleAttackerHitDamage(tk) * km, ivl: heroAttackSec(tk), cd: heroAttackSec(tk), boom: (P.selfDestructPct || 0) * o.mag };
+          T.t = cd; I.cloneCasts = (I.cloneCasts || 0) + 1;
+          return;
+        }
+        if (T.t < 0) T.t = 0; // the next clone waits until this one falls
+        var cf = enemies[0];
+        if (!(cf && cf.arrived && cf.engaged && cf.hp > 0)) { cl.cd = cl.ivl; return; }
+        cl.cd -= dt; if (cl.cd > 0) return; cl.cd += cl.ivl;
+        var cdmg = cl.dmg * idleEnemyDefTake(cf, cl.dmg); cf.hp -= cdmg; I.cloneDmg = (I.cloneDmg || 0) + cdmg;
+        if (cf.hp <= 0) idleRemoveDeadEnemyAt(0);
       } else if (o.fx === "emp") {
         T.t -= dt;
         if (T.t <= 0) {
@@ -7785,6 +7815,12 @@ function createGame(opts) {
   var idleEnemyPendingHits = [];
   function idleApplyEnemyHit(type, rawDmg, tgtHeroKey) {
     var hitDmg = rawDmg;
+    if (tgtHeroKey && String(tgtHeroKey).indexOf("__clone:") === 0) { /* v974: a hit on a Clone Task clone (DEF = its template hero's) */
+      var ck0 = tgtHeroKey.slice(8), cl0 = state.idle.clones && state.idle.clones[ck0]; if (!cl0 || cl0.hp <= 0) return;
+      cl0.hp -= hitDmg * idleHeroDefMult(cl0.tpl, idleEnemyAtk(type)) * idleHeroHitMult(type);
+      if (cl0.hp <= 0) idleCloneFall(ck0);
+      return;
+    }
     if (tgtHeroKey) {
       var tgtEnt = idleHeroEntry(tgtHeroKey);
       if (!tgtEnt || tgtEnt.hp <= 0) return;
@@ -8463,7 +8499,7 @@ function createGame(opts) {
     if (opts.deferConquest) {
       var _ri = state.idle;
       _ri.enemies = []; _ri.spawnTimer = null; _ri.enemiesKilledInLevel = 0; _ri.bossPhase = false; _ri.bossRetry = false;
-      _ri.shieldOn = false; _ri.guardShield = 0; _ri.fxT = null; _ri.levelRewards = null; _ri.pending = null; _ri.levelElapsedSec = 0;
+      _ri.shieldOn = false; _ri.guardShield = 0; _ri.fxT = null; _ri.clones = null; _ri.levelRewards = null; _ri.pending = null; _ri.levelElapsedSec = 0;
       _ri.weaponFlightQueue = []; _ri.heroHp = {};
       try { _ri.playerHp = idlePlayerMaxHp(); } catch (e) { _ri.playerHp = null; }
     }
@@ -10409,7 +10445,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v973"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v974"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

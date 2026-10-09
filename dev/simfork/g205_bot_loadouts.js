@@ -24,11 +24,14 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     for (let i = 0; i < 200; i++) { const op = generateArenaOpponent(); o.n++; const ids = Object.keys(op.weapons || {}); if (ids.length) o.withW++; if (ids.length > 3) o.tooMany = true; if (op.weapons.salvo_loader) o.salvo++; if (fortressTypeOf(op.fortressTech || {}) === 3) o.f3++; if (op.esper) o.esper++; ids.forEach((id) => o.lvls.push(op.weapons[id])); }
     o.avgLvl = Math.round(o.lvls.reduce((a, x) => a + x, 0) / o.lvls.length); delete o.lvls;
     /* bot weapons really fire in an Arena fight */
-    const op = generateArenaOpponent(); op.weapons = { missile_barrage: 30, laser_beam: 30, railgun: 30 }; const kit = botWeaponsToSim(op.weapons);
+    let op, kit; /* v974: a random opponent can lose before its first shot lands (weapons travel since v968) - try up to 8 opponents */
+    for (let tries = 0; tries < 8; tries++) {
+    op = generateArenaOpponent(); op.weapons = { missile_barrage: 30, laser_beam: 30, railgun: 30 }; kit = botWeaponsToSim(op.weapons);
     const side = (ro, hs, fort, isP) => { const st = arenaSideStats(ro, hs, 20, 0, false, null, fort, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, ro.indexOf(e.id), isP); }); return st; };
     const tr = { src: {}, aiSrc: {}, perTick: [] }; const sim = arenaMakeSim(side(game.state.conquestRoster, game.state.heroes, null, true), side(op.roster, op.heroes, op.fortressTech, false), { rng: worldPvpSeededRng("b"), critSeed: "b", aiWeapons: kit.specs, aiShieldPct: kit.shieldPct, salvoA: kit.salvo, trace: tr });
     let fires = 0, x; do { x = sim.step(); fires += (x.info.aiWeaponFires || []).length; } while (!x.done);
     o.aiWeaponDmg = Object.keys(tr.aiSrc).filter((k) => /^weapon:/.test(k)).length; o.aiFires = fires;
+    if (o.aiWeaponDmg > 0 && fires > 0) break; }
     /* world PvP: a bot city's saved loadout is used */
     const bs = randomBotSaveState(0.7); o.botSaveWeapons = (bs.equippedWeapons || []).length; o.botSaveLv = bs.weaponLevels;
     return o;
