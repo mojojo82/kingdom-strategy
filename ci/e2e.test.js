@@ -96,6 +96,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await t("dev tools hidden for normal players", async () => {
     const d = await A.evaluate(() => { const el = document.querySelector(".idle-util-icons"); return el ? getComputedStyle(el).display : "none"; });
     check(d === "none", "dev icons display: " + d);
+    const m = await A.evaluate(() => { const el = document.querySelector("#moreMenu .mm-dev"); return el ? getComputedStyle(el).display : "none"; }); /* v998: More > Dev Tools tile */
+    check(m === "none", "More > Dev Tools tile display: " + m);
   });
   await t("admin website: sign in, find player, send mail; player claims it in the game", async () => {
     process.env.FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099";

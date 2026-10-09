@@ -842,3 +842,10 @@
 
 ### v997 — foam line toned down (TEST)
 - Harley: v996 "reads as a solid thick border". Now foamW 4.5, foamA 0.7, alpha broken up by the noise (0.3-1.2x) and fading outward, so it reads as patchy white foam, not an outline. Still clearly more visible than v995. Headless screenshot check.
+
+### v998 — Dev Tools moved to More > 🛠️ Dev Tools, as tabs (TEST)
+- Harley: the dev tools area is getting big; move it into More: category tabs on top, the selected tool below.
+- More menu has a 🛠️ Dev Tools tile, admin only (hidden by html.ks-noadmin like the other dev bits). It opens a More screen (#devScreen) with 4 category tabs: 🧪 Testing (Speed & Testing, Welcome-back popup, World Map), ⚔️ Combat (Arena, Boss, Enemies, Heroes & Skills, Espers), 🎨 Visuals (Ground, Background Layers, Effects & Sound, Sound Effects), 📊 Balance (Max Level Estimator, USD Value). Under the tabs, that category's tools are chips, and the chosen tool shows below. The last tab and tool are remembered (localStorage ksDevTab).
+- Each tool is still its own .dev-sub (ids and handlers unchanged), opened through its header click so reveal hooks still run. A tool not filed in DEV_CATS lands in a "🧰 Other" tab automatically.
+- The Conquest 🛠️ popup still opens the same tabbed panel and hands it back.
+- Test: new g221_devtools_tabs.js. The CI e2e test also checks the tile is hidden for normal players.

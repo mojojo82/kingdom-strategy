@@ -1873,6 +1873,16 @@
     #moreMenu .mm-tile { background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:16px 6px; text-align:center; font-weight:700; font-size:12.5px; color:var(--text); cursor:pointer; }
     #moreMenu .mm-tile .ic { display:block; font-size:30px; margin-bottom:6px; }
     #moreMenu .mm-tile:active { transform:scale(.96); }
+    /* v998: Dev Tools as a More screen - category tabs, the category's tools as chips, the chosen tool below */
+    #devScreen { display:none; } body[data-screen="more"][data-sub="devtools"] #devScreen { display:block; padding:2px 0 24px; }
+    #devToolsPanel.dt-tabbed .dev-sub-header { display:none; } #devToolsPanel.dt-tabbed .dev-sub { display:none; } #devToolsPanel.dt-tabbed .dev-sub.dt-on { display:block; }
+    #devToolsPanel .dt-tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 0 8px; margin-bottom:6px; border-bottom:1px dashed var(--border); scrollbar-width:none; }
+    #devToolsPanel .dt-tab { flex:0 0 auto; padding:7px 11px; border:1px dashed var(--border); border-radius:8px; background:var(--panel2); color:var(--muted); font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap; }
+    #devToolsPanel .dt-tab.on { color:var(--gold); border-color:var(--gold); background:var(--panel3, #1c2840); }
+    #devToolsPanel .dt-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    #devToolsPanel .dt-chip { padding:5px 10px; border:1px dotted var(--border); border-radius:14px; font-size:12px; color:var(--text); cursor:pointer; background:transparent; }
+    #devToolsPanel .dt-chip.on { background:#2bb3d9; color:#06131c; border-color:#2bb3d9; font-weight:700; }
+    html.ks-noadmin #moreMenu .mm-dev { display:none !important; }
     #bottomNav { display:flex; flex:0 0 auto; background:linear-gradient(180deg,#3b2f22,#1f1811); border-top:2px solid #b3985f; padding:0 2px calc(env(safe-area-inset-bottom) + 16px); box-shadow:0 -4px 14px rgba(0,0,0,.5); z-index:50; } /* v937/v938: buttons sit 16px higher so taps stay clear of the iPhone home bar (the white swipe line) */
     #bottomNav .bn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:7px 0 6px; color:#bfae86; font-size:11px; font-weight:800; letter-spacing:.02em; cursor:pointer; border-radius:10px; text-shadow:0 1px 2px #000; }
     #bottomNav .bn .ic { display:block; width:32px; height:32px; line-height:0; filter:grayscale(.35) brightness(.8); }
@@ -2619,6 +2629,7 @@
 <div id="screenBar"></div>
 <div id="layout">
   <div id="moreMenu"></div>
+  <div id="devScreen"></div><!-- v998: More > Dev Tools (admin only); #devToolsPanel is moved in here when opened -->
   <div class="col">
     <div class="panel" id="worldChatPanel" style="flex:1;min-height:420px;">
       <h2>💬 Chat <span class="chat-name-edit" id="chatNameEdit" title="Click to change your display name"></span><span id="chatTabsDesk" class="chat-tabs-desk"></span></h2>
@@ -10670,7 +10681,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v997"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v998"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22287,6 +22298,44 @@ document.querySelectorAll(".dev-sub-header").forEach(function (header) {
   };
 });
 
+// v998 (Harley): Dev Tools as tabs - category tabs on top, that category's tools as chips, the chosen tool open below. Remembers the last one.
+// Each tool is still its own .dev-sub (same ids / handlers); opening one goes through its header's click so its reveal hooks still run.
+var DEV_CATS = [["test", "🧪 Testing", ["devSubSpeed", "devSubWelcome", "devSubWorldMap"]], ["combat", "⚔️ Combat", ["devSubArena", "devSubBoss", "devSubEnemies", "devSubHeroes", "devSubEspers"]],
+  ["visual", "🎨 Visuals", ["devSubGround", "devSubBgLayers", "devSubFx", "devSubSfx"]], ["balance", "📊 Balance", ["devSubEstimator", "devSubUsd"]]];
+var devTabs = { cat: null, tool: null };
+(function devTabsInit() {
+  var panel = document.getElementById("devToolsPanel"); if (!panel || panel.classList.contains("dt-tabbed")) return;
+  var subs = [].slice.call(panel.querySelectorAll(":scope > .dev-sub")), byId = {}, known = {};
+  subs.forEach(function (d) { var h = d.querySelector(".dev-sub-header"); if (h) byId[h.getAttribute("data-target")] = { el: d, h: h, label: h.textContent.replace(/^\s*▸\s*/, "").trim() }; });
+  var cats = DEV_CATS.map(function (c) { c[2].forEach(function (id) { known[id] = 1; }); return { k: c[0], l: c[1], ids: c[2].filter(function (id) { return byId[id]; }) }; });
+  var other = Object.keys(byId).filter(function (id) { return !known[id]; }); if (other.length) cats.push({ k: "other", l: "🧰 Other", ids: other }); /* a new tool nobody filed yet still shows up */
+  var tabs = document.createElement("div"), chips = document.createElement("div"); tabs.className = "dt-tabs"; chips.className = "dt-chips";
+  var lab = panel.querySelector(".dev-tools-label"); panel.insertBefore(chips, lab ? lab.nextSibling : panel.firstChild); panel.insertBefore(tabs, chips);
+  panel.classList.add("dt-tabbed");
+  function pick(catK, toolId) {
+    var cat = cats.filter(function (c) { return c.k === catK; })[0] || cats[0]; if (!cat) return;
+    if (cat.ids.indexOf(toolId) < 0) toolId = cat.ids[0];
+    devTabs.cat = cat.k; devTabs.tool = toolId; try { localStorage.setItem("ksDevTab", cat.k + "|" + toolId); } catch (e) {}
+    tabs.innerHTML = ""; cats.forEach(function (c) { var t = document.createElement("div"); t.className = "dt-tab" + (c.k === cat.k ? " on" : ""); t.textContent = c.l; t.onclick = function () { pick(c.k); }; tabs.appendChild(t); });
+    chips.innerHTML = ""; cat.ids.forEach(function (id) { var c = document.createElement("div"); c.className = "dt-chip" + (id === toolId ? " on" : ""); c.textContent = byId[id].label; c.onclick = function () { pick(cat.k, id); }; chips.appendChild(c); });
+    Object.keys(byId).forEach(function (id) { var x = byId[id], body = document.getElementById(id); x.el.classList.toggle("dt-on", id === toolId);
+      if (!body) return; var shown = body.style.display !== "none";
+      if (id === toolId && !shown) x.h.click(); /* opens it and runs its reveal hooks */
+      else if (id !== toolId && shown) { body.style.display = "none"; x.h.classList.remove("open"); } });
+  }
+  var saved = ""; try { saved = localStorage.getItem("ksDevTab") || ""; } catch (e) {}
+  var sp = saved.split("|"); devTabs.pick = pick; pick(sp[0] || "test", sp[1] || null);
+})();
+function devScreenOpen() {
+  var pop = document.getElementById("utilPopup"), panel = document.getElementById("devToolsPanel"), host = document.getElementById("devScreen");
+  if (pop && pop.style.display === "flex") { var x = document.getElementById("upX"); if (x) x.click(); } /* the Conquest 🛠️ popup had it: give it back first */
+  if (panel && host && panel.parentNode !== host) host.appendChild(panel);
+  if (panel) panel.style.display = "block";
+  setScreen("more", "devtools");
+  try { syncFpsCounterCheckbox(); syncFortressCannonCheckbox(); syncLastLevelClearDisplay(); renderDevWeaponsList(); } catch (e) {}
+  try { if (devTabs.pick) devTabs.pick(devTabs.cat, devTabs.tool); } catch (e) {}
+}
+
 function renderDevSpeedButtons() {
   var el = document.getElementById("devSpeedBtns");
   if (!el) return;
@@ -24879,7 +24928,7 @@ function renderAlliancePanel() {
 }
 var MORE_ITEMS = [{ k: "events", ic: "🎉", l: "Events" }, { k: "shop", ic: "🛒", l: "Shop" }, { k: "alliance", ic: "🏳️", l: "Alliance" }, { k: "arena", ic: "🏟️", l: "Arena" }, { k: "espers", ic: "✨", l: "Espers" }, { k: "cards", ic: "🃏", l: "Cards" }, { k: "weapons", ic: "🚀", l: "Weapons" }, { k: "recon", ic: "🛰️", l: "Intel & Recon" }, { k: "td", ic: "🏰", l: "Fortress Defense" }, { k: "skins", ic: "🎨", l: "Skins" },
   { k: "reports", ic: "📜", l: "Reports" }, { k: "stats", ic: "📊", l: "Stats" }, { k: "chat", ic: "💬", l: "World Chat" },
-  { k: "gauntlet", ic: "🏯", l: "The Gauntlet" }, { k: "marches", ic: "🚩", l: "Marches" }, { k: "log", ic: "🗒️", l: "Event Log" }, { k: "fortress", ic: "🏰", l: "Fortress" }, { k: "pvpsim", ic: "🧪", l: "PvP Simulator" }, { k: "bosssim", ic: "🎯", l: "Boss Simulator" }, { k: "profile", ic: "👤", l: "Profile" }, { k: "options", ic: "⚙️", l: "Options" }];
+  { k: "gauntlet", ic: "🏯", l: "The Gauntlet" }, { k: "marches", ic: "🚩", l: "Marches" }, { k: "log", ic: "🗒️", l: "Event Log" }, { k: "fortress", ic: "🏰", l: "Fortress" }, { k: "pvpsim", ic: "🧪", l: "PvP Simulator" }, { k: "bosssim", ic: "🎯", l: "Boss Simulator" }, { k: "profile", ic: "👤", l: "Profile" }, { k: "options", ic: "⚙️", l: "Options" }, { k: "devtools", ic: "🛠️", l: "Dev Tools" }];
 // v806: warm up the Conquest scene's assets in the background after login (spare moments only), so the first time the screen opens nothing has to load or decode.
 var conquestPreloadStarted = false;
 function preloadConquestAssets() {
@@ -25069,8 +25118,8 @@ function renderBottomNav() {
 (function initMoreMenu() {
   var m = document.getElementById("moreMenu");
   MORE_ITEMS.forEach(function (it) {
-    var t = document.createElement("div"); t.className = "mm-tile"; t.innerHTML = '<span class="ic">' + it.ic + '</span>' + it.l;
-    t.onclick = function () { if (it.k === "profile") openGovProfile(); else if (it.k === "shop") ksShopOpen(); else if (it.k === "events") ksEvOpen(); else setScreen("more", it.k); };
+    var t = document.createElement("div"); t.className = "mm-tile" + (it.k === "devtools" ? " mm-dev" : ""); t.innerHTML = '<span class="ic">' + it.ic + '</span>' + it.l;
+    t.onclick = function () { if (it.k === "profile") openGovProfile(); else if (it.k === "shop") ksShopOpen(); else if (it.k === "events") ksEvOpen(); else if (it.k === "devtools") devScreenOpen(); else setScreen("more", it.k); };
     m.appendChild(t);
   });
   var ft = document.createElement("div"); ft.className = "mm-tile"; m.appendChild(ft);
