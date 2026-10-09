@@ -4900,7 +4900,7 @@ var HERO_DEFS = {
   hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at level 5), Hanzo leaps into the air and rains shuriken on every enemy on screen, their fortress included." },
+      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at level 5), Hanzo leaps into the air and a second later rains shuriken on every enemy on screen, their fortress included. Shuriken are projectiles: shields that stop projectiles stop them." },
       { name: "Shadow Step", icon: "💨", kind: "passive", effectType: "dodge", perLevel: 0.10, desc: "Dodges 10% of attacks per level (50% at level 5)." }
     ],
     expeditionSkills: [
@@ -5217,6 +5217,8 @@ function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
 }
 // v992: Shadow Step (Hanzo) - share of incoming attacks dodged (0..0.95). Deterministic, no dice: hit n is dodged when floor((n+1)p) > floor(np).
 // v992: a skill whose cooldown shrinks with level (cdByLevel) - Hanzo's Shuriken Storm. Anything else keeps its flat cooldown.
+var HANZO_LEAP_SEC = 1.0; // v993 (Harley): Shuriken Storm isn't instant - he leaps into the air first, the shuriken land this much later (Conquest and Arena)
+function HANZO_LEAP_TICKS() { return Math.max(1, Math.round(HANZO_LEAP_SEC / (ARENA_TICK_MS / 1000))); }
 function heroSkill1Lvl(key) { var h = game.state.heroes[key]; return (h && h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[0]) || 1; }
 function skillCdAt(skill, lvl) { return (skill && skill.cdByLevel) ? skill.cdByLevel[Math.max(1, Math.min(skill.cdByLevel.length, lvl || 1)) - 1] : skill.cooldown; }
 function heroDodgePct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0;
@@ -6773,7 +6775,7 @@ function createGame(opts) {
     return e;
   }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
-  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.gerbT = null; state.idle.cardInvulUsed = false; state.idle.cardInvulT = 0; state.idle.cardFluxUsed = false; /* v985 */ state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
+  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.gerbT = null; state.idle.stormQ = null; state.idle.cardInvulUsed = false; state.idle.cardInvulT = 0; state.idle.cardFluxUsed = false; /* v985 */ state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
     var r = state.conquestRoster.slice(0, 5);
     for (var i = 0; i < r.length; i++) {
@@ -7033,7 +7035,7 @@ function createGame(opts) {
     if (!manualResults) { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } // v811: with the Defeat screen up HP stays at 0 (refilled on Confirm) so a player who glances back doesn't see "Defeated" with a full bar
     state.idle.shieldOn = false;
     if (!manualResults) { state.idle.enemies = []; state.idle.spawnTimer = null; } // v810: with the Defeat screen up the enemies (boss included) stay frozen on the field; Confirm clears them (idleResolveResult)
-    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; state.idle.clones = null; state.idle.gerbT = null; idleDying = [];
+    idleEnemyPendingHits = []; state.idle.guardShield = 0; state.idle.fxT = null; state.idle.clones = null; state.idle.gerbT = null; state.idle.stormQ = null; idleDying = [];
     state.idle.resetCount = (state.idle.resetCount || 0) + 1;
     state.idle.levelElapsedSec = 0;
     state.idle.levelRewards = null;
@@ -7196,6 +7198,7 @@ function createGame(opts) {
       }
     });
 
+    idleStormTick(dt); // v993: Shuriken Storms landing after Hanzo's leap (before `front` is read, so a storm kill can't leave a dead front)
     var front = state.idle.enemies[0];
     var frontTargetable = front && front.arrived;
     var frontPointBlank = front && front.engaged;
@@ -7239,15 +7242,11 @@ function createGame(opts) {
           }
           return;
         }
-        if (skill1.aoeAll) { /* v992: Hanzo's Shuriken Storm - every live enemy on the field, no range limit */
-          var aoePool = state.idle.enemies.filter(function (e0) { return e0.hp > 0; });
-          if (!aoePool.length) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
+        if (skill1.aoeAll) { /* v992: Hanzo's Shuriken Storm - every live enemy on the field, no range limit. v993: he leaps first - it lands HANZO_LEAP_SEC later (idleStormTick) */
+          if (!state.idle.enemies.some(function (e0) { return e0.hp > 0; })) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
           var aoeDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = aoeDmg;
-          aoePool.forEach(function (e0) { var dd0 = aoeDmg * idleMarkMult(e0, key) * idleEnemyDefTake(e0, aoeDmg); e0.hp -= dd0; state.idle.aoeDmg = (state.idle.aoeDmg || 0) + dd0;
-            (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: key, id: e0.id }); });
-          state.idle.skillLandCounts[key] = (state.idle.skillLandCounts[key] || 0) + 1;
-          for (var ai0 = state.idle.enemies.length - 1; ai0 >= 0; ai0--) { var ee0 = state.idle.enemies[ai0]; if (ee0 !== front && ee0.hp <= 0) idleRemoveDeadEnemyAt(ai0); }
+          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: HANZO_LEAP_SEC, dmg: aoeDmg });
           return;
         }
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
@@ -7863,6 +7862,16 @@ function createGame(opts) {
   // v990: card 14 Death Gerbils (Conquest). While enemies are on the field, every `every` s a gerbil joins (no cap - the level reset clears them).
   // Stats = pct of your average roster hero (HP, hit, swing speed). They live in state.idle.clones (key "gerbilN"), so enemy hits land on them
   // like on a clone (idleCloneUp / idleMeleeTargetHero), and they swing at the front engaged enemy.
+  // v993: a Shuriken Storm lands once Hanzo's leap is over: every live enemy on the field takes the hit. Knocked out mid-leap = no storm.
+  function idleStormTick(dt) {
+    var Q = state.idle.stormQ; if (!Q || !Q.length) return; var keep = [];
+    Q.forEach(function (q) { q.t -= dt; if (q.t > 1e-9) { keep.push(q); return; } if (idleHeroIsKo(q.key)) return;
+      var hit = 0; state.idle.enemies.forEach(function (e0) { if (!(e0.hp > 0)) return; var dd0 = q.dmg * idleMarkMult(e0, q.key) * idleEnemyDefTake(e0, q.dmg); e0.hp -= dd0; hit++; state.idle.aoeDmg = (state.idle.aoeDmg || 0) + dd0;
+        (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: q.key, id: e0.id }); });
+      if (hit) state.idle.skillLandCounts[q.key] = (state.idle.skillLandCounts[q.key] || 0) + 1;
+      for (var ai0 = state.idle.enemies.length - 1; ai0 >= 0; ai0--) if (state.idle.enemies[ai0].hp <= 0) idleRemoveDeadEnemyAt(ai0); });
+    state.idle.stormQ = keep;
+  }
   function idleGerbilTick(dt) {
     var gb = cardModsFrom(state).gerbil, I = state.idle; if (!gb) return;
     var enemies = I.enemies || [], live = false, i; for (i = 0; i < enemies.length; i++) if (enemies[i].hp > 0) { live = true; break; }
@@ -10661,7 +10670,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v992"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v993"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26857,7 +26866,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // (already after armor / dmgTakenMult) drains the pool first; only the overflow costs HP. Regen never refills it; once at 0 it stays down.
   var playerShieldMax = (opts.shieldPct > 0) ? playerStats.maxHp * opts.shieldPct / 100 : 0, aiShieldMax = (opts.aiShieldPct > 0) ? aiStats.maxHp * opts.aiShieldPct / 100 : 0;
   var playerShield = playerShieldMax, aiShield = aiShieldMax;
-  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = []; /* v968: weapon shots in flight */
+  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = []; /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
   var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {};
   (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first; }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first; });
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
@@ -26972,7 +26981,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function canMelee(hh, id) { if (!posMode) return engaged; var e = hh && hh.by[id]; return !!(e && e.reach); }
   // One melee hit (basic or skill). Returns true if it hits the fortress pool (caller adds it to that side's damage); false if a hero absorbed it.
   // v992: Shuriken Storm - one hit on every standing enemy hero and summon (dodge applies); the caller adds the same hit to the enemy fortress.
-  function aoeHit(oh, oppStats, dmg) { if (!oh) return; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (dodgeRoll(o, o.dodge)) return;
+  function aoeHit(oh, oppStats, dmg, wallUp) { if (!oh) return; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (wallUp && !o.infantry) return; /* v993: Projection Wall shields ranged heroes */ if (dodgeRoll(o, o.dodge)) return;
     o.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
     if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); }
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
@@ -27061,6 +27070,13 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     // active skills always fire on their own cooldown regardless of range —
     // same as Gareth's Shield Slam / Kessa's Arc Burst in Border Skirmish —
     // but a requiresClose skill's damage only lands once actually engaged.
+    // v993: Shuriken Storms that finish their leap land now (both sides together). Knocked out mid-leap = no storm. The shuriken are PROJECTILES:
+    // Projection Wall keeps them off the defender's ranged heroes, Deflector Dome / Orbit Shield cut them (heroes here, fortress via projP/projA below).
+    if (stormQ.length) { var stormKeep = []; stormQ.forEach(function (q) { if (q.at > tick) { stormKeep.push(q); return; }
+      var mine = q.sd === 'P' ? pHH : aHH; if (isKo(mine, q.key)) return;
+      var dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0;
+      if (q.sd === 'P') { aoeHit(aHH, aiStats, q.v * (1 - red), wallUp); playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); }
+      else { aoeHit(pHH, playerStats, q.v * (1 - red), wallUp); aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } }); stormQ = stormKeep; }
     playerStats.actives.forEach(function (a) {
       if (isKo(pHH, a.key)) { playerCd[a.key] = a.cooldown; return; } // KO'd: skill timer sits at full until he revives
       playerCd[a.key] -= cdStep;
@@ -27068,7 +27084,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
         playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         var av = a.value * cardSkMul('P', a.key); /* v985: cards */
-        if (a.aoe) { aoeHit(aHH, aiStats, av); playerDmg += av; trAdd('skill:' + a.key + '|' + a.name, av); return; } /* v992: Shuriken Storm - every enemy + their fortress */
+        if (a.aoe) { stormQ.push({ at: tick + HANZO_LEAP_TICKS(), sd: 'P', key: a.key, name: a.name, v: av }); return; } /* v993: Shuriken Storm - he leaps first; lands HANZO_LEAP_SEC later (stormLand) */
         if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; } else if (posMode) { if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
       }
     });
@@ -27079,7 +27095,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
         aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         var avA = a.value * cardSkMul('A', a.key); /* v985: cards */
-        if (a.aoe) { aoeHit(pHH, playerStats, avA); aiDmg += avA; trAddAi('skill:' + a.key + '|' + a.name, avA); return; } /* v992 */
+        if (a.aoe) { stormQ.push({ at: tick + HANZO_LEAP_TICKS(), sd: 'A', key: a.key, name: a.name, v: avA }); return; } /* v993 */
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; } else if (posMode) { if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
       }
     });

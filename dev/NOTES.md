@@ -802,3 +802,14 @@
   L1 78/0/0/0/0, L2 90/0, L3 100/0, L4 100/100/80/0/0, L5 100/100/97/75/40. Lv80: L3 95/10, L4 100/100/100/98/80, L5 100 across the board (+20 included).
   Conquest Lv40 climb: Gareth team 135, Hanzo L1 149, L5 154.
 - Meta check (run.js --only meta) unchanged versus v991. Test: new g217_hanzo.js; g207-g211, g215, g216 pass.
+
+### v993 — Hanzo's leap: Shuriken Storm lands 1 s after the cast; shuriken are projectiles (TEST)
+- Harley: "Shuriken storm isnt instant as he needs to jump into the air first". HANZO_LEAP_SEC = 1.0. Arena: stormQ, landing at the start of the tick before actives, both sides together. Conquest: state.idle.stormQ + idleStormTick, run before `front` is read. Knocked out mid-leap = no storm.
+- Shuriken count as projectiles: Projection Wall keeps them off the defender's ranged heroes, and Deflector Dome / Orbit Shield cut them (heroes directly, fortress via projP/projA).
+- Why: Arena fires every skill except Gareth's at 0 s, so the instant Storm one-shot a solo Kessa before she acted (Kessa solo vs maxed Hanzo + Lone Wolf: 0%).
+- New sims (Arena):
+  - Kessa solo (cards 11,2,3,4,5) vs maxed Hanzo + Lone Wolf, same weapons: 80% Kessa; with Projection Wall in her build: 93%. Her opening Arc Burst knocks him out mid-leap.
+  - Hanzo team tiers, Lv40, +0/+5/+10/+15/+20: L1 82/0, L3 98/0, L4 100/80/28/0/0, L5 100/100/60/30/17 (was L4 100/100/80, L5 100/100/97/75/40).
+  - Hanzo team tiers, Lv80: L4 100/100/100/90/57, L5 100/100/100/90/67.
+  - The leap costs him most at Lv40. Harley to decide on a re-tune.
+- Test: g217 passes; g208, g211, g215 pass.
