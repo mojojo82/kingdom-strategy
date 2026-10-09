@@ -73,8 +73,12 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     const ccBest = ccRows.slice().sort((a, b2) => b2.score - a.score)[0];
     const summary = { metaScore: score[M], metaRank: rank(M), top: [E[order[0]].name, score[order[0]]], countersBeatMeta: cBeat + "/" + counters.length, otherBeatMeta: beatMeta.filter((i) => !counters.includes(i)).map((i) => E[i].name),
       ccBeatCounters: ccRows.filter((r) => r.vsMeta === 0).map((r) => r.beatsCounters), metaLossCount: metaLoss.length, splitsWonAsAttacker: metaLoss.filter((x) => x[1] === 1 && x[3] === 1).length + "/" + metaLoss.filter((x) => x[1] === 1).length };
+    /* who beats the meta, and how hard each build is to get (Legendary count). Easy counter = beats the meta both ways with few Legendaries. */
+    const CC = idx("hex+railgun+dup>hex"), legN = (e) => e.ids.filter((id) => (WEAPON_DEFS_BY_ID[id] || {}).rarity === "Legendary").length;
+    const beaters = E.map((_, i) => i).filter((i) => i !== M && pair(i, M) >= 1.5).map((i) => ({ name: E[i].name, legendaries: legN(E[i]), score: score[i], rank: rank(i), vsMeta: pair(i, M), vsCounterCounter: pair(i, CC) }))
+      .sort((a, b2) => a.legendaries - b2.legendaries || b2.score - a.score);
     ARENA_FORT_HP_PER_POWER = keepPer;
-    return JSON.stringify({ cond: COND, summary, metaLoss, entries: E.length, fieldSize: field.length,
+    return JSON.stringify({ cond: COND, summary, metaLoss, beaters, entries: E.length, fieldSize: field.length,
       meta: { name: E[M].name, score: score[M], rank: rank(M) },
       watch: ["emp+railgun+clone", "emp+railgun+wave", "hex+railgun+wave", "hex+railgun+dup>hex", "railgun+dup>railgun+wave"].map((n) => { const i = idx(n); return [n, score[i], rank(i)]; }),
       top15: order.slice(0, 15).map((i) => [rank(i), E[i].name, score[i]]),
@@ -88,6 +92,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
   pr("\nMETA " + R.meta.name + ": score " + R.meta.score + ", rank " + R.meta.rank + (R.meta.rank === 1 ? "  OK" : "  !! not on top"));
   pr("\nMeta drops points to (" + R.metaLoss.length + "; 1 = split, 0 = loses both ways, * = in field sample): " + R.metaLoss.map((x) => x[0] + " " + x[1] + (x[2] ? "*" : "")).join(", "));
   pr("\nSUMMARY " + JSON.stringify(R.summary));
+  pr("\nBEATERS " + JSON.stringify(R.beaters));
   pr("\nWatch list:"); R.watch.forEach((r) => pr("  " + r[0].padEnd(28) + "score " + r[1] + "  rank " + r[2]));
   pr("\nTop 15:"); R.top15.forEach((r) => pr("  " + String(r[0]).padStart(3) + ". " + r[1].padEnd(28) + r[2]));
   pr("\nBuilds that beat the meta both ways (" + R.beatMeta.length + "): " + R.beatMeta.join(", "));
