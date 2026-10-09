@@ -5481,7 +5481,11 @@ var CARD_EFFECTS_BY_NAME = {
   // own card loadout to read from in the first place. Heals are clamped to
   // the side's own maxHp for that fight — never above it, however long the
   // fight runs. Added 2026-09-28.
-  "regen": { kind: "regen", pct: 0.10, intervalSec: 5 }
+  "regen": { kind: "regen", pct: 0.10, intervalSec: 5 },
+  // Drop Signal (v973): each time this side's Railgun fires, its fallen summons (Clone Task clones today) are redeployed at once - even
+  // while its fortress is stunned, and an EMP can't reset that redeploy - and (drones: true) its switched-off drones come back online.
+  // Arena / world PvP: arenaMakeSim opts.summonCall / opts.aiSummonCall. Conquest has no summons yet, so nothing happens there.
+  "drop signal": { kind: "summonCall", drones: true }
 };
 // Which of a card effect's own fields are safe to expose as dev-editable
 // numbers/toggles, and a short comment for each explaining what it does —
@@ -5499,6 +5503,9 @@ var CARD_EFFECT_FIELD_INFO = {
   dmgRamp: {
     multiplier: { type: "number", min: 1, step: 1, label: "Multiplier", comment: "Bullet damage is multiplied by this, to the power of how many times the cannon has fired this fight (burst #1 = x this once, burst #2 = x this twice, etc)." },
     compound: { type: "boolean", label: "Compounds each burst", comment: "On: each cannon burst re-multiplies on top of the last (10, 100, 1000…). Off: every burst applies the multiplier fresh, just once (always x10, never higher)." }
+  },
+  summonCall: {
+    drones: { type: "boolean", label: "Also brings drones back online", comment: "On: when your Railgun fires, any of your drones that were switched off (e.g. by an enemy Railgun) come straight back online. Fallen summons are always redeployed." }
   },
   regen: {
     pct: { type: "number", min: 0, step: 0.01, label: "% of max HP per tick", comment: "Fraction of max HP restored every interval (0.10 = 10%). Never heals past the fight's own max HP." },
@@ -5530,6 +5537,11 @@ function equippedCardEffects(state) {
 function equippedDmgRamp(state) {
   var fx = equippedCardEffects(state);
   for (var i = 0; i < fx.length; i++) if (fx[i].kind === "dmgRamp") return fx[i];
+  return null;
+}
+function equippedSummonCall(state) {
+  var fx = equippedCardEffects(state);
+  for (var i = 0; i < fx.length; i++) if (fx[i].kind === "summonCall") return fx[i];
   return null;
 }
 function equippedRegen(state) {
@@ -10397,7 +10409,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v972"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v973"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16160,11 +16172,12 @@ function worldPvpBattle(march, def, ownerId, opts) {
   // no such override, so these are only ever non-null when the PvP Simulator dev tool passes them.
   var atkDmgRamp = opts.dmgRamp !== undefined ? opts.dmgRamp : equippedDmgRamp(asim.state);
   var atkRegen = opts.regen !== undefined ? opts.regen : equippedRegen(asim.state);
+  var atkSummonCall = opts.summonCall !== undefined ? opts.summonCall : equippedSummonCall(asim.state); /* v973: Drop Signal */
   /* v962: world PvP = Arena with troops, so both sides bring their weapons too (were left out unless the PvP Simulator passed them) */
   var kitOf = function (st) { var m = {}; (st.equippedWeapons || []).forEach(function (id) { if (st.weaponLevels && st.weaponLevels[id] > 0) m[id] = st.weaponLevels[id]; }); return botWeaponsToSim(m); };
   var atkKit = opts.atkWeapons !== undefined ? null : (asim === game ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : kitOf(asim.state));
   var defKit = opts.defWeapons !== undefined ? null : kitOf(dsim.state);
-  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
+  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, summonCall: atkSummonCall, aiSummonCall: opts.defSummonCall || null, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
   var winner = sim.runToEnd();
   var atkFrac = atkMax > 0 ? 1 - sim.playerHp / atkMax : 0, defFrac = defMax > 0 ? 1 - sim.aiHp / defMax : 0;
   var atkRatio = atkFrac * LOSS_FACTOR * (1 - asim.lossReductionAmt()) * (1 - asim.heroLeadLossReduction(atkKeys));
@@ -26765,7 +26778,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var hit = land.map(function (q) { var c = fxCtx(q.sd), O = c.O, tgt = q.sd === 'P' ? 'A' : 'P', b0 = O.blocked; fxStunTry(tgt, (q.p.stun || 2) * q.m);
         if (q.p.aftershock > 0) O.pend.push({ at: fxNowS + (q.p.aftershockDelay || 3), tgt: tgt, sec: q.p.aftershock * q.m }); return O.blocked > b0 ? null : q; });
       hit.forEach(function (q) { if (!q) return; var O = fxCtx(q.sd).O; // landed (not soaked by Status Wave): cancel the target's running beams + buffs and reset every weapon reload
-        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; if (x.k === 'rail' && fxDroidUp(O)) return; /* v970: droid link - an EMP can't reset a linked Railgun */ x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
+        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; if (x.k === 'rail' && fxDroidUp(O)) return; if (x.k === 'clone' && x.rush) return; /* v973: nor reset by an EMP */ /* v970: droid link - an EMP can't reset a linked Railgun */ x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
         O.wall = 0; O.repLeft = 0;
         if (q.sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
         else { activeBeams = []; (opts.weapons || []).forEach(function (wp) { weaponCd[wp.id] = wcd(wp); }); }
@@ -26789,7 +26802,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         S.inst.forEach(function (ins) {
           if (ins.k !== kind) return;
           // v970: droid link - while this side's Clone Task droid stands, its Railgun keeps charging (and fires) through enemy EMP stuns
-          var linked = kind === 'rail' && fxDroidUp(S);
+          var linked = (kind === 'rail' && fxDroidUp(S)) || (kind === 'clone' && ins.rush); /* v973: a Drop Signal redeploy is not stopped by a stun */
           if (S.stun > 0 && kind !== 'sw' && !linked) return;
           ins.t -= dtS;
           if (ins.t > 1e-9) return;
@@ -26798,18 +26811,18 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           if (kind === 'wall') { S.wall = Math.max(S.wall, (P.dur || 0) * m); ins.t += cd; S.casts.wall = (S.casts.wall || 0) + 1; return; }
           if (kind === 'dome') { ins.up = (P.dur || 0); ins.red = Math.min(0.95, (P.red || 0) / 100 * m); ins.t += cd; S.casts.dome = (S.casts.dome || 0) + 1; return; }
           if (kind === 'clone') {
-            if (ins.droid && !ins.droid.ko) { ins.t = 0; return; }
+            if (ins.droid && !ins.droid.ko) { ins.t = 0; ins.rush = false; return; }
             var T = S.tmpl; if (!T.g || !T.ga) { ins.t += cd; return; }
             S.n++; var did = 'droid' + sd + S.n, k = (P.mult || 1) * m;
             var e = { refA: T.g.refA, id: did, infantry: true, max: T.g.max * k, def: T.g.def, runL: T.g.runL, hp: T.g.max * k, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, droid: true, boom: (P.selfDestructPct || 0) * m, owner: sd };
             c.hh.list.push(e); c.hh.by[did] = e; c.st.attackers.push({ id: did, dmg: T.ga.dmg * k, melee: true, sec: T.ga.sec });
-            ins.droid = e; ins.t += cd; S.droids++; S.casts.clone = (S.casts.clone || 0) + 1; return;
+            ins.droid = e; ins.rush = false; ins.t += cd; S.droids++; S.casts.clone = (S.casts.clone || 0) + 1; return;
           }
           if (kind === 'io') {
             if (fxHp(sd) > c.st.maxHp * 0.85) { ins.t = 0; return; }
             S.repLeft = c.st.maxHp * (P.heal || 0) / 100 * m; S.repRate = S.repLeft / (P.dur || 4); ins.t += cd; S.casts.io = (S.casts.io || 0) + 1; return;
           }
-          if (kind === 'rail') { ins.t += cd; S.casts.rail = (S.casts.rail || 0) + 1; railQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: sd, p: P, m: m }); return; } // v968: lands in fxRailLand
+          if (kind === 'rail') { var sc = sd === 'P' ? opts.summonCall : opts.aiSummonCall; if (sc) { S.inst.forEach(function (y) { if (y.k === 'clone') { y.t = 0; y.rush = true; } }); if (sc.drones) S.droneOff = 0; } /* v973: Drop Signal card */ ins.t += cd; S.casts.rail = (S.casts.rail || 0) + 1; railQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: sd, p: P, m: m }); return; } // v968: lands in fxRailLand
         });
       });
     });
@@ -27092,7 +27105,7 @@ function runArenaBattle(onTick, onDone) {
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
-  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one

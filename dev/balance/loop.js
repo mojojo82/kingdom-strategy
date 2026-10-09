@@ -4,7 +4,7 @@
    - Duplicate copies a weapon you already have: every Duplicate build is tried once per copy target ("dup>hex" = Duplicate copying Hex Shield).
    - Each build fights a fixed sample of the field both ways (once as attacker, once as defender) -> overall score 0-100 and rank.
    - Loop checks: META = EMP + Railgun + Clone Task. COUNTER = EMP + Status Wave + any. COUNTER-COUNTER = Hex Shield + Railgun + any.
-   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; srf = Status Wave Reflect seconds; ban = ["emp_gun", ...] weapons left out; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
+   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; srf = Status Wave Reflect seconds; ban = ["emp_gun", ...] weapons left out; dropSignal = both sides carry the Drop Signal card; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
 const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
@@ -54,7 +54,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     const side = (isP) => { const st = arenaSideStats(FIVE, hs, 15, COND.base, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, FIVE.indexOf(e.id), isP); }); return st; };
     const memo = new Map();
     const fight = (i, j, sd) => { const k = i + "_" + j + "_" + sd; if (memo.has(k)) return memo.get(k); const ka = E[i].kit, kb = E[j].kit, seed = "L" + sd;
-      const r = arenaMakeSim(side(true), side(false), { rng: worldPvpSeededRng(seed), critSeed: seed, weapons: ka.specs, aiWeapons: kb.specs, shieldPct: ka.shieldPct, aiShieldPct: kb.shieldPct }).runToEnd();
+      const r = arenaMakeSim(side(true), side(false), { rng: worldPvpSeededRng(seed), critSeed: seed, weapons: ka.specs, aiWeapons: kb.specs, shieldPct: ka.shieldPct, aiShieldPct: kb.shieldPct, summonCall: COND.dropSignal ? CARD_EFFECTS_BY_NAME["drop signal"] : null, aiSummonCall: COND.dropSignal ? CARD_EFFECTS_BY_NAME["drop signal"] : null }).runToEnd();
       const v = r === "player" ? 1 : r === "ai" ? 0 : 0.5; memo.set(k, v); return v; };
     const pair = (i, j) => fight(i, j, 1) + (1 - fight(j, i, 2)); /* 0..2 for i: 2 = wins both ways */
     const field = E.map((_, i) => i).filter((i) => i % 9 === 0);
