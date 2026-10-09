@@ -792,3 +792,13 @@
 ### v991 — Death Gerbils drawn as small green ooze (TEST)
 - Harley: "Change the art to green tinted smaller ooze enemies". drawGerbilOoze() uses the ooze enemy sheet (ENEMY_SKINS.ooze), tinted GERBIL_TINT (lighter than the clone tint so the shape still reads) at GERBIL_SCALE 0.6, facing the enemy, with a small green HP bar. Conquest (drawIdleClones) and Arena (drawArenaClones; cloneInfo passes `g`). In Arena gerbils no longer need an infantry hero in the line-up to be drawn.
 - Checked with headless screenshots: Conquest shows the ooze next to Gareth.
+
+### v992 — Hanzo, the first blatantly powerful hero (TEST)
+- Harley: "Hanzo. He is a ninja. Melee. Skill 1, jumps into the air and rapidly fires shuriken at all enemies on screen including their fortress. Skill 2. Passive. At 5 levels, he dodges 50% of attacks". Infantry (front line), Legendary, VIP pack only. Tuning goal: skill level 3 worrying, 4 dominant, 5 force of nature. Dodge 10% per level.
+- Shuriken Storm (aoeAll): every live enemy in Conquest; in Arena every standing enemy hero/summon plus the enemy fortress, with no reach needed. pctByLevel [0.6, 0.9, 1.4, 2.2, 3.5]; cooldown 8 s, 5 s at level 5 (new `cdByLevel` + skillCdAt(), used by Conquest timers, the skill-ring UI and Arena actives).
+- Shadow Step (passive, effectType "dodge", 10%/level): no dice. Hit n is dodged when floor((n+1)p) > floor(np) (heroDodgePct / dodgeRoll). Arena: meleeHit, rangedHit, Death Strike cleave and Shuriken Storm all check it. Conquest: idleApplyEnemyHit, with the counter kept across level attempts (state.idle.dodgeN). Weapons and blasts are not dodged.
+- vipOnly: recruitHero returns "vip_only", the Heroes screen shows "💎 VIP pack only", and he's left out of ARENA_COMBAT_HERO_KEYS (bots). No VIP pack exists yet, so grant him via dev tools for testing. No art: emoji placeholder like Torvald (mockup first).
+- Tuning sims (Arena, Hanzo replacing Gareth, Lv40, same weapons both sides, win % vs normal team at +0/+5/+10/+15/+20 levels):
+  L1 78/0/0/0/0, L2 90/0, L3 100/0, L4 100/100/80/0/0, L5 100/100/97/75/40. Lv80: L3 95/10, L4 100/100/100/98/80, L5 100 across the board (+20 included).
+  Conquest Lv40 climb: Gareth team 135, Hanzo L1 149, L5 154.
+- Meta check (run.js --only meta) unchanged versus v991. Test: new g217_hanzo.js; g207-g211, g215, g216 pass.

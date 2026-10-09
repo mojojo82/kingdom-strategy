@@ -4893,6 +4893,21 @@ var HERO_DEFS = {
       { name: "Hold the Line", icon: "🧱", kind: "passive", desc: "Reduces army losses on marches/assaults he leads.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Slow Advance", icon: "🥾", kind: "passive", desc: "Increases march speed on marches he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.015 }
     ] },
+  // v992: Hanzo - the first blatantly powerful hero (Harley). VIP-pack only (vipOnly: can't be recruited with resources, never on bots for now).
+  // Skill 1 Shuriken Storm: leaps up and hits EVERY enemy on screen (Conquest: all live enemies; Arena: every enemy hero/summon AND the enemy fortress),
+  // no range limit. Tuned so level 3 is worrying, 4 dominant, 5 a force of nature. Skill 2 Shadow Step: dodges 10% of attacks per level (no dice -
+  // an even spread, 50% = every 2nd hit misses). Same rules in Conquest and Arena. No art yet (placeholder like Torvald) - mockup first.
+  hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true,
+    maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
+    conquestSkills: [
+      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at level 5), Hanzo leaps into the air and rains shuriken on every enemy on screen, their fortress included." },
+      { name: "Shadow Step", icon: "💨", kind: "passive", effectType: "dodge", perLevel: 0.10, desc: "Dodges 10% of attacks per level (50% at level 5)." }
+    ],
+    expeditionSkills: [
+      { name: "Silent Blades", icon: "🗡️", kind: "passive", desc: "Boosts Infantry Attack while leading.", effectType: "leadTroopAtkMult", perLevel: 0.05 },
+      { name: "Smoke Screen", icon: "🌫️", kind: "passive", desc: "Reduces army losses on marches/assaults he leads.", effectType: "leadLossReductionMult", perLevel: 0.03 },
+      { name: "Shadow Run", icon: "🥷💨", kind: "passive", desc: "Increases march speed on marches he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.03 }
+    ] },
   mira: { name: "Mira", title: "The Steward", class: "governor", icon: "👑", rarity: "Legendary",
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, stone: 60, food: 60 }, levelCostMult: 1.4,
     skillLabel: "All Resource Production (as Overlord)", skillType: "governorResourceMult", perLevel: 0.03 }
@@ -5200,6 +5215,14 @@ function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
   }
   return level * (skill.perLevel || 0);
 }
+// v992: Shadow Step (Hanzo) - share of incoming attacks dodged (0..0.95). Deterministic, no dice: hit n is dodged when floor((n+1)p) > floor(np).
+// v992: a skill whose cooldown shrinks with level (cdByLevel) - Hanzo's Shuriken Storm. Anything else keeps its flat cooldown.
+function heroSkill1Lvl(key) { var h = game.state.heroes[key]; return (h && h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[0]) || 1; }
+function skillCdAt(skill, lvl) { return (skill && skill.cdByLevel) ? skill.cdByLevel[Math.max(1, Math.min(skill.cdByLevel.length, lvl || 1)) - 1] : skill.cooldown; }
+function heroDodgePct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0;
+  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.effectType === "dodge") p += sk.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[i]) || 1); });
+  return Math.min(0.95, p); }
+function dodgeRoll(ent, p) { if (!(p > 0) || !ent) return false; var n = ent.dgN || 0; ent.dgN = n + 1; if (Math.floor((n + 1) * p + 1e-9) > Math.floor(n * p + 1e-9)) { ent.dodges = (ent.dodges || 0) + 1; return true; } return false; }
 function skillValueAtLevel(heroKey, skillIdx, level, skill, h, basicAtkDmg) {
   var ov = getSkillOverride(heroKey, skillIdx, level);
   return ov != null ? ov : skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg);
@@ -6350,6 +6373,7 @@ function createGame(opts) {
   function recruitHero(key) {
     var def = HERO_DEFS[key];
     if (!def) return { ok: false, reason: "unknown_hero" };
+    if (def.vipOnly) return { ok: false, reason: "vip_only" }; /* v992: Hanzo comes from a VIP pack only */
     if (state.buildings.tavern.level < 1) return { ok: false, reason: "needs_tavern" };
     var h = state.heroes[key];
     if (h.owned) return { ok: false, reason: "already_owned" };
@@ -7186,8 +7210,8 @@ function createGame(opts) {
       if (!def || !h || !h.owned || !def.conquestSkills) return;
       var skill1 = def.conquestSkills[0];
       if (!skill1 || skill1.kind !== "active") return;
-      if (idleHeroIsKo(key)) { state.heroCooldowns[key] = skill1.cooldown; return; } // v527: KO'd — skill timer sits at full until he revives
-      if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skill1.cooldown) * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985 */
+      if (idleHeroIsKo(key)) { state.heroCooldowns[key] = skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)); return; } // v527: KO'd — skill timer sits at full until he revives
+      if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skillCdAt(skill1, heroSkillLevel(key, "conquest", 0))) * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985 */
       state.heroCooldowns[key] -= dt;
       var manualCast = false; // Manual mode: the skill waits at 0 (ready) until the player taps it
       if (state.idle.skillAuto === false && state.heroCooldowns[key] <= 0) {
@@ -7197,7 +7221,7 @@ function createGame(opts) {
         if (!manualCast) return;
       }
       if (state.heroCooldowns[key] <= 0) {
-        state.heroCooldowns[key] += skill1.cooldown * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985: skill cooldown bonus cards */
+        state.heroCooldowns[key] += skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)) * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985: skill cooldown bonus cards */
         state.idle.skillFireCounts[key] = (state.idle.skillFireCounts[key] || 0) + 1;
         if (skill1.support) { // support skills (heal / guard shield) act on the fortress, not on an enemy
           var spLvl = heroSkillLevel(key, "conquest", 0), maxHpS = idlePlayerMaxHp();
@@ -7213,6 +7237,17 @@ function createGame(opts) {
             var gAmt = maxHpS * (skill1.guardPctByLevel[Math.min(skill1.guardPctByLevel.length, spLvl) - 1] || 0) * (1 + (equipBonus.support || 0) / 100);
             state.idle.guardShield = Math.max(state.idle.guardShield || 0, gAmt);
           }
+          return;
+        }
+        if (skill1.aoeAll) { /* v992: Hanzo's Shuriken Storm - every live enemy on the field, no range limit */
+          var aoePool = state.idle.enemies.filter(function (e0) { return e0.hp > 0; });
+          if (!aoePool.length) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
+          var aoeDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
+          state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = aoeDmg;
+          aoePool.forEach(function (e0) { var dd0 = aoeDmg * idleMarkMult(e0, key) * idleEnemyDefTake(e0, aoeDmg); e0.hp -= dd0; state.idle.aoeDmg = (state.idle.aoeDmg || 0) + dd0;
+            (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: key, id: e0.id }); });
+          state.idle.skillLandCounts[key] = (state.idle.skillLandCounts[key] || 0) + 1;
+          for (var ai0 = state.idle.enemies.length - 1; ai0 >= 0; ai0--) { var ee0 = state.idle.enemies[ai0]; if (ee0 !== front && ee0.hp <= 0) idleRemoveDeadEnemyAt(ai0); }
           return;
         }
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
@@ -7979,6 +8014,9 @@ function createGame(opts) {
     if (tgtHeroKey) {
       var tgtEnt = idleHeroEntry(tgtHeroKey);
       if (!tgtEnt || tgtEnt.hp <= 0) return;
+      var dgP = heroDodgePct(tgtHeroKey, state.heroes[tgtHeroKey]); if (dgP > 0) state.idle.dodgeTries = (state.idle.dodgeTries || 0) + 1;
+      var dgC = state.idle.dodgeN || (state.idle.dodgeN = {}), dgE = dgC[tgtHeroKey] || (dgC[tgtHeroKey] = {}); /* counter kept across level attempts, so short fights still get their share */
+      if (dodgeRoll(dgE, dgP)) { state.idle.dodges = (state.idle.dodges || 0) + 1; return; } /* v992: Shadow Step */
       tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type); /* bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
       idleLimitAdd(tgtHeroKey, true);
       if (tgtEnt.hp <= 0) idleKoHero(tgtHeroKey);
@@ -10623,7 +10661,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v991"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v992"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13473,7 +13511,7 @@ function renderHeroes() {
     // Red dot: something you can act on right now
     var canAct = false;
     if (!h.owned) {
-      canAct = tavernLevel >= 1 && Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; });
+      canAct = !def.vipOnly && tavernLevel >= 1 && Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; });
     } else {
       canAct = game.heroCanAffordLevel(key) || game.heroCanAffordStar(key);
     }
@@ -23096,14 +23134,14 @@ function renderIdleSkillbar() {
   roster.forEach(function (key) {
     var def = HERO_DEFS[key], h = game.state.heroes[key];
     var skill1 = def.conquestSkills[0];
-    var rawRemaining = game.state.heroCooldowns[key] != null ? Math.max(0, game.state.heroCooldowns[key]) : skill1.cooldown;
+    var rawRemaining = game.state.heroCooldowns[key] != null ? Math.max(0, game.state.heroCooldowns[key]) : skillCdAt(skill1, heroSkill1Lvl(key));
     // use the smoothly-interpolated per-frame value (updated in stepIdleAnim)
     // so the ring eases continuously instead of jumping once per real second;
     // fall back to the raw engine value on the very first render before that
     // loop has run yet.
     var remaining = idleAnim.smoothCooldown[key] != null ? idleAnim.smoothCooldown[key] : rawRemaining;
     var ready = remaining <= 0.05;
-    var deg = Math.round((remaining / skill1.cooldown) * 360);
+    var deg = Math.round((remaining / skillCdAt(skill1, heroSkill1Lvl(key))) * 360);
     var slot = document.createElement("div");
     slot.className = "skill-slot";
     var iconSrc = getSkillIcon(key);
@@ -23148,10 +23186,10 @@ function updateIdleSkillbarDom() {
     if (!nodes) return;
     var def = HERO_DEFS[key];
     var skill1 = def.conquestSkills[0];
-    var rawRemaining = game.state.heroCooldowns[key] != null ? Math.max(0, game.state.heroCooldowns[key]) : skill1.cooldown;
+    var rawRemaining = game.state.heroCooldowns[key] != null ? Math.max(0, game.state.heroCooldowns[key]) : skillCdAt(skill1, heroSkill1Lvl(key));
     var remaining = idleAnim.smoothCooldown[key] != null ? idleAnim.smoothCooldown[key] : rawRemaining;
     var ready = remaining <= 0.05;
-    var deg = Math.round((remaining / skill1.cooldown) * 360);
+    var deg = Math.round((remaining / skillCdAt(skill1, heroSkill1Lvl(key))) * 360);
     nodes.wrap.classList.toggle("ready", ready);
     nodes.overlay.style.setProperty("--pct", deg + "deg");
     if (nodes.text) nodes.text.textContent = skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "";
@@ -24240,6 +24278,7 @@ var HERO_FLAVOR = {
   kessa: "A wandering storm-caller who arrived at the gates during a lightning squall and never left. Kessa's bolts won't reach across an open field, but let anything get close and it won't get the chance to regret it.",
   sera: "A field chaplain who followed the army out of the border chapel and kept the wounded breathing. Sera is no fighter, but give her twelve quiet seconds and the line will hold a little longer.",
   torvald: "A gate-warden with forty years of watches behind him. Torvald never wins a fight fast — he just makes sure there is still a fortress standing when the others finish it.",
+  hanzo: "Nobody hears Hanzo arrive, and nobody remembers him leaving. One leap, a storm of steel from above, and the field below is never quite the same.",
   mira: "A former treasury minister who traded ledgers for a governor's seat. Mira has never swung a blade, but no kingdom under her stewardship has ever gone hungry."
 };
 
@@ -24326,8 +24365,8 @@ function renderHeroDetail() {
       var rcost = Object.keys(def.recruitCost).map(function (r) { return RES_ICON[r] + fmt(def.recruitCost[r]); }).join(" ");
       var recruitBtn = document.createElement("button");
       recruitBtn.className = "hd-actionbtn";
-      recruitBtn.innerHTML = tavernLevel < 1 ? "🔒 Requires Hall of Heroes" : "Recruit — " + rcost;
-      recruitBtn.disabled = tavernLevel < 1 || !Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; });
+      recruitBtn.innerHTML = def.vipOnly ? "💎 VIP pack only" : tavernLevel < 1 ? "🔒 Requires Hall of Heroes" : "Recruit — " + rcost;
+      recruitBtn.disabled = !!def.vipOnly || tavernLevel < 1 || !Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; });
       recruitBtn.onclick = function () { game.recruitHero(key); persist(); render(); renderHeroDetail(); };
       btnWrap.appendChild(recruitBtn);
     } else {
@@ -26302,7 +26341,7 @@ renderSfxRows();
 //    a real kingdom, used the same way idlePlayerMaxHp uses the player's
 //    real Town Hall — just so the opponent's HP scales the same way a real
 //    kingdom's would.
-var ARENA_COMBAT_HERO_KEYS = Object.keys(HERO_DEFS).filter(function (k) { return !!HERO_DEFS[k].conquestSkills; });
+var ARENA_COMBAT_HERO_KEYS = Object.keys(HERO_DEFS).filter(function (k) { return !!HERO_DEFS[k].conquestSkills && !HERO_DEFS[k].vipOnly; }); /* v992: VIP heroes (Hanzo) not on bots for now */
 var ARENA_OPPONENT_NAMES = [
   "Warlord Threx", "Dame Ashwyn", "Captain Korr", "Lady Fenmoor", "Hetman Ulvric", "Baroness Skarde",
   "Sir Dravon", "Lady Myrren", "Karg the Bold", "Duchess Velora", "Marshal Oskan", "Vesna Nightblade",
@@ -26664,14 +26703,14 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1), melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
-    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNet(h, bnD) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
+    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNet(h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
       if (skill.kind === "passive" && skill.effectType === "conquestDamageMult") dmgMultSum += lvl * skill.perLevel;
       if (skill.kind === "active" && skill.support) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel)[Math.min(5, lvl) - 1] || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
       if (skill.kind === "limit") limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest */
-      if (skill.kind === "active" && !skill.support) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skill.cooldown, skill: skill, lvl: lvl, requiresClose: isInfantry, /* Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
+      if (skill.kind === "active" && !skill.support) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skillCdAt(skill, lvl), skill: skill, lvl: lvl, requiresClose: isInfantry && !skill.aoeAll, aoe: !!skill.aoeAll, /* v992: Shuriken Storm needs no reach. Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
     });
   });
   // dmgMultSum only settles once the WHOLE roster's passives are known, so
@@ -26689,7 +26728,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var value = skill.pctByLevel
       ? skillDamageBaseFor(a.key, h, attackerDmgById[a.key], bn.skill || 0) * (skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, a.lvl)) - 1] || 0)
       : (skill.burstBase || 0) + (skill.burstPerLevel || 0) * a.lvl; // legacy fallback for any skill not yet converted to pctByLevel
-    return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, visualStyle: a.visualStyle };
+    return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, aoe: a.aoe, visualStyle: a.visualStyle };
   });
   var limits = limitsRaw.map(function (a) { var sk = a.skill, L = Math.max(1, Math.min(sk.pctByLevel.length, a.lvl)); return { key: a.key, fill: sk.hitsToFill, taken: sk.takenPts || 1, n: sk.targetsByLevel[Math.min(sk.targetsByLevel.length, L) - 1], exec: sk.executePct, value: skillDamageBaseFor(a.key, heroesState[a.key], attackerDmgById[a.key], bn.skill || 0) * (sk.pctByLevel[L - 1] || 0) }; });
   var refAtk = 0; Object.keys(attackerDmgById).forEach(function (k) { refAtk = Math.max(refAtk, attackerDmgById[k]); }); if (!(refAtk > 0)) refAtk = game.idleFortressCannonBulletDmgBase() * bnA; // the attacker's own typical hit — what the other side's DEF is measured against
@@ -26878,7 +26917,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // infantry hero instead of the fortress; ranged damage goes to the fortress (except HERO_KO_CFG.rangedPct); a hero at 0 HP is KO'd (stops attacking,
   // skill timer reset and frozen) and revives after reviveSec. The fortress pool is still the lose condition.
   var koCfg = game.heroKoCfg;
-  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
+  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, dodge: h.dodge || 0, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
   var pHH = mkHeroHp(playerStats, aRefA), aHH = mkHeroHp(aiStats, pRefA);
   // v969: both sides act at the same moment. A hero knocked out during this tick still makes this tick's attacks / skills (from where he stood,
   // with the limit bar he had) - it no longer matters which side's hits are worked out first. isKo = "was already down when this tick began".
@@ -26932,11 +26971,15 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   }
   function canMelee(hh, id) { if (!posMode) return engaged; var e = hh && hh.by[id]; return !!(e && e.reach); }
   // One melee hit (basic or skill). Returns true if it hits the fortress pool (caller adds it to that side's damage); false if a hero absorbed it.
+  // v992: Shuriken Storm - one hit on every standing enemy hero and summon (dodge applies); the caller adds the same hit to the enemy fortress.
+  function aoeHit(oh, oppStats, dmg) { if (!oh) return; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (dodgeRoll(o, o.dodge)) return;
+    o.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
+    if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); }
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
     var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh); }) : null;
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
-    var e = t.hero; e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
+    var e = t.hero; if (dodgeRoll(e, e.dodge)) return false; /* v992: Shadow Step */ e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
     if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     heroHitTaken(e);
     return false;
@@ -26954,6 +26997,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (rAcc[tag + id] < 1 - 1e-9) return true;
     rAcc[tag + id] -= 1;
     map[tag + id] = best.id;
+    if (dodgeRoll(best, best.dodge)) return false; /* v992: Shadow Step */
     best.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
     if (best.hp <= 1e-9) { koMark(best); best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
     heroHitTaken(best);
@@ -27024,6 +27068,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
         playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         var av = a.value * cardSkMul('P', a.key); /* v985: cards */
+        if (a.aoe) { aoeHit(aHH, aiStats, av); playerDmg += av; trAdd('skill:' + a.key + '|' + a.name, av); return; } /* v992: Shuriken Storm - every enemy + their fortress */
         if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; } else if (posMode) { if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
       }
     });
@@ -27034,6 +27079,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
         aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         var avA = a.value * cardSkMul('A', a.key); /* v985: cards */
+        if (a.aoe) { aoeHit(pHH, playerStats, avA); aiDmg += avA; trAddAi('skill:' + a.key + '|' + a.name, avA); return; } /* v992 */
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; } else if (posMode) { if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
       }
     });
@@ -27048,6 +27094,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         me.lim = 0; limTgt[tagP + L.key] = tg.map(function (o) { return o.id; });
         if (!tg.length) { out += L.value; return; }
         tg.forEach(function (o) {
+          if (dodgeRoll(o, o.dodge)) return; /* v992: Shadow Step */
           if (o.hp <= o.max * L.exec) o.hp = 0; else o.hp -= L.value * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
           if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; }
           heroHitTaken(o);

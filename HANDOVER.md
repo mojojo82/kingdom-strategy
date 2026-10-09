@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (9 Oct 2026, TEST game v991):** everything below is built and tested; TEST is deployed (v951-v991 are TEST only). The live game link still serves the
+**State at handover (9 Oct 2026, TEST game v992):** everything below is built and tested; TEST is deployed (v951-v992 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -114,6 +114,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Cards are one shared catalog, admins only edit it** (v977): names / type / effect text live in `assetitems/cardcatalog` (all read, admin write), not in each save. Card effects come from the catalog name (or the card's ID code #n). Card IDs (1-30) are fixed; the album grid position is only each player's own visual sort order (state.cardOrder) - players move/sort freely, effects/equips follow the card ID.
 - **Card 10 (Overclock) is for the future Type 2 fortress** (Harley): Fortress 2 tech (not built yet) will give an innate skill cooldown bonus; card 10 needs >25% cooldown bonus so it stays dead until then. Don't "fix" its trigger.
 - **Card 3 (Desperate Spark) is strong on purpose** (Harley, v988): Kessa +200% ATK always on, even in 5-hero teams (sims: a 5-hero team with it beats teams 10 levels higher). Future cards will compete for the slot, so only Kessa-focused builds take it. Don't nerf it unless Harley asks.
+- **Hanzo is blatantly powerful on purpose** (Harley, v992): VIP-pack only (`vipOnly`: can't be recruited with resources, kept off bots for now). Tuned so skill level 3 is worrying, 4 dominant, 5 a force of nature (see NOTES v992). Don't nerf without Harley.
 - **Weapon build rankings are saved in `dev/balance/WEAPON_BUILDS.md`** - update it after weapon/combat changes so the info is never lost.
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
