@@ -20,6 +20,7 @@ Rerun: `node dev/balance/loop.js --cond '{"lvl":40,"arms":10,"wl":30}' --save na
 | COUNTER-COUNTER | Hex Shield + Railgun + any | beats the counters, loses to the meta |
 
 **Without cards the meta is NOT #1 at any stage** (rank 38 at Lv20, 3 at Lv40, 7 at Lv80).
+**Harley (9 Oct): fine for now. The meta build currently REQUIRES the Drop Signal card.**
 With the Drop Signal card (v973 runs), only its counters beat it at Lv40 and Lv80. Lv20 is still broken.
 
 ## Watch list (score / rank)
