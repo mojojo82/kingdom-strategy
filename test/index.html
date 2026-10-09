@@ -10445,7 +10445,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v974"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v975"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -19976,6 +19976,21 @@ function drawHeroWarps(ctx) {
 }
 var koCv = null;
 // A KO'd hero: the normal idle frame, washed blue-grey and half see-through, with a revive countdown ring above him.
+// v975: Clone Task's clone in Conquest - Gareth's sprite with a heavy green tint, standing just in front of him; swings when it lands a hit.
+function drawIdleClones(ctx, w, h) {
+  var C = game.state.idle.clones; if (!C) return;
+  var hScale = heroSpriteVisualScale / 100, n = 0, now = performance.now();
+  Object.keys(C).forEach(function (k) {
+    var cl = C[k]; if (!cl || !(cl.hp > 0)) return;
+    var tv = idleAnim.heroVis[cl.tpl]; if (!tv || !HERO_ANIMS[cl.tpl]) return;
+    var mem = idleAnim.cloneVis || (idleAnim.cloneVis = {}), cm = mem[k] || (mem[k] = { dmg: 0, atkUntil: 0 });
+    var dm = game.state.idle.cloneDmg || 0; if (dm > cm.dmg) cm.atkUntil = now + 450; cm.dmg = dm;
+    var x = tv.x + 20 + n * 10, y = tv.y + 3; n++;
+    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? "attack" : "idle", hScale, false, 0.83 + n * 0.1, 1, CLONE_TINT);
+    var a = HERO_ANIMS[cl.tpl], top = (y + 12 * hScale) - a.dispH * (a.sizeMul || 1) * hScale - 5, bw = 24, fr = Math.max(0, Math.min(1, cl.hp / cl.max));
+    ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
+  });
+}
 function drawKoHero(ctx, w, h, key, i) {
   var vis = idleAnim.heroVis[key] || idleSquadSlotPos(w, h, i, key);
   var hScale = heroSpriteVisualScale / 100, feetY = vis.y + 12 * hScale;
@@ -20031,7 +20046,19 @@ function drawHeroHpBar(ctx, w, h, key) {
 }
 var heroAnimMem = {};
 function heroAnimRestart(key) { for (var id in heroAnimMem) if (id.indexOf(key) === 0) delete heroAnimMem[id]; }
-function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd) {
+// v975: tint (optional, e.g. "rgba(40,220,90,0.62)") colours the sprite - used for Clone Task's clone (Gareth's art, heavy green, until it has its own art)
+var heroTintCv = null;
+function heroTintBlit(ctx, im, sx, sy, cw, ch, dx, dy, dw, dh, tint) {
+  if (!tint) { ctx.drawImage(im, sx, sy, cw, ch, dx, dy, dw, dh); return; }
+  if (!heroTintCv) heroTintCv = document.createElement("canvas");
+  if (heroTintCv.width !== cw || heroTintCv.height !== ch) { heroTintCv.width = cw; heroTintCv.height = ch; }
+  var tx = heroTintCv.getContext("2d");
+  tx.globalCompositeOperation = "source-over"; tx.clearRect(0, 0, cw, ch); tx.drawImage(im, sx, sy, cw, ch, 0, 0, cw, ch);
+  tx.globalCompositeOperation = "source-atop"; tx.fillStyle = tint; tx.fillRect(0, 0, cw, ch); tx.globalCompositeOperation = "source-over";
+  ctx.drawImage(heroTintCv, 0, 0, cw, ch, dx, dy, dw, dh);
+}
+var CLONE_TINT = "rgba(40,220,90,0.62)";
+function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) {
   var a = HERO_ANIMS[key], im = heroAnimImg(key); if (!a || !im) return false;
   var now = performance.now(), id = key + (flip ? "f" : "") + Math.round((phase || 0) * 100);
   var mem = heroAnimMem[id] || (heroAnimMem[id] = { state: state, prev: null, t: now });
@@ -20044,8 +20071,8 @@ function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd) {
     if (a.noBlend && a.noBlend[st]) fr = 0; // hard cuts for states whose frames differ too much to dissolve (legs ghost)
     var blend = 1; fr = fr * fr * (3 - 2 * fr); // full smoothstep cross-dissolve, all states // cross-dissolve to the next frame so 6-8 frame loops read smoothly
     ctx.globalAlpha = alpha;
-    ctx.drawImage(im, f0 * a.cw, row[0] * a.ch, a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k);
-    if (fr > 0.02) { ctx.globalAlpha = alpha * fr * blend; ctx.drawImage(im, f1 * a.cw, row[0] * a.ch, a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k); }
+    heroTintBlit(ctx, im, f0 * a.cw, row[0] * a.ch, a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint);
+    if (fr > 0.02) { ctx.globalAlpha = alpha * fr * blend; heroTintBlit(ctx, im, f1 * a.cw, row[0] * a.ch, a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint); }
     ctx.globalAlpha = 1;
     return f0;
   }
@@ -21161,6 +21188,7 @@ function drawIdleAnim(ctx, w, h) {
       drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob);
       if (!(idleAnim.skillFlash[key] > 0) && !heroChargeMem["c_" + key]) drawHeroHpBar(ctx, w, h, key);
     });
+    drawIdleClones(ctx, w, h);
   }
   if (idleAnim.pendingBar) { var pb = idleAnim.pendingBar; ctx.fillStyle = "#1a0f0f"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w, 4); ctx.fillStyle = "#c73b4e"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w * pb.frac, 4); idleAnim.pendingBar = null; }
   drawHeroWarps(ctx);
@@ -27034,7 +27062,8 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     }
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
-    var info = { limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
+    var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach }; }) : []; }; /* v975: clones for the visuals */
+    var info = { pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
       landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
     var winner = done ? (playerHp + playerShield > aiHp + aiShield ? "player" : (aiHp + aiShield > playerHp + playerShield ? "ai" : "draw")) : null;
@@ -27626,6 +27655,25 @@ function drawArenaFrame(ctx, w, h) {
   drawArenaFortress(ctx, w, h, true, osSetA); drawArenaFortress(ctx, w, h, false);
   drawFormation(arenaAnim.playerRoster, true);
   drawFormation(arenaAnim.aiRoster, false);
+  (function drawArenaClones() { /* v975: Clone Task's clone - Gareth's sprite, heavy green tint; runs out and fights where the sim puts it */
+    var cdm = arenaAnim.cloneD; if (!cdm || !arenaAnim.battleShared) return;
+    var frD = Math.min(1, (performance.now() - (arenaAnim.cloneTickT || 0)) / ARENA_TICK_MS), n = { p: 0, a: 0 };
+    Object.keys(cdm).forEach(function (kk) {
+      var c = cdm[kk], isP = c.side === "p", roster = isP ? arenaAnim.playerRoster : arenaAnim.aiRoster;
+      var ti = -1; roster.slice(0, 5).forEach(function (k, ii) { if (ti < 0 && HERO_DEFS[k] && HERO_DEFS[k].class === "infantry") ti = ii; }); if (ti < 0) return;
+      var tk = roster[ti]; if (!HERO_ANIMS[tk]) return;
+      var slot = arenaSlotPos(w, h, ti, isP), mX = isP ? w * 0.5 - 13 : w * 0.5 + 13;
+      var oppSkinN = isP ? (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]) : fortressSkin(), oImgN = oppSkinN.cq;
+      var oswN = (oImgN && oImgN.complete && oImgN.naturalWidth) ? oImgN.naturalWidth * FORTRESS_SHIP_SCALE * oppSkinN.cqScale * (24 / 22) : 120;
+      var ocxN = isP ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, endX = isP ? ocxN - oswN / 2 - 6 : ocxN + oswN / 2 + 6;
+      var mapDx = function (dv) { return dv <= 0.5 ? slot.x + (mX - slot.x) * (dv / 0.5) : mX + (endX - mX) * ((dv - 0.5) / 0.5); };
+      var x = mapDx(c.prev) + (mapDx(c.cur) - mapDx(c.prev)) * frD, y = slot.y + 6 + n[c.side] * 4; n[c.side]++;
+      var st = (c.cur !== c.prev && frD < 1 && !arenaAnim.battleEnded) ? "run" : (c.reach && !arenaAnim.battleEnded ? "attack" : "idle");
+      drawHeroAnim(ctx, tk, x, y + 13, st, heroSpriteVisualScale / 100, !isP, 0.83, 1, CLONE_TINT);
+      var a = HERO_ANIMS[tk], top = (y + 13) - a.dispH * (a.sizeMul || 1) * (heroSpriteVisualScale / 100) - 5, bw = 24, fr = Math.max(0, Math.min(1, c.hp / c.max));
+      ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
+    });
+  })();
   drawHeroWarps(ctx);
   drawWeldSparks(ctx, groundYFor(h) + 4);
   if (osSetA) orbitShieldDrawPass(ctx, osSetA, true);
@@ -28277,7 +28325,7 @@ function renderArenaBattleScreen() {
   arenaAnim.aiActiveDefs = aStats0.actives;
   arenaAnim.pendingToPlayer = 0; arenaAnim.pendingToAi = 0; arenaAnim.truePlayerHp = pStats0.maxHp; arenaAnim.trueAiHp = aStats0.maxHp;
   arenaAnim.projectiles = []; arenaAnim.weaponMissiles = []; arenaAnim.missileImpacts = []; arenaAnim.skillEmbers = []; arenaAnim.orbBursts = []; arenaAnim.beams = []; arenaAnim.heroLightning = []; arenaAnim.flashHero = {}; arenaAnim.banner = null; arenaAnim.battleStartTime = null; arenaAnim.battleEnded = false;
-  arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null; arenaAnim.infX = null; arenaAnim.infRunPrev = null; arenaAnim.heroScreen = null; arenaAnim.heroTickT = 0; arenaAnim.dmgNums = []; arenaAnim.chargeLand = null; arenaAnim.atkUntil = null; arenaAnim.atkTrig = null; // fresh opponent / fresh view: every hero back at home, alive, no ghosts from the last fight
+  arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null; arenaAnim.infX = null; arenaAnim.infRunPrev = null; arenaAnim.heroScreen = null; arenaAnim.heroTickT = 0; arenaAnim.dmgNums = []; arenaAnim.chargeLand = null; arenaAnim.atkUntil = null; arenaAnim.atkTrig = null; // fresh opponent / fresh view: every hero back at home, alive, no ghosts from the last fight
   renderArenaSkillbar();
   // renderArena rebuilds the canvas element from scratch each call — if the
   // anim loop is already running, it's holding a reference to the OLD
@@ -28309,7 +28357,7 @@ function renderArenaBattleScreen() {
     if (timerEl) { timerEl.textContent = "" + Math.round(ARENA_MAX_DURATION_MS / 1000) + "s"; timerEl.classList.remove("low"); }
     arenaAnim.battleStartTime = performance.now();
     arenaAnim.battleEnded = false;
-    arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null;
+    arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null;
     var canvas = document.getElementById("arenaCanvas");
     // Logical (CSS-pixel) dimensions, same as the draw loop above — these
     // feed arenaSlotPos() to compute projectile spawn points, which must
@@ -28436,6 +28484,12 @@ function renderArenaBattleScreen() {
       // type this tick, rather than stacking a sound per hero.
       if (playerFiredArc || aiFiredArc) sfxShootArc();
       if (playerFiredFlat || aiFiredFlat) sfxShoot();
+      (function () { /* v975: clone positions, same prev/cur glide as the heroes */
+        var cdm = arenaAnim.cloneD || (arenaAnim.cloneD = {}), seen = {};
+        [["p", state.pClones], ["a", state.aClones]].forEach(function (pr) { (pr[1] || []).forEach(function (c) { var kk = pr[0] + c.id, r0 = cdm[kk]; seen[kk] = 1; if (!r0) cdm[kk] = { prev: 0, cur: c.d, hp: c.hp, max: c.max, reach: c.reach, side: pr[0] }; else { r0.prev = r0.cur; r0.cur = c.d; r0.hp = c.hp; r0.max = c.max; r0.reach = c.reach; } }); });
+        Object.keys(cdm).forEach(function (kk) { if (!seen[kk]) delete cdm[kk]; });
+        arenaAnim.cloneTickT = performance.now();
+      })();
       if (state.playerHeroes || state.aiHeroes) {
         var hhm = {};
         (state.playerHeroes || []).forEach(function (e) { hhm["p_" + e.id] = e; });

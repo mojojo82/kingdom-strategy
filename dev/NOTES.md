@@ -704,3 +704,10 @@
 - No clone art in Conquest (Arena has none either) - mechanics only for now; art = separate step with a mockup.
 - Test: new g211_conquest_clone.js (Lv40 five-hero climb 135 -> 138 with Clone Task; weak Lv12 team: clone falls 68 times and keeps coming back). g205 made robust (tries up to 8 random opponents - one can lose before its first shot lands since weapons travel). g200-g211 pass.
 - Still open: Conquest Railgun / EMP act instantly (breaks "nothing is instant").
+
+### v975 — the clone is drawn: Gareth's art, heavy green tint (TEST)
+- Harley: "use gareth art for now but put a heavy green tint on it" (placeholder until the clone has its own art).
+- `drawHeroAnim(..., tint)` + `heroTintBlit` (offscreen cell canvas, source-atop fill - no ctx.filter, works on iPhone Safari) + `CLONE_TINT` rgba(40,220,90,0.62).
+- Conquest: `drawIdleClones` - the clone stands just in front of its template hero (Gareth), swings for 0.45s whenever it lands a hit, green HP bar. (Conquest clones have no walking of their own yet.)
+- Arena: the sim's info now carries pClones / aClones ({id, d, hp, max, reach}); arenaAnim.cloneD keeps prev/cur positions; the clone is drawn on the template hero's lane, runs / swings from where the sim puts it, green HP bar.
+- Checked with headless screenshots (Conquest + an Arena fight). Tests g200-g211 (except unchanged g203/g206/g207) pass.
