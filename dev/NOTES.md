@@ -932,3 +932,10 @@
 - The old sticky detail panel is gone: tapping a node opens the same popup as research (Now / Next level / Needs … / Upgrade (cost 🔬) / RP you have). The popup stays open after Upgrade and updates, so you can tap Upgrade several times. Dev buttons (+500, Max, Reset) sit in a row above the tree.
 - Shared popup helper rtPopEl(); fortressOpen / fortressDetail.
 - Test: new g231_fortress_tree.js.
+
+### v1012 — other players see your base skin and your current avatar (TEST)
+- Harley: an uploaded avatar and the equipped base skin weren't visible to other players (they saw the defaults).
+- Base skin: was never shared (only drawn for your own base; others always drew the Watchtower). Now your city doc carries `sk` (skin id): set when you claim/teleport, when you change skin, and added to older city docs the first time the city list loads. Everyone draws other bases with that skin (and its size). Rules already let the owner update their city doc (only HP fields are server-only).
+- Avatar: other players' name + avatar were read once per session and cached forever, so a new avatar never showed until the viewer reloaded (and a failed first read stuck as "no avatar"). Now re-read after a minute (old one shown meanwhile).
+- Note: the skin field isn't checked against ownership (cosmetic only).
+- Test: new g232_shared_look.js (two players on one fake backend: doc carries the skin, the other player draws it, avatar seen, changed avatar seen without reload, switching back seen).

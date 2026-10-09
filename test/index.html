@@ -9154,6 +9154,7 @@ function setMapCitySkin(id) {
   mapCitySkin = id;
   try { localStorage.setItem(MAP_CITY_SKIN_KEY, id); } catch (e) {}
   assetSyncUpload(MAP_CITY_SKIN_KEY, id);
+  try { publishMyCitySkin(); } catch (e) {}
   renderVisibleTiles();
 }
 /* v946: earnable city skins. The Neptune skin (Titan Fountain) is an event reward: locked until state.skins.city_titan is set
@@ -9166,7 +9167,15 @@ function citySkinOwned(id) {
 }
 function myCitySkinId() { return CITY_SKINS[mapCitySkin] && citySkinOwned(mapCitySkin) ? mapCitySkin : "tower"; }
 function myCityIconSrc() { return CITY_SKINS[myCitySkinId()].src; }
-function otherCityIconSrc() { return CITY_SKINS.tower.src; }
+/* v1012 (Harley: other players saw the default base): every player's chosen skin is now on their city doc (field "sk"), so others draw it too */
+var citySkinByTile = {};
+function citySkinIdAt(tileId) { var k = citySkinByTile[tileId]; return CITY_SKINS[k] ? k : "tower"; }
+function otherCityIconSrc(tileId) { return CITY_SKINS[citySkinIdAt(tileId)].src; }
+function publishMyCitySkin() { /* write my skin onto my city doc (only when it differs from what's there) */
+  var home = game.state.homeTileId; if (!cloudDb || !home || occupiedTileIds[home] !== PLAYER_ID) return;
+  var sk = myCitySkinId(); if (citySkinByTile[home] === sk) return; citySkinByTile[home] = sk;
+  cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(home)).update({ sk: sk }).catch(function (e) { delete citySkinByTile[home]; console.error("skin publish failed", e && e.message); });
+}
 var BUILDING_ICON = {
   townhall: "🏛️", farm: "🌾", sawmill: "🪚", quarry: "⛰️", goldmine: "💰",
   warehouse: "🏬", barracks: "⚔️", archery: "🏹", stable: "🐎",
@@ -10822,7 +10831,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1011"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1012"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14314,9 +14323,10 @@ function renderVisibleTiles() {
         var cityImgCls = "city-icon-img" + (isFreshDropTarget ? " city-drop-anim" : "");
         var cityImgStyleParts = [];
         if (isFreshDropTarget) cityImgStyleParts.push("--drop-distance:" + (-dropAnimFallPx) + "px");
-        if (isMyCity && CITY_SKINS[myCitySkinId()] && CITY_SKINS[myCitySkinId()].scale) cityImgStyleParts.push("width:calc(var(--tile-px) * var(--city-w, 2.2) * " + CITY_SKINS[myCitySkinId()].scale.toFixed(3) + ")");
-        var citySrc = isMyCity ? myCityIconSrc() : otherCityIconSrc();
-        var cwMul = (isMyCity && CITY_SKINS[myCitySkinId()] && CITY_SKINS[myCitySkinId()].scale) || 1, cMl = "", cBot = 0;
+        var cSkin = CITY_SKINS[isMyCity ? myCitySkinId() : citySkinIdAt(tile.id)]; /* v1012: other players' skins too */
+        if (cSkin && cSkin.scale) cityImgStyleParts.push("width:calc(var(--tile-px) * var(--city-w, 2.2) * " + cSkin.scale.toFixed(3) + ")");
+        var citySrc = isMyCity ? myCityIconSrc() : otherCityIconSrc(tile.id);
+        var cwMul = (cSkin && cSkin.scale) || 1, cMl = "", cBot = 0;
         if (mapIso) { /* v827: line the art's FOUNDATION (measured from its pixels) up with the centre of the 3x3 block, whatever the skin */
           var am = cityArtGet(citySrc), acw = isoCfg.base * cwMul;
           cMl = "calc(var(--tile-px) * " + (acw * (0.5 - am.fx)).toFixed(3) + ")"; cBot = 0.5 - isoCfg.y / 100 - acw * am.aspect * (1 - am.fy);
@@ -16192,11 +16202,12 @@ function startCitySync() {
       if (!doc.exists) return;
       var data = doc.data();
       var tileId = docIdToTileId(doc.id);
-      if (data && data.owner) { occupiedTileIds[tileId] = data.owner; seen[tileId] = true; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
+      if (data && data.owner) { occupiedTileIds[tileId] = data.owner; seen[tileId] = true; if (CITY_SKINS[data.sk]) citySkinByTile[tileId] = data.sk; else delete citySkinByTile[tileId]; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
       if (data && typeof data.hp === "number") cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; else delete cityHp[tileId]; /* v894: base HP */
       if (tileId === game.state.homeTileId && data && data.raidedAt) applyRaidIfNew(data.raidedAt);
     });
-    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id]) delete occupiedTileIds[id]; });
+    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id]) { delete occupiedTileIds[id]; delete citySkinByTile[id]; } });
+    try { publishMyCitySkin(); } catch (e) {} /* v1012: older city docs get the skin added */
   }, function (e) { console.error("City sync error:", e && e.code, e && e.message); });
 }
 function pickRandomUnclaimedEmptyTile() { /* v864: sample random spots instead of listing every tile in the world */
@@ -16218,8 +16229,8 @@ function claimCityTile(tileId) {
     return ref.get().then(function (snap) {
       var data = snap.exists ? snap.data() : null;
       if (data && data.owner && data.owner !== (PLAYER_ID || holder)) return { ok: false, reason: "taken" };
-      return ref.set({ owner: PLAYER_ID || holder, claimedAt: Date.now() }).then(function () {
-        occupiedTileIds[tileId] = PLAYER_ID || holder;
+      return ref.set({ owner: PLAYER_ID || holder, claimedAt: Date.now(), sk: myCitySkinId() }).then(function () {
+        occupiedTileIds[tileId] = PLAYER_ID || holder; citySkinByTile[tileId] = myCitySkinId();
         return { ok: true };
       });
     });
@@ -17200,14 +17211,15 @@ function ticHtml(o) {
 var ownerProfileCache = {};
 function fetchOwnerProfile(ownerId) { /* name + avatar a player saved for themselves (their own asset items); bots get a generated name */
   if (!ownerId) return null;
-  if (ownerProfileCache[ownerId]) return ownerProfileCache[ownerId];
+  var pc0 = ownerProfileCache[ownerId];
+  if (pc0 && (pc0.bot || pc0.loading || Date.now() - (pc0.at || 0) < 60000)) return pc0; /* v1012: re-read a real player's name/avatar after a minute (it used to be read once per session, so a new avatar never showed until a reload) */
   if (ownerId.indexOf(BOT_OWNER_PREFIX) === 0 && botNameByOwner[ownerId]) { ownerProfileCache[ownerId] = { name: botNameByOwner[ownerId], avatar: null, bot: true }; return ownerProfileCache[ownerId]; }
   if (ownerId.indexOf(BOT_OWNER_PREFIX) === 0) { var tag = ownerId.slice(BOT_OWNER_PREFIX.length).replace(/[^a-z0-9]/gi, "").slice(-4).toUpperCase(); ownerProfileCache[ownerId] = { name: "Raider " + (tag || "Bot"), avatar: null, bot: true }; return ownerProfileCache[ownerId]; }
-  var p = ownerProfileCache[ownerId] = { name: null, avatar: null, loading: true };
-  if (!cloudDb) { p.loading = false; return p; }
+  var p = ownerProfileCache[ownerId] = { name: pc0 ? pc0.name : null, avatar: pc0 ? pc0.avatar : null, loading: true }; /* keep showing the old ones while re-reading */
+  if (!cloudDb) { p.loading = false; p.at = Date.now(); return p; }
   var base = ownerId === "owner" ? "assetitems/" : ("players/" + ownerId + "/assetitems/");
   Promise.all([PLAYER_NAME_KEY, AVATAR_KEY].map(function (k) { return cloudDb.doc(base + k).get().then(function (sn) { return sn.exists && sn.data() ? sn.data().data : null; }, function () { return null; }); }))
-    .then(function (r) { p.name = r[0] || null; p.avatar = r[1] || null; p.loading = false; try { renderTileInfo(); } catch (e) {} });
+    .then(function (r) { var ch = p.name !== (r[0] || null) || p.avatar !== (r[1] || null); p.name = r[0] || null; p.avatar = r[1] || null; p.loading = false; p.at = Date.now(); if (ch) try { renderTileInfo(); } catch (e) {} });
   return p;
 }
 // Renders only the read-only header (garrison/remaining amounts) for the tile info panel.
