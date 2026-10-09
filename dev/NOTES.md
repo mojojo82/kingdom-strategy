@@ -861,3 +861,8 @@
 - tileBlockReason() now refuses a spot if any tile of the 3x3 block is a resource ("the resource at x,y"). Every placement path asks it: claim/teleport (the message reads "Too close to the resource at …"), the new-player home spot, Generate Random Players, Bot Alliance. It checks the tile's current type, so once a resource stops being one, the spot is legal again. Bases placed earlier are not moved.
 - Bot Alliance packing: any legal tile nearest the anchor (was a fixed 3-tile grid), so bases squeeze into the gaps between resources. In the test, corner cluster spread 13 → 11 and random spot 6 → 4.
 - Test: g222 also checks no bot base covers a resource and that a spot next to a resource is refused.
+
+### v1001 — avatar cropper: zoom + position before saving (TEST)
+- Harley: when uploading a new avatar, let the player control how much to zoom into the image.
+- Picking a photo now opens "Adjust your avatar": the photo fills a square frame; zoom 1-5x with a slider, pinch, or mouse wheel (zooms towards the fingers / pointer); drag to position (it always covers the frame). Save keeps exactly the framed part as a 256x256 WebP (JPEG fallback). That's also tiny to store and sync (~5 KB vs the raw photo). Cancel saves nothing. The same file can be picked again.
+- Test: new g223_avatar_crop.js (cancel, zoom, drag, saved 256x256 small).

@@ -1,0 +1,38 @@
+/* v1001: avatar upload opens a cropper - zoom (slider / pinch / wheel) and drag, Save keeps the framed part as a 256x256 picture. Run: AVIMG=/path/img.jpg node dev/simfork/g223_avatar_crop.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g223@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  const IMG = process.env.AVIMG;
+  await P.setInputFiles("#avatarInput", IMG); await P.waitForSelector("#avCrop", { timeout: 5000 });
+  const o = {};
+  o.cancel = await P.evaluate(() => { document.getElementById("avCropCancel").click(); return !document.getElementById("avCrop") && !localStorage.getItem(AVATAR_KEY); });
+  await P.setInputFiles("#avatarInput", IMG); await P.waitForSelector("#avCrop", { timeout: 5000 });
+  await P.evaluate(() => { const z = document.getElementById("avCropZ"); z.value = "3"; z.dispatchEvent(new Event("input")); });
+  const box = await P.locator("#avCropCv").boundingBox();
+  await P.mouse.move(box.x + 120, box.y + 120); await P.mouse.down(); await P.mouse.move(box.x + 160, box.y + 100, { steps: 5 }); await P.mouse.up();
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "avatar_crop.png" });
+  o.zoom = await P.evaluate(() => +document.getElementById("avCropZ").value);
+  await P.click("#avCropSave"); await P.waitForTimeout(300);
+  o.saved = await P.evaluate(() => new Promise((res) => { const u = localStorage.getItem(AVATAR_KEY); if (!u) return res(null); const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight, kb: Math.round(u.length / 1024), type: u.slice(5, 15) }); im.src = u; }));
+  o.overlayGone = await P.evaluate(() => !document.getElementById("avCrop"));
+  console.log(JSON.stringify(o));
+  assert.ok(o.cancel, "cancel saves nothing"); assert.ok(o.zoom === 3, "zoom slider");
+  assert.ok(o.saved && o.saved.w === 256 && o.saved.h === 256 && o.saved.kb < 60 && o.overlayGone, "saved as a small 256x256 picture");
+  console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
+})().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

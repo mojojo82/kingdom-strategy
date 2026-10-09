@@ -10696,7 +10696,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1000"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1001"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25822,20 +25822,70 @@ document.getElementById("avatarInput").addEventListener("change", function (e) {
     return;
   }
   var reader = new FileReader();
-  reader.onload = function (ev) {
-    var dataUrl = ev.target.result;
-    try {
-      localStorage.setItem(AVATAR_KEY, dataUrl);
-      localStorage.setItem(AVATAR_KEY + "__ts", String(Date.now()));
-    } catch (err) {
-      alert("That image is too large to save. Try a smaller picture.");
-      return;
-    }
-    assetSyncUpload(AVATAR_KEY, dataUrl);
-    applyAvatar(dataUrl);
-  };
+  reader.onload = function (ev) { openAvatarCropper(ev.target.result, saveAvatarDataUrl); }; /* v1001: zoom + position before it's saved */
   reader.readAsDataURL(file);
+  e.target.value = ""; /* picking the same file again still opens the cropper */
 });
+function saveAvatarDataUrl(dataUrl) {
+  try {
+    localStorage.setItem(AVATAR_KEY, dataUrl);
+    localStorage.setItem(AVATAR_KEY + "__ts", String(Date.now()));
+  } catch (err) {
+    alert("That image is too large to save. Try a smaller picture.");
+    return;
+  }
+  assetSyncUpload(AVATAR_KEY, dataUrl);
+  applyAvatar(dataUrl);
+}
+/* v1001 (Harley): avatar cropper. The picked photo fills a square frame; the player zooms (slider, pinch or mouse wheel) and drags it into
+   place, then Save keeps exactly the framed part as a 256x256 picture (also much smaller to store/sync than the raw photo). */
+var AVATAR_OUT_PX = 256, AVATAR_ZOOM_MAX = 5;
+function openAvatarCropper(src, onSave) {
+  var img = new Image();
+  img.onload = function () {
+    var old = document.getElementById("avCrop"); if (old) old.remove();
+    var ov = document.createElement("div"); ov.id = "avCrop";
+    ov.style.cssText = "position:fixed;inset:0;z-index:2147483300;background:rgba(5,9,20,.92);display:flex;align-items:center;justify-content:center;padding:16px;font-family:var(--bodyfont,system-ui),sans-serif;touch-action:none";
+    ov.innerHTML = '<div style="width:100%;max-width:340px;background:#121c33;border:2px dashed #c9a24a;border-radius:12px;padding:16px;color:#f3e9d2;text-align:center">'
+      + '<div style="font-size:17px;font-weight:800;color:#f0c95f;margin-bottom:4px">Adjust your avatar</div>'
+      + '<div style="font-size:12px;color:#93a2ba;margin-bottom:10px">Drag to move · pinch or slide to zoom</div>'
+      + '<canvas id="avCropCv" style="width:240px;height:240px;border-radius:16px;border:2px solid #c9a24a;background:#0a1224;touch-action:none;cursor:grab"></canvas>'
+      + '<div style="display:flex;align-items:center;gap:10px;margin:12px 4px 4px"><span style="font-size:16px">➖</span><input id="avCropZ" type="range" min="1" max="' + AVATAR_ZOOM_MAX + '" step="0.01" value="1" style="flex:1"><span style="font-size:16px">➕</span></div>'
+      + '<div style="display:flex;gap:10px;margin-top:12px"><button id="avCropCancel" class="secondary" style="flex:1">Cancel</button><button id="avCropSave" style="flex:1">Save</button></div></div>';
+    document.body.appendChild(ov);
+    var cv = document.getElementById("avCropCv"), F = 240, dpr = Math.min(3, window.devicePixelRatio || 1), ctx = cv.getContext("2d");
+    cv.width = F * dpr; cv.height = F * dpr;
+    var W = img.naturalWidth, H = img.naturalHeight, s0 = F / Math.min(W, H), z = 1, ox = 0, oy = 0, zEl = document.getElementById("avCropZ");
+    function clamp() { var sc = s0 * z, mx = Math.max(0, (W * sc - F) / 2), my = Math.max(0, (H * sc - F) / 2); ox = Math.max(-mx, Math.min(mx, ox)); oy = Math.max(-my, Math.min(my, oy)); }
+    function paint(c, size) { var k = size / F, sc = s0 * z * k; c.clearRect(0, 0, size, size); c.imageSmoothingQuality = "high"; c.drawImage(img, size / 2 + ox * k - W * sc / 2, size / 2 + oy * k - H * sc / 2, W * sc, H * sc); }
+    function draw() { clamp(); paint(ctx, F * dpr); zEl.value = String(z); }
+    function setZoom(nz, cx, cy) { nz = Math.max(1, Math.min(AVATAR_ZOOM_MAX, nz)); /* zoom towards the finger / pointer */
+      if (cx != null) { var px = cx - F / 2, py = cy - F / 2; ox = px - (px - ox) * nz / z; oy = py - (py - oy) * nz / z; } z = nz; draw(); }
+    zEl.oninput = function () { setZoom(+zEl.value); };
+    var pts = {}, last = null, pinch = null;
+    function local(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * F / r.width, y: (e.clientY - r.top) * F / r.height }; }
+    cv.addEventListener("pointerdown", function (e) { try { cv.setPointerCapture(e.pointerId); } catch (er) {} pts[e.pointerId] = local(e); last = null; pinch = null; cv.style.cursor = "grabbing"; e.preventDefault(); });
+    cv.addEventListener("pointermove", function (e) {
+      if (!pts[e.pointerId]) return; var p = local(e), prev = pts[e.pointerId]; pts[e.pointerId] = p; var ids = Object.keys(pts);
+      if (ids.length >= 2) { var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        if (pinch) { setZoom(z * d / pinch.d, mx, my); ox += mx - pinch.mx; oy += my - pinch.my; draw(); } pinch = { d: Math.max(1, d), mx: mx, my: my }; }
+      else { ox += p.x - prev.x; oy += p.y - prev.y; draw(); }
+      e.preventDefault();
+    });
+    function up(e) { delete pts[e.pointerId]; pinch = null; if (!Object.keys(pts).length) cv.style.cursor = "grab"; }
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+    cv.addEventListener("wheel", function (e) { var p = local(e); setZoom(z * (e.deltaY < 0 ? 1.1 : 1 / 1.1), p.x, p.y); e.preventDefault(); }, { passive: false });
+    document.getElementById("avCropCancel").onclick = function () { ov.remove(); };
+    document.getElementById("avCropSave").onclick = function () {
+      var out = document.createElement("canvas"); out.width = out.height = AVATAR_OUT_PX; paint(out.getContext("2d"), AVATAR_OUT_PX);
+      var url = out.toDataURL("image/webp", 0.9); if (url.indexOf("data:image/webp") !== 0) url = out.toDataURL("image/jpeg", 0.9);
+      ov.remove(); onSave(url);
+    };
+    draw();
+  };
+  img.onerror = function () { alert("Couldn't open that picture. Try another one."); };
+  img.src = src;
+}
 
 // ---- World Chat (left sidebar) ----
 // Local-only for now — there's no multiplayer backend yet, so every message
