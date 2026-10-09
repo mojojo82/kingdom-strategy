@@ -4,7 +4,7 @@
    - Duplicate copies a weapon you already have: every Duplicate build is tried once per copy target ("dup>hex" = Duplicate copying Hex Shield).
    - Each build fights a fixed sample of the field both ways (once as attacker, once as defender) -> overall score 0-100 and rank.
    - Loop checks: META = EMP + Railgun + Clone Task. COUNTER = EMP + Status Wave + any. COUNTER-COUNTER = Hex Shield + Railgun + any.
-   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
+   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; srf = Status Wave Reflect seconds; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
 const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
@@ -38,6 +38,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
       specs.forEach((sp) => { const cdf = (s) => { sp.cooldownSec = s; sp.cooldownTicks = Math.max(1, Math.round(s / tick)); };
         if (sp.fx === "clone") { if (COND.cm != null) sp.p.mult = COND.cm; if (COND.ccd != null) cdf(COND.ccd); }
         if (sp.fx === "emp" && COND.ecd != null) cdf(COND.ecd);
+        if (sp.fx === "sw" && COND.srf != null) sp.p.reflect = COND.srf; /* Status Wave Reflect seconds at any level */
         if (sp.fx === "sw") { if (COND.sd != null) sp.p.dur = COND.sd; if (COND.scd != null) cdf(COND.scd); if (COND.lob != null) sp.p.lob = COND.lob; } });
       if (COND.hex != null) hex *= COND.hex; /* sim-only Hex Shield strength multiplier */
       return { specs, shieldPct: hex };
