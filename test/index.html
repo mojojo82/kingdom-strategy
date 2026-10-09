@@ -5535,8 +5535,49 @@ var CARD_EFFECTS_BY_NAME = {
   // Drop Signal (v973): each time this side's Railgun fires, its fallen summons (Clone Task clones today) are redeployed at once - even
   // while its fortress is stunned, and an EMP can't reset that redeploy - and (drones: true) its switched-off drones come back online.
   // Arena / world PvP: arenaMakeSim opts.summonCall / opts.aiSummonCall. Conquest has no summons yet, so nothing happens there.
-  "drop signal": { kind: "summonCall", drones: true }
+  "drop signal": { kind: "summonCall", drones: true },
+  // v985: Harley's cards 1-11. Bound to their card slot ("#n" = card n) until they get names. "Health" = your fortress's health (0..1 of max).
+  "#1": { kind: "infAtk", pct: 0.10 },                         // infantry heroes +10% base ATK (basic attacks + skills)
+  "#2": { kind: "kessaArcLow", pct: 0.30, below: 0.30 },       // Kessa's Arc Burst +30% damage while health < 30%
+  "#3": { kind: "kessaAtkLow", pct: 0.20, below: 0.50 },       // Kessa base ATK +20% while health < 50%
+  "#4": { kind: "lastStand", below: 0.10, sec: 2 },            // once per fight: health drops below 10% -> fortress takes no damage for 2s
+  "#5": { kind: "polarFlux", below: 0.50, pct: 0.30 },         // once per fight: health drops below 50% -> Polar Flux hits every enemy unit on the field for 30% of its max HP
+  "#6": { kind: "t1Def", pct: 0.30 },                          // both players on a Type 1 fortress -> your fortress takes 30% less damage (PvP only)
+  "#7": { kind: "critDmg", pct: 0.10 },                        // fortress super-burst (crit) damage +10%
+  "#8": { kind: "cdr", pct: 0.05 },                            // skill cooldown bonus +5% (skills recharge 5% faster)
+  "#9": { kind: "cdrLow", pct: 0.05, below: 0.90 },            // +5% more skill cooldown bonus while health < 90%
+  "#10": { kind: "cdrDmg", over: 0.25, pct: 0.25 },            // skill cooldown bonus above 25% -> hero damage +25%
+  "#11": { kind: "soloAtk", pct: 2.0, perHero: 0.10 }          // +200% ATK (heroes + fortress cannon), x0.10 for every hero you bring (1 hero +20%, 5 heroes ~+0.002%)
 };
+// v985: which effect a card slot has - its name if that matches an effect, else its slot code "#n" (cards 1-11 until they're named).
+function cardEffectKeyAt(state, idx) {
+  var c = state && state.cards && state.cards[idx], nk = c && c.name ? String(c.name).trim().toLowerCase() : "";
+  if (nk && CARD_EFFECTS_BY_NAME[nk]) return nk;
+  var sk = "#" + (idx + 1); return CARD_EFFECTS_BY_NAME[sk] ? sk : "";
+}
+// v985: every equipped card effect rolled into one set of combat modifiers (same rules in Conquest and Arena)
+function cardModsFrom(state) {
+  var m = { infAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, any: false };
+  equippedCardEffects(state).forEach(function (fx) {
+    m.any = true;
+    if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
+    else if (fx.kind === "cdr") m.cdr += fx.pct || 0;
+    else if (m.hasOwnProperty(fx.kind)) m[fx.kind] = fx;
+  });
+  return m;
+}
+function cardCdBonus(m, hpFrac) { if (!m) return 0; return Math.min(0.9, (m.cdr || 0) + (m.cdrLow && hpFrac < m.cdrLow.below ? m.cdrLow.pct : 0)); }
+function cardSoloBonus(m, nHeroes) { return (m && m.soloAtk) ? m.soloAtk.pct * Math.pow(m.soloAtk.perHero, Math.max(0, nHeroes)) : 0; }
+function cardHeroDmgMul(m, key, hpFrac, nHeroes) {
+  var d = HERO_DEFS[key]; if (!m || !m.any || !d) return 1;
+  var x = 1;
+  if (m.infAtk && d.class === "infantry") x *= 1 + m.infAtk;
+  if (m.kessaAtkLow && key === "kessa" && hpFrac < m.kessaAtkLow.below) x *= 1 + m.kessaAtkLow.pct;
+  if (m.cdrDmg && cardCdBonus(m, hpFrac) > m.cdrDmg.over) x *= 1 + m.cdrDmg.pct;
+  if (m.soloAtk) x *= 1 + cardSoloBonus(m, nHeroes);
+  return x;
+}
+function cardSkillMul(m, key, hpFrac, nHeroes) { var x = cardHeroDmgMul(m, key, hpFrac, nHeroes); if (m && m.kessaArcLow && key === "kessa" && hpFrac < m.kessaArcLow.below) x *= 1 + m.kessaArcLow.pct; return x; } /* Kessa's active skill is Arc Burst */
 // Which of a card effect's own fields are safe to expose as dev-editable
 // numbers/toggles, and a short comment for each explaining what it does —
 // read by the "Dev Mod" panel in the card's Full View (see
@@ -5554,6 +5595,17 @@ var CARD_EFFECT_FIELD_INFO = {
     multiplier: { type: "number", min: 1, step: 1, label: "Multiplier", comment: "Bullet damage is multiplied by this, to the power of how many times the cannon has fired this fight (burst #1 = x this once, burst #2 = x this twice, etc)." },
     compound: { type: "boolean", label: "Compounds each burst", comment: "On: each cannon burst re-multiplies on top of the last (10, 100, 1000…). Off: every burst applies the multiplier fresh, just once (always x10, never higher)." }
   },
+  infAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Infantry ATK bonus", comment: "0.10 = +10% base ATK for infantry heroes (basic attacks and skills)." } },
+  kessaArcLow: { pct: { type: "number", min: 0, step: 0.05, label: "Arc Burst bonus", comment: "0.30 = +30% Arc Burst damage." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.30 = while your fortress is under 30% health." } },
+  kessaAtkLow: { pct: { type: "number", min: 0, step: 0.05, label: "Kessa ATK bonus", comment: "0.20 = +20% base ATK." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.50 = while your fortress is under 50% health." } },
+  lastStand: { below: { type: "number", min: 0, step: 0.01, label: "Health below", comment: "Triggers once per fight when your fortress drops under this (0.10 = 10%)." }, sec: { type: "number", min: 0, step: 0.5, label: "Invincible (s)", comment: "Seconds the fortress takes no damage." } },
+  polarFlux: { below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "Fires once per fight when your fortress drops under this." }, pct: { type: "number", min: 0, step: 0.05, label: "Blast % of max HP", comment: "0.30 = every enemy unit on the field loses 30% of its max HP." } },
+  t1Def: { pct: { type: "number", min: 0, step: 0.05, label: "Damage cut", comment: "0.30 = your fortress takes 30% less damage when both players have a Type 1 fortress (PvP)." } },
+  critDmg: { pct: { type: "number", min: 0, step: 0.01, label: "Crit damage bonus", comment: "0.10 = super bursts hit 10% harder." } },
+  cdr: { pct: { type: "number", min: 0, step: 0.01, label: "Cooldown bonus", comment: "0.05 = skills recharge 5% faster." } },
+  cdrLow: { pct: { type: "number", min: 0, step: 0.01, label: "Cooldown bonus", comment: "0.05 = skills recharge 5% faster..." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "...while your fortress is under this (0.90 = 90%)." } },
+  cdrDmg: { over: { type: "number", min: 0, step: 0.01, label: "Cooldown bonus above", comment: "0.25 = needs more than 25% total skill cooldown bonus." }, pct: { type: "number", min: 0, step: 0.05, label: "Hero damage bonus", comment: "0.25 = +25% hero damage." } },
+  soloAtk: { pct: { type: "number", min: 0, step: 0.25, label: "ATK bonus", comment: "2 = +200% ATK (heroes and fortress cannon) with no heroes." }, perHero: { type: "number", min: 0, step: 0.05, label: "Kept per hero", comment: "0.10 = each hero you bring keeps 10% of what's left (1 hero +20%, 2 heroes +2%...)." } },
   summonCall: {
     drones: { type: "boolean", label: "Also brings drones back online", comment: "On: when your Railgun fires, any of your drones that were switched off (e.g. by an enemy Railgun) come straight back online. Fallen summons are always redeployed." }
   },
@@ -5579,8 +5631,8 @@ function equippedCardEffects(state) {
   var out = [];
   if (!state || !Array.isArray(state.equippedCards) || !Array.isArray(state.cards)) return out;
   for (var i = 0; i < state.equippedCards.length; i++) {
-    var c = state.cards[state.equippedCards[i]];
-    var fx = c && cardEffectFor(c.name);
+    var ek = cardEffectKeyAt(state, state.equippedCards[i]); /* v985: by name, or the card's slot code */
+    var fx = ek && cardEffectFor(ek);
     if (fx) out.push(fx);
   }
   return out;
@@ -6687,7 +6739,7 @@ function createGame(opts) {
     return e;
   }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
-  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
+  function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.cardInvulUsed = false; state.idle.cardInvulT = 0; state.idle.cardFluxUsed = false; /* v985 */ state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
     var r = state.conquestRoster.slice(0, 5);
     for (var i = 0; i < r.length; i++) {
@@ -7125,7 +7177,7 @@ function createGame(opts) {
       var skill1 = def.conquestSkills[0];
       if (!skill1 || skill1.kind !== "active") return;
       if (idleHeroIsKo(key)) { state.heroCooldowns[key] = skill1.cooldown; return; } // v527: KO'd — skill timer sits at full until he revives
-      if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = skill1.firstCd || skill1.cooldown;
+      if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skill1.cooldown) * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985 */
       state.heroCooldowns[key] -= dt;
       var manualCast = false; // Manual mode: the skill waits at 0 (ready) until the player taps it
       if (state.idle.skillAuto === false && state.heroCooldowns[key] <= 0) {
@@ -7135,7 +7187,7 @@ function createGame(opts) {
         if (!manualCast) return;
       }
       if (state.heroCooldowns[key] <= 0) {
-        state.heroCooldowns[key] += skill1.cooldown;
+        state.heroCooldowns[key] += skill1.cooldown * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985: skill cooldown bonus cards */
         state.idle.skillFireCounts[key] = (state.idle.skillFireCounts[key] || 0) + 1;
         if (skill1.support) { // support skills (heal / guard shield) act on the fortress, not on an enemy
           var spLvl = heroSkillLevel(key, "conquest", 0), maxHpS = idlePlayerMaxHp();
@@ -7160,6 +7212,7 @@ function createGame(opts) {
         if (canHit) {
           var front0 = front; front = skTgt; // the skill hits the enemy at his sword (melee) or the front enemy
           var skDmgE = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
+          var cmS = cardModsFrom(state); if (key === "kessa" && cmS.kessaArcLow && idleHpFrac() < cmS.kessaArcLow.below) skDmgE *= 1 + cmS.kessaArcLow.pct; /* v985: card 2 */
           var gExec = false; // v954: the old 20% coin-flip execute is gone - Death Strike (a limit skill, no dice) took its place
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = skDmgE;
           front.hp -= (gExec ? skDmgE : skDmgE * idleMarkMult(front, key) * idleEnemyDefTake(front, skDmgE));
@@ -7592,6 +7645,15 @@ function createGame(opts) {
     // whenever the effect isn't currently equipped, so re-equipping later
     // always starts a fresh interval rather than an instant catch-up heal
     // from time that passed while it was off.
+    if (state.idle.cardInvulT > 0) state.idle.cardInvulT = Math.max(0, state.idle.cardInvulT - deltaSec); /* v985: card 4 timer */
+    (function () { /* v985: card 5 - Polar Flux, once per level attempt */
+      var cmF = cardModsFrom(state), mxF = idlePlayerMaxHp();
+      if (!cmF.polarFlux || state.idle.cardFluxUsed || !(state.idle.playerHp > 0) || state.idle.playerHp >= mxF * cmF.polarFlux.below) return;
+      state.idle.cardFluxUsed = true; state.idle.cardFluxCount = (state.idle.cardFluxCount || 0) + 1;
+      var frontDied = false;
+      for (var fi = state.idle.enemies.length - 1; fi >= 0; fi--) { var fe = state.idle.enemies[fi]; if (!fe || !fe.arrived || !(fe.hp > 0)) continue; fe.hp -= (fe.maxHp || fe.hp) * cmF.polarFlux.pct; if (fe.hp <= 0) { if (fi === 0) frontDied = true; else idleRemoveDeadEnemyAt(fi); } }
+      if (frontDied) idleCheckFrontDeath();
+    })();
     var regenI = equippedRegen(state);
     if (regenI && regenI.pct > 0 && state.idle.playerHp != null) {
       if (state.idle.regenTimer == null) state.idle.regenTimer = regenI.intervalSec;
@@ -7629,7 +7691,7 @@ function createGame(opts) {
         state.idle.salvoBurstNo = (state.idle.salvoBurstNo || 0) + 1; /* v957: burst number within this level attempt (reset in idleResetHeroHp) */
         var svI = salvoSpec(state.equippedWeapons, function (wd) { return weaponLevelStats(wd); });
         var isCritBurstI = fbI.critRate > 0 && (salvoForces(svI, state.idle.salvoBurstNo) || fortressCritRoll('idle', 'p', state.idle.fortressCannonBurstNo) < fbI.critRate);
-        state.idle.fortressCannonCritMult = isCritBurstI ? salvoBurstMult(svI, state.idle.salvoBurstNo, fbI.critMult) : 1;
+        state.idle.fortressCannonCritMult = isCritBurstI ? salvoBurstMult(svI, state.idle.salvoBurstNo, fbI.critMult * (1 + cardModsFrom(state).critDmg)) : 1; /* v985: card 7 */
         // Critical Mass (dmgRamp): flat bullet-damage multiplier, entirely separate from crit chance/damage above.
         // x10 the moment the cannon fires its first burst, then x10 again (compounding) on every further burst
         // that initializes: burst #1 -> x10, burst #2 -> x100, burst #3 -> x1000, etc.
@@ -7652,7 +7714,7 @@ function createGame(opts) {
           // different enemy shot to shot).
           var cannonTarget = idleFortressCannonPickTarget();
           if (cannonTarget) {
-            var cannonBulletDmg = IDLE_FORTRESS_CANNON_BULLET_DMG * heroBonusMult("atk") * (1 + fortressBonusFrom(state.fortressTech || {}).cannon) * (state.idle.fortressCannonCritMult || 1) * (state.idle.fortressCannonDmgRampMult || 1);
+            var cannonBulletDmg = IDLE_FORTRESS_CANNON_BULLET_DMG * heroBonusMult("atk") * (1 + fortressBonusFrom(state.fortressTech || {}).cannon) * (state.idle.fortressCannonCritMult || 1) * (state.idle.fortressCannonDmgRampMult || 1) * (1 + cardSoloBonus(cardModsFrom(state), idleHeroCount())); /* v985: card 11 */
             cannonTarget.hp -= cannonBulletDmg * idleEnemyDefTake(cannonTarget, cannonBulletDmg);
             state.idle.fortressCannonHitCount = (state.idle.fortressCannonHitCount || 0) + 1;
             // Log WHICH enemy this bullet actually landed on (target mode can
@@ -7826,8 +7888,10 @@ function createGame(opts) {
     var def = HERO_DEFS[aid], h = state.heroes[aid];
     if (!def || !h || !h.owned) return 0; // unequipped/removed mid-combat — this attacker just goes quiet
     if (idleHeroIsKo(aid)) return 0; // v527: KO'd heroes don't attack
-    return Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (def.atkMult || 1));
+    return Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (def.atkMult || 1) * cardHeroDmgMul(cardModsFrom(state), aid, idleHpFrac(), idleHeroCount())); /* v985: cards */
   }
+  function idleHpFrac() { var mx = idlePlayerMaxHp(); return mx > 0 && state.idle.playerHp != null ? state.idle.playerHp / mx : 1; }
+  function idleHeroCount() { return state.conquestRoster.filter(function (k) { return state.heroes[k] && state.heroes[k].owned; }).length; }
   function idleHeroBaseAtk(key) { var h = state.heroes[key]; return (h && h.owned) ? Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective()) : 0; } // base ATK stat = power level × attack constant (no skill bonuses)
   function idleHeroDefMult(key, A) { return defReduce(A, heroDefNet(state.heroes[key], heroBonusMult("def"))); }
   /* v954: limit skills (Death Strike) - a bar per hero that fills one step for every hit he takes; a KO empties it. Kept across levels. */
@@ -7889,7 +7953,10 @@ function createGame(opts) {
       state.idle.shieldHitCount = (state.idle.shieldHitCount || 0) + 1;
       if (state.idle.shield <= 0) { state.idle.shield = 0; state.idle.shieldPopped = true; state.idle.shieldBreakCount = (state.idle.shieldBreakCount || 0) + 1; }
     }
+    if (state.idle.cardInvulT > 0) return; /* v985: card 4 - invincible */
     state.idle.playerHp -= hitDmg;
+    var cmL = cardModsFrom(state); /* v985: card 4 triggers once per level attempt */
+    if (cmL.lastStand && !state.idle.cardInvulUsed && state.idle.playerHp > 0 && state.idle.playerHp < idlePlayerMaxHp() * cmL.lastStand.below) { state.idle.cardInvulUsed = true; state.idle.cardInvulT = cmL.lastStand.sec || 2; state.idle.cardFx = (state.idle.cardFx || 0) + 1; }
   }
   var idlePendingHits = []; // extra hits of a sub-second-interval hero, delivered a real interval later so they land spread out (not stacked into the 1s step)
   function idleAttackerIsMelee(aid) {
@@ -10498,7 +10565,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v984"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v985"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11929,7 +11996,7 @@ function renderCardDetailArt(idx) {
 function updateCardEffectBadge() {
   var el = document.getElementById("cardEffectBadge"); if (!el || cardDetailIdx == null) return;
   var card = game.state.cards[cardDetailIdx];
-  var fx = card && cardEffectFor(card.name);
+  var fx = card && cardEffectFor(cardEffectKeyAt(game.state, cardDetailIdx)); /* v985 */
   if (!fx) { el.classList.remove("show"); el.textContent = ""; return; }
   var equipped = cardEquipPos(cardDetailIdx) !== -1;
   el.classList.add("show");
@@ -11953,14 +12020,14 @@ function renderCardDevModPanel() {
   if (!cardDevModOn) { panel.innerHTML = ""; return; }
   var card = game.state.cards[cardDetailIdx];
   var name = card && card.name;
-  var key = name ? String(name).trim().toLowerCase() : "";
+  var key = cardEffectKeyAt(game.state, cardDetailIdx); /* v985: slot code for cards without a matching name */
   var base = key ? CARD_EFFECTS_BY_NAME[key] : null;
   if (!base) {
     panel.innerHTML = '<div class="cdm-none">This card\'s name doesn\'t match any card with a real coded effect, so there\'s nothing to tune. (Effects are matched by exact name — see the badge above.)</div>';
     return;
   }
   var fieldInfo = CARD_EFFECT_FIELD_INFO[base.kind] || {};
-  var current = cardEffectFor(name); // base merged with any existing override
+  var current = cardEffectFor(key); // base merged with any existing override
   var hasOverride = !!cardEffectOverridesStore()[key];
   var html = '<div class="cdm-hint">Dev Mod — tune this card\'s real numbers live. Persists in this save; no player build ever shows this panel.</div>';
   Object.keys(fieldInfo).forEach(function (field) {
@@ -16324,11 +16391,12 @@ function worldPvpBattle(march, def, ownerId, opts) {
   var atkDmgRamp = opts.dmgRamp !== undefined ? opts.dmgRamp : equippedDmgRamp(asim.state);
   var atkRegen = opts.regen !== undefined ? opts.regen : equippedRegen(asim.state);
   var atkSummonCall = opts.summonCall !== undefined ? opts.summonCall : equippedSummonCall(asim.state); /* v973: Drop Signal */
+  var atkCardMods = opts.cardMods !== undefined ? opts.cardMods : cardModsFrom(asim.state); /* v985: cards */
   /* v962: world PvP = Arena with troops, so both sides bring their weapons too (were left out unless the PvP Simulator passed them) */
   var kitOf = function (st) { var m = {}; (st.equippedWeapons || []).forEach(function (id) { if (st.weaponLevels && st.weaponLevels[id] > 0) m[id] = st.weaponLevels[id]; }); return botWeaponsToSim(m); };
   var atkKit = opts.atkWeapons !== undefined ? null : (asim === game ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : kitOf(asim.state));
   var defKit = opts.defWeapons !== undefined ? null : kitOf(dsim.state);
-  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, summonCall: atkSummonCall, aiSummonCall: opts.defSummonCall || null, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
+  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, summonCall: atkSummonCall, aiSummonCall: opts.defSummonCall || null, cardMods: atkCardMods, aiCardMods: opts.defCardMods || null, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
   var winner = sim.runToEnd();
   var atkFrac = atkMax > 0 ? 1 - sim.playerHp / atkMax : 0, defFrac = defMax > 0 ? 1 - sim.aiHp / defMax : 0;
   var atkRatio = atkFrac * LOSS_FACTOR * (1 - asim.lossReductionAmt()) * (1 - asim.heroLeadLossReduction(atkKeys));
@@ -26669,6 +26737,16 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var rng = opts.rng || Math.random;
   // Defense: each side's fortress DEF is measured against the other side's typical hit (same A/(A+DEF) rule as heroes); folded into the damage-taken multiplier once.
   var pRefA = playerStats.refAtk || 0, aRefA = aiStats.refAtk || 0;
+  // v985: card effects (opts.cardMods = the player's, opts.aiCardMods = the opponent's; bots carry none). Static ones are folded in here.
+  var cmP = opts.cardMods || null, cmA = opts.aiCardMods || null;
+  function cardStatic(st, cm, ost, nH) { if (!cm || !cm.any) return st; st = Object.assign({}, st);
+    if (cm.t1Def && st.fortType === 1 && ost.fortType === 1) st.dmgTakenMult = (st.dmgTakenMult || 1) * Math.max(0, 1 - cm.t1Def); /* card 6: 30% less damage taken */
+    if (cm.critDmg && st.critRate > 0) st.critMult = (st.critMult || 1) * (1 + cm.critDmg);
+    if (cm.soloAtk) st.cannonMult = (st.cannonMult || 1) * (1 + cardSoloBonus(cm, nH));
+    return st; }
+  var nHeroP = playerStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length, nHeroA = aiStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length;
+  var pStats0 = playerStats; playerStats = cardStatic(playerStats, cmP, aiStats, nHeroP); aiStats = cardStatic(aiStats, cmA, pStats0, nHeroA);
+  var cardInvP = 0, cardInvA = 0, cardLsP = false, cardLsA = false, cardPfP = false, cardPfA = false;
   playerStats = Object.assign({}, playerStats, { dmgTakenMult: (playerStats.dmgTakenMult || 1) * defReduce(aRefA, playerStats.fortDef || 0) });
   aiStats = Object.assign({}, aiStats, { dmgTakenMult: (aiStats.dmgTakenMult || 1) * defReduce(pRefA, aiStats.fortDef || 0) });
   var playerHp = playerStats.maxHp, aiHp = aiStats.maxHp;
@@ -26826,8 +26904,13 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var tr = opts.trace;
   function trAdd(k, v) { if (tr) tr.src[k] = (tr.src[k] || 0) + v * (aiStats.dmgTakenMult || 1); }
   function trAddAi(k, v) { if (tr) tr.aiSrc[k] = (tr.aiSrc[k] || 0) + v * (playerStats.dmgTakenMult || 1); }
+  function cardHpFrac(sd) { return sd === 'P' ? (playerStats.maxHp > 0 ? playerHp / playerStats.maxHp : 1) : (aiStats.maxHp > 0 ? aiHp / aiStats.maxHp : 1); }
+  function cardAtkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return cm ? cardHeroDmgMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1; }
+  function cardSkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return cm ? cardSkillMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1; }
+  function cardCdMul(sd) { var cm = sd === 'P' ? cmP : cmA; return cm ? 1 - cardCdBonus(cm, cardHpFrac(sd)) : 1; }
   sim.step = function () {
     tick++;
+    cardInvP = Math.max(0, cardInvP - dtS); cardInvA = Math.max(0, cardInvA - dtS); /* v985: card 4 timers */
     engaged = tick >= ARENA_ENGAGE_TICKS; // has infantry finished walking over yet (the whole-army fallback when hero positions aren't simulated)
     skTgt = {}; hitTgt = {}; limTgt = {};
     var playerFlash = [], aiFlash = [];
@@ -26859,7 +26942,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         var hitsNow = 0;
         while (cd[a.id] <= 1e-9 && hitsNow < 4) { // loop only matters if the interval is ever shorter than one tick
           cd[a.id] += iv; hitsNow++;
-          applyDmg(a.dmg, a.id, a.melee);
+          applyDmg(a.dmg * cardAtkMul(attackers === playerStats.attackers ? 'P' : 'A', a.id), a.id, a.melee); /* v985: cards */
           hitList.push(a.id);
           var lme = hh && hh.by[a.id]; if (lme && lme.limMax) lme.lim = Math.min(lme.limMax, lme.lim + 1); /* v954: every swing fills a limit bar, same as Conquest */
         }
@@ -26875,8 +26958,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       playerCd[a.key] -= cdStep;
       if (playerCd[a.key] <= 0) {
         if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
-        playerCd[a.key] += a.cooldown; playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
-        if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, a.value, 'p_')) playerDmg += a.value; } else if (posMode) { if (rangedHit(pHH, aHH, aiStats, a.key, a.value, skTgt, 'p_')) { playerDmg += a.value; projP += a.value; } } else { playerDmg += a.value; if (a.requiresClose) playerMeleeDmg += a.value; } trAdd('skill:' + a.key + '|' + a.name, a.value); }
+        playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
+        var av = a.value * cardSkMul('P', a.key); /* v985: cards */
+        if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; } else if (posMode) { if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
       }
     });
     aiStats.actives.forEach(function (a) {
@@ -26884,8 +26968,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       aiCd[a.key] -= cdStep;
       if (aiCd[a.key] <= 0) {
         if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
-        aiCd[a.key] += a.cooldown; aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
-        if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, a.value, 'a_')) aiDmg += a.value; } else if (posMode) { if (rangedHit(aHH, pHH, playerStats, a.key, a.value, skTgt, 'a_')) { aiDmg += a.value; projA += a.value; } } else { aiDmg += a.value; if (a.requiresClose) aiMeleeDmg += a.value; } trAddAi('skill:' + a.key + '|' + a.name, a.value); }
+        aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
+        var avA = a.value * cardSkMul('A', a.key); /* v985: cards */
+        if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; } else if (posMode) { if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
       }
     });
     // v954: limit skills (Death Strike), same rule as Conquest: full bar + an enemy in sword reach -> cleave the nearest N standing enemy heroes
@@ -27170,8 +27255,18 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (playerGuard > 0 && toPlayer > 0) { var pgS = Math.min(playerGuard, toPlayer); playerGuard -= pgS; toPlayer -= pgS; }
     if (aiShield > 0 && toAi > 0) { aiShieldHit = Math.min(aiShield, toAi); aiShield -= aiShieldHit; toAi -= aiShieldHit; }
     if (playerShield > 0 && toPlayer > 0) { playerShieldHit = Math.min(playerShield, toPlayer); playerShield -= playerShieldHit; toPlayer -= playerShieldHit; }
+    if (cardInvP > 0) toPlayer = 0; if (cardInvA > 0) toAi = 0; /* v985: card 4 - invincible */
     aiHp = Math.max(0, aiHp - toAi);      // dmgTakenMult: armor (world PvP troop defense / wall); 1 = none, as in the live Arena
     playerHp = Math.max(0, playerHp - toPlayer);
+    [['P', cmP], ['A', cmA]].forEach(function (pr) { /* v985: cards 4 + 5 trigger once per fight */
+      var sd = pr[0], cm = pr[1]; if (!cm || !cm.any) return; var hpS = sd === 'P' ? playerHp : aiHp, mxS = sd === 'P' ? playerStats.maxHp : aiStats.maxHp; if (!(hpS > 0)) return;
+      if (cm.lastStand && !(sd === 'P' ? cardLsP : cardLsA) && hpS < mxS * cm.lastStand.below) { if (sd === 'P') { cardLsP = true; cardInvP = cm.lastStand.sec || 2; } else { cardLsA = true; cardInvA = cm.lastStand.sec || 2; } }
+      if (cm.polarFlux && !(sd === 'P' ? cardPfP : cardPfA) && hpS < mxS * cm.polarFlux.below) {
+        if (sd === 'P') cardPfP = true; else cardPfA = true;
+        var ohh = sd === 'P' ? aHH : pHH; if (ohh) ohh.list.forEach(function (e) { if (e.ko || e.dead) return; e.hp -= e.max * cm.polarFlux.pct; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; } });
+        sim.cardFlux = (sim.cardFlux || 0) + 1;
+      }
+    });
     // Regen: ticks on its own counter, independent of the attack/cannon
     // cooldowns above. Only heals while still alive this tick (a fully-
     // defeated player doesn't get revived by it — `done` below already
@@ -27300,7 +27395,7 @@ function runArenaBattle(onTick, onDone) {
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
-  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), cardMods: cardModsFrom(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct() });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one
