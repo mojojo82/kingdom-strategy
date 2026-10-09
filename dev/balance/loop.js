@@ -4,7 +4,7 @@
    - Duplicate copies a weapon you already have: every Duplicate build is tried once per copy target ("dup>hex" = Duplicate copying Hex Shield).
    - Each build fights a fixed sample of the field both ways (once as attacker, once as defender) -> overall score 0-100 and rank.
    - Loop checks: META = EMP + Railgun + Clone Task. COUNTER = EMP + Status Wave + any. COUNTER-COUNTER = Hex Shield + Railgun + any.
-   Optional overrides in --cond for "what if" runs (sim only): cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
+   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
 const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
@@ -46,7 +46,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     for (let a = 0; a < W.length; a++) for (let c = a + 1; c < W.length; c++) for (let d = c + 1; d < W.length; d++) {
       const ids = [W[a], W[c], W[d]], base = ids.map(sh).join("+");
       if (!ids.includes("duplicate")) { E.push({ ids, name: base, kit: kitFor(ids, null) }); continue; }
-      ids.filter((id) => id !== "duplicate" && id !== "orbit_shield").forEach((t) => E.push({ ids, dup: t, name: base.replace("dup", "dup>" + sh(t)), kit: kitFor(ids, t) }));
+      ids.filter((id) => id !== "duplicate" && id !== "orbit_shield" && !(COND.noShieldDup && id === "hex_shield")).forEach((t) => E.push({ ids, dup: t, name: base.replace("dup", "dup>" + sh(t)), kit: kitFor(ids, t) }));
     }
     const FIVE = ["gareth", "lyra", "roran", "kessa", "sera"], hs = {}; FIVE.forEach((k) => { hs[k] = { owned: true, level: COND.lvl, stars: COND.arms, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
     const keepPer = ARENA_FORT_HP_PER_POWER; ARENA_FORT_HP_PER_POWER = COND.per;
@@ -74,7 +74,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     const summary = { metaScore: score[M], metaRank: rank(M), top: [E[order[0]].name, score[order[0]]], countersBeatMeta: cBeat + "/" + counters.length, otherBeatMeta: beatMeta.filter((i) => !counters.includes(i)).map((i) => E[i].name),
       ccBeatCounters: ccRows.filter((r) => r.vsMeta === 0).map((r) => r.beatsCounters), metaLossCount: metaLoss.length, splitsWonAsAttacker: metaLoss.filter((x) => x[1] === 1 && x[3] === 1).length + "/" + metaLoss.filter((x) => x[1] === 1).length };
     /* who beats the meta, and how hard each build is to get (Legendary count). Easy counter = beats the meta both ways with few Legendaries. */
-    const CC = idx("hex+railgun+dup>hex"), legN = (e) => e.ids.filter((id) => (WEAPON_DEFS_BY_ID[id] || {}).rarity === "Legendary").length;
+    const CC = idx(COND.noShieldDup ? "hex+railgun+dup>railgun" : "hex+railgun+dup>hex"), legN = (e) => e.ids.filter((id) => (WEAPON_DEFS_BY_ID[id] || {}).rarity === "Legendary").length;
     const beaters = E.map((_, i) => i).filter((i) => i !== M && pair(i, M) >= 1.5).map((i) => ({ name: E[i].name, legendaries: legN(E[i]), score: score[i], rank: rank(i), vsMeta: pair(i, M), vsCounterCounter: pair(i, CC) }))
       .sort((a, b2) => a.legendaries - b2.legendaries || b2.score - a.score);
     ARENA_FORT_HP_PER_POWER = keepPer;
