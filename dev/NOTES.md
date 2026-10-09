@@ -880,3 +880,9 @@
 - Popup: "Collection Time (Max Xh)" with a live HH:MM:SS timer and bar, Energon/Valor rates, a grid of everything inside (rare items get a purple edge), "Next item in …", Claim and ✕. Opens from the 🌙 icon; pops up by itself only when you come back to a full chest ("Welcome back!"). The Forge collect also empties the whole chest. Older saves: the timer starts from how much Energon was already in the bucket.
 - Rolled in the game (seeded per chest), not on the server. Amounts are small and well under the anti-cheat limits.
 - Tests: new g225_idle_chest.js (fills while playing, 8h cap and 24 drops, claim pays out, Field Logistics 16h / 16 min, no VIP shards, popup + timer + full popup, fits 430px). g224 updated.
+
+### v1004 — the game runs on the server's clock (TEST)
+- Harley: lock the Idle Chest to the server's clock. Locking only the chest would leave production, the build/research/training timers and the Energon/Valor bucket open to the same "move the phone clock forward" trick, so the whole game clock is fixed instead.
+- On load, every time the app comes back to the front, and every 10 min, the game asks the page's web server for the time (HEAD request, Date header). If the phone is more than a minute off, the difference goes into `ksClockSkew`, which `vnow()` (the game clock everything already uses) adds. The game doesn't tick until the check answers; after 5 s with no answer it carries on with the phone clock and tries again later.
+- A clock moved forward while the app was in the background now gives only the real time that passed. Saves made with a clock that was ahead just wait (production pauses) until real time catches up.
+- Test: new g226_server_clock.js (phone 8 h ahead → game follows the server; going to the background and coming back with the clock moved 8 h gives ~10 s of chest; the game waits while checking; small differences ignored; server not answering → game still runs).

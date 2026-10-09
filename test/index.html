@@ -5194,6 +5194,26 @@ var devSpeedMult = 1;
 var vRealAnchor = Date.now();
 var vVirtualAnchor = Date.now();
 function vnow() { return vVirtualAnchor + (Date.now() - vRealAnchor) * devSpeedMult; }
+/* v1004 (Harley): the game runs on the SERVER's clock, so moving the phone's clock forward can't fast-forward the Idle Chest, production,
+   build/research/training timers or anything else. The page's own web server sends its time (the Date header); if the phone is more than
+   a minute off, that difference is added to the game clock. The game doesn't tick until the clock is checked (on load and every time the app
+   comes back to the front); if the check fails it carries on with the phone clock and tries again. */
+var ksClockSkew = 0, ksClockReady = false, ksClockBusy = false, KS_CLOCK_MIN_SKEW_MS = 60000;
+function ksApplyClockSkew(ms) { if (!isFinite(ms)) return; if (Math.abs(ms) < KS_CLOCK_MIN_SKEW_MS) ms = 0; vVirtualAnchor += ms - ksClockSkew; ksClockSkew = ms; }
+function ksClockCheck() {
+  if (ksClockBusy) return; ksClockBusy = true; var t0 = Date.now(), done = false;
+  function finish(skew) { if (done) return; done = true; ksClockBusy = false; if (skew != null) ksApplyClockSkew(skew); ksClockReady = true; }
+  setTimeout(function () { finish(null); }, 5000); /* no answer in 5 s: carry on, the next check will fix it */
+  try {
+    fetch(location.href.split("#")[0].split("?")[0] + "?clk=" + t0, { method: "HEAD", cache: "no-store" }).then(function (r) {
+      var d = Date.parse(r.headers.get("date") || ""), t1 = Date.now();
+      finish(isFinite(d) ? d + 500 - (t0 + t1) / 2 : null); /* the header is whole seconds: +0.5 s; compare with the middle of the round trip */
+    }, function () { finish(null); });
+  } catch (e) { finish(null); }
+}
+ksClockCheck();
+document.addEventListener("visibilitychange", function () { if (!document.hidden) { ksClockReady = false; ksClockCheck(); } });
+setInterval(function () { if (!document.hidden) ksClockCheck(); }, 600000);
 function setDevSpeed(mult) {
   vVirtualAnchor = vnow();
   vRealAnchor = Date.now();
@@ -10768,7 +10788,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1003"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1004"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16910,7 +16930,7 @@ function adoptSharedMarchResults() {
     myMarchPublished[marchRecordKey(PLAYER_ID, m.id)] = "resolved";
     changed = true;
   });
-  if (changed) { try { game.tick(); persist(); render(); } catch (e) {} }
+  if (changed) { try { if (ksClockReady) game.tick(); persist(); render(); } catch (e) {} }
 }
 function fetchSaveForOwner(ownerId) {
   var path = (ownerId === "owner") ? "save/main" : ("players/" + ownerId + "/save/main");
@@ -29347,7 +29367,7 @@ function renderArenaBattleScreen() {
 // be thrown away on the reload Reconnect does; freezing here makes the
 // banner's meaning literal ("nothing is happening on this device right
 // now") instead of a game that visibly keeps running behind a warning.
-setInterval(function () { if (deviceIsActive) { game.tick(); processMarchResolutions(); syncMyMarchRecords(); foreignResolveSweep(); persist(); } render(); }, 1000);
+setInterval(function () { if (deviceIsActive && ksClockReady) { game.tick(); processMarchResolutions(); syncMyMarchRecords(); foreignResolveSweep(); persist(); } render(); }, 1000);
 // v765: combat advances in its own fixed 125 ms slices, polled fast so the engine state moves smoothly instead of in one burst per second. tick() above still calls the same advance (shared bank), so nothing is double counted.
 setInterval(function () { if (deviceIsActive && !document.hidden) { try { game.tickCombat(); } catch (e) { console.error(e); } } }, 30);
 // Cloud sync runs on its own, slower interval (not every tick) — the db
