@@ -667,3 +667,8 @@
 - Balance kit `--only arena --vs v959`: hero picture unchanged (Lyra must-pick, Gareth / Torvald least missed), small shifts only.
 - Loop (results/loop_v969.json): meta 92 / rank 26; #1 Hex + EMP + Railgun 99; 7/15 counters beat the meta.
 - Railgun idea tested in scratch copies only (not in the game): "droid link" (while your Clone droid stands, EMP can't reset or freeze your Railgun) -> meta 99 / #2 at Lv40 and Lv80 with the loop working; Lv20 still broken (Railgun + shield builds beat the meta). "Charge holds through EMP" for every Railgun made all Railgun builds 100 and broke the loop. Hex nerfs (85%..30%) barely moved anything.
+
+### v970 — Railgun "droid link" (TEST)
+- Harley picked option B: while your own Clone Task droid stands, enemy EMP can't stop (stun-freeze) or reset your Railgun. Only builds with Clone Task + Railgun get it (the meta). Text added to both cards ("Droid link: ..."). `fxDroidUp(S)` in arenaMakeSim. Conquest unaffected (no enemy EMP there).
+- Test: new g209_droid_link.js. g200-g208 pass.
+- Loop: Lv40 meta 97 / rank 5, only 2 non-counter builds beat it (Hex + EMP + Dup>Hex, Hex + Railgun + Wave), meta beats Hex + EMP + Railgun both ways, 7/15 counters beat it, counter-counter beats 14/15 counters and loses to the meta. Lv80 96 / rank 10, 5 others beat it. Lv20 (weapons Lv10) still broken: 94 / rank 38, Railgun + shield builds beat it both ways, 0/15 counters work.

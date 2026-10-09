@@ -5332,7 +5332,7 @@ WEAPON_DEFS.push({
 });
 WEAPON_DEFS.push({
   id: "railgun", name: "Railgun", icon: "🧲", kind: "fx", fx: "rail", rarity: "Legendary", cooldown: 30, count: 0, dmgPct: 0, p: { countdown: 10, fortPct: 10, cloneDelay: 10, droneOff: 10 },
-  desc: function (d, st) { return "Does not fire when the round opens. After a " + st.p.countdown + "s countdown it hits the enemy fortress for " + st.p.fortPct + "% of its max HP, knocks out every enemy hero, switches off their drone for " + st.p.droneOff + "s and delays their next Clone Task by " + st.p.cloneDelay + "s. Recharge " + st.cooldown + "s."; },
+  desc: function (d, st) { return "Does not fire when the round opens. After a " + st.p.countdown + "s countdown it hits the enemy fortress for " + st.p.fortPct + "% of its max HP, knocks out every enemy hero, switches off their drone for " + st.p.droneOff + "s and delays their next Clone Task by " + st.p.cloneDelay + "s. Recharge " + st.cooldown + "s. Droid link: while your own Clone Task droid stands, enemy EMP can't stop or reset your Railgun."; },
   rows: function (st) { return [["Countdown", st.p.countdown + "s"], ["Fortress damage", st.p.fortPct + "% of max HP"], ["Clone Task delay", st.p.cloneDelay + "s"], ["Recharge", st.cooldown + "s"]]; },
   levelMods: [
     { atLevel: 10, p: { fortPct: 15, cloneDelay: 15 } },
@@ -5342,7 +5342,7 @@ WEAPON_DEFS.push({
 });
 WEAPON_DEFS.push({
   id: "clone_task", name: "Clone Task", icon: "🤖", kind: "fx", fx: "clone", rarity: "Legendary", cooldown: 12, count: 0, dmgPct: 0, p: { mult: 1, selfDestructPct: 0 },
-  desc: function (d, st) { return "Summons a melee AI droid with " + st.p.mult + "× Gareth's HP and attack. A new droid every " + st.cooldown + "s once the last is destroyed." + (st.p.selfDestructPct > 0 ? " Self-destruct: a destroyed droid explodes for " + st.p.selfDestructPct + "% of the enemy fortress's max HP." : ""); },
+  desc: function (d, st) { return "Summons a melee AI droid with " + st.p.mult + "× Gareth's HP and attack. A new droid every " + st.cooldown + "s once the last is destroyed. Droid link: while it stands, enemy EMP can't stop or reset your Railgun." + (st.p.selfDestructPct > 0 ? " Self-destruct: a destroyed droid explodes for " + st.p.selfDestructPct + "% of the enemy fortress's max HP." : ""); },
   rows: function (st) { return [["Droid strength", st.p.mult + "× Gareth"], ["Cooldown", st.cooldown + "s"], ["Self-destruct", st.p.selfDestructPct > 0 ? st.p.selfDestructPct + "% fortress HP" : "locked (Lv.50)"]]; },
   levelMods: [
     { atLevel: 10, p: { mult: 1.5 } },
@@ -10397,7 +10397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v969"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v970"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26756,6 +26756,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S, keep = []; S.pend.forEach(function (q) { if (q.at <= fxNowS + 1e-9) fxStunTry(q.tgt, q.sec); else keep.push(q); }); S.pend = keep; });
     // v967/v968: EMP pulses fly (ARENA_WEAPON_FLIGHT_TICKS) and act when they land. All pulses landing in the same tick act together,
     // so EMP vs EMP stuns both fortresses (no attacker-goes-first win). A pulse already in the air still lands if its sender gets stunned.
+    function fxDroidUp(S) { return S.inst.some(function (y) { return y.k === 'clone' && y.droid && !y.droid.ko && !y.droid.dead; }); }
     function fxEmpTick() {
       ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S; if (S.stun > 0) return; S.inst.forEach(function (ins) { if (ins.k !== 'emp') return; ins.t -= dtS; if (ins.t > 1e-9) return;
         ins.t += ins.cd; S.casts.emp = (S.casts.emp || 0) + 1; empQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: sd, p: ins.p, m: ins.mag }); }); });
@@ -26763,7 +26764,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var hit = land.map(function (q) { var c = fxCtx(q.sd), O = c.O, tgt = q.sd === 'P' ? 'A' : 'P', b0 = O.blocked; fxStunTry(tgt, (q.p.stun || 2) * q.m);
         if (q.p.aftershock > 0) O.pend.push({ at: fxNowS + (q.p.aftershockDelay || 3), tgt: tgt, sec: q.p.aftershock * q.m }); return O.blocked > b0 ? null : q; });
       hit.forEach(function (q) { if (!q) return; var O = fxCtx(q.sd).O; // landed (not soaked by Status Wave): cancel the target's running beams + buffs and reset every weapon reload
-        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
+        O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; if (x.k === 'rail' && fxDroidUp(O)) return; /* v970: droid link - an EMP can't reset a linked Railgun */ x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
         O.wall = 0; O.repLeft = 0;
         if (q.sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
         else { activeBeams = []; (opts.weapons || []).forEach(function (wp) { weaponCd[wp.id] = wcd(wp); }); }
@@ -26786,7 +26787,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         var c = fxCtx(sd), S = c.S, O = c.O;
         S.inst.forEach(function (ins) {
           if (ins.k !== kind) return;
-          if (S.stun > 0 && kind !== 'sw') return;
+          // v970: droid link - while this side's Clone Task droid stands, its Railgun keeps charging (and fires) through enemy EMP stuns
+          var linked = kind === 'rail' && fxDroidUp(S);
+          if (S.stun > 0 && kind !== 'sw' && !linked) return;
           ins.t -= dtS;
           if (ins.t > 1e-9) return;
           var cd = ins.cd, P = ins.p, m = ins.mag;
