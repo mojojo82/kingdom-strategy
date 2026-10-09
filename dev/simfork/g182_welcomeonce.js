@@ -24,7 +24,7 @@ let slowCloud = false;
   /* save everywhere, then pretend the last visit was 3 hours ago (both the phone's copy and the cloud copy) */
   const lsKeys = await P.evaluate(() => { persist(); cloudSyncNow(true); return Object.keys(localStorage); });
   await P.waitForTimeout(1500);
-  const AGO = Date.now() - 3 * 3600 * 1000;
+  const AGO = Date.now() - 9 * 3600 * 1000; /* v1002: the popup now needs a FULL bucket (8 h cap) */
   const sk = Object.keys(store).find((k) => /players\/[^/]+\/save\/main$/.test(k)); store[sk].bucket.at = AGO; store[sk].bucket.en = 0; delete store[sk].bucket.away;
   const e0 = store[sk].energon || 0;
   await P.evaluate((AGO) => { Object.keys(localStorage).forEach((k) => { try { const v = JSON.parse(localStorage.getItem(k)); if (v && v.bucket && typeof v.bucket === "object") { v.bucket.at = AGO; v.bucket.en = 0; delete v.bucket.away; localStorage.setItem(k, JSON.stringify(v)); } } catch (e) {} }); }, AGO);
@@ -42,7 +42,7 @@ let slowCloud = false;
   const r2 = await P.evaluate(async () => {
     const st = game.state, e0 = Math.floor(st.energon); window.ksWelcomeBackCooldownReset && window.ksWelcomeBackCooldownReset();
     Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange"));
-    st.bucket.at = Date.now() - 2 * 3600 * 1000; /* the phone froze the page for 2 h */
+    st.bucket.at = Date.now() - 9 * 3600 * 1000; st.bucket.en = 0; st.bucket.val = 0; /* the phone froze the page for 9 h (v1002: full bucket needed) */
     Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); window.dispatchEvent(new Event("pageshow")); window.dispatchEvent(new Event("focus"));
     let shows = 0;
     for (let i = 0; i < 30; i++) { await new Promise((r) => setTimeout(r, 500)); const p = document.getElementById("wbPop"); if (p && p.style.display === "flex") { shows++; document.getElementById("wbBtn").click(); } }
@@ -64,10 +64,10 @@ let slowCloud = false;
   });
   console.log("a second 'away' right after collecting -> popups:", r4.shows, "| went into the idle bucket:", r4.bucketGain);
   if (!process.env.NOASSERT) { assert.strictEqual(r4.shows, 0, "no second popup"); assert.ok(r4.bucketGain >= 19 && r4.bucketGain <= 21, "kept in the bucket"); }
-  console.log("switching back after 2 h in the background -> popups:", r2.shows, "| energon gained", r2.gained, "(80 expected)");
-  if (!process.env.NOASSERT) { assert.strictEqual(r2.shows, 1, "popup once on resume"); assert.ok(r2.gained >= 78 && r2.gained <= 82, "paid once on resume"); }
-  console.log("Welcome back popups after one 3 h absence:", shows, "| energon before", e0, "after", e1, "(3 h x 40/h = 120 expected)");
+  console.log("switching back after 9 h in the background (8 h cap) -> popups:", r2.shows, "| energon gained", r2.gained, "(320 expected = 8 h cap)");
+  if (!process.env.NOASSERT) { assert.strictEqual(r2.shows, 1, "popup once on resume"); assert.ok(r2.gained >= 316 && r2.gained <= 324, "paid once on resume"); }
+  console.log("Welcome back popups after one 9 h absence:", shows, "| energon before", e0, "after", e1, "(8 h cap x 40/h = 320 expected)");
   console.log("errs", errs.slice(0, 3));
-  if (!process.env.NOASSERT) { assert.strictEqual(shows, 1, "popup once"); assert.ok(e1 - e0 >= 115 && e1 - e0 <= 125, "paid once"); assert.deepStrictEqual(errs, []); console.log("ALL OK"); }
+  if (!process.env.NOASSERT) { assert.strictEqual(shows, 1, "popup once"); assert.ok(e1 - e0 >= 315 && e1 - e0 <= 325, "paid once"); assert.deepStrictEqual(errs, []); console.log("ALL OK"); }
   await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

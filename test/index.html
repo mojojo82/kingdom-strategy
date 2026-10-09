@@ -1958,6 +1958,15 @@
   #mapReconBtn { display:flex; position:absolute; right:10px; top:10px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
   #mapReconBtn .mmi { font-size:24px; line-height:1; }
   html.ks-mail-on #mapReconBtn { top:66px; }
+  /* v1002: idle rewards (the away bucket) on the world map, same look as the mailbox, with a fill bar; glows when there's something to collect */
+  #mapIdleBtn { display:none; position:absolute; right:10px; top:148px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
+  body[data-screen="world"] #mapIdleBtn { display:flex; }
+  #mapIdleBtn .mmi { font-size:22px; line-height:1; margin-top:-6px; }
+  #mapIdleBtn .mib { position:absolute; left:6px; right:6px; bottom:5px; height:5px; border-radius:3px; background:rgba(0,0,0,.55); overflow:hidden; }
+  #mapIdleBtn .mib i { display:block; height:100%; width:0; background:linear-gradient(90deg,#c9a24a,#f0c95f); }
+  #mapIdleBtn.has { border-style:solid; border-color:#f0c95f; }
+  #mapIdleBtn.full { animation:mapMailPulse 1.8s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { #mapIdleBtn.full { animation:none; } }
   /* v927: server chip sits top-right of the map on World; X/Y of the view centre at the bottom middle */
   #mapviewportWrap > #ksFbBadge { position:absolute !important; top:6px !important; right:6px !important; left:auto !important; bottom:auto !important; z-index:7 !important; max-width:52% !important; }
   body[data-screen="world"] #mapMailBtn { top:36px; }
@@ -1987,6 +1996,7 @@
   @media (max-width:900px) { /* phones: sit just above the chat bar (it covers the bottom of the map), and keep the 🔥 server chip off the bottom nav */
     body[data-screen="world"] #mapReconBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
     body[data-screen="world"] #mapMailBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); } /* v929: mailbox above recon */
+    body[data-screen="world"] #mapIdleBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 112px); } /* v1002: idle rewards above the mailbox */
     #ksFbBadge { bottom:calc(var(--bnH,86px) + 54px) !important; z-index:39 !important; }
     body[data-screen="world"] #mapCoords { position:fixed; bottom:calc(var(--bnH,86px) + 46px + 10px); z-index:39; }
     body[data-screen="world"] #mapMailBtn, body[data-screen="world"] #mapReconBtn, html.ks-mail-on body[data-screen="world"] #mapReconBtn { top:auto; }
@@ -2674,6 +2684,7 @@
             <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
             <div id="ksEvDock"></div>
             <button id="mapReconBtn" type="button" title="Intel &amp; Recon" aria-label="Intel and Recon"><span class="mmi">🛰️</span></button>
+            <button id="mapIdleBtn" type="button" title="Idle rewards" aria-label="Idle rewards"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
             <div id="mapviewport">
               <div id="mapworld">
                 <div id="mapMarchLayer"></div>
@@ -3231,7 +3242,7 @@
             <div class="dev-sub">
               <div class="dev-sub-header" data-target="devSubWelcome"><span class="dev-sub-arrow">▸</span> 🌙 Welcome-back popup</div>
               <div class="dev-sub-body" id="devSubWelcome" style="display:none;">
-                <div class="dev-tools-hint">Shown when you return after being away and idle rewards were banked. These apply to this device; set the defaults in WB_DEFAULTS before release.</div>
+                <div class="dev-tools-hint">Pops up when you return and the idle-rewards bucket is FULL (v1002); otherwise the rewards wait in the 🌙 icon on the World map. These apply to this device; set the defaults in WB_DEFAULTS before release.</div>
                 <div class="dev-tools-row"><label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="wbOn" autocomplete="off"> Popup enabled</label></div>
                 <div class="dev-tools-row"><label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="wbAuto" autocomplete="off"> Auto-collect (popup just reports what was added)</label></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:130px;">Minimum time away:</span><select id="wbMin" autocomplete="off"><option value="20">20 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900">15 min</option><option value="3600">1 hour</option></select></div>
@@ -10696,7 +10707,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1001"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1002"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25452,8 +25463,28 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
     if (!a) return;
     if (Date.now() - lastShownAt < 180000) { game.bucketAwayClear(); return; }
     if (!cfg.on || a.sec < cfg.minSec || (a.en < 1 && a.val < 1)) { game.bucketAwayClear(); return; }
+    if (!bucketFull()) { game.bucketAwayClear(); return; } /* v1002 (Harley): only pops up in your face when the bucket is full; otherwise it waits in the 🌙 icon on the World map */
     show(a, false);
   }, 700);
+  function bucketFull() { var b = game.bucketInfo(); return (b.capEn > 0 && b.energon >= b.capEn * 0.999) || (b.capVal > 0 && b.valor >= b.capVal * 0.999); }
+  /* v1002: the 🌙 World map icon - shows how full the bucket is; tap to see it and collect whenever you like */
+  function openBucket() {
+    var b = game.bucketInfo(), pct = Math.round(100 * Math.max(b.capEn ? b.energon / b.capEn : 0, b.capVal ? b.valor / b.capVal : 0)), has = b.energon >= 1 || b.valor >= 1;
+    pop.innerHTML = '<div class="wb-box"><div class="wb-t">Idle rewards</div><div class="wb-s">Fills while you\'re away · ' + Math.min(100, pct) + '% full' + (pct >= 100 ? ' (it has stopped filling)' : '') + '</div>' +
+      '<div class="wb-r"><div class="wb-i">' + ico("energon") + ' ' + fmtCompact(b.energon) + '<small>Energon</small></div><div class="wb-i">' + ico("valor") + ' ' + fmtCompact(b.valor) + '<small>Valor</small></div></div>' +
+      '<button id="wbBtn">' + (has ? "Collect" : "Close") + '</button></div>';
+    pop.style.display = "flex";
+    document.getElementById("wbBtn").onclick = function () { pop.style.display = "none"; if (has) { game.collectBucket(); persist(); wbCloudSave(); render(); try { renderForge(); } catch (e) {} updateForgeBtn(); } paintIdleBtn(); };
+  }
+  function paintIdleBtn() {
+    var btn = document.getElementById("mapIdleBtn"); if (!btn) return; var b; try { b = game.bucketInfo(); } catch (e) { return; }
+    var f = Math.max(b.capEn ? b.energon / b.capEn : 0, b.capVal ? b.valor / b.capVal : 0);
+    btn.querySelector(".mib i").style.width = Math.round(Math.min(1, f) * 100) + "%";
+    btn.classList.toggle("has", b.energon >= 1 || b.valor >= 1); btn.classList.toggle("full", f >= 0.999);
+    btn.title = "Idle rewards: " + Math.round(Math.min(1, f) * 100) + "% full";
+  }
+  (function () { var btn = document.getElementById("mapIdleBtn"); if (btn) btn.onclick = function (e) { e.stopPropagation(); openBucket(); }; })();
+  setInterval(paintIdleBtn, 2000); setTimeout(paintIdleBtn, 1500);
   function sync() {
     var o = document.getElementById("wbOn"), au = document.getElementById("wbAuto"), m = document.getElementById("wbMin"), t = document.getElementById("wbTest");
     if (!o) return;
@@ -25464,7 +25495,7 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
     t.onclick = function () { var save0 = cfg.auto; cfg.auto = false; show({ sec: 3 * 3600, en: 1234, val: 567 }, true); cfg.auto = save0; };
   }
   sync(); document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubWelcome"]')) setTimeout(sync, 0); });
-  window.__wb = { cfg: cfg, show: show };
+  window.__wb = { cfg: cfg, show: show, openBucket: function () { openBucket(); }, full: function () { return bucketFull(); } };
 })();
 
 (function utilPopups() {

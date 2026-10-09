@@ -866,3 +866,9 @@
 - Harley: when uploading a new avatar, let the player control how much to zoom into the image.
 - Picking a photo now opens "Adjust your avatar": the photo fills a square frame; zoom 1-5x with a slider, pinch, or mouse wheel (zooms towards the fingers / pointer); drag to position (it always covers the frame). Save keeps exactly the framed part as a 256x256 WebP (JPEG fallback). That's also tiny to store and sync (~5 KB vs the raw photo). Cancel saves nothing. The same file can be picked again.
 - Test: new g223_avatar_crop.js (cancel, zoom, drag, saved 256x256 small).
+
+### v1002 — welcome-back popup only when the idle bucket is full; 🌙 icon on the World map (TEST)
+- Harley: only pop up in the player's face when the bucket is full; until then it's a small icon on the world map the player opens to collect whenever they want.
+- The away check still banks the bucket as before (8 h cap, quarter of the live rate), but the popup only shows when Energon or Valor has reached its cap. Otherwise the away marker is cleared quietly.
+- New #mapIdleBtn (🌙, same look as the mailbox, above it on phones, below recon on PC): a fill bar for how full the bucket is, solid gold border when there's something in it, pulsing when full. Tap → "Idle rewards" popup (amounts, % full, Collect). The Forge's collect still works too.
+- Test: new g224_idle_icon.js. g182 updated to the full-bucket rule (9 h away → popup once, paid the 8 h cap once).

@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (9 Oct 2026, TEST game v1001):** everything below is built and tested; TEST is deployed (v951-v1001 are TEST only). The live game link still serves the
+**State at handover (9 Oct 2026, TEST game v1002):** everything below is built and tested; TEST is deployed (v951-v1002 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
