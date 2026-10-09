@@ -5332,8 +5332,8 @@ WEAPON_DEFS.push({
 });
 WEAPON_DEFS.push({
   id: "railgun", name: "Railgun", icon: "🧲", kind: "fx", fx: "rail", rarity: "Legendary", cooldown: 30, count: 0, dmgPct: 0, p: { countdown: 10, fortPct: 10, cloneDelay: 10, droneOff: 10 },
-  desc: function (d, st) { return "Does not fire when the round opens. After a " + st.p.countdown + "s countdown it hits the enemy fortress for " + st.p.fortPct + "% of its max HP, knocks out every enemy hero, switches off their drone for " + st.p.droneOff + "s and delays their next Clone Task by " + st.p.cloneDelay + "s. Recharge " + st.cooldown + "s. Droid link: while your own Clone Task droid stands, enemy EMP can't stop or reset your Railgun."; },
-  rows: function (st) { return [["Countdown", st.p.countdown + "s"], ["Fortress damage", st.p.fortPct + "% of max HP"], ["Clone Task delay", st.p.cloneDelay + "s"], ["Recharge", st.cooldown + "s"]]; },
+  desc: function (d, st) { return "Does not fire when the round opens. After a " + st.p.countdown + "s countdown it hits the enemy fortress for " + st.p.fortPct + "% of its max HP, knocks out every enemy hero, switches off their drones for " + st.p.droneOff + "s and delays their next summon by " + st.p.cloneDelay + "s. Recharge " + st.cooldown + "s. Summon link: while one of your summons is on the field, enemy EMP can't stop or reset your Railgun."; },
+  rows: function (st) { return [["Countdown", st.p.countdown + "s"], ["Fortress damage", st.p.fortPct + "% of max HP"], ["Summon delay", st.p.cloneDelay + "s"], ["Recharge", st.cooldown + "s"]]; },
   levelMods: [
     { atLevel: 10, p: { fortPct: 15, cloneDelay: 15 } },
     { atLevel: 30, p: { fortPct: 20, cloneDelay: 20 } },
@@ -5342,12 +5342,12 @@ WEAPON_DEFS.push({
 });
 WEAPON_DEFS.push({
   id: "clone_task", name: "Clone Task", icon: "🤖", kind: "fx", fx: "clone", rarity: "Legendary", cooldown: 12, count: 0, dmgPct: 0, p: { mult: 1, selfDestructPct: 0 },
-  desc: function (d, st) { return "Summons a melee AI droid with " + st.p.mult + "× Gareth's HP and attack. A new droid every " + st.cooldown + "s once the last is destroyed. Droid link: while it stands, enemy EMP can't stop or reset your Railgun." + (st.p.selfDestructPct > 0 ? " Self-destruct: a destroyed droid explodes for " + st.p.selfDestructPct + "% of the enemy fortress's max HP." : ""); },
-  rows: function (st) { return [["Droid strength", st.p.mult + "× Gareth"], ["Cooldown", st.cooldown + "s"], ["Self-destruct", st.p.selfDestructPct > 0 ? st.p.selfDestructPct + "% fortress HP" : "locked (Lv.50)"]]; },
+  desc: function (d, st) { return "Summons a living clone of Gareth with " + st.p.mult + "× his HP and attack. A new clone every " + st.cooldown + "s once the last has fallen. Clones are summons: EMP can't stun them." + (st.p.selfDestructPct > 0 ? " Death burst: a fallen clone bursts for " + st.p.selfDestructPct + "% of the enemy fortress's max HP." : ""); },
+  rows: function (st) { return [["Clone strength", st.p.mult + "× Gareth"], ["Cooldown", st.cooldown + "s"], ["Death burst", st.p.selfDestructPct > 0 ? st.p.selfDestructPct + "% fortress HP" : "locked (Lv.50)"]]; },
   levelMods: [
     { atLevel: 10, p: { mult: 1.5 } },
     { atLevel: 30, p: { mult: 3 } }, /* v971: was 2 - with the droid link a tougher droid keeps the meta's Railgun firing (Harley: 3x; past ~3.25x the counters stop working) */
-    { atLevel: 50, p: { selfDestructPct: 5 }, note: "<b>Self-destruct</b>: a destroyed droid explodes for 5% of the enemy fortress's max HP" }
+    { atLevel: 50, p: { selfDestructPct: 5 }, note: "<b>Death burst</b>: a fallen clone bursts for 5% of the enemy fortress's max HP" }
   ]
 });
 WEAPON_DEFS.push({
@@ -10397,7 +10397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v971"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v972"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11214,8 +11214,8 @@ var WEAPON_RARITY_COLOR = { "Elite": "#3b82d6", "Super Rare": "#9145d1", "Epic":
 function weaponRarityChip(w) { return w.rarity ? ' <span class="wi-chip" style="background:' + (WEAPON_RARITY_COLOR[w.rarity] || "#888") + ';color:#fff;">' + w.rarity + '</span>' : ""; }
 var FX_P_LABELS = {
   emp: { aftershock: ["Aftershock stun", "s"] },
-  rail: { fortPct: ["Fortress damage", "% of max HP"], cloneDelay: ["Clone Task delay", "s"] },
-  clone: { mult: ["Droid strength", "× Gareth"], selfDestructPct: ["Self-destruct blast", "% of enemy fortress HP"] },
+  rail: { fortPct: ["Fortress damage", "% of max HP"], cloneDelay: ["Summon delay", "s"] },
+  clone: { mult: ["Clone strength", "× Gareth"], selfDestructPct: ["Death burst", "% of enemy fortress HP"] },
   drone: { pct: ["Drone damage", "% of a ranged hero"], pierce: ["Piercing rounds", ""] },
   dup: { eff: ["Copy strength", "%"] },
   dome: { red: ["Projectile reduction", "%"] },
@@ -26756,6 +26756,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S, keep = []; S.pend.forEach(function (q) { if (q.at <= fxNowS + 1e-9) fxStunTry(q.tgt, q.sec); else keep.push(q); }); S.pend = keep; });
     // v967/v968: EMP pulses fly (ARENA_WEAPON_FLIGHT_TICKS) and act when they land. All pulses landing in the same tick act together,
     // so EMP vs EMP stuns both fortresses (no attacker-goes-first win). A pulse already in the air still lands if its sender gets stunned.
+    // v972: "summons" = living summons (Clone Task clones today; Fortress III summons later). Drones (Droid Call) are machines - a separate category.
     function fxDroidUp(S) { return S.inst.some(function (y) { return y.k === 'clone' && y.droid && !y.droid.ko && !y.droid.dead; }); }
     function fxEmpTick() {
       ['P', 'A'].forEach(function (sd) { var S = fxCtx(sd).S; if (S.stun > 0) return; S.inst.forEach(function (ins) { if (ins.k !== 'emp') return; ins.t -= dtS; if (ins.t > 1e-9) return;

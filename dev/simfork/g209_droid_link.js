@@ -32,6 +32,6 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.linked >= 1, "with a droid up, the Railgun fires through enemy EMP");
   assert.strictEqual(r.noClone, 0, "without Clone Task, enemy EMP still keeps the Railgun from firing");
   assert.ok(r.noEmpFoe >= 1, "with no enemy EMP the Railgun fires as normal");
-  assert.ok(/Droid link/.test(r.card) && /Droid link/.test(r.cloneCard), "both cards explain the droid link");
+  assert.ok(/Summon link/.test(r.card) && /summon/i.test(r.cloneCard) && !/droid/i.test(r.card + r.cloneCard), "v972: cards talk about summons / clones, not droids");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
