@@ -728,3 +728,6 @@
 
 ### v979 — "Test" in every card description (TEST)
 - Harley: "put 1 word into the desc boxes". CARD_TEXT_DEFAULTS: slots 1-29 effect "Test", slot 30 Drop Signal.
+
+### v980 — effect cards say which effect they are (TEST)
+- Harley: "Regen gets Regen written in the box so I know what card it is at a glance". Any card named Critical Mass / Regen / Drop Signal shows that name in its description box (fills an empty box or placeholder; real text kept). v979 "Test" placeholders cleared. Drop Signal default description = "Drop Signal".
