@@ -764,3 +764,11 @@
 - Harley: "Polar flux is supposed to damage everyone. Even the player. It works like a suicide card but you can combo it with other cards to protect yourself from the ko".
 - Card 5 now blasts 30% max HP off both sides' heroes, clones and both fortresses (Arena), and enemies + your heroes, clones and fortress (Conquest). A fortress already inside Last Bastion (card 4) is spared; Last Bastion is checked after the blast, so if the flux drops you under 10% it catches the fall. Without protection the flux can KO you.
 - Test: g215 adds c5drop (own fortress drops) and c45 (cards 4+5 combo). ALL OK.
+
+### v988 — Kessa-only card numbers locked in (TEST)
+- Harley: card 11 should secretly make a Kessa-only build viable vs mid-tier players. Sims (dev/balance/kessa_cards.js, results in dev/balance/WEAPON_BUILDS.md) showed health-gated buffs barely fire because a 1-hero fortress dies fast.
+- Card 3 (Desperate Spark): Kessa base ATK +200%, always on (was +20% under 50% health).
+- Card 11 (Lone Wolf): +200% ATK with 0 or 1 hero; each hero after the first keeps 10% (2 heroes +20%, 3 +2%). New field `free: 1` (Dev Mod "Free heroes").
+- Sim result (Arena, same weapons both sides, opponent no cards): Kessa Lv40 alone vs a 5-hero Lv30 team wins 97%, vs Lv20 100%, vs Lv40 0%.
+- Card text defaults updated. The shared card catalog text wins if it was set, so Harley may need to edit cards 3/11 text there.
+- Test: g215 updated (c3 = x3 always, c11 one hero = x3). ALL OK.

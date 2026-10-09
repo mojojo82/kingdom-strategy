@@ -27,7 +27,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     eq([]); const g0 = game.idleAttackerDamage("gareth"), k0 = game.idleAttackerDamage("kessa");
     eq([0]); o.c1 = +(game.idleAttackerDamage("gareth") / g0).toFixed(3); o.c1lyra = game.idleAttackerDamage("lyra") === (eq([]), game.idleAttackerDamage("lyra"));
     st.idle.playerHp = game.idlePlayerMaxHp() * 0.4; eq([2]); o.c3 = +(game.idleAttackerDamage("kessa") / k0).toFixed(3); st.idle.playerHp = game.idlePlayerMaxHp();
-    eq([2]); o.c3full = game.idleAttackerDamage("kessa") === k0;
+    eq([2]); o.c3full = +(game.idleAttackerDamage("kessa") / k0).toFixed(3);
     eq([10]); o.c11five = +(game.idleAttackerDamage("gareth") / g0).toFixed(5); st.conquestRoster = ["gareth"]; eq([]); const g1 = game.idleAttackerDamage("gareth"); eq([10]); o.c11one = +(game.idleAttackerDamage("gareth") / g1).toFixed(3); st.conquestRoster = FIVE.slice();
     o.c11zeroBonus = cardSoloBonus(eq([10]), 0);
     /* Arena sims */
@@ -50,8 +50,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   });
   console.log(JSON.stringify(r));
   assert.ok(Math.abs(r.c1 - 1.1) < 0.01, "card 1: infantry +10% ATK"); assert.ok(r.c1lyra, "card 1 leaves ranged heroes alone");
-  assert.ok(Math.abs(r.c3 - 1.2) < 0.01, "card 3: Kessa +20% ATK under 50% health"); assert.ok(r.c3full, "card 3 off at full health");
-  assert.ok(r.c11five >= 1 && r.c11five < 1.0001, "card 11: almost nothing with 5 heroes"); assert.ok(Math.abs(r.c11one - 1.2) < 0.01, "card 11: +20% with 1 hero"); assert.strictEqual(r.c11zeroBonus, 2, "card 11: +200% with no heroes");
+  assert.ok(Math.abs(r.c3 - 3) < 0.01, "card 3: Kessa +200% ATK under 50% health"); assert.ok(Math.abs(r.c3full - 3) < 0.01, "card 3 (v988): always on, full health too");
+  assert.ok(r.c11five >= 1 && r.c11five < 1.001, "card 11: almost nothing with 5 heroes"); assert.ok(Math.abs(r.c11one - 3) < 0.01, "card 11 (v988): +200% with 1 hero"); assert.strictEqual(r.c11zeroBonus, 2, "card 11: +200% with no heroes");
   assert.ok(r.skillC8 > r.skillBase, "card 8: faster skills -> more skill damage");
   assert.ok(r.c9low === 0.05 && r.c9high === 0, "card 9: +5% cooldown bonus only under 90% health");
   assert.ok(r.c10 === 1.25 && r.c10off === 1, "card 10: +25% hero damage only above 25% cooldown bonus");
