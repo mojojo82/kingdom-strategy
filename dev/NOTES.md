@@ -678,3 +678,9 @@
 - `loop.js` now prints BEATERS (who beats the meta, with Legendary count). No zero-Legendary build beats the meta at Lv20/40/80.
 - Harley's call: leave the counter at 1 Legendary (no rarity changes).
 - Open: Hex + EMP + Duplicate(copy Hex) beats the meta AND the counter-counter at Lv40/80 (rank 1-3) - a hole. Early game: EMP at weapon Lv10 fires every 13s > Railgun's 10s countdown (test copy: EMP 8s at Lv10 fixes the Lv20 loop; Lv30 would need a new upgrade).
+
+### v971 — Clone Task droid 3x at Lv30 (TEST)
+- Harley: "we will do the 3x thing". Clone Task Lv30 upgrade: droid 2x -> 3x Gareth (Lv50 keeps 3x + self-destruct; Lv10 stays 1.5x). Applies in Conquest too (one rule set).
+- Droid sweep (test copies, loop.js cm override): above ~3.25x the counters stop beating the meta (1-3/15); the meta never takes sole #1 - Hex + EMP + Clone rises to joint top score. 3x is the best compromise.
+- Loop v971: Lv40 meta 99 / rank 3, 6/15 counters beat it, only Hex + EMP + Dup>Hex also beats it. Lv80 97 / rank 7, 6/15 counters, Orbit + Hex + EMP and Hex + EMP + Dup>Hex beat it. All tests g200-g209 pass.
+- Remaining holes = stacked shield + EMP. Harley: plug them with weapons only (no cards). "Railgun pierces shields" test copies gave results identical to no piercing - unverified, re-check next.
