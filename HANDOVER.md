@@ -115,6 +115,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Card 10 (Overclock) is for the future Type 2 fortress** (Harley): Fortress 2 tech (not built yet) will give an innate skill cooldown bonus; card 10 needs >25% cooldown bonus so it stays dead until then. Don't "fix" its trigger.
 - **Card 3 (Desperate Spark) is strong on purpose** (Harley, v988): Kessa +200% ATK always on, even in 5-hero teams (sims: a 5-hero team with it beats teams 10 levels higher). Future cards will compete for the slot, so only Kessa-focused builds take it. Don't nerf it unless Harley asks.
 - **Hanzo is blatantly powerful on purpose** (Harley, v992): VIP-pack only (`vipOnly`: can't be recruited with resources, kept off bots for now). Tuned so skill level 3 is worrying, 4 dominant, 5 a force of nature (see NOTES v992). Don't nerf without Harley.
+  v993 (Harley): no further buffs - Kessa (Arc Burst knocks him out mid-leap, plus Projection Wall) is his natural counter; "without kessa hes already dominating the whole game".
 - **Weapon build rankings are saved in `dev/balance/WEAPON_BUILDS.md`** - update it after weapon/combat changes so the info is never lost.
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
