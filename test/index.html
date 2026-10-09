@@ -10447,7 +10447,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v980"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v981"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11973,7 +11973,7 @@ var CARD_CATALOG_DOC = "assetitems/cardcatalog";
 var CARD_CATALOG_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Drop Signal", narrative: "" };
 // v978: card text written in the code (slot index -> text). Shown to every player in any slot the shared catalog leaves empty; an admin's
 // in-game edit (saved to the catalog) takes priority. Order per slot: shared catalog > the admin's own save text > these defaults.
-var CARD_TEXT_DEFAULTS = { 29: CARD_CATALOG_DROP_SIGNAL };
+var CARD_TEXT_DEFAULTS = { 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL }; /* v981: all three effect cards on cards 28-30 */
 // v980 (Harley): a card with an effect shows that effect's name in its description box (Regen -> "Regen"), so it's clear at a glance which
 // card it is. Fills an empty description or placeholder text (v979's "Test", the old long Drop Signal line); real text is left alone.
 var CARD_EFFECT_LABEL = { "critical mass": "Critical Mass", "regen": "Regen", "drop signal": "Drop Signal" };
@@ -12009,7 +12009,7 @@ function cardCatalogSettle() { /* also re-run after a save loads, so an admin's 
       var merged = [], changed = false;
       for (var i = 0; i < CARD_COUNT; i++) { var ci = cardTextOf(cat[i]); if (!ci.name && !ci.type && !ci.narrative && CARD_PLACEHOLDER_TEXT.indexOf(ci.effect) !== -1) { ci.effect = ""; changed = true; } merged.push(ci); } /* v980: "Test" placeholders cleared */
       if (K.isAdmin) merged.forEach(function (t, i) { var mine = game.state.cards[i]; if (cardTextBlank(t) && !cardTextBlank(mine)) { merged[i] = cardTextOf(mine); changed = true; } });
-      merged.forEach(function (t, i) { if (cardTextBlank(t) && CARD_TEXT_DEFAULTS[i] && !(CARD_TEXT_DEFAULTS[i] === CARD_CATALOG_DROP_SIGNAL && merged.some(function (u) { return u.name.trim().toLowerCase() === "drop signal"; }))) { merged[i] = cardTextOf(CARD_TEXT_DEFAULTS[i]); if (K.isAdmin) changed = true; } }); /* v978: text from the code */
+      merged.forEach(function (t, i) { var df = CARD_TEXT_DEFAULTS[i]; if (cardTextBlank(t) && df && !(df.name && merged.some(function (u) { return u.name.trim().toLowerCase() === df.name.toLowerCase(); }))) { /* skipped if that card already sits elsewhere */ merged[i] = cardTextOf(CARD_TEXT_DEFAULTS[i]); if (K.isAdmin) changed = true; } }); /* v978: text from the code */
       merged.forEach(function (t) { var lb = CARD_EFFECT_LABEL[t.name.trim().toLowerCase()]; if (lb && t.effect !== lb && (!t.effect || CARD_PLACEHOLDER_TEXT.indexOf(t.effect) !== -1)) { t.effect = lb; changed = true; } }); /* v980 */
       if (!K.isAdmin) changed = false;
       if (K.isAdmin) {

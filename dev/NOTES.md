@@ -731,3 +731,6 @@
 
 ### v980 — effect cards say which effect they are (TEST)
 - Harley: "Regen gets Regen written in the box so I know what card it is at a glance". Any card named Critical Mass / Regen / Drop Signal shows that name in its description box (fills an empty box or placeholder; real text kept). v979 "Test" placeholders cleared. Drop Signal default description = "Drop Signal".
+
+### v981 — Critical Mass and Regen cards exist (TEST)
+- Harley: put them now. CARD_TEXT_DEFAULTS: card 28 Critical Mass, card 29 Regen, card 30 Drop Signal, each with its name in the description box. A default is skipped if a card with that name already sits elsewhere in the shared list.

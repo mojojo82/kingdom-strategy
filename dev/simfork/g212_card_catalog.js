@@ -27,6 +27,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     game.state.cards[2].name = "Critical Mass"; game.state.equippedCards = [2];
     cardCatalogRaw = []; cardCatalogSettle(); await wait(50);
     o.playerName = game.state.cards[2].name; game.state.equippedCards = []; cardCatalogRaw = [{ name: "", effect: "Test" }, { name: "Critical Mass", effect: "" }, { name: "Regen", effect: "Test" }, { name: "Mine", effect: "Real text" }]; cardCatalogSettle(); await wait(50);
+    o.fresh = (cardCatalogRaw = [], cardCatalogSettle(), [27, 28, 29].map((i) => game.state.cards[i].name + ":" + game.state.cards[i].effect).join("|"));
+    cardCatalogRaw = [{ name: "", effect: "Test" }, { name: "Critical Mass", effect: "" }, { name: "Regen", effect: "Test" }, { name: "Mine", effect: "Real text" }]; cardCatalogSettle(); await wait(50);
     o.playerDefault = [0, 1, 2, 3, 29].map((i) => game.state.cards[i].name + ":" + game.state.cards[i].effect).join("|"); o.playerRamp = !!equippedDmgRamp(game.state);
     openCardDetailOverlay(2); o.readOnly = document.getElementById("cardDetailName").readOnly; o.devModHidden = document.getElementById("cardDevModBtn").style.display === "none"; closeCardDetailOverlay();
     game.state.cardEffectOverrides = { "critical mass": { multiplier: 999 } }; o.ovIgnored = cardEffectFor("Critical Mass").multiplier === 10;
@@ -46,6 +48,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.playerName === "" && !r.playerRamp && r.readOnly && r.devModHidden && r.ovIgnored, "a normal player can't make or edit card text or Dev Mod card values");
   assert.ok(r.saved && r.slot0 === "Old Card" && r.slot1 === "Kept" && r.last === "Drop Signal" && r.dropCount === 1, "admin save text fills empty slots, catalog text kept, Drop Signal in the last slot, written to the shared doc");
   assert.ok(r.adminEditable && r.dropFound, "an admin can edit; Drop Signal works from the catalog");
+  assert.strictEqual(r.fresh, "Critical Mass:Critical Mass|Regen:Regen|Drop Signal:Drop Signal", "v981: all three effect cards exist");
   assert.strictEqual(r.playerDefault, ":|Critical Mass:Critical Mass|Regen:Regen|Mine:Real text|Drop Signal:Drop Signal", "v978: text written in the code shows for every player in empty slots");
   assert.strictEqual(r.slot0Effect, "old text from the original save", "the admin's own save text beats the code default");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
