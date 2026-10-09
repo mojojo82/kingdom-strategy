@@ -101,3 +101,17 @@ Rerun: `node dev/balance/kessa_solo.js`.
 | ×5 (same as 5 heroes) | 0 | 57 | 80 | 97 |
 
 Kessa Lv80 vs a Lv60 team gives almost the same table (×3 / +200% = 73, ×2 / +300% = 97).
+
+### Kessa's 3 cards only (11, 2, 3), v987
+
+Grid over the three cards' numbers. Kessa win %, same setup as above. "always" = the health condition removed.
+Rerun: `node dev/balance/kessa_cards.js "[40,30]"`.
+
+- **The health conditions are the problem.** A 1-hero fortress dies so fast that "<50%" and "<30%" buffs barely get a chance to fire. Card 3 always on is worth far more than a bigger number.
+- **Vs Lv30 (mid tier)**, wins come from:
+  - card 11 +200% with card 3 +200% always on → **97%**
+  - card 11 +300% with card 3 +100% always on → 87–97%
+  - card 11 +100% with card 3 +200% always and card 2 +500% always → 97%
+- **Vs Lv20:** card 11 +100% with card 3 +100% always on → 100%.
+- **Vs equal Lv40:** best result is 38% (card 11 +400%, card 3 +200% always, card 2 +500% always). Basically not winnable.
+- With today's numbers (card 11 +20%, card 3 +20% under 50%, card 2 +30% under 30%): 0% at every gap.
