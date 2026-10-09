@@ -4,7 +4,7 @@
    - Duplicate copies a weapon you already have: every Duplicate build is tried once per copy target ("dup>hex" = Duplicate copying Hex Shield).
    - Each build fights a fixed sample of the field both ways (once as attacker, once as defender) -> overall score 0-100 and rank.
    - Loop checks: META = EMP + Railgun + Clone Task. COUNTER = EMP + Status Wave + any. COUNTER-COUNTER = Hex Shield + Railgun + any.
-   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; srf = Status Wave Reflect seconds; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
+   Optional overrides in --cond for "what if" runs (sim only): noShieldDup = Duplicate cannot copy Hex Shield; srf = Status Wave Reflect seconds; ban = ["emp_gun", ...] weapons left out; cm/ccd = Clone mult/cooldown, sd/scd = Status Wave duration/cooldown. */
 const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
@@ -25,7 +25,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
   const R = JSON.parse(await P.evaluate((COND) => {
     const SHORT = { missile_barrage: "missile", laser_beam: "laser", orbit_shield: "orbit", hex_shield: "hex", emp_gun: "emp", railgun: "railgun", clone_task: "clone", droid_call: "droid", duplicate: "dup", deflector_dome: "dome", io_repair: "io", status_wave: "wave", projection_wall: "wall", flak_burst: "flak", scatter_rounds: "scatter", pulse_beam: "pulse" };
     const sh = (id) => SHORT[id] || id;
-    const W = WEAPON_DEFS.filter((w) => !w.visualOnly && w.id !== "salvo_loader").map((w) => w.id);
+    const W = WEAPON_DEFS.filter((w) => !w.visualOnly && w.id !== "salvo_loader" && !(COND.ban || []).includes(w.id)).map((w) => w.id); /* ban: weapons left out of every build */
     const tick = ARENA_TICK_MS / 1000;
     /* a build's sim kit; `want` = what Duplicate copies (same rules as the game: simApplyDup / simDupTarget) */
     const kitFor = (ids, want) => {
@@ -63,6 +63,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
     const rank = (i) => order.indexOf(i) + 1, idx = (name) => E.findIndex((e) => e.name === name);
     const has = (e, a, b2) => e.ids.includes(a) && e.ids.includes(b2);
     const M = idx("emp+railgun+clone");
+    if (M < 0) { ARENA_FORT_HP_PER_POWER = keepPer; return JSON.stringify({ cond: COND, noMeta: true, entries: E.length, fieldSize: field.length, top: order.slice(0, 40).map((i) => [rank(i), E[i].name, score[i]]) }); }
     const beatMeta = E.map((_, i) => i).filter((i) => i !== M && pair(i, M) >= 1.5);
     const counters = E.map((_, i) => i).filter((i) => has(E[i], "emp_gun", "status_wave"));
     const ccs = E.map((_, i) => i).filter((i) => has(E[i], "hex_shield", "railgun") && !E[i].ids.includes("status_wave"));
@@ -89,6 +90,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
   }, COND));
   await b.close();
   const pr = (s) => console.log(s);
+  if (R.noMeta) { pr("NO META BUILD (banned weapon). Ranking of " + R.entries + " builds:"); R.top.forEach((r) => pr("  " + String(r[0]).padStart(3) + ". " + r[1].padEnd(28) + r[2])); await 0; process.exit(0); }
   pr("WEAPON LOOP  (heroes Lv" + COND.lvl + ", weapons Lv" + COND.wl + ", no research; " + R.entries + " builds incl. every Duplicate copy choice; field sample " + R.fieldSize + ")");
   pr("\nMETA " + R.meta.name + ": score " + R.meta.score + ", rank " + R.meta.rank + (R.meta.rank === 1 ? "  OK" : "  !! not on top"));
   pr("\nMeta drops points to (" + R.metaLoss.length + "; 1 = split, 0 = loses both ways, * = in field sample): " + R.metaLoss.map((x) => x[0] + " " + x[1] + (x[2] ? "*" : "")).join(", "));
