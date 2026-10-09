@@ -743,3 +743,9 @@
 
 ### v983 — Death Strike bar easier to read (TEST)
 - Harley: two yellows were hard to read; the bar looked like it did nothing. New drawLimitBar (Conquest + Arena): same height as the HP bar, filling = amber (#e0782a) on a dark brown track, loaded = bright gold with a pulsing glow, white shine and a spark at the end. Checked with headless screenshots.
+
+### v984 — Harley's card text on cards 1-11 (TEST)
+- Harley pasted his original card text; it's now in CARD_TEXT_DEFAULTS as the description of cards 1-11 (only fix: "Polar flux flux fires" -> "Polar Flux fires"). TEXT ONLY - none of these has a game effect yet (effects exist only for Critical Mass, Regen, Drop Signal - cards 28-30):
+  1 infantry heroes +10% base ATK · 2 Kessa Arc Burst +30% dmg when health < 30% · 3 Kessa base ATK +20% when health < 50% · 4 invincible shield 2s when health < 10%
+  5 Polar Flux at fortress health < 50% (blast 30% max HP to everyone) · 6 +30% DEF if both players have a Type 1 fortress · 7 crit damage +10% · 8 skill cooldown bonus +5%
+  9 skill cooldown +5% when health < 90% · 10 hero damage +25% if skill cooldown bonus > 25% · 11 +200% ATK, -90% per hero you control

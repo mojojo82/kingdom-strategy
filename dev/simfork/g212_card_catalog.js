@@ -49,7 +49,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.saved && r.slot0 === "Old Card" && r.slot1 === "Kept" && r.last === "Drop Signal" && r.dropCount === 1, "admin save text fills empty slots, catalog text kept, Drop Signal in the last slot, written to the shared doc");
   assert.ok(r.adminEditable && r.dropFound, "an admin can edit; Drop Signal works from the catalog");
   assert.strictEqual(r.fresh, "Critical Mass:Critical Mass|Regen:Regen|Drop Signal:Drop Signal", "v981: all three effect cards exist");
-  assert.strictEqual(r.playerDefault, ":|Critical Mass:Critical Mass|Regen:Regen|Mine:Real text|Drop Signal:Drop Signal", "v978: text written in the code shows for every player in empty slots");
+  assert.strictEqual(r.playerDefault, ":All of your infantry heroes gain +10% to their base atk|Critical Mass:Critical Mass|Regen:Regen|Mine:Real text|Drop Signal:Drop Signal", "v978: text written in the code shows for every player in empty slots");
   assert.strictEqual(r.slot0Effect, "old text from the original save", "the admin's own save text beats the code default");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
