@@ -82,3 +82,22 @@ The best are hex+railgun+clone (beats 14/15) and hex+railgun+dup>hex (13/15).
 - **Lv20 fix found in sim:** EMP cooldown 8s from weapon Lv10. Not built yet.
 - **Rejected:** Fabricator Bay (makes EMP dead weight), two droids, 4× droid plus counter tweaks, Hex nerf, "Duplicate can't copy shields".
 - **Clone Task** is 3× at Lv30 (v971). Weapon shots fly for 1.8s (v968). Both sides act at the same moment (v969).
+
+## Kessa-only build (card 11 baseline, v987)
+
+Sim: Kessa alone + cards 11, 2, 3, 4, 8 vs a normal 5-hero team with no cards, same weapon build on both sides (5 builds × attack/defend × 3 seeds). Kessa side's win %.
+Rerun: `node dev/balance/kessa_solo.js`.
+
+- Today, card 11 with 1 hero gives **+20% ATK** and Kessa-only wins **0%** at every level gap tested.
+- A 1-hero fortress has about **1/5 the HP** (5,825 vs 28,225 at Lv40), because Arena fortress HP grows with hero power. That is the real problem; ATK alone can't fix it.
+- With ATK only (no extra HP), Kessa-only needs +400–600% to beat players 10–20 levels lower.
+- **Same level: 0% even with +300% ATK and 5× fortress HP.** Kessa-only can't beat an equal 5-hero team.
+
+| Kessa Lv40 vs Lv30 team | +20% ATK | +100% | +200% | +300% |
+|---|---|---|---|---|
+| fortress HP ×1 (today) | 0 | 0 | 0 | 0 |
+| ×2 | 0 | 0 | 0 | 80 |
+| ×3 | 0 | 0 | 68 | 80 |
+| ×5 (same as 5 heroes) | 0 | 57 | 80 | 97 |
+
+Kessa Lv80 vs a Lv60 team gives almost the same table (×3 / +200% = 73, ×2 / +300% = 97).
