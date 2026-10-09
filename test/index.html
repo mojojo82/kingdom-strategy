@@ -3252,6 +3252,21 @@
                 </div>
               </div>
             </div>
+
+            <div class="dev-sub">
+              <div class="dev-sub-header" data-target="devSubBotAlly"><span class="dev-sub-arrow">▸</span> 🏳️ Bot Alliance</div>
+              <div class="dev-sub-body" id="devSubBotAlly" style="display:none;">
+                <div class="dev-tools-hint" style="margin-bottom:6px;">Makes a whole alliance of bot players: their cities sit side by side in one cluster, all in the alliance (leader R5, two R4 officers, the rest members). Writes to the shared world of this server (TEST / LIVE), like the random players above.</div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:92px;">Bots</span><input type="number" id="devBaCount" min="1" max="100" value="12" style="width:80px;"></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:92px;">Alliance name</span><input type="text" id="devBaAllyName" maxlength="24" placeholder="e.g. Iron Tide" style="flex:1;min-width:140px;"></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:92px;">Tag</span><input type="text" id="devBaTag" maxlength="4" placeholder="3-4 letters" style="width:90px;text-transform:uppercase;"></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:92px;">Strength</span><select id="devBaTier"><option value="map">By map position (like random players)</option><option value="0.15">Weak</option><option value="0.5">Medium</option><option value="0.85">Strong</option><option value="mix">Mixed</option></select></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:92px;">Location</span><input type="number" id="devBaX" placeholder="X" style="width:74px;"><input type="number" id="devBaY" placeholder="Y" style="width:74px;"><button class="dev-btn" id="devBaHere" title="Use the tile in the middle of the world map view">📍 Map centre</button></div>
+                <div class="dev-tools-hint" style="margin:-2px 0 6px;">Leave X / Y empty for a random spot.</div>
+                <div class="dev-tools-row"><button class="dev-btn" id="devBaGo">🏳️ Generate alliance</button><span class="dev-tools-hint" id="devBaStatus"></span></div>
+                <div id="devBaList" style="margin-top:8px;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -10681,7 +10696,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v998"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v999"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15947,7 +15962,7 @@ function startCitySync() {
       if (!doc.exists) return;
       var data = doc.data();
       var tileId = docIdToTileId(doc.id);
-      if (data && data.owner) { occupiedTileIds[tileId] = data.owner; seen[tileId] = true; }
+      if (data && data.owner) { occupiedTileIds[tileId] = data.owner; seen[tileId] = true; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
       if (data && typeof data.hp === "number") cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; else delete cityHp[tileId]; /* v894: base HP */
       if (tileId === game.state.homeTileId && data && data.raidedAt) applyRaidIfNew(data.raidedAt);
     });
@@ -16094,8 +16109,96 @@ function destroyAllBotPlayers() {
         cloudDb.doc(serverPrefix() + "cities/" + doc.id).delete(),
         cloudDb.doc(botSaveDocPath(owner)).delete()
       ]).catch(function (e) { console.error("Failed to remove bot player " + doc.id + ":", e && e.code, e && e.message); });
-    })).then(function () { return { removed: botDocs.length }; });
+    })).then(function () { return destroyBotAlliances(null).catch(function () {}); }).then(function () { return { removed: botDocs.length }; }); /* v999: their alliances go too */
   });
+}
+// ---- v999 (Harley): Dev Tools > Testing > Bot Alliance. A whole alliance of bot players whose cities sit side by side. ----
+// Bases own a 3x3 block and blocks can't touch, so the tightest packing is a grid 3 tiles apart; the grid is filled outward from the
+// anchor (nearest spots first) so the alliance forms one compact cluster. Each bot is a normal generated bot (city doc + save doc,
+// owner "bot_..."), plus its name on the city doc (bn) and the usual alliance docs (alliances/<aid>, members, allyindex).
+var botNameByOwner = {};
+var BOT_ALLY_FIRST = ["Aldric", "Brenna", "Cassian", "Dara", "Edric", "Fenna", "Garrick", "Hilde", "Ivo", "Jora", "Kael", "Lysa", "Marek", "Nessa", "Orrin", "Petra", "Quill", "Rowan", "Sable", "Tarek", "Ulla", "Varn", "Wren", "Yorik", "Zara"];
+var BOT_ALLY_LAST = ["Stone", "Vale", "Ash", "Thorn", "Reed", "Frost", "Holt", "Marsh", "Crane", "Briar", "Storm", "Flint", "Wolfe", "Ridge", "Hale"];
+function botAllyName(i, used) { for (var t = 0; t < 50; t++) { var n = BOT_ALLY_FIRST[Math.floor(Math.random() * BOT_ALLY_FIRST.length)] + " " + BOT_ALLY_LAST[Math.floor(Math.random() * BOT_ALLY_LAST.length)]; if (!used[n]) { used[n] = 1; return n; } } return "Lord " + (i + 1); }
+function botAllySpots(count, ax, ay, maxR) { /* grid spots 3 apart, nearest the anchor first; only free, buildable tiles. v999 (Harley): no room at the
+  spot (crowded, map edge, a corner like 1,1) -> keep spreading outward ring by ring until every bot has a place (or the map runs out) */
+  var n = mapSizeTiles(), G = BASE_FP_R * 2 + 1, picks = [], tried = {}, R = Math.ceil(Math.sqrt(count)) + 1, lim = maxR || Math.ceil(n / G) + 1;
+  while (picks.length < count && R <= lim + 1) {
+    var cand = [];
+    for (var i = -R; i <= R; i++) for (var j = -R; j <= R; j++) { var x = ax + i * G, y = ay + j * G, key = i + "," + j; if (tried[key]) continue; tried[key] = 1;
+      if (x < 0 || y < 0 || x >= n || y >= n) continue; cand.push({ x: x, y: y, d: i * i + j * j + (Math.abs(i) + Math.abs(j)) * 0.01 }); }
+    cand.sort(function (a, b) { return a.d - b.d; });
+    for (var k = 0; k < cand.length && picks.length < count; k++) { var t = mapTileAt(game.state.map, cand[k].x, cand[k].y);
+      if (!t || t.type !== "empty" || occupiedTileIds[t.id] || t.id === game.state.homeTileId || isTileTooCloseToCity(t.id)) continue;
+      picks.push(t); occupiedTileIds[t.id] = "?"; }
+    R += 3;
+  }
+  picks.forEach(function (t) { delete occupiedTileIds[t.id]; });
+  /* nearest first overall (a later ring can hold a spot closer than an earlier ring's corner) */
+  picks.sort(function (a, b) { var p = tileXY(a.id), q = tileXY(b.id); return ((p[0] - ax) * (p[0] - ax) + (p[1] - ay) * (p[1] - ay)) - ((q[0] - ax) * (q[0] - ax) + (q[1] - ay) * (q[1] - ay)); });
+  return picks;
+}
+function botAllyAnchor(count) { /* a random spot where the whole cluster fits tightly */
+  var n = mapSizeTiles(), best = null, bestR = 1e9;
+  for (var tries = 0; tries < 40; tries++) {
+    var x = BASE_FP_R + 3 + Math.floor(Math.random() * Math.max(1, n - 2 * (BASE_FP_R + 3))), y = BASE_FP_R + 3 + Math.floor(Math.random() * Math.max(1, n - 2 * (BASE_FP_R + 3)));
+    var p = botAllySpots(count, x, y, Math.ceil(Math.sqrt(count)) + 4); if (p.length < count) continue;
+    var r = p.reduce(function (m, t) { var xy = tileXY(t.id); return Math.max(m, Math.abs(xy[0] - x) + Math.abs(xy[1] - y)); }, 0);
+    if (r < bestR) { bestR = r; best = { x: x, y: y, picks: p }; } if (bestR <= Math.ceil(Math.sqrt(count)) * 3 + 2) break;
+  }
+  return best;
+}
+function generateBotAlliance(opts) {
+  if (!cloudDb) return Promise.reject(new Error("no shared database in this view"));
+  var count = Math.max(1, Math.min(ALLY_MAX_MEMBERS, Math.floor(+opts.count || 0))), name = String(opts.name || "").trim().slice(0, 24), tag = String(opts.tag || "").trim().toUpperCase();
+  if (name.length < 3) return Promise.reject(new Error("name needs at least 3 characters"));
+  if (!/^[A-Z0-9]{3,4}$/.test(tag)) return Promise.reject(new Error("tag must be 3-4 letters or numbers"));
+  if (Object.keys(ALLY.list).some(function (k) { return ALLY.list[k].tag === tag; })) return Promise.reject(new Error("tag [" + tag + "] is taken"));
+  var n = mapSizeTiles(), mid = Math.floor(n / 2), spots, ax, ay;
+  if (opts.x != null && opts.y != null && isFinite(opts.x) && isFinite(opts.y)) { ax = Math.max(0, Math.min(n - 1, Math.round(opts.x))); ay = Math.max(0, Math.min(n - 1, Math.round(opts.y))); spots = botAllySpots(count, ax, ay); }
+  else { var an = botAllyAnchor(count); if (an) { ax = an.x; ay = an.y; spots = an.picks; } else { ax = mid; ay = mid; spots = botAllySpots(count, ax, ay); } } /* no roomy spot found: spread out from the middle */
+  if (!spots.length) return Promise.reject(new Error("no free tiles near " + ax + "," + ay));
+  var stamp = Date.now().toString(36), aid = tag.toLowerCase() + "_" + stamp, used = {}, members = [];
+  var ranks = spots.map(function (t, i) { return i === 0 ? 5 : i <= 2 ? 4 : i <= 5 ? 3 : i <= 10 ? 2 : 1; });
+  var writes = spots.map(function (tile, i) {
+    var owner = BOT_OWNER_PREFIX + "a" + stamp + "_" + i, bname = botAllyName(i, used), xy = tileXY(tile.id);
+    var tier = opts.tier === "mix" ? 0.1 + Math.random() * 0.8 : opts.tier === "map" || opts.tier == null ? Math.max(0, Math.min(1, (1 - Math.max(Math.abs(xy[0] - mid), Math.abs(xy[1] - mid)) / mid) + (Math.random() - 0.5) * 0.3)) : Math.max(0, Math.min(1, +opts.tier + (Math.random() - 0.5) * 0.1));
+    var save = randomBotSaveState(tier); save.botName = bname; save.botAlliance = aid;
+    var power = 0; try { power = Math.round(summarizeSavedState(save).power); } catch (e) {}
+    members.push({ owner: owner, name: bname, rank: ranks[i], power: power, th: (save.buildings && save.buildings.townhall && save.buildings.townhall.level) || 1 });
+    occupiedTileIds[tile.id] = owner; botNameByOwner[owner] = bname;
+    return Promise.all([cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tile.id)).set({ owner: owner, claimedAt: Date.now(), bn: bname }), cloudDb.doc(botSaveDocPath(owner)).set(save)]);
+  });
+  return Promise.all(writes).then(function () {
+    var leader = members[0].owner;
+    return cloudDb.doc(allyPath("alliances/" + aid)).set({ name: name, tag: tag, leader: leader, joinMode: "approval", minPower: 0, minTH: 1, memberCount: members.length, createdAt: Date.now(), bot: true, home: ax + "," + ay });
+  }).then(function () {
+    return Promise.all(members.map(function (m) { return Promise.all([
+      cloudDb.doc(allyPath("alliances/" + aid + "/members/" + m.owner)).set({ rank: m.rank, name: m.name, power: m.power, th: m.th, joinedAt: Date.now(), bot: true }),
+      cloudDb.doc(allyPath("allyindex/" + m.owner)).set({ aid: aid, tag: tag, rank: m.rank })]); }));
+  }).then(function () { return { aid: aid, placed: spots.length, requested: count, at: ax + "," + ay, first: spots[0].id }; });
+}
+function destroyBotAlliances(onlyAid) { /* removes bot alliances (all, or one) with their members' cities, saves and index entries */
+  if (!cloudDb) return Promise.reject(new Error("no shared database in this view"));
+  var aids = Object.keys(ALLY.list).filter(function (k) { return ALLY.list[k].bot && (!onlyAid || k === onlyAid); });
+  return Promise.all(aids.map(function (aid) {
+    return cloudDb.collection(allyPath("alliances/" + aid + "/members")).get().then(function (q) {
+      var owners = q.docs.map(function (d) { return d.id; }).filter(function (o) { return o.indexOf(BOT_OWNER_PREFIX) === 0; });
+      var cityIds = Object.keys(occupiedTileIds).filter(function (id) { return owners.indexOf(occupiedTileIds[id]) >= 0; });
+      return Promise.all(owners.map(function (o) { delete otherCityStatsCache[o]; delete ownerProfileCache[o]; return Promise.all([cloudDb.doc(allyPath("alliances/" + aid + "/members/" + o)).delete(), cloudDb.doc(allyPath("allyindex/" + o)).delete(), cloudDb.doc(botSaveDocPath(o)).delete()]).catch(function () {}); })
+        .concat(cityIds.map(function (id) { delete occupiedTileIds[id]; return cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(id)).delete().catch(function () {}); })));
+    }).then(function () { return cloudDb.doc(allyPath("alliances/" + aid)).delete(); });
+  })).then(function () { return { removed: aids.length }; });
+}
+function renderDevBotAllyList() {
+  var el = document.getElementById("devBaList"); if (!el) return;
+  var aids = Object.keys(ALLY.list || {}).filter(function (k) { return ALLY.list[k].bot; });
+  if (!aids.length) { el.innerHTML = '<div class="dev-tools-hint">No bot alliances on this server yet.</div>'; return; }
+  el.innerHTML = '<div class="dev-tools-hint" style="margin-bottom:4px;">Bot alliances here:</div>' + aids.map(function (k) { var a = ALLY.list[k];
+    return '<div class="dev-tools-row"><span style="flex:1;">[' + escapeHtml(a.tag) + '] ' + escapeHtml(a.name) + ' · ' + (a.memberCount || 0) + ' bots' + (a.home ? ' · near ' + escapeHtml(a.home) : '') + '</span>' + (a.home ? '<button class="dev-btn" data-bago="' + escapeHtml(a.home) + '">👁 Go</button>' : '') + '<button class="dev-btn danger" data-badel="' + escapeHtml(k) + '">💥 Remove</button></div>'; }).join("");
+  [].forEach.call(el.querySelectorAll("[data-bago]"), function (b) { b.onclick = function () { setScreen("world"); setTimeout(function () { try { centerMapOnTile(b.getAttribute("data-bago")); } catch (e) {} }, 300); }; });
+  [].forEach.call(el.querySelectorAll("[data-badel]"), function (b) { b.onclick = function () { if (!confirm("Remove this bot alliance and all its bot cities?")) return; b.disabled = true;
+    destroyBotAlliances(b.getAttribute("data-badel")).then(function () { document.getElementById("devBaStatus").textContent = "Removed."; try { renderVisibleTiles(); } catch (e) {} setTimeout(renderDevBotAllyList, 600); }, function (e) { document.getElementById("devBaStatus").textContent = "Failed: " + (e && e.message); }); }; });
 }
 function ensureHomeTileAssigned() {
   if (game.state.homeTileId) return Promise.resolve();
@@ -16870,6 +16973,7 @@ var ownerProfileCache = {};
 function fetchOwnerProfile(ownerId) { /* name + avatar a player saved for themselves (their own asset items); bots get a generated name */
   if (!ownerId) return null;
   if (ownerProfileCache[ownerId]) return ownerProfileCache[ownerId];
+  if (ownerId.indexOf(BOT_OWNER_PREFIX) === 0 && botNameByOwner[ownerId]) { ownerProfileCache[ownerId] = { name: botNameByOwner[ownerId], avatar: null, bot: true }; return ownerProfileCache[ownerId]; }
   if (ownerId.indexOf(BOT_OWNER_PREFIX) === 0) { var tag = ownerId.slice(BOT_OWNER_PREFIX.length).replace(/[^a-z0-9]/gi, "").slice(-4).toUpperCase(); ownerProfileCache[ownerId] = { name: "Raider " + (tag || "Bot"), avatar: null, bot: true }; return ownerProfileCache[ownerId]; }
   var p = ownerProfileCache[ownerId] = { name: null, avatar: null, loading: true };
   if (!cloudDb) { p.loading = false; return p; }
@@ -22300,7 +22404,7 @@ document.querySelectorAll(".dev-sub-header").forEach(function (header) {
 
 // v998 (Harley): Dev Tools as tabs - category tabs on top, that category's tools as chips, the chosen tool open below. Remembers the last one.
 // Each tool is still its own .dev-sub (same ids / handlers); opening one goes through its header's click so its reveal hooks still run.
-var DEV_CATS = [["test", "🧪 Testing", ["devSubSpeed", "devSubWelcome", "devSubWorldMap"]], ["combat", "⚔️ Combat", ["devSubArena", "devSubBoss", "devSubEnemies", "devSubHeroes", "devSubEspers"]],
+var DEV_CATS = [["test", "🧪 Testing", ["devSubSpeed", "devSubWelcome", "devSubWorldMap", "devSubBotAlly"]], ["combat", "⚔️ Combat", ["devSubArena", "devSubBoss", "devSubEnemies", "devSubHeroes", "devSubEspers"]],
   ["visual", "🎨 Visuals", ["devSubGround", "devSubBgLayers", "devSubFx", "devSubSfx"]], ["balance", "📊 Balance", ["devSubEstimator", "devSubUsd"]]];
 var devTabs = { cat: null, tool: null };
 (function devTabsInit() {
@@ -22513,6 +22617,20 @@ document.getElementById("devDestroyBotPlayersBtn").onclick = function () {
     status.textContent = "Failed: " + (e && e.message);
   }).then(function () { btn.disabled = false; });
 };
+(function devBotAllyWire() { /* v999 */
+  var st = function (t) { document.getElementById("devBaStatus").textContent = t; };
+  document.getElementById("devBaHere").onclick = function () { var c = null; try { c = mapCenterTile(); } catch (e) {} if (!c) { st("Open the World map once first, then come back."); return; } document.getElementById("devBaX").value = c[0]; document.getElementById("devBaY").value = c[1]; st("Map centre: " + c[0] + "," + c[1]); };
+  document.getElementById("devBaGo").onclick = function () {
+    var b = this, xv = document.getElementById("devBaX").value, yv = document.getElementById("devBaY").value;
+    var o = { count: +document.getElementById("devBaCount").value, name: document.getElementById("devBaAllyName").value, tag: document.getElementById("devBaTag").value, tier: document.getElementById("devBaTier").value, x: xv === "" ? null : +xv, y: yv === "" ? null : +yv };
+    b.disabled = true; st("Building " + (o.count || 0) + " bot cities…");
+    generateBotAlliance(o).then(function (r) {
+      st("✓ [" + o.tag.toUpperCase() + "] made: " + r.placed + " of " + r.requested + " bots near " + r.at + (r.placed < r.requested ? " (no more free tiles close by)" : "") + ".");
+      try { renderVisibleTiles(); } catch (e) {} setTimeout(renderDevBotAllyList, 600);
+    }, function (e) { st("Couldn't make it: " + (e && e.message)); }).then(function () { b.disabled = false; });
+  };
+  document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubBotAlly"], .dt-chip')) setTimeout(renderDevBotAllyList, 0); });
+})();
 document.getElementById("devAddValor").onclick = function () { game.state.idle.valor += 5000; persist(); render(); };
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };

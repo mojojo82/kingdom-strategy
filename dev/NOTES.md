@@ -849,3 +849,9 @@
 - Each tool is still its own .dev-sub (ids and handlers unchanged), opened through its header click so reveal hooks still run. A tool not filed in DEV_CATS lands in a "🧰 Other" tab automatically.
 - The Conquest 🛠️ popup still opens the same tabbed panel and hands it back.
 - Test: new g221_devtools_tabs.js. The CI e2e test also checks the tile is hidden for normal players.
+
+### v999 — Dev Tools > Testing > 🏳️ Bot Alliance (TEST)
+- Harley: a dev tool that generates a bot alliance. Set how many bots, the alliance name and tag; it's generated at a random location or one he sets, with the bot cities sitting next to each other. If the chosen spot has little room (e.g. 1,1), bots go where there is room nearby, spreading outward.
+- generateBotAlliance(): normal generated bots (cities/<tile> + players/<bot>/save/main, owner "bot_a<stamp>_<i>"), packed on a grid 3 tiles apart (the tightest that base blocks allow), nearest the anchor first, ring by ring until all fit. Random spot = botAllyAnchor tries 40 spots for the tightest cluster (falls back to spreading from the middle). Alliance docs: alliances/<aid> {…, bot: true, home}, members (R5 leader, two R4, then R3/R2/R1), allyindex. Each bot gets a name (city doc `bn`, shown instead of "Raider XXXX"). Strength: by map position (default), weak, medium, strong or mixed. 📍 Map centre fills X/Y from the world view.
+- The tool lists the server's bot alliances with 👁 Go (jump the map there) and 💥 Remove (that alliance + its bots). "Destroy All Players" also clears bot alliances now (no orphan alliances).
+- Test: new g222_bot_alliance.js (corner 1,1 → all 12 placed, spaced, compact; random spot; taken tag refused; tags on the map; remove one; destroy all).
