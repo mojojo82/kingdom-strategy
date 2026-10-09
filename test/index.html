@@ -4900,7 +4900,7 @@ var HERO_DEFS = {
   hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at level 5), Hanzo leaps into the air and a second later rains shuriken on every enemy on screen, their fortress included. Shuriken are projectiles: shields that stop projectiles stop them." },
+      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at level 5), Hanzo leaps into the air and a moment later rains shuriken on every enemy on screen, their fortress included. Shuriken are projectiles: shields that stop projectiles stop them." },
       { name: "Shadow Step", icon: "💨", kind: "passive", effectType: "dodge", perLevel: 0.10, desc: "Dodges 10% of attacks per level (50% at level 5)." }
     ],
     expeditionSkills: [
@@ -5217,7 +5217,7 @@ function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
 }
 // v992: Shadow Step (Hanzo) - share of incoming attacks dodged (0..0.95). Deterministic, no dice: hit n is dodged when floor((n+1)p) > floor(np).
 // v992: a skill whose cooldown shrinks with level (cdByLevel) - Hanzo's Shuriken Storm. Anything else keeps its flat cooldown.
-var HANZO_LEAP_SEC = 1.0; // v993 (Harley): Shuriken Storm isn't instant - he leaps into the air first, the shuriken land this much later (Conquest and Arena)
+var HANZO_LEAP_SEC = 0.45; // v993 (Harley): Shuriken Storm isn't instant - he leaps into the air first, the shuriken land this much later (Conquest and Arena). v994: 1.0 -> 0.45 (one Arena beat): restores his Lv40 tiers while solo Kessa still edges him (53%, 93% with Projection Wall)
 function HANZO_LEAP_TICKS() { return Math.max(1, Math.round(HANZO_LEAP_SEC / (ARENA_TICK_MS / 1000))); }
 function heroSkill1Lvl(key) { var h = game.state.heroes[key]; return (h && h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[0]) || 1; }
 function skillCdAt(skill, lvl) { return (skill && skill.cdByLevel) ? skill.cdByLevel[Math.max(1, Math.min(skill.cdByLevel.length, lvl || 1)) - 1] : skill.cooldown; }
@@ -10670,7 +10670,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v993"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v994"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

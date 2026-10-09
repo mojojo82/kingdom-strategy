@@ -813,3 +813,12 @@
   - Hanzo team tiers, Lv80: L4 100/100/100/90/57, L5 100/100/100/90/67.
   - The leap costs him most at Lv40. Harley to decide on a re-tune.
 - Test: g217 passes; g208, g211, g215 pass.
+
+### v994 — Hanzo's leap 1.0 s -> 0.45 s (TEST)
+- Harley: "Lets massage up these numbers while still making sure kessa gets the win" (his Lv40 level-5 tiers after v993's 1 s leap: +10 60, +15 30, +20 17).
+- Tried (sims): L5 Storm damage 3.5 -> 5 or 7, and L5 cooldown 5 -> 4 s. These only nudge the numbers (+15: 18-37%) and cost Kessa (73% at 7x). The leap itself was the lever. Arena ticks are 0.45 s, so the choices are 1 beat (0.45 s) or 2 beats (0.9-1.0 s).
+- 0.45 s results:
+  - Hanzo team, Lv40, win % at +0/+5/+10/+15/+20: L1 85/0, L2 95/0, L3 100/0, L4 100/80/60/0/0, L5 100/100/100/90/55.
+  - Hanzo team, Lv80: L3 95/10, L4 100/100/100/98/80, L5 100 across the board.
+  - Solo Kessa (cards 11,2,3,4,5) vs maxed Hanzo + Lone Wolf: 53% with the same weapons, 93% with Projection Wall in her build (88-90% with Wall+Dome / Wall+Hex+Dome). Same at Lv40 and Lv80.
+- g217 passes.
