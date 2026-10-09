@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (9 Oct 2026, TEST game v981):** everything below is built and tested; TEST is deployed (v951-v981 are TEST only). The live game link still serves the
+**State at handover (9 Oct 2026, TEST game v982):** everything below is built and tested; TEST is deployed (v951-v982 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -110,6 +110,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   (round robin of builds; prints a WARNING if the meta isn't on top) and `node dev/balance/loop.js` (every build incl. each Duplicate copy choice).
   Loop (from Harley's memory): META = EMP + Railgun + Clone Task; COUNTER = EMP + Status Wave + any; COUNTER-COUNTER = Hex Shield + Railgun + Duplicate (copying Hex). Not on top yet - see NOTES v966-v968.
 - **Nothing a weapon fires is instant** - every projectile travels (Conquest and Arena, sims included). Damage / stun / knockout happens when it lands.
+- **All art is an admin tool, the same for every player** (v982) - hero art, card art, skill icons, sprites, Esper art, ground/trees: stored once in `assetitems/<key>` (index `assetitems/_shared_index`), only admins upload. **The only player-controlled image is each player's own avatar.**
 - **Cards are one shared catalog, admins only edit it** (v977): names / type / effect text live in `assetitems/cardcatalog` (all read, admin write), not in each save. Card effects come from the catalog name.
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 

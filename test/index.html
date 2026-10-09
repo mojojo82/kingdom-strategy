@@ -3393,7 +3393,27 @@ var cloudAssetMap = {};       // key -> raw "data:...;base64,..." string
 var assetSyncKnownKeys = {};  // key -> true, the full set backing the index doc
 var assetSyncReady = false;   // true once the initial load has resolved (success or failure)
 
+// ---- v982: art is an ADMIN tool, the same for every player (Harley: "the only player controlled image is their own avatar") ----
+// On Firebase, every image key below is stored ONCE in the shared admin-only area (assetitems/<key>, listed in assetitems/_shared_index:
+// every signed-in player reads, only an admin writes - firestore.rules). Non-admins can't upload these and only ever see the shared copy.
+// The avatar and every small setting stay per player. When an admin opens the game, art from the admin's own account (the old per-player
+// copies) fills shared keys that are still empty.
+var SHARED_ART_PREFIXES = ["kingdom_prototype_heroart_v1_", "kingdom_prototype_cardart_v1_", "kingdom_prototype_skillicon_v1_", "kingdom_prototype_combatsprite_v1_",
+  "kingdom_prototype_espergraphic_v1_", "kingdom_prototype_bosssprite_v1", "kingdom_prototype_enemyinfantry_v1", "kingdom_prototype_enemyarcher_v1", "kingdom_prototype_enemylancer_v1",
+  "kingdom_prototype_treesprite_v1_", "kingdom_prototype_groundtile_v1", "kingdom_prototype_grassoverlay_v1"];
+var SHARED_ART_INDEX_DOC = "assetitems/_shared_index";
+var sharedArtKnownKeys = {};
+function assetOnFirebase() { var K = window.KS_BACKEND; return !!(K && K.kind === "firebase") && !IS_GUEST_LINK; }
+function assetIsShared(key) {
+  if (!assetOnFirebase() || !key) return false;
+  for (var i = 0; i < SHARED_ART_PREFIXES.length; i++) { var p = SHARED_ART_PREFIXES[i]; if (key.indexOf(p) === 0 && (p.slice(-1) === "_" || key === p)) return true; }
+  return false;
+}
+function assetIsAdmin() { var K = window.KS_BACKEND; return !!(K && K.isAdmin); }
+function assetCanEditArt() { return !assetOnFirebase() || assetIsAdmin(); } /* the upload taps (hero portrait, card picture) check this */
+function assetSyncPersonalDocIdFor(key) { return (PLAYER_ID === "owner") ? ("assetitems/" + key) : ("players/" + PLAYER_ID + "/assetitems/" + key); }
 function assetSyncDocIdFor(key) {
+  if (assetIsShared(key)) return "assetitems/" + key; /* v982 */
   // Every branch must resolve to a 4-segment path: collection (3
   // segments, odd — a valid collection path) + doc id (the key, the 4th
   // segment). "owner" (the pre-existing single-save case — see
@@ -3425,7 +3445,11 @@ function assetSyncGet(key) {
 var assetSyncWriteQueue = Promise.resolve();
 function assetSyncUpdateIndex() {
   assetSyncWriteQueue = assetSyncWriteQueue.then(function () {
-    return assetSyncDb.doc(assetSyncIndexDoc()).set({ keys: Object.keys(assetSyncKnownKeys) });
+    var mine = Object.keys(assetSyncKnownKeys).filter(function (k) { return !assetIsShared(k); }), shared = Object.keys(assetSyncKnownKeys).filter(assetIsShared);
+    shared.forEach(function (k) { sharedArtKnownKeys[k] = true; });
+    var w = assetSyncDb.doc(assetSyncIndexDoc()).set({ keys: mine });
+    if (shared.length && assetIsAdmin()) w = w.then(function () { return assetSyncDb.doc(SHARED_ART_INDEX_DOC).set({ keys: Object.keys(sharedArtKnownKeys) }); }); /* v982 */
+    return w;
   });
   return assetSyncWriteQueue;
 }
@@ -3515,7 +3539,8 @@ function assetSyncShrinkImage(dataUrl, maxDim) {
 // stays full quality. Only other devices, reading back whatever was
 // actually stored, would see the shrunk version.
 function assetSyncUpload(key, dataUrl) {
-  if (!assetSyncDb || !dataUrl || !PLAYER_ID) return; // !PLAYER_ID: identity hasn't resolved yet (brief async window, or the welcome overlay is still up) — assetSyncDocIdFor would otherwise build a bogus "players/null/..." path. Whatever triggered this already wrote to localStorage regardless; it'll sync next time this same value changes.
+  if (!assetSyncDb || !dataUrl || !PLAYER_ID) return;
+  if (assetIsShared(key) && !assetIsAdmin()) return; /* v982: shared art - admins only */ // !PLAYER_ID: identity hasn't resolved yet (brief async window, or the welcome overlay is still up) — assetSyncDocIdFor would otherwise build a bogus "players/null/..." path. Whatever triggered this already wrote to localStorage regardless; it'll sync next time this same value changes.
   var previous = cloudAssetMap[key];
   cloudAssetMap[key] = dataUrl;
   // Stamp when THIS device chose it (a real user upload, not the automatic backfill), so other devices can tell which copy is newer.
@@ -4311,6 +4336,7 @@ function initDeviceLock(db) {
       // though, same reason as grassOverlayImg below — it's only ever set
       // once, at page load, before this cloud data has arrived.
       try { var cloudAvatar = getAvatar(); if (cloudAvatar) applyAvatar(cloudAvatar); } catch (e) {}
+      try { assetSyncLoadShared(); } catch (e) {} /* v982 */
       // Refresh anything already on screen (the idle-animation canvas,
       // mainly) so a synced override shows up without a manual reload.
       // grassOverlayImg needs an explicit nudge here — unlike the ground
@@ -4330,6 +4356,30 @@ function initDeviceLock(db) {
     try { renderAssetSyncDebugPanel(); } catch (e) {}
   });
 })();
+
+// v982: load the shared admin art; then (admin only, once admin status is known) copy the admin's own per-player art into shared keys that
+// are still empty - this is how the art Harley uploaded on his own account becomes everyone's art.
+function assetSyncLoadShared() {
+  if (!assetSyncDb || !assetOnFirebase()) return;
+  assetSyncDb.doc(SHARED_ART_INDEX_DOC).get().then(function (snap) {
+    var keys = (snap.exists && snap.data() && snap.data().keys) || [];
+    keys.forEach(function (k) { sharedArtKnownKeys[k] = true; });
+    return Promise.all(keys.map(function (key) {
+      return assetSyncDb.doc("assetitems/" + key).get().then(function (it) { var d = it.exists && it.data(); if (d && typeof d.data === "string") { if (assetSyncLocalChoice[key] === undefined) { cloudAssetMap[key] = d.data; cloudAssetTs[key] = d.ts || 0; } assetSyncKnownKeys[key] = true; } }).catch(function () {});
+    }));
+  }).then(function () {
+    try { render(); } catch (e) {} try { renderCards(); } catch (e) {}
+    (function migrate(tries) {
+      var K = window.KS_BACKEND || {};
+      if (!K.adminChecked && tries < 40) { setTimeout(function () { migrate(tries + 1); }, 250); return; }
+      if (!K.isAdmin) return;
+      assetSyncDb.doc(assetSyncIndexDoc()).get().then(function (snap) {
+        var mine = ((snap.exists && snap.data() && snap.data().keys) || []).filter(function (k) { return assetIsShared(k) && !sharedArtKnownKeys[k]; });
+        mine.forEach(function (k) { assetSyncDb.doc(assetSyncPersonalDocIdFor(k)).get().then(function (it) { var d = it.exists && it.data(); if (d && typeof d.data === "string" && !sharedArtKnownKeys[k]) { assetSyncBackfilling = true; try { assetSyncUpload(k, d.data); } finally { assetSyncBackfilling = false; } } }).catch(function () {}); });
+      }).catch(function () {});
+    })(0);
+  }).catch(function (e) { assetSyncLogError("Shared art load failed: " + (e && e.message)); });
+}
 
 // ===== Kingdom Strategy Engine (pure logic, no DOM) =====
 // Original implementation of generic 4X kingdom-builder mechanics:
@@ -5552,6 +5602,7 @@ function equippedRegen(state) {
 }
 var CARD_ART_PREFIX = "kingdom_prototype_cardart_v1_";
 function getCardArt(idx) {
+  if (assetIsShared(CARD_ART_PREFIX + idx) && !assetIsAdmin()) return assetSyncGet(CARD_ART_PREFIX + idx) || null; /* v982 */
   var cloud = assetSyncGet(CARD_ART_PREFIX + idx);
   if (cloud) return cloud;
   try { return localStorage.getItem(CARD_ART_PREFIX + idx); } catch (e) { return null; }
@@ -10447,7 +10498,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v981"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v982"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11873,7 +11924,7 @@ function renderCardDetailArt(idx) {
   var art = getCardArt(idx);
   wrap.innerHTML = art
     ? '<img src="' + art + '">'
-    : '<div class="cd-fv-art-placeholder">🖼️<br>Tap to upload</div>';
+    : '<div class="cd-fv-art-placeholder">🖼️' + (assetCanEditArt() ? '<br>Tap to upload' : '') + '</div>'; /* v982 */
 }
 function updateCardEffectBadge() {
   var el = document.getElementById("cardEffectBadge"); if (!el || cardDetailIdx == null) return;
@@ -12042,7 +12093,7 @@ document.getElementById("cardDetailOverlay").onclick = function (e) {
   if (e.target.id === "cardDetailOverlay") closeCardDetailOverlay();
 };
 document.getElementById("cardDetailArtWrap").onclick = function () {
-  if (cardDetailIdx == null) return;
+  if (cardDetailIdx == null || !assetCanEditArt()) return; /* v982: art is an admin tool */
   cardArtUploadTarget = cardDetailIdx;
   document.getElementById("cardArtInput").click();
 };
@@ -23939,6 +23990,7 @@ document.getElementById("saveDataConfirmYes").onclick = function () {
 
 // Newest copy wins between this device's storage and the synced cloud copy (falls back to whichever exists).
 function assetPickNewest(k) {
+  if (assetIsShared(k) && !assetIsAdmin()) return assetSyncGet(k) || (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k]) || null; /* v982: shared admin art only */
   if (assetSyncLocalChoice[k]) return assetSyncLocalChoice[k]; // uploaded on this device this session
   var local = null; try { local = localStorage.getItem(k); } catch (e) {}
   var cloud = assetSyncGet(k);
@@ -24261,7 +24313,7 @@ document.getElementById("hdNavRight").onclick = function () {
   var idx = HERO_ORDER.indexOf(heroDetailKey);
   openHeroDetail(HERO_ORDER[(idx + 1) % HERO_ORDER.length]);
 };
-document.getElementById("hdPortrait").onclick = function () { document.getElementById("hdArtInput").click(); };
+document.getElementById("hdPortrait").onclick = function () { if (!assetCanEditArt()) return; document.getElementById("hdArtInput").click(); }; /* v982: art is an admin tool */
 document.getElementById("hdArtInput").addEventListener("change", function (e) {
   var file = e.target.files && e.target.files[0];
   if (!file) return;

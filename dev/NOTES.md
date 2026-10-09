@@ -734,3 +734,9 @@
 
 ### v981 — Critical Mass and Regen cards exist (TEST)
 - Harley: put them now. CARD_TEXT_DEFAULTS: card 28 Critical Mass, card 29 Regen, card 30 Drop Signal, each with its name in the description box. A default is skipped if a card with that name already sits elsewhere in the shared list.
+
+### v982 — all art is a shared admin tool; only the avatar is personal (TEST)
+- Harley: card pictures (and hero art) are his dev tool in the place they're used, not a player choice - "the only player controlled image is their own avatar". On Firebase the art store saved each upload per player (players/<uid>/assetitems), so his art showed only for him and any player could upload their own.
+- `SHARED_ART_PREFIXES` (hero art, card art, skill icons, combat sprites, Esper graphics, boss + enemy sprites, tree sprites, ground tile, grass overlay) -> `assetIsShared(key)`: stored at assetitems/<key> + index assetitems/_shared_index (existing rules: all read, admin write). Non-admins: uploads ignored (assetSyncUpload), hero portrait / card picture taps do nothing ("Tap to upload" hidden), getters show only the shared copy (or the built-in OWNER_DEFAULTS picture). Avatar + every small setting stay per player.
+- `assetSyncLoadShared()` after the normal load; then, for an admin (once admin status is known), art on the admin's own account fills shared keys that are still empty - Harley's existing uploads become everyone's art the next time he opens the game.
+- Test: new g214_shared_art.js. g200-g212 pass (g199 needs the real save file - not run).
