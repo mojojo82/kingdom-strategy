@@ -872,3 +872,11 @@
 - The away check still banks the bucket as before (8 h cap, quarter of the live rate), but the popup only shows when Energon or Valor has reached its cap. Otherwise the away marker is cleared quietly.
 - New #mapIdleBtn (🌙, same look as the mailbox, above it on phones, below recon on PC): a fill bar for how full the bucket is, solid gold border when there's something in it, pulsing when full. Tap → "Idle rewards" popup (amounts, % full, Collect). The Forge's collect still works too.
 - Test: new g224_idle_icon.js. g182 updated to the full-bucket rule (9 h away → popup once, paid the 8 h cap once).
+
+### v1003 — Idle Chest (TEST)
+- Harley ("Apply it"): the idle bucket becomes an Idle Chest like High Seas Hero's, in our look.
+- Fills all the time, online and offline (was offline only), up to 8h. New Growth research **Field Logistics** (10 levels): +0.8h cap per level (16h at max) and drops a little faster (every 20 min → 16 min at max).
+- Inside: Energon (40/h + Energon Siphon) and Valor (as before), 25% of your resource production, and one item every 20 min of filling. Items (weights): draw ticket 30, 1h construction speedup 18, 1h speedup 8, 1 hour of your Research Point production 26 (at least 100), 3 hero shards 12 (rare; split over owned non-VIP heroes; no heroes → a ticket), 3 Conquest Books 6 (rare). No gems, weapon fragments or cards. A full chest stops filling.
+- Popup: "Collection Time (Max Xh)" with a live HH:MM:SS timer and bar, Energon/Valor rates, a grid of everything inside (rare items get a purple edge), "Next item in …", Claim and ✕. Opens from the 🌙 icon; pops up by itself only when you come back to a full chest ("Welcome back!"). The Forge collect also empties the whole chest. Older saves: the timer starts from how much Energon was already in the bucket.
+- Rolled in the game (seeded per chest), not on the server. Amounts are small and well under the anti-cheat limits.
+- Tests: new g225_idle_chest.js (fills while playing, 8h cap and 24 drops, claim pays out, Field Logistics 16h / 16 min, no VIP shards, popup + timer + full popup, fits 430px). g224 updated.

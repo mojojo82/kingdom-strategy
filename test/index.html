@@ -2684,7 +2684,7 @@
             <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
             <div id="ksEvDock"></div>
             <button id="mapReconBtn" type="button" title="Intel &amp; Recon" aria-label="Intel and Recon"><span class="mmi">🛰️</span></button>
-            <button id="mapIdleBtn" type="button" title="Idle rewards" aria-label="Idle rewards"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
+            <button id="mapIdleBtn" type="button" title="Idle Chest" aria-label="Idle Chest"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
             <div id="mapviewport">
               <div id="mapworld">
                 <div id="mapMarchLayer"></div>
@@ -4548,6 +4548,7 @@ var TECH_DEFS_RAW = {
   drillSergeant:      { name: "Drill Sergeant",      icon: "📯", category: "growth",  maxLevel: 5, baseCost: 70,  costMult: 1.55, effectType: "trainSpeedMult",   effectTarget: null,   perLevel: 0.05, unit: "pct",  statLabel: "Troop Training Speed" },
   scholarlyPursuit:   { name: "Scholarly Pursuit",   icon: "🧠", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "rpProductionMult", effectTarget: null,   perLevel: 0.06, unit: "pct",  statLabel: "Research Point Production", reqBuilding: "academy", reqBuildingLevel: 1 },
   energonSiphon:      { name: "Energon Siphon",      icon: "🔋", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "idleEnergonFlat",  effectTarget: null,   perLevel: 40,   unit: "flat", statLabel: "Idle Energon per hour" }, /* v921: +20/h per level (10 levels, +200/h) */
+  fieldLogistics:     { name: "Field Logistics",     icon: "🧰", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "idleCapHours",     effectTarget: null,   perLevel: 1.6,  unit: "hours", statLabel: "Idle Chest max time" }, /* v1003: +0.8h per level (8h -> 16h at level 10), drops come a little faster too */
   logistics:          { name: "Logistics",           icon: "📦", category: "growth",  maxLevel: 5, baseCost: 80,  costMult: 1.55, effectType: "gatherBonusMult",  effectTarget: null,   perLevel: 0.06, unit: "pct",  statLabel: "Gathering Yield" },
 
   // ---- ECONOMY ----
@@ -5763,7 +5764,7 @@ function createGame(opts) {
     resources: { food: 500, wood: 500, stone: 300, gold: 100 },
     researchPoints: 0, tech: {}, fortressTech: {}, heroBonus: { atk: 0, hp: 0, def: 0, skill: 0 }, buildings: {},
     buildQueue2: false, researchQueue: null, techV10: true, speedups: { construction_1h: 0, general_1h: 0 }, skins: {}, energon: 0, gems: 0, forge: { level: 1, progress: 0, forged: 0 }, equipment: { inv: [], slots: [null, null, null, null, null, null, null, null, null, null], nextId: 1 },
-    bucket: { at: null, en: 0, val: 0, enHr: 1200, valHr: 1200, liveSec: 0, liveEn: 0, liveVal: 0 }, // v727: Energon / Forge / Equipment / idle rewards bucket
+    bucket: { at: null, en: 0, val: 0, enHr: 1200, valHr: 1200, liveSec: 0, liveEn: 0, liveVal: 0, fillSec: 0, dropSec: 0, rolls: 0, res: {}, items: {} }, // v727: Energon / Forge / Equipment / idle rewards bucket
     troops: { infantry: 0, archer: 0, cavalry: 0 },
     heroes: {}, governorHero: null, conquestRoster: [], heroCooldowns: {},
     espers: {}, equippedEsper: null, // only one Esper can be equipped at a time — see renderEspers()/setEquippedEsper()
@@ -6994,16 +6995,51 @@ function createGame(opts) {
   /* v921: idle Energon is a small fixed trickle (40/h) that research raises (Energon Siphon, up to +200/h); it no longer follows how fast you farm while playing. Idle Valor is unchanged. */
   var IDLE_ENERGON_BASE_HR = 40;
   function idleEnergonHr() { return IDLE_ENERGON_BASE_HR + techBonusSum("idleEnergonFlat"); }
-  function bucketCapEn() { return idleEnergonHr() * BUCKET_CAP_HOURS; }
-  function bucketCapVal() { return state.bucket.valHr * BUCKET_RATE_FRAC * BUCKET_CAP_HOURS; }
+  /* v1003 (Harley): the idle bucket is now an Idle Chest. It fills all the time (online and offline) up to a cap (8h, Field Logistics research raises it to 16h).
+     Inside: Energon + Valor (as before), 25% of your resource production, and an item drop every 20 min (a little faster with Field Logistics).
+     Regular drops: draw tickets, speedups, Research Points. Rare: hero shards (heroes you own, not VIP), Conquest Books. Never gems, weapon fragments or cards. */
+  var IDLE_DROP_MIN = 20;
+  var IDLE_DROPS = [
+    { id: "tickets", w: 30, n: 1, label: "Draw ticket" },
+    { id: "su_con",  w: 18, n: 1, label: "1h Construction speedup" },
+    { id: "su_gen",  w: 8,  n: 1, label: "1h Speedup" },
+    { id: "rpHours", w: 26, n: 1, label: "Research Points (1h)" },
+    { id: "shards",  w: 12, n: 3, label: "Hero shards", rare: true },
+    { id: "books",   w: 6,  n: 3, label: "Conquest Books", rare: true }
+  ];
+  var IDLE_RES = ["food", "wood", "stone", "gold"];
+  function bucketCapHours() { return BUCKET_CAP_HOURS + techBonusSum("idleCapHours"); }
+  function idleDropSec() { return IDLE_DROP_MIN * 60 / (1 + 0.025 * (state.tech.fieldLogistics || 0)); } /* Field Logistics 10: a drop every 16 min */
+  function bucketCapEn() { return idleEnergonHr() * bucketCapHours(); }
+  function bucketCapVal() { return state.bucket.valHr * BUCKET_RATE_FRAC * bucketCapHours(); }
+  function bucketResHr(r) { var t = 0; for (var k in BUILDING_DEFS) { var d = BUILDING_DEFS[k], bl = state.buildings[k]; if (d.produces && d.produces[r] && bl && bl.level > 0) t += d.produces[r] * bl.level; } return t * resourceMult(r) * PRODUCTION_SCALE * 3600 * BUCKET_RATE_FRAC; }
+  function rpPerHour() { var t = 0; for (var k in BUILDING_DEFS) { var d = BUILDING_DEFS[k], bl = state.buildings[k]; if (d.research && bl && bl.level > 0) t += d.research * bl.level; } return t * rpProductionMult() * 3600; }
+  function idleRollDrop() {
+    var b = state.bucket, rng = seededRandom(((b.seed || 1) * 7919 + (b.rolls || 0) * 104729) % 2147483647), tot = 0, i;
+    b.rolls = (b.rolls || 0) + 1;
+    for (i = 0; i < IDLE_DROPS.length; i++) tot += IDLE_DROPS[i].w;
+    var x = rng() * tot;
+    for (i = 0; i < IDLE_DROPS.length; i++) { if (x < IDLE_DROPS[i].w) break; x -= IDLE_DROPS[i].w; }
+    var d = IDLE_DROPS[Math.min(i, IDLE_DROPS.length - 1)]; b.items[d.id] = (b.items[d.id] || 0) + d.n;
+  }
+  function bucketFill(sec) { /* add `sec` seconds of filling, stopping at the cap */
+    var b = state.bucket; if (!b.res) b.res = {}; if (!b.items) b.items = {}; if (!b.seed) b.seed = 1 + Math.floor(Math.random() * 1e6);
+    var s = Math.min(sec, Math.max(0, bucketCapHours() * 3600 - (b.fillSec || 0)));
+    if (!(s > 0)) return;
+    var hrs = s / 3600; b.fillSec = (b.fillSec || 0) + s;
+    b.en = b.en >= bucketCapEn() ? b.en : Math.min(bucketCapEn(), b.en + hrs * idleEnergonHr()); /* v921: fixed trickle; an older, bigger bucket isn't cut down */
+    b.val = Math.min(bucketCapVal(), b.val + hrs * b.valHr * BUCKET_RATE_FRAC);
+    IDLE_RES.forEach(function (r) { b.res[r] = (b.res[r] || 0) + hrs * bucketResHr(r); });
+    b.dropSec = (b.dropSec || 0) + s; var D = idleDropSec();
+    while (b.dropSec >= D) { b.dropSec -= D; idleRollDrop(); }
+  }
   function tickBucket(t) {
     var b = state.bucket; if (b.at == null) { b.at = t; return; }
     var gap = (t - b.at) / 1000; b.at = t;
     if (gap < 0) return;
-    if (gap > BUCKET_MIN_GAP_SEC) { // we were away: bank it (capped at 8h worth), don't treat as live play
-      var hrs = Math.min(gap / 3600, BUCKET_CAP_HOURS), en0 = b.en, val0 = b.val;
-      b.en = b.en >= bucketCapEn() ? b.en : Math.min(bucketCapEn(), b.en + hrs * idleEnergonHr()); /* v921: fixed trickle; an older, bigger bucket isn't cut down */
-      b.val = Math.min(bucketCapVal(), b.val + hrs * b.valHr * BUCKET_RATE_FRAC);
+    var en0 = b.en, val0 = b.val;
+    bucketFill(gap); /* v1003: fills while you play too */
+    if (gap > BUCKET_MIN_GAP_SEC) { // we were away: don't treat as live play
       var aw = b.away || (b.away = { sec: 0, en: 0, val: 0, id: 0 }); // welcome-back popup reads this
       aw.sec += gap; aw.en += Math.max(0, b.en - en0); aw.val += Math.max(0, b.val - val0); aw.id++;
       b.liveSec = 0; b.liveEn = 0; b.liveVal = 0; return;
@@ -7015,15 +7051,36 @@ function createGame(opts) {
       b.liveSec = 0; b.liveEn = 0; b.liveVal = 0;
     }
   }
+  function bucketHasAny() { var b = state.bucket; return b.en >= 1 || b.val >= 1 || IDLE_RES.some(function (r) { return ((b.res || {})[r] || 0) >= 1; }) || Object.keys(b.items || {}).some(function (k) { return b.items[k] > 0; }); }
   function collectBucket() {
     var b = state.bucket, en = Math.floor(b.en), val = Math.floor(b.val);
-    if (en <= 0 && val <= 0) return { ok: false };
-    state.energon += en; state.idle.valor += val; b.en -= en; b.val -= val; return { ok: true, energon: en, valor: val };
+    if (!bucketHasAny()) return { ok: false };
+    state.energon += en; state.idle.valor += val; b.en -= en; b.val -= val;
+    var res = {}; IDLE_RES.forEach(function (r) { var v = Math.floor((b.res || {})[r] || 0); if (v > 0) { res[r] = v; b.res[r] -= v; } }); addResourcesClamped(res);
+    var got = [], it = b.items || {}, rng = seededRandom(((b.seed || 1) * 31 + (b.rolls || 0) * 7 + 3) % 2147483647);
+    Object.keys(it).forEach(function (id) { var n = it[id] | 0; if (n <= 0) return;
+      if (id === "tickets") { state.weaponTickets = (state.weaponTickets || 0) + n; got.push({ id: id, n: n }); }
+      else if (id === "su_con" || id === "su_gen") { var sk = id === "su_con" ? "construction_1h" : "general_1h"; state.speedups[sk] = (state.speedups[sk] || 0) + n; got.push({ id: id, n: n }); }
+      else if (id === "rpHours") { var rp = Math.max(100, Math.round(rpPerHour())) * n; state.researchPoints += rp; got.push({ id: id, n: n, rp: rp }); }
+      else if (id === "books") { state.idle.conquestBooks = (state.idle.conquestBooks || 0) + n; got.push({ id: id, n: n }); }
+      else if (id === "shards") { /* split over heroes you own (not VIP / governor), 3 at a time; none owned -> a draw ticket per 3 */
+        var pool = Object.keys(state.heroes).filter(function (k) { var d = HERO_DEFS[k], h = state.heroes[k]; return d && h && h.owned && !d.vipOnly && d.class !== "governor"; }), per = {};
+        for (var q = 0; q < n; q += 3) { var c = Math.min(3, n - q); if (!pool.length) { state.weaponTickets = (state.weaponTickets || 0) + 1; got.push({ id: "tickets", n: 1 }); continue; } var hk = pool[Math.floor(rng() * pool.length)]; per[hk] = (per[hk] || 0) + c; }
+        Object.keys(per).forEach(function (hk) { state.heroes[hk].fragments = (state.heroes[hk].fragments || 0) + per[hk]; got.push({ id: "shards", n: per[hk], hero: hk }); });
+      }
+      delete it[id]; });
+    b.fillSec = 0;
+    return { ok: true, energon: en, valor: val, res: res, items: got };
   }
   function idleSetSkillAuto(on) { state.idle.skillAuto = !!on; if (on) state.idle.skillCast = {}; }
   function idleCastSkill(key) { if (state.idle.skillAuto !== false) return false; var cd = state.heroCooldowns[key]; if (cd != null && cd > 0.05) return false; if (!state.idle.skillCast) state.idle.skillCast = {}; state.idle.skillCast[key] = true; return true; }
   function bucketAwayClear() { delete state.bucket.away; }
-  function bucketInfo() { var b = state.bucket; return { away: b.away ? { sec: b.away.sec, en: Math.floor(b.away.en), val: Math.floor(b.away.val), id: b.away.id } : null, energon: Math.floor(b.en), valor: Math.floor(b.val), capEn: Math.floor(bucketCapEn()), capVal: Math.floor(bucketCapVal()), enHr: idleEnergonHr(), valHr: b.valHr * BUCKET_RATE_FRAC }; }
+  function bucketInfo() { var b = state.bucket, capS = bucketCapHours() * 3600, res = {}, items = [];
+    IDLE_RES.forEach(function (r) { res[r] = Math.floor((b.res || {})[r] || 0); });
+    IDLE_DROPS.forEach(function (d) { var n = (b.items || {})[d.id] | 0; if (n > 0) items.push({ id: d.id, n: n, label: d.label, rare: !!d.rare }); });
+    var resHr = {}; IDLE_RES.forEach(function (r) { resHr[r] = bucketResHr(r); });
+    return { away: b.away ? { sec: b.away.sec, en: Math.floor(b.away.en), val: Math.floor(b.away.val), id: b.away.id } : null, energon: Math.floor(b.en), valor: Math.floor(b.val), capEn: Math.floor(bucketCapEn()), capVal: Math.floor(bucketCapVal()), enHr: idleEnergonHr(), valHr: b.valHr * BUCKET_RATE_FRAC,
+      fillSec: Math.min(capS, b.fillSec || 0), capSec: capS, capH: bucketCapHours(), full: (b.fillSec || 0) >= capS - 0.5, res: res, resHr: resHr, items: items, dropSec: idleDropSec(), nextDropSec: (b.fillSec || 0) >= capS - 0.5 ? null : Math.max(0, idleDropSec() - (b.dropSec || 0)), hasAny: bucketHasAny(), rpHr: rpPerHour() }; }
   function forgeInfo() { var F = state.forge; return { level: F.level, progress: F.progress, need: forgeNeed(F.level), cost: forgeCost(F.level), odds: forgeOdds(F.level), maxLevel: FORGE_MAX_LEVEL, unlock: EQ_UNLOCK.slice(), invMax: EQ_INV_MAX }; }
   // ================= end v727 =================
   function idleMarkMult(e, aid) { return ((e && e.markT > 0 && !idleAttackerIsMelee(aid)) ? 1 + (e.markPct || 0) : 1) * ((e && e.type === "boss") ? 1 + (equipBonus.boss || 0) / 100 : 1); } // Kessa's Storm Mark: marked enemies take extra damage from ranged heroes
@@ -8567,7 +8624,11 @@ function createGame(opts) {
       for (var qs = 0; qs < EQ_SLOTS; qs++) { var qp = Array.isArray(eqIn.slots) ? eqIn.slots[qs] : null; eqOut.slots.push(qp && typeof qp.id === "number" ? qp : null); }
       state.equipment = eqOut;
     }
-    if (saved.bucket && typeof saved.bucket === "object") state.bucket = Object.assign({ at: null, en: 0, val: 0, enHr: 1200, valHr: 1200, liveSec: 0, liveEn: 0, liveVal: 0 }, saved.bucket);
+    if (saved.bucket && typeof saved.bucket === "object") { var sbHadFill = typeof saved.bucket.fillSec === "number";
+      state.bucket = Object.assign({ at: null, en: 0, val: 0, enHr: 1200, valHr: 1200, liveSec: 0, liveEn: 0, liveVal: 0, fillSec: 0, dropSec: 0, rolls: 0 }, saved.bucket);
+      state.bucket.res = Object.assign({}, saved.bucket.res || {}); state.bucket.items = Object.assign({}, saved.bucket.items || {});
+      if (!sbHadFill) state.bucket.fillSec = Math.min(bucketCapHours() * 3600, (state.bucket.en || 0) / Math.max(1, idleEnergonHr()) * 3600); /* v1003: an older save - how long it has been filling, from its Energon */
+    }
     try { recomputeEquipBonus(); } catch (e) {}
     if (saved.buildings) for (var bk in saved.buildings) if (state.buildings[bk]) Object.assign(state.buildings[bk], saved.buildings[bk]);
     if (saved.troops) Object.assign(state.troops, saved.troops);
@@ -10707,7 +10768,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1002"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1003"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12430,6 +12491,7 @@ function techBonusText(def, level) {
   if (level <= 0) return null;
   var total = level * def.perLevel;
   if (def.unit === "flat") return "+" + fmt(total) + " " + def.statLabel;
+  if (def.unit === "hours") return "+" + (Math.round(total * 10) / 10) + "h " + def.statLabel; /* v1003 Field Logistics */
   var pct = Math.round(total * 1000) / 10;
   return (def.invert ? "-" : "+") + pct + "% " + def.statLabel;
 }
@@ -25378,7 +25440,7 @@ function renderForge() {
   forgePanelEl.innerHTML = h;
   var q = function (id) { return document.getElementById(id); };
   q("fgClose").onclick = closeForge;
-  q("fgCollect").onclick = function () { var c = game.collectBucket(); if (c.ok) { fgMsg("Collected " + ico("energon") + " " + fmtCompact(c.energon) + " and " + ico("valor") + " " + fmtCompact(c.valor)); persist(); render(); renderForge(); fgMsg("Collected " + ico("energon") + " " + fmtCompact(c.energon) + " and " + ico("valor") + " " + fmtCompact(c.valor)); } };
+  q("fgCollect").onclick = function () { var c = game.collectBucket(); if (c.ok) { var more = (c.items && c.items.length) || Object.keys(c.res || {}).length ? " + the rest of the Idle Chest" : ""; persist(); render(); renderForge(); fgMsg("Collected " + ico("energon") + " " + fmtCompact(c.energon) + " and " + ico("valor") + " " + fmtCompact(c.valor) + more); } };
   q("fgForge").onclick = function () { fgDoForge(); };
   q("fgAuto").onclick = function () { forgeAuto = !forgeAuto; updateForgeBtn(); renderForge(); };
   q("fgBest").onclick = function () { game.equipBest(); persist(); renderForge(); updateForgeBtn(); };
@@ -25434,7 +25496,21 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
     "#wbPop .wb-r{display:flex;justify-content:center;gap:10px;margin-bottom:14px;}" +
     "#wbPop .wb-i{flex:1;background:rgba(0,0,0,.35);border-radius:8px;padding:8px 4px;font-size:18px;font-weight:700;color:#fff;}" +
     "#wbPop .wb-i small{display:block;font-size:10px;font-weight:400;color:#d8c29a;margin-top:2px;}" +
-    "#wbPop button{background:linear-gradient(#f59a2c,#d4731a);border:0;border-radius:8px;color:#fff;font:700 15px var(--bodyfont);padding:9px 34px;cursor:pointer;}";
+    "#wbPop button{background:linear-gradient(#f59a2c,#d4731a);border:0;border-radius:8px;color:#fff;font:700 15px var(--bodyfont);padding:9px 34px;cursor:pointer;}" +
+    /* v1003: Idle Chest */
+    "#wbPop .ic-box{position:relative;width:min(340px,92vw);}" +
+    "#wbPop .ic-x{position:absolute;top:6px;right:8px;background:none;border:0;padding:4px 8px;font-size:18px;color:#d8c29a;cursor:pointer;}" +
+    "#wbPop .ic-tl{font-size:12px;color:#d8c29a;margin-top:6px;} #wbPop .ic-tl b{color:#ffd978;}" +
+    "#wbPop .ic-time{font:800 26px/1.1 ui-monospace,Menlo,Consolas,monospace;color:#fff;letter-spacing:1px;margin:2px 0 6px;}" +
+    "#wbPop .ic-bar{height:7px;border-radius:4px;background:rgba(0,0,0,.45);overflow:hidden;margin:0 6px 10px;} #wbPop .ic-bar i{display:block;height:100%;background:linear-gradient(90deg,#c9a24a,#f0c95f);}" +
+    "#wbPop .ic-rates{display:flex;justify-content:center;gap:12px;font-size:12px;color:#f3e3c3;margin-bottom:10px;} #wbPop .ic-rates .ri{width:14px;height:14px;vertical-align:-2px;}" +
+    "#wbPop .ic-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:rgba(0,0,0,.28);border:1px dashed #b98a4c;border-radius:10px;padding:8px;margin-bottom:6px;max-height:42vh;overflow:auto;}" +
+    "#wbPop .ic-it{position:relative;background:rgba(0,0,0,.35);border:1px solid rgba(185,138,76,.55);border-radius:8px;padding:6px 2px 4px;min-width:0;}" +
+    "#wbPop .ic-it.rare{border-color:#c78bff;box-shadow:inset 0 0 8px rgba(199,139,255,.35);}" +
+    "#wbPop .ic-it .ri,#wbPop .ic-it .ic-e{width:28px;height:28px;display:block;margin:0 auto 2px;font-size:22px;line-height:28px;}" +
+    "#wbPop .ic-it b{display:block;font-size:13px;color:#fff;} #wbPop .ic-it small{display:block;font-size:9px;color:#d8c29a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
+    "#wbPop .ic-next{font-size:11px;color:#d8c29a;margin-bottom:12px;min-height:14px;}" +
+    "#wbPop .ic-empty{grid-column:1/-1;font-size:12px;color:#d8c29a;padding:10px 0;}";
   document.head.appendChild(st);
   var pop = document.createElement("div"); pop.id = "wbPop"; document.body.appendChild(pop);
   function dur(sec) { var m = Math.round(sec / 60); if (m < 60) return Math.max(1, m) + " min"; var h = Math.floor(m / 60), mm = m % 60; return h + " h" + (mm ? " " + mm + " min" : ""); }
@@ -25464,24 +25540,56 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
     if (Date.now() - lastShownAt < 180000) { game.bucketAwayClear(); return; }
     if (!cfg.on || a.sec < cfg.minSec || (a.en < 1 && a.val < 1)) { game.bucketAwayClear(); return; }
     if (!bucketFull()) { game.bucketAwayClear(); return; } /* v1002 (Harley): only pops up in your face when the bucket is full; otherwise it waits in the 🌙 icon on the World map */
-    show(a, false);
+    if (cfg.auto) { show(a, false); return; }
+    game.bucketAwayClear(); lastShownAt = Date.now(); wbCloudSave(); openBucket(true); /* v1003: the full Idle Chest */
   }, 700);
-  function bucketFull() { var b = game.bucketInfo(); return (b.capEn > 0 && b.energon >= b.capEn * 0.999) || (b.capVal > 0 && b.valor >= b.capVal * 0.999); }
-  /* v1002: the 🌙 World map icon - shows how full the bucket is; tap to see it and collect whenever you like */
-  function openBucket() {
-    var b = game.bucketInfo(), pct = Math.round(100 * Math.max(b.capEn ? b.energon / b.capEn : 0, b.capVal ? b.valor / b.capVal : 0)), has = b.energon >= 1 || b.valor >= 1;
-    pop.innerHTML = '<div class="wb-box"><div class="wb-t">Idle rewards</div><div class="wb-s">Fills while you\'re away · ' + Math.min(100, pct) + '% full' + (pct >= 100 ? ' (it has stopped filling)' : '') + '</div>' +
-      '<div class="wb-r"><div class="wb-i">' + ico("energon") + ' ' + fmtCompact(b.energon) + '<small>Energon</small></div><div class="wb-i">' + ico("valor") + ' ' + fmtCompact(b.valor) + '<small>Valor</small></div></div>' +
-      '<button id="wbBtn">' + (has ? "Collect" : "Close") + '</button></div>';
-    pop.style.display = "flex";
-    document.getElementById("wbBtn").onclick = function () { pop.style.display = "none"; if (has) { game.collectBucket(); persist(); wbCloudSave(); render(); try { renderForge(); } catch (e) {} updateForgeBtn(); } paintIdleBtn(); };
+  function bucketFull() { return !!game.bucketInfo().full; }
+  /* v1003: the Idle Chest popup (opened from the 🌙 World map icon, or by itself when you come back to a full chest) */
+  function hms(sec) { sec = Math.max(0, Math.floor(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s2 = sec % 60; return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m + ":" + (s2 < 10 ? "0" : "") + s2; }
+  var IC_ITEM = { tickets: [ico("ticket"), "Draw tickets"], su_con: ['<span class="ic-e">🔨</span>', "Build 1h"], su_gen: ['<span class="ic-e">⏩</span>', "Speedup 1h"], rpHours: [ico("rp"), "Research"], shards: [ico("fragment"), "Hero shards"], books: [ico("books"), "Books"] };
+  var icTimer = null;
+  function tile(icon, n, label, rare) { return '<div class="ic-it' + (rare ? " rare" : "") + '">' + icon + "<b>" + fmtCompact(n) + "</b><small>" + label + "</small></div>"; }
+  function chestHtml(b, welcome) {
+    var t = "";
+    if (b.energon >= 1) t += tile(ico("energon"), b.energon, "Energon");
+    if (b.valor >= 1) t += tile(ico("valor"), b.valor, "Valor");
+    ["food", "wood", "stone", "gold"].forEach(function (r) { if (b.res[r] >= 1) t += tile(ico(r), b.res[r], r.charAt(0).toUpperCase() + r.slice(1)); });
+    b.items.forEach(function (it) { var m = IC_ITEM[it.id] || ["", it.label]; t += tile(m[0], it.id === "rpHours" ? Math.max(100, Math.round(b.rpHr)) * it.n : it.n, m[1], it.rare); });
+    if (!t) t = '<div class="ic-empty">Nothing yet - the chest fills over time, even while you play.</div>';
+    var pct = Math.min(100, Math.round(100 * b.fillSec / b.capSec));
+    return '<div class="wb-box ic-box"><button class="ic-x" id="icX" aria-label="Close">✕</button><div class="wb-t">' + (welcome ? "Welcome back!" : "Idle Chest") + '</div>' +
+      '<div class="ic-tl">Collection Time <b>(Max ' + (Math.round(b.capH * 10) / 10) + 'h)</b></div><div class="ic-time" id="icTime">' + hms(b.fillSec) + '</div>' +
+      '<div class="ic-bar"><i id="icBar" style="width:' + pct + '%"></i></div>' +
+      '<div class="ic-rates"><span>' + ico("energon") + " " + fmtCompact(Math.round(b.enHr)) + '/h</span><span>' + ico("valor") + " " + fmtCompact(Math.round(b.valHr)) + '/h</span></div>' +
+      '<div class="ic-grid">' + t + '</div><div class="ic-next" id="icNext">' + (b.full ? "Chest is full - claim it to start filling again" : "Next item in " + hms(b.nextDropSec)) + '</div>' +
+      '<button id="wbBtn">' + (b.hasAny ? "Claim" : "Close") + '</button></div>';
   }
+  function closeChest() { pop.style.display = "none"; if (icTimer) { clearInterval(icTimer); icTimer = null; } paintIdleBtn(); }
+  function openBucket(welcome) {
+    var b = game.bucketInfo(), sig = JSON.stringify([b.energon, b.valor, b.res, b.items, b.full]);
+    pop.innerHTML = chestHtml(b, welcome); pop.style.display = "flex";
+    document.getElementById("icX").onclick = closeChest;
+    document.getElementById("wbBtn").onclick = function () {
+      if (game.bucketInfo().hasAny) { var c = game.collectBucket(); persist(); wbCloudSave(); render(); try { renderForge(); } catch (e) {} updateForgeBtn();
+        if (c && c.ok && c.items && c.items.length) game.log("🎁 Idle Chest: " + c.items.map(function (x) { return (x.rp ? fmtCompact(x.rp) + " Research Points" : x.n + " " + (IC_ITEM[x.id] || ["", x.id])[1] + (x.hero && HERO_DEFS[x.hero] ? " (" + HERO_DEFS[x.hero].name + ")" : "")); }).join(", ")); }
+      closeChest();
+    };
+    if (icTimer) clearInterval(icTimer);
+    icTimer = setInterval(function () { /* live timer; redraw when something new lands in the chest */
+      if (pop.style.display !== "flex" || !document.getElementById("icTime")) { clearInterval(icTimer); icTimer = null; return; }
+      var n = game.bucketInfo(), s2 = JSON.stringify([n.energon, n.valor, n.res, n.items, n.full]);
+      if (s2 !== sig) { openBucket(welcome); return; }
+      document.getElementById("icTime").textContent = hms(n.fillSec); document.getElementById("icBar").style.width = Math.min(100, Math.round(100 * n.fillSec / n.capSec)) + "%";
+      document.getElementById("icNext").textContent = n.full ? "Chest is full - claim it to start filling again" : "Next item in " + hms(n.nextDropSec);
+    }, 1000);
+  }
+  pop.addEventListener("click", function (e) { if (e.target === pop && document.getElementById("icTime")) closeChest(); });
   function paintIdleBtn() {
     var btn = document.getElementById("mapIdleBtn"); if (!btn) return; var b; try { b = game.bucketInfo(); } catch (e) { return; }
-    var f = Math.max(b.capEn ? b.energon / b.capEn : 0, b.capVal ? b.valor / b.capVal : 0);
+    var f = b.capSec ? b.fillSec / b.capSec : 0;
     btn.querySelector(".mib i").style.width = Math.round(Math.min(1, f) * 100) + "%";
-    btn.classList.toggle("has", b.energon >= 1 || b.valor >= 1); btn.classList.toggle("full", f >= 0.999);
-    btn.title = "Idle rewards: " + Math.round(Math.min(1, f) * 100) + "% full";
+    btn.classList.toggle("has", !!b.hasAny); btn.classList.toggle("full", !!b.full);
+    btn.title = "Idle Chest: " + Math.round(Math.min(1, f) * 100) + "% full";
   }
   (function () { var btn = document.getElementById("mapIdleBtn"); if (btn) btn.onclick = function (e) { e.stopPropagation(); openBucket(); }; })();
   setInterval(paintIdleBtn, 2000); setTimeout(paintIdleBtn, 1500);
@@ -25495,7 +25603,7 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
     t.onclick = function () { var save0 = cfg.auto; cfg.auto = false; show({ sec: 3 * 3600, en: 1234, val: 567 }, true); cfg.auto = save0; };
   }
   sync(); document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubWelcome"]')) setTimeout(sync, 0); });
-  window.__wb = { cfg: cfg, show: show, openBucket: function () { openBucket(); }, full: function () { return bucketFull(); } };
+  window.__wb = { cfg: cfg, show: show, openBucket: function (w) { openBucket(w); }, full: function () { return bucketFull(); } };
 })();
 
 (function utilPopups() {

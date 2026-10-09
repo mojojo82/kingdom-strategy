@@ -19,7 +19,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.fill("#ksE", "g224@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => setScreen("world")); await P.waitForTimeout(1500);
-  const away = (h) => P.evaluate(async (h) => { const st = game.state; st.bucket.en = 0; st.bucket.val = 0; delete st.bucket.away; window.ksWelcomeBackCooldownReset && window.ksWelcomeBackCooldownReset();
+  const away = (h) => P.evaluate(async (h) => { const st = game.state; st.bucket.en = 0; st.bucket.val = 0; st.bucket.fillSec = 0; st.bucket.dropSec = 0; st.bucket.res = {}; st.bucket.items = {}; delete st.bucket.away; window.ksWelcomeBackCooldownReset && window.ksWelcomeBackCooldownReset();
     st.bucket.at = Date.now() - h * 3600e3; let shows = 0; for (let i = 0; i < 12; i++) { await new Promise((r) => setTimeout(r, 500)); const p = document.getElementById("wbPop"); if (p && p.style.display === "flex") { shows++; break; } } return shows; }, h);
   const o = {};
   o.pop2h = await away(2); await P.waitForTimeout(2500);
@@ -36,7 +36,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   console.log(JSON.stringify(o));
   assert.strictEqual(o.pop2h, 0, "2 h away (not full): no popup");
   assert.ok(o.icon.vis && o.icon.has && !o.icon.full && /^2[0-9]%$/.test(o.icon.bar), "icon shows a part-full bucket");
-  assert.ok(/Idle rewards/.test(o.popTxt) && /2\d% full/.test(o.popTxt), "icon opens the bucket");
+  assert.ok(/Idle Chest/.test(o.popTxt) && /02:0\d:\d\d/.test(o.popTxt), "icon opens the chest (v1003)");
   assert.ok(o.gained >= 76 && o.gained <= 84 && !o.after.has && o.after.bar === "0%", "collected 2 h worth, icon empty");
   assert.strictEqual(o.pop9h, 1, "full bucket: popup");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
