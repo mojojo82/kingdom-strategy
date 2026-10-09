@@ -40,11 +40,21 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   /* preview: admin sees another skin on their own base without changing it */
   o.preview = await A.evaluate((h) => { const pv = document.getElementById("devSaPreview"); pv.checked = true; pv.dispatchEvent(new Event("change")); const s = document.getElementById("devSaSkin"); s.value = "mecha"; s.dispatchEvent(new Event("change"));
     const im = mapTileEls[h] && mapTileEls[h].querySelector("img.city-icon-img"); const r = { skinKept: mapCitySkin, usesPreview: !!im }; pv.checked = false; pv.dispatchEvent(new Event("change")); return r; }, home);
+  /* v1014: adjust on the World map - panel above the bottom bar, base visible above it with its squares, info card hidden, Done puts it back */
+  await A.evaluate(() => { setScreen("more", "dev"); }); await A.waitForTimeout(300);
+  await A.evaluate(() => document.getElementById("devSaMap").click()); await A.waitForTimeout(1500);
+  o.map = await A.evaluate((h) => { const f = document.getElementById("saFloat"), fr = f.getBoundingClientRect(), t = mapTileEls[h], im = t && t.querySelector("img.city-icon-img"), ir = im && im.getBoundingClientRect();
+    return { screen: document.body.dataset.screen, floatShown: getComputedStyle(f).display !== "none", sliders: !!f.querySelector("#devSaX"), infoHidden: getComputedStyle(document.getElementById("tileinfo")).display === "none", baseAbove: ir && ir.bottom <= fr.top + 5 && ir.top >= 0, squares: document.querySelectorAll("#mapworld .tile.fp").length, previewOn: skinAlignPreview }; }, home);
+  await A.screenshot({ path: (process.env.OUT || "/tmp/") + "skin_align_map.png" });
+  await A.evaluate(() => document.getElementById("devSaDone").click()); await A.waitForTimeout(300);
+  o.done = await A.evaluate(() => ({ back: !!document.querySelector("#devSubSkinAlign #devSaX"), floatHidden: document.getElementById("saFloat").style.display === "none", preview: skinAlignPreview, cls: document.body.classList.contains("sa-on") }));
   console.log(JSON.stringify(o));
   assert.ok(/Saved for all players/.test(o.status) && o.doc, "saved to the shared doc");
   assert.ok(/"titan"/.test(after.al), "the other player got the alignment");
   assert.ok(after.tileLeft === before.tileLeft && after.tileTop === before.tileTop, "the 3x3 squares (tile) didn't move");
   assert.ok(after.ml !== before.ml && after.bot !== before.bot && /1\.200/.test(after.w || ""), "the picture moved and grew for the other player too");
   assert.ok(o.preview.skinKept === "titan", "preview doesn't change the real skin");
+  assert.ok(o.map.screen === "world" && o.map.floatShown && o.map.sliders && o.map.infoHidden && o.map.baseAbove && o.map.squares >= 8 && o.map.previewOn, "on the map: panel with the sliders, base visible above it with its squares, card hidden, preview on");
+  assert.ok(o.done.back && o.done.floatHidden && o.done.preview === null && !o.done.cls, "Done puts the controls back and turns the preview off");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

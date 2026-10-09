@@ -945,3 +945,8 @@
 - New Dev Tools > 🎨 Visuals > 🏰 Base skin alignment: pick a skin, sliders Left/right and Up/down (-2..+2 tiles, steps of 0.02) and Size (x0.5..x2), "Show this skin on my base" (preview, this screen only, real skin unchanged), "Go to my base", "Reset this skin". Every change saves (0.5 s after you stop) for all players and shows "✓ Saved for all players".
 - Stored as one shared doc `assetitems/_skinalign` ({data: JSON}); rules already let anyone signed in read it and only admins write. Everyone listens to it live, and keeps a local copy. Applied on top of the existing foundation lining-up (v827) and the skin's built-in scale; the base's water ring follows. The tile / 3x3 squares never move.
 - Test: new g233_skin_align.js (admin moves Titan: saved, the other player gets it, squares unchanged, picture moved and 1.2x, preview leaves the real skin).
+
+### v1014 — skin alignment right on the World map (TEST)
+- Harley: put the alignment sliders by my base on the World map so I can see it.
+- Dev Tools > Visuals > Base skin alignment has "🗺️ Adjust on the map (by my base)": the controls move into a small panel above the bottom bar (navy, gold dashed border), the map jumps to your base, zooms in, selects it so its 3x3 squares show (its info card is hidden while the panel is open) and shows the chosen skin on your base (preview on). Change skin in the panel to preview another. "✓ Done" puts the controls back in Dev Tools, turns the preview off and brings the info card back.
+- g233 extended (panel shown with the sliders, base visible above it with 9 squares, card hidden, Done restores).

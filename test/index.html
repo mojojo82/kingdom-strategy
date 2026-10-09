@@ -636,6 +636,9 @@
   #mapworld .tile.lod { --lsz:6px; border:none; background:none; box-shadow:none; border-radius:2px; width:var(--lsz); height:var(--lsz); min-width:0; min-height:0; padding:0; margin-left:calc((var(--tile-px) - var(--lsz)) / 2); margin-top:calc((var(--tile-px) - var(--lsz)) / 2); transform:none; animation:none; overflow:hidden; } /* v865: fixed on-screen marker size, centred on the tile */
   #mapworld.iso .tile.lod, #mapworld.iso .tile.lod:hover { transform:scaleY(0.5736) rotate(45deg); }
   #mapworld .tile.lod-res.gold { background:#f0c95f; } #mapworld .tile.lod-res.food { background:#8fd14f; } #mapworld .tile.lod-res.wood { background:#c08a52; } #mapworld .tile.lod-res.stone { background:#c3cad3; }
+  #saFloat { position:fixed; left:8px; right:8px; bottom:calc(var(--bnH,86px) + 8px); z-index:9300; max-width:420px; margin:0 auto; padding:8px 10px; border:2px dashed #c9a24a; border-radius:12px; background:rgba(15,21,32,.88); box-shadow:0 6px 20px rgba(0,0,0,.55); } /* v1014: skin alignment on the World map */
+  #saFloat .dev-tools-row { margin:4px 0; } #saFloat .dev-slider { flex:1; min-width:0; }
+  body.sa-on #tileinfo { display:none !important; }
   #myPin { position:absolute; left:0; top:0; z-index:100001; pointer-events:none; width:32px; height:41px; } /* v1005; v1006: smaller, placed with a transform (see paintMyPin) */
   #myPin svg { display:block; filter:drop-shadow(0 3px 3px rgba(0,0,0,.55)); animation:myPinBob 1.6s ease-in-out infinite; }
   #myPin .mp-ring { position:absolute; left:50%; bottom:-8px; width:40px; height:17px; margin-left:-20px; border-radius:50%; border:3px solid #ffd36b; animation:myPinRing 1.6s ease-out infinite; }
@@ -3302,12 +3305,15 @@
               <div class="dev-sub-header" data-target="devSubSkinAlign"><span class="dev-sub-arrow">▸</span> 🏰 Base skin alignment</div>
               <div class="dev-sub-body" id="devSubSkinAlign" style="display:none;">
                 <div class="dev-tools-hint" style="margin-bottom:6px;">Moves / resizes one base skin's picture on its 3x3 squares. The squares (grid) don't move. Saved for every player.</div>
+                <div class="dev-tools-row"><button class="dev-btn" id="devSaMap">🗺️ Adjust on the map (by my base)</button></div>
+                <div id="devSaBox">
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Skin</span><select id="devSaSkin"></select></div>
                 <div class="dev-tools-row"><label class="dev-tools-hint"><input type="checkbox" id="devSaPreview"> Show this skin on my base (only on this screen)</label></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Left / right</span><input type="range" class="dev-slider" id="devSaX" min="-2" max="2" step="0.02"><span class="dev-slider-val" id="devSaXVal"></span></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Up / down</span><input type="range" class="dev-slider" id="devSaY" min="-2" max="2" step="0.02"><span class="dev-slider-val" id="devSaYVal"></span></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:70px;">Size</span><input type="range" class="dev-slider" id="devSaS" min="0.5" max="2" step="0.01"><span class="dev-slider-val" id="devSaSVal"></span></div>
-                <div class="dev-tools-row"><button class="dev-btn" id="devSaGo">📍 Go to my base</button><button class="dev-btn" id="devSaReset">↺ Reset this skin</button><span class="dev-tools-hint" id="devSaStatus"></span></div>
+                <div class="dev-tools-row"><button class="dev-btn" id="devSaReset">↺ Reset this skin</button><button class="dev-btn" id="devSaDone" style="display:none">✓ Done</button><span class="dev-tools-hint" id="devSaStatus"></span></div>
+                </div>
               </div>
             </div>
 
@@ -10856,7 +10862,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1013"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1014"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22915,7 +22921,21 @@ function devSkinAlignSync() {
   sel.onchange = function () { if (document.getElementById("devSaPreview").checked) skinAlignPreview = sel.value; devSkinAlignSync(); try { renderVisibleTiles(); } catch (e) {} st(""); };
   document.getElementById("devSaPreview").onchange = function () { skinAlignPreview = this.checked ? sel.value : null; try { renderVisibleTiles(); } catch (e) {} };
   document.getElementById("devSaReset").onclick = function () { var v = JSON.parse(JSON.stringify(SKIN_ALIGN)); delete v[sel.value]; skinAlignSet(v); st("Saving…"); skinAlignSave(function (ok) { st(ok ? "✓ Reset for all players" : "Not saved"); }); };
-  document.getElementById("devSaGo").onclick = function () { var h = game.state.homeTileId; if (h) { goToWorldTile(h); } };
+  /* v1014 (Harley): adjust right on the World map - the controls move into a small panel above the bottom bar, the map centres on your base with
+     its 3x3 squares showing (its info card stays hidden), and your base shows the chosen skin. Done puts everything back. */
+  var box = document.getElementById("devSaBox"), home0 = box.parentNode, flt = null;
+  document.getElementById("devSaMap").onclick = function () {
+    var h = game.state.homeTileId; if (!h) return;
+    if (!flt) { flt = document.createElement("div"); flt.id = "saFloat"; document.body.appendChild(flt); }
+    flt.appendChild(box); flt.style.display = ""; document.getElementById("devSaDone").style.display = "";
+    var pv = document.getElementById("devSaPreview"); pv.checked = true; skinAlignPreview = sel.value;
+    document.body.classList.add("sa-on"); setScreen("world");
+    setTimeout(function () { try { setMapZoom(mapZoom * 56 / tilePxZ()); } catch (e) {} goToWorldTile(h); setTimeout(function () { try { var vp = document.getElementById("mapviewport"), c = tileCenterPx(mapTileById(game.state.map, h)); vp.scrollTop = Math.max(0, c.y - vp.clientHeight * 0.38); renderVisibleTiles(); } catch (e) {} }, 120); }, 50);
+  };
+  document.getElementById("devSaDone").onclick = function () {
+    home0.appendChild(box); if (flt) flt.style.display = "none"; this.style.display = "none"; document.body.classList.remove("sa-on");
+    var pv = document.getElementById("devSaPreview"); pv.checked = false; skinAlignPreview = null; try { renderVisibleTiles(); renderTileInfo(); } catch (e) {}
+  };
   devSkinAlignSync();
   document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubSkinAlign"], .dt-chip')) setTimeout(devSkinAlignSync, 0); });
 })();
