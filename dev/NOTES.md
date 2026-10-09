@@ -725,3 +725,6 @@
 ### v978 — card text can be written in the code (TEST)
 - Harley: "I'm asking you to put text there" - Claude can't edit the live database, so card text can now also live in the code: `CARD_TEXT_DEFAULTS` (slot index -> {name, type, effect, narrative}), shown to every player in any slot the shared catalog leaves empty. Priority per slot: shared catalog (admin in-game edits) > the admin's own save text > code defaults. Now: slot 1 effect "Test" (Harley's check), slot 30 Drop Signal.
 - To change card text from Claude's side: edit CARD_TEXT_DEFAULTS. Note an admin in-game edit (catalog) wins over it.
+
+### v979 — "Test" in every card description (TEST)
+- Harley: "put 1 word into the desc boxes". CARD_TEXT_DEFAULTS: slots 1-29 effect "Test", slot 30 Drop Signal.
