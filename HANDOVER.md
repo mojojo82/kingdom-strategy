@@ -112,6 +112,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Nothing a weapon fires is instant** - every projectile travels (Conquest and Arena, sims included). Damage / stun / knockout happens when it lands.
 - **All art is an admin tool, the same for every player** (v982) - hero art, card art, skill icons, sprites, Esper art, ground/trees: stored once in `assetitems/<key>` (index `assetitems/_shared_index`), only admins upload. **The only player-controlled image is each player's own avatar.**
 - **Cards are one shared catalog, admins only edit it** (v977): names / type / effect text live in `assetitems/cardcatalog` (all read, admin write), not in each save. Card effects come from the catalog name (or the card's ID code #n). Card IDs (1-30) are fixed; the album grid position is only each player's own visual sort order (state.cardOrder) - players move/sort freely, effects/equips follow the card ID.
+- **Card 10 (Overclock) is for the future Type 2 fortress** (Harley): Fortress 2 tech (not built yet) will give an innate skill cooldown bonus; card 10 needs >25% cooldown bonus so it stays dead until then. Don't "fix" its trigger.
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
 ## Open items / to-dos
