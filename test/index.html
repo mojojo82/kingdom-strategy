@@ -635,7 +635,7 @@
   #mapworld .tile.lod { --lsz:6px; border:none; background:none; box-shadow:none; border-radius:2px; width:var(--lsz); height:var(--lsz); min-width:0; min-height:0; padding:0; margin-left:calc((var(--tile-px) - var(--lsz)) / 2); margin-top:calc((var(--tile-px) - var(--lsz)) / 2); transform:none; animation:none; overflow:hidden; } /* v865: fixed on-screen marker size, centred on the tile */
   #mapworld.iso .tile.lod, #mapworld.iso .tile.lod:hover { transform:scaleY(0.5736) rotate(45deg); }
   #mapworld .tile.lod-res.gold { background:#f0c95f; } #mapworld .tile.lod-res.food { background:#8fd14f; } #mapworld .tile.lod-res.wood { background:#c08a52; } #mapworld .tile.lod-res.stone { background:#c3cad3; }
-  #myPin { position:absolute; left:0; top:0; z-index:100001; pointer-events:none; width:32px; height:41px; will-change:transform; } /* v1005; v1006: smaller, placed with a transform (see paintMyPin) */
+  #myPin { position:absolute; left:0; top:0; z-index:100001; pointer-events:none; width:32px; height:41px; } /* v1005; v1006: smaller, placed with a transform (see paintMyPin) */
   #myPin svg { display:block; filter:drop-shadow(0 3px 3px rgba(0,0,0,.55)); animation:myPinBob 1.6s ease-in-out infinite; }
   #myPin .mp-ring { position:absolute; left:50%; bottom:-8px; width:40px; height:17px; margin-left:-20px; border-radius:50%; border:3px solid #ffd36b; animation:myPinRing 1.6s ease-out infinite; }
   @keyframes myPinRing { 0% { transform:scale(.4); opacity:1; } 100% { transform:scale(1.5); opacity:0; } }
@@ -10794,7 +10794,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1006"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1007"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15680,42 +15680,46 @@ updateMapHideButtons(); // reflect any persisted on/off state from a previous se
     var dx = touches[0].clientX - touches[1].clientX, dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
   }
+  /* v1007 (Harley's screen recording: zooming, mostly from far out, made the view jump somewhere else): on iPhones a finger that was already
+     scrolling the map keeps the phone's own scrolling (and its momentum) going through the pinch, and it overrides the scroll position the zoom
+     sets - at the new zoom that old position is somewhere else entirely. While two fingers are down the map's own scrolling is now switched off
+     (overflow hidden, which also stops any momentum) and the game moves the map itself: the spot that was under your fingers stays under them,
+     so you can pan and zoom in the same gesture. Normal scrolling comes back when the fingers lift. */
+  function pinchMid(touches, rect) { return { x: (touches[0].clientX + touches[1].clientX) / 2 - rect.left, y: (touches[0].clientY + touches[1].clientY) / 2 - rect.top }; }
+  function pinchEnd() { if (!pinch) return; pinch = null; viewport.style.overflow = ""; }
   viewport.addEventListener("touchstart", function (e) {
     if (e.touches.length === 2) {
-      var rect = viewport.getBoundingClientRect();
+      var rect = viewport.getBoundingClientRect(), m = pinchMid(e.touches, rect);
+      viewport.style.overflow = "hidden";
       pinch = {
         startDist: touchDist(e.touches), startZoom: mapZoom,
-        anchorX: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
-        anchorY: (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top,
+        anchorX: m.x, anchorY: m.y, midX: m.x, midY: m.y,
+        wx: (viewport.scrollLeft + m.x) / mapZoom, wy: (viewport.scrollTop + m.y) / mapZoom, /* the map spot under the fingers, at zoom 1 */
         latestFactor: 1, rafPending: false
       };
-    }
+    } else if (e.touches.length > 2) pinchEnd();
   }, { passive: true });
   viewport.addEventListener("touchmove", function (e) {
     if (pinch && e.touches.length === 2) {
       e.preventDefault();
-      // touchmove can fire many times per animation frame — each call to
-      // setMapZoom does a real synchronous layout pass (resize #mapworld,
-      // reposition every visible tile, scroll, re-render), so applying
-      // every single touchmove event directly was the jank: several full
-      // relayouts queued up between paints. Only the LATEST pinch distance
-      // matters, so just record it here and let one rAF-scheduled call
-      // actually apply it — same coalescing the scroll handler above
-      // already does for the same reason.
-      pinch.latestFactor = touchDist(e.touches) / pinch.startDist;
+      // touchmove can fire many times per animation frame - only the latest finger positions matter, applied once per frame (setMapZoom does a full relayout)
+      var m = pinchMid(e.touches, viewport.getBoundingClientRect());
+      pinch.latestFactor = touchDist(e.touches) / pinch.startDist; pinch.midX = m.x; pinch.midY = m.y;
       if (!pinch.rafPending) {
         pinch.rafPending = true;
         var p = pinch;
         requestAnimationFrame(function () {
           p.rafPending = false;
           if (pinch !== p) return; // pinch ended/restarted before this frame ran
-          setMapZoom(p.startZoom * p.latestFactor, p.anchorX, p.anchorY);
+          setMapZoom(p.startZoom * p.latestFactor, p.midX, p.midY);
+          viewport.scrollLeft = Math.max(0, p.wx * mapZoom - p.midX); viewport.scrollTop = Math.max(0, p.wy * mapZoom - p.midY);
+          renderVisibleTiles();
         });
       }
     }
   }, { passive: false });
-  viewport.addEventListener("touchend", function (e) { if (e.touches.length < 2) pinch = null; });
-  viewport.addEventListener("touchcancel", function () { pinch = null; });
+  viewport.addEventListener("touchend", function (e) { if (e.touches.length < 2) pinchEnd(); });
+  viewport.addEventListener("touchcancel", function () { pinchEnd(); });
 })();
 
 // ---- March visual markers (world map) ----

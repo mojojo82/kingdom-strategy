@@ -898,3 +898,10 @@
 - Not reproduced in headless Chromium (pinch with real touch events stays exact). Likely the phone (WebKit) not redrawing an element with running animations when its left/top change. The pin is now placed with a translate3d transform (handled by the compositor) and re-placed every time the tiles are (repositionAllTiles), not only on a full render.
 - Size 48x62 → 32x41, ring 60x26 → 40x17.
 - g227 updated (32 px).
+
+### v1007 — pinch-zoom no longer jumps; map follows your fingers (TEST)
+- Harley (screen recording, iPhone): zooming, mostly from far out, made the view jump to a different place (e.g. X:799 → X:1199 in one frame); the "you are here" pin was also seen off its base.
+- Cause (best reading; WebKit can't be run here): on iPhones a finger that was already scrolling keeps the phone's own scrolling/momentum going through the pinch, and it overrides the scroll position each zoom step sets - at the new zoom that old position is far away. Chromium doesn't do this, which is why headless pinches never jumped.
+- Fix: while two fingers are down, the map's own scrolling is switched off (overflow hidden, which also kills momentum) and the game positions the map itself: the map spot under the fingers' midpoint stays under it, so pinch also pans. Scrolling comes back when the fingers lift (or a 3rd finger cancels the pinch).
+- Pin: will-change removed (it is still placed with a transform). If it still drifts on the phone, it's likely the same phone-scroll layer issue.
+- Test: new g228_pinch_zoom.js (4 pinches with drifting fingers: base stays at the same spot relative to the fingers within 3 px, scrolling off during / back after, pin on the base). The v1006 game fails it (map drifted 11-39 px from the fingers).
