@@ -10794,7 +10794,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1007"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1008"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15680,29 +15680,37 @@ updateMapHideButtons(); // reflect any persisted on/off state from a previous se
     var dx = touches[0].clientX - touches[1].clientX, dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
   }
-  /* v1007 (Harley's screen recording: zooming, mostly from far out, made the view jump somewhere else): on iPhones a finger that was already
-     scrolling the map keeps the phone's own scrolling (and its momentum) going through the pinch, and it overrides the scroll position the zoom
-     sets - at the new zoom that old position is somewhere else entirely. While two fingers are down the map's own scrolling is now switched off
-     (overflow hidden, which also stops any momentum) and the game moves the map itself: the spot that was under your fingers stays under them,
-     so you can pan and zoom in the same gesture. Normal scrolling comes back when the fingers lift. */
+  /* v1008 (Harley's 2nd recording): v1007 moved the map's scroll on every pinch frame with the phone's own scrolling switched off - on iPhones the
+     map then didn't redraw until the fingers lifted (only the animated pin moved), so it got worse. Now the map is not scrolled or re-laid-out
+     at all during a pinch: the whole map is just stretched/moved with a CSS transform around the fingers (smooth, done by the phone's graphics chip),
+     and the real zoom + scroll is applied ONCE when the fingers lift, keeping the spot that was under your fingers under them. */
+  var world = document.getElementById("mapworld");
   function pinchMid(touches, rect) { return { x: (touches[0].clientX + touches[1].clientX) / 2 - rect.left, y: (touches[0].clientY + touches[1].clientY) / 2 - rect.top }; }
-  function pinchEnd() { if (!pinch) return; pinch = null; viewport.style.overflow = ""; }
+  function pinchFactor(p) { var z = Math.max(mapZoomMin(), Math.min(MAP_ZOOM_MAX, p.startZoom * p.latestFactor)); return z / p.startZoom; }
+  function pinchEnd() {
+    var p = pinch; if (!p) return; pinch = null;
+    var f = pinchFactor(p);
+    world.style.transform = ""; world.style.transformOrigin = "";
+    if (Math.abs(f - 1) < 0.002 && Math.abs(p.midX - p.m0x) < 1 && Math.abs(p.midY - p.m0y) < 1) return;
+    setMapZoom(p.startZoom * f, p.m0x, p.m0y);
+    viewport.scrollLeft = Math.max(0, p.wx * mapZoom - p.midX); viewport.scrollTop = Math.max(0, p.wy * mapZoom - p.midY);
+    renderVisibleTiles();
+  }
   viewport.addEventListener("touchstart", function (e) {
     if (e.touches.length === 2) {
-      var rect = viewport.getBoundingClientRect(), m = pinchMid(e.touches, rect);
-      viewport.style.overflow = "hidden";
+      var m = pinchMid(e.touches, viewport.getBoundingClientRect()), sl = viewport.scrollLeft, st = viewport.scrollTop;
       pinch = {
-        startDist: touchDist(e.touches), startZoom: mapZoom,
-        anchorX: m.x, anchorY: m.y, midX: m.x, midY: m.y,
-        wx: (viewport.scrollLeft + m.x) / mapZoom, wy: (viewport.scrollTop + m.y) / mapZoom, /* the map spot under the fingers, at zoom 1 */
+        startDist: touchDist(e.touches), startZoom: mapZoom, m0x: m.x, m0y: m.y, midX: m.x, midY: m.y,
+        ox: sl + m.x, oy: st + m.y,                                 /* the map point under the fingers, in map pixels now */
+        wx: (sl + m.x) / mapZoom, wy: (st + m.y) / mapZoom,         /* ... and at zoom 1 */
         latestFactor: 1, rafPending: false
       };
+      world.style.transformOrigin = pinch.ox + "px " + pinch.oy + "px";
     } else if (e.touches.length > 2) pinchEnd();
   }, { passive: true });
   viewport.addEventListener("touchmove", function (e) {
     if (pinch && e.touches.length === 2) {
       e.preventDefault();
-      // touchmove can fire many times per animation frame - only the latest finger positions matter, applied once per frame (setMapZoom does a full relayout)
       var m = pinchMid(e.touches, viewport.getBoundingClientRect());
       pinch.latestFactor = touchDist(e.touches) / pinch.startDist; pinch.midX = m.x; pinch.midY = m.y;
       if (!pinch.rafPending) {
@@ -15710,10 +15718,8 @@ updateMapHideButtons(); // reflect any persisted on/off state from a previous se
         var p = pinch;
         requestAnimationFrame(function () {
           p.rafPending = false;
-          if (pinch !== p) return; // pinch ended/restarted before this frame ran
-          setMapZoom(p.startZoom * p.latestFactor, p.midX, p.midY);
-          viewport.scrollLeft = Math.max(0, p.wx * mapZoom - p.midX); viewport.scrollTop = Math.max(0, p.wy * mapZoom - p.midY);
-          renderVisibleTiles();
+          if (pinch !== p) return;
+          world.style.transform = "translate3d(" + (p.midX - p.m0x).toFixed(1) + "px," + (p.midY - p.m0y).toFixed(1) + "px,0) scale(" + pinchFactor(p).toFixed(4) + ")";
         });
       }
     }

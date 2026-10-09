@@ -905,3 +905,9 @@
 - Fix: while two fingers are down, the map's own scrolling is switched off (overflow hidden, which also kills momentum) and the game positions the map itself: the map spot under the fingers' midpoint stays under it, so pinch also pans. Scrolling comes back when the fingers lift (or a 3rd finger cancels the pinch).
 - Pin: will-change removed (it is still placed with a transform). If it still drifts on the phone, it's likely the same phone-scroll layer issue.
 - Test: new g228_pinch_zoom.js (4 pinches with drifting fingers: base stays at the same spot relative to the fingers within 3 px, scrolling off during / back after, pin on the base). The v1006 game fails it (map drifted 11-39 px from the fingers).
+
+### v1008 — pinch-zoom: stretch during the gesture, apply once on release (TEST)
+- Harley (2nd recording): v1007 was worse - during a pinch the map stood still and only the pin moved, then it jumped when the fingers lifted. With the map's own scrolling switched off, iOS didn't redraw the scrolled map until the touch ended (only the separately-animated pin layer updated).
+- Now nothing is scrolled or re-laid-out during a pinch: #mapworld just gets a CSS transform (translate + scale around the fingers' starting point), which the phone's graphics chip draws smoothly. When the fingers lift, the transform is removed and the real zoom + scroll are applied once, keeping the spot that was under the fingers under them. Overflow is never switched off.
+- Trade-off: while zooming OUT, only the part of the map that was already drawn is shown stretched (the edges are plain sea) until you let go; then it fills in.
+- g228 updated (transform during, no scrolling during, cleared after, base follows the fingers during and after within 3 px).

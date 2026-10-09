@@ -1,5 +1,5 @@
-/* v1007: pinch-zoom keeps the spot under your fingers under them (zoom + pan in one gesture), the map's own scrolling is off while two fingers
-   are down (on iPhones it fought the zoom and the view jumped), and comes back after. The "you are here" pin stays on the base. Run: node dev/simfork/g228_pinch_zoom.js */
+/* v1007/v1008: pinch-zoom keeps the spot under your fingers under them (zoom + pan in one gesture). v1008: during the pinch the map is only
+   stretched with a CSS transform (no scrolling / relayout), the real zoom + scroll is applied once when the fingers lift. The "you are here" pin stays on the base. Run: node dev/simfork/g228_pinch_zoom.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -23,7 +23,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const cdp = await ctx.newCDPSession(P);
   const home = () => P.evaluate(() => { const vp = document.getElementById("mapviewport"), vr = vp.getBoundingClientRect(), c = tileCenterPx(mapTileById(game.state.map, game.state.homeTileId)), el = document.getElementById("myPin");
     const pr = el && el.style.display !== "none" ? el.getBoundingClientRect() : null;
-    return { x: vr.left + c.x - vp.scrollLeft, y: vr.top + c.y - vp.scrollTop, z: mapZoom, ov: vp.style.overflow, pin: pr ? [Math.round(pr.left + 16), Math.round(pr.top + 41)] : null }; });
+    return { x: vr.left + c.x - vp.scrollLeft, y: vr.top + c.y - vp.scrollTop, z: mapZoom, tf: document.getElementById("mapworld").style.transform, sl: vp.scrollLeft, pin: pr ? [Math.round(pr.left + pr.width / 2), Math.round(pr.bottom)] : null }; });
   const touch = (type, pts) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts });
   const o = { cases: [] };
   /* pinch out and in around different spots while the fingers also drift (pan) */
@@ -34,13 +34,15 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     await P.waitForTimeout(80); const mid = await home();
     await touch("touchEnd", []); await P.waitForTimeout(300); const h1 = await home();
     const f = h1.z / h0.z, ex = cx + dx + (h0.x - cx) * f, ey = cy + dy + (h0.y - cy) * f; /* where the base should be: same spot relative to the fingers */
-    o.cases.push({ f: +f.toFixed(2), off: [Math.round(h1.x - ex), Math.round(h1.y - ey)], ovDuring: mid.ov, ovAfter: h1.ov, pinOff: h1.pin ? [h1.pin[0] - Math.round(h1.x), h1.pin[1] - Math.round(h1.y)] : null });
+    const pinMid = mid.pin && h0.pin ? [Math.round(mid.pin[0] - ex), Math.round(mid.pin[1] - ey)] : null; /* during the pinch the (stretched) pin already sits where the base will end up */
+    o.cases.push({ f: +f.toFixed(2), off: [Math.round(h1.x - ex), Math.round(h1.y - ey)], tfDuring: !!mid.tf, noScrollDuring: mid.sl === h0.sl, tfAfter: h1.tf, pinMid, pinOff: h1.pin ? [h1.pin[0] - Math.round(h1.x), h1.pin[1] - Math.round(h1.y)] : null });
   }
   console.log(JSON.stringify(o));
   o.cases.forEach((c, i) => {
     assert.ok(Math.abs(c.f - 1) > 0.3, "case " + i + ": the zoom changed");
     assert.ok(Math.abs(c.off[0]) <= 3 && Math.abs(c.off[1]) <= 3, "case " + i + ": the map stays under the fingers (no jump)");
-    assert.ok(c.ovDuring === "hidden" && c.ovAfter === "", "case " + i + ": own scrolling off during the pinch, back after");
+    assert.ok(c.tfDuring && c.noScrollDuring && c.tfAfter === "", "case " + i + ": stretched (no scrolling) during the pinch, cleared after");
+    if (c.pinMid) assert.ok(Math.abs(c.pinMid[0]) <= 3 && Math.abs(c.pinMid[1]) <= 3, "case " + i + ": during the pinch the base follows the fingers");
     if (c.pinOff) assert.ok(Math.abs(c.pinOff[0]) <= 1 && Math.abs(c.pinOff[1]) <= 1, "case " + i + ": pin on the base");
   });
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
