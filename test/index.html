@@ -5541,7 +5541,7 @@ var CARD_EFFECTS_BY_NAME = {
   "#2": { kind: "kessaArcLow", pct: 0.30, below: 0.30 },       // Kessa's Arc Burst +30% damage while health < 30%
   "#3": { kind: "kessaAtkLow", pct: 0.20, below: 0.50 },       // Kessa base ATK +20% while health < 50%
   "#4": { kind: "lastStand", below: 0.10, sec: 2 },            // once per fight: health drops below 10% -> fortress takes no damage for 2s
-  "#5": { kind: "polarFlux", below: 0.50, pct: 0.30 },         // once per fight: health drops below 50% -> Polar Flux hits every enemy unit on the field for 30% of its max HP
+  "#5": { kind: "polarFlux", below: 0.50, pct: 0.30 },         // once per fight: health drops below 50% -> Polar Flux hits EVERYONE (both sides' units and fortresses, yours too) for 30% of max HP - a suicide card unless combined (e.g. Last Bastion)
   "#6": { kind: "t1Def", pct: 0.30 },                          // both players on a Type 1 fortress -> your fortress takes 30% less damage (PvP only)
   "#7": { kind: "critDmg", pct: 0.10 },                        // fortress super-burst (crit) damage +10%
   "#8": { kind: "cdr", pct: 0.05 },                            // skill cooldown bonus +5% (skills recharge 5% faster)
@@ -5599,7 +5599,7 @@ var CARD_EFFECT_FIELD_INFO = {
   kessaArcLow: { pct: { type: "number", min: 0, step: 0.05, label: "Arc Burst bonus", comment: "0.30 = +30% Arc Burst damage." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.30 = while your fortress is under 30% health." } },
   kessaAtkLow: { pct: { type: "number", min: 0, step: 0.05, label: "Kessa ATK bonus", comment: "0.20 = +20% base ATK." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.50 = while your fortress is under 50% health." } },
   lastStand: { below: { type: "number", min: 0, step: 0.01, label: "Health below", comment: "Triggers once per fight when your fortress drops under this (0.10 = 10%)." }, sec: { type: "number", min: 0, step: 0.5, label: "Invincible (s)", comment: "Seconds the fortress takes no damage." } },
-  polarFlux: { below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "Fires once per fight when your fortress drops under this." }, pct: { type: "number", min: 0, step: 0.05, label: "Blast % of max HP", comment: "0.30 = every enemy unit on the field loses 30% of its max HP." } },
+  polarFlux: { below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "Fires once per fight when your fortress drops under this." }, pct: { type: "number", min: 0, step: 0.05, label: "Blast % of max HP", comment: "0.30 = everyone - every unit on both sides and both fortresses, yours included - loses 30% of max HP." } },
   t1Def: { pct: { type: "number", min: 0, step: 0.05, label: "Damage cut", comment: "0.30 = your fortress takes 30% less damage when both players have a Type 1 fortress (PvP)." } },
   critDmg: { pct: { type: "number", min: 0, step: 0.01, label: "Crit damage bonus", comment: "0.10 = super bursts hit 10% harder." } },
   cdr: { pct: { type: "number", min: 0, step: 0.01, label: "Cooldown bonus", comment: "0.05 = skills recharge 5% faster." } },
@@ -7650,9 +7650,14 @@ function createGame(opts) {
       var cmF = cardModsFrom(state), mxF = idlePlayerMaxHp();
       if (!cmF.polarFlux || state.idle.cardFluxUsed || !(state.idle.playerHp > 0) || state.idle.playerHp >= mxF * cmF.polarFlux.below) return;
       state.idle.cardFluxUsed = true; state.idle.cardFluxCount = (state.idle.cardFluxCount || 0) + 1;
-      var frontDied = false;
-      for (var fi = state.idle.enemies.length - 1; fi >= 0; fi--) { var fe = state.idle.enemies[fi]; if (!fe || !fe.arrived || !(fe.hp > 0)) continue; fe.hp -= (fe.maxHp || fe.hp) * cmF.polarFlux.pct; if (fe.hp <= 0) { if (fi === 0) frontDied = true; else idleRemoveDeadEnemyAt(fi); } }
+      var frontDied = false, pctF = cmF.polarFlux.pct; /* card 5 hits EVERYONE: enemies, your heroes, your clones and your fortress (unless Last Bastion is up) */
+      for (var fi = state.idle.enemies.length - 1; fi >= 0; fi--) { var fe = state.idle.enemies[fi]; if (!fe || !fe.arrived || !(fe.hp > 0)) continue; fe.hp -= (fe.maxHp || fe.hp) * pctF; if (fe.hp <= 0) { if (fi === 0) frontDied = true; else idleRemoveDeadEnemyAt(fi); } }
+      state.conquestRoster.forEach(function (hk) { if (!state.heroes[hk] || !state.heroes[hk].owned || idleHeroIsKo(hk)) return; var he = idleHeroEntry(hk); he.hp -= idleHeroMaxHp(hk) * pctF; if (he.hp <= 0) idleKoHero(hk); });
+      if (state.idle.clones) Object.keys(state.idle.clones).forEach(function (ck) { var cl = state.idle.clones[ck]; if (cl && cl.hp > 0) { cl.hp -= cl.max * pctF; if (cl.hp <= 0) idleCloneFall(ck); } });
+      if (!(state.idle.cardInvulT > 0)) state.idle.playerHp -= mxF * pctF;
       if (frontDied) idleCheckFrontDeath();
+      if (state.idle.playerHp <= 0) { idleResetLevel(); return; }
+      if (cmF.lastStand && !state.idle.cardInvulUsed && state.idle.playerHp < mxF * cmF.lastStand.below) { state.idle.cardInvulUsed = true; state.idle.cardInvulT = cmF.lastStand.sec || 2; } /* card 4 catches the fall */
     })();
     var regenI = equippedRegen(state);
     if (regenI && regenI.pct > 0 && state.idle.playerHp != null) {
@@ -10565,7 +10570,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v986"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v987"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -27261,12 +27266,14 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     playerHp = Math.max(0, playerHp - toPlayer);
     [['P', cmP], ['A', cmA]].forEach(function (pr) { /* v985: cards 4 + 5 trigger once per fight */
       var sd = pr[0], cm = pr[1]; if (!cm || !cm.any) return; var hpS = sd === 'P' ? playerHp : aiHp, mxS = sd === 'P' ? playerStats.maxHp : aiStats.maxHp; if (!(hpS > 0)) return;
-      if (cm.lastStand && !(sd === 'P' ? cardLsP : cardLsA) && hpS < mxS * cm.lastStand.below) { if (sd === 'P') { cardLsP = true; cardInvP = cm.lastStand.sec || 2; } else { cardLsA = true; cardInvA = cm.lastStand.sec || 2; } }
-      if (cm.polarFlux && !(sd === 'P' ? cardPfP : cardPfA) && hpS < mxS * cm.polarFlux.below) {
+      if (cm.polarFlux && !(sd === 'P' ? cardPfP : cardPfA) && hpS < mxS * cm.polarFlux.below) { /* card 5: hits EVERYONE - both sides' heroes/clones and both fortresses (a fortress inside Last Bastion is spared) */
         if (sd === 'P') cardPfP = true; else cardPfA = true;
-        var ohh = sd === 'P' ? aHH : pHH; if (ohh) ohh.list.forEach(function (e) { if (e.ko || e.dead) return; e.hp -= e.max * cm.polarFlux.pct; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; } });
-        sim.cardFlux = (sim.cardFlux || 0) + 1;
+        [pHH, aHH].forEach(function (hh0) { if (hh0) hh0.list.forEach(function (e) { if (e.ko || e.dead) return; e.hp -= e.max * cm.polarFlux.pct; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; } }); });
+        if (!(cardInvP > 0)) playerHp = Math.max(0, playerHp - playerStats.maxHp * cm.polarFlux.pct);
+        if (!(cardInvA > 0)) aiHp = Math.max(0, aiHp - aiStats.maxHp * cm.polarFlux.pct);
+        hpS = sd === 'P' ? playerHp : aiHp; sim.cardFlux = (sim.cardFlux || 0) + 1;
       }
+      if (cm.lastStand && hpS > 0 && !(sd === 'P' ? cardLsP : cardLsA) && hpS < mxS * cm.lastStand.below) { if (sd === 'P') { cardLsP = true; cardInvP = cm.lastStand.sec || 2; } else { cardLsA = true; cardInvA = cm.lastStand.sec || 2; } }
     });
     // Regen: ticks on its own counter, independent of the attack/cannon
     // cooldowns above. Only heals while still alive this tick (a fully-

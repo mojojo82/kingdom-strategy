@@ -759,3 +759,8 @@
 
 ### v986 — placeholder card names (TEST)
 - Harley: make up placeholder names. Cards 1-11: Iron Vanguard, Storm's Fury, Desperate Spark, Last Bastion, Polar Flux, Twin Citadels, Keen Edge, Quick Study, Second Wind, Overclock, Lone Wolf (CARD_TEXT_DEFAULTS). A catalog slot that already has the description but no name gets the placeholder name too. Effects still come from the slot code (#1-#11), so renaming a card does not break it.
+
+### v987 — Polar Flux hits everyone (TEST)
+- Harley: "Polar flux is supposed to damage everyone. Even the player. It works like a suicide card but you can combo it with other cards to protect yourself from the ko".
+- Card 5 now blasts 30% max HP off both sides' heroes, clones and both fortresses (Arena), and enemies + your heroes, clones and fortress (Conquest). A fortress already inside Last Bastion (card 4) is spared; Last Bastion is checked after the blast, so if the flux drops you under 10% it catches the fall. Without protection the flux can KO you.
+- Test: g215 adds c5drop (own fortress drops) and c45 (cards 4+5 combo). ALL OK.

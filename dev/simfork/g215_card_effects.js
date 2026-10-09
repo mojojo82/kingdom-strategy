@@ -39,12 +39,12 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
       const sim = arenaMakeSim(pl, ai, { rng: worldPvpSeededRng("c"), critSeed: "c", cardMods: cm, trace: tr, maxTicks: tanky ? 800 : undefined });
       const hp = []; let x; do { x = sim.step(); hp.push(x.info.playerHp); } while (!x.done);
       const skill = Object.keys(tr.src).filter((k) => /^skill:/.test(k)).reduce((a, k) => a + tr.src[k], 0);
-      return { cannon: tr.src.cannon || 0, hp, skill, flux: sim.cardFlux || 0, aiHeroes: x.info.aiHeroes, winner: x.winner, ticks: hp.length }; };
+      return { cannon: tr.src.cannon || 0, hp, skill, aiHp: (sim.aiHp || 0), flux: sim.cardFlux || 0, aiHeroes: x.info.aiHeroes, winner: x.winner, ticks: hp.length }; };
     const base = run(null, true), c4 = run([3], true), c5 = run([4], true), even = run(null, false, true), c8 = run([7], false, true), c9 = run([8], false, true);
     o.skillBase = Math.round(even.skill); const m9 = eq([8]); o.c9low = cardCdBonus(m9, 0.85); o.c9high = cardCdBonus(m9, 0.95); const m10 = { any: true, cdr: 0.3, cdrDmg: { over: 0.25, pct: 0.25 } }; o.c10 = cardHeroDmgMul(m10, "gareth", 1, 5); o.c10off = cardHeroDmgMul(Object.assign({}, m10, { cdr: 0.1 }), "gareth", 1, 5); o.skillC8 = Math.round(c8.skill); o.skillC9 = Math.round(c9.skill);
     /* card 4: after health first drops under 10%, the next 2s (4-5 ticks) take no damage */
     const m4 = c4.hp[0], i4 = c4.hp.findIndex((v) => v < m4 * 0.10 && v > 0); o.c4flat = i4 >= 0 && c4.hp.slice(i4, i4 + 4).every((v) => v === c4.hp[i4]); o.c4ticks = c4.ticks; o.baseTicks = base.ticks;
-    o.c2 = +cardSkillMul(eq([1]), "kessa", 0.2, 5).toFixed(3); o.c2high = cardSkillMul(eq([1]), "kessa", 0.5, 5); const c6 = run([5], true); useF1 = true; const e7 = run(null, false, true), c7 = run([6], false, true); useF1 = false; o.c6 = Math.round(c6.hp[12]) > Math.round(base.hp[12]); o.c7 = Math.round(c7.cannon) > Math.round(e7.cannon); o.c7r = [Math.round(e7.cannon), Math.round(c7.cannon)]; useF1 = true; const sf = side(true); useF1 = false; o.f1 = { critRate: sf.critRate, critMult: sf.critMult, fortType: sf.fortType }; o.c5flux = c5.flux; o.baseFlux = base.flux;
+    o.c2 = +cardSkillMul(eq([1]), "kessa", 0.2, 5).toFixed(3); o.c2high = cardSkillMul(eq([1]), "kessa", 0.5, 5); const c6 = run([5], true); useF1 = true; const e7 = run(null, false, true), c7 = run([6], false, true); useF1 = false; o.c6 = Math.round(c6.hp[12]) > Math.round(base.hp[12]); o.c7 = Math.round(c7.cannon) > Math.round(e7.cannon); o.c7r = [Math.round(e7.cannon), Math.round(c7.cannon)]; useF1 = true; const sf = side(true); useF1 = false; o.f1 = { critRate: sf.critRate, critMult: sf.critMult, fortType: sf.fortType }; o.c5flux = c5.flux; const fi = c5.hp.findIndex((v, i) => i > 0 && c5.hp[i - 1] >= c5.hp[0] * 0.5 && v < c5.hp[0] * 0.5); o.c5drop = fi > 0 ? +((c5.hp[fi - 1] - c5.hp[fi]) / c5.hp[0]).toFixed(2) : null; const c45 = run([3, 4], true); o.c45 = c45.flux === 1; o.baseFlux = base.flux;
     const sd0 = side(true); o.dbg = { fortType: sd0.fortType, fortDef: sd0.fortDef, refAtk: sd0.refAtk, critRate: sd0.critRate, critMult: sd0.critMult, def1: defReduce(sd0.refAtk, sd0.fortDef), def13: defReduce(sd0.refAtk, sd0.fortDef * 1.3) };
     return o;
   });
@@ -57,6 +57,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(r.c10 === 1.25 && r.c10off === 1, "card 10: +25% hero damage only above 25% cooldown bonus");
   assert.ok(r.c4flat, "card 4: 2s with no fortress damage after dropping under 10%");
   assert.ok(r.c5flux === 1 && r.baseFlux === 0, "card 5: Polar Flux fires once");
+  assert.ok(r.c5drop >= 0.3, "card 5: it hits your own fortress too (30%+ drop in that tick)"); assert.ok(r.c45, "cards 4+5 together");
   assert.ok(r.c2 === 1.3 && r.c2high === 1, "card 2: Arc Burst +30% only under 30% health");
   assert.ok(r.c6, "card 6: both on Type 1 -> fortress takes less damage");
   assert.ok(r.c7, "card 7: bigger super bursts -> more cannon damage (needs crit chance)");
