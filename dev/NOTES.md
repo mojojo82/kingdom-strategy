@@ -925,3 +925,10 @@
 - The board is rebuilt only when something on it changes (levels, running research, affordability, width); the timer text updates on its own, so the glow doesn't restart every second.
 - The old list code is still in renderTechs (after `renderTechTree(); return;`) in case it's wanted back.
 - Test: new g230_research_tree.js.
+
+### v1011 — Fortress tree in the research-tree look (TEST)
+- Harley: update the fortress trees too.
+- Fortress I and III trees now use the same board as research: bronze board, teal hex nodes (gold = MAX, cyan = can upgrade now, grey + 🔒 = locked), level pill and name under each node. Lines are cyan when the node below is unlocked, grey when not - here they ARE the unlock order (unchanged rule: every parent at Lv3).
+- The old sticky detail panel is gone: tapping a node opens the same popup as research (Now / Next level / Needs … / Upgrade (cost 🔬) / RP you have). The popup stays open after Upgrade and updates, so you can tap Upgrade several times. Dev buttons (+500, Max, Reset) sit in a row above the tree.
+- Shared popup helper rtPopEl(); fortressOpen / fortressDetail.
+- Test: new g231_fortress_tree.js.

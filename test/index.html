@@ -543,6 +543,7 @@
   #fortressModeContent .ft-brow { display:flex; flex-wrap:wrap; gap:4px 12px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.1); }
   #fortressModeContent .ft-brow > b { flex:1 1 100%; font-size:12px; opacity:.85; }
   #fortressModeContent .ft-total { border-bottom:none; opacity:.9; }
+  #fortressModeContent .ft-dev { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px; }
   #fortressModeContent .ft-tree { position:relative; width:100%; max-width:420px; margin:0 auto; border-radius:12px; background:linear-gradient(#1c4a80,#3a86c8); overflow:hidden; }
   #fortressModeContent .ft-lines { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; }
   #fortressModeContent .ft-node { position:absolute; width:86px; margin-left:-43px; text-align:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -10821,7 +10822,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1010"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1011"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12660,14 +12661,15 @@ function renderTechTree() {
   el.innerHTML = '<div class="rt-board" style="height:' + H + 'px"><svg class="rt-lines" width="' + W + '" height="' + H + '">' + lines + '</svg>' + nodes + '</div>';
   el.querySelectorAll(".rt-node").forEach(function (n) { n.onclick = function () { techSel[cat] = n.getAttribute("data-k"); techTreeOpen(techSel[cat]); }; });
   techTreeTick();
-  var pop = document.getElementById("rtPop"); if (pop && pop.style.display === "flex") techTreeDetail(pop.getAttribute("data-k")); /* keep an open popup current */
+  var pop = document.getElementById("rtPop"); if (pop && pop.style.display === "flex" && TECH_DEFS[pop.getAttribute("data-k")]) techTreeDetail(pop.getAttribute("data-k")); /* keep an open popup current */
 }
-function techTreeOpen(key) {
+function rtPopEl() {
   var pop = document.getElementById("rtPop");
   if (!pop) { pop = document.createElement("div"); pop.id = "rtPop"; pop.innerHTML = '<div class="rt-detail" id="rtDetail"></div>'; document.body.appendChild(pop);
     pop.addEventListener("click", function (e) { if (e.target === pop || (e.target.closest && e.target.closest(".rt-x"))) pop.style.display = "none"; }); }
-  pop.setAttribute("data-k", key); techTreeDetail(key); pop.style.display = "flex"; techTreeTick();
+  return pop;
 }
+function techTreeOpen(key) { var pop = rtPopEl(); pop.setAttribute("data-k", key); techTreeDetail(key); pop.style.display = "flex"; techTreeTick(); }
 function techTreeTick() { var rq = game.state.researchQueue, t = document.querySelector("#techList [data-rt-time]"); if (t && rq) t.textContent = "⏳ " + fmtTime(Math.max(0, (rq.finishAt - vnow()) / 1000)); var d = document.querySelector("#rtDetail [data-rt-left]"); if (d && rq) d.textContent = fmtTime(Math.max(0, (rq.finishAt - vnow()) / 1000)); }
 function techTreeDetail(key) {
   var box = document.getElementById("rtDetail"); if (!box) return;
@@ -13176,14 +13178,15 @@ function renderFortress() {
   if (titleEl) titleEl.textContent = fType === 3 ? "🏰 Fortress III — Bulwark" : "🏰 Fortress I — Heavy Cannon";
   var TREE = fortressTreeOf(map);
   if (!TREE[fortressSel]) { fortressSel = Object.keys(TREE).filter(function (k) { return TREE[k].row === 0; })[0]; renderFortress.scrolled = false; }
+  /* v1011 (Harley): same look as the research tree (bronze board, teal hexes, cyan lines, level pill); here the lines ARE the unlock order */
   var maxRow = 0; Object.keys(TREE).forEach(function (k) { maxRow = Math.max(maxRow, TREE[k].row); });
-  var ROWH = 146, PAD = 30, H = (maxRow + 1) * ROWH + PAD, W = 300;
-  function pos(k) { var d = TREE[k]; return { x: (d.col * 2 + 1) / 6 * W, y: PAD / 2 + d.row * ROWH + 45 }; }
+  var W = Math.max(280, body.clientWidth || 400), ROWH = 136, TOP = 14, H = TOP + (maxRow + 1) * ROWH;
+  function pos(k) { var d = TREE[k]; return { x: (d.col * 2 + 1) / 6 * W, y: TOP + d.row * ROWH }; } /* top of the hex */
   var lines = "";
   Object.keys(TREE).forEach(function (k) {
     TREE[k].parents.forEach(function (pk) {
-      var a = pos(pk), c = pos(k), midY = ((a.y + 88) + (c.y - 44)) / 2, on = fortressNodeUnlocked(map, k);
-      lines += '<polyline fill="none" stroke="' + (on ? "#ff8a7a" : "#e05a4c") + '" stroke-width="5" stroke-linejoin="round" vector-effect="non-scaling-stroke" points="' + a.x + "," + (a.y + 88) + " " + a.x + "," + midY + " " + c.x + "," + midY + " " + c.x + "," + (c.y - 44) + '"/>';
+      var a = pos(pk), c = pos(k), y0 = a.y + 106, y1 = c.y - 2, midY = (y0 + y1) / 2, on = fortressNodeUnlocked(map, k);
+      lines += '<polyline fill="none" stroke="' + (on ? "#4fd1c5" : "#5c6a6a") + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="' + a.x + "," + y0 + " " + a.x + "," + midY + " " + c.x + "," + midY + " " + c.x + "," + y1 + '"/>';
     });
   });
   var pc = function (v) { return Math.round(v * 1000) / 10; };
@@ -13203,34 +13206,40 @@ function renderFortress() {
         '<div class="ft-brow ft-total"><b>Total</b><span>❤️ +' + pc(b.hp) + '%</span><span>🛡️ -' + pc(b.dmgRed) + '% damage taken</span></div>' +
       '</div>';
   }
-  var sd = TREE[fortressSel], sl = map[fortressSel] || 0;
-  if (sd) {
-    var unl = fortressNodeUnlocked(map, fortressSel);
-    h += '<div class="ft-detail"><div class="ft-rp">🔬 Research points: <b>' + fmt(st.researchPoints) + '</b></div><b>' + sd.icon + ' ' + sd.name + '</b> — Lv ' + sl + ' / ' + sd.maxLevel + '<br>Now: ' + fortressDesc(sd, sl) + '<br>' +
-      (sl < sd.maxLevel ? 'Next level: ' + fortressDesc(sd, sl + 1) + ' · cost ' + fmt(fortressNodeCost(fortressSel, sl + 1)) + ' 🔬<br>' : 'Maxed.<br>') +
-      (unl ? "" : '<span style="color:#ff9a8a;">🔒 Needs ' + sd.parents.map(function (pk) { return fortressNode(pk).name + " Lv" + Math.min(FORTRESS_UNLOCK_AT, fortressNode(pk).maxLevel); }).join(" and ") + '</span><br>') +
-      '<button class="dev-btn" id="ftUpBtn"' + ((!unl || sl >= sd.maxLevel || st.researchPoints < fortressNodeCost(fortressSel, sl + 1)) ? " disabled" : "") + '>Upgrade</button> ' +
-      '<button class="dev-btn" id="ftDevRp">+500 🔬 (dev)</button> <button class="dev-btn" id="ftDevMax">Max tree (dev)</button> <button class="dev-btn" id="ftDevReset">Reset tree (dev)</button></div>';
-  }
-  h += '<div class="ft-tree" style="height:' + H + 'px;"><svg class="ft-lines" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' + lines + '</svg>';
+  h += '<div class="ft-dev"><button class="dev-btn" id="ftDevRp">+500 🔬 (dev)</button> <button class="dev-btn" id="ftDevMax">Max tree (dev)</button> <button class="dev-btn" id="ftDevReset">Reset tree (dev)</button></div>';
+  h += '<div class="rt-board" style="height:' + H + 'px"><svg class="rt-lines" width="' + W + '" height="' + H + '">' + lines + '</svg>';
   Object.keys(TREE).forEach(function (k) {
-    var d = TREE[k], lvl = map[k] || 0, p = pos(k), unlocked = fortressNodeUnlocked(map, k);
-    var can = unlocked && lvl < d.maxLevel && st.researchPoints >= fortressNodeCost(k, lvl + 1);
-    h += '<div class="ft-node' + (unlocked ? "" : " locked") + (lvl >= d.maxLevel ? " max" : "") + (can ? " can" : "") + (fortressSel === k ? " sel" : "") + '" data-k="' + k + '" style="left:' + (p.x / W * 100) + '%;top:' + (p.y - 41) + 'px;">' +
-      '<div class="ft-hex"><div>' + d.icon + '</div></div><div class="ft-lv">' + (lvl >= d.maxLevel ? "Max Level" : lvl + " / " + d.maxLevel) + '</div><div class="ft-nm">' + d.name + '</div></div>';
+    var d = TREE[k], lvl = map[k] || 0, p = pos(k), unlocked = fortressNodeUnlocked(map, k), maxed = lvl >= d.maxLevel;
+    var stt = maxed ? "max" : !unlocked ? "locked" : st.researchPoints >= fortressNodeCost(k, lvl + 1) ? "can" : "";
+    h += '<div class="rt-node ' + stt + '" data-k="' + k + '" style="left:' + p.x + 'px;top:' + p.y + 'px">' +
+      '<div class="rt-hex"><i>' + d.icon + '</i></div>' + (stt === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
+      '<div class="rt-lv">' + (maxed ? "MAX" : lvl + "/" + d.maxLevel) + '</div><div class="rt-nm">' + escapeHtml(d.name) + '</div></div>';
   });
   h += '</div>';
   h += '<div class="ft-boosts" style="margin-top:8px;">' + fortressTypeRowHtml(fType) + '</div>';
   if (fType === 3) h += '<div class="dev-tools-hint" style="margin-top:8px;">Fortress III is the tank fortress: no cannon damage bonus and no super bursts (the cannon still fires at its base damage). Innate: +25% max HP and -15% damage taken, in every fight. A branch unlocks when every node above it reaches Lv ' + FORTRESS_UNLOCK_AT + '.</div>';
   else h += '<div class="dev-tools-hint" style="margin-top:8px;">Fortress I innate: +10% cannon bullet damage and a 20% chance that a cannon burst is a super burst (x2.0 damage, raised by the crit nodes). Rolls are a fixed pattern per battle, not real luck. A branch unlocks when every node above it (in the chain below it) reaches Lv ' + FORTRESS_UNLOCK_AT + '.</div>';
   body.innerHTML = h;
-  body.querySelectorAll(".ft-node").forEach(function (n) { n.onclick = function () { fortressSel = n.getAttribute("data-k"); renderFortress(); }; });
-  if (!renderFortress.scrolled) { renderFortress.scrolled = true; var sn = body.querySelector('.ft-node[data-k="' + fortressSel + '"]'); if (sn) try { sn.scrollIntoView({ block: "center" }); } catch (e) {} }
+  body.querySelectorAll(".rt-node").forEach(function (n) { n.onclick = function () { fortressSel = n.getAttribute("data-k"); fortressOpen(fortressSel); }; });
+  var fpop = document.getElementById("rtPop"); if (fpop && fpop.style.display === "flex" && /^ft:/.test(fpop.getAttribute("data-k") || "")) fortressDetail(fpop.getAttribute("data-k").slice(3)); /* keep an open popup current */
   wireFortressTypeRow();
-  var up = document.getElementById("ftUpBtn"); if (up) up.onclick = function () { var r = game.researchFortress(fortressSel); if (r.ok) persist(); renderFortress(); };
   var dv = document.getElementById("ftDevRp"); if (dv) dv.onclick = function () { game.state.researchPoints += 500; persist(); renderFortress(); };
   var mx = document.getElementById("ftDevMax"); if (mx) mx.onclick = function () { var m = game.state.fortressTech || (game.state.fortressTech = {}); Object.keys(TREE).forEach(function (k) { m[k] = TREE[k].maxLevel; }); if (game.idleClampPlayerHp) game.idleClampPlayerHp(); persist(); renderFortress(); if (typeof render === "function") try { render(); } catch (e) {} };
   var rs = document.getElementById("ftDevReset"); if (rs) rs.onclick = function () { var m = game.state.fortressTech || (game.state.fortressTech = {}); Object.keys(TREE).forEach(function (k) { delete m[k]; }); if (game.idleClampPlayerHp) game.idleClampPlayerHp(); persist(); renderFortress(); };
+}
+function fortressOpen(k) { var pop = rtPopEl(); pop.setAttribute("data-k", "ft:" + k); fortressDetail(k); pop.style.display = "flex"; }
+function fortressDetail(k) { /* v1011: the node popup (same box as research) - Now / Next / cost / what it needs / Upgrade */
+  var box = document.getElementById("rtDetail"); if (!box) return;
+  var st = game.state, map = st.fortressTech || {}, TREE = fortressTreeOf(map), d = TREE[k]; if (!d) return;
+  var lv = map[k] || 0, maxed = lv >= d.maxLevel, unl = fortressNodeUnlocked(map, k), cost = maxed ? 0 : fortressNodeCost(k, lv + 1), can = unl && !maxed && st.researchPoints >= cost;
+  var stt = maxed ? "max" : !unl ? "locked" : can ? "can" : "";
+  var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + stt + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + d.icon + '</i></div></div><div><div class="rt-dn">' + escapeHtml(d.name) + '</div><div>' + (maxed ? "MAX" : "Level " + lv + " / " + d.maxLevel) + '</div></div></div>';
+  h += '<div class="cur">Now: ' + fortressDesc(d, lv) + '</div>';
+  if (!maxed) h += '<div class="nxt">Next level: ' + fortressDesc(d, lv + 1) + '</div>';
+  if (!unl) h += '<div class="locked">🔒 Needs ' + d.parents.map(function (pk) { return fortressNode(pk).name + " Lv" + Math.min(FORTRESS_UNLOCK_AT, fortressNode(pk).maxLevel); }).join(" and ") + '</div>';
+  if (!maxed) h += '<button class="secondary" id="ftUpBtn"' + (can ? "" : " disabled") + '>Upgrade (' + fmt(cost) + ' 🔬)</button><div style="opacity:.75;margin-top:4px;font-size:11px">You have ' + fmt(st.researchPoints) + ' 🔬</div>';
+  box.innerHTML = h;
+  var up = document.getElementById("ftUpBtn"); if (up) up.onclick = function () { var r = game.researchFortress(k); if (r.ok) persist(); renderFortress(); };
 }
 function pvpSimFortMap(v) { return v === "max" ? fortressMaxMap() : v === "mine" ? (game.state.fortressTech || {}) : v === "base" ? {} : v === "t3" ? { _type: 3 } : v === "t3max" ? fortressMaxMap(3) : null; }
 function pvpSimLoadMine(side) {
