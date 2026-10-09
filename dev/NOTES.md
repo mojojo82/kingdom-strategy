@@ -714,3 +714,9 @@
 
 ### v976 — clone on the heroes' ground line (TEST)
 - Harley: "the clone is too low". Conquest: feet now on the same line as Gareth (was +3px). Arena: same ground line as the heroes (was +6px) and a step (14px) behind the template hero so both stay visible when they stand together. Checked with headless screenshots.
+
+### v977 — shared card catalog, admins only edit card text (TEST)
+- Harley: card text was missing; "that card text should come across. Just make it though that only an admin can edit the text". Cause: card text lived in each player's own save (the original text is in the claude.ai owner save - comes in with admin panel > Import a save into my account). It also meant any player could type "Critical Mass" into a card and get its effect.
+- Now one shared catalog `assetitems/cardcatalog` ({cards:[{name,type,effect,narrative} x30], ts}) - everyone reads it (live listener), only an admin can write (existing firestore.rules for assetitems). Applied over every save (and again right after a save loads). Non-admins: card text fields read-only, Dev Mod button hidden, Dev Mod card values ignored (cardEffectFor). Admin: edits push to the catalog (debounced); on open, the admin's own save text fills catalog slots that are empty (how the original text comes across after the import), and Drop Signal ("Summon" - "Each time your Railgun fires, your fallen summons are redeployed and any switched-off drones come back online.") goes into the LAST free slot if no card has that name. KS.adminChecked tells when isAdmin is final (the merge waits for it).
+- Not changed: card ART is still per player (assetSync under players/<uid>/ on Firebase) - a later step if Harley wants it shared too.
+- Test: new g212_card_catalog.js. g201/g204/g205/g210 pass.

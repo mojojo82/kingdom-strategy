@@ -206,8 +206,8 @@
             started = true;
             var last = null; try { last = localStorage.getItem("ks_uid"); } catch (e) {}
             if (last !== u.uid) { try { localStorage.setItem("ks_uid", u.uid); } catch (e) {} wipeAndReload(); return; }
-            KS.uid = u.uid; KS.email = u.email || null; KS.isAdmin = false;
-            if (ADMIN_UIDS.indexOf(u.uid) !== -1 && u.getIdTokenResult) u.getIdTokenResult().then(function (t) { if (t.signInProvider === "google.com" || KS.emulator) { KS.isAdmin = true; document.documentElement.classList.remove("ks-noadmin"); } }).catch(function () {}); /* v913: admin needs Google sign-in (2-step verification lives there) */
+            KS.uid = u.uid; KS.email = u.email || null; KS.isAdmin = false; KS.adminChecked = ADMIN_UIDS.indexOf(u.uid) === -1 || !u.getIdTokenResult; /* v977: adminChecked = isAdmin is final */
+            if (ADMIN_UIDS.indexOf(u.uid) !== -1 && u.getIdTokenResult) u.getIdTokenResult().then(function (t) { if (t.signInProvider === "google.com" || KS.emulator) { KS.isAdmin = true; document.documentElement.classList.remove("ks-noadmin"); } KS.adminChecked = true; }).catch(function () { KS.adminChecked = true; }); /* v913: admin needs Google sign-in (2-step verification lives there) */
             fs.doc(ROOT + "players/" + u.uid + "/save/main").get().then(function (s) {
               if (s.exists) return null;
               return askName(u.displayName || (u.email ? u.email.split("@")[0] : "")).then(function (n) { KS.pendingName = n; });
@@ -5521,6 +5521,7 @@ function cardEffectFor(name) {
   var key = String(name).trim().toLowerCase();
   var base = CARD_EFFECTS_BY_NAME[key];
   if (!base) return null;
+  var K = window.KS_BACKEND; if (K && K.kind === "firebase" && !K.isAdmin) return base; /* v977: Dev Mod card values only count for admins (they used to sit in any player's save) */
   var ov = cardEffectOverridesStore()[key];
   return ov ? Object.assign({}, base, ov) : base;
 }
@@ -8373,6 +8374,7 @@ function createGame(opts) {
         if (typeof c.effect === "string") state.cards[idx].effect = c.effect;
         if (typeof c.narrative === "string") state.cards[idx].narrative = c.narrative;
       });
+      if (typeof cardCatalogSettle === "function") setTimeout(function () { try { cardCatalogSettle(); } catch (e) {} }, 0); /* v977: the shared card catalog wins over save text */
     }
     // cardOrder is only ever trusted if every entry is a genuine, unique
     // index into the current CARD_COUNT range — anything else (missing,
@@ -10445,7 +10447,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v976"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v977"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -10727,6 +10729,7 @@ function hideCloudSaveTooLargeWarning() {
   window.claude.use("db").then(function (db) {
     cloudDb = db;
     if (!cloudDb) { ensureWorldVersionCurrent().then(ensureHomeTileAssigned); return; } // not available in this view — stays local-only, nothing else changes
+    try { cardCatalogStart(); } catch (e) {} /* v977: shared card catalog */
     // startWorldTileSync()/startCitySync() moved to inside
     // resolveServerAssignment() below (see its comment) — they read
     // CURRENT_SERVER_ID indirectly via serverPrefix(), which isn't correct
@@ -11959,13 +11962,61 @@ function setCardDevModOn(on) {
   if (btn) btn.classList.toggle("active", on);
   renderCardDevModPanel();
 }
-document.getElementById("cardDevModBtn").onclick = function () { setCardDevModOn(!cardDevModOn); };
+document.getElementById("cardDevModBtn").onclick = function () { if (!cardTextEditable()) return; setCardDevModOn(!cardDevModOn); }; /* v977: admins only */
+// ---- v977: one shared card catalog (names / type / effect text / story), the same for every player, editable by admins only ----
+// Stored in the admin-only shared area (assetitems/cardcatalog: every signed-in player reads it, only an admin can write - firestore.rules).
+// Card text used to live in each player's own save, so a new account saw 30 blank cards and any player could type a card's name
+// (e.g. "Critical Mass") to switch its effect on. Now the catalog is applied over every save. When an admin opens the game, card text in
+// the admin's OWN save fills the catalog's empty slots (this is how the original claude.ai card text comes across after the save import),
+// and Drop Signal goes into the first free slot if no card has that name yet. Offline / claude.ai build (no Firebase): text stays per save.
+var CARD_CATALOG_DOC = "assetitems/cardcatalog";
+var CARD_CATALOG_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Each time your Railgun fires, your fallen summons are redeployed and any switched-off drones come back online.", narrative: "" };
+var cardCatalog = null, cardCatalogPushT = null;
+function cardTextEditable() { var K = window.KS_BACKEND; return !K || K.kind !== "firebase" || !!K.isAdmin; }
+function cardTextOf(c) { c = c || {}; return { name: String(c.name || ""), type: String(c.type || ""), effect: String(c.effect || ""), narrative: String(c.narrative || "") }; }
+function cardTextBlank(c) { return !c || !(c.name || c.type || c.effect || c.narrative); }
+function cardCatalogApply() {
+  if (!cardCatalog) return;
+  game.state.cards.forEach(function (c, i) { var t = cardTextOf(cardCatalog[i]); c.name = t.name; c.type = t.type; c.effect = t.effect; c.narrative = t.narrative; });
+  try { renderCards(); } catch (e) {}
+  if (cardDetailIdx != null) { var c0 = game.state.cards[cardDetailIdx]; ["Name", "Type", "Effect"].forEach(function (f) { var el = document.getElementById("cardDetail" + f); if (el && document.activeElement !== el) el.value = c0[f.toLowerCase()] || ""; }); try { updateCardEffectBadge(); } catch (e) {} }
+}
+function cardCatalogPush() {
+  if (!cardTextEditable() || !cloudDb || cloudDb.backend !== "firebase") return;
+  cardCatalog = game.state.cards.map(cardTextOf);
+  clearTimeout(cardCatalogPushT);
+  cardCatalogPushT = setTimeout(function () { cloudDb.doc(CARD_CATALOG_DOC).set({ cards: cardCatalog, ts: Date.now() }).catch(function (e) { console.error("Card catalog save failed:", e && e.message); }); }, 700);
+}
+function cardCatalogStart() {
+  if (!cloudDb || cloudDb.backend !== "firebase" || cardCatalogStart.on) return; cardCatalogStart.on = true;
+  cloudDb.doc(CARD_CATALOG_DOC).onSnapshot(function (snap) {
+    var d = snap.exists ? snap.data() : null; cardCatalogRaw = (d && Array.isArray(d.cards)) ? d.cards : []; cardCatalogSettle();
+  }, function (e) { console.error("Card catalog listen failed:", e && e.message); });
+}
+var cardCatalogRaw = null;
+function cardCatalogSettle() { /* also re-run after a save loads, so an admin's own card text is merged in and nobody's old save text wins */
+    if (!cardCatalogRaw) return; var cat = cardCatalogRaw;
+    (function settle(tries) {
+      var K = window.KS_BACKEND || {};
+      if (!K.adminChecked && tries < 40) { setTimeout(function () { settle(tries + 1); }, 250); return; } // wait until we know whether this is an admin
+      var merged = [], changed = false;
+      for (var i = 0; i < CARD_COUNT; i++) merged.push(cardTextOf(cat[i]));
+      if (K.isAdmin) {
+        merged.forEach(function (t, i) { var mine = game.state.cards[i]; if (cardTextBlank(t) && !cardTextBlank(mine)) { merged[i] = cardTextOf(mine); changed = true; } });
+        if (!merged.some(function (t) { return t.name.trim().toLowerCase() === "drop signal"; })) { var fi = -1; for (var bi = merged.length - 1; bi >= 0; bi--) if (cardTextBlank(merged[bi])) { fi = bi; break; } /* the LAST free slot - the imported original cards sit at the front */ if (fi >= 0) { merged[fi] = cardTextOf(CARD_CATALOG_DROP_SIGNAL); changed = true; } }
+      }
+      cardCatalog = merged; cardCatalogApply();
+      if (changed) cardCatalogPush();
+    })(0);
+}
 function openCardDetailOverlay(idx) {
   cardDetailIdx = idx;
   var card = game.state.cards[idx];
   document.getElementById("cardDetailName").value = card.name || "";
   document.getElementById("cardDetailType").value = card.type || "";
   document.getElementById("cardDetailEffect").value = card.effect || "";
+  var dmB = document.getElementById("cardDevModBtn"); if (dmB) dmB.style.display = cardTextEditable() ? "" : "none";
+  var ro = !cardTextEditable(); ["cardDetailName", "cardDetailType", "cardDetailEffect"].forEach(function (id) { var el = document.getElementById(id); el.readOnly = ro; el.placeholder = ro ? "" : (id === "cardDetailEffect" ? "Effect text…" : id === "cardDetailName" ? "Name" : "Type"); }); /* v977: only admins edit card text */
   renderCardDetailArt(idx);
   updateCardEquipBtn();
   updateCardEffectBadge();
@@ -11987,19 +12038,22 @@ document.getElementById("cardDetailArtWrap").onclick = function () {
 };
 document.getElementById("cardDetailName").oninput = function (e) {
   if (cardDetailIdx == null) return;
+  if (!cardTextEditable()) { e.target.value = game.state.cards[cardDetailIdx].name || ""; return; }
   game.state.cards[cardDetailIdx].name = e.target.value;
-  persist();
+  persist(); cardCatalogPush();
   updateCardEffectBadge();
 };
 document.getElementById("cardDetailType").oninput = function (e) {
   if (cardDetailIdx == null) return;
+  if (!cardTextEditable()) { e.target.value = game.state.cards[cardDetailIdx].type || ""; return; }
   game.state.cards[cardDetailIdx].type = e.target.value;
-  persist();
+  persist(); cardCatalogPush();
 };
 document.getElementById("cardDetailEffect").oninput = function (e) {
   if (cardDetailIdx == null) return;
+  if (!cardTextEditable()) { e.target.value = game.state.cards[cardDetailIdx].effect || ""; return; }
   game.state.cards[cardDetailIdx].effect = e.target.value;
-  persist();
+  persist(); cardCatalogPush();
 };
 
 document.getElementById("cardArtInput").addEventListener("change", function (e) {
