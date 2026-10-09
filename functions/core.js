@@ -363,7 +363,7 @@ function decideMailClaim(mail, now) {
 // Every save write is compared with the previous save (server timestamps). A jump the game can't produce in that time is a "flag". Bounds are
 // deliberately generous: they must never trip on real play (a false flag is worse than a missed small cheat); tighten later from real flag data.
 // Mail items claimed in the window are allowed on top. Pure: no I/O.
-const AC = {
+const AC_DEFAULT = {
   slackSec: 30,                                  // clock / save-delay slack added to every time window
   build: { base: 3, perSec: 1 / 20 },            // building levels (all buildings together)
   tech: { base: 3, perSec: 1 / 20 },             // research + fortress tech levels (together)
@@ -388,7 +388,8 @@ function mailAllowance(mails) { /* claimed mail -> { savePath: amount } */
   (mails || []).forEach((m) => { Object.keys((m && m.items) || {}).forEach((id) => { const it = ITEMS[id]; if (!it || it.kind !== "save" || !it.path) return; out[it.path] = (out[it.path] || 0) + Math.max(0, acNum(m.items[id])); }); });
   return out;
 }
-function checkSave(before, after, dtSec, allow) {
+function checkSave(before, after, dtSec, allow, limits) {
+  const AC = mergeLimits(limits); /* v995: admin-tuned limits (Security panel) on top of the defaults */
   const reasons = [], al = allow || {}; let mailCouldHelp = false;
   if (!after || typeof after !== "object") return { reasons, mailCouldHelp };
   const R = after.resources || {};
@@ -427,5 +428,58 @@ function checkSave(before, after, dtSec, allow) {
   return { reasons, mailCouldHelp };
 }
 
-module.exports = { CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+// ---- v995: Security panel. Limits the admin can tune (merged over AC_DEFAULT), the security config, flag summaries. Pure: no I/O. ----
+const AC = AC_DEFAULT; /* the defaults, exported under the old name */
+const LIMIT_KEYS = { build: ["base", "perSec"], tech: ["base", "perSec"], weapon: ["base", "perSec"], heroLvl: ["base", "perSec"], frag: ["base", "perSec"],
+  troops: ["base", "mult", "perSec"], res: ["base", "mult", "perSec"], cur: ["base", "mult", "perSec"] };
+const LIMIT_LABELS = { build: "Building levels", tech: "Research levels", weapon: "Weapon levels", heroLvl: "Hero levels (each hero)", frag: "Hero fragments (each hero)",
+  troops: "Troops (all)", res: "Food / wood / stone / gold (each)", cur: "Energon, Research Points, draw tickets, Valor, Conquest Books (each)" };
+function mergeLimits(over) {
+  const L = JSON.parse(JSON.stringify(AC_DEFAULT));
+  if (!over || typeof over !== "object") return L;
+  if (Number.isFinite(+over.slackSec) && +over.slackSec >= 0) L.slackSec = Math.min(3600, +over.slackSec);
+  Object.keys(LIMIT_KEYS).forEach((k) => { const o = over[k]; if (!o || typeof o !== "object") return;
+    LIMIT_KEYS[k].forEach((f) => { const v = +o[f]; if (Number.isFinite(v) && v >= 0) L[k][f] = Math.min(1e12, v); }); });
+  return L;
+}
+/* the config doc <root>secconfig/main: { autoRevert, limits (only the changed fields), updatedAt, updatedBy } */
+function normalizeSecConfig(d) {
+  d = d || {}; const limits = {};
+  if (Number.isFinite(+(d.limits || {}).slackSec) && +d.limits.slackSec >= 0 && +d.limits.slackSec !== AC_DEFAULT.slackSec) limits.slackSec = Math.min(3600, +d.limits.slackSec);
+  Object.keys(LIMIT_KEYS).forEach((k) => { const o = (d.limits || {})[k]; if (!o || typeof o !== "object") return;
+    LIMIT_KEYS[k].forEach((f) => { const v = +o[f]; if (Number.isFinite(v) && v >= 0 && v !== AC_DEFAULT[k][f]) { limits[k] = limits[k] || {}; limits[k][f] = Math.min(1e12, v); } }); });
+  return { autoRevert: d.autoRevert === true, limits };
+}
+/* what kind of thing a flag reason is about: "wood", "gareth level", "Conquest", "building levels"... */
+function reasonKey(r) {
+  r = String(r || ""); let m;
+  if ((m = /^new save/.exec(r))) return "new save";
+  if ((m = /^Conquest /.exec(r))) return "Conquest";
+  if ((m = /^resources\.(\w+) is not a valid/.exec(r))) return m[1] + " (broken value)";
+  if ((m = /^([^+]+?) \+/.exec(r))) return m[1].replace(/^idle\./, "").replace(/^(\w+) (level|fragments)$/, "hero $2");
+  return r.slice(0, 40);
+}
+const SEC_ACTIONS = ["dismiss", "watch", "unwatch", "trust", "untrust", "rollback", "suspend", "unsuspend", "ban", "unban", "restrict", "unrestrict"];
+const SUSPEND_MAX_HOURS = 24 * 90;
+/* ban record a player sees: kind "suspend" | "ban" | "restore" (a short write lock while an admin rollback lands) */
+function banActive(b, now) { return !!(b && (b.kind === "ban" || ((b.kind === "suspend" || b.kind === "restore") && +b.untilMs > now))); }
+/* overview numbers for the Security panel from the acplayers rows (+ bans) */
+function secSummary(rows, bans, now) {
+  const day = 86400000, out = { flags24h: 0, flags7d: 0, players24h: 0, open: 0, watching: 0, trusted: 0, restricted: 0, reverted: 0, suspended: 0, banned: 0, topReasons: [], repeat: [] };
+  const rc = {};
+  (rows || []).forEach((p) => {
+    let had24 = false;
+    (p.recent || []).forEach((e) => { if (now - e.at <= day) { out.flags24h++; had24 = true; } if (now - e.at <= 7 * day) { out.flags7d++; (e.reasons || []).forEach((r) => { const k = reasonKey(r); rc[k] = (rc[k] || 0) + 1; }); } });
+    if (had24) out.players24h++;
+    const st = p.status || "open"; if (st === "open") out.open++; if (st === "watch") out.watching++;
+    if (p.trusted) out.trusted++; if (p.restricted) out.restricted++; out.reverted += p.reverted || 0;
+    if ((p.count || 0) >= 3 && st !== "dismissed") out.repeat.push({ uid: p.uid, name: p.name || "", count: p.count, lastAt: p.lastAt });
+  });
+  (bans || []).forEach((b) => { if (!banActive(b, now)) return; if (b.kind === "ban") out.banned++; else if (b.kind === "suspend") out.suspended++; });
+  out.topReasons = Object.keys(rc).map((k) => ({ what: k, n: rc[k] })).sort((a, b) => b.n - a.n).slice(0, 8);
+  out.repeat.sort((a, b) => b.count - a.count); out.repeat = out.repeat.slice(0, 10);
+  return out;
+}
+
+module.exports = { AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

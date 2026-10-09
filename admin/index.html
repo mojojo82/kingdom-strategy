@@ -16,6 +16,7 @@
   .env button.on.test { background:#1f4e7a; color:#fff; } .env button.on.live { background:var(--red); color:#fff; }
   .who { margin-left:auto; color:var(--dim); font-size:12px; display:flex; gap:8px; align-items:center; }
   main { max-width:1100px; margin:0 auto; padding:16px; display:grid; gap:14px; }
+  main > * { min-width:0; } main > section { overflow-x:auto; } select { max-width:100%; } /* v995: grid items no longer stretch the page wider than a phone */
   .card { background:var(--panel); border:1px dashed var(--line); border-radius:10px; padding:14px; }
   .card h2 { margin:0 0 10px; font-size:15px; color:var(--gold); }
   .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
@@ -53,6 +54,10 @@
   .tabent input[type=datetime-local] { width:190px; } .tabent .bdg { width:110px; } .mini { padding:3px 8px !important; font-size:12px !important; }
   #tierEd input { width:90px; }
   .tabitems { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; } .ichip { display:inline-flex; align-items:center; gap:2px; border:1px dashed #5d6f93; border-radius:6px; padding:1px 6px; font-size:12px; background:#0f1520; white-space:nowrap; } .ichip .inm { color:var(--dim); font-size:11px; }
+  .secstats .stat { margin:2px 14px 2px 0; } .badge { display:inline-block; border-radius:6px; padding:0 6px; font-size:11px; margin-right:3px; border:1px dashed #5d6f93; }
+  .badge.watch { color:#ffd27a; border-color:#ffd27a; } .badge.trust { color:var(--green); border-color:var(--green); } .badge.hide { color:#cfa8ff; border-color:#cfa8ff; } .badge.dis { color:var(--dim); } .badge.ban { color:#ffb3b3; border-color:var(--red); }
+  .lim { display:grid; grid-template-columns:1fr; gap:4px; padding:8px 0; border-bottom:1px dotted #26324d; } .lim .lr { display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .lim input[type=number] { width:110px; } .lim input[type=range] { flex:1; min-width:140px; }
+  .secact { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
   @media (max-width:600px) { main { padding:10px; } .who { width:100%; margin-left:0; } td, th { padding:5px 4px; } }
 </style>
 </head>
@@ -75,6 +80,16 @@
 
 <main id="app" class="hide">
   <div id="envBanner" class="banner"></div>
+
+  <section class="card" id="secCard">
+    <div class="row" style="justify-content:space-between"><h2 style="margin:0">🛡️ Security</h2><button class="b ghost" id="secRefresh">↻ Refresh</button></div>
+    <div class="muted" style="margin:4px 0 8px">Anti-cheat for the selected server. Every save is compared with the last one; anything that grew faster than the game allows is flagged here. Every action below is logged (Audit log tab).</div>
+    <div id="secTrig" class="muted"></div>
+    <div id="secStats" class="secstats"></div>
+    <div class="row" style="margin:8px 0"><span>Auto-rollback: <b id="secAuto">…</b></span><button class="b ghost mini" id="secAutoBtn">Turn on</button><span class="muted">On = a flagged save is thrown away and the previous one put back automatically (trusted players are skipped).</span></div>
+    <div class="tabs" id="secTabs"><button data-s="feed" class="on">📰 Live feed</button><button data-s="players">⚑ Players</button><button data-s="odd">🔎 Oddities</button><button data-s="bans">🚫 Bans</button><button data-s="limits">🎚️ Limits</button><button data-s="audit">📜 Audit log</button></div>
+    <div id="secBody"><div class="muted">Loading…</div></div>
+  </section>
 
   <section class="card">
     <h2>Find a player</h2>
@@ -235,7 +250,7 @@
     var bn = $("envBanner"); bn.className = "banner " + S.env;
     bn.textContent = S.env === "live" ? "LIVE server: changes affect real players." : "TEST server: changes only affect the test copy of the game.";
   }
-  [].forEach.call($("envSw").children, function (b) { b.onclick = function () { S.env = b.getAttribute("data-env"); try { localStorage.setItem("ksAdminEnv", S.env); } catch (e) {} renderEnv(); S.player = null; $("playerCard").classList.add("hide"); $("results").innerHTML = ""; }; });
+  [].forEach.call($("envSw").children, function (b) { b.onclick = function () { S.env = b.getAttribute("data-env"); try { localStorage.setItem("ksAdminEnv", S.env); } catch (e) {} renderEnv(); try { secLoad(); } catch (e) {} S.player = null; $("playerCard").classList.add("hide"); $("results").innerHTML = ""; }; });
 
   // ---- sign in ----
   function siErr(e) { $("siMsg").textContent = errText(e); }
@@ -247,7 +262,7 @@
     $("who").innerHTML = esc(u.email || u.uid) + ' <button class="b ghost" id="so" style="padding:3px 9px;font-size:12px">Sign out</button>';
     $("so").onclick = function () { auth.signOut(); };
     call("adminCatalog").then(function (c) {
-      S.catalog = c; $("signin").classList.add("hide"); $("app").classList.remove("hide"); renderEnv();
+      S.catalog = c; $("signin").classList.add("hide"); $("app").classList.remove("hide"); renderEnv(); secLoad();
       setShop(c.packs, c.shop); pkClear(); S.evDraft = JSON.parse(JSON.stringify(c.events || [])); renderEvEd();
       $("mItems").innerHTML = ""; $("aItems").innerHTML = ""; addItemRow("mItems"); addItemRow("aItems");
     }, function (e) { $("signin").classList.remove("hide"); $("app").classList.add("hide"); u.getIdTokenResult().then(function (t) { $("siMsg").textContent = !/admin only|permission/i.test(errText(e)) ? errText(e) : (t.signInProvider !== "google.com" && !EMU) ? "Admin needs Google sign-in. Sign out and use Continue with Google." : "This account isn't an admin."; }); });
@@ -293,6 +308,100 @@
   $("flaggedBtn").onclick = flagged;
   $("findBtn").onclick = find; $("q").onkeydown = function (e) { if (e.key === "Enter") find(); };
 
+
+  // ---- v995: 🛡️ Security panel ----
+  var SEC = { tab: "feed", d: null };
+  var SEC_STATUS = { open: "", watch: '<span class="badge watch">👁 watching</span>', dismissed: '<span class="badge dis">dismissed</span>' };
+  function secBadges(p) { return (SEC_STATUS[p.status] || "") + (p.trusted ? '<span class="badge trust">✅ trusted</span>' : "") + (p.restricted ? '<span class="badge hide">🙈 hidden</span>' : ""); }
+  function secOpen(uid) { S.tab = "flags"; [].forEach.call($("tabs").children, function (x) { x.classList.toggle("on", x.getAttribute("data-t") === "flags"); }); openPlayer(uid); setTimeout(function () { $("playerCard").scrollIntoView({ behavior: "smooth" }); }, 50); }
+  function secLoad() {
+    $("secBody").innerHTML = '<div class="muted">Loading…</div>';
+    call("adminSecOverview", {}).then(function (d) { SEC.d = d; secRender(); }, function (e) { $("secBody").innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; });
+  }
+  function secRender() {
+    var d = SEC.d; if (!d) return; var m = d.summary;
+    $("secTrig").innerHTML = d.triggersOn ? "" : '<div class="err" style="margin-bottom:6px">⚠️ The save check is not switched on in this server yet, so no new flags arrive. It needs a one-time Google Cloud permission setup by the project owner (see HANDOVER, "Anti-cheat").</div>';
+    $("secStats").innerHTML = [["Flags (24 h)", m.flags24h], ["Flags (7 days)", m.flags7d], ["Players flagged (24 h)", m.players24h], ["Open", m.open], ["Watching", m.watching], ["Suspended", m.suspended], ["Banned", m.banned], ["Hidden", m.restricted], ["Auto-rollbacks", m.reverted]]
+      .map(function (x) { return '<span class="stat">' + x[0] + " <b>" + x[1] + "</b></span>"; }).join("");
+    $("secAuto").textContent = d.config.autoRevert ? "ON" : "OFF"; $("secAuto").className = d.config.autoRevert ? "neg" : "";
+    $("secAutoBtn").textContent = d.config.autoRevert ? "Turn off" : "Turn on";
+    [].forEach.call($("secTabs").children, function (b) { b.classList.toggle("on", b.getAttribute("data-s") === SEC.tab); });
+    var el = $("secBody"), h = "";
+    if (SEC.tab === "feed") {
+      h = d.feed.length ? '<table><tr><th>When</th><th>Player</th><th>What jumped</th></tr>' + d.feed.map(function (f) { return '<tr class="click" data-sec="' + esc(f.uid) + '"><td>' + when(f.at) + '</td><td>' + esc(f.name || f.uid) + '<br>' + (SEC_STATUS[f.status] || "") + '</td><td>' + (f.reasons || []).map(function (r) { return "<div>" + esc(r) + "</div>"; }).join("") + "</td></tr>"; }).join("") + "</table>"
+        : '<div class="muted">No flags yet on ' + S.env.toUpperCase() + ".</div>";
+    } else if (SEC.tab === "players") {
+      h = d.players.length ? '<table><tr><th>Player</th><th>Flags</th><th>Last</th><th>Last reason</th></tr>' + d.players.map(function (p) { return '<tr class="click" data-sec="' + esc(p.uid) + '"><td>' + esc(p.name || p.uid) + "<br>" + secBadges(p) + "</td><td><b>" + p.count + "</b>" + (p.reverted ? '<div class="muted">' + p.reverted + " rolled back</div>" : "") + "</td><td>" + when(p.lastAt) + "</td><td>" + esc(p.why) + "</td></tr>"; }).join("") + "</table>"
+        : '<div class="muted">Nobody flagged on ' + S.env.toUpperCase() + ".</div>";
+    } else if (SEC.tab === "odd") {
+      h = '<h2 style="margin-top:4px">Most common reasons (7 days)</h2>' + (m.topReasons.length ? "<table><tr><th>What jumped</th><th>Flags</th></tr>" + m.topReasons.map(function (r) { return "<tr><td>" + esc(r.what) + "</td><td><b>" + r.n + "</b></td></tr>"; }).join("") + "</table>" : '<div class="muted">Nothing this week.</div>')
+        + '<h2 style="margin-top:14px">Repeat offenders (3+ flags, not dismissed)</h2>' + (m.repeat.length ? "<table><tr><th>Player</th><th>Flags</th><th>Last</th></tr>" + m.repeat.map(function (r) { return '<tr class="click" data-sec="' + esc(r.uid) + '"><td>' + esc(r.name || r.uid) + "</td><td><b>" + r.count + "</b></td><td>" + when(r.lastAt) + "</td></tr>"; }).join("") + "</table>" : '<div class="muted">None.</div>')
+        + '<div class="muted" style="margin-top:12px">Device / multi-account matching isn\'t included: the game has a no player-tracking rule.</div>';
+    } else if (SEC.tab === "bans") {
+      h = d.bans.length ? "<table><tr><th>Player</th><th>Type</th><th>Until</th><th>Reason</th><th></th></tr>" + d.bans.map(function (b) { return '<tr><td><a href="#" data-sec="' + esc(b.uid) + '">' + esc(b.name || b.uid) + '</a></td><td><span class="badge ban">' + esc(b.kind) + "</span></td><td>" + (b.kind === "ban" ? "for good" : when(b.untilMs)) + "</td><td>" + esc(b.reason || "") + '</td><td>' + (b.kind === "restore" ? "" : '<button class="b ghost mini" data-lift="' + esc(b.uid) + '" data-kind="' + esc(b.kind) + '">Lift</button>') + "</td></tr>"; }).join("") + "</table>"
+        : '<div class="muted">No one is suspended or banned on ' + S.env.toUpperCase() + ".</div>";
+    } else if (SEC.tab === "limits") {
+      var L = d.config.limits, D = d.defaults;
+      h = '<div class="muted">How much each thing may grow between two saves: <b>base</b> + <b>× what they had</b> (where shown) + <b>per second</b> of time between the saves. Lower = stricter. Values that differ from the default are marked ✱. Bad flags are worse than a missed small cheat, so tighten slowly.</div>'
+        + '<div class="lim"><div><b>Clock slack</b> (seconds added to every window) ' + (L.slackSec !== D.slackSec ? "✱" : "") + '</div><div class="lr"><input type="number" min="0" step="1" data-lk="slackSec" value="' + L.slackSec + '"><span class="muted">default ' + D.slackSec + "</span></div></div>"
+        + Object.keys(d.keys).map(function (k) {
+          return '<div class="lim"><div><b>' + esc(d.labels[k] || k) + "</b></div>" + d.keys[k].map(function (f) {
+            var v = L[k][f], dv = D[k][f], nm = f === "perSec" ? "per second" : f === "mult" ? "× what they had" : "base", mx = Math.max(1, dv * 5);
+            return '<div class="lr"><span style="width:110px">' + nm + (v !== dv ? " ✱" : "") + '</span>' + (f === "perSec" ? '<input type="range" min="0" max="' + mx + '" step="' + (dv >= 10 ? 1 : 0.01) + '" value="' + Math.min(v, mx) + '" data-lr="' + k + "." + f + '">' : "") + '<input type="number" min="0" step="any" data-lk="' + k + "." + f + '" value="' + v + '"><span class="muted">default ' + dv + "</span></div>";
+          }).join("") + "</div>";
+        }).join("")
+        + '<div class="row" style="margin-top:10px"><button class="b" id="limSave">Save limits</button><button class="b ghost" id="limReset">Reset all to defaults</button></div>';
+    } else {
+      h = '<div class="muted">Loading…</div>';
+      call("adminSecAudit", {}).then(function (r) {
+        if (SEC.tab !== "audit") return;
+        el.innerHTML = r.rows.length ? "<table><tr><th>When</th><th>Action</th><th>Player</th><th>Details</th></tr>" + r.rows.map(function (x) { return "<tr><td>" + when(x.at) + "</td><td><b>" + esc(x.action) + '</b><div class="muted">' + esc(x.by) + "</div></td><td>" + (x.target ? esc(x.name || x.target) : "—") + '</td><td class="muted">' + esc(x.detail ? JSON.stringify(x.detail) : "") + "</td></tr>"; }).join("") + "</table>" : '<div class="muted">Nothing logged yet.</div>';
+      }, function (e) { el.innerHTML = '<div class="err">' + esc(errText(e)) + "</div>"; });
+    }
+    el.innerHTML = h;
+    [].forEach.call(el.querySelectorAll("[data-sec]"), function (x) { x.onclick = function (ev) { ev.preventDefault(); secOpen(x.getAttribute("data-sec")); }; });
+    [].forEach.call(el.querySelectorAll("[data-lift]"), function (x) { x.onclick = function () { secAct(x.getAttribute("data-lift"), x.getAttribute("data-kind") === "ban" ? "unban" : "unsuspend"); }; });
+    [].forEach.call(el.querySelectorAll("[data-lr]"), function (r) { r.oninput = function () { var n = el.querySelector('[data-lk="' + r.getAttribute("data-lr") + '"]'); if (n) n.value = r.value; }; });
+    if ($("limSave")) $("limSave").onclick = function () {
+      var lim = {}; [].forEach.call(el.querySelectorAll("[data-lk]"), function (i) { var p = i.getAttribute("data-lk").split("."), v = +i.value; if (!isFinite(v) || v < 0) return; if (p.length === 1) lim[p[0]] = v; else { lim[p[0]] = lim[p[0]] || {}; lim[p[0]][p[1]] = v; } });
+      if (!confirmEnv("Save anti-cheat limits on " + S.env.toUpperCase() + "?")) return;
+      call("adminSecConfig", { autoRevert: d.config.autoRevert, limits: lim }).then(function (r) { d.config = r.config; toast("Limits saved"); secRender(); }, function (e) { toast(errText(e), true); });
+    };
+    if ($("limReset")) $("limReset").onclick = function () {
+      if (!confirmEnv("Reset every anti-cheat limit to its default on " + S.env.toUpperCase() + "?")) return;
+      call("adminSecConfig", { autoRevert: d.config.autoRevert, limits: {} }).then(function (r) { d.config = r.config; toast("Limits reset"); secRender(); }, function (e) { toast(errText(e), true); });
+    };
+  }
+  $("secRefresh").onclick = secLoad;
+  [].forEach.call($("secTabs").children, function (b) { b.onclick = function () { SEC.tab = b.getAttribute("data-s"); secRender(); }; });
+  $("secAutoBtn").onclick = function () {
+    var d = SEC.d; if (!d) return; var on = !d.config.autoRevert;
+    if (!confirmEnv(on ? "Turn auto-rollback ON on " + S.env.toUpperCase() + "?\n\nEvery flagged save will be thrown away and the player's previous save put back (trusted players are skipped)." : "Turn auto-rollback OFF on " + S.env.toUpperCase() + "? (Flags are still recorded.)")) return;
+    call("adminSecConfig", { autoRevert: on, limits: d.config.changed || {} }).then(function (r) { d.config = r.config; toast("Auto-rollback " + (on ? "ON" : "OFF")); secRender(); }, function (e) { toast(errText(e), true); });
+  };
+  var SEC_ASK = { rollback: "Roll this player's game back to their last good save (from before the first flag)? Their current save is kept as a backup.", ban: "Ban this player for good? They can't play or save until you lift it.",
+    dismiss: "Dismiss these flags as a false alarm?", restrict: "Hide this player from rankings and block their event rewards?", trust: "Trust this player? Their saves are still checked but never auto-rolled back." };
+  function secAct(uid, action, extra) {
+    var data = Object.assign({ uid: uid, action: action }, extra || {});
+    if (action === "suspend" || action === "ban") { var why = prompt("Reason the player will see (optional):", ""); if (why === null) return; data.note = why; }
+    if (action === "suspend" && !(data.hours >= 1)) return;
+    var ask = action === "suspend" ? "Suspend this player for " + data.hours + " hour(s)?" : (SEC_ASK[action] || (action + " this player?"));
+    if (!confirmEnv(ask)) return;
+    call("adminSecAction", data).then(function () { toast("Done: " + action); if (S.player === uid) openPlayer(uid); secLoad(); }, function (e) { toast(errText(e) === "no_snapshot" ? "No good save stored for this player yet (only saves from after this update are kept)." : errText(e), true); });
+  }
+  function secPlayerPanel(i) {
+    var F = i.flags || {}, B = i.ban, st = F.status || (i.flags ? "open" : "none"), now = Date.now();
+    var banTxt = B && (B.kind === "ban" || +B.untilMs > now) ? '<div><span class="badge ban">' + (B.kind === "ban" ? "🚫 banned" : B.kind === "restore" ? "⏪ restoring" : "⏸️ suspended until " + when(B.untilMs)) + "</span> " + esc(B.reason || "") + "</div>" : "";
+    var btn = function (a, label, cls) { return '<button class="b ' + (cls || "ghost") + ' mini" data-pact="' + a + '">' + label + "</button>"; };
+    return '<div class="secact">' + (i.flags ? secBadges({ status: st, trusted: F.trusted, restricted: F.restricted }) : "") + banTxt + "</div>"
+      + '<div class="secact">' + (i.flags && st !== "dismissed" ? btn("dismiss", "✓ Dismiss (false alarm)") : "") + (st === "watch" ? btn("unwatch", "Stop watching") : btn("watch", "👁 Watch"))
+      + (F.trusted ? btn("untrust", "Untrust") : btn("trust", "✅ Trust")) + (F.restricted ? btn("unrestrict", "Show in rankings") : btn("restrict", "🙈 Hide from rankings & events"))
+      + (F.snapAt ? btn("rollback", "⏪ Roll back to " + when(F.snapAt), "warn") : "") + "</div>"
+      + '<div class="secact"><select id="susH"><option value="1">1 hour</option><option value="6">6 hours</option><option value="24" selected>1 day</option><option value="72">3 days</option><option value="168">1 week</option><option value="720">30 days</option></select>'
+      + btn("suspend", "⏸️ Suspend", "warn") + btn("ban", "🚫 Ban", "warn") + (B && B.kind === "suspend" ? btn("unsuspend", "Lift suspension") : "") + (B && B.kind === "ban" ? btn("unban", "Lift ban") : "") + "</div>"
+      + (F.restoredAt ? '<div class="muted">Rolled back on ' + when(F.restoredAt) + " to the save from " + when(F.restoredTo) + ".</div>" : "");
+  }
+  function secWirePlayer(el) { [].forEach.call(el.querySelectorAll("[data-pact]"), function (b) { b.onclick = function () { var a = b.getAttribute("data-pact"); secAct(S.player, a, a === "suspend" ? { hours: +$("susH").value } : null); }; }); }
   // ---- player ----
   function openPlayer(uid) {
     S.player = uid; $("playerCard").classList.remove("hide"); $("pUid").textContent = uid; $("pName").textContent = "Loading…"; $("pStats").innerHTML = ""; $("tabBody").innerHTML = "";
@@ -316,9 +425,10 @@
         return "<tr><td>" + when(m.sentAt) + "</td><td>" + esc(m.title) + "</td><td>" + Object.keys(m.items || {}).map(function (k) { return '<span class="pill">' + esc(itemLabel(k)) + " × " + (+m.items[k]).toLocaleString() + "</span>"; }).join("") + "</td><td>" + (m.claimedAt ? '<span class="ok">' + when(m.claimedAt) + "</span>" : '<span class="muted">not yet</span>') + "</td></tr>"; }).join("") + "</table>" : '<div class="muted">No mail sent to this player.</div>';
     } else if (S.tab === "flags") {
       var F = i.flags;
-      el.innerHTML = !F ? '<div class="muted">No anti-cheat flags for this player.</div>'
-        : '<div class="muted" style="margin:6px 0">' + (F.count || 0) + ' flag(s) since ' + when(F.firstAt) + '. Flag only: the save was not changed.</div><table><tr><th>When</th><th>Time between saves</th><th>Why</th></tr>' + (F.recent || []).map(function (r) {
-          return "<tr><td>" + when(r.at) + "</td><td>" + (r.dtSec == null ? "first save" : r.dtSec + " s") + "</td><td>" + (r.reasons || []).map(function (x) { return '<div>' + esc(x) + "</div>"; }).join("") + "</td></tr>"; }).join("") + "</table>";
+      el.innerHTML = secPlayerPanel(i) + (!F ? '<div class="muted">No anti-cheat flags for this player.</div>'
+        : '<div class="muted" style="margin:6px 0">' + (F.count || 0) + ' flag(s) since ' + when(F.firstAt) + '. ' + (F.reverted ? F.reverted + " of them auto-rolled back." : "Saves not changed (auto-rollback was off).") + '</div><table><tr><th>When</th><th>Time between saves</th><th>Why</th></tr>' + (F.recent || []).map(function (r) {
+          return "<tr><td>" + when(r.at) + "</td><td>" + (r.dtSec == null ? "first save" : r.dtSec + " s") + "</td><td>" + (r.reasons || []).map(function (x) { return '<div>' + esc(x) + "</div>"; }).join("") + "</td></tr>"; }).join("") + "</table>");
+      secWirePlayer(el);
     } else {
       el.innerHTML = i.purchases.length ? '<table><tr><th>When</th><th>Pack</th><th>Price</th><th>Receipt</th><th>Status</th><th></th></tr>' + i.purchases.map(function (p) {
         return "<tr><td>" + when(p.at) + "</td><td>" + esc(p.packName || p.pack) + "</td><td>" + esc(p.price) + " " + esc(p.currency || "") + '</td><td class="muted">' + esc(p.provider) + " " + esc(p.receiptId) + "</td><td>" + esc(p.status) + (p.statusNote ? ' <span class="muted">(' + esc(p.statusNote) + ")</span>" : "") +

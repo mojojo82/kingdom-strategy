@@ -822,3 +822,16 @@
   - Hanzo team, Lv80: L3 95/10, L4 100/100/100/98/80, L5 100 across the board.
   - Solo Kessa (cards 11,2,3,4,5) vs maxed Hanzo + Lone Wolf: 53% with the same weapons, 93% with Projection Wall in her build (88-90% with Wall+Dome / Wall+Hex+Dome). Same at Lv40 and Lv80.
 - g217 passes.
+
+### v995 — Security panel in the admin site (TEST game + server)
+- Harley: a security area in the admin console with controls, where oddities are flagged. "Do the whole lot."
+- Server (functions/index.js + core.js):
+  - Callables: adminSecOverview (stats, feed, players, oddities, active bans, limits), adminSecAction (dismiss / watch / unwatch / trust / untrust / restrict / unrestrict / suspend(hours) / unsuspend / ban / unban / rollback), adminSecConfig (auto-rollback switch + limit overrides), adminSecAudit.
+  - Save trigger: limits now come from secconfig/main merged over the defaults (C.mergeLimits). Auto-rollback is the config switch (AC_REVERT stays a hard OFF const) and skips trusted players. Each new flag episode stores the pre-flag save in acsnap/<uid>.
+  - wrap() refuses calls from suspended/banned players. claimEvent refuses restricted ("hidden") players.
+- Rules (tools/build-rules.js): liveOpen/testOpen also require "not banned" (bans/<uid> kind ban, or suspend/restore with untilMs in the future). New admin-only collections: secconfig, secaudit, acsnap. bans readable by the player themself.
+- Game: ksBanWatch/ksBanRender. Suspend/ban shows a full-screen notice and stops saving; lifting reloads the game. A rollback ("restore") stops saving and reloads once onto the restored save (localStorage ksRestoreSeen stops loops).
+- Admin site: also fixed the page being wider than a phone (641 px on 430 px; main grid items min-width:0).
+- Left out: device / multi-account matching (no-tracking rule).
+- Still OFF on the real server: the save trigger (features.json saveTriggers=false) needs Harley's 3 one-time IAM grants (HANDOVER). Until then the panel shows a warning and no flags arrive. Bans, rollbacks of stored snapshots, audit and config all work regardless.
+- Tests: core unit test (limits, config, summary, ban state); g218_security_server (real functions in node); g219_ban_notice (game notice/reload); g220_admin_security (admin panel, phone width); ci/integration.test.js security test (real rules + functions on the emulator, runs in GitHub CI before deploy). g179, g191, g212-g214 pass.

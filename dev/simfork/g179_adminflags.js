@@ -24,7 +24,7 @@ const STUB = `window.firebase = { initializeApp: function () {}, auth: Object.as
   await P.click("#flaggedBtn"); await P.waitForSelector("#results [data-uid]", { timeout: 10000 });
   const list = await P.textContent("#results"); console.log("list:", list.replace(/\s+/g, " ").slice(0, 200)); assert.ok(/cheaterX/.test(list) && /gold \+49,999,000/.test(list));
   await P.click("#results [data-uid]"); await P.waitForFunction(() => /Anti-cheat flags/.test(document.getElementById("pStats").textContent), null, { timeout: 10000 });
-  const tab = await P.textContent("#tabBody"); console.log("tab:", tab.replace(/\s+/g, " ").slice(0, 220)); assert.ok(/3 flag\(s\)/.test(tab) && /troops \+8,999,800/.test(tab) && /was not changed/.test(tab));
+  const tab = await P.textContent("#tabBody"); console.log("tab:", tab.replace(/\s+/g, " ").slice(0, 220)); assert.ok(/3 flag\(s\)/.test(tab) && /troops \+8,999,800/.test(tab) && /not changed/.test(tab));
   await P.screenshot({ path: OUT + "admin_flags.png" });
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

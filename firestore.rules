@@ -11,7 +11,7 @@ service cloud.firestore {
     function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail']; }
 
     // ===== live =====
-    function liveOpen() { return isAdmin() || !(exists(/databases/$(database)/documents/config/maintenance) && get(/databases/$(database)/documents/config/maintenance).data.on == true); } // v942: maintenance locks player writes
+    function liveOpen() { return isAdmin() || (!(exists(/databases/$(database)/documents/config/maintenance) && get(/databases/$(database)/documents/config/maintenance).data.on == true) && (!exists(/databases/$(database)/documents/bans/$(request.auth.uid)) || (get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.kind != 'ban' && get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.untilMs < request.time.toMillis()))); } // v942: maintenance locks player writes; v995: so does a ban / suspension
 
       // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
       //      are written by the server only, and readable only by that player and admins. ----
@@ -61,6 +61,11 @@ service cloud.firestore {
       // ---- server bookkeeping ----
       match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
       match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
+      // ---- v995 Security panel: bans (a player may read only their own, to show the notice), config, audit log, pre-flag snapshots ----
+      match /bans/{d} { allow read: if isAdmin() || isMe(d); allow write: if false; }
+      match /secconfig/{d} { allow read: if isAdmin(); allow write: if false; }
+      match /secaudit/{d} { allow read: if isAdmin(); allow write: if false; }
+      match /acsnap/{d} { allow read: if isAdmin(); allow write: if false; }
 
       // ---- shared world state used by every client (stage 2 will move these behind the server too) ----
       match /alliances/{aid} { allow read: if signedIn(); allow write: if signedIn() && liveOpen(); }
@@ -75,7 +80,7 @@ service cloud.firestore {
     // ===== test (same rules) =====
     match /envs/{env} {
       allow read, write: if false;
-      function testOpen() { return isAdmin() || !(exists(/databases/$(database)/documents/envs/$(env)/config/maintenance) && get(/databases/$(database)/documents/envs/$(env)/config/maintenance).data.on == true); }
+      function testOpen() { return isAdmin() || (!(exists(/databases/$(database)/documents/envs/$(env)/config/maintenance) && get(/databases/$(database)/documents/envs/$(env)/config/maintenance).data.on == true) && (!exists(/databases/$(database)/documents/envs/$(env)/bans/$(request.auth.uid)) || (get(/databases/$(database)/documents/envs/$(env)/bans/$(request.auth.uid)).data.kind != 'ban' && get(/databases/$(database)/documents/envs/$(env)/bans/$(request.auth.uid)).data.untilMs < request.time.toMillis()))); }
 
         // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
         //      are written by the server only, and readable only by that player and admins. ----
@@ -125,6 +130,11 @@ service cloud.firestore {
         // ---- server bookkeeping ----
         match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
         match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
+        // ---- v995 Security panel: bans (a player may read only their own, to show the notice), config, audit log, pre-flag snapshots ----
+        match /bans/{d} { allow read: if isAdmin() || isMe(d); allow write: if false; }
+        match /secconfig/{d} { allow read: if isAdmin(); allow write: if false; }
+        match /secaudit/{d} { allow read: if isAdmin(); allow write: if false; }
+        match /acsnap/{d} { allow read: if isAdmin(); allow write: if false; }
 
         // ---- shared world state used by every client (stage 2 will move these behind the server too) ----
         match /alliances/{aid} { allow read: if signedIn(); allow write: if signedIn() && testOpen(); }

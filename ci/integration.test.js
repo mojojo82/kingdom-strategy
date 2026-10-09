@@ -254,6 +254,49 @@ const P = (s) => R + s;
     await setDoc(doc(A.db, P("players/" + A.uid + "/save/main")), { x: 4 });
     m = await ADM.call("adminMaintenance", {}); assert.strictEqual(m.on, false, "read without changing");
   });
+  await t("security panel (v995): suspend / ban lock saves + server calls, the player sees their own notice, rollback restores the pre-flag save, auto-rollback, restrict", async () => {
+    await fnErr(Cc.call("adminSecAction", { uid: B.uid, action: "ban" }), /admin only|permission/);
+    await fnErr(Cc.call("adminSecOverview", {}), /admin only|permission/);
+    await setDoc(doc(Cc.db, P("players/" + Cc.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 100 }, idle: { chapter: 1, levelNum: 1 } });
+    /* suspend: rules refuse writes at once, the player can read (only) their own ban doc, server calls refused */
+    let r = await ADM.call("adminSecAction", { uid: Cc.uid, action: "suspend", hours: 2, note: "test" }); assert.strictEqual(r.ban.kind, "suspend");
+    await denied(setDoc(doc(Cc.db, P("players/" + Cc.uid + "/save/main")), { x: 1 }));
+    const own = await getDoc(doc(Cc.db, P("bans/" + Cc.uid))); assert.strictEqual(own.data().kind, "suspend");
+    await denied(getDoc(doc(Cc.db, P("bans/" + B.uid))));
+    await denied(setDoc(doc(Cc.db, P("bans/" + Cc.uid)), { kind: "none" }));
+    await sleep(16000); /* the server re-reads a ban at most every 15 s per instance (the rules are instant) */
+    await fnErr(Cc.call("claimLevel", { chapter: 1, levelNum: 2 }), /suspended|permission/);
+    await ADM.call("adminSecAction", { uid: Cc.uid, action: "unsuspend" });
+    await setDoc(doc(Cc.db, P("players/" + Cc.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 100 }, idle: { chapter: 1, levelNum: 1 } });
+    /* ban: same lock, no end date */
+    await ADM.call("adminSecAction", { uid: Cc.uid, action: "ban" }); await denied(setDoc(doc(Cc.db, P("players/" + Cc.uid + "/save/main")), { x: 2 }));
+    await ADM.call("adminSecAction", { uid: Cc.uid, action: "unban" });
+    /* a cheat jump -> flag + snapshot of the save before it -> rollback puts that save back (and backs up the cheated one) */
+    await sleep(1500);
+    await setDoc(doc(Cc.db, P("players/" + Cc.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 9e9 }, idle: { chapter: 1, levelNum: 1 } });
+    let f = null; for (let i = 0; i < 20 && !(f && f.exists()); i++) { await sleep(1000); f = await getDoc(doc(ADM.db, P("acplayers/" + Cc.uid))); }
+    assert.ok(f && f.exists() && f.data().snapAt, "flag with a snapshot");
+    const ov = await ADM.call("adminSecOverview", {}); assert.ok(ov.feed.some((e) => e.uid === Cc.uid) && ov.summary.flags24h >= 1 && ov.players.some((p) => p.uid === Cc.uid));
+    r = await ADM.call("adminSecAction", { uid: Cc.uid, action: "rollback" }); assert.ok(r.ok && r.ban && r.ban.kind === "restore");
+    const sv = await getDoc(doc(ADM.db, P("players/" + Cc.uid + "/save/main"))); assert.strictEqual(sv.data().resources.gold, 100, "pre-flag save restored");
+    await denied(setDoc(doc(Cc.db, P("players/" + Cc.uid + "/save/main")), { x: 3 })); /* their old open game can't overwrite it for a minute */
+    const au = await ADM.call("adminSecAudit", {}); assert.ok(au.rows.some((x) => x.action === "rollback" && x.target === Cc.uid) && au.rows.some((x) => x.action === "suspend"));
+    /* auto-rollback switch: a flagged save is put back by the server */
+    let c = await ADM.call("adminSecConfig", { autoRevert: true, limits: { res: { perSec: 150 } } }); assert.strictEqual(c.config.autoRevert, true); assert.strictEqual(c.config.limits.res.perSec, 150);
+    await sleep(16000);
+    await setDoc(doc(B.db, P("players/" + B.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 100 }, idle: { chapter: 1, levelNum: 1 } });
+    await sleep(1500);
+    await setDoc(doc(B.db, P("players/" + B.uid + "/save/main")), { resources: { food: 500, wood: 500, stone: 300, gold: 9e9 }, idle: { chapter: 1, levelNum: 1 } });
+    let g = 9e9; for (let i = 0; i < 20 && g === 9e9; i++) { await sleep(1000); g = (await getDoc(doc(B.db, P("players/" + B.uid + "/save/main")))).data().resources.gold; }
+    assert.strictEqual(g, 100, "auto-rollback put the save back");
+    c = await ADM.call("adminSecConfig", { autoRevert: false }); assert.strictEqual(c.config.autoRevert, false);
+    /* restrict: no event rewards */
+    await ADM.call("adminSecAction", { uid: B.uid, action: "restrict" });
+    await setDoc(doc(B.db, P("players/" + B.uid + "/save/main")), { power: 60000 });
+    await fnErr(B.call("claimEvent", { event: "burst_of_life", idx: 0 }), /restricted|permission/);
+    await ADM.call("adminSecAction", { uid: B.uid, action: "unrestrict" });
+    await fnErr(ADM.call("adminSecAction", { uid: ADM.uid, action: "ban" }), /admin account|failed-precondition/);
+  });
   await t("live env is separate from test env", async () => {
     ENV = "live"; R = "";
     const r = await B.call("claimLevel", { chapter: 1, levelNum: 1 }); assert.strictEqual(r.gems, 50);

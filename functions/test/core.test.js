@@ -211,4 +211,26 @@ t("card catalog merge fills only empty slots, keeps Drop Signal in the last free
   assert.strictEqual(m.cards[C.CARD_SLOTS - 1].name, "Drop Signal"); assert.strictEqual(m.filled, 2); assert.ok(m.drop);
   const again = C.mergeCardCatalog(m.cards, [{ name: "Late" }]); assert.strictEqual(again.cards.filter((c) => c.name === "Drop Signal").length, 1); assert.strictEqual(again.filled, 0);
 });
+t("security panel (v995): tunable limits, config, ban state, summary", () => {
+  const L = C.mergeLimits({ res: { perSec: 5, base: -1, mult: "x" }, slackSec: 10, bogus: { base: 1 } });
+  assert.strictEqual(L.res.perSec, 5); assert.strictEqual(L.res.base, C.AC_DEFAULT.res.base, "bad values ignored"); assert.strictEqual(L.res.mult, C.AC_DEFAULT.res.mult); assert.strictEqual(L.slackSec, 10);
+  assert.strictEqual(C.AC_DEFAULT.res.perSec, 200, "defaults untouched"); assert.strictEqual(C.AC, C.AC_DEFAULT);
+  const cfg = C.normalizeSecConfig({ autoRevert: "yes", limits: { res: { perSec: 200, base: 7 }, heroLvl: { base: 30 } } });
+  assert.strictEqual(cfg.autoRevert, false, "only true turns it on"); assert.deepStrictEqual(cfg.limits, { res: { base: 7 } }, "only changed fields kept");
+  assert.strictEqual(C.normalizeSecConfig({ autoRevert: true }).autoRevert, true);
+  /* tighter limits flag what the defaults allow */
+  const b = { resources: { food: 0, wood: 0, stone: 0, gold: 0 }, idle: { chapter: 1, levelNum: 1 } }, a = JSON.parse(JSON.stringify(b)); a.resources.wood = 50000;
+  assert.strictEqual(C.checkSave(b, a, 60).reasons.length, 0); assert.ok(C.checkSave(b, a, 60, {}, { res: { base: 1000 } }).reasons.some((x) => /^wood \+/.test(x)));
+  assert.strictEqual(C.reasonKey("wood +5,000 in 3s (limit 1)"), "wood"); assert.strictEqual(C.reasonKey("gareth level +40 in 3s"), "hero level"); assert.strictEqual(C.reasonKey("idle.valor +9 in 3s"), "valor");
+  assert.strictEqual(C.reasonKey("Conquest +50 levels (needs 300s, had 30s)"), "Conquest");
+  const now = 1e12;
+  assert.ok(C.banActive({ kind: "ban" }, now)); assert.ok(C.banActive({ kind: "suspend", untilMs: now + 1 }, now)); assert.ok(!C.banActive({ kind: "suspend", untilMs: now - 1 }, now)); assert.ok(!C.banActive(null, now));
+  const rows = [{ uid: "a", count: 4, lastAt: now - 10, status: "open", recent: [{ at: now - 10, reasons: ["wood +1 in 1s"] }, { at: now - 3 * 86400000, reasons: ["gold +1 in 1s"] }] },
+    { uid: "b", count: 1, lastAt: now - 9e8, status: "dismissed", restricted: true, reverted: 2, recent: [{ at: now - 9e8, reasons: ["wood +1"] }] }, { uid: "c", count: 5, status: "watch", trusted: true, recent: [] }];
+  const S = C.secSummary(rows, [{ kind: "ban" }, { kind: "suspend", untilMs: now + 5 }, { kind: "suspend", untilMs: now - 5 }], now);
+  assert.strictEqual(S.flags24h, 1); assert.strictEqual(S.flags7d, 2); assert.strictEqual(S.players24h, 1); assert.strictEqual(S.open, 1); assert.strictEqual(S.watching, 1);
+  assert.strictEqual(S.trusted, 1); assert.strictEqual(S.restricted, 1); assert.strictEqual(S.reverted, 2); assert.strictEqual(S.banned, 1); assert.strictEqual(S.suspended, 1);
+  assert.deepStrictEqual(S.repeat.map((x) => x.uid), ["c", "a"], "repeat offenders, dismissed left out"); assert.ok(S.topReasons.some((x) => x.what === "wood"));
+  assert.ok(C.SEC_ACTIONS.indexOf("rollback") >= 0 && C.SUSPEND_MAX_HOURS > 24);
+});
 console.log(n + " tests passed");

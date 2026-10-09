@@ -31,11 +31,25 @@ async function maintOn(R) {
   let on = false; try { const s = await db.doc(R + "config/maintenance").get(); on = !!(s.exists && s.data().on === true); } catch (e) { on = c ? c.on : false; }
   maintCache[R] = { on, t: now }; return on;
 }
+/* v995: Security panel. <root>bans/<uid> { kind: "suspend" | "ban" | "restore", untilMs, reason, by, at } (the player can read their own; the rules
+   refuse their writes while it is active). <root>secconfig/main = admin-tuned anti-cheat (auto-rollback switch + limits). Both read at most every 15 s. */
+const banCache = {}, secCache = {};
+async function banOf(R, uid) {
+  const k = R + uid, c = banCache[k], now = Date.now(); if (c && now - c.t < 15000) return c.b;
+  let b = null; try { const s = await db.doc(R + "bans/" + uid).get(); b = s.exists ? s.data() : null; } catch (e) { b = c ? c.b : null; }
+  banCache[k] = { b, t: now }; return b;
+}
+async function secConfig(R) {
+  const c = secCache[R], now = Date.now(); if (c && now - c.t < 15000) return c.cfg;
+  let cfg = C.normalizeSecConfig(null); try { const s = await db.doc(R + "secconfig/main").get(); if (s.exists) cfg = C.normalizeSecConfig(s.data()); } catch (e) { if (c) cfg = c.cfg; }
+  secCache[R] = { cfg, t: now }; return cfg;
+}
 function wrap(fn) {
   return onCall(async (req) => {
     try {
       const uid = uidOf(req), R = C.envRoot((req.data || {}).env);
       if (!isAdmin(uid, req) && await maintOn(R)) throw new HttpsError("unavailable", "maintenance");
+      if (!isAdmin(uid, req)) { const b = await banOf(R, uid); if (C.banActive(b, Date.now()) && b.kind !== "restore") throw new HttpsError("permission-denied", b.kind === "ban" ? "banned" : "suspended"); } /* v995 */
       return await fn(req, uid, R, req.data || {});
     }
     catch (e) {
@@ -352,6 +366,7 @@ exports.adminSaveEvents = wrap(async (req, uid, R, d) => {
 });
 // v946: a player claims an event milestone. Progress comes from their saved game (the game saves its power with every cloud save).
 exports.claimEvent = wrap(async (req, uid, R, d) => {
+  const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted"); /* v995: Security panel "hide from rankings & event rewards" */
   const events = await eventsConfig(R), ev = events.find((e) => e.id === String(d.event || "")), idx = Math.trunc(+d.idx), base = R + "players/" + uid + "/";
   const [sv, mt] = await Promise.all([db.doc(base + "save/main").get(), db.doc(base + "meta/account").get()]);
   const save = sv.exists ? sv.data() : {}, createdAt = (mt.exists && mt.data().createdAt) || save.startedAt || null;
@@ -415,23 +430,23 @@ exports.adminFindPlayers = wrap(async (req, uid, R, d) => {
 exports.adminPlayerInfo = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);
   const t = validUid(d.uid), base = R + "players/" + t + "/";
-  const [w, m, n, led, mail, pur, ac] = await Promise.all([
+  const [w, m, n, led, mail, pur, ac, bn] = await Promise.all([
     db.doc(base + "wallet/main").get(), db.doc(base + "meta/account").get(), db.doc(base + NAME_DOC).get(),
     db.collection(base + "ledger").orderBy("at", "desc").limit(200).get(),
     db.collection(base + "mail").orderBy("sentAt", "desc").limit(100).get(),
     db.collection(R + "purchases").where("uid", "==", t).get(),
-    db.doc(R + "acplayers/" + t).get()
+    db.doc(R + "acplayers/" + t).get(), db.doc(R + "bans/" + t).get() /* v995 */
   ]);
   const purchases = pur.docs.map((x) => Object.assign({ id: x.id }, x.data())).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 100);
   return { uid: t, name: n.exists ? (n.data() || {}).data || "" : "", wallet: w.exists ? w.data() : {}, meta: m.exists ? m.data() : {},
     ledger: led.docs.map((x) => Object.assign({ id: x.id }, x.data())), mail: mail.docs.map((x) => Object.assign({ id: x.id }, x.data())), purchases,
-    flags: ac.exists ? ac.data() : null };
+    flags: ac.exists ? ac.data() : null, ban: bn.exists ? bn.data() : null };
 });
 
 // ---- anti-cheat stage 2 (v920): every save write is compared with the previous one (C.checkSave). FLAG ONLY for now: a jump the game can't
 // produce is recorded in <env>acplayers/<uid> (admin-only), the save is never touched. AC_REVERT = true would also put the previous save back
 // (destructive: only once Harley has reviewed real flags and asked for it). Admins and bots are skipped (dev tools edit saves freely).
-const AC_REVERT = false;
+const AC_REVERT = false; /* v995: the real switch is now secconfig/main.autoRevert (Security panel); this stays as a hard OFF default */
 function acHandler(R) {
   return async (event) => {
     const uid = event.params.uid;
@@ -441,21 +456,27 @@ function acHandler(R) {
     const before = bS && bS.exists ? bS.data() : null, after = aS.data();
     const tA = aS.updateTime ? aS.updateTime.toMillis() : Date.now(), tB = before && bS.updateTime ? bS.updateTime.toMillis() : null;
     const dt = tB == null ? null : (tA - tB) / 1000;
-    let r = C.checkSave(before, after, dt, {});
+    const cfg = await secConfig(R);
+    let r = C.checkSave(before, after, dt, {}, cfg.limits);
     if (!r.reasons.length) return;
     if (r.mailCouldHelp && tB != null) { /* only now look up mail claimed in that window (most saves never need this read) */
       const ms = await db.collection(R + "players/" + uid + "/mail").where("claimedAt", ">=", tB - 120000).get();
-      r = C.checkSave(before, after, dt, C.mailAllowance(ms.docs.map((x) => x.data())));
+      r = C.checkSave(before, after, dt, C.mailAllowance(ms.docs.map((x) => x.data())), cfg.limits);
       if (!r.reasons.length) return;
     }
-    const ref = db.doc(R + "acplayers/" + uid), entry = { at: tA, dtSec: dt == null ? null : Math.round(dt), reasons: r.reasons.slice(0, 10) };
+    const ref = db.doc(R + "acplayers/" + uid), snapRef = db.doc(R + "acsnap/" + uid), entry = { at: tA, dtSec: dt == null ? null : Math.round(dt), reasons: r.reasons.slice(0, 10) };
+    let revert = false;
     await db.runTransaction(async (tx) => {
       const s0 = await tx.get(ref), cur = s0.exists ? s0.data() : {};
       const recent = [entry].concat(Array.isArray(cur.recent) ? cur.recent : []).slice(0, 20);
-      tx.set(ref, { uid, count: (cur.count || 0) + 1, firstAt: cur.firstAt || tA, lastAt: tA, recent, reverted: (cur.reverted || 0) + (AC_REVERT && before ? 1 : 0) });
+      const newEpisode = !s0.exists || cur.status === "dismissed" || !cur.snapAt; /* v995: keep the last good save from BEFORE the first flag of this episode */
+      revert = (AC_REVERT || cfg.autoRevert) && !!before && !cur.trusted;
+      if (newEpisode && before) tx.set(snapRef, { uid, at: tB, save: before });
+      tx.set(ref, Object.assign({}, cur, { uid, count: (cur.count || 0) + 1, firstAt: cur.firstAt || tA, lastAt: tA, recent, reverted: (cur.reverted || 0) + (revert ? 1 : 0),
+        status: cur.status === "watch" ? "watch" : "open", snapAt: newEpisode && before ? tB : (cur.snapAt || null) }));
     });
-    console.warn("anti-cheat flag", R || "live", uid, JSON.stringify(entry.reasons));
-    if (AC_REVERT && before) await aS.ref.set(before);
+    console.warn("anti-cheat flag", R || "live", uid, JSON.stringify(entry.reasons), revert ? "REVERTED" : "");
+    if (revert) await aS.ref.set(before);
   };
 }
 const FEATURES = require("./features.json");
@@ -471,4 +492,71 @@ exports.adminFlagged = wrap(async (req, uid, R) => {
   const rows = q.docs.map((x) => x.data());
   if (rows.length) { const ns = await db.getAll(...rows.map((x) => db.doc(R + "players/" + x.uid + "/" + NAME_DOC))); rows.forEach((x, i) => { x.name = ns[i].exists ? String((ns[i].data() || {}).data || "") : ""; }); }
   return { players: rows };
+});
+
+
+// ===== v995: Security panel (admin console). Feed + overview, per-player actions, the auto-rollback switch and limit sliders, audit log. =====
+function secAudit(R, by, action, target, detail) { return db.collection(R + "secaudit").add({ at: Date.now(), by, action, target: target || null, detail: detail || null }); }
+async function namesFor(R, uids) {
+  const u = Array.from(new Set(uids.filter(Boolean))).slice(0, 100), out = {}; if (!u.length) return out;
+  const ns = await db.getAll(...u.map((x) => db.doc(R + "players/" + x + "/" + NAME_DOC))); u.forEach((x, i) => { out[x] = ns[i].exists ? String((ns[i].data() || {}).data || "") : ""; }); return out;
+}
+exports.adminSecOverview = wrap(async (req, uid, R) => {
+  adminOnly(uid, req);
+  const now = Date.now();
+  const [q, bq, cfg] = await Promise.all([db.collection(R + "acplayers").orderBy("lastAt", "desc").limit(200).get(), db.collection(R + "bans").get(), secConfig(R)]);
+  const rows = q.docs.map((x) => x.data()), bans = bq.docs.map((x) => Object.assign({ uid: x.id }, x.data()));
+  const names = await namesFor(R, rows.slice(0, 60).map((x) => x.uid).concat(bans.map((b) => b.uid)));
+  rows.forEach((x) => { x.name = names[x.uid] || ""; }); bans.forEach((b) => { b.name = names[b.uid] || ""; b.active = C.banActive(b, now); });
+  const feed = []; rows.forEach((p) => (p.recent || []).forEach((e) => feed.push({ uid: p.uid, name: p.name, at: e.at, dtSec: e.dtSec, reasons: e.reasons, status: p.status || "open" })));
+  feed.sort((a, b) => b.at - a.at);
+  const players = rows.slice(0, 100).map((p) => ({ uid: p.uid, name: p.name, count: p.count || 0, lastAt: p.lastAt, firstAt: p.firstAt, status: p.status || "open", trusted: !!p.trusted, restricted: !!p.restricted,
+    reverted: p.reverted || 0, snapAt: p.snapAt || null, why: (p.recent && p.recent[0] && p.recent[0].reasons && p.recent[0].reasons[0]) || "" }));
+  return { now, triggersOn: !!(FEATURES.saveTriggers || process.env.FUNCTIONS_EMULATOR === "true"), config: { autoRevert: cfg.autoRevert, limits: C.mergeLimits(cfg.limits), changed: cfg.limits }, defaults: C.AC_DEFAULT, keys: C.LIMIT_KEYS, labels: C.LIMIT_LABELS,
+    summary: C.secSummary(rows, bans, now), feed: feed.slice(0, 40), players, bans: bans.filter((b) => b.active) };
+});
+exports.adminSecAction = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const t = validUid(d.uid), action = String(d.action || ""), note = String(d.note || "").slice(0, 300), now = Date.now();
+  if (C.SEC_ACTIONS.indexOf(action) < 0) throw new C.GameError("invalid-argument", "unknown action");
+  if (ADMIN_UIDS.indexOf(t) !== -1) throw new C.GameError("failed-precondition", "that's an admin account");
+  const acRef = db.doc(R + "acplayers/" + t), banRef = db.doc(R + "bans/" + t);
+  let detail = note ? { note } : null;
+  if (action === "dismiss") await acRef.set({ uid: t, status: "dismissed", dismissedAt: now, dismissedBy: uid }, { merge: true });
+  else if (action === "watch" || action === "unwatch") await acRef.set({ uid: t, status: action === "watch" ? "watch" : "open" }, { merge: true });
+  else if (action === "trust" || action === "untrust") await acRef.set({ uid: t, trusted: action === "trust" }, { merge: true });
+  else if (action === "restrict" || action === "unrestrict") await acRef.set({ uid: t, restricted: action === "restrict" }, { merge: true });
+  else if (action === "suspend") {
+    const h = Math.trunc(+d.hours); if (!(h >= 1 && h <= C.SUSPEND_MAX_HOURS)) throw new C.GameError("invalid-argument", "hours must be 1-" + C.SUSPEND_MAX_HOURS);
+    await banRef.set({ kind: "suspend", untilMs: now + h * 3600000, reason: note, by: uid, at: now }); detail = { hours: h, note };
+  } else if (action === "ban") await banRef.set({ kind: "ban", untilMs: null, reason: note, by: uid, at: now });
+  else if (action === "unsuspend" || action === "unban") await banRef.delete();
+  else if (action === "rollback") {
+    const [sn, cur, bn] = await Promise.all([db.doc(R + "acsnap/" + t).get(), db.doc(R + "players/" + t + "/save/main").get(), banRef.get()]);
+    if (!sn.exists || !(sn.data() || {}).save) throw new C.GameError("failed-precondition", "no_snapshot");
+    const backup = "backup_" + now;
+    if (cur.exists) await db.doc(R + "players/" + t + "/save/" + backup).set(cur.data()); /* the rollback can itself be undone */
+    if (!C.banActive(bn.exists ? bn.data() : null, now)) await banRef.set({ kind: "restore", untilMs: now + 60000, reason: "rollback", by: uid, at: now }); /* their open game stops saving and reloads */
+    await db.doc(R + "players/" + t + "/save/main").set(sn.data().save);
+    await acRef.set({ uid: t, restoredAt: now, restoredTo: sn.data().at || null, status: "dismissed", dismissedAt: now, dismissedBy: uid }, { merge: true });
+    detail = { to: sn.data().at || null, backup: cur.exists ? backup : null, note };
+  }
+  delete banCache[R + t];
+  await secAudit(R, uid, action, t, detail);
+  const [a2, b2] = await Promise.all([acRef.get(), banRef.get()]);
+  return { ok: true, flags: a2.exists ? a2.data() : null, ban: b2.exists ? b2.data() : null };
+});
+exports.adminSecConfig = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const cfg = C.normalizeSecConfig(d);
+  await db.doc(R + "secconfig/main").set(Object.assign({}, cfg, { updatedAt: Date.now(), updatedBy: uid }));
+  delete secCache[R];
+  await secAudit(R, uid, "config", null, { autoRevert: cfg.autoRevert, limits: cfg.limits });
+  return { config: { autoRevert: cfg.autoRevert, limits: C.mergeLimits(cfg.limits), changed: cfg.limits } };
+});
+exports.adminSecAudit = wrap(async (req, uid, R) => {
+  adminOnly(uid, req);
+  const q = await db.collection(R + "secaudit").orderBy("at", "desc").limit(100).get(), rows = q.docs.map((x) => x.data());
+  const names = await namesFor(R, rows.map((x) => x.target)); rows.forEach((x) => { x.name = x.target ? names[x.target] || "" : ""; });
+  return { rows };
 });

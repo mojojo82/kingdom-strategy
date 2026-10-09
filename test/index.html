@@ -10670,7 +10670,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v994"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v995"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14447,6 +14447,52 @@ function ksMaintRender() {
     db.doc("config/maintenance").onSnapshot(function (s) { KS_MAINT.data = s.exists ? s.data() : null; ksMaintRender(); }, function () {});
     setTimeout(ksMaintRender, 3000); /* admin status arrives a moment after sign-in */
   }).catch(function () {});
+})();
+/* v995: Security panel. An admin can suspend or ban an account, or roll a cheated game back to its last good save. <root>bans/<uid> (the player
+   can read only their own): kind "suspend" (until untilMs) / "ban" (for good) -> a notice covers the game and nothing is saved (the database
+   refuses it too); kind "restore" -> the open game stops saving and reloads onto the restored save. */
+var KS_BAN = { data: null, locked: false };
+function ksBanRender() {
+  var b = KS_BAN.data, now = Date.now(), ov = document.getElementById("ksBan");
+  var active = !!(b && (b.kind === "ban" || ((b.kind === "suspend" || b.kind === "restore") && +b.untilMs > now)));
+  if (active && b.kind === "restore") {
+    var seenKey = "ksRestoreSeen", seen = null; try { seen = localStorage.getItem(seenKey); } catch (e) {}
+    if (String(seen) === String(b.at)) return; /* this rollback already landed on this device (we reloaded onto it) */
+    try { localStorage.setItem(seenKey, String(b.at)); } catch (e) {}
+    saveLoadFailed = true; /* don't overwrite the restored save with this game's state */
+    if (!ov) { ov = document.createElement("div"); ov.id = "ksBan"; document.body.appendChild(ov); }
+    ov.style.cssText = "position:fixed;inset:0;z-index:2147483600;background:rgba(5,9,20,.96);display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,sans-serif";
+    ov.innerHTML = '<div style="max-width:360px;width:100%;background:#121c33;border:2px dashed #c9a24a;border-radius:12px;padding:22px 18px;color:#f3e9d2;text-align:center">'
+      + '<div style="font-size:40px;line-height:1">⏪</div><div style="font-size:20px;font-weight:700;color:#f0c95f;margin:8px 0 6px">Game restored</div>'
+      + '<div style="font-size:14px;line-height:1.45">An admin restored your kingdom to an earlier save. Reloading…</div></div>';
+    setTimeout(function () { ksFreshReload(); }, 2500);
+    return;
+  }
+  if (active) {
+    if (!ov) { ov = document.createElement("div"); ov.id = "ksBan"; document.body.appendChild(ov); }
+    ov.style.cssText = "position:fixed;inset:0;z-index:2147483600;background:rgba(5,9,20,.96);display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,sans-serif";
+    var ban = b.kind === "ban", when = !ban && b.untilMs ? new Date(+b.untilMs).toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+    ov.innerHTML = '<div style="max-width:360px;width:100%;background:#121c33;border:2px dashed #e2584a;border-radius:12px;padding:22px 18px;color:#f3e9d2;text-align:center">'
+      + '<div style="font-size:40px;line-height:1">' + (ban ? "🚫" : "⏸️") + '</div><div style="font-size:20px;font-weight:700;color:#f0c95f;margin:8px 0 6px">' + (ban ? "Account banned" : "Account suspended") + '</div>'
+      + '<div style="font-size:14px;line-height:1.45;white-space:pre-wrap">' + escapeHtml(b.reason || (ban ? "This account broke the game's rules." : "This account is on a break for breaking the game's rules.")) + '</div>'
+      + (when ? '<div style="margin-top:10px;font-size:13px;color:#8fd3ea">Back on ' + escapeHtml(when) + '</div>' : "") + '</div>';
+    if (!KS_BAN.locked) { KS_BAN.locked = true; saveLoadFailed = true; }
+    if (!ban && b.untilMs) { clearTimeout(KS_BAN.t); KS_BAN.t = setTimeout(ksBanRender, Math.min(2147483000, Math.max(1000, +b.untilMs - now + 500))); } /* the suspension ends by itself */
+  } else {
+    if (ov) ov.remove();
+    if (KS_BAN.locked) { KS_BAN.locked = false; ksFreshReload(); } /* lifted: come back on a fresh load */
+  }
+}
+(function ksBanWatch() {
+  if (!window.KS_BACKEND || window.KS_BACKEND.kind !== "firebase" || !window.claude || typeof window.claude.use !== "function") return;
+  var tries = 0;
+  (function go() {
+    if (typeof PLAYER_ID !== "string" || !PLAYER_ID || PLAYER_ID === "owner" || IS_GUEST_LINK) { if (++tries < 120) setTimeout(go, 1000); return; }
+    window.claude.use("db").then(function (db) {
+      if (!db || !db.doc) return;
+      db.doc("bans/" + PLAYER_ID).onSnapshot(function (s) { KS_BAN.data = s.exists ? s.data() : null; ksBanRender(); }, function () {});
+    }).catch(function () {});
+  })();
 })();
 function mapCenterTile() { /* tile under the middle of the view */
   var vp = document.getElementById("mapviewport"); if (!vp || !vp.clientWidth) return null;
