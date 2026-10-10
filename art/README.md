@@ -16,3 +16,4 @@ Rule (Harley, 8 Oct 2026): every new art asset is kept twice - the original here
 Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | cards_grid_18.png | Card art for the 18 named cards, as sent (one 6x3 grid from GPT, ~290px per card). Harley will regenerate each in hi-res later | 1774x887 | CARD_ART_BUILTIN (180x180 webp each, v1035) |
 | cards/01_iron_vanguard.png ... cards/18_drop_signal.png | The grid cut into one file per card (290x290), in card order | 290x290 | - |
+| profile_slot_stone.png | Stone tile for one of the 6 Overlord Profile slots, as sent (white background) | 1254x1254 | mockup shown 10 Oct: white cut out, 124x124 webp in the top-left slot |
