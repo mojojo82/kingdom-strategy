@@ -889,6 +889,10 @@
   .formation-fort { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 2px; font-size:12px; color:#f0c95f; font-weight:700; }
   .lb2-fort { margin-top:6px; font-size:12.5px; color:#f0d98c; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; }
   .idle-fort { position:absolute; top:78px; left:13px; z-index:2; }
+  .cq-left-grid { position:absolute; left:12px; top:4px; display:grid; grid-template-columns:repeat(3,var(--lg,40px)); grid-auto-rows:var(--lg,40px); gap:4px; z-index:2; }
+  .cq-left-grid .lg-cell { position:relative; background:rgba(0,0,0,.2); border-radius:calc(var(--lg,40px) * 0.08); }
+  .cq-left-grid .idle-bag-btn { position:absolute; inset:0; top:0; left:0; width:100%; height:100%; border:none; border-radius:inherit; background:transparent; }
+  .cq-left-grid .idle-bag-btn svg { width:72%; height:72%; }
   .cq-quick { position:absolute; right:12px; bottom:8px; z-index:3; display:flex; align-items:center; gap:8px; }
   .cq-quick .idle-stats-btn { position:static; }
   .cq-quick .idle-fort { position:static; }
@@ -11134,7 +11138,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1040"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1041"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26159,6 +26163,23 @@ setInterval(function () { /* refresh only when something changed (so taps never 
   if (!row || !sb || !fw) return;
   var box = document.createElement("div"); box.className = "cq-quick";
   row.style.position = "relative"; box.appendChild(sb); box.appendChild(fw); row.appendChild(box);
+})();
+/* v1041 (Harley): 6 slots (2 rows x 3) where the backpack was, left of the 10 equipment spaces; the backpack sits in the first one, without
+   its dotted outline. The other 5 are empty for now. Slots are sized to fit the space left of the equipment grid (max = equipment size). */
+(function () {
+  var sp = document.getElementById("idleSkillSpacer"), bb = sp && sp.querySelector(".idle-bag-btn");
+  if (!sp || !bb || sp.querySelector(".cq-left-grid")) return;
+  var g = document.createElement("div"); g.className = "cq-left-grid";
+  for (var i = 0; i < 6; i++) { var c = document.createElement("div"); c.className = "lg-cell"; if (i === 0) c.appendChild(bb); g.appendChild(c); }
+  sp.appendChild(g);
+  function fit() {
+    var ig = document.getElementById("idleIconGrid"); if (!ig || !sp.clientWidth) return;
+    var room = ig.getBoundingClientRect().left - sp.getBoundingClientRect().left - 12 - 10, igs = parseFloat(getComputedStyle(ig).getPropertyValue("--ig")) || 40;
+    var cell = Math.max(24, Math.min(igs, Math.floor((room - 8) / 3)));
+    g.style.setProperty("--lg", cell + "px"); g.style.top = Math.max(4, Math.round((ig.offsetHeight - (cell * 2 + 4)) / 2) + 4) + "px";
+  }
+  fit(); setTimeout(fit, 450); setTimeout(fit, 1500); window.addEventListener("resize", fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(sp); /* re-fit when Conquest is shown (sizes are 0 while hidden) */
 })();
 // ================= v727: Forge UI (Energon, Equipment, idle rewards bucket) =================
 var forgeAuto = false, forgeLast = null, forgeDetailId = null, forgeDetailSlot = null, forgePanelEl = null, forgeBtnEl = null;

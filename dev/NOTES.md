@@ -1114,3 +1114,8 @@
 - Harley: the 10 equipment spaces should match the pieces' shape, with no rim or shadow - just a flat colour; same for the gear boxes bottom-left (remove the border).
 - Measured: pieces and empty spaces were both 50x50, but the pieces' tile corners are ~8% (TURRET_ICON_LIBRARY masks, ~4-5px) vs the empty 9px, and empty spaces had a dark rim + inner shadow.
 - Now: empty equipment spaces = flat rgba(0,0,0,.2), corner = 8% of the space, no rim/shadow. All gear boxes (.power-slot, Conquest + Arena rows, incl. the "sunken" weapon space) = flat, border transparent (so nothing shifts), no shadow.
+
+## v1041 - Conquest: 6 slots where the backpack was (TEST)
+- Harley: "Make 6 slots where the back pack is. Remove the dotted line and backpack goes into one of those empty slots".
+- .cq-left-grid: 2 rows x 3 flat slots (same flat style/corners as the equipment spaces) left of the 10 equipment spaces, sized to the room there (max = equipment size, ~40px on a phone), centred beside them (re-fit by ResizeObserver when Conquest shows). The backpack sits in the first slot without its dotted outline; the other 5 are empty.
+- g238 (backpack) still passes.
