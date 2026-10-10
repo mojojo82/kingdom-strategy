@@ -1073,3 +1073,11 @@
   - Unset = falls back to the Conquest type, so old saves fight exactly as before.
 - Saved: formations[i].fort, arenaFort. Balance: `run.js --only meta` output identical to v1032 (the existing meta warning is unchanged).
 - Test: new g243_fort_type.js.
+
+## v1034 - Admin art: what the admin sees = what every player sees (TEST)
+- Harley asked whether card art uploaded from the admin account is for all players (it is, since v982) - then "ok" to close the gap where the admin's own phone could show a different picture.
+- Shared art (cards, hero portraits, skill icons, combat sprites, esper graphics, boss/enemy sprites, trees, ground, grass) on Firebase is now never read from or kept on the phone, admins included (artLocal, getCardArt, assetPickNewest).
+- The load-time "backfill" no longer pushes phone copies of shared art - it ran before the shared art had loaded, so an admin phone could push an OLD copy over a newer shared picture.
+- After the shared art loads, old phone copies are deleted (sharedArtClearPhoneCopies); on an admin phone, a picture the shared area doesn't have at all is uploaded first so nothing is lost.
+- An admin upload that still fails after its retries puts back the shared picture on that phone and shows "That picture did NOT save, so players won't see it".
+- Test: new g244_shared_art.js.

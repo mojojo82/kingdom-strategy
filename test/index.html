@@ -3581,6 +3581,10 @@ function assetIsShared(key) {
   for (var i = 0; i < SHARED_ART_PREFIXES.length; i++) { var p = SHARED_ART_PREFIXES[i]; if (key.indexOf(p) === 0 && (p.slice(-1) === "_" || key === p)) return true; }
   return false;
 }
+/* v1034 (Harley: admin art is for ALL players, not a personal setting): on Firebase, shared art is never read from or kept on this device -
+   every device (admins included) shows exactly the shared copy, so what the admin sees is what every player sees. */
+function artLocal(key) { if (assetIsShared(key)) return null; try { return localStorage.getItem(key); } catch (e) { return null; } }
+var assetSharedPrev = {}; // key -> the shared image before this device's upload (restored if the upload finally fails)
 function assetIsAdmin() { var K = window.KS_BACKEND; return !!(K && K.isAdmin); }
 function assetCanEditArt() { return !assetOnFirebase() || assetIsAdmin(); } /* the upload taps (hero portrait, card picture) check this */
 function assetSyncPersonalDocIdFor(key) { return (PLAYER_ID === "owner") ? ("assetitems/" + key) : ("players/" + PLAYER_ID + "/assetitems/" + key); }
@@ -3714,9 +3718,10 @@ function assetSyncUpload(key, dataUrl) {
   if (!assetSyncDb || !dataUrl || !PLAYER_ID) return;
   if (assetIsShared(key) && !assetIsAdmin()) return; /* v982: shared art - admins only */ // !PLAYER_ID: identity hasn't resolved yet (brief async window, or the welcome overlay is still up) — assetSyncDocIdFor would otherwise build a bogus "players/null/..." path. Whatever triggered this already wrote to localStorage regardless; it'll sync next time this same value changes.
   var previous = cloudAssetMap[key];
+  if (assetIsShared(key)) { if (!(key in assetSharedPrev)) assetSharedPrev[key] = previous || null; try { localStorage.removeItem(key); localStorage.removeItem(key + "__ts"); } catch (e) {} } /* v1034 */
   cloudAssetMap[key] = dataUrl;
   // Stamp when THIS device chose it (a real user upload, not the automatic backfill), so other devices can tell which copy is newer.
-  if (!assetSyncBackfilling) { try { localStorage.setItem(key + "__ts", String(Date.now())); } catch (e) {} }
+  if (!assetSyncBackfilling && !assetIsShared(key)) { try { localStorage.setItem(key + "__ts", String(Date.now())); } catch (e) {} }
   // Remember that THIS device just chose a new value for this key, so the
   // initial cloud load (if it's still in flight) can't land afterwards and
   // silently replace it with the older cloud copy.
@@ -3739,7 +3744,15 @@ function assetSyncHandleFinalFailure(key, dataUrl, msg) {
   cloudAssetMap[key] = assetSyncLocalChoice[key] || dataUrl; // newest local upload always wins on this device
   assetSyncLogError(msg);
   var n = assetSyncRetryCount[key] || 0;
-  if (n >= 2) return;
+  if (n >= 2) {
+    if (assetIsShared(key)) { /* v1034: shared art that never saved - show what players actually see, and say so */
+      var prev = assetSharedPrev[key]; if (prev) cloudAssetMap[key] = prev; else delete cloudAssetMap[key];
+      delete assetSyncLocalChoice[key]; delete assetSharedPrev[key]; assetSyncRetryCount[key] = 0;
+      try { render(); } catch (e) {} try { renderCards(); } catch (e) {}
+      try { alert("⚠️ That picture did NOT save, so players won't see it. Try again, or use a smaller image."); } catch (e) {}
+    }
+    return;
+  }
   assetSyncRetryCount[key] = n + 1;
   var retryUrl = assetSyncLocalChoice[key] || dataUrl;
   setTimeout(function () {
@@ -3751,6 +3764,7 @@ function assetSyncHandleFinalFailure(key, dataUrl, msg) {
 function assetSyncWriteWithShrink(key, dataUrl, remainingSizes, previous) {
   var tsForWrite = assetSyncLocalTs(key) || Date.now(); cloudAssetTs[key] = tsForWrite;
   assetSyncDb.doc(assetSyncDocIdFor(key)).set({ data: dataUrl, ts: tsForWrite }).then(function () {
+    delete assetSharedPrev[key]; assetSyncRetryCount[key] = 0; /* v1034 */
     if (assetSyncKnownKeys[key]) { try { renderAssetSyncDebugPanel(); } catch (e) {} return; }
     assetSyncKnownKeys[key] = true;
     return assetSyncUpdateIndex();
@@ -3878,6 +3892,7 @@ function assetSyncBackfillLocal() {
       }
       if (!matches) continue; // not one of our override keys (leave save data etc. alone)
       if (k.slice(-4) === "__ts") continue; // timestamp bookkeeping, not an asset
+      if (assetIsShared(k)) continue; /* v1034: shared art lives only in the shared copy - never push a phone copy over it (this ran before the shared copy had even loaded) */
       var val = localStorage.getItem(k);
       if (!val || cloudAssetMap[k] === val) continue; // nothing local, or cloud is already an exact match — skip
       if (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k] === val) continue; // v746: seeded default, not a personal upload
@@ -4532,6 +4547,17 @@ function initDeviceLock(db) {
 
 // v982: load the shared admin art; then (admin only, once admin status is known) copy the admin's own per-player art into shared keys that
 // are still empty - this is how the art Harley uploaded on his own account becomes everyone's art.
+/* v1034: once the shared art has loaded, old copies of it on this phone are removed (they could hide what players really see). An admin's
+   phone copy of a picture the shared area doesn't have at all is uploaded first, so nothing that only lived on the phone is lost. */
+function sharedArtClearPhoneCopies(isAdmin) {
+  var keys = [];
+  try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.slice(-4) !== "__ts" && assetIsShared(k)) keys.push(k); } } catch (e) { return; }
+  keys.forEach(function (k) {
+    var v = null; try { v = localStorage.getItem(k); } catch (e) {}
+    if (isAdmin && v && !sharedArtKnownKeys[k] && !cloudAssetMap[k] && !(typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k] === v)) { assetSyncBackfilling = true; try { assetSyncUpload(k, v); } catch (e) {} finally { assetSyncBackfilling = false; } }
+    try { localStorage.removeItem(k); localStorage.removeItem(k + "__ts"); } catch (e) {}
+  });
+}
 function assetSyncLoadShared() {
   if (!assetSyncDb || !assetOnFirebase()) return;
   assetSyncDb.doc(SHARED_ART_INDEX_DOC).get().then(function (snap) {
@@ -4545,6 +4571,7 @@ function assetSyncLoadShared() {
     (function migrate(tries) {
       var K = window.KS_BACKEND || {};
       if (!K.adminChecked && tries < 40) { setTimeout(function () { migrate(tries + 1); }, 250); return; }
+      sharedArtClearPhoneCopies(!!K.isAdmin);
       if (!K.isAdmin) return;
       assetSyncDb.doc(assetSyncIndexDoc()).get().then(function (snap) {
         var mine = ((snap.exists && snap.data() && snap.data().keys) || []).filter(function (k) { return assetIsShared(k) && !sharedArtKnownKeys[k]; });
@@ -5918,7 +5945,7 @@ function equippedRegen(state) {
 }
 var CARD_ART_PREFIX = "kingdom_prototype_cardart_v1_";
 function getCardArt(idx) {
-  if (assetIsShared(CARD_ART_PREFIX + idx) && !assetIsAdmin()) return assetSyncGet(CARD_ART_PREFIX + idx) || null; /* v982 */
+  if (assetIsShared(CARD_ART_PREFIX + idx)) return assetSyncGet(CARD_ART_PREFIX + idx) || null; /* v982; v1034: admins too */
   var cloud = assetSyncGet(CARD_ART_PREFIX + idx);
   if (cloud) return cloud;
   try { return localStorage.getItem(CARD_ART_PREFIX + idx); } catch (e) { return null; }
@@ -9490,7 +9517,7 @@ var TREE_SPRITE_OVERRIDE_PREFIX = "kingdom_prototype_treesprite_v1_";
 function getTreeSpriteOverride(i) {
   var cloud = assetSyncGet(TREE_SPRITE_OVERRIDE_PREFIX + i);
   if (cloud) return cloud;
-  try { return localStorage.getItem(TREE_SPRITE_OVERRIDE_PREFIX + i); } catch (e) { return null; }
+  try { return artLocal(TREE_SPRITE_OVERRIDE_PREFIX + i); } catch (e) { return null; }
 }
 function setTreeSpriteOverride(i, dataUrl) {
   try { localStorage.setItem(TREE_SPRITE_OVERRIDE_PREFIX + i, dataUrl); assetSyncUpload(TREE_SPRITE_OVERRIDE_PREFIX + i, dataUrl); return true; }
@@ -9549,7 +9576,7 @@ var GROUND_TILE_KEY = "kingdom_prototype_groundtile_v1";
 function getGroundTile() {
   var cloud = assetSyncGet(GROUND_TILE_KEY);
   if (cloud) return cloud;
-  try { return localStorage.getItem(GROUND_TILE_KEY) || DEFAULT_GROUND_TILE; }
+  try { return artLocal(GROUND_TILE_KEY) || DEFAULT_GROUND_TILE; }
   catch (e) { return DEFAULT_GROUND_TILE; }
 }
 function setGroundTile(dataUrl) {
@@ -10583,7 +10610,7 @@ var GRASS_OVERLAY_TILE_KEY = "kingdom_prototype_grassoverlay_v1";
 function getGrassOverlayTile() {
   var cloud = assetSyncGet(GRASS_OVERLAY_TILE_KEY);
   if (cloud) return cloud;
-  try { return localStorage.getItem(GRASS_OVERLAY_TILE_KEY) || DEFAULT_GRASS_OVERLAY_TILE; }
+  try { return artLocal(GRASS_OVERLAY_TILE_KEY) || DEFAULT_GRASS_OVERLAY_TILE; }
   catch (e) { return DEFAULT_GRASS_OVERLAY_TILE; }
 }
 function setGrassOverlayTile(dataUrl) {
@@ -10711,7 +10738,7 @@ var ENEMY_INFANTRY_SPRITE_KEY = "kingdom_prototype_enemyinfantry_v1";
 function getEnemyInfantrySprite() {
   var cloud = assetSyncGet(ENEMY_INFANTRY_SPRITE_KEY);
   if (cloud) return cloud;
-  try { return localStorage.getItem(ENEMY_INFANTRY_SPRITE_KEY) || DEFAULT_ENEMY_INFANTRY_SPRITE; }
+  try { return artLocal(ENEMY_INFANTRY_SPRITE_KEY) || DEFAULT_ENEMY_INFANTRY_SPRITE; }
   catch (e) { return DEFAULT_ENEMY_INFANTRY_SPRITE; }
 }
 function setEnemyInfantrySprite(dataUrl) {
@@ -11056,7 +11083,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1033"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1034"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18084,7 +18111,7 @@ var BOSS_SPRITE_KEY = "kingdom_prototype_bosssprite_v1";
 function getBossSprite() {
   var cloud = assetSyncGet(BOSS_SPRITE_KEY);
   if (cloud) return cloud;
-  try { return localStorage.getItem(BOSS_SPRITE_KEY); } catch (e) { return null; }
+  try { return artLocal(BOSS_SPRITE_KEY); } catch (e) { return null; }
 }
 function setBossSprite(dataUrl) {
   try { localStorage.setItem(BOSS_SPRITE_KEY, dataUrl); assetSyncUpload(BOSS_SPRITE_KEY, dataUrl); return true; }
@@ -25056,7 +25083,7 @@ document.getElementById("saveDataConfirmYes").onclick = function () {
 
 // Newest copy wins between this device's storage and the synced cloud copy (falls back to whichever exists).
 function assetPickNewest(k) {
-  if (assetIsShared(k) && !assetIsAdmin()) return assetSyncGet(k) || (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k]) || null; /* v982: shared admin art only */
+  if (assetIsShared(k)) return assetSyncGet(k) || (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k]) || null; /* v982: shared admin art only; v1034: admins too */
   if (assetSyncLocalChoice[k]) return assetSyncLocalChoice[k]; // uploaded on this device this session
   var local = null; try { local = localStorage.getItem(k); } catch (e) {}
   var cloud = assetSyncGet(k);
@@ -25110,7 +25137,7 @@ var COMBAT_SPRITE_PREFIX = "kingdom_prototype_combatsprite_v1_";
 function getCombatSpriteOverride(key) {
   var cloud = assetSyncGet(COMBAT_SPRITE_PREFIX + key);
   if (cloud) return cloud;
-  try { return localStorage.getItem(COMBAT_SPRITE_PREFIX + key); } catch (e) { return null; }
+  try { return artLocal(COMBAT_SPRITE_PREFIX + key); } catch (e) { return null; }
 }
 function getCombatSprite(key) { return getCombatSpriteOverride(key) || getHeroArt(key) || null; }
 function setCombatSprite(key, dataUrl) {
@@ -25141,7 +25168,7 @@ var ESPER_GRAPHIC_PREFIX = "kingdom_prototype_espergraphic_v1_";
 function getEsperGraphicOverride(key) {
   var cloud = assetSyncGet(ESPER_GRAPHIC_PREFIX + key);
   if (cloud) return cloud;
-  try { return localStorage.getItem(ESPER_GRAPHIC_PREFIX + key); } catch (e) { return null; }
+  try { return artLocal(ESPER_GRAPHIC_PREFIX + key); } catch (e) { return null; }
 }
 function setEsperGraphic(key, dataUrl) {
   try { localStorage.setItem(ESPER_GRAPHIC_PREFIX + key, dataUrl); assetSyncUpload(ESPER_GRAPHIC_PREFIX + key, dataUrl); return true; }
