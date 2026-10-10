@@ -1841,10 +1841,9 @@
     #chatMessages .chat-copy.done { color:#8fe08f; border-color:#8fe08f; }
     #chatMessages .chat-meta { align-items:center; }
     #chatMessages .chat-text.multi { text-align:left; white-space:pre; overflow-x:auto; font-family:"Courier New",ui-monospace,Menlo,monospace !important; font-size:11px; line-height:1.15; -webkit-overflow-scrolling:touch; }
-    /* v1017 (Harley): multi-line messages (emoji / text art) get the whole width - the bubble spans the row, the translate button drops under it, and the art is shrunk to fit (see chatFitArt) */
-    #chatMessages .chat-msg.wide .chat-body { flex:1 1 auto; max-width:100%; }
-    #chatMessages .chat-row.wide { flex-wrap:wrap; justify-content:flex-end; }
-    #chatMessages .chat-row.wide .chat-text { flex:1 1 100%; max-width:100%; box-sizing:border-box; }
+    /* v1018 (Harley): art messages keep the normal bubble width (translate button back on the right); a too-wide art is shrunk to fit it (chatFitArt) */
+    #chatMessages .chat-row.wide { min-width:0; }
+    #chatMessages .chat-row.wide .chat-text { flex:0 1 auto; min-width:0; max-width:100%; overflow:hidden; box-sizing:border-box; }
     #chatMessages .chat-text.multi.emo { font-family:-apple-system,"SF Pro Text","Segoe UI",Roboto,"Noto Sans","Noto Sans JP",sans-serif !important; font-size:15px; line-height:1.2; }
     #chatMessages .chat-body { min-width:0; }
     body[data-screen="more"][data-sub="chat"] .chat-body:has(.multi) { max-width:calc(100% - 54px); }
@@ -10871,7 +10870,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1017"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1018"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26416,7 +26415,7 @@ function renderWorldChat() {
     var av = own ? avatarHtml : (op && op.avatar ? '<img class="chat-avatar" src="' + op.avatar + '">' : '<div class="chat-avatar">👤</div>');
     var cls = String(m.text).indexOf("\n") !== -1 ? (/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFF00-\uFFEF\u3000-\u30FF]/u.test(m.text) ? ' multi emo' : ' multi') : '';
     var tr = chatTranslations[key];
-    return sep + '<div class="chat-msg' + (own ? ' own' : '') + (cls ? ' wide' : '') + (chatSelKey === key ? ' sel' : '') + '" data-key="' + escapeHtml(key) + '">' + av +
+    return sep + '<div class="chat-msg' + (own ? ' own' : '') + (chatSelKey === key ? ' sel' : '') + '" data-key="' + escapeHtml(key) + '">' + av +
       '<div class="chat-body"><div class="chat-meta"><span class="chat-name">' + escapeHtml(m.name) + '</span><span class="chat-time">' + time + '</span><button class="chat-copy" title="Copy message">Copy</button></div>' +
       '<div class="chat-row' + (cls ? ' wide' : '') + '"><div class="chat-text' + cls + '">' + (m.loc ? '<button class="chat-loc" data-tile="' + escapeHtml(m.loc) + '">' + escapeHtml(m.text) + ' ➜</button>' : escapeHtml(m.text)) + '</div><button class="chat-tr" title="Translate"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11l-3-3M20 17H9l3 3"/></svg></button></div>' +
       (tr && tr.shown ? '<div class="chat-trans">' + escapeHtml(tr.text || "Translating…") + '</div>' : '') + '</div></div>';
@@ -26424,12 +26423,12 @@ function renderWorldChat() {
   chatFitArt(el);
   el.scrollTop = wasBottom ? el.scrollHeight : prevTop;
 }
-function chatFitArt(el) { /* v1017: shrink a too-wide art message until it fits its bubble (never below 6px) */
+function chatFitArt(el) { /* v1017: shrink a too-wide art message until it fits its bubble (v1018: never below 4px) */
   [].forEach.call(el.querySelectorAll(".chat-text.multi"), function (t) {
     t.style.fontSize = ""; var cw = t.clientWidth, sw = t.scrollWidth; if (!cw || sw <= cw + 1) return;
     var fs = parseFloat(getComputedStyle(t).fontSize) || 14, pad = (parseFloat(getComputedStyle(t).paddingLeft) || 0) + (parseFloat(getComputedStyle(t).paddingRight) || 0);
-    var nf = Math.max(6, fs * (cw - pad) / Math.max(1, sw - pad) * 0.98); t.style.fontSize = nf.toFixed(2) + "px";
-    if (t.scrollWidth > t.clientWidth + 1 && nf > 6) t.style.fontSize = Math.max(6, nf * t.clientWidth / t.scrollWidth * 0.97).toFixed(2) + "px";
+    var nf = Math.max(4, fs * (cw - pad) / Math.max(1, sw - pad) * 0.98); t.style.fontSize = nf.toFixed(2) + "px";
+    if (t.scrollWidth > t.clientWidth + 1 && nf > 4) t.style.fontSize = Math.max(4, nf * t.clientWidth / t.scrollWidth * 0.97).toFixed(2) + "px";
   });
 }
 function sendWorldChatMessage() {

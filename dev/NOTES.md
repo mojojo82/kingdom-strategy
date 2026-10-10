@@ -965,3 +965,8 @@
 - Harley (screenshot): a wide emoji-art message was cut off on the right; make the message window bigger.
 - Multi-line messages (emoji / text art) now use the whole row: the bubble spans the width next to the avatar, the translate button drops underneath it, and if the art is still wider than the bubble its font shrinks until it fits (chatFitArt, never below 6 px). Normal one-line messages are unchanged.
 - Test: new g235_chat_art.js (16-wide emoji art fits, bubble ~356 px on a 430 px screen, translate under it, no sideways page scroll).
+
+### v1018 — chat art: normal bubble width again, art scales down to fit (TEST)
+- Harley (phone screenshot of v1017): the box got wider but not taller; put the width back, and if someone pastes large art just scale the font / emoji down.
+- Art bubbles are back to the normal width with the translate button on the right; a too-wide art shrinks to fit the bubble (chatFitArt, minimum now 4 px so very wide art still fits). The bubble's height follows the art (no height limit).
+- g235 updated: 39-wide emoji art fits a ~308 px bubble at ~5.8 px, translate on the right.

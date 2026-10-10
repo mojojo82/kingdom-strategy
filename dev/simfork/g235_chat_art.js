@@ -1,4 +1,4 @@
-/* v1017: multi-line (emoji / text art) chat messages use the whole width and shrink to fit, so wide art isn't cut off. Run: node dev/simfork/g235_chat_art.js */
+/* v1017/v1018: multi-line (emoji / text art) chat messages keep the normal bubble (translate button on the right) and a too-wide art shrinks to fit, so it isn't cut off. Run: node dev/simfork/g235_chat_art.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -18,16 +18,17 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
   await P.fill("#ksE", "g235@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
-  const art = Array.from({ length: 6 }, (_, i) => "🟦".repeat(16 - (i > 3 ? 1 : 0)) + (i > 3 ? "⬛" : "")).join("\n");
+  const art = Array.from({ length: 6 }, (_, i) => "🟦".repeat(38) + (i > 3 ? "⬛" : "🟩")).join("\n"); /* 39 wide, like Harley's */
   await P.evaluate((art) => { postWorldChat(art); setScreen("more", "chat"); }, art); await P.waitForTimeout(1500);
   await P.evaluate(() => renderWorldChat()); await P.waitForTimeout(300);
   const o = await P.evaluate(() => { const rows = [...document.querySelectorAll("#chatMessages .chat-msg")]; const artRow = rows.find((r) => r.querySelector(".chat-text.multi")), t = artRow.querySelector(".chat-text"), tr = artRow.querySelector(".chat-tr");
     const r = t.getBoundingClientRect(), rr = tr.getBoundingClientRect();
-    return { fits: t.scrollWidth <= t.clientWidth + 1, right: Math.round(r.right), width: Math.round(r.width), fs: getComputedStyle(t).fontSize, trBelow: rr.top >= r.bottom - 1, pageW: document.documentElement.scrollWidth}; });
+    return { fits: t.scrollWidth <= t.clientWidth + 1, right: Math.round(r.right), width: Math.round(r.width), fs: getComputedStyle(t).fontSize, trRight: rr.left >= r.right - 1, pageW: document.documentElement.scrollWidth}; });
   await P.screenshot({ path: (process.env.OUT || "/tmp/") + "chat_art.png" });
   console.log(JSON.stringify(o));
   assert.ok(o.fits, "the whole art is visible (no cut-off)");
-  assert.ok(o.width > 300 && o.right <= 430 && o.pageW <= 430, "the art bubble uses the row's width, on screen");
-  assert.ok(o.trBelow, "translate button sits under the art");
+  assert.ok(o.width <= 330 && o.right <= 430 && o.pageW <= 430, "normal bubble width, on screen");
+  assert.ok(o.trRight, "translate button on the right, as before");
+  assert.ok(parseFloat(o.fs) < 15, "the art was scaled down");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
