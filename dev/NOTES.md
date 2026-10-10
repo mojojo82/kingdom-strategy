@@ -1245,3 +1245,7 @@
 - A faint, seamless light/dark patch picture (tint 0.15, patch size 6.5 tiles) tiles across the whole sea in #mapSeaLayer, which sits under the path arrows and tiles.
 - Dev Tools (next to the base-water switch): "World map: whitecaps on the open sea". It's per device (localStorage), like the base-water switch.
 - Test: dev/simfork/g252_whitecaps.js. g200 still passes.
+
+## v1065 - Base water shapes: oval / box / boat, rotation, left-right (TEST)
+- Harley: too hard to match the Ghost Galleon's shape in Base Water Lab; wants shape type, rotation and left/right.
+- New per-skin settings, in Base Water Lab and the game (BASE_WATER2): shape (0 diamond using roundness, 1 oval, 2 rounded box, 3 boat = oval with one pointed end), taper (boat point sharpness, - points left / + right), rot (degrees, turns the footprint on screen), fpX (left/right, fraction of the art width). The glow/ring pictures are sized to the turned shape. Defaults keep the old look (diamond, no turn), so nothing changes until he sends settings. g200 passes.

@@ -11224,7 +11224,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1064"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1065"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14693,7 +14693,7 @@ function baseWaterSheet(src) {
 /* v1060: base water v2, from Base Water Lab (dev/labs/base-water-lab.html). Per base skin: one still glow picture (shallow-water tint + foam line hugging the
    base's ground footprint) and one soft ring picture; the ring is shown BASE_WATER2 rings times, each copy growing and fading on a loop with CSS (cheap on phones).
    Footprint = the iso diamond found from the art (its widest row = side corners, lowest pixel = front corner), rounded by "round". Sizes are fractions of the art width. */
-var BASE_WATER2 = { fpW: 1, fpD: 1, fpY: 0, round: 1.6, glow: 0.45, glowSize: 0.13, rim: 0.35, rimW: 0.014, rings: 3, ringA: 0.4, ringW: 0.03, ringEnd: 1.55, ringDur: 3.4, glowCol: "#4fc0e8", rimCol: "#cfeeff" };
+var BASE_WATER2 = { shape: 0, fpX: 0, rot: 0, taper: 0.6, fpW: 1, fpD: 1, fpY: 0, round: 1.6, glow: 0.45, glowSize: 0.13, rim: 0.35, rimW: 0.014, rings: 3, ringA: 0.4, ringW: 0.03, ringEnd: 1.55, ringDur: 3.4, glowCol: "#4fc0e8", rimCol: "#cfeeff" };
 var BASE_WATER2_SKIN = { castle: { round: 1.05, glowSize: 0.055, ringA: 0.16, ringW: 0.016 } }; /* Harley's Base Water Lab settings per skin */
 function baseWater2Cfg(src) { var id = null; for (var k in CITY_SKINS) if (CITY_SKINS[k].src === src) id = k; var o = (id && BASE_WATER2_SKIN[id]) || {}, c = {}; for (var q in BASE_WATER2) c[q] = o[q] !== undefined ? o[q] : BASE_WATER2[q]; return c; }
 function baseWaterBuild(m, im) {
@@ -14704,11 +14704,18 @@ function baseWaterBuild(m, im) {
   if (maxb < 0) return;
   var from = Math.floor(maxb - (maxb - first) * 0.45), pw = 0, yw = from; for (y = from; y <= maxb; y++) pw = Math.max(pw, rw[y]);
   for (y = maxb; y >= from; y--) if (rw[y] >= pw * 0.97) { yw = y; break; }
-  var hw = Math.max(10, (hi[yw] - lo[yw]) / 2) * P.fpW, hh = Math.max(6, maxb - yw) * P.fpD, cx = (lo[yw] + hi[yw]) / 2, cy = yw + P.fpY * R, pexp = P.round;
-  var norm = function (dx, dy) { return Math.pow(Math.pow(Math.abs(dx) / hw, pexp) + Math.pow(Math.abs(dy) / hh, pexp), 1 / pexp); };
+  var hw = Math.max(10, (hi[yw] - lo[yw]) / 2) * P.fpW, hh = Math.max(6, maxb - yw) * P.fpD, cx = (lo[yw] + hi[yw]) / 2 + P.fpX * R, cy = yw + P.fpY * R, pexp = P.round, shape = P.shape | 0;
+  var ra = P.rot * Math.PI / 180, rc0 = Math.cos(ra), rs0 = Math.sin(ra);
+  /* v1065 shape: 0 diamond (round), 1 oval, 2 rounded box, 3 boat (oval with one end pointed by taper, - = left); turned by rot degrees */
+  var norm = function (dx, dy) {
+    var X = dx * rc0 + dy * rs0, Y = -dx * rs0 + dy * rc0, q = pexp;
+    if (shape === 1) q = 2; else if (shape === 2) q = Math.max(4, pexp * 2.5); else if (shape === 3) q = (X * P.taper > 0) ? 2 - 0.95 * Math.abs(P.taper) : 2;
+    return Math.pow(Math.pow(Math.abs(X) / hw, q) + Math.pow(Math.abs(Y) / hh, q), 1 / q);
+  };
   var hex = function (cc) { return [parseInt(cc.slice(1, 3), 16), parseInt(cc.slice(3, 5), 16), parseInt(cc.slice(5, 7), 16)]; };
   var mk = function (padX, fn) {
-    var padY = padX * hh / hw, W = Math.ceil(2 * (hw + padX)), H = Math.ceil(2 * (hh + padY)), c = document.createElement("canvas"); c.width = W; c.height = H;
+    var sc = 1 + padX / hw, bw = Math.sqrt(Math.pow(hw * rc0, 2) + Math.pow(hh * rs0, 2)) * sc, bh = Math.sqrt(Math.pow(hw * rs0, 2) + Math.pow(hh * rc0, 2)) * sc; /* outermost level = footprint scaled by sc, turned */
+    var W = Math.ceil(2 * bw) + 2, H = Math.ceil(2 * bh) + 2, c = document.createElement("canvas"); c.width = W; c.height = H;
     var x = c.getContext("2d"), d = x.createImageData(W, H), o = d.data, ox = W / 2, oy = H / 2;
     for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) { var px = fn((norm(xx + 0.5 - ox, yy + 0.5 - oy) - 1) * hw); if (!px) continue; var i = (yy * W + xx) * 4; o[i] = px[0]; o[i + 1] = px[1]; o[i + 2] = px[2]; o[i + 3] = px[3]; }
     x.putImageData(d, 0, 0);
