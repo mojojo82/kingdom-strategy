@@ -1091,3 +1091,7 @@
 - Originals: art/originals/cards_grid_18.png + art/originals/cards/01..18_*.png. In game: CARD_ART_BUILTIN (180px webp), matched by card name (follows the card if slots move), else its default slot; a slot renamed to something else shows no picture. An admin upload (shared art) still wins.
 - To swap in a hi-res picture later: replace that card's entry in CARD_ART_BUILTIN (keep the original in art/originals/cards/).
 - Test: new g245_card_art.js.
+
+## v1036 - Stone tile in the Overlord Profile slots (TEST)
+- Harley sent a stone tile (white background) for the 6 blank squares beside the fortress on the Overlord Profile: white cut out (flood fill from the edges), squared, 124px webp (GP_SLOT_STONE). Top-left slot full size, top-right 80% ("Keep both. Push them into the game. I need to spend some time looking at them"). Display only; the other 4 stay empty.
+- Original: art/originals/profile_slot_stone.png.
