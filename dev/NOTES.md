@@ -1163,3 +1163,10 @@
 - Harley (screenshot): foam should only be along the ship's hull bottom edge (bow tip to stern); parts with foam were above water. Also visible: white background left between sails/rigging.
 - Base water: a skin can have waterLine {x0, x1} (fractions of picture width); baseWaterBuild then starts foam/ripples only from the hull's bottom edge between x0 and x1 and draws nothing above that edge. Ghost Galleon: { x0: 0.29, x1: 0.93 } (bow tip -> stern; excludes the bowsprit, its hanging chain and lantern). Other skins unchanged.
 - Art: enclosed white background patches (between sails, under the bowsprit, between deck rails) cut out too; the white crossbones on the flag kept.
+
+## v1051 - Ghost Galleon march ship (3D, from Harley's .glb) (TEST)
+- Harley sent the Meshy AI "Haunted Pirate Ship" .glb (46 MB, one mesh of 1.3M triangles, 3 textures): "delete those rocks and then add the glb into the game as another march skin" / "decimate it into soup".
+- The 6 rock formations were separate mesh pieces at ground level -> removed. Decimated by vertex clustering to ~4.6k triangles (same as the Voidspire), base-colour texture baked into per-vertex colours. Embedded as PIRATE3D_MODEL (~60 KB). Bow points -X like the Voidspire, so it steers the same.
+- The march WebGL renderer now holds several models (marchGL.models: void, pirate; one buffer set each, bound per ship) and a per-vertex colour mode (uVC, lit, both sides lit for the sails). MARCH_SKINS entry "Ghost Galleon" (model: "pirate", size 1.15, own thumbnail rendered from the model).
+- Tools (no libraries): dev/glb/. Original .glb in art/originals/.
+- Checked headless: both models draw with no WebGL errors (the headless screenshot can't capture the 3D layer, so it still needs a look on a phone). g249 passes.
