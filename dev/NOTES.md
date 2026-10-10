@@ -992,3 +992,13 @@
 - Buildings: in "Next:" each cost you can't pay is red. The Upgrade/Build button is no longer greyed-out-dead: when something is missing it's dimmed but tappable and opens a checklist (same brown popup as research): required buildings (Lv needed / you have), "A free builder" (or which building is busy and how long), and each resource (need / you have / red −shortfall), ✓ or ✗ on every line. Locked buildings get a "🔒 Requirements" button with the same list. When nothing's missing the button upgrades as before.
 - Research popup: if you can't research yet it lists RP and the extra resource (need / have / −short) and a busy research slot.
 - Test: new g237_needs.js (gold 120 → only gold ✗ "−3,280", no upgrade; enough gold → upgrades; second building → "free builder ✗ Busy: Town Hall (1h left)").
+
+### v1023 — the Backpack (TEST)
+- Harley: a little brown backpack on Conquest and the World map; all consumables go here, in categories. Resource chests of different levels come next (Harley: fixed amounts per level; he'll send Kingshot's chest details - none found online beyond "1K Bread"-style packs). The red top-bar bag stays as the read-only overview of what you own.
+- New brown backpack icon (inline SVG, our dark outline + gold buckle): World map button above the Idle Chest (same look as the other map buttons), and a small one under Stats in Conquest. Both open the Backpack: brown popup, tabs Resources / Speedups / Items / Heroes, item grid with counts, and a detail bar for the picked item:
+  - speedups list every running timer they can shorten (building / training / research) with a −1h button each;
+  - draw tickets → Go (Weapon Draw), Conquest Books → Go (Heroes), hero shards (Heroes tab) → Go (Heroes);
+  - Resources says "No resource chests yet" until chests exist.
+- Opens on the first tab that has something. Refreshes only when something changes (timers tick on their own), so taps never land on a rebuilt button.
+- `BAG_ITEMS` = { id, cat, icon, name, count(), desc, use() / go() } - add chests there.
+- Test: new g238_backpack.js.

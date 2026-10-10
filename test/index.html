@@ -2001,6 +2001,25 @@
   /* v1002: idle rewards (the away bucket) on the world map, same look as the mailbox, with a fill bar; glows when there's something to collect */
   #mapIdleBtn { display:none; position:absolute; right:10px; top:148px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
   body[data-screen="world"] #mapIdleBtn { display:flex; }
+  /* v1023 (Harley): Backpack - all consumables in categories. Brown backpack on the World map (above the Idle Chest) and in Conquest (under Stats) */
+  #mapBagBtn { display:none; position:absolute; right:10px; top:204px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
+  body[data-screen="world"] #mapBagBtn { display:flex; } #mapBagBtn svg { width:32px; height:32px; }
+  .idle-bag-btn { position:absolute; top:34px; left:12px; z-index:2; width:40px; height:40px; padding:0; border:2px dashed #c9a24a; border-radius:9px; background:rgba(15,21,32,.55); cursor:pointer; display:flex; align-items:center; justify-content:center; } .idle-bag-btn svg { width:28px; height:28px; }
+  #bagPop { position:fixed; inset:0; z-index:9450; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); }
+  #bagPop .bg-box { position:relative; width:min(360px,92vw); max-height:86vh; display:flex; flex-direction:column; background:linear-gradient(#5a4128,#3b2a17); border:2px solid #b98a4c; border-radius:12px; padding:12px; color:#f3e3c3; box-shadow:0 8px 30px rgba(0,0,0,.6); }
+  #bagPop .bg-t { font-family:Georgia,'Times New Roman',serif; font-style:italic; font-weight:800; font-size:22px; color:#ffd978; text-align:center; margin-bottom:8px; }
+  #bagPop .bg-x { position:absolute; top:6px; right:8px; background:none; border:0; padding:4px 8px; font-size:18px; color:#d8c29a; cursor:pointer; }
+  #bagPop .bg-tabs { display:flex; gap:4px; margin-bottom:8px; } #bagPop .bg-tab { flex:1; text-align:center; padding:6px 2px; border-radius:8px; font-size:11.5px; font-weight:800; background:rgba(0,0,0,.3); border:1px solid #6b5730; color:#d8c29a; cursor:pointer; }
+  #bagPop .bg-tab.on { background:#f0c95f; color:#3b2a17; border-color:#f0c95f; }
+  #bagPop .bg-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; background:rgba(0,0,0,.28); border:1px dashed #b98a4c; border-radius:10px; padding:8px; min-height:180px; align-content:start; overflow:auto; }
+  #bagPop .bg-it { position:relative; background:rgba(0,0,0,.35); border:1px solid rgba(185,138,76,.6); border-radius:8px; padding:6px 2px 4px; text-align:center; font-size:24px; cursor:pointer; min-width:0; }
+  #bagPop .bg-it.sel { border-color:#f0c95f; box-shadow:0 0 0 2px rgba(240,201,95,.4); } #bagPop .bg-it .ri { width:28px; height:28px; }
+  #bagPop .bg-it small { display:block; font-size:9px; color:#d8c29a; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #bagPop .bg-it b { position:absolute; right:3px; bottom:16px; font-size:11px; color:#fff; text-shadow:0 1px 2px #000; }
+  #bagPop .bg-empty { grid-column:1/-1; font-size:12px; color:#d8c29a; padding:24px 6px; text-align:center; }
+  #bagPop .bg-use { margin-top:10px; font-size:12px; min-height:44px; } #bagPop .bg-use .bg-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+  #bagPop .bg-use button.bg-go { background:#2bb3d9; color:#06131c; border:0; border-radius:8px; font-weight:800; padding:8px 18px; cursor:pointer; flex:none; }
+  #bagPop .bg-tg { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; }
   #mapIdleBtn .mmi { font-size:22px; line-height:1; margin-top:-6px; }
   #mapIdleBtn .mib { position:absolute; left:6px; right:6px; bottom:5px; height:5px; border-radius:3px; background:rgba(0,0,0,.55); overflow:hidden; }
   #mapIdleBtn .mib i { display:block; height:100%; width:0; background:linear-gradient(90deg,#c9a24a,#f0c95f); }
@@ -2036,7 +2055,8 @@
   @media (max-width:900px) { /* phones: sit just above the chat bar (it covers the bottom of the map), and keep the 🔥 server chip off the bottom nav */
     body[data-screen="world"] #mapReconBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
     body[data-screen="world"] #mapMailBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); } /* v929: mailbox above recon */
-    body[data-screen="world"] #mapIdleBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 112px); } /* v1002: idle rewards above the mailbox */
+    body[data-screen="world"] #mapIdleBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 112px); }
+    body[data-screen="world"] #mapBagBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 168px); } /* v1023: backpack above the Idle Chest */ /* v1002: idle rewards above the mailbox */
     #ksFbBadge { bottom:calc(var(--bnH,86px) + 54px) !important; z-index:39 !important; }
     body[data-screen="world"] #mapCoords { position:fixed; bottom:calc(var(--bnH,86px) + 46px + 10px); z-index:39; }
     body[data-screen="world"] #mapMailBtn, body[data-screen="world"] #mapReconBtn, html.ks-mail-on body[data-screen="world"] #mapReconBtn { top:auto; }
@@ -2732,7 +2752,7 @@
             <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
             <div id="ksEvDock"></div>
             <button id="mapReconBtn" type="button" title="Intel &amp; Recon" aria-label="Intel and Recon"><span class="mmi">🛰️</span></button>
-            <button id="mapIdleBtn" type="button" title="Idle Chest" aria-label="Idle Chest"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
+            <button id="mapBagBtn" type="button" title="Backpack" aria-label="Backpack"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#3b2a17" stroke-width="5" stroke-linecap="round"/><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#a87440" stroke-width="2.5" stroke-linecap="round"/><rect x="11" y="14" width="42" height="44" rx="10" fill="#8a5a2b" stroke="#3b2a17" stroke-width="3"/><rect x="17" y="34" width="30" height="18" rx="5" fill="#6b4220" stroke="#3b2a17" stroke-width="2.5"/><path d="M13 26 Q32 34 51 26 L51 20 Q51 15 46 15 L18 15 Q13 15 13 20 Z" fill="#a8703a" stroke="#3b2a17" stroke-width="2.5" stroke-linejoin="round"/><rect x="28" y="24" width="8" height="10" rx="2" fill="#f0c95f" stroke="#3b2a17" stroke-width="2"/><line x1="32" y1="38" x2="32" y2="48" stroke="#3b2a17" stroke-width="2" opacity=".6"/><path d="M16 18 Q14 22 15 28" stroke="#c99560" stroke-width="2" fill="none" opacity=".7"/></svg></button><button id="mapIdleBtn" type="button" title="Idle Chest" aria-label="Idle Chest"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
             <div id="mapviewport">
               <div id="mapworld">
                 <div id="mapMarchLayer"></div>
@@ -10900,7 +10920,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1022"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1023"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25673,6 +25693,61 @@ function attachStatsButton(ph, bid) { // v703: shared by Conquest (spacer) and A
   btn.onclick = function () { if (pop) close(); else open(); };
 }
 attachStatsButton(document.getElementById("idleSkillSpacer"), "idleStatsBtn");
+/* v1023 (Harley): the Backpack - every consumable in one place, by category, with a Use button. Resource chests come next (Harley is sending the Kingshot info);
+   BAG_ITEMS is the list to add them to: { id, cat, icon, name, count(), desc, use() }. The red bag in the top bar stays as the "what I own" overview. */
+var BAG_SVG = document.getElementById("mapBagBtn") ? document.getElementById("mapBagBtn").innerHTML : "🎒";
+var BAG_CATS = [["res", "Resources"], ["speed", "Speedups"], ["items", "Items"], ["heroes", "Heroes"]];
+function bagSpeedUse(kind) { /* the timers this speedup can shorten, each with its own button (handled by the shared [data-su] click handler) */
+  var st = game.state, out = "";
+  Object.keys(st.buildings).forEach(function (k) { var b = st.buildings[k]; if (b.upgrading && game.speedupTargets(kind, "build")) out += bagTarget("🔨 " + BUILDING_DEFS[k].name + " → Lv " + b.upgrading.toLevel, b.upgrading.finishAt, kind, "build", k);
+    if (b.queue && b.queue.length && game.speedupTargets(kind, "train")) out += bagTarget("⚔️ Training at " + BUILDING_DEFS[k].name, b.queue[b.queue.length - 1].finishAt, kind, "train", k); });
+  if (st.researchQueue && game.speedupTargets(kind, "research")) out += bagTarget("🔬 " + TECH_DEFS[st.researchQueue.key].name + " Lv " + st.researchQueue.toLevel, st.researchQueue.finishAt, kind, "research", "");
+  return out || '<div style="opacity:.8;margin-top:6px">Nothing ' + (kind === "construction_1h" ? "is being built" : "is running") + ' right now.</div>';
+}
+function bagTarget(label, finishAt, kind, what, key) { return '<div class="bg-tg"><span>' + label + '<br><small style="opacity:.75" data-bfin="' + finishAt + '">' + fmtTime(Math.max(0, (finishAt - vnow()) / 1000)) + ' left</small></span><button type="button" class="su-btn" data-su="' + kind + '" data-suw="' + what + '" data-suk="' + key + '">−1h</button></div>'; }
+var BAG_ITEMS = [
+  { id: "su_con", cat: "speed", icon: '<span style="font-size:24px">🔨</span>', name: "1h Construction speedup", count: function () { return (game.state.speedups || {}).construction_1h || 0; }, desc: "Takes 1 hour off a building upgrade.", use: function () { return bagSpeedUse("construction_1h"); } },
+  { id: "su_gen", cat: "speed", icon: '<span style="font-size:24px">⏩</span>', name: "1h Speedup", count: function () { return (game.state.speedups || {}).general_1h || 0; }, desc: "Takes 1 hour off anything: building, training or research.", use: function () { return bagSpeedUse("general_1h"); } },
+  { id: "tickets", cat: "items", icon: function () { return ico("ticket"); }, name: "Weapon draw ticket", count: function () { return game.state.weaponTickets || 0; }, desc: "One draw in the Weapon Draw.", go: function () { setScreen("more", "weapons"); } },
+  { id: "books", cat: "items", icon: function () { return ico("books"); }, name: "Conquest Books", count: function () { return (game.state.idle && game.state.idle.conquestBooks) || 0; }, desc: "Levels up your heroes' skills.", go: function () { setScreen("heroes"); } }
+];
+function bagItemsFor(cat) {
+  var list = BAG_ITEMS.filter(function (it) { return it.cat === cat && it.count() > 0; });
+  if (cat === "heroes") Object.keys(game.state.heroes).forEach(function (k) { var h = game.state.heroes[k], d = HERO_DEFS[k]; if (d && h && (h.fragments | 0) > 0 && d.class !== "governor") list.push({ id: "shards_" + k, cat: "heroes", icon: '<span style="font-size:24px">' + (d.icon || "🧩") + '</span>', name: d.name + " shards", count: function () { return h.fragments | 0; }, desc: "Shards for " + d.name + ": recruit or add stars.", go: function () { setScreen("heroes"); } }); });
+  return list;
+}
+var bagState = { cat: "speed", sel: null };
+function bagRender() {
+  var pop = document.getElementById("bagPop"); if (!pop || pop.style.display !== "flex") return;
+  var items = bagItemsFor(bagState.cat), sel = items.filter(function (x) { return x.id === bagState.sel; })[0] || items[0] || null; bagState.sel = sel ? sel.id : null;
+  var grid = items.map(function (it) { var ic = typeof it.icon === "function" ? it.icon() : it.icon; return '<div class="bg-it' + (sel && it.id === sel.id ? " sel" : "") + '" data-bi="' + it.id + '">' + ic + '<b>x' + fmtCompact(it.count()) + '</b><small>' + escapeHtml(it.name) + '</small></div>'; }).join("");
+  if (!grid) grid = '<div class="bg-empty">' + (bagState.cat === "res" ? "No resource chests yet." : "Nothing here yet.") + '</div>';
+  var use = sel ? '<div class="bg-row"><span><b>' + escapeHtml(sel.name) + '</b> × ' + fmt(sel.count()) + '<br><span style="opacity:.85">' + escapeHtml(sel.desc) + '</span></span>' + (sel.go ? '<button type="button" class="bg-go" data-bgo="1">Go</button>' : "") + '</div>' + (sel.use ? sel.use() : "") : "";
+  pop.querySelector(".bg-tabs").innerHTML = BAG_CATS.map(function (c) { return '<span class="bg-tab' + (c[0] === bagState.cat ? " on" : "") + '" data-bc="' + c[0] + '">' + c[1] + '</span>'; }).join("");
+  pop.querySelector(".bg-grid").innerHTML = grid; pop.querySelector(".bg-use").innerHTML = use;
+}
+function bagOpen() {
+  var pop = document.getElementById("bagPop");
+  if (!pop) { pop = document.createElement("div"); pop.id = "bagPop"; pop.innerHTML = '<div class="bg-box"><button class="bg-x" aria-label="Close">✕</button><div class="bg-t">Backpack</div><div class="bg-tabs"></div><div class="bg-grid"></div><div class="bg-use"></div></div>'; document.body.appendChild(pop);
+    pop.addEventListener("click", function (e) { var t = e.target;
+      if (t === pop || (t.closest && t.closest(".bg-x"))) { pop.style.display = "none"; return; }
+      var c = t.closest && t.closest("[data-bc]"); if (c) { bagState.cat = c.getAttribute("data-bc"); bagState.sel = null; bagRender(); return; }
+      var it = t.closest && t.closest("[data-bi]"); if (it) { bagState.sel = it.getAttribute("data-bi"); bagRender(); return; }
+      if (t.closest && t.closest("[data-bgo]")) { var s2 = bagItemsFor(bagState.cat).filter(function (x) { return x.id === bagState.sel; })[0]; pop.style.display = "none"; if (s2 && s2.go) s2.go(); return; }
+      if (t.closest && t.closest("[data-su]")) setTimeout(bagRender, 50); /* a speedup was used */
+    }); }
+  if (!bagItemsFor(bagState.cat).length) { var firstFull = BAG_CATS.filter(function (c) { return bagItemsFor(c[0]).length; })[0]; if (firstFull) bagState.cat = firstFull[0]; }
+  pop.style.display = "flex"; bagRender();
+}
+var bagSig = "";
+setInterval(function () { /* refresh only when something changed (so taps never land on a rebuilt button); the timers tick on their own */
+  var pop = document.getElementById("bagPop"); if (!pop || pop.style.display !== "flex") return;
+  var st = game.state, sig = JSON.stringify([bagState, BAG_CATS.map(function (c) { return bagItemsFor(c[0]).map(function (x) { return x.id + x.count(); }); }), Object.keys(st.buildings).map(function (k) { var b = st.buildings[k]; return (b.upgrading ? b.upgrading.finishAt : 0) + "/" + (b.queue ? b.queue.length : 0); }), st.researchQueue && st.researchQueue.finishAt]);
+  if (sig !== bagSig) { bagSig = sig; bagRender(); return; }
+  [].forEach.call(pop.querySelectorAll("[data-bfin]"), function (e) { e.textContent = fmtTime(Math.max(0, (+e.getAttribute("data-bfin") - vnow()) / 1000)) + " left"; });
+}, 1000);
+(function () { var mb = document.getElementById("mapBagBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); bagOpen(); };
+  var sp = document.getElementById("idleSkillSpacer"); if (sp && !sp.querySelector(".idle-bag-btn")) { var bb = document.createElement("button"); bb.type = "button"; bb.className = "idle-bag-btn"; bb.title = "Backpack"; bb.setAttribute("aria-label", "Backpack"); bb.innerHTML = BAG_SVG; bb.onclick = bagOpen; sp.appendChild(bb); } })();
 // ================= v727: Forge UI (Energon, Equipment, idle rewards bucket) =================
 var forgeAuto = false, forgeLast = null, forgeDetailId = null, forgeDetailSlot = null, forgePanelEl = null, forgeBtnEl = null;
 var FG_STAT_NAMES = { skill: "Skill Damage", boss: "Boss Damage", support: "Support Power" };
