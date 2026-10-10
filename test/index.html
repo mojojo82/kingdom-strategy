@@ -635,7 +635,6 @@
   #mapMarchLayer { position:absolute; top:0; left:0; pointer-events:none; z-index:3; }
   /* v1064: sea whitecaps (Whitecap Lab) + faint light/dark patches, under everything else on the map */
   #mapSeaLayer { position:absolute; top:0; left:0; pointer-events:none; z-index:0; }
-  #mapSeaTint { position:absolute; top:0; left:0; pointer-events:none; background-repeat:repeat; display:none; }
   .wcap { position:absolute; overflow:hidden; pointer-events:none; }
   .wcap img { display:block; height:100%; max-width:none; will-change:transform; }
   @keyframes wcapRun { from { transform:translateX(0); } to { transform:translateX(-100%); } }
@@ -2857,7 +2856,7 @@
             <button id="mapBagBtn" type="button" title="Backpack" aria-label="Backpack"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#3b2a17" stroke-width="5" stroke-linecap="round"/><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#a87440" stroke-width="2.5" stroke-linecap="round"/><rect x="11" y="14" width="42" height="44" rx="10" fill="#8a5a2b" stroke="#3b2a17" stroke-width="3"/><rect x="17" y="34" width="30" height="18" rx="5" fill="#6b4220" stroke="#3b2a17" stroke-width="2.5"/><path d="M13 26 Q32 34 51 26 L51 20 Q51 15 46 15 L18 15 Q13 15 13 20 Z" fill="#a8703a" stroke="#3b2a17" stroke-width="2.5" stroke-linejoin="round"/><rect x="28" y="24" width="8" height="10" rx="2" fill="#f0c95f" stroke="#3b2a17" stroke-width="2"/><line x1="32" y1="38" x2="32" y2="48" stroke="#3b2a17" stroke-width="2" opacity=".6"/><path d="M16 18 Q14 22 15 28" stroke="#c99560" stroke-width="2" fill="none" opacity=".7"/></svg></button><button id="mapIdleBtn" type="button" title="Idle Chest" aria-label="Idle Chest"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
             <div id="mapviewport">
               <div id="mapworld">
-                <div id="mapSeaLayer"><div id="mapSeaTint"></div></div><div id="mapPathLayer"></div><div id="mapMarchLayer"></div>
+                <div id="mapSeaLayer"></div><div id="mapPathLayer"></div><div id="mapMarchLayer"></div>
               </div>
             </div>
             <div id="tileinfo"></div>
@@ -11226,7 +11225,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1067"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1068"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14758,8 +14757,8 @@ function baseWaterHtml(src, widthMul, isoBottomTiles, marginLeft, tileId) {
    so the cost is the same however much sea is showing. They fade out when the map is zoomed out past fadeZoom (px per tile) and stop when the map isn't shown. */
 var WHITECAP_KEY = "kingdom_whitecaps_v1", whitecapsOn = true;
 try { whitecapsOn = localStorage.getItem(WHITECAP_KEY) !== "0"; } catch (e) {}
-var WHITECAPS = { fadeZoom: 22, count: 5, size: 3.2, thin: 6.2, opacity: 0.44, life: 3.1, gap: 1.2, drift: 0.62, breakup: 0.81, soft: 0.1, crumble: 0.7, frames: 40, variants: 6, tint: 0.15, tintSize: 6.5, col: "#cfe8f6" }; /* Harley's Whitecap Lab settings */
-var wcap = { strips: [], building: false, els: [], tintUrl: "", lastZoom: -1 };
+var WHITECAPS = { fadeZoom: 22, count: 5, size: 3.2, thin: 6.2, opacity: 0.44, life: 3.1, gap: 1.2, drift: 0.62, breakup: 0.81, soft: 0.1, crumble: 0.7, frames: 40, variants: 6, col: "#cfe8f6" }; /* v1068: sea light/dark patches removed (Harley: crash + lag) */ /* Harley's Whitecap Lab settings */
+var wcap = { strips: [], building: false, els: [], lastZoom: -1 };
 function wcNoise(seed) {
   var P = new Float32Array(256 * 256), s = seed * 7919 + 1; for (var i = 0; i < P.length; i++) { s = (s * 16807) % 2147483647; P[i] = s / 2147483647; }
   var v = function (x, y) { var xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi; fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
@@ -14796,13 +14795,6 @@ function wcBuildStrip(v) {
   var st = { N: N, ar: H / W, url: "" }; try { cvs.toBlob(function (bl) { st.url = bl ? URL.createObjectURL(bl) : cvs.toDataURL("image/png"); whitecapSync(); }, "image/png"); } catch (e) { st.url = cvs.toDataURL("image/png"); }
   return st;
 }
-function wcBuildTint() { /* seamless soft light/dark patches */
-  var W = 192, H = 192, c = document.createElement("canvas"); c.width = W; c.height = H; var x = c.getContext("2d"), d = x.createImageData(W, H), o = d.data;
-  var grid = function (G, sd) { var g = [], s = sd; for (var i = 0; i < G * G; i++) { s = (s * 16807) % 2147483647; g.push(s / 2147483647); } return function (u, v) { var xi = Math.floor(u), yi = Math.floor(v), fx = u - xi, fy = v - yi; fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); var A = g[(yi % G) * G + xi % G], B = g[(yi % G) * G + (xi + 1) % G], Cc = g[((yi + 1) % G) * G + xi % G], D = g[((yi + 1) % G) * G + (xi + 1) % G]; return A + (B - A) * fx + (Cc - A) * fy + (A - B - Cc + D) * fx * fy; }; };
-  var g1 = grid(4, 7), g2 = grid(8, 13);
-  for (var y = 0; y < H; y++) for (var q = 0; q < W; q++) { var v = g1(q / W * 4, y / H * 4) * 0.7 + g2(q / W * 8, y / H * 8) * 0.3 - 0.5, i = (y * W + q) * 4; o[i] = v > 0 ? 120 : 6; o[i + 1] = v > 0 ? 190 : 30; o[i + 2] = v > 0 ? 230 : 60; o[i + 3] = Math.round(Math.min(1, Math.abs(v) * 2.6) * 255); }
-  x.putImageData(d, 0, 0); return c.toDataURL("image/png");
-}
 function wcIsOpenSea(px, py) { /* a map point (world px) that's on an empty sea tile with no land near it */
   var map = game.state.map, tx, ty;
   if (mapIso) { var g = isoGeom(), a = (px - g.offX) / g.r2, b = (py - g.offY) / (g.r2 * ISO_K); tx = Math.round((a + b) / 2); ty = Math.round((b - a) / 2); }
@@ -14826,14 +14818,9 @@ function wcPlace(el, first) {
 }
 // called from renderVisibleTiles (scroll / zoom / redraw) and the switch: keeps the right number of whitecaps alive, builds the pictures the first time
 function whitecapSync() {
-  var C = WHITECAPS, layer = document.getElementById("mapSeaLayer"), tint = document.getElementById("mapSeaTint"), world = document.getElementById("mapworld"); if (!layer || !world) return;
+  var C = WHITECAPS, layer = document.getElementById("mapSeaLayer"), world = document.getElementById("mapworld"); if (!layer || !world) return;
   var showing = whitecapsOn && deviceIsActive && game.state && game.state.map && document.body.getAttribute("data-screen") === "world";
   var u = tilePxZ() + gapPxZ(), fade = wcSm(C.fadeZoom * 0.75, C.fadeZoom * 1.15, u);
-  if (tint) {
-    if (showing && C.tint > 0) { if (!wcap.tintUrl) { wcap.tintUrl = wcBuildTint(); tint.style.backgroundImage = "url(" + wcap.tintUrl + ")"; }
-      tint.style.display = "block"; tint.style.width = world.style.width; tint.style.height = world.style.height; tint.style.opacity = C.tint; tint.style.backgroundSize = (C.tintSize * u * 4).toFixed(0) + "px"; }
-    else tint.style.display = "none";
-  }
   if (showing && !wcap.strips.length && !wcap.building) { /* build the flip-books a bit at a time, off the main beat */
     wcap.building = true; var v = 0, step = function () { wcap.strips.push(wcBuildStrip(v)); v++; if (v < C.variants) setTimeout(step, 30); else wcap.building = false; }; setTimeout(step, 400); return;
   }

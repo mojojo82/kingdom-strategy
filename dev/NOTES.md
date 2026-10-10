@@ -1257,3 +1257,8 @@
 
 ## v1067 - Watchtower base water from Base Water Lab (TEST)
 - BASE_WATER2_SKIN.tower = round 1.15, glow 0.49, glowSize 0.05, rim 0.17, ringA 0.18, ringW 0.016, ringEnd 1.26, ringDur 4.8 (tighter glow, short faint slow rings). Castle and Ghost Galleon keep their earlier settings (this paste only had the Watchtower). g200 passes.
+
+## v1068 - Sea light/dark patches removed (TEST)
+- Harley: the TEST page crashed on his phone ("A problem repeatedly occurred" = iOS killed the page, usually out of memory), and zooming lagged badly. He asked to remove the dark patches.
+- Likely cause: v1064's #mapSeaTint was one element the size of the whole world (115k+ px wide at normal zoom) with opacity, so it can get its own huge backing layer, and it was resized/repainted on every zoom. Removed the element, its CSS, wcBuildTint and the tint settings. Whitecaps are unchanged (5 small flip-books).
+- Still to watch: if lag remains, the other new animated layers are the base-water rings (3 per base in view). Both Dev Tools switches (base water, whitecaps) can isolate it. g252 (updated: no tint layer) and g200 pass.
