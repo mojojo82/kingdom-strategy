@@ -1213,3 +1213,7 @@
 - Now the water is built as one vertex list per frame and drawn by WebGL in the ship canvas itself: soft foam blobs and soft wake/ripple lines are quads, one draw call under the ships and one for the near-side foam over the hull. No extra screen layers or 2D canvases. Building the list takes about 1 ms of JS for 8-40 ships (the light version kicks in from 9 ships).
 - Trade-off: the wake shares the ships' layer, so it now draws over islands and bases instead of under them.
 - Same numbers (MARCH_WATER_DEF / MARCH_WATER), same Dev Tools on/off switch. g249, g250 and g251 (updated to read the WebGL canvas) pass. fps on a real phone not measured.
+
+## v1059 - Ghost Galleon wake from Wake Lab (TEST)
+- Harley pasted his Wake Lab settings. The only change from the defaults is the Ghost Galleon: trail length 2.5 tiles (was 7) and strength 0.16 (was 0.75). Voidspire keeps the defaults.
+- MARCH_WATER.pirate = { wakeLen: 2.5, wakeOp: 0.16 }. (Wake Lab's "bob" isn't used in the game; the game keeps its own Dev Tools bob slider.) g251 passes.
