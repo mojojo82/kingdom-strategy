@@ -1038,3 +1038,9 @@
 - Building cap = Kingshot's table (TRAIN_CAP_KS) x TRAIN_CAP_MULT 7.5: Lv1 128, Lv10 420, Lv20 945, Lv30 1,568.
 - New Growth research Camp Expansion (effect trainCapFlat): +50 per level, +500 at level 10. Lv30 + full research = 2,068 per batch.
 - Test: g240_train_cap.js updated (Lv10 420, Lv30 1,568, full 2,068).
+
+## v1029 - No info card for empty tiles (TEST)
+- Harley: "No need to show an info card for an empty tile" (screenshot: the "Too Close to a City" card), then "Open land card remove also"; chose a small Teleport button instead (Kingshot style).
+- Empty land too close to a city: tapping it selects nothing, so no card.
+- Open land: no card, no close/bookmark/share; just a small cyan "🌀 Teleport" button above the tile (#tileinfo.tp-mini, 150px), with a small note if marches are still out. `tileIsOpenLand(id)`.
+- Test: new g241_empty_tile.js.

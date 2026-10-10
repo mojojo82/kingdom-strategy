@@ -1,0 +1,40 @@
+/* v1029: empty land too close to a city: no card; open land: only a small Teleport button (no card). Run: node dev/simfork/g241_empty_tile.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g241@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => setScreen("world")); await P.waitForTimeout(800);
+  const o = await P.evaluate(() => {
+    const h = tileXY(game.state.homeTileId), ids = []; for (let dx = -12; dx <= 12; dx++) for (let dy = -12; dy <= 12; dy++) ids.push((h[0] + dx) + "," + (h[1] + dy)); const el = document.getElementById("tileinfo");
+    const isEmpty = (id) => { const t = mapTileById(game.state.map, id); return t && t.type === "empty" && !isTileOccupied(id) && id !== game.state.homeTileId; };
+    const close = ids.find((id) => isEmpty(id) && isTileTooCloseToCity(id)), open = ids.find((id) => isEmpty(id) && !isTileTooCloseToCity(id));
+    selectedTile = close; renderVisibleTiles(); renderTileInfo();
+    const r1 = { sel: selectedTile, card: el.classList.contains("has-sel"), txt: /Too Close/.test(el.innerText) };
+    selectedTile = open; renderVisibleTiles(); renderTileInfo();
+    const r2 = { mini: el.classList.contains("tp-mini"), tp: !!document.getElementById("teleportBtn"), noCard: !/Open Land/.test(el.innerText) && !el.querySelector(".ti-close") && !el.querySelector(".ti-acts"), w: Math.round(el.getBoundingClientRect().width) };
+    window.__open = open; return { r1, r2 };
+  });
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "empty_tile.png" });
+  o.after = await P.evaluate(() => { selectedTile = game.state.homeTileId; renderVisibleTiles(); renderTileInfo(); const el = document.getElementById("tileinfo"); return { mini: el.classList.contains("tp-mini"), close: !!el.querySelector(".ti-close") }; });
+  console.log(JSON.stringify(o), errs);
+  assert.deepStrictEqual(o.r1, { sel: null, card: false, txt: false }, "too-close empty tile: no card");
+  assert.ok(o.r2.mini && o.r2.tp && o.r2.noCard && o.r2.w <= 160, "open land: just a small Teleport button");
+  assert.deepStrictEqual(o.after, { mini: false, close: true }, "a normal card still works after");
+  assert.deepStrictEqual(errs, []);
+  await b.close(); console.log("g241 OK");
+})().catch((e) => { console.error(e); process.exit(1); });

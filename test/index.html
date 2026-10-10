@@ -858,6 +858,10 @@
   #tileinfo.pretty .tic-btn { display:block; width:100%; margin:5px 0 3px; font-family:var(--bodyfont) !important; background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; padding:7px 12px; font-size:13px; font-weight:800; text-shadow:none; -webkit-text-stroke:0; box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 2px 0 #1f6c80; } /* v854: same shape as the city Upgrade buttons, in the game's cyan */
   #tileinfo.pretty .tic-btn:active { transform:translateY(1px); box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 1px 0 #1f6c80; }
   #tileinfo.pretty .tic-btn:disabled { filter:grayscale(.8) brightness(.85); }
+  #mapviewportWrap #tileinfo.pretty.tp-mini { padding:0; border:none; background:none; box-shadow:none; overflow:visible; }
+  #tileinfo.tp-mini .tic-btn { margin:0; box-shadow:0 3px 10px rgba(0,0,0,.55); }
+  #tileinfo.tp-mini .tp-note { text-align:center; margin-top:3px; font-size:11px; color:#f3e8cf; text-shadow:0 1px 2px #000, 0 0 4px #000; }
+  #tileinfo.tp-mini .tp-note:empty { display:none; }
   #tileinfo.pretty #copyToSimBtn { background:none !important; border:none !important; color:var(--muted) !important; text-decoration:underline; padding:2px 0 !important; }
 
   .marchcard { background:var(--panel2); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:8px; padding:10px; margin-bottom:9px; font-size:12.5px; }
@@ -10987,7 +10991,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1028"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1029"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24148,7 +24152,7 @@ function placeTileInfo() {
   if (tdiv.classList.contains("fp")) { var fpP = mapIso ? BASE_FP_R * Math.SQRT2 * (tilePxZ() + gapPxZ()) * ISO_K : (tilePxZ() + gapPxZ()) * BASE_FP_R; topRef = Math.min(topRef, t.top - fpP); botRef = t.bottom + fpP; } /* v824: card clears the whole 3x3 block */
   var cx = t.left + t.width / 2;
   if (cx < v.left || cx > v.right || t.bottom < v.top || t.top > v.bottom) { el.style.visibility = "hidden"; arrow.style.display = "none"; return; }
-  var M = TI_MARGIN, cardW = Math.min(TI_WIDTH, v.width - 2 * M);
+  var M = TI_MARGIN, cardW = Math.min(el.classList.contains("tp-mini") ? 150 : TI_WIDTH, v.width - 2 * M);
   el.style.width = cardW + "px";
   el.style.maxHeight = Math.max(80, Math.round(v.height - 2 * M - TI_ARROW - TI_GAP)) + "px";
   var cardH = el.offsetHeight;
@@ -24166,13 +24170,26 @@ function placeTileInfo() {
   arrow.style.top = Math.round((placeBelow ? top - TI_ARROW : top + cardH) - w.top) + "px";
   arrow.style.display = "block";
 }
+function tileIsOpenLand(id) { /* v1029: empty land, not a base, not blocked */
+  if (!id || id === game.state.homeTileId || isTileOccupied(id)) return false;
+  var t = mapTileById(game.state.map, id); return !!t && t.type === "empty" && !isTileTooCloseToCity(t.id);
+}
 function renderTileInfo() {
+  /* v1029 (Harley: "no need to show an info card for an empty tile"): empty land you can't teleport to (too close to a city) has nothing to do -
+     no card, nothing selected. Open land you CAN teleport to still shows its card (that's where Teleport Here lives). */
+  if (selectedTile && selectedTile !== game.state.homeTileId && !isTileOccupied(selectedTile)) {
+    var tE = mapTileById(game.state.map, selectedTile);
+    if (tE && tE.type === "empty" && isTileTooCloseToCity(tE.id)) { selectedTile = null; try { renderVisibleTiles(); } catch (e) {} }
+  }
+  var mini = tileIsOpenLand(selectedTile); /* open land: only a small Teleport button (tp-mini) - no card, close or bookmark */
   renderTileInfoInner();
   var el = document.getElementById("tileinfo");
   if (!el) return;
   el.classList.toggle("has-sel", !!selectedTile);
   el.classList.toggle("pretty", !!selectedTile);
+  el.classList.toggle("tp-mini", mini);
   placeTileInfo();
+  if (mini) return;
   if (selectedTile && !el.querySelector(".ti-close")) {
     var x = document.createElement("button"); x.className = "ti-close"; x.textContent = "✕";
     x.onclick = function () { selectedTile = null; try { renderVisibleTiles(); } catch (e) {} renderTileInfo(); };
@@ -24338,9 +24355,9 @@ function renderEmptyTileInfo(el, tile) {
     el.innerHTML = ticHtml({ id: tile.id, theme: "land", portrait: "🚫", name: "Too Close to a City", sub: "A base needs a clear 3×3 block (shown red) — pick a tile at least 3 away from other bases and the map edge." });
     return;
   }
-  el.innerHTML = ticHtml({ id: tile.id, theme: "land", portrait: "🏞️", name: "Open Land", sub: "Teleporting is free while in development" }) +
-    ((game.state.marches || []).length ? '<button id="teleportBtn" class="tic-btn" disabled>🌀 Teleport Here</button><div class="sub" style="text-align:center;margin-top:2px;">' + game.state.marches.length + ' march' + (game.state.marches.length > 1 ? 'es are' : ' is') + ' still out — teleport once ' + (game.state.marches.length > 1 ? 'they\'re' : 'it\'s') + ' home.</div>' : '<button id="teleportBtn" class="tic-btn">🌀 Teleport Here</button>') +
-    '<div class="sub" id="teleportStatus" style="margin-top:4px;text-align:center;"></div>';
+  /* v1029 (Harley: no info card for empty tiles): open land shows just a small Teleport button over the tile (Kingshot style), no card. */
+  el.innerHTML = ((game.state.marches || []).length ? '<button id="teleportBtn" class="tic-btn" disabled>🌀 Teleport</button><div class="sub tp-note">Marches still out</div>' : '<button id="teleportBtn" class="tic-btn">🌀 Teleport</button>') +
+    '<div class="sub tp-note" id="teleportStatus"></div>';
   var btn = document.getElementById("teleportBtn");
   var status = document.getElementById("teleportStatus");
   btn.onclick = function () {
