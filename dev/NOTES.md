@@ -1002,3 +1002,14 @@
 - Opens on the first tab that has something. Refreshes only when something changes (timers tick on their own), so taps never land on a rebuilt button.
 - `BAG_ITEMS` = { id, cat, icon, name, count(), desc, use() / go() } - add chests there.
 - Test: new g238_backpack.js.
+
+### v1024 — resource chests and resource packs in the Backpack (TEST)
+- Harley (screen recording of Lord Rush's backpack - "identical to Kingshot"): use that info.
+- New `state.items` (id → count, saved) and `ITEM_DEFS` (Kingshot's Bread / Iron = our Food / Gold):
+  - Resource packs: 100 / 1K / 10K / 1M of Food, Wood, Stone, Gold - added straight away.
+  - Resource Supply Chests 1K / 10K / 100K - one resource at random. Odds are a PLACEHOLDER (Food 35, Wood 35, Stone 20, Gold 10 %; shown under Details) - Harley to send the real ones from the Details screen.
+  - Custom Resource Chests Lv.1 / Lv.2 / Lv.3 - you choose: Lv.1 = 10K Food or 10K Wood or 2K Stone or 500 Gold, x10 each level (Lv.3 = 1M / 1M / 200K / 50K), same as the recording.
+  - Not done: the "Secured" custom chests (our game has no secured / unsecured resources yet).
+- Backpack Resources tab: Kingshot-style coloured tiles (grey 100, green 1K / Lv.1, blue 10K / Lv.2, purple 100K / Lv.3, gold 1M) with the amount / level on top; detail with − slider + / Max quantity, the four resource choices for Custom chests, Use (and Details for supply chests); shows what you got. Chest icons are emoji placeholders (📦 / 🧰) until there's art.
+- game.useItem(id, n, choice) / game.addItem(id, n). Admins get a "dev: + test chests & packs" link in the Backpack. No way to earn them yet (mail / events / shop to decide).
+- g238 extended (pick required, 2x Lv.2 → 200K Food, Max uses all, supply chest odds + 10K of one resource).

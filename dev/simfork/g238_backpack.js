@@ -47,5 +47,23 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(o.used.cut === 60 && o.used.left === 2 && o.used.shown === "x2", "using a construction speedup takes 1h off the Town Hall upgrade");
   assert.ok(o.items.length === 2 && /ticket/i.test(o.items[0]) && /Books/.test(o.items[1]), "tickets and books under Items");
   assert.ok(/No resource chests yet/.test(o.res), "Resources ready for chests");
+  /* v1024: chests and packs */
+  o.chest = await P.evaluate(() => { const st = game.state; ["custom_2", "supply_10000"].forEach((k) => game.addItem(k, 3)); game.addItem("res_wood_1000", 4); const f0 = st.resources.food, w0 = st.resources.wood;
+    bagState.cat = "res"; bagState.sel = "custom_2"; bagOpen(); const tiles = [...document.querySelectorAll("#bagPop .bg-it")].map((t) => t.className.replace("bg-it", "").trim() + "|" + t.innerText.replace(/\s+/g, " "));
+    document.querySelector("#bagPop [data-buse]").click(); const noPick = document.querySelector("#bagPop .bg-got").textContent, leftNoPick = st.items.custom_2;
+    document.querySelector('#bagPop [data-bp="food"]').click(); document.querySelector('#bagPop [data-bq="1"]').click(); document.querySelector("#bagPop [data-buse]").click();
+    const r1 = { food: st.resources.food - f0, left: st.items.custom_2, got: document.querySelector("#bagPop .bg-got").textContent };
+    bagState.sel = "res_wood_1000"; bagRender(); document.querySelector('#bagPop [data-bq="max"]').click(); document.querySelector("#bagPop [data-buse]").click();
+    const r2 = { wood: st.resources.wood - w0, left: st.items.res_wood_1000 || 0 };
+    bagState.sel = "supply_10000"; bagRender(); document.querySelector("#bagPop [data-bdet]").click(); const odds = document.querySelector("#bagPop .bg-tg") ? document.querySelector("#bagPop .bg-tg").innerText : "";
+    const tot0 = st.resources.food + st.resources.wood + st.resources.stone + st.resources.gold; document.querySelector("#bagPop [data-buse]").click(); const tot1 = st.resources.food + st.resources.wood + st.resources.stone + st.resources.gold;
+    return { tiles, noPick, leftNoPick, r1, r2, odds, supplyGain: tot1 - tot0, supplyLeft: st.items.supply_10000 }; });
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "backpack_chests.png" });
+  console.log(JSON.stringify(o.chest));
+  assert.ok(o.chest.tiles[0].startsWith("r2") && /Lv\.2/.test(o.chest.tiles[0]), "custom chest first, blue (Lv.2) tile");
+  assert.ok(/Pick a resource/.test(o.chest.noPick) && o.chest.leftNoPick === 3, "a Custom chest needs a pick first");
+  assert.ok(o.chest.r1.food === 200000 && o.chest.r1.left === 1 && /\+200K Food/.test(o.chest.r1.got), "2x Lv.2 Custom → 200K Food");
+  assert.ok(o.chest.r2.wood === 4000 && o.chest.r2.left === 0, "Max uses all 4 x 1K Wood");
+  assert.ok(/35%/.test(o.chest.odds) && o.chest.supplyGain === 10000 && o.chest.supplyLeft === 2, "supply chest: Details shows the odds, gives 10K of one resource");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

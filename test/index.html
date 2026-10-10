@@ -2019,6 +2019,18 @@
   #bagPop .bg-empty { grid-column:1/-1; font-size:12px; color:#d8c29a; padding:24px 6px; text-align:center; }
   #bagPop .bg-use { margin-top:10px; font-size:12px; min-height:44px; } #bagPop .bg-use .bg-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
   #bagPop .bg-use button.bg-go { background:#2bb3d9; color:#06131c; border:0; border-radius:8px; font-weight:800; padding:8px 18px; cursor:pointer; flex:none; }
+  #bagPop .bg-it.r0 { background:linear-gradient(#77706a,#4a4540); } #bagPop .bg-it.r1 { background:linear-gradient(#5f9a3e,#36621f); } #bagPop .bg-it.r2 { background:linear-gradient(#3f7fc4,#1f4f86); } #bagPop .bg-it.r3 { background:linear-gradient(#8a55c4,#552f86); } #bagPop .bg-it.r4 { background:linear-gradient(#d39a2c,#8a5a12); }
+  #bagPop .bg-it i { position:absolute; left:0; right:0; top:1px; font-style:normal; font-size:9.5px; font-weight:800; color:#fff; text-shadow:0 1px 2px #000; }
+  #bagPop .bg-it .bg-ic { display:block; margin-top:8px; line-height:28px; }
+  #bagPop .bg-qty { display:flex; align-items:center; gap:6px; margin-top:8px; } #bagPop .bg-qty input[type=range] { flex:1; min-width:0; }
+  #bagPop .bg-qty button { width:30px; height:30px; padding:0; border:1px solid #6b5730; border-radius:7px; background:#33291c; color:#f0c95f; font-weight:800; cursor:pointer; }
+  #bagPop .bg-qty .bg-n { min-width:44px; text-align:center; font-weight:800; background:rgba(0,0,0,.35); border-radius:6px; padding:5px 4px; }
+  #bagPop .bg-qty .bg-max { width:auto; padding:0 8px; font-size:11px; }
+  #bagPop .bg-pick { display:flex; gap:5px; margin-top:8px; } #bagPop .bg-pick span { flex:1; text-align:center; padding:5px 2px; border-radius:8px; border:1px solid #6b5730; background:rgba(0,0,0,.3); font-size:11px; cursor:pointer; }
+  #bagPop .bg-pick span.on { border-color:#f0c95f; background:rgba(240,201,95,.2); color:#ffe9a8; } #bagPop .bg-pick .ri { width:16px; height:16px; vertical-align:-3px; }
+  #bagPop .bg-btns { display:flex; gap:8px; margin-top:10px; } #bagPop .bg-btns button { flex:1; border:0; border-radius:8px; font-weight:800; padding:9px 6px; cursor:pointer; }
+  #bagPop .bg-btns .bg-usebtn { background:#2bb3d9; color:#06131c; } #bagPop .bg-btns .bg-det { background:#33291c; color:#f0c95f; border:1px solid #6b5730; }
+  #bagPop .bg-got { margin-top:8px; color:#7fe08a; font-weight:800; text-align:center; }
   #bagPop .bg-tg { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; }
   #mapIdleBtn .mmi { font-size:22px; line-height:1; margin-top:-6px; }
   #mapIdleBtn .mib { position:absolute; left:6px; right:6px; bottom:5px; height:5px; border-radius:3px; background:rgba(0,0,0,.55); overflow:hidden; }
@@ -5845,6 +5857,23 @@ function setCardArt(idx, dataUrl) {
   catch (e) { alert("That image is too large to save. Try a smaller picture."); return false; }
 }
 
+/* v1024 (Harley, from Lord Rush = Kingshot): backpack resource items.
+   - Resource packs: 100 / 1K / 10K / 1M of one resource, added straight away.
+   - Resource Supply Chests (1K / 10K / 100K): one resource at random (Food 35%, Wood 35%, Stone 20%, Gold 10% - placeholder odds, Harley to confirm).
+   - Custom Resource Chests Lv.1-3: you choose - Lv.1 = 10K Food or 10K Wood or 2K Stone or 500 Gold; x10 per level. (Kingshot's Bread/Iron = our Food/Gold.) */
+var ITEM_RES = ["food", "wood", "stone", "gold"], ITEM_RES_NAME = { food: "Food", wood: "Wood", stone: "Stone", gold: "Gold" };
+var SUPPLY_ODDS = { food: 35, wood: 35, stone: 20, gold: 10 };
+function itemAmtLabel(n) { return n >= 1e6 ? (n / 1e6) + "M" : n >= 1000 ? (n / 1000) + "K" : String(n); }
+var ITEM_DEFS = (function () {
+  var D = {};
+  ITEM_RES.forEach(function (r) { [100, 1000, 10000, 1000000].forEach(function (n) { D["res_" + r + "_" + n] = { kind: "res", res: r, amt: n, name: itemAmtLabel(n) + " " + ITEM_RES_NAME[r], desc: "Grants " + itemAmtLabel(n) + " " + ITEM_RES_NAME[r] + "." }; }); });
+  [1000, 10000, 100000].forEach(function (n) { D["supply_" + n] = { kind: "supply", amt: n, name: itemAmtLabel(n) + " Resource Supply Chest", desc: "Grants " + itemAmtLabel(n) + " Food, Wood, Stone or Gold (random)." }; });
+  [1, 2, 3].forEach(function (lv) { var m = Math.pow(10, lv - 1), c = { food: 10000 * m, wood: 10000 * m, stone: 2000 * m, gold: 500 * m };
+    D["custom_" + lv] = { kind: "choice", lv: lv, choice: c, name: "Lv." + lv + " Custom Resource Chest", desc: "Grants your choice of " + itemAmtLabel(c.food) + " Food, " + itemAmtLabel(c.wood) + " Wood, " + itemAmtLabel(c.stone) + " Stone or " + itemAmtLabel(c.gold) + " Gold." }; });
+  return D;
+})();
+var ITEM_ORDER = Object.keys(ITEM_DEFS).sort(function (a, b) { var A = ITEM_DEFS[a], B = ITEM_DEFS[b], k = { choice: 0, supply: 1, res: 2 };
+  return (k[A.kind] - k[B.kind]) || (A.kind === "res" ? (ITEM_RES.indexOf(A.res) - ITEM_RES.indexOf(B.res)) || (A.amt - B.amt) : (A.lv || A.amt) - (B.lv || B.amt)); });
 function createGame(opts) {
   var manualResults = !!(opts && opts.manualResults); // v748: only the real game shows Victory/Defeat screens; sims auto-resolve
   opts = opts || {};
@@ -5994,6 +6023,7 @@ function createGame(opts) {
     gauntlet: { floor: 1 }, // v798: The Gauntlet — next floor to beat (1-100; 101 = all cleared)
     td: { day: "", runs: 0, best: 0 }, // v797: Fortress Defense daily run counter
     recon: { window: -1, missions: [], nextId: 1, devShift: 0, done: 0, xp: 0 }, // v787: Intel & Recon missions (refresh every 8h of server/UTC time)
+    items: {}, /* v1024 backpack items: id -> count (ITEM_DEFS) */
     weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, lastDraw: null, // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
     weaponLevels: {}, // { weaponId: level } — missing/absent means level 1. See WEAPON_DEFS' levelMods comment.
     weaponStatOverrides: {}, // { weaponId: { cooldown?, count?, dmgPct? } } — Dev Tools "Edit Stats" per-weapon raw overrides, layered on TOP of the level-resolved stats below (see weaponLevelStats/weaponCooldownFor); a field left out of a weapon's override object falls through to its normal level-resolved value.
@@ -6168,6 +6198,20 @@ function createGame(opts) {
   /* v946: speedup items. kind = "construction_1h" (building upgrades only) or "general_1h" (anything). what = "build" | "train" | "research". Each takes 1 hour off. */
   var SPEEDUP_SEC = { construction_1h: 3600, general_1h: 3600 };
   function speedupTargets(kind, what) { return kind === "general_1h" || (kind === "construction_1h" && what === "build"); }
+  /* v1024: open / use backpack items. n = how many; choice = a resource for Custom chests. Returns { ok, got: { res: amount } } */
+  function itemRoll() { var tot = 0, r, x; for (r in SUPPLY_ODDS) tot += SUPPLY_ODDS[r]; x = Math.random() * tot; for (r in SUPPLY_ODDS) { if (x < SUPPLY_ODDS[r]) return r; x -= SUPPLY_ODDS[r]; } return "food"; }
+  function useItem(id, n, choice) {
+    var d = ITEM_DEFS[id]; n = Math.floor(n || 1); if (!state.items) state.items = {};
+    if (!d || !(n >= 1)) return { ok: false, reason: "bad_item" };
+    if ((state.items[id] || 0) < n) return { ok: false, reason: "not_enough" };
+    if (d.kind === "choice" && !d.choice[choice]) return { ok: false, reason: "pick_resource" };
+    var got = {};
+    for (var i = 0; i < n; i++) { var r = d.kind === "res" ? d.res : d.kind === "choice" ? choice : itemRoll(), a = d.kind === "choice" ? d.choice[r] : d.amt; got[r] = (got[r] || 0) + a; }
+    state.items[id] -= n; if (state.items[id] <= 0) delete state.items[id];
+    addResources(got); log("🎒 Used " + n + "x " + d.name + ": " + Object.keys(got).map(function (r) { return "+" + got[r].toLocaleString() + " " + ITEM_RES_NAME[r]; }).join(", "));
+    return { ok: true, got: got };
+  }
+  function addItem(id, n) { if (!ITEM_DEFS[id]) return false; if (!state.items) state.items = {}; state.items[id] = (state.items[id] || 0) + Math.max(0, Math.floor(n || 1)); return true; }
   function useSpeedup(kind, what, key) {
     if (!SPEEDUP_SEC[kind] || !speedupTargets(kind, what)) return { ok: false, reason: "wrong_kind" };
     if (!((state.speedups || {})[kind] > 0)) return { ok: false, reason: "none_left" };
@@ -8838,6 +8882,7 @@ function createGame(opts) {
     if (saved.gauntlet && typeof saved.gauntlet === "object") state.gauntlet = { floor: Math.max(1, Math.min(101, saved.gauntlet.floor | 0 || 1)) };
     if (saved.td && typeof saved.td === "object") state.td = { day: String(saved.td.day || ""), runs: Math.max(0, saved.td.runs | 0), best: Math.max(0, saved.td.best | 0) };
     if (saved.weaponFrags && typeof saved.weaponFrags === "object") Object.keys(saved.weaponFrags).forEach(function (wid) { var n = saved.weaponFrags[wid]; if (WEAPON_DEFS_BY_ID[wid] && typeof n === "number" && isFinite(n) && n > 0) state.weaponFrags[wid] = Math.floor(n); });
+    if (saved.items && typeof saved.items === "object") { state.items = {}; Object.keys(saved.items).forEach(function (k) { var v = Math.floor(+saved.items[k]); if (ITEM_DEFS[k] && isFinite(v) && v > 0) state.items[k] = v; }); } /* v1024 */
     if (typeof saved.weaponTickets === "number" && isFinite(saved.weaponTickets)) state.weaponTickets = Math.max(0, Math.floor(saved.weaponTickets));
     if (typeof saved.weaponDraws === "number" && isFinite(saved.weaponDraws)) state.weaponDraws = Math.max(0, Math.floor(saved.weaponDraws));
     if (saved.weaponLevels && typeof saved.weaponLevels === "object") {
@@ -9089,6 +9134,7 @@ function createGame(opts) {
     getHeroPosOffset: getHeroPosOffset, setHeroPosOffset: setHeroPosOffset, resetAllHeroPosOffsets: resetAllHeroPosOffsets,
     idleEnemyAtk: idleEnemyAtk, idleHeroHitMult: idleHeroHitMult, idleLimitFrac: idleLimitFrac, idleLimitSkill: idleLimitSkill,
     forgeOnce: forgeOnce, equipPiece: equipPiece, unequipSlot: unequipSlot, dismantlePiece: dismantlePiece, dismantleUpTo: dismantleUpTo, equipBest: equipBest,
+    useItem: useItem, addItem: addItem,
     tickCombat: tickCombat, idleSetSkillAuto: idleSetSkillAuto, idleCastSkill: idleCastSkill, collectBucket: collectBucket, bucketAwayClear: bucketAwayClear, bucketInfo: bucketInfo, forgeInfo: forgeInfo, forgeOdds: forgeOdds, forgeCost: forgeCost, recomputeEquipBonus: recomputeEquipBonus, equipTotals: equipTotals,
     EQ_RARITIES: EQ_RARITIES, EQ_DISMANTLE: EQ_DISMANTLE, EQ_SLOTS: EQ_SLOTS,
     getIdleEase: function () { return IDLE_EASE; }, setIdleEase: function (o) { Object.keys(o || {}).forEach(function (k) { if (k in IDLE_EASE) IDLE_EASE[k] = o[k]; }); },
@@ -10920,7 +10966,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1023"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1024"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11542,6 +11588,7 @@ document.addEventListener("click", function (e) {
   e.preventDefault(); e.stopPropagation();
   var r = game.useSpeedup(b.getAttribute("data-su"), b.getAttribute("data-suw"), b.getAttribute("data-suk") || null);
   if (r.ok) { persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (er) {} } render();
+  try { bagRender(); } catch (er) {} /* v1024: the Backpack shows the new count straight away */
 }, true);
 function renderResOverlay() {
   var ov = document.getElementById("resOverlay");
@@ -25711,38 +25758,68 @@ var BAG_ITEMS = [
   { id: "tickets", cat: "items", icon: function () { return ico("ticket"); }, name: "Weapon draw ticket", count: function () { return game.state.weaponTickets || 0; }, desc: "One draw in the Weapon Draw.", go: function () { setScreen("more", "weapons"); } },
   { id: "books", cat: "items", icon: function () { return ico("books"); }, name: "Conquest Books", count: function () { return (game.state.idle && game.state.idle.conquestBooks) || 0; }, desc: "Levels up your heroes' skills.", go: function () { setScreen("heroes"); } }
 ];
+function bagRarity(d) { var v = d.kind === "choice" ? d.lv : d.amt >= 1e6 ? 4 : d.amt >= 1e5 ? 3 : d.amt >= 1e4 ? 2 : d.amt >= 1e3 ? 1 : 0; return d.kind === "choice" ? d.lv : v; }
+function bagResItems() { /* v1024: resource packs and chests from state.items */
+  var I = game.state.items || {};
+  return ITEM_ORDER.filter(function (id) { return (I[id] || 0) > 0; }).map(function (id) { var d = ITEM_DEFS[id];
+    return { id: id, cat: "res", rar: bagRarity(d), top: d.kind === "choice" ? "Lv." + d.lv : itemAmtLabel(d.amt),
+      icon: d.kind === "res" ? ico(d.res) : '<span style="font-size:26px">' + (d.kind === "choice" ? "🧰" : "📦") + '</span>', name: d.name, desc: d.desc, item: d, count: function () { return (game.state.items || {})[id] || 0; } }; });
+}
 function bagItemsFor(cat) {
   var list = BAG_ITEMS.filter(function (it) { return it.cat === cat && it.count() > 0; });
+  if (cat === "res") list = bagResItems().concat(list);
   if (cat === "heroes") Object.keys(game.state.heroes).forEach(function (k) { var h = game.state.heroes[k], d = HERO_DEFS[k]; if (d && h && (h.fragments | 0) > 0 && d.class !== "governor") list.push({ id: "shards_" + k, cat: "heroes", icon: '<span style="font-size:24px">' + (d.icon || "🧩") + '</span>', name: d.name + " shards", count: function () { return h.fragments | 0; }, desc: "Shards for " + d.name + ": recruit or add stars.", go: function () { setScreen("heroes"); } }); });
   return list;
 }
-var bagState = { cat: "speed", sel: null };
+var bagState = { cat: "res", sel: null, qty: 1, qtyFor: null, pick: null, det: null, got: "" };
 function bagRender() {
   var pop = document.getElementById("bagPop"); if (!pop || pop.style.display !== "flex") return;
   var items = bagItemsFor(bagState.cat), sel = items.filter(function (x) { return x.id === bagState.sel; })[0] || items[0] || null; bagState.sel = sel ? sel.id : null;
-  var grid = items.map(function (it) { var ic = typeof it.icon === "function" ? it.icon() : it.icon; return '<div class="bg-it' + (sel && it.id === sel.id ? " sel" : "") + '" data-bi="' + it.id + '">' + ic + '<b>x' + fmtCompact(it.count()) + '</b><small>' + escapeHtml(it.name) + '</small></div>'; }).join("");
+  var grid = items.map(function (it) { var ic = typeof it.icon === "function" ? it.icon() : it.icon; return '<div class="bg-it' + (it.rar != null ? " r" + it.rar : "") + (sel && it.id === sel.id ? " sel" : "") + '" data-bi="' + it.id + '">' + (it.top ? "<i>" + it.top + "</i>" : "") + (it.top ? '<span class="bg-ic">' + ic + "</span>" : ic) + '<b>x' + fmtCompact(it.count()) + '</b><small>' + escapeHtml(it.name) + '</small></div>'; }).join("");
   if (!grid) grid = '<div class="bg-empty">' + (bagState.cat === "res" ? "No resource chests yet." : "Nothing here yet.") + '</div>';
-  var use = sel ? '<div class="bg-row"><span><b>' + escapeHtml(sel.name) + '</b> × ' + fmt(sel.count()) + '<br><span style="opacity:.85">' + escapeHtml(sel.desc) + '</span></span>' + (sel.go ? '<button type="button" class="bg-go" data-bgo="1">Go</button>' : "") + '</div>' + (sel.use ? sel.use() : "") : "";
+  var use = sel ? '<div class="bg-row"><span><b>' + escapeHtml(sel.name) + '</b> × ' + fmt(sel.count()) + '<br><span style="opacity:.85">' + escapeHtml(sel.desc) + '</span></span>' + (sel.go ? '<button type="button" class="bg-go" data-bgo="1">Go</button>' : "") + '</div>' + (sel.use ? sel.use() : "") + (sel.item ? bagItemPanel(sel) : "") : "";
   pop.querySelector(".bg-tabs").innerHTML = BAG_CATS.map(function (c) { return '<span class="bg-tab' + (c[0] === bagState.cat ? " on" : "") + '" data-bc="' + c[0] + '">' + c[1] + '</span>'; }).join("");
   pop.querySelector(".bg-grid").innerHTML = grid; pop.querySelector(".bg-use").innerHTML = use;
 }
+function bagItemPanel(it) { /* v1024: quantity (- slider + / Max), resource pick for Custom chests, Use (and Details for supply chests) */
+  var d = it.item, max = it.count(); if (bagState.qtyFor !== it.id) { bagState.qtyFor = it.id; bagState.qty = 1; bagState.pick = null; } bagState.qty = Math.max(1, Math.min(max, bagState.qty || 1));
+  var h = '<div class="bg-qty"><button type="button" data-bq="-1">−</button><input type="range" id="bgRange" min="1" max="' + max + '" value="' + bagState.qty + '"><button type="button" data-bq="1">+</button><span class="bg-n" id="bgN">' + bagState.qty + '</span><button type="button" class="bg-max" data-bq="max">Max</button></div>';
+  if (d.kind === "choice") h += '<div class="bg-pick">' + ITEM_RES.map(function (r) { return '<span data-bp="' + r + '"' + (bagState.pick === r ? ' class="on"' : "") + '>' + ico(r) + " " + itemAmtLabel(d.choice[r]) + "</span>"; }).join("") + "</div>";
+  h += '<div class="bg-btns">' + (d.kind === "supply" ? '<button type="button" class="bg-det" data-bdet="1">Details</button>' : "") + '<button type="button" class="bg-usebtn" data-buse="1">Use</button></div>';
+  if (bagState.det === it.id && d.kind === "supply") h += '<div class="bg-tg" style="display:block">' + ITEM_RES.map(function (r) { return ico(r) + " " + itemAmtLabel(d.amt) + " " + ITEM_RES_NAME[r] + ": " + SUPPLY_ODDS[r] + "%"; }).join("<br>") + "</div>";
+  if (bagState.got) h += '<div class="bg-got">' + bagState.got + "</div>";
+  return h;
+}
+function bagItemUse() {
+  var it = bagItemsFor(bagState.cat).filter(function (x) { return x.id === bagState.sel; })[0]; if (!it || !it.item) return;
+  if (it.item.kind === "choice" && !bagState.pick) { bagState.got = '<span style="color:#ff9a8a">Pick a resource first</span>'; bagRender(); return; }
+  var r = game.useItem(it.id, bagState.qty, bagState.pick);
+  if (r.ok) { bagState.got = "Got " + Object.keys(r.got).map(function (k) { return "+" + fmtCompact(r.got[k]) + " " + ITEM_RES_NAME[k]; }).join(", "); persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} render(); }
+  bagState.qtyFor = null; bagRender();
+}
 function bagOpen() {
   var pop = document.getElementById("bagPop");
-  if (!pop) { pop = document.createElement("div"); pop.id = "bagPop"; pop.innerHTML = '<div class="bg-box"><button class="bg-x" aria-label="Close">✕</button><div class="bg-t">Backpack</div><div class="bg-tabs"></div><div class="bg-grid"></div><div class="bg-use"></div></div>'; document.body.appendChild(pop);
+  if (!pop) { pop = document.createElement("div"); pop.id = "bagPop"; pop.innerHTML = '<div class="bg-box"><button class="bg-x" aria-label="Close">✕</button><div class="bg-t">Backpack</div><div class="bg-tabs"></div><div class="bg-grid"></div><div class="bg-use"></div><a href="#" class="bg-dev" style="display:none;margin-top:8px;font-size:11px;color:#7a6a4a;text-align:center">dev: + test chests &amp; packs</a></div>'; document.body.appendChild(pop);
     pop.addEventListener("click", function (e) { var t = e.target;
       if (t === pop || (t.closest && t.closest(".bg-x"))) { pop.style.display = "none"; return; }
       var c = t.closest && t.closest("[data-bc]"); if (c) { bagState.cat = c.getAttribute("data-bc"); bagState.sel = null; bagRender(); return; }
-      var it = t.closest && t.closest("[data-bi]"); if (it) { bagState.sel = it.getAttribute("data-bi"); bagRender(); return; }
+      var it = t.closest && t.closest("[data-bi]"); if (it) { bagState.sel = it.getAttribute("data-bi"); bagState.got = ""; bagRender(); return; }
       if (t.closest && t.closest("[data-bgo]")) { var s2 = bagItemsFor(bagState.cat).filter(function (x) { return x.id === bagState.sel; })[0]; pop.style.display = "none"; if (s2 && s2.go) s2.go(); return; }
+      var q = t.closest && t.closest("[data-bq]"); if (q) { var mx = +(document.getElementById("bgRange") || {}).max || 1, v = q.getAttribute("data-bq"); bagState.qty = v === "max" ? mx : Math.max(1, Math.min(mx, (bagState.qty || 1) + (+v))); var rg = document.getElementById("bgRange"); if (rg) rg.value = bagState.qty; document.getElementById("bgN").textContent = bagState.qty; return; }
+      var pk = t.closest && t.closest("[data-bp]"); if (pk) { bagState.pick = pk.getAttribute("data-bp"); bagState.got = ""; bagRender(); return; }
+      if (t.closest && t.closest("[data-bdet]")) { bagState.det = bagState.det === bagState.sel ? null : bagState.sel; bagRender(); return; }
+      if (t.closest && t.closest("[data-buse]")) { bagItemUse(); return; }
+      if (t.closest && t.closest(".bg-dev")) { e.preventDefault(); ["custom_1", "custom_2", "custom_3", "supply_1000", "supply_10000", "supply_100000"].forEach(function (k) { game.addItem(k, 5); }); ITEM_RES.forEach(function (r) { game.addItem("res_" + r + "_1000", 10); game.addItem("res_" + r + "_10000", 3); }); persist(); bagRender(); return; }
       if (t.closest && t.closest("[data-su]")) setTimeout(bagRender, 50); /* a speedup was used */
-    }); }
+    });
+    pop.addEventListener("input", function (e) { if (e.target && e.target.id === "bgRange") { bagState.qty = +e.target.value; var n = document.getElementById("bgN"); if (n) n.textContent = bagState.qty; } }); }
   if (!bagItemsFor(bagState.cat).length) { var firstFull = BAG_CATS.filter(function (c) { return bagItemsFor(c[0]).length; })[0]; if (firstFull) bagState.cat = firstFull[0]; }
-  pop.style.display = "flex"; bagRender();
+  pop.style.display = "flex"; var dv = pop.querySelector(".bg-dev"); if (dv) dv.style.display = assetIsAdmin() ? "block" : "none"; bagRender();
 }
 var bagSig = "";
 setInterval(function () { /* refresh only when something changed (so taps never land on a rebuilt button); the timers tick on their own */
   var pop = document.getElementById("bagPop"); if (!pop || pop.style.display !== "flex") return;
-  var st = game.state, sig = JSON.stringify([bagState, BAG_CATS.map(function (c) { return bagItemsFor(c[0]).map(function (x) { return x.id + x.count(); }); }), Object.keys(st.buildings).map(function (k) { var b = st.buildings[k]; return (b.upgrading ? b.upgrading.finishAt : 0) + "/" + (b.queue ? b.queue.length : 0); }), st.researchQueue && st.researchQueue.finishAt]);
+  var st = game.state, sig = JSON.stringify([bagState.cat, bagState.sel, bagState.pick, bagState.det, bagState.got, BAG_CATS.map(function (c) { return bagItemsFor(c[0]).map(function (x) { return x.id + x.count(); }); }), Object.keys(st.buildings).map(function (k) { var b = st.buildings[k]; return (b.upgrading ? b.upgrading.finishAt : 0) + "/" + (b.queue ? b.queue.length : 0); }), st.researchQueue && st.researchQueue.finishAt]);
   if (sig !== bagSig) { bagSig = sig; bagRender(); return; }
   [].forEach.call(pop.querySelectorAll("[data-bfin]"), function (e) { e.textContent = fmtTime(Math.max(0, (+e.getAttribute("data-bfin") - vnow()) / 1000)) + " left"; });
 }, 1000);
