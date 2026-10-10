@@ -1,4 +1,4 @@
-/* v1034: admin art (cards etc.) is the same for every player - no device shows or pushes its own copy; an upload that fails says so. Run: node dev/simfork/g244_shared_art.js */
+/* v1034/v1038: admin art (cards etc.) is the same for every player - no device shows or pushes its own copy; an upload that fails says so. Run: node dev/simfork/g244_shared_art.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -22,22 +22,24 @@ const store = { "envs/test/assetitems/_shared_index": { keys: [K0] }, ["envs/tes
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.waitForTimeout(1500);
   const o = {};
-  o.load = await P.evaluate(([a, b]) => ({ fb: assetOnFirebase(), shown: getCardArt(0), local0: localStorage.getItem(a), local1: localStorage.getItem(b) }), [K0, K1]);
+  o.load = await P.evaluate(([a, b]) => { const d = (k, v) => v === null || v === OWNER_DEFAULTS[k] ? null : v; return { fb: assetOnFirebase(), shown: getCardArt(0), local0: d(a, localStorage.getItem(a)), local1: d(b, localStorage.getItem(b)) }; }, [K0, K1]);
+  o.defaults = await P.evaluate(() => { const D = OWNER_DEFAULTS; return { boss: getBossSprite() === D.kingdom_prototype_bosssprite_v1, kessa: getCombatSpriteOverride("kessa") === D.kingdom_prototype_combatsprite_v1_kessa, aries: getEsperGraphicOverride("aries") === D.kingdom_prototype_espergraphic_v1_aries, grass: getGrassOverlayTile() === D.kingdom_prototype_grassoverlay_v1, lyra: getHeroArt("lyra") === D.kingdom_prototype_heroart_v1_lyra, card15: getCardArt(15) === D.kingdom_prototype_cardart_v1_15 }; });
   o.cloudAfterLoad = store["envs/test/assetitems/" + K0].data;
   /* an admin phone that still has a picture the shared area doesn't have: it gets uploaded, then the phone copy goes */
   o.admin = await P.evaluate(async ([a, b]) => { KS_BACKEND.isAdmin = true; localStorage.setItem(b, "data:image/png;base64,PHONEONLY"); localStorage.setItem(a, "data:image/png;base64,OLDPHONE");
-    sharedArtClearPhoneCopies(true); await new Promise((r) => setTimeout(r, 800)); return { shown0: getCardArt(0), shown1: getCardArt(1), local0: localStorage.getItem(a), local1: localStorage.getItem(b) }; }, [K0, K1]);
+    sharedArtClearPhoneCopies(true); await new Promise((r) => setTimeout(r, 800)); const d = (k, v) => v === null || v === OWNER_DEFAULTS[k] ? null : v; return { shown0: getCardArt(0), shown1: getCardArt(1), local0: d(a, localStorage.getItem(a)), local1: d(b, localStorage.getItem(b)) }; }, [K0, K1]);
   o.cloud = { k0: store["envs/test/assetitems/" + K0].data, k1: (store["envs/test/assetitems/" + K1] || {}).data || null };
   /* admin upload that fails for good: back to the shared picture + a clear message */
   o.fail = await P.evaluate(async ([a]) => { const msgs = []; window.alert = (m) => msgs.push(m); const realDoc = assetSyncDb.doc.bind(assetSyncDb);
     assetSyncDb.doc = (pth) => { const d = realDoc(pth); if (pth === "assetitems/" + a) d.set = () => Promise.reject(new Error("network down")); return d; };
     assetSyncRetryCount[a] = 2; setCardArt(0, "data:image/png;base64,NEWFAILS"); const during = getCardArt(0); await new Promise((r) => setTimeout(r, 800));
-    assetSyncDb.doc = realDoc; return { during, after: getCardArt(0), msgs, local: localStorage.getItem(a) }; }, [K0]);
+    assetSyncDb.doc = realDoc; const v = localStorage.getItem(a); return { during, after: getCardArt(0), msgs, local: v === OWNER_DEFAULTS[a] ? null : v }; }, [K0]);
   /* admin upload that works: everyone's copy changes, nothing kept on the phone */
-  o.ok = await P.evaluate(async ([a]) => { setCardArt(0, "data:image/png;base64,NEWGOOD"); await new Promise((r) => setTimeout(r, 800)); return { shown: getCardArt(0), local: localStorage.getItem(a) }; }, [K0]);
+  o.ok = await P.evaluate(async ([a]) => { setCardArt(0, "data:image/png;base64,NEWGOOD"); await new Promise((r) => setTimeout(r, 800)); const v = localStorage.getItem(a); return { shown: getCardArt(0), local: v === OWNER_DEFAULTS[a] ? null : v }; }, [K0]);
   o.cloudOk = store["envs/test/assetitems/" + K0].data;
   console.log(JSON.stringify(o), errs);
   assert.ok(o.load.fb, "on Firebase");
+  assert.deepStrictEqual(o.defaults, { boss: true, kessa: true, aries: true, grass: true, lyra: true, card15: true }, "built-in default art still shows when nothing is uploaded (v1038)");
   assert.strictEqual(o.load.shown, "data:image/png;base64,SHARED", "the shared picture shows, not the phone's newer-stamped copy");
   assert.strictEqual(o.cloudAfterLoad, "data:image/png;base64,SHARED", "the phone copy was NOT pushed over the shared one");
   assert.ok(o.load.local0 === null && o.load.local1 === null, "old phone copies removed");

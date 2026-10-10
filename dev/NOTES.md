@@ -1100,3 +1100,8 @@
 - Harley asked for mockups of a flat colour / gradient behind the fortress on the Overlord Profile; picked option 3 of 4 (flat navy, navy->gold, bronze glow, teal).
 - The painted sky/ground/trees canvas (#gpScene) is hidden; .gp-stage = radial-gradient(#4a3a22 -> #2a2117 -> #14100b). The canvas code is untouched (easy to bring back).
 - The dark sword on the small stone tile was only a mockup - not in the game.
+
+## v1038 - FIX: built-in default art came back (TEST)
+- Harley: "Various images have reset just now" (boss showed the emoji placeholder). Cause: v1034 stopped reading phone copies of shared art, but the game's own built-in defaults (OWNER_DEFAULTS: boss sprite, enemy archer/lancer, Kessa combat sprite, Aries esper, grass overlay, older card pictures, hero art) are delivered by seeding them into the phone's storage - so they were ignored too.
+- artLocal() now falls back to OWNER_DEFAULTS for shared keys (still never a phone copy); getCardArt = shared upload > v1035 built-in card art > OWNER_DEFAULTS card art; the phone-copy cleanup leaves seeded defaults alone.
+- Nothing was deleted from the shared area. g244 now also checks the defaults show (fails on v1037, passes now).

@@ -3589,7 +3589,7 @@ function assetIsShared(key) {
 }
 /* v1034 (Harley: admin art is for ALL players, not a personal setting): on Firebase, shared art is never read from or kept on this device -
    every device (admins included) shows exactly the shared copy, so what the admin sees is what every player sees. */
-function artLocal(key) { if (assetIsShared(key)) return null; try { return localStorage.getItem(key); } catch (e) { return null; } }
+function artLocal(key) { if (assetIsShared(key)) return (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[key]) || null; try { return localStorage.getItem(key); } catch (e) { return null; } } /* v1038: shared art still falls back to the game's BUILT-IN default (OWNER_DEFAULTS), never to a phone copy */
 var assetSharedPrev = {}; // key -> the shared image before this device's upload (restored if the upload finally fails)
 function assetIsAdmin() { var K = window.KS_BACKEND; return !!(K && K.isAdmin); }
 function assetCanEditArt() { return !assetOnFirebase() || assetIsAdmin(); } /* the upload taps (hero portrait, card picture) check this */
@@ -4561,6 +4561,7 @@ function sharedArtClearPhoneCopies(isAdmin) {
   keys.forEach(function (k) {
     var v = null; try { v = localStorage.getItem(k); } catch (e) {}
     if (isAdmin && v && !sharedArtKnownKeys[k] && !cloudAssetMap[k] && !(typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k] === v)) { assetSyncBackfilling = true; try { assetSyncUpload(k, v); } catch (e) {} finally { assetSyncBackfilling = false; } }
+    if (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k] === v) return; /* v1038: the game's own seeded default - leave it */
     try { localStorage.removeItem(k); localStorage.removeItem(k + "__ts"); } catch (e) {}
   });
 }
@@ -5983,11 +5984,11 @@ function cardArtBuiltin(idx) {
   return CARD_ART_BUILTIN_SLOT[idx] || null;
 }
 function getCardArt(idx) {
-  if (assetIsShared(CARD_ART_PREFIX + idx)) return assetSyncGet(CARD_ART_PREFIX + idx) || cardArtBuiltin(idx); /* v982; v1034: admins too; v1035: built-in art if none uploaded */
+  if (assetIsShared(CARD_ART_PREFIX + idx)) return assetSyncGet(CARD_ART_PREFIX + idx) || cardArtBuiltin(idx) || (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[CARD_ART_PREFIX + idx]) || null; /* v982; v1034: admins too; v1035: built-in art if none uploaded; v1038: older built-in default after that */
   var cloud = assetSyncGet(CARD_ART_PREFIX + idx);
   if (cloud) return cloud;
   var loc = null; try { loc = localStorage.getItem(CARD_ART_PREFIX + idx); } catch (e) {}
-  return loc || cardArtBuiltin(idx);
+  return loc || cardArtBuiltin(idx) || (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[CARD_ART_PREFIX + idx]) || null;
 }
 function setCardArt(idx, dataUrl) {
   try { localStorage.setItem(CARD_ART_PREFIX + idx, dataUrl); assetSyncUpload(CARD_ART_PREFIX + idx, dataUrl); return true; }
@@ -11122,7 +11123,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1037"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1038"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
