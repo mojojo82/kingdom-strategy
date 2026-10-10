@@ -1206,3 +1206,10 @@
 - Dev Tools > Speed & Testing has a "🌊 Ship water" On/Off switch next to the 3D ship size/bob. It's a shared owner setting like the others (assetSyncUpload), so it applies to all players.
 - Cost, measured in headless Chromium with software graphics: about 0.3 ms per ship per frame, and 4.7 ms for 40 ships with the light version. A phone's GPU should do better, but that hasn't been checked on a real phone.
 - Test: dev/simfork/g251_ship_water.js. g249 and g250 still pass.
+
+## v1058 - Ship water moved onto the GPU (TEST)
+- Harley: fps took a big hit with v1057's ship water.
+- Likely cause: v1057 added two transparent full-screen 2D canvases (viewport + margin, at the phone's 2x resolution), wiped and redrawn every frame. The phone has to blend those extra layers over the map even when only one ship is out.
+- Now the water is built as one vertex list per frame and drawn by WebGL in the ship canvas itself: soft foam blobs and soft wake/ripple lines are quads, one draw call under the ships and one for the near-side foam over the hull. No extra screen layers or 2D canvases. Building the list takes about 1 ms of JS for 8-40 ships (the light version kicks in from 9 ships).
+- Trade-off: the wake shares the ships' layer, so it now draws over islands and bases instead of under them.
+- Same numbers (MARCH_WATER_DEF / MARCH_WATER), same Dev Tools on/off switch. g249, g250 and g251 (updated to read the WebGL canvas) pass. fps on a real phone not measured.

@@ -11207,7 +11207,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1057"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1058"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16507,7 +16507,7 @@ function marchGLInit() {
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mo.bi); };
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
     ["uRes", "uOrg", "uU", "uS", "uCS", "uLift", "uZ0", "uLo", "uHi", "uGlow", "uHot", "uVC"].forEach(function (n) { marchGL.loc[n] = gl.getUniformLocation(pr, n); });
-    marchGL.cv = cv; marchGL.gl = gl; marchGL.prog = pr; marchGL.ok = true;
+    marchGL.cv = cv; marchGL.gl = gl; marchGL.prog = pr; marchGL.aP = aP; marchGL.aN = aN; marchGL.aC = aC; marchGL.ok = true;
   } catch (e) { console.error("March 3D init failed:", e && e.message); marchGL.ok = false; }
   return marchGL.ok;
 }
@@ -16524,6 +16524,8 @@ function marchGLDraw(ships, u) {
   gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   var now = performance.now(), dt = G.last ? Math.min(0.1, (now - G.last) / 1000) : 0.016; G.last = now;
   var L = G.loc; G.bound = null;
+  var water = march3dWater && marchWaterInitGL(gl) && marchWaterBuild(ships, u, G); /* v1058: water on the GPU, same canvas */
+  if (water) { gl.bindBuffer(gl.ARRAY_BUFFER, marchWater.buf); gl.bufferData(gl.ARRAY_BUFFER, marchWater.arr.subarray(0, marchWater.n * 6), gl.DYNAMIC_DRAW); marchWaterGLDraw(gl, 0, marchWater.nU, W, H); }
   gl.uniform2f(L.uRes, W, H); gl.uniform1f(L.uU, u);
   var zRef = 0; ships.forEach(function (sh) { zRef += sh.tx + sh.ty; }); zRef /= ships.length;
   ships.forEach(function (sh) {
@@ -16538,6 +16540,7 @@ function marchGLDraw(ships, u) {
     gl.uniform3fv(L.uLo, mk.lo); gl.uniform3fv(L.uHi, mk.hi); gl.uniform3fv(L.uGlow, mk.glow); gl.uniform3fv(L.uHot, mk.hot); gl.uniform1f(L.uVC, mo.vc);
     gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0);
   });
+  if (water) marchWaterGLDraw(gl, marchWater.nU, marchWater.n - marchWater.nU, W, H); /* near-side foam over the hull edge */
   G.hadShips = true;
 }
 
@@ -16624,7 +16627,7 @@ function updateMarchMarkers(manual) {
         }
       });
     }
-    if (marchGL.ok !== null && marchGL.ok) { marchGLDraw(use3d ? ships3d : [], tilePxZ() + gapPxZ()); marchWaterDraw(use3d ? ships3d : [], tilePxZ() + gapPxZ()); }
+    if (marchGL.ok !== null && marchGL.ok) marchGLDraw(use3d ? ships3d : [], tilePxZ() + gapPxZ());
     // Drop markers for marches that resolved/returned since the last frame —
     // same seen-map-diff idea as idleAnim's enemyById, just far fewer entries.
     Object.keys(marchMarkerEls).forEach(function (id) {
@@ -16635,32 +16638,26 @@ function updateMarchMarkers(manual) {
   }
   if (manual !== true) marchAnim.rafId = requestAnimationFrame(updateMarchMarkers);
 }
-// v1057: water round the 3D march ships. Two 2D canvases sit exactly over the ship canvas: one under the bases (wake, foam, ripples) and one above the ship (the foam lapping over the near hull edge).
-// The wake is worked out from the straight leg the ship is on (no history kept), drawn in short chunks so even lots of ships stay cheap; with more than 8 ships it drops to a lighter version (fewer foam blobs, 2 streaks, no foam over the hull).
-var marchWater = { under: null, over: null, dot: null, had: false };
+// v1057/v1058: water round the 3D march ships (foam, bow wave, wake trail, ripples). v1058: drawn by the GPU in the SAME WebGL canvas as the ships
+// (one extra draw call for all the water, no extra screen layers). v1057 used two full-screen 2D canvases and that cost too many fps on the phone.
+// The wake comes from the straight leg the ship is on (no history kept). More than 8 ships = lighter version.
+var marchWater = { arr: new Float32Array(6 * 6000), n: 0, nU: 0, buf: null, prog: null, loc: null };
 function mwHash(a, b) { var h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); }
 function mwNoise(x) { var i = Math.floor(x), f = x - i, a = mwHash(i, 7.3), b = mwHash(i + 1, 7.3); f = f * f * (3 - 2 * f); return a + (b - a) * f; }
-function marchWaterDraw(ships, u) {
-  var MW = marchWater, G = marchGL;
-  if (!march3dWater || !ships.length || !G.ok || G.w === undefined) {
-    if (MW.had) { [MW.under, MW.over].forEach(function (c) { c.getContext("2d").clearRect(0, 0, c.width, c.height); c.style.display = "none"; }); MW.had = false; }
-    return;
-  }
-  if (!MW.under) {
-    var wrap = document.getElementById("mapworld"); if (!wrap) return;
-    var mkc = function (z) { var c = document.createElement("canvas"); c.style.cssText = "position:absolute;pointer-events:none;display:none;z-index:" + z + ";"; wrap.appendChild(c); return c; };
-    MW.under = mkc(6); MW.over = mkc(100000);
-    MW.dot = document.createElement("canvas"); MW.dot.width = MW.dot.height = 64;
-    var dg = MW.dot.getContext("2d"), gr = dg.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.45, "rgba(240,250,255,.85)"); gr.addColorStop(1, "rgba(220,240,255,0)"); dg.fillStyle = gr; dg.fillRect(0, 0, 64, 64);
-  }
-  var cw = Math.round(G.w * G.dpr), ch = Math.round(G.h * G.dpr), ctxs = [];
-  [MW.under, MW.over].forEach(function (c) {
-    if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; c.style.width = G.w + "px"; c.style.height = G.h + "px"; }
-    c.style.left = G.ox + "px"; c.style.top = G.oy + "px"; c.style.display = "block";
-    var x = c.getContext("2d"); x.setTransform(G.dpr, 0, 0, G.dpr, 0, 0); x.clearRect(0, 0, G.w, G.h); x.globalAlpha = 1; ctxs.push(x);
-  });
-  MW.had = true;
-  var ux = ctxs[0], ox2 = ctxs[1], now = performance.now() / 1000, lod = ships.length > 8, dot = MW.dot;
+function mwV(x, y, u, v, k, al) { var M = marchWater; if ((M.n + 1) * 6 > M.arr.length) { var na = new Float32Array(M.arr.length * 2); na.set(M.arr); M.arr = na; } var o = M.n * 6, A = M.arr; A[o] = x; A[o + 1] = y; A[o + 2] = u; A[o + 3] = v; A[o + 4] = k; A[o + 5] = al; M.n++; }
+function mwDot(x, y, rx, ry, al) { /* soft round foam blob (kind 0) */
+  mwV(x - rx, y - ry, -1, -1, 0, al); mwV(x + rx, y - ry, 1, -1, 0, al); mwV(x + rx, y + ry, 1, 1, 0, al);
+  mwV(x - rx, y - ry, -1, -1, 0, al); mwV(x + rx, y + ry, 1, 1, 0, al); mwV(x - rx, y + ry, -1, 1, 0, al);
+}
+function mwSeg(p, q, w0, w1, a0, a1) { /* soft line from p to q (kind 1), width/alpha can change along it */
+  var dx = q[0] - p[0], dy = q[1] - p[1], l = Math.sqrt(dx * dx + dy * dy); if (l < 0.01) return; var nx = -dy / l, ny = dx / l, h0 = w0 / 2, h1 = w1 / 2;
+  mwV(p[0] + nx * h0, p[1] + ny * h0, 0, -1, 1, a0); mwV(p[0] - nx * h0, p[1] - ny * h0, 0, 1, 1, a0); mwV(q[0] - nx * h1, q[1] - ny * h1, 0, 1, 1, a1);
+  mwV(p[0] + nx * h0, p[1] + ny * h0, 0, -1, 1, a0); mwV(q[0] - nx * h1, q[1] - ny * h1, 0, 1, 1, a1); mwV(q[0] + nx * h1, q[1] + ny * h1, 0, -1, 1, a1);
+}
+// Fills marchWater.arr: first everything under the ships (nU vertices), then the near-side foam that laps over the hull (n - nU).
+function marchWaterBuild(ships, u, G) {
+  var MW = marchWater; MW.n = 0; MW.nU = 0;
+  var now = performance.now() / 1000, lod = ships.length > 8, fronts = [];
   ships.forEach(function (sh) {
     var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], model = mk.model || "void", mo = G.models[model] || G.models.void, c = marchWaterCfg(model);
     var cx = sh.ox - G.ox, cy = sh.oy - G.oy, reach = (c.wakeLen + 2) * u;
@@ -16670,65 +16667,76 @@ function marchWaterDraw(ships, u) {
     var ang = G.ang[sh.id]; if (ang === undefined) ang = Math.atan2(sh.gz, -sh.gx);
     var cs = Math.cos(ang), sn = Math.sin(ang), W2 = function (lx, lz) { return [sh.tx + lx * cs + lz * sn, sh.ty - lx * sn + lz * cs]; };
     var moving = sh.st === "acting" ? 0 : 1, tf = now * c.foamSpeed;
-    // wake trail along the straight leg behind the ship
+    // wake trail
     var gl2 = Math.sqrt(sh.gx * sh.gx + sh.gz * sh.gz) || 1, Dx = sh.gx / gl2, Dz = sh.gz / gl2, Rx = Dz, Rz = -Dx;
     var fade = sh.st === "acting" ? Math.max(0, 1 - sh.stopped / 2.5) : 1, back = len * c.sternPos, avail = sh.ld - back, maxS = Math.min(c.wakeLen, avail);
     if (fade > 0 && maxS > 0.05 && c.wakeOp > 0) {
-      var sx0 = sh.tx - Dx * back, sz0 = sh.ty - Dz * back, step = 0.2, N = Math.max(1, Math.ceil(maxS / step)), CH = 3;
-      ux.strokeStyle = "#ffffff"; ux.lineCap = "round";
+      var sx0 = sh.tx - Dx * back, sz0 = sh.ty - Dz * back, step = lod ? 0.4 : 0.25, N = Math.max(1, Math.ceil(maxS / step));
       if (c.churn > 0) {
-        var cl = c.wakeLen * 0.45, cN = Math.max(1, Math.ceil(Math.min(cl, maxS) / step));
-        for (var j = 0; j < cN; j += CH) {
-          var sA = j * step, sB = Math.min(cN, j + CH) * step, sM = (sA + sB) / 2, fC = Math.max(0, 1 - sM / cl);
-          var a0 = P(sx0 - Dx * sA, sz0 - Dz * sA), a1 = P(sx0 - Dx * sB, sz0 - Dz * sB);
-          ux.globalAlpha = c.churn * c.wakeOp * fC * fC * 0.5 * fade; ux.lineWidth = Math.max(1, (beam * c.wakeStart * 1.4 + sM * c.wakeSpread * 1.2) * u);
-          ux.beginPath(); ux.moveTo(a0[0], a0[1]); ux.lineTo(a1[0], a1[1]); ux.stroke();
+        var cl = Math.min(c.wakeLen * 0.45, maxS), cN = Math.max(1, Math.ceil(cl / (step * 2))), cst = cl / cN, prevC = null, pw = 0, pa = 0;
+        for (var j = 0; j <= cN; j++) {
+          var sA = j * cst, fC = Math.max(0, 1 - sA / (c.wakeLen * 0.45)), pC = P(sx0 - Dx * sA, sz0 - Dz * sA);
+          var wC = Math.max(1, (beam * c.wakeStart * 1.4 + sA * c.wakeSpread * 1.2) * u), aC = c.churn * c.wakeOp * fC * fC * 0.5 * fade;
+          if (prevC) mwSeg(prevC, pC, pw, wC, pa, aC); prevC = pC; pw = wC; pa = aC;
         }
       }
       var n = lod ? Math.min(2, c.streaks | 0) : (c.streaks | 0);
       for (var side = -1; side <= 1; side += 2) for (var k = 0; k < n; k++) {
-        var seed = k * 3.7 + (side > 0 ? 11 : 0), lane = n > 1 ? (k / (n - 1) - 0.5) : 0, pts = [];
+        var seed = k * 3.7 + (side > 0 ? 11 : 0), lane = n > 1 ? (k / (n - 1) - 0.5) : 0, prev = null, pW = 0, pA = 0;
         for (var q = 0; q <= N; q++) {
-          var s2 = Math.min(maxS, q * step), pd = avail - s2;
+          var s2 = Math.min(maxS, q * step), pd = avail - s2, f = Math.max(0, 1 - s2 / c.wakeLen);
           var off = beam * c.wakeStart + s2 * c.wakeSpread + lane * (beam * 0.35 + s2 * c.wakeSpread * 0.6) + (mwNoise(pd * 2.2 + seed) - 0.5) * 2 * c.wobble * (0.4 + s2 / c.wakeLen);
-          pts.push(P(sx0 - Dx * s2 + Rx * off * side, sz0 - Dz * s2 + Rz * off * side));
-        }
-        for (var j2 = 0; j2 < N; j2 += CH) {
-          var e = Math.min(N, j2 + CH), sMid = (j2 + e) / 2 * step, f = Math.max(0, 1 - sMid / c.wakeLen);
-          var al = c.wakeOp * Math.pow(f, 1.4) * (0.55 + 0.45 * mwNoise((avail - sMid) * 4 + seed * 2)) * fade; if (al < 0.01) continue;
-          ux.globalAlpha = al; ux.lineWidth = Math.max(0.8, c.streakW * u * (0.6 + 0.8 * f));
-          ux.beginPath(); ux.moveTo(pts[j2][0], pts[j2][1]); for (var r2 = j2 + 1; r2 <= e; r2++) ux.lineTo(pts[r2][0], pts[r2][1]); ux.stroke();
+          var pt = P(sx0 - Dx * s2 + Rx * off * side, sz0 - Dz * s2 + Rz * off * side);
+          var al = c.wakeOp * Math.pow(f, 1.4) * (0.55 + 0.45 * mwNoise(pd * 4 + seed * 2)) * fade, wd = Math.max(1.2, c.streakW * u * (0.6 + 0.8 * f) * 1.6);
+          if (prev && (al > 0.01 || pA > 0.01)) mwSeg(prev, pt, pW, wd, pA, al); prev = pt; pW = wd; pA = al;
         }
       }
     }
-    // ripples while parked (fighting / gathering)
-    if (!moving && c.ripples > 0) {
-      ux.strokeStyle = "#e6f5ff"; ux.lineWidth = Math.max(1, u * 0.04);
-      for (var rr = 0; rr < 3; rr++) {
-        var g = ((now / 2.4) + rr / 3) % 1, ra = c.ripples * (1 - g) * 0.6; if (ra < 0.01) continue;
-        ux.globalAlpha = ra; ux.beginPath();
-        for (var i3 = 0; i3 <= 32; i3++) { var th3 = i3 / 32 * Math.PI * 2, wp3 = W2(Math.cos(th3) * (half * 1.05 + g * 1.4), Math.sin(th3) * (beam * 1.2 + g * 1.4)), p3 = P(wp3[0], wp3[1]); if (i3) ux.lineTo(p3[0], p3[1]); else ux.moveTo(p3[0], p3[1]); }
-        ux.stroke();
-      }
+    // ripples while parked
+    if (!moving && c.ripples > 0) for (var rr = 0; rr < 3; rr++) {
+      var g = ((now / 2.4) + rr / 3) % 1, ra = c.ripples * (1 - g) * 0.6; if (ra < 0.01) continue;
+      var prevR = null, segs = lod ? 16 : 28, rw = Math.max(1.5, u * 0.06);
+      for (var i3 = 0; i3 <= segs; i3++) { var th3 = i3 / segs * Math.PI * 2, wp3 = W2(Math.cos(th3) * (half * 1.05 + g * 1.4), Math.sin(th3) * (beam * 1.2 + g * 1.4)), p3 = P(wp3[0], wp3[1]); if (prevR) mwSeg(prevR, p3, rw, rw, ra, ra); prevR = p3; }
     }
-    // foam hugging the hull (+ bow wave when sailing); the near side also goes over the hull edge
-    var depthC = sh.tx + sh.ty, K = lod ? 14 : 24, NB = lod ? 4 : 7;
-    [[ux, false], [ox2, true]].forEach(function (pass) {
-      var x = pass[0], frontOnly = pass[1], amt = frontOnly ? c.front : 1; if (frontOnly && (lod || amt <= 0)) return;
-      if (c.foam > 0) for (var i = 0; i < K; i++) {
-        var th = i / K * Math.PI * 2, wp = W2(Math.cos(th) * half * 0.95, Math.sin(th) * beam * 1.05); if (frontOnly && wp[0] + wp[1] < depthC) continue;
-        var nn = mwNoise(tf * 1.6 + i * 1.91 + sh.id), boost = 1 + moving * c.bow * Math.max(0, -Math.cos(th)) * 1.2;
-        var r = u * 0.19 * c.foamSize * (0.55 + 0.7 * nn) * boost, a = c.foam * amt * (0.35 + 0.65 * mwNoise(tf * 2.3 + i * 0.7 + 5 + sh.id)) * (frontOnly ? 0.9 : 0.8);
-        var pp = P(wp[0], wp[1]); x.globalAlpha = Math.min(1, a); x.drawImage(dot, pp[0] - r, pp[1] - r * 0.6, r * 2, r * 1.2);
-      }
-      if (moving && c.bow > 0) for (var sd = -1; sd <= 1; sd += 2) for (var b = 0; b < NB; b++) {
-        var gg = b / (NB - 1), wpb = W2(-half * (1.02 - gg * 0.75), sd * beam * (0.35 + gg * 1.25) * (1 + 0.15 * Math.sin(tf * 5 + b))); if (frontOnly && wpb[0] + wpb[1] < depthC) continue;
-        var rb = u * 0.13 * c.foamSize * (1 - gg * 0.5) * (0.7 + 0.6 * mwNoise(tf * 3 + b * 1.3 + sd * 4 + sh.id)), ab = c.bow * amt * (1 - gg * 0.7) * 0.9;
-        var pb = P(wpb[0], wpb[1]); x.globalAlpha = Math.min(1, ab); x.drawImage(dot, pb[0] - rb, pb[1] - rb * 0.6, rb * 2, rb * 1.2);
-      }
-    });
+    // foam hugging the hull (+ bow wave); near-side blobs are kept for the pass over the ship
+    var depthC = sh.tx + sh.ty, K = lod ? 14 : 24, NB = lod ? 4 : 7, fr = !lod && c.front > 0;
+    var blob = function (wp, r, a, fa) { var p = P(wp[0], wp[1]); mwDot(p[0], p[1], r, r * 0.6, a); if (fr && wp[0] + wp[1] >= depthC) fronts.push(p[0], p[1], r, a * fa); };
+    if (c.foam > 0) for (var i = 0; i < K; i++) {
+      var th = i / K * Math.PI * 2, wp = W2(Math.cos(th) * half * 0.95, Math.sin(th) * beam * 1.05);
+      var nn = mwNoise(tf * 1.6 + i * 1.91 + sh.id), boost = 1 + moving * c.bow * Math.max(0, -Math.cos(th)) * 1.2, an = 0.35 + 0.65 * mwNoise(tf * 2.3 + i * 0.7 + 5 + sh.id);
+      blob(wp, u * 0.19 * c.foamSize * (0.55 + 0.7 * nn) * boost, c.foam * an * 0.8, c.front * 0.9 / 0.8);
+    }
+    if (moving && c.bow > 0) for (var sd = -1; sd <= 1; sd += 2) for (var b = 0; b < NB; b++) {
+      var gg = b / (NB - 1), wpb = W2(-half * (1.02 - gg * 0.75), sd * beam * (0.35 + gg * 1.25) * (1 + 0.15 * Math.sin(tf * 5 + b)));
+      blob(wpb, u * 0.13 * c.foamSize * (1 - gg * 0.5) * (0.7 + 0.6 * mwNoise(tf * 3 + b * 1.3 + sd * 4 + sh.id)), c.bow * (1 - gg * 0.7) * 0.9, c.front);
+    }
   });
-  ux.globalAlpha = 1; ox2.globalAlpha = 1;
+  MW.nU = MW.n;
+  for (var fi = 0; fi < fronts.length; fi += 4) mwDot(fronts[fi], fronts[fi + 1], fronts[fi + 2], fronts[fi + 2] * 0.6, fronts[fi + 3]);
+  return MW.n > 0;
+}
+function marchWaterInitGL(gl) {
+  var MW = marchWater; if (MW.prog) return true;
+  try {
+    var sh = function (t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+    var vs = "attribute vec2 aS; attribute vec4 aD; uniform vec2 uRes; varying vec4 vD; void main(){ vD = aD; gl_Position = vec4(aS.x / uRes.x * 2.0 - 1.0, 1.0 - aS.y / uRes.y * 2.0, 0.0, 1.0); }";
+    var fs = "precision mediump float; varying vec4 vD; void main(){ float a; if (vD.z < 0.5) { float d = length(vD.xy); a = d < 0.45 ? mix(1.0, 0.85, d / 0.45) : mix(0.85, 0.0, clamp((d - 0.45) / 0.55, 0.0, 1.0)); } else { a = 1.0 - vD.y * vD.y; } a = clamp(a * vD.w, 0.0, 1.0); gl_FragColor = vec4(vec3(0.96, 0.99, 1.0) * a, a); }";
+    var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+    MW.prog = pr; MW.buf = gl.createBuffer(); MW.loc = { aS: gl.getAttribLocation(pr, "aS"), aD: gl.getAttribLocation(pr, "aD"), uRes: gl.getUniformLocation(pr, "uRes") };
+    return true;
+  } catch (e) { console.error("Ship water init failed:", e && e.message); march3dWater = false; return false; }
+}
+function marchWaterGLDraw(gl, first, count, W, H) { /* draws a range of the water vertices, then hands the GL state back to the ship program */
+  var MW = marchWater, L = MW.loc, G = marchGL; if (!count) return;
+  gl.disableVertexAttribArray(G.aP); gl.disableVertexAttribArray(G.aN); if (G.aC >= 0) gl.disableVertexAttribArray(G.aC);
+  gl.useProgram(MW.prog); gl.uniform2f(L.uRes, W, H); gl.bindBuffer(gl.ARRAY_BUFFER, MW.buf);
+  gl.enableVertexAttribArray(L.aS); gl.vertexAttribPointer(L.aS, 2, gl.FLOAT, false, 24, 0);
+  gl.enableVertexAttribArray(L.aD); gl.vertexAttribPointer(L.aD, 4, gl.FLOAT, false, 24, 8);
+  gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.drawArrays(gl.TRIANGLES, first, count);
+  gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.disableVertexAttribArray(L.aS); gl.disableVertexAttribArray(L.aD);
+  gl.useProgram(G.prog); G.bound = null;
 }
 // v1054: attack visuals — every ~1s a volley of 2-3 glowing shells flies from the parked ship to the target and bursts on it. Purely cosmetic: the fight itself is still worked out by resolveAction.
 var MARCH_FX_STANDOFF = 3, marchFx = {};

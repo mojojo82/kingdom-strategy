@@ -1,4 +1,4 @@
-/* v1057: water round the 3D march ships (wake, foam, ripples): drawn while sailing and parked, hidden when the Dev Tools switch is off. Run: node dev/simfork/g251_ship_water.js */
+/* v1057/v1058: water round the 3D march ships (wake, foam, ripples), drawn in the ship WebGL canvas while sailing and parked; gone when the Dev Tools switch is off. Run: node dev/simfork/g251_ship_water.js */
 /* v1048: march ship skin per formation (Skins > Marches); the march carries it, it is shared, and the 3D ship is drawn with it. Run: node dev/simfork/g249_march_skins.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
@@ -24,15 +24,14 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     selectedTile = t.id; renderTileInfo(); await new Promise((r) => setTimeout(r, 300));
     [...document.querySelectorAll(".formation-attack-btn")][1].click(); await new Promise((r) => setTimeout(r, 300));
     const m = st.marches[st.marches.length - 1]; m.skin = "ghost_galleon"; m.travelSec = 1000; m.arriveAt = vnow() + 450000; march3dOn = true; return 1; });
-  const ink = () => P.evaluate(() => { updateMarchMarkers(true); const c = marchWater.under; if (!c || c.style.display === "none") return -1; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let k = 3; k < d.length; k += 4) if (d[k] > 20) n++; return n; });
+  const ink = () => P.evaluate(() => { updateMarchMarkers(true); const gl = marchGL.gl, W = gl.drawingBufferWidth, H = gl.drawingBufferHeight, px = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, px); let n = 0; for (let k = 3; k < px.length; k += 4) if (px[k] > 20) n++; return n; });
   await P.waitForTimeout(600);
-  o.sail = await ink();
+  o.sail = await ink(); o.waterV = await P.evaluate(() => marchWater.n);
   await P.evaluate(() => { const m = game.state.marches[game.state.marches.length - 1]; m.action = "attack"; m.status = "acting"; m.arriveAt = vnow() - 800; m.actionEnd = vnow() + 120000; });
   await P.waitForTimeout(300); o.park = await ink();
-  await P.evaluate(() => document.getElementById("devMarch3dWaterBtn").click()); o.off = await ink(); o.btn = await P.evaluate(() => document.getElementById("devMarch3dWaterBtn").textContent);
+  o.parkV = await P.evaluate(() => marchWater.n); await P.evaluate(() => document.getElementById("devMarch3dWaterBtn").click()); o.off = await ink(); o.btn = await P.evaluate(() => document.getElementById("devMarch3dWaterBtn").textContent);
   o.gl = await P.evaluate(() => marchGL.gl.getError());
   console.log(JSON.stringify(o), errs);
-  assert.ok(o.sail > 300, "wake + foam drawn while sailing"); assert.ok(o.park > 300, "foam + ripples while parked");
-  assert.strictEqual(o.off, -1, "switch off hides it"); assert.ok(/Off/.test(o.btn)); assert.strictEqual(o.gl, 0); assert.deepStrictEqual(errs, []);
+  assert.ok(o.waterV > 300 && o.parkV > 300, "water built while sailing and parked"); assert.ok(o.sail > o.off + 1500, "water pixels drawn (vs switched off)"); assert.ok(o.park > o.off + 1500, "parked water drawn"); assert.ok(/Off/.test(o.btn)); assert.strictEqual(o.gl, 0); assert.deepStrictEqual(errs, []);
   console.log("g251 OK"); await b.close();
 })();
