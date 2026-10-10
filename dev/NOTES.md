@@ -1095,3 +1095,8 @@
 ## v1036 - Stone tile in the Overlord Profile slots (TEST)
 - Harley sent a stone tile (white background) for the 6 blank squares beside the fortress on the Overlord Profile: white cut out (flood fill from the edges), squared, 124px webp (GP_SLOT_STONE). Top-left slot full size, top-right 80% ("Keep both. Push them into the game. I need to spend some time looking at them"). Display only; the other 4 stay empty.
 - Original: art/originals/profile_slot_stone.png.
+
+## v1037 - Overlord Profile background: bronze glow (TEST)
+- Harley asked for mockups of a flat colour / gradient behind the fortress on the Overlord Profile; picked option 3 of 4 (flat navy, navy->gold, bronze glow, teal).
+- The painted sky/ground/trees canvas (#gpScene) is hidden; .gp-stage = radial-gradient(#4a3a22 -> #2a2117 -> #14100b). The canvas code is untouched (easy to bring back).
+- The dark sword on the small stone tile was only a mockup - not in the game.
