@@ -1196,3 +1196,13 @@
 ## v1056 - Close targets: fire from your own city (TEST)
 - Harley: if the enemy city is less than 3 tiles away, that's the only time the 3-tile rule breaks: the ship just sits on your city and fires from there.
 - Dropped the 60% cap: the ship stops 3 tiles back, or at home if the target is 3 tiles or closer. g250 passes.
+
+## v1057 - Water round the 3D march ships (TEST)
+- Harley: put the Wake Lab water into the game with the default numbers for now (his per-ship settings come later).
+- Foam hugs each 3D ship, with a bow wave while sailing. Two streaky wake trails run back along the leg it's on (worked out from the straight path, no history kept). Rings ripple out while it's parked (fighting or gathering), and the wake fades over 2.5 s after it stops. Foam on the near side laps over the hull edge.
+- Ships now sit 0.2 tiles lower, and the shader cuts the hull off at the waterline so it sits in the water.
+- Drawn on two 2D canvases that line up with the ship canvas: one under the bases (wake/foam/ripples, z 6 like the route arrows) and one above the ship (near-side foam). Off-screen ships are skipped. With more than 8 ships it switches to a lighter version: fewer foam blobs, 2 streaks, no foam over the hull.
+- Numbers: MARCH_WATER_DEF (the Wake Lab defaults) + MARCH_WATER[model] for per-ship overrides (void / pirate), so Harley's "Copy settings" paste drops straight in.
+- Dev Tools > Speed & Testing has a "🌊 Ship water" On/Off switch next to the 3D ship size/bob. It's a shared owner setting like the others (assetSyncUpload), so it applies to all players.
+- Cost, measured in headless Chromium with software graphics: about 0.3 ms per ship per frame, and 4.7 ms for 40 ships with the light version. A phone's GPU should do better, but that hasn't been checked on a real phone.
+- Test: dev/simfork/g251_ship_water.js. g249 and g250 still pass.

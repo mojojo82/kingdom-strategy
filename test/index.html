@@ -3213,6 +3213,7 @@
                   <button class="dev-btn" id="devSoundFxBtn">🔊 Sound FX: On</button>
                 </div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:88px;">3D ship size:</span><input type="range" class="dev-slider" id="devMarch3dSize" min="0.8" max="6" step="0.1"><span class="dev-slider-val" id="devMarch3dSizeVal"></span></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint" style="width:88px;">Ship water:</span><button class="dev-btn" id="devMarch3dWaterBtn">🌊 Ship water: On</button></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:88px;">3D ship bob:</span><input type="range" class="dev-slider" id="devMarch3dBob" min="0" max="200" step="5"><span class="dev-slider-val" id="devMarch3dBobVal"></span></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:88px;">Melee reach:</span><input type="range" class="dev-slider" id="devMeleeReach" min="0" max="40" step="1"><span class="dev-slider-val" id="devMeleeReachVal"></span></div>
                 <div class="dev-tools-hint" style="margin-top:6px;">🗺️ Isometric map look (shown when the toggle below is On):</div>
@@ -3725,7 +3726,7 @@ function assetSyncIsImageKey(key) {
   nonImageKeys[CANNON_ORIGIN_X_KEY] = true;
   nonImageKeys[ORBIT_SHIELD_KEY] = true; nonImageKeys[HEX_SHIELD_KEY] = true; nonImageKeys[ECUBE_KEY] = true;
   nonImageKeys[CANNON_ORIGIN_Y_KEY] = true;
-  nonImageKeys[BEAM_CLIP_KEY] = true; nonImageKeys[MISSILE_EXH_KEY] = true; nonImageKeys[HERO_HOP_KEY] = true; nonImageKeys[GARETH_CHANGER_KEY] = true; nonImageKeys[OOZE_BLOB_KEY] = true; nonImageKeys[MAP_ISO_KEY] = true; nonImageKeys[MAP_ISO_CFG_KEY] = true; nonImageKeys[MARCH3D_KEY] = true; nonImageKeys[MARCH3D_SIZE_KEY] = true; nonImageKeys[MARCH3D_BOB_KEY] = true; nonImageKeys[MELEE_REACH_KEY] = true; nonImageKeys[TERRAIN_DEV_KEY] = true; nonImageKeys[RUN_BLEND_KEY] = true; nonImageKeys[GROUND_HIDE_KEY] = true; nonImageKeys[HERO_DUST_KEY] = true; nonImageKeys[HERO_DUST_CFG_KEY] = true; nonImageKeys[HERO_KO_CFG_KEY] = true;
+  nonImageKeys[BEAM_CLIP_KEY] = true; nonImageKeys[MISSILE_EXH_KEY] = true; nonImageKeys[HERO_HOP_KEY] = true; nonImageKeys[GARETH_CHANGER_KEY] = true; nonImageKeys[OOZE_BLOB_KEY] = true; nonImageKeys[MAP_ISO_KEY] = true; nonImageKeys[MAP_ISO_CFG_KEY] = true; nonImageKeys[MARCH3D_KEY] = true; nonImageKeys[MARCH3D_SIZE_KEY] = true; nonImageKeys[MARCH3D_BOB_KEY] = true; nonImageKeys[MARCH3D_WATER_KEY] = true; nonImageKeys[MELEE_REACH_KEY] = true; nonImageKeys[TERRAIN_DEV_KEY] = true; nonImageKeys[RUN_BLEND_KEY] = true; nonImageKeys[GROUND_HIDE_KEY] = true; nonImageKeys[HERO_DUST_KEY] = true; nonImageKeys[HERO_DUST_CFG_KEY] = true; nonImageKeys[HERO_KO_CFG_KEY] = true;
   nonImageKeys[ARENA_SHARED_TIMING_KEY] = true; nonImageKeys[ARENA_HERO_HP_KEY] = true; nonImageKeys[ARENA_DMGNUM_KEY] = true; nonImageKeys[HERO_ATTACK_TIMING_KEY] = true; nonImageKeys[SKILL_FULL_CD_KEY] = true; nonImageKeys[ARENA_RANGED_HERO_KEY] = true; nonImageKeys[MAP_ICONS_KEY] = true; nonImageKeys[MAP_CITY_SKIN_KEY] = true;
   nonImageKeys[FORT_LIFE_KEY] = true; nonImageKeys[FORT_FLASH_KEY] = true;
   if (nonImageKeys[key]) return false;
@@ -4461,6 +4462,10 @@ function initDeviceLock(db) {
           } },
         { key: MARCH3D_BOB_KEY, apply: function (v) {
             var n = parseFloat(v); if (n >= 0) { march3dBob = n; try { localStorage.setItem(MARCH3D_BOB_KEY, v); var el = document.getElementById("devMarch3dBob"), lb = document.getElementById("devMarch3dBobVal"); if (el) el.value = n; if (lb) lb.textContent = n + "%"; } catch (e) {} }
+          } },
+        { key: MARCH3D_WATER_KEY, apply: function (v) {
+            march3dWater = v !== "0";
+            try { localStorage.setItem(MARCH3D_WATER_KEY, v); renderMarch3dWaterBtn(); } catch (e) {}
           } },
         { key: MARCH3D_SIZE_KEY, apply: function (v) {
             var n = parseFloat(v); if (n > 0) { march3dSize = n; try { localStorage.setItem(MARCH3D_SIZE_KEY, v); var el = document.getElementById("devMarch3dSize"), lb = document.getElementById("devMarch3dSizeVal"); if (el) el.value = n; if (lb) lb.textContent = n + " tiles"; } catch (e) {} }
@@ -11202,7 +11207,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1056"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1057"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16427,6 +16432,12 @@ var SHIP3D_MODEL = {"c":[-0.0012,-0.00704,-0.00515],"h":[0.95815,0.56166,0.21727
    the 4k-triangle Voidspire Dreadnought model, using the same 35deg / 45deg camera as the isometric ground, so a ship sits exactly on its path and faces where it's heading. */
 var MARCH3D_KEY = "kingdom_prototype_march3d_v1", march3dOn = true, MARCH3D_SIZE_KEY = "kingdom_prototype_march3dsize_v1", march3dSize = 2.4, MARCH3D_BOB_KEY = "kingdom_prototype_march3dbob_v1", march3dBob = 0; /* v838: bob amplitude in % of the old fixed 0.06-tile bob; off by default */
 try { march3dOn = localStorage.getItem(MARCH3D_KEY) !== "0"; /* v933: on by default (Harley's owner setting) */ var _ms = parseFloat(localStorage.getItem(MARCH3D_SIZE_KEY)); if (_ms > 0) march3dSize = _ms; var _mb = parseFloat(localStorage.getItem(MARCH3D_BOB_KEY)); if (_mb >= 0) march3dBob = _mb; } catch (e) {}
+/* v1057: water round the 3D march ships (hull foam, bow wave, wake trail, ripples while fighting). Numbers come from Wake Lab (dev/labs/wake-lab.html); MARCH_WATER holds per-model overrides when Harley tunes a ship. Visual only. */
+var MARCH3D_WATER_KEY = "kingdom_prototype_march3dwater_v1", march3dWater = true;
+try { march3dWater = localStorage.getItem(MARCH3D_WATER_KEY) !== "0"; } catch (e) {}
+var MARCH_WATER_DEF = { sink: 0.2, hullLen: 1, hullBeam: 1, sternPos: 0.85, wakeLen: 7, wakeOp: 0.75, wakeStart: 0.75, wakeSpread: 0.11, streaks: 3, streakW: 0.05, wobble: 0.06, churn: 0.35, foam: 0.7, foamSize: 1, foamSpeed: 1, bow: 0.8, front: 0.55, ripples: 0.6 };
+var MARCH_WATER = { void: {}, pirate: {} }, marchWaterCache = {};
+function marchWaterCfg(model) { var c = marchWaterCache[model]; if (c) return c; c = {}; var o = MARCH_WATER[model] || {}; Object.keys(MARCH_WATER_DEF).forEach(function (k) { c[k] = o[k] !== undefined ? o[k] : MARCH_WATER_DEF[k]; }); return (marchWaterCache[model] = c); }
 /* v1048 (Harley: "an option that would let us use a certain model/skin for each march/formation"): march ship skins, chosen per formation in
    Skins > Marches. Every skin draws a 3D model (today only the Voidspire Dreadnought, SHIP3D_MODEL) with its own colours (lo/hi = hull
    shading bottom->top, glow = upper lights, hot = engines); thumb = CSS filter on the Voidspire picture for the Skins list. New models
@@ -16450,11 +16461,11 @@ function marchGLInit() {
     wrap.appendChild(cv);
     var gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true }); if (!gl) return false;
     function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
-    var vs = "attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; varying vec3 vC; uniform vec2 uRes; uniform vec2 uOrg; uniform float uU; uniform float uS; uniform vec2 uCS; uniform float uLift; uniform float uZ0; varying vec3 vN; varying vec3 vP;" +
-      "void main(){ vec3 p = aPos * uS; float c = uCS.x, s = uCS.y; vec3 w = vec3(p.x*c + p.z*s, p.y + uLift, -p.x*s + p.z*c); vN = vec3(aNrm.x*c + aNrm.z*s, aNrm.y, -aNrm.x*s + aNrm.z*c); vP = aPos; vC = aCol;" +
+    var vs = "attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; varying vec3 vC; uniform vec2 uRes; uniform vec2 uOrg; uniform float uU; uniform float uS; uniform vec2 uCS; uniform float uLift; uniform float uZ0; varying vec3 vN; varying vec3 vP; varying float vWY;" +
+      "void main(){ vec3 p = aPos * uS; float c = uCS.x, s = uCS.y; vec3 w = vec3(p.x*c + p.z*s, p.y + uLift, -p.x*s + p.z*c); vN = vec3(aNrm.x*c + aNrm.z*s, aNrm.y, -aNrm.x*s + aNrm.z*c); vP = aPos; vC = aCol; vWY = w.y;" +
       "float sx = (w.x - w.z) * 0.70711 * uU; float sy = ((w.x + w.z) * 0.70711 * 0.57358 - w.y * 0.81915) * uU; vec2 scr = uOrg + vec2(sx, sy);" +
       "float depth = uZ0 + (w.x + w.z) * 0.70711 * 0.81915 + w.y * 0.57358; gl_Position = vec4(scr.x / uRes.x * 2.0 - 1.0, 1.0 - scr.y / uRes.y * 2.0, -depth / 400.0, 1.0); }";
-    var fs = "precision mediump float; varying vec3 vN; varying vec3 vP; varying vec3 vC; uniform float uVC; uniform vec3 uLo; uniform vec3 uHi; uniform vec3 uGlow; uniform vec3 uHot; void main(){ vec3 n = normalize(vN);" +
+    var fs = "precision mediump float; varying vec3 vN; varying vec3 vP; varying vec3 vC; varying float vWY; uniform float uVC; uniform vec3 uLo; uniform vec3 uHi; uniform vec3 uGlow; uniform vec3 uHot; void main(){ if (vWY < 0.0) discard; vec3 n = normalize(vN);" +
       "if (uVC > 0.5) { if (!gl_FrontFacing) n = -n; vec3 L0 = normalize(vec3(-0.35, 0.85, 0.45)); float d0 = max(dot(n, L0), 0.0); vec3 lit = vC * (0.42 + 0.85 * d0) + vC * vC * 0.25; gl_FragColor = vec4(min(lit, vec3(1.0)), 1.0); return; }" +
       " vec3 L = normalize(vec3(-0.35, 0.85, 0.45)); float d = max(dot(n, L), 0.0);" +
       "vec3 base = mix(uLo, uHi, clamp(vP.y * 0.9 + 0.45, 0.0, 1.0)); vec3 col = base * (0.35 + 0.75 * d) + vec3(0.05,0.06,0.10) * (0.5 + 0.5 * n.y);" +
@@ -16523,7 +16534,7 @@ function marchGLDraw(ships, u) {
     var bob = Math.sin(now / 420 + sh.id * 1.7) * 0.06 * (march3dBob / 100);
     gl.uniform2f(L.uOrg, sh.ox - G.ox, sh.oy - G.oy); gl.uniform2f(L.uCS, Math.cos(cur), Math.sin(cur));
     var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], mo = G.models[mk.model || "void"] || G.models.void, S = march3dSize * (mk.size || 1) / (2 * mo.M.h[0]); G.bind(mo); /* v1048: the march's skin; v1051: and its model */
-    gl.uniform1f(L.uS, S); gl.uniform1f(L.uLift, mo.M.h[1] * S + 0.14 + bob); gl.uniform1f(L.uZ0, (sh.tx + sh.ty - zRef) * 0.70711 * 0.81915); /* v1054: depth relative to the ships on screen — absolute tile coords pushed far-off ships (x+y > ~690) out of the depth range so they vanished */
+    gl.uniform1f(L.uS, S); gl.uniform1f(L.uLift, mo.M.h[1] * S + 0.14 + bob - (march3dWater ? marchWaterCfg(mk.model || "void").sink : 0)); /* v1057: sits in the water; the shader cuts the hull off at the waterline */ gl.uniform1f(L.uZ0, (sh.tx + sh.ty - zRef) * 0.70711 * 0.81915); /* v1054: depth relative to the ships on screen — absolute tile coords pushed far-off ships (x+y > ~690) out of the depth range so they vanished */
     gl.uniform3fv(L.uLo, mk.lo); gl.uniform3fv(L.uHi, mk.hi); gl.uniform3fv(L.uGlow, mk.glow); gl.uniform3fv(L.uHot, mk.hot); gl.uniform1f(L.uVC, mo.vc);
     gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0);
   });
@@ -16606,13 +16617,14 @@ function updateMarchMarkers(manual) {
           var ghx = tile.x - hm.x, ghz = tile.y - hm.y; if (m.status === "returning") { ghx = -ghx; ghz = -ghz; }
           var tt = m.status === "acting" ? 1 : t, fx = m.status === "returning" ? stopX + (hm.x - stopX) * tt : hm.x + (stopX - hm.x) * tt, fy = m.status === "returning" ? stopY + (hm.y - stopY) * tt : hm.y + (stopY - hm.y) * tt;
           if (m.status === "acting") { fx = stopX; fy = stopY; }
-          ships3d.push({ id: m._sid || m.id, ox: px, oy: py, tx: fx, ty: fy, gx: ghx, gz: ghz, skin: m.skin || "voidspire" });
+          var legLen = Math.sqrt((stopX - hm.x) * (stopX - hm.x) + (stopY - hm.y) * (stopY - hm.y)); /* v1057: for the wake trail */
+          ships3d.push({ id: m._sid || m.id, ox: px, oy: py, tx: fx, ty: fy, gx: ghx, gz: ghz, skin: m.skin || "voidspire", st: m.status, ld: m.status === "acting" ? legLen : legLen * t, stopped: m.status === "acting" ? Math.max(0, (vnow() - m.arriveAt) / 1000) : 0 });
         } else {
         el.innerHTML = '<img class="march-ship-inner" src="' + MARCH_SHIP_SPRITES[dirIdx] + '" alt="ship">' + badge;
         }
       });
     }
-    if (marchGL.ok !== null && marchGL.ok) marchGLDraw(use3d ? ships3d : [], tilePxZ() + gapPxZ());
+    if (marchGL.ok !== null && marchGL.ok) { marchGLDraw(use3d ? ships3d : [], tilePxZ() + gapPxZ()); marchWaterDraw(use3d ? ships3d : [], tilePxZ() + gapPxZ()); }
     // Drop markers for marches that resolved/returned since the last frame —
     // same seen-map-diff idea as idleAnim's enemyById, just far fewer entries.
     Object.keys(marchMarkerEls).forEach(function (id) {
@@ -16622,6 +16634,101 @@ function updateMarchMarkers(manual) {
     Object.keys(marchFx).forEach(function (id) { if (!seen[id]) delete marchFx[id]; });
   }
   if (manual !== true) marchAnim.rafId = requestAnimationFrame(updateMarchMarkers);
+}
+// v1057: water round the 3D march ships. Two 2D canvases sit exactly over the ship canvas: one under the bases (wake, foam, ripples) and one above the ship (the foam lapping over the near hull edge).
+// The wake is worked out from the straight leg the ship is on (no history kept), drawn in short chunks so even lots of ships stay cheap; with more than 8 ships it drops to a lighter version (fewer foam blobs, 2 streaks, no foam over the hull).
+var marchWater = { under: null, over: null, dot: null, had: false };
+function mwHash(a, b) { var h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); }
+function mwNoise(x) { var i = Math.floor(x), f = x - i, a = mwHash(i, 7.3), b = mwHash(i + 1, 7.3); f = f * f * (3 - 2 * f); return a + (b - a) * f; }
+function marchWaterDraw(ships, u) {
+  var MW = marchWater, G = marchGL;
+  if (!march3dWater || !ships.length || !G.ok || G.w === undefined) {
+    if (MW.had) { [MW.under, MW.over].forEach(function (c) { c.getContext("2d").clearRect(0, 0, c.width, c.height); c.style.display = "none"; }); MW.had = false; }
+    return;
+  }
+  if (!MW.under) {
+    var wrap = document.getElementById("mapworld"); if (!wrap) return;
+    var mkc = function (z) { var c = document.createElement("canvas"); c.style.cssText = "position:absolute;pointer-events:none;display:none;z-index:" + z + ";"; wrap.appendChild(c); return c; };
+    MW.under = mkc(6); MW.over = mkc(100000);
+    MW.dot = document.createElement("canvas"); MW.dot.width = MW.dot.height = 64;
+    var dg = MW.dot.getContext("2d"), gr = dg.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.45, "rgba(240,250,255,.85)"); gr.addColorStop(1, "rgba(220,240,255,0)"); dg.fillStyle = gr; dg.fillRect(0, 0, 64, 64);
+  }
+  var cw = Math.round(G.w * G.dpr), ch = Math.round(G.h * G.dpr), ctxs = [];
+  [MW.under, MW.over].forEach(function (c) {
+    if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; c.style.width = G.w + "px"; c.style.height = G.h + "px"; }
+    c.style.left = G.ox + "px"; c.style.top = G.oy + "px"; c.style.display = "block";
+    var x = c.getContext("2d"); x.setTransform(G.dpr, 0, 0, G.dpr, 0, 0); x.clearRect(0, 0, G.w, G.h); x.globalAlpha = 1; ctxs.push(x);
+  });
+  MW.had = true;
+  var ux = ctxs[0], ox2 = ctxs[1], now = performance.now() / 1000, lod = ships.length > 8, dot = MW.dot;
+  ships.forEach(function (sh) {
+    var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], model = mk.model || "void", mo = G.models[model] || G.models.void, c = marchWaterCfg(model);
+    var cx = sh.ox - G.ox, cy = sh.oy - G.oy, reach = (c.wakeLen + 2) * u;
+    if (cx < -reach || cy < -reach || cx > G.w + reach || cy > G.h + reach) return;
+    var P = function (wx, wz) { var X = wx - sh.tx, Z = wz - sh.ty; return [cx + (X - Z) * 0.70711 * u, cy + (X + Z) * 0.40558 * u]; };
+    var L = march3dSize * (mk.size || 1), len = L / 2, half = len * c.hullLen, beam = len * (mo.M.h[2] / mo.M.h[0]) * c.hullBeam;
+    var ang = G.ang[sh.id]; if (ang === undefined) ang = Math.atan2(sh.gz, -sh.gx);
+    var cs = Math.cos(ang), sn = Math.sin(ang), W2 = function (lx, lz) { return [sh.tx + lx * cs + lz * sn, sh.ty - lx * sn + lz * cs]; };
+    var moving = sh.st === "acting" ? 0 : 1, tf = now * c.foamSpeed;
+    // wake trail along the straight leg behind the ship
+    var gl2 = Math.sqrt(sh.gx * sh.gx + sh.gz * sh.gz) || 1, Dx = sh.gx / gl2, Dz = sh.gz / gl2, Rx = Dz, Rz = -Dx;
+    var fade = sh.st === "acting" ? Math.max(0, 1 - sh.stopped / 2.5) : 1, back = len * c.sternPos, avail = sh.ld - back, maxS = Math.min(c.wakeLen, avail);
+    if (fade > 0 && maxS > 0.05 && c.wakeOp > 0) {
+      var sx0 = sh.tx - Dx * back, sz0 = sh.ty - Dz * back, step = 0.2, N = Math.max(1, Math.ceil(maxS / step)), CH = 3;
+      ux.strokeStyle = "#ffffff"; ux.lineCap = "round";
+      if (c.churn > 0) {
+        var cl = c.wakeLen * 0.45, cN = Math.max(1, Math.ceil(Math.min(cl, maxS) / step));
+        for (var j = 0; j < cN; j += CH) {
+          var sA = j * step, sB = Math.min(cN, j + CH) * step, sM = (sA + sB) / 2, fC = Math.max(0, 1 - sM / cl);
+          var a0 = P(sx0 - Dx * sA, sz0 - Dz * sA), a1 = P(sx0 - Dx * sB, sz0 - Dz * sB);
+          ux.globalAlpha = c.churn * c.wakeOp * fC * fC * 0.5 * fade; ux.lineWidth = Math.max(1, (beam * c.wakeStart * 1.4 + sM * c.wakeSpread * 1.2) * u);
+          ux.beginPath(); ux.moveTo(a0[0], a0[1]); ux.lineTo(a1[0], a1[1]); ux.stroke();
+        }
+      }
+      var n = lod ? Math.min(2, c.streaks | 0) : (c.streaks | 0);
+      for (var side = -1; side <= 1; side += 2) for (var k = 0; k < n; k++) {
+        var seed = k * 3.7 + (side > 0 ? 11 : 0), lane = n > 1 ? (k / (n - 1) - 0.5) : 0, pts = [];
+        for (var q = 0; q <= N; q++) {
+          var s2 = Math.min(maxS, q * step), pd = avail - s2;
+          var off = beam * c.wakeStart + s2 * c.wakeSpread + lane * (beam * 0.35 + s2 * c.wakeSpread * 0.6) + (mwNoise(pd * 2.2 + seed) - 0.5) * 2 * c.wobble * (0.4 + s2 / c.wakeLen);
+          pts.push(P(sx0 - Dx * s2 + Rx * off * side, sz0 - Dz * s2 + Rz * off * side));
+        }
+        for (var j2 = 0; j2 < N; j2 += CH) {
+          var e = Math.min(N, j2 + CH), sMid = (j2 + e) / 2 * step, f = Math.max(0, 1 - sMid / c.wakeLen);
+          var al = c.wakeOp * Math.pow(f, 1.4) * (0.55 + 0.45 * mwNoise((avail - sMid) * 4 + seed * 2)) * fade; if (al < 0.01) continue;
+          ux.globalAlpha = al; ux.lineWidth = Math.max(0.8, c.streakW * u * (0.6 + 0.8 * f));
+          ux.beginPath(); ux.moveTo(pts[j2][0], pts[j2][1]); for (var r2 = j2 + 1; r2 <= e; r2++) ux.lineTo(pts[r2][0], pts[r2][1]); ux.stroke();
+        }
+      }
+    }
+    // ripples while parked (fighting / gathering)
+    if (!moving && c.ripples > 0) {
+      ux.strokeStyle = "#e6f5ff"; ux.lineWidth = Math.max(1, u * 0.04);
+      for (var rr = 0; rr < 3; rr++) {
+        var g = ((now / 2.4) + rr / 3) % 1, ra = c.ripples * (1 - g) * 0.6; if (ra < 0.01) continue;
+        ux.globalAlpha = ra; ux.beginPath();
+        for (var i3 = 0; i3 <= 32; i3++) { var th3 = i3 / 32 * Math.PI * 2, wp3 = W2(Math.cos(th3) * (half * 1.05 + g * 1.4), Math.sin(th3) * (beam * 1.2 + g * 1.4)), p3 = P(wp3[0], wp3[1]); if (i3) ux.lineTo(p3[0], p3[1]); else ux.moveTo(p3[0], p3[1]); }
+        ux.stroke();
+      }
+    }
+    // foam hugging the hull (+ bow wave when sailing); the near side also goes over the hull edge
+    var depthC = sh.tx + sh.ty, K = lod ? 14 : 24, NB = lod ? 4 : 7;
+    [[ux, false], [ox2, true]].forEach(function (pass) {
+      var x = pass[0], frontOnly = pass[1], amt = frontOnly ? c.front : 1; if (frontOnly && (lod || amt <= 0)) return;
+      if (c.foam > 0) for (var i = 0; i < K; i++) {
+        var th = i / K * Math.PI * 2, wp = W2(Math.cos(th) * half * 0.95, Math.sin(th) * beam * 1.05); if (frontOnly && wp[0] + wp[1] < depthC) continue;
+        var nn = mwNoise(tf * 1.6 + i * 1.91 + sh.id), boost = 1 + moving * c.bow * Math.max(0, -Math.cos(th)) * 1.2;
+        var r = u * 0.19 * c.foamSize * (0.55 + 0.7 * nn) * boost, a = c.foam * amt * (0.35 + 0.65 * mwNoise(tf * 2.3 + i * 0.7 + 5 + sh.id)) * (frontOnly ? 0.9 : 0.8);
+        var pp = P(wp[0], wp[1]); x.globalAlpha = Math.min(1, a); x.drawImage(dot, pp[0] - r, pp[1] - r * 0.6, r * 2, r * 1.2);
+      }
+      if (moving && c.bow > 0) for (var sd = -1; sd <= 1; sd += 2) for (var b = 0; b < NB; b++) {
+        var gg = b / (NB - 1), wpb = W2(-half * (1.02 - gg * 0.75), sd * beam * (0.35 + gg * 1.25) * (1 + 0.15 * Math.sin(tf * 5 + b))); if (frontOnly && wpb[0] + wpb[1] < depthC) continue;
+        var rb = u * 0.13 * c.foamSize * (1 - gg * 0.5) * (0.7 + 0.6 * mwNoise(tf * 3 + b * 1.3 + sd * 4 + sh.id)), ab = c.bow * amt * (1 - gg * 0.7) * 0.9;
+        var pb = P(wpb[0], wpb[1]); x.globalAlpha = Math.min(1, ab); x.drawImage(dot, pb[0] - rb, pb[1] - rb * 0.6, rb * 2, rb * 1.2);
+      }
+    });
+  });
+  ux.globalAlpha = 1; ox2.globalAlpha = 1;
 }
 // v1054: attack visuals — every ~1s a volley of 2-3 glowing shells flies from the parked ship to the target and bursts on it. Purely cosmetic: the fight itself is still worked out by resolveAction.
 var MARCH_FX_STANDOFF = 3, marchFx = {};
@@ -23766,6 +23873,9 @@ document.getElementById("devMarch3dBtn").onclick = function () { march3dOn = !ma
 (function () { var el = document.getElementById("devMarch3dBob"), lb = document.getElementById("devMarch3dBobVal"); el.value = march3dBob; lb.textContent = march3dBob + "%"; el.addEventListener("input", function () { march3dBob = parseFloat(this.value); lb.textContent = march3dBob + "%"; try { localStorage.setItem(MARCH3D_BOB_KEY, String(march3dBob)); } catch (e) {} assetSyncUpload(MARCH3D_BOB_KEY, String(march3dBob)); }); })();
 (function () { var el = document.getElementById("devMarch3dSize"), lb = document.getElementById("devMarch3dSizeVal"); el.value = march3dSize; lb.textContent = march3dSize + " tiles"; el.addEventListener("input", function () { march3dSize = parseFloat(this.value); lb.textContent = march3dSize + " tiles"; try { localStorage.setItem(MARCH3D_SIZE_KEY, String(march3dSize)); } catch (e) {} assetSyncUpload(MARCH3D_SIZE_KEY, String(march3dSize)); }); })();
 renderMarch3dBtn();
+function renderMarch3dWaterBtn() { var b = document.getElementById("devMarch3dWaterBtn"); if (!b) return; b.textContent = "🌊 Ship water: " + (march3dWater ? "On" : "Off"); b.className = "dev-btn" + (march3dWater ? " active" : ""); } /* v1057: foam + wake round the 3D march ships (all players) */
+document.getElementById("devMarch3dWaterBtn").onclick = function () { march3dWater = !march3dWater; try { localStorage.setItem(MARCH3D_WATER_KEY, march3dWater ? "1" : "0"); } catch (e) {} assetSyncUpload(MARCH3D_WATER_KEY, march3dWater ? "1" : "0"); renderMarch3dWaterBtn(); };
+renderMarch3dWaterBtn();
 document.getElementById("devHeroHopBtn").onclick = function () { setHeroHop(!heroHopOn); renderHeroHopBtn(); };
 document.getElementById("devShowGarrisonBtn").onclick = function () {
   setShowGarrison(!showGarrisonEnabled);
