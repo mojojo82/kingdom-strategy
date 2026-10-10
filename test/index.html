@@ -10991,7 +10991,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1029"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1030"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24179,7 +24179,12 @@ function renderTileInfo() {
      no card, nothing selected. Open land you CAN teleport to still shows its card (that's where Teleport Here lives). */
   if (selectedTile && selectedTile !== game.state.homeTileId && !isTileOccupied(selectedTile)) {
     var tE = mapTileById(game.state.map, selectedTile);
-    if (tE && tE.type === "empty" && isTileTooCloseToCity(tE.id)) { selectedTile = null; try { renderVisibleTiles(); } catch (e) {} }
+    if (tE && tE.type === "empty" && isTileTooCloseToCity(tE.id)) { /* v1030 (Harley): keep the tile selected so its RED 3x3 "can't build here" block still shows - only the card goes */
+      var elB = document.getElementById("tileinfo");
+      if (elB) { lastArmyFormTile = null; currentArmyInputs = null; elB.innerHTML = ""; elB.classList.remove("has-sel", "pretty", "tp-mini"); }
+      try { tileInfoArrowEl().style.display = "none"; } catch (e) {}
+      return;
+    }
   }
   var mini = tileIsOpenLand(selectedTile); /* open land: only a small Teleport button (tp-mini) - no card, close or bookmark */
   renderTileInfoInner();

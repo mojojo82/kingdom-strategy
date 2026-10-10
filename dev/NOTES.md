@@ -1044,3 +1044,8 @@
 - Empty land too close to a city: tapping it selects nothing, so no card.
 - Open land: no card, no close/bookmark/share; just a small cyan "🌀 Teleport" button above the tile (#tileinfo.tp-mini, 150px), with a small note if marches are still out. `tileIsOpenLand(id)`.
 - Test: new g241_empty_tile.js.
+
+## v1030 - Red "can't build here" block is back (TEST)
+- Harley: "You removed the red illegal location indicator. I said to remove the info card." v1029 deselected a too-close tile, which also removed its red 3x3 block.
+- Now the tile stays selected (red block shows) and only the card is hidden (empty, no has-sel, arrow hidden).
+- g241 updated: too-close tile stays selected with .tile.fp.bad showing and no card.
