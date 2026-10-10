@@ -975,3 +975,8 @@
 - Harley: a big emoji art in chat looked flat; the original had been cut. Messages were capped at 500 characters and each coloured-square emoji counts as 2, so art was cut after ~6 rows of 40. Harley: 2000.
 - CHAT_MAX_LEN = 2000 for World and Alliance chat (the box allows 2000 too); firestore.rules worldchat text.size() <= 2000 (rules deploy with CI). Roughly 25 rows of 40 squares.
 - Tests: g235 sends a 25-row art (1,924 characters) and it arrives whole; ci/integration.test.js now checks 2000 allowed, 2001 refused.
+
+### v1020 — CI fixed: More > Dev Tools tile hidden for normal players on PC too (TEST)
+- The CI workflow (server tests + rules/functions deploy) had failed since v998, so rules and functions stopped deploying after v997 (nothing server-side changed until v1019's chat limit). Found while deploying the 2,000-character chat rule. The raw CI log can't be downloaded from this session, so the workflow now also prints failing test lines as annotations (readable with `gh api .../check-runs/<job>/annotations`).
+- The failing e2e check was real: "dev tools hidden for normal players". The rule hiding the More > Dev Tools tile from non-admins sat in the phone-only CSS, so on a PC-width screen normal players saw the tile. Moved into the global non-admin style.
+- Lesson: after each push, check the firebase workflow result, not just the Pages deploy.
