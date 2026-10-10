@@ -1153,3 +1153,8 @@
 - MARCH_SKINS registry (id, name, colours lo/hi/glow/hot fed to the 3D ship shader as uniforms, thumb = CSS filter on the Voidspire picture). Today: Voidspire, Voidspire · Crimson, Voidspire · Gilded (colour variants of the one model so the choice can be tested; easy to drop). New models get added here.
 - Skins > 🚀 Marches: pick a formation (chips), then tap a ship skin -> formations[i].marchSkin (saved). A march sent from that formation carries march.skin; the shared march record has skin, so other players see it (foreignMarchList); marchGLDraw sets the colours per ship. Unset = Voidspire (old saves unchanged).
 - Test: new g249_march_skins.js.
+
+## v1049 - New city skin: Ghost Galleon (pirate ship) (TEST)
+- Harley: "Add this into game as new city skin" + "Dont downsize the image. I will do that in the alignment controls."
+- CITY_SKINS.pirate "Ghost Galleon": white background cut out (flood fill from the edges, soft 1px edge), empty border trimmed, kept at full size (1270x1033 webp, ~180KB), scale 1.0, last in CITY_SKIN_ORDER, not locked (free for everyone). Foundation metrics baked into CITY_ART_BAKED (fx .4465, fy .6750, aspect .8134). Original art/originals/pirate_ship_city.png.
+- Harley sizes / positions it in Dev Tools > Visuals > Base skin alignment (shared for all players).

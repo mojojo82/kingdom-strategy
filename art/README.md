@@ -18,3 +18,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | cards/01_iron_vanguard.png ... cards/18_drop_signal.png | The grid cut into one file per card (290x290), in card order | 290x290 | - |
 | profile_slot_stone.png | Stone tile for one of the 6 Overlord Profile slots, as sent (white background) | 1254x1254 | GP_SLOT_STONE (white cut out, 124x124 webp, v1036): Overlord Profile top-left slot full size, top-right 80% |
 | gear_4_items.png | 4 gear items on black, as sent (red sword, gold sword, ice shield, arcane staff) | 1254x1254 | mockup 10 Oct: each cut out (black removed, glow kept), on a stone tile in the Overlord Profile slots |
+| pirate_ship_city.png | Pirate ship ("Ghost Galleon") city skin, as sent (white background) | 1447x1087 | CITY_SKINS.pirate (v1049): white cut out, empty border trimmed, FULL size 1270x1033 webp (Harley: don't downsize - he sizes it with the skin alignment), scale 1.0 |
