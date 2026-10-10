@@ -1144,3 +1144,6 @@
 - "Find lost art" found nothing - because nothing was lost: the archer (small sprite) and lancer (skeleton warrior) are BUILT-IN (OWNER_DEFAULTS). Built-ins are copied to a phone only ONCE (seedOwnerDefaults flag); v1034-v1037 deleted those copies and they were never re-copied, and the enemy sprite slots (makeEnemySpriteSlot) had no built-in fallback, so the placeholders showed.
 - Fix: makeEnemySpriteSlot falls back to OWNER_DEFAULTS; and every load, any missing built-in IMAGE is copied back to the phone (empty slots only, never overwrites).
 - Test: new g248_enemy_defaults.js (fails on v1045, passes now).
+
+## v1047 - Weapon level on the weapon slots (TEST)
+- Harley: "Lets show the current level of each weapon". renderWeaponSlotsInto adds a small "LvN" badge (bottom-left, dark pill, gold text) on each equipped weapon in the gear row (Conquest + Arena); the level is in the redraw signature so it updates when a weapon levels up.

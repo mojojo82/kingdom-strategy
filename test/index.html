@@ -1617,6 +1617,7 @@
   .idle-weapon-slots { margin-left:auto; display:flex; gap:10px; }
   .idle-weapon-slots .power-slot { padding:0; cursor:pointer; border-color:transparent !important; }
   .idle-weapon-slots .power-slot img { width:100%; height:100%; object-fit:cover; display:block; }
+  .idle-weapon-slots .power-slot .wp-lv { position:absolute; left:2px; bottom:2px; padding:0 4px; border-radius:6px; background:rgba(0,0,0,.72); color:#f0d98c; font-size:10px; font-weight:800; line-height:14px; font-family:var(--bodyfont); pointer-events:none; }
   .idle-weapon-slots .power-slot.slot-sunken { background:rgba(0,0,0,.2); border:2px solid rgba(18,10,4,.6) !important; box-shadow:inset 0 3px 0 rgba(0,0,0,.28), inset 3px 0 0 rgba(0,0,0,.12); }
   /* v1040 (Harley): empty gear spaces are just a flat colour - no rim, no inner shadow; the 10 equipment spaces get the pieces' own corner
      (the pieces' tile art has ~8% corners, was 9px); the gear boxes lose their tan border (border kept transparent so nothing shifts). */
@@ -11184,7 +11185,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1046"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1047"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23003,7 +23004,7 @@ function renderIdleWeaponSlots() { // v703: fills the weapon slots in BOTH the C
   ["idlePowerSlots", "arenaPowerSlots"].forEach(function (bid) { var box = document.getElementById(bid); if (box) renderWeaponSlotsInto(box); });
 }
 function renderWeaponSlotsInto(box) {
-  var eq = (game.state.equippedWeapons || []).slice(0, WEAPON_EQUIP_MAX), sig = eq.join(",");
+  var eq = (game.state.equippedWeapons || []).slice(0, WEAPON_EQUIP_MAX), lvOf = function (id) { return (game.state.weaponLevels && game.state.weaponLevels[id]) || 1; }, sig = eq.map(function (id) { return id + ":" + lvOf(id); }).join(","); /* v1047: level in the sig so the badge updates */
   var wrap = box.querySelector(".idle-weapon-slots");
   if (wrap && wrap.dataset.sig === sig) return;
   if (!wrap) { wrap = document.createElement("div"); wrap.className = "idle-weapon-slots"; box.appendChild(wrap); }
@@ -23015,6 +23016,7 @@ function renderWeaponSlotsInto(box) {
       d.title = w.name;
       if (w.img) { var im = document.createElement("img"); im.src = w.img; im.alt = w.name; d.appendChild(im); }
       else { d.classList.add("equipped"); d.textContent = w.icon; }
+      d.style.position = "relative"; var lvb = document.createElement("span"); lvb.className = "wp-lv"; lvb.textContent = "Lv" + lvOf(w.id); d.appendChild(lvb); /* v1047 (Harley): each weapon's current level */
       (function (id) { d.onclick = function () { openWeaponInfo(id); }; })(w.id);
     }
     if (!w && !wrap.querySelector(".slot-sunken")) d.classList.add("slot-sunken"); // first empty slot: style test (sunken, reverse bevel)
