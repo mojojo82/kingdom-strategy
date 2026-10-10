@@ -889,6 +889,8 @@
   .formation-fort { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 2px; font-size:12px; color:#f0c95f; font-weight:700; }
   .lb2-fort { margin-top:6px; font-size:12.5px; color:#f0d98c; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; }
   .idle-fort { position:absolute; top:78px; left:13px; z-index:2; }
+  #idlePowerSlots .power-slot.cq-card, #idlePowerSlots + .ps-row2 .power-slot.cq-card { display:flex; align-items:center; justify-content:center; font-size:20px; }
+  #idlePowerSlots .power-slot.cq-card img, #idlePowerSlots + .ps-row2 .power-slot.cq-card img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; border-radius:inherit; }
   .cq-left-grid { position:absolute; left:12px; top:4px; display:grid; grid-template-columns:repeat(3,var(--lg,40px)); grid-auto-rows:var(--lg,40px); gap:4px; z-index:2; }
   .cq-left-grid .lg-cell { position:relative; background:rgba(0,0,0,.2); border-radius:calc(var(--lg,40px) * 0.08); }
   .cq-left-grid .idle-bag-btn { position:absolute; inset:0; top:0; left:0; width:100%; height:100%; border:none; border-radius:inherit; background:transparent; }
@@ -2879,6 +2881,11 @@
                   <span class="dev-tools-hint">Hero progression:</span>
                   <button class="secondary" id="devAddValor">+5,000 Valor</button>
                   <button class="secondary" id="devAddFragments">+50 Fragments (all owned)</button>
+                </div>
+                <div class="dev-tools-row">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
+                    <input type="checkbox" id="devCardsOffToggle"> 🃏 Card effects OFF (this device only) - your cards stay equipped and shown, but do nothing
+                  </label>
                 </div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
@@ -5940,8 +5947,14 @@ function cardEffectFor(name) {
   var ov = cardEffectOverridesStore()[key];
   return ov ? Object.assign({}, base, ov) : base;
 }
+/* v1042 (Harley: "a dev tool that disables the effects of all cards... I need to do some display tests without the cards affecting my conquest run"):
+   while on, YOUR cards (game.state) give no effects anywhere - still equipped and shown. Bots and the simulators' card picks are unaffected.
+   Admin dev tool, kept on this device only (localStorage), never in the save or the shared settings. */
+var DEV_CARDS_OFF_KEY = "ks_dev_cardsoff_v1";
+function devCardsOff() { try { var K = window.KS_BACKEND; if (K && K.kind === "firebase" && !K.isAdmin) return false; return localStorage.getItem(DEV_CARDS_OFF_KEY) === "1"; } catch (e) { return false; } }
 function equippedCardEffects(state) {
   var out = [];
+  if (typeof game !== "undefined" && game && state === game.state && devCardsOff()) return out;
   if (!state || !Array.isArray(state.equippedCards) || !Array.isArray(state.cards)) return out;
   for (var i = 0; i < state.equippedCards.length; i++) {
     var ek = cardEffectKeyAt(state, state.equippedCards[i]); /* v985: by name, or the card's slot code */
@@ -11138,7 +11151,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1041"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1042"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12792,8 +12805,25 @@ document.getElementById("cardArtInput").addEventListener("change", function (e) 
 function renderPowerSlots() {
   var el = document.getElementById("idlePowerSlots");
   if (el) {
-    el.innerHTML = powerSlotHtml(0) + powerSlotHtml(1) + powerSlotHtml(2);
+    el.innerHTML = '<div class="power-slot"></div><div class="power-slot"></div><div class="power-slot"></div>'; /* v1042: Conquest's 6 boxes show equipped cards (renderConquestCardSlots), not the Esper */
+    cqCardSig = ""; renderConquestCardSlots();
   }
+}
+/* v1042 (Harley): the 6 boxes bottom-left in Conquest (3 in the top row, 3 below) show your equipped cards' art, filling the square, in equip order. */
+var cqCardSig = "";
+function renderConquestCardSlots() {
+  var top = document.getElementById("idlePowerSlots"), row2 = top && top.nextElementSibling;
+  if (!top || !row2) return;
+  var boxes = [].slice.call(top.querySelectorAll(":scope > .power-slot")).concat([].slice.call(row2.querySelectorAll(":scope > .power-slot")));
+  var eq = Array.isArray(game.state.equippedCards) ? game.state.equippedCards : [];
+  var arts = eq.map(function (i) { return getCardArt(i) || ""; });
+  var sig = eq.join(",") + "|" + arts.map(function (a) { return a.length + a.slice(-24); }).join(",") + "|" + boxes.length;
+  if (sig === cqCardSig) return; cqCardSig = sig;
+  boxes.forEach(function (b, k) {
+    var idx = eq[k], c = idx != null && game.state.cards[idx];
+    b.classList.remove("equipped"); b.classList.toggle("cq-card", !!c); b.innerHTML = ""; b.title = c ? (c.name || "Card " + (idx + 1)) : "";
+    if (c) { if (arts[k]) { var im = document.createElement("img"); im.src = arts[k]; im.alt = ""; b.appendChild(im); } else b.textContent = "🃏"; }
+  });
 }
 // Espers tab — read-only collection view. Each owned Esper gets an icon,
 // name, its skill/passive descriptions, and any flavor stat lines, with a
@@ -22960,6 +22990,7 @@ function renderWeaponSlotsInto(box) {
 }
 function renderIdleHeader() {
   renderIdleWeaponSlots();
+  try { renderConquestCardSlots(); } catch (e) {}
   renderIdleIconGrid();
   if (!idleHeaderEls) {
     var vEl = document.getElementById("idleValorCount"), dEl = document.getElementById("idleDpsCount"), kEl = document.getElementById("idleDefeatedCount");
@@ -23359,6 +23390,7 @@ function devSkinAlignSync() {
 document.getElementById("devAddValor").onclick = function () { game.state.idle.valor += 5000; persist(); render(); };
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
+(function () { var t = document.getElementById("devCardsOffToggle"); if (!t) return; t.checked = devCardsOff(); t.onchange = function () { try { localStorage.setItem(DEV_CARDS_OFF_KEY, t.checked ? "1" : "0"); } catch (e) {} try { render(); } catch (e2) {} }; })();
 // Hoisted to named functions (not local closures) so the SAME sync logic
 // can also be re-run from devToolsToggle/devSubSpeed's reveal handlers
 // below — not just load/pageshow. Both checkboxes live inside two nested

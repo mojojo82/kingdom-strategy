@@ -1119,3 +1119,8 @@
 - Harley: "Make 6 slots where the back pack is. Remove the dotted line and backpack goes into one of those empty slots".
 - .cq-left-grid: 2 rows x 3 flat slots (same flat style/corners as the equipment spaces) left of the 10 equipment spaces, sized to the room there (max = equipment size, ~40px on a phone), centred beside them (re-fit by ResizeObserver when Conquest shows). The backpack sits in the first slot without its dotted outline; the other 5 are empty.
 - g238 (backpack) still passes.
+
+## v1042 - Conquest card boxes + "Card effects OFF" dev switch (TEST)
+- Harley: the 6 boxes bottom-left in Conquest (one was the Esper slot) now all show equipped cards - just the art, filling the square. renderConquestCardSlots(): #idlePowerSlots' 3 + the row below's 3, in equip order (CARD_EQUIP_MAX is 5, so the 6th stays empty); refreshed from renderIdleHeader with a signature. The Esper no longer shows there (Arena's slots unchanged).
+- Dev Tools > Speed & Testing: "🃏 Card effects OFF (this device only)". While on, YOUR cards (game.state) give no effects anywhere but stay equipped and shown; bots and the PvP/Boss simulators' card picks are unaffected. Admins only; stored in localStorage ks_dev_cardsoff_v1 (not the save, not shared). Gate is in equippedCardEffects(), which every card effect goes through.
+- Test: new g246_card_slots.js; g215 still passes.
