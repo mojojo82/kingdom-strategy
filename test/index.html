@@ -10867,7 +10867,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1015"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1016"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17246,6 +17246,8 @@ function ticHtml(o) {
   return html;
 }
 var ownerProfileCache = {};
+var chatAvRedrawT = 0;
+function chatAvatarRedraw() { clearTimeout(chatAvRedrawT); chatAvRedrawT = setTimeout(function () { try { var el = document.getElementById("chatMessages"); if (el && el.offsetParent) renderWorldChat(); } catch (e) {} }, 150); } /* v1016: one redraw after a batch of avatars arrive */
 function fetchOwnerProfile(ownerId) { /* name + avatar a player saved for themselves (their own asset items); bots get a generated name */
   if (!ownerId) return null;
   var pc0 = ownerProfileCache[ownerId];
@@ -17256,7 +17258,7 @@ function fetchOwnerProfile(ownerId) { /* name + avatar a player saved for themse
   if (!cloudDb) { p.loading = false; p.at = Date.now(); return p; }
   var base = ownerId === "owner" ? "assetitems/" : ("players/" + ownerId + "/assetitems/");
   Promise.all([PLAYER_NAME_KEY, AVATAR_KEY].map(function (k) { return cloudDb.doc(base + k).get().then(function (sn) { return sn.exists && sn.data() ? sn.data().data : null; }, function () { return null; }); }))
-    .then(function (r) { var ch = p.name !== (r[0] || null) || p.avatar !== (r[1] || null); p.name = r[0] || null; p.avatar = r[1] || null; p.loading = false; p.at = Date.now(); if (ch) try { renderTileInfo(); } catch (e) {} });
+    .then(function (r) { var ch = p.name !== (r[0] || null) || p.avatar !== (r[1] || null); p.name = r[0] || null; p.avatar = r[1] || null; p.loading = false; p.at = Date.now(); if (ch) { try { renderTileInfo(); } catch (e) {} chatAvatarRedraw(); } });
   return p;
 }
 // Renders only the read-only header (garrison/remaining amounts) for the tile info panel.
@@ -26406,7 +26408,8 @@ function renderWorldChat() {
     var day = d.toLocaleDateString([], { year: "numeric", month: "2-digit", day: "2-digit" }), sep = "";
     if (day !== lastDay) { sep = '<div class="chat-date">' + day + '</div>'; lastDay = day; }
     var own = m.pid ? m.pid === PLAYER_ID : m.name === me, key = m.ts + "|" + m.name;
-    var av = own ? avatarHtml : '<div class="chat-avatar">👤</div>';
+    var op = !own && m.pid ? fetchOwnerProfile(m.pid) : null; /* v1016 (Harley): other players' avatars in chat (same cached, re-read-every-minute profile as the map) */
+    var av = own ? avatarHtml : (op && op.avatar ? '<img class="chat-avatar" src="' + op.avatar + '">' : '<div class="chat-avatar">👤</div>');
     var cls = String(m.text).indexOf("\n") !== -1 ? (/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFF00-\uFFEF\u3000-\u30FF]/u.test(m.text) ? ' multi emo' : ' multi') : '';
     var tr = chatTranslations[key];
     return sep + '<div class="chat-msg' + (own ? ' own' : '') + (chatSelKey === key ? ' sel' : '') + '" data-key="' + escapeHtml(key) + '">' + av +

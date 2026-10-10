@@ -39,11 +39,16 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const s2 = await look(); await B.waitForTimeout(800); const s3 = await look(); o.av2 = s3.avatar === blue;
   /* back to the default skin */
   await A.evaluate(() => setMapCitySkin("tower")); await A.waitForTimeout(2000); const s4 = await look(); o.skin4 = s4.skin;
+  /* v1016: world chat shows the other player's avatar */
+  await A.evaluate(() => postWorldChat("hello from Alpha")); await A.waitForTimeout(1200);
+  o.chat = await B.evaluate(() => new Promise((res) => { cloudDb.doc("players/" + PLAYER_ID + "/assetitems/g232ping2").set({ data: "1" }); setScreen("more", "chat"); setTimeout(() => { try { renderWorldChat(); } catch (e) {} setTimeout(() => {
+    const row = [...document.querySelectorAll("#chatMessages .chat-msg")].find((r) => /hello from Alpha/.test(r.textContent)); const im = row && row.querySelector("img.chat-avatar"); res({ row: !!row, img: !!im, src: im ? im.getAttribute("src").slice(0, 30) : null }); }, 1500); }, 1500); }));
   console.log(JSON.stringify(o));
   assert.strictEqual(o.doc, "titan", "the city doc carries the skin");
   assert.ok(o.skin1 === "titan", "the other player draws Titan Fountain");
   assert.ok(o.av1, "the other player sees the avatar");
   assert.ok(o.av2, "a changed avatar shows up without a reload");
   assert.strictEqual(o.skin4, "tower", "switching back is seen too");
+  assert.ok(o.chat.row && o.chat.img && /^data:image/.test(o.chat.src), "chat shows the other player's avatar");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
