@@ -1147,3 +1147,9 @@
 
 ## v1047 - Weapon level on the weapon slots (TEST)
 - Harley: "Lets show the current level of each weapon". renderWeaponSlotsInto adds a small "LvN" badge (bottom-left, dark pill, gold text) on each equipped weapon in the gear row (Conquest + Arena); the level is in the redraw signature so it updates when a weapon levels up.
+
+## v1048 - March ship skin per formation (TEST)
+- Harley: "In skins we need an option that would let us use a certain model/skin for each march/formation. Currently the voidspire model is the only one" (more models coming from .glb files).
+- MARCH_SKINS registry (id, name, colours lo/hi/glow/hot fed to the 3D ship shader as uniforms, thumb = CSS filter on the Voidspire picture). Today: Voidspire, Voidspire · Crimson, Voidspire · Gilded (colour variants of the one model so the choice can be tested; easy to drop). New models get added here.
+- Skins > 🚀 Marches: pick a formation (chips), then tap a ship skin -> formations[i].marchSkin (saved). A march sent from that formation carries march.skin; the shared march record has skin, so other players see it (foreignMarchList); marchGLDraw sets the colours per ship. Unset = Voidspire (old saves unchanged).
+- Test: new g249_march_skins.js.

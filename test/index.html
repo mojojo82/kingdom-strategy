@@ -891,6 +891,9 @@
   .idle-fort { position:absolute; top:78px; left:13px; z-index:2; }
   #idlePowerSlots .power-slot.cq-card, #idlePowerSlots + .ps-row2 .power-slot.cq-card { display:flex; align-items:center; justify-content:center; font-size:20px; }
   #idlePowerSlots .power-slot.cq-card img, #idlePowerSlots + .ps-row2 .power-slot.cq-card img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; border-radius:inherit; }
+  .sk2 .sk-forms { display:flex; gap:6px; padding:8px 10px 2px; flex-wrap:wrap; }
+  .sk2 .sk-form { flex:1 1 0; min-width:0; text-align:center; padding:6px 4px; border-radius:9px; font-size:12.5px; font-weight:800; background:#14100b; color:#c9a96a; border:1.5px solid #6b5634; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sk2 .sk-form.on { background:#57cfdf; color:#0e3440; border-color:#1f6c80; }
   .cq-left-grid { position:absolute; left:12px; top:4px; display:grid; grid-template-columns:repeat(3,var(--lg,40px)); grid-auto-rows:var(--lg,40px); gap:4px; z-index:2; }
   .cq-left-grid .lg-cell { position:relative; background:rgba(0,0,0,.2); border-radius:calc(var(--lg,40px) * 0.08); }
   .cq-left-grid .idle-bag-btn { position:absolute; inset:0; top:0; left:0; width:100%; height:100%; border:none; border-radius:inherit; background:transparent; }
@@ -9154,6 +9157,7 @@ function createGame(opts) {
         if (!state.formations[idx] || !f) return;
         if (typeof f.name === "string") state.formations[idx].name = f.name;
         if (f.fort === 1 || f.fort === 3) state.formations[idx].fort = f.fort; /* v1033 */
+        if (typeof f.marchSkin === "string") state.formations[idx].marchSkin = f.marchSkin; /* v1048 */
         if (f.troops) Object.assign(state.formations[idx].troops, f.troops);
         if (Array.isArray(f.heroKeys)) {
           // Only real, currently-owned, non-governor heroes survive the
@@ -11185,7 +11189,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1047"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1048"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16392,6 +16396,17 @@ var SHIP3D_MODEL = {"c":[-0.0012,-0.00704,-0.00515],"h":[0.95815,0.56166,0.21727
    the 4k-triangle Voidspire Dreadnought model, using the same 35deg / 45deg camera as the isometric ground, so a ship sits exactly on its path and faces where it's heading. */
 var MARCH3D_KEY = "kingdom_prototype_march3d_v1", march3dOn = true, MARCH3D_SIZE_KEY = "kingdom_prototype_march3dsize_v1", march3dSize = 2.4, MARCH3D_BOB_KEY = "kingdom_prototype_march3dbob_v1", march3dBob = 0; /* v838: bob amplitude in % of the old fixed 0.06-tile bob; off by default */
 try { march3dOn = localStorage.getItem(MARCH3D_KEY) !== "0"; /* v933: on by default (Harley's owner setting) */ var _ms = parseFloat(localStorage.getItem(MARCH3D_SIZE_KEY)); if (_ms > 0) march3dSize = _ms; var _mb = parseFloat(localStorage.getItem(MARCH3D_BOB_KEY)); if (_mb >= 0) march3dBob = _mb; } catch (e) {}
+/* v1048 (Harley: "an option that would let us use a certain model/skin for each march/formation"): march ship skins, chosen per formation in
+   Skins > Marches. Every skin draws a 3D model (today only the Voidspire Dreadnought, SHIP3D_MODEL) with its own colours (lo/hi = hull
+   shading bottom->top, glow = upper lights, hot = engines); thumb = CSS filter on the Voidspire picture for the Skins list. New models
+   (e.g. from a .glb) are added here with a model field. The chosen skin travels with the march and is shared, so other players see it. */
+var MARCH_SKINS = [
+  { id: "voidspire", name: "Voidspire", lo: [0.16, 0.19, 0.27], hi: [0.50, 0.56, 0.70], glow: [0.15, 0.55, 0.85], hot: [0.9, 0.45, 0.15], thumb: "" },
+  { id: "voidspire_crimson", name: "Voidspire · Crimson", lo: [0.26, 0.09, 0.09], hi: [0.74, 0.42, 0.40], glow: [0.95, 0.22, 0.18], hot: [1.0, 0.72, 0.2], thumb: "sepia(1) saturate(4) hue-rotate(-40deg) brightness(.95)" },
+  { id: "voidspire_gilded", name: "Voidspire · Gilded", lo: [0.24, 0.18, 0.08], hi: [0.88, 0.74, 0.40], glow: [1.0, 0.8, 0.3], hot: [1.0, 0.5, 0.15], thumb: "sepia(1) saturate(2.2) brightness(1.1)" }
+];
+var MARCH_SKINS_BY_ID = {}; MARCH_SKINS.forEach(function (k) { MARCH_SKINS_BY_ID[k.id] = k; });
+function formationMarchSkin(f) { return f && MARCH_SKINS_BY_ID[f.marchSkin] ? f.marchSkin : "voidspire"; }
 var marchGL = { ok: null, cv: null, gl: null, prog: null, loc: {}, buf: null, nIdx: 0, hadShips: false, dpr: 1, w: 0, h: 0, ang: {}, last: 0 };
 function marchGLInit() {
   if (marchGL.ok !== null) return marchGL.ok;
@@ -16407,9 +16422,9 @@ function marchGLInit() {
       "void main(){ vec3 p = aPos * uS; float c = uCS.x, s = uCS.y; vec3 w = vec3(p.x*c + p.z*s, p.y + uLift, -p.x*s + p.z*c); vN = vec3(aNrm.x*c + aNrm.z*s, aNrm.y, -aNrm.x*s + aNrm.z*c); vP = aPos;" +
       "float sx = (w.x - w.z) * 0.70711 * uU; float sy = ((w.x + w.z) * 0.70711 * 0.57358 - w.y * 0.81915) * uU; vec2 scr = uOrg + vec2(sx, sy);" +
       "float depth = uZ0 + (w.x + w.z) * 0.70711 * 0.81915 + w.y * 0.57358; gl_Position = vec4(scr.x / uRes.x * 2.0 - 1.0, 1.0 - scr.y / uRes.y * 2.0, -depth / 400.0, 1.0); }";
-    var fs = "precision mediump float; varying vec3 vN; varying vec3 vP; void main(){ vec3 n = normalize(vN); vec3 L = normalize(vec3(-0.35, 0.85, 0.45)); float d = max(dot(n, L), 0.0);" +
-      "vec3 base = mix(vec3(0.16,0.19,0.27), vec3(0.50,0.56,0.70), clamp(vP.y * 0.9 + 0.45, 0.0, 1.0)); vec3 col = base * (0.35 + 0.75 * d) + vec3(0.05,0.06,0.10) * (0.5 + 0.5 * n.y);" +
-      "col += vec3(0.15,0.55,0.85) * smoothstep(0.25, 0.55, vP.y) * 0.8; col += vec3(0.9,0.45,0.15) * smoothstep(0.7, 0.95, vP.x) * 0.7; gl_FragColor = vec4(col, 1.0); }";
+    var fs = "precision mediump float; varying vec3 vN; varying vec3 vP; uniform vec3 uLo; uniform vec3 uHi; uniform vec3 uGlow; uniform vec3 uHot; void main(){ vec3 n = normalize(vN); vec3 L = normalize(vec3(-0.35, 0.85, 0.45)); float d = max(dot(n, L), 0.0);" +
+      "vec3 base = mix(uLo, uHi, clamp(vP.y * 0.9 + 0.45, 0.0, 1.0)); vec3 col = base * (0.35 + 0.75 * d) + vec3(0.05,0.06,0.10) * (0.5 + 0.5 * n.y);" +
+      "col += uGlow * smoothstep(0.25, 0.55, vP.y) * 0.8; col += uHot * smoothstep(0.7, 0.95, vP.x) * 0.7; gl_FragColor = vec4(col, 1.0); }";
     var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
     if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
     // decode the embedded model (int16 positions + uint16 indices), build smooth normals
@@ -16430,7 +16445,7 @@ function marchGLInit() {
     gl.bindBuffer(gl.ARRAY_BUFFER, bp); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, bn); gl.enableVertexAttribArray(aN); gl.vertexAttribPointer(aN, 3, gl.FLOAT, false, 0, 0);
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
-    ["uRes", "uOrg", "uU", "uS", "uCS", "uLift", "uZ0"].forEach(function (n) { marchGL.loc[n] = gl.getUniformLocation(pr, n); });
+    ["uRes", "uOrg", "uU", "uS", "uCS", "uLift", "uZ0", "uLo", "uHi", "uGlow", "uHot"].forEach(function (n) { marchGL.loc[n] = gl.getUniformLocation(pr, n); });
     marchGL.cv = cv; marchGL.gl = gl; marchGL.prog = pr; marchGL.nIdx = idx.length; marchGL.ok = true;
   } catch (e) { console.error("March 3D init failed:", e && e.message); marchGL.ok = false; }
   return marchGL.ok;
@@ -16457,6 +16472,7 @@ function marchGLDraw(ships, u) {
     var bob = Math.sin(now / 420 + sh.id * 1.7) * 0.06 * (march3dBob / 100);
     gl.uniform2f(L.uOrg, sh.ox - G.ox, sh.oy - G.oy); gl.uniform2f(L.uCS, Math.cos(cur), Math.sin(cur));
     gl.uniform1f(L.uLift, SHIP3D_MODEL.h[1] * S + 0.14 + bob); gl.uniform1f(L.uZ0, (sh.tx + sh.ty) * 0.70711 * 0.81915);
+    var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0]; gl.uniform3fv(L.uLo, mk.lo); gl.uniform3fv(L.uHi, mk.hi); gl.uniform3fv(L.uGlow, mk.glow); gl.uniform3fv(L.uHot, mk.hot); /* v1048: the march's skin */
     gl.drawElements(gl.TRIANGLES, G.nIdx, gl.UNSIGNED_SHORT, 0);
   });
   G.hadShips = true;
@@ -16534,7 +16550,7 @@ function updateMarchMarkers(manual) {
           var ghx = tile.x - hm.x, ghz = tile.y - hm.y; if (m.status === "returning") { ghx = -ghx; ghz = -ghz; }
           var tt = m.status === "acting" ? 1 : t, fx = m.status === "returning" ? tile.x + (hm.x - tile.x) * tt : hm.x + (tile.x - hm.x) * tt, fy = m.status === "returning" ? tile.y + (hm.y - tile.y) * tt : hm.y + (tile.y - hm.y) * tt;
           if (m.status === "acting") { fx = tile.x; fy = tile.y; }
-          ships3d.push({ id: m._sid || m.id, ox: px, oy: py, tx: fx, ty: fy, gx: ghx, gz: ghz });
+          ships3d.push({ id: m._sid || m.id, ox: px, oy: py, tx: fx, ty: fy, gx: ghx, gz: ghz, skin: m.skin || "voidspire" });
         } else {
         el.innerHTML = '<img class="march-ship-inner" src="' + MARCH_SHIP_SPRITES[dirIdx] + '" alt="ship">' + badge;
         }
@@ -17525,7 +17541,7 @@ function foreignMarchList(t) {
     var home = mapTileById(game.state.map, r.homeTileId);
     if (!home) return;
     var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 9973;
-    out.push({ id: "w_" + k, _sid: 1000 + h, foreign: true, ownerName: r.ownerName, status: status, arriveAt: r.arriveAt, travelSec: r.travelSec, returnAt: r.returnAt, actionEnd: r.actionEnd, tileId: r.tileId, action: r.action, _home: home });
+    out.push({ id: "w_" + k, _sid: 1000 + h, foreign: true, skin: r.skin || "voidspire", ownerName: r.ownerName, status: status, arriveAt: r.arriveAt, travelSec: r.travelSec, returnAt: r.returnAt, actionEnd: r.actionEnd, tileId: r.tileId, action: r.action, _home: home });
   });
   return out;
 }
@@ -17545,7 +17561,7 @@ function syncMyMarchRecords() {
     if (!pub) {
       var rep = null;
       if (resolved && st.battleReports[0] && st.battleReports[0].marchId === m.id) rep = plainClone(st.battleReports[0]);
-      ops.push({ key: key, kind: "set", data: { ownerId: PLAYER_ID, ownerName: (typeof playerDisplayName === "function" ? playerDisplayName() : null) || null, mid: m.id, tileId: m.tileId, homeTileId: st.homeTileId, action: m.action, travelSec: m.travelSec, arriveAt: m.arriveAt, actionEnd: actionEnd, returnAt: returnAt, army: plainClone(m.army), heroKeys: plainClone(m.heroKeys || []), resolved: resolved, result: resolved ? { loot: plainClone((m.result && m.result.loot) || {}) } : null, report: rep, updatedAt: Date.now() } });
+      ops.push({ key: key, kind: "set", data: { skin: m.skin || "voidspire", ownerId: PLAYER_ID, ownerName: (typeof playerDisplayName === "function" ? playerDisplayName() : null) || null, mid: m.id, tileId: m.tileId, homeTileId: st.homeTileId, action: m.action, travelSec: m.travelSec, arriveAt: m.arriveAt, actionEnd: actionEnd, returnAt: returnAt, army: plainClone(m.army), heroKeys: plainClone(m.heroKeys || []), resolved: resolved, result: resolved ? { loot: plainClone((m.result && m.result.loot) || {}) } : null, report: rep, updatedAt: Date.now() } });
       myMarchPublished[key] = resolved ? "resolved" : "new";
     } else if (pub === "new" && resolved) {
       var rep2 = (st.battleReports[0] && st.battleReports[0].marchId === m.id) ? plainClone(st.battleReports[0]) : null;
@@ -17785,6 +17801,7 @@ function buildFormationAttackForm(tile, action) {
       Object.keys(f.troops).forEach(function (t) { army[t] = Math.max(0, Math.min(f.troops[t] || 0, Math.floor(game.state.troops[t] || 0))); });
       var result = game.sendMarch(army, tile.id, action, f.heroKeys, formationFortType(f, game.state.fortressTech));
       if (!result.ok) return;
+      result.march.skin = formationMarchSkin(f); /* v1048 */
       selectedTile = null; lastArmyFormTile = null; /* v848: march sent - close the tile card */
       persist(); render(); try { renderVisibleTiles(); renderTileInfo(); } catch (e) {}
     };
@@ -25958,16 +25975,18 @@ function setScreen(screen, sub) {
 // to hide it until it is unlocked (a skin is shown only when !locked).
 // Frame art lives in AVATAR_FRAME_ART (defined further down, next to the Arena leaderboard); the list is built lazily.
 function avatarFramesList() { return [{ id: "none", name: "No Frame", sub: "Plain avatar" }].concat(Object.keys(AVATAR_FRAME_ART).map(function (id) { return { id: id, name: AVATAR_FRAME_ART[id].name, sub: AVATAR_FRAME_ART[id].sub }; })); }
-var skinsTab = "fortress";
+var skinsTab = "fortress", skinsMarchForm = 0; /* v1048: which formation the Marches tab is choosing for */
 function skinsCatalog(cat) {
   var out = [];
   if (cat === "fortress") FORTRESS_SKINS.forEach(function (sk) { out.push({ id: sk.id, name: sk.name, sub: "Fortress", img: sk.gov.src, locked: false, cur: fortressSkin().id === sk.id }); });
+  else if (cat === "march") { var fm = game.state.formations[skinsMarchForm]; MARCH_SKINS.forEach(function (k) { out.push({ id: k.id, name: k.name, sub: "March ship", img: voidGovImg.src, filter: k.thumb, locked: false, cur: formationMarchSkin(fm) === k.id }); }); }
   else if (cat === "city") CITY_SKIN_ORDER.forEach(function (id) { out.push({ id: id, name: CITY_SKINS[id].label, sub: "City / base", img: CITY_SKINS[id].src, locked: !citySkinOwned(id), cur: myCitySkinId() === id }); });
   else avatarFramesList().forEach(function (f) { out.push({ id: f.id, name: f.name, sub: f.sub, avatar: true, locked: false, cur: (AVATAR_FRAME_ART[game.state.avatarFrame] ? game.state.avatarFrame : "none") === f.id }); });
   return out.filter(function (x) { return !x.locked; });
 }
 function equipSkin(cat, id) {
   if (cat === "fortress") { game.state.fortressSkin = id; persist(); try { drawGovScene(); } catch (e) {} }
+  else if (cat === "march") { var fm = game.state.formations[skinsMarchForm]; if (fm) { fm.marchSkin = id; persist(); } }
   else if (cat === "city") { setMapCitySkin(id); var sel = document.getElementById("mapCitySkinSelect"); if (sel) sel.value = id; }
   else { game.state.avatarFrame = id; persist(); }
   renderSkinsScreen();
@@ -25977,7 +25996,7 @@ function renderSkinsScreen() {
 }
 function renderSkinsInto(elId) {
   var el = document.getElementById(elId); if (!el) return;
-  var cats = [["fortress", "🏰 Fortress"], ["avatar", "🖼️ Avatar"], ["city", "🏙️ City"]];
+  var cats = [["fortress", "🏰 Fortress"], ["march", "🚀 Marches"], ["avatar", "🖼️ Avatar"], ["city", "🏙️ City"]];
   var total = 0; cats.forEach(function (c) { total += skinsCatalog(c[0]).length; });
   var av = getAvatar();
   var rows = skinsCatalog(skinsTab).map(function (sk) {
@@ -25986,7 +26005,7 @@ function renderSkinsInto(elId) {
       var inner = av ? '<img src="' + av + '" alt="">' : "👑";
       thumb = '<div class="sk-thumb avwrap' + (sk.id === "none" ? " plain" : "") + '"><div class="sk-av"><div class="sk-av-in">' + inner + '</div>' +
         avatarFrameImgHtml(sk.id) + '</div></div>';
-    } else thumb = '<div class="sk-thumb"><img src="' + sk.img + '" alt=""></div>';
+    } else thumb = '<div class="sk-thumb"><img src="' + sk.img + '" alt=""' + (sk.filter ? ' style="filter:' + sk.filter + '"' : '') + '></div>';
     return '<div class="lb2-row' + (sk.cur ? " sel" : "") + '" data-id="' + sk.id + '">' + thumb +
       '<div class="lb2-info"><div class="lb2-name">' + sk.name + '</div><div class="lb2-power" style="font-size:12.5px;">' + sk.sub + '</div></div>' +
       (sk.cur ? '<div class="sk-act on">✓ Equipped</div>' : '<div class="sk-act equip">Equip</div>') + '</div>';
@@ -25994,9 +26013,11 @@ function renderSkinsInto(elId) {
   el.innerHTML = '<div class="lb2 noframe sk2">' +
     '<div class="lb2-banner"><div class="lb2-banner-t">Skins</div><div class="lb2-banner-s">' + total + ' unlocked</div></div>' +
     '<div class="sk-tabs">' + cats.map(function (c) { return '<div class="sk-tab' + (skinsTab === c[0] ? " on" : "") + '" data-tab="' + c[0] + '">' + c[1] + '</div>'; }).join("") + '</div>' +
+    (skinsTab === "march" ? '<div class="sk-forms">' + game.state.formations.map(function (f, i) { if (f.guard) return ""; return '<div class="sk-form' + (i === skinsMarchForm ? " on" : "") + '" data-fi="' + i + '">' + escapeHtml(f.name || ("Formation " + (i + 1))) + '</div>'; }).join("") + '</div>' : '') +
     '<div class="lb2-list">' + (rows || '<div class="lb2-hint">Nothing unlocked here yet.</div>') +
     '<div class="lb2-hint">Tap a skin to equip it. New skins you unlock appear here.</div></div></div>';
   Array.prototype.forEach.call(el.querySelectorAll(".sk-tab"), function (t) { t.onclick = function () { skinsTab = t.getAttribute("data-tab"); renderSkinsScreen(); }; });
+  Array.prototype.forEach.call(el.querySelectorAll(".sk-form"), function (t) { t.onclick = function () { skinsMarchForm = +t.getAttribute("data-fi"); renderSkinsScreen(); }; });
   Array.prototype.forEach.call(el.querySelectorAll(".lb2-row"), function (r) { r.onclick = function () { equipSkin(skinsTab, r.getAttribute("data-id")); }; });
 }
 function renderScreenBar() {
