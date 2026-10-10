@@ -1,0 +1,44 @@
+/* v1022: like Kingshot - costs you can't pay show red, and a blocked Upgrade/Build/Research opens a checklist of exactly what's missing. Run: node dev/simfork/g237_needs.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g237@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => { const st = game.state; st.buildings.townhall.level = 6; st.resources.wood = 80000; st.resources.stone = 20000; st.resources.gold = 120; st.resources.food = 99999; setScreen("city"); render(); });
+  await P.waitForTimeout(800);
+  const thRow = () => P.evaluateHandle(() => [...document.querySelectorAll("#buildingsList .bld")].find((r) => /Town Hall/.test(r.textContent)));
+  const o = {};
+  o.costs = await P.evaluate(() => { const r = [...document.querySelectorAll("#buildingsList .bld")].find((x) => /Town Hall/.test(x.textContent)); return [...r.querySelectorAll(".cost-short,.cost-ok")].map((s) => s.className + ":" + s.textContent.trim()); });
+  await P.evaluate(() => [...document.querySelectorAll("#buildingsList .bld")].find((r) => /Town Hall/.test(r.textContent)).querySelector("button").click()); await P.waitForTimeout(300);
+  o.pop = await P.evaluate(() => ({ shown: document.getElementById("rtPop").style.display, txt: document.getElementById("rtDetail").innerText, bad: [...document.querySelectorAll("#rtDetail .rq-row.no")].map((r) => r.innerText.replace(/\s+/g, " ")) }));
+  o.notStarted = await P.evaluate(() => !game.state.buildings.townhall.upgrading);
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "needs_gold.png" });
+  await P.evaluate(() => document.querySelector(".rt-x").click());
+  await P.evaluate(() => { game.state.resources.gold = 5000; render(); }); await P.waitForTimeout(300);
+  await P.evaluate(() => [...document.querySelectorAll("#buildingsList .bld")].find((r) => /Town Hall/.test(r.textContent)).querySelector("button").click()); await P.waitForTimeout(300);
+  o.started = await P.evaluate(() => !!game.state.buildings.townhall.upgrading && document.getElementById("rtPop").style.display !== "flex");
+  /* another building now: builders busy */
+  await P.evaluate(() => { render(); }); await P.waitForTimeout(200);
+  o.busy = await P.evaluate(() => { const r = [...document.querySelectorAll("#buildingsList .bld")].find((x) => /Farm/.test(x.textContent)); r.querySelector("button").click(); return [...document.querySelectorAll("#rtDetail .rq-row.no")].map((x) => x.innerText.replace(/\s+/g, " ")); });
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "needs_popup.png" });
+  console.log(JSON.stringify(o));
+  assert.ok(o.costs.some((c) => /^cost-short:.*3,400/.test(c)) && o.costs.some((c) => /^cost-ok:.*69/.test(c)), "the missing gold is red, the wood you have isn't");
+  assert.ok(o.pop.shown === "flex" && o.pop.bad.length === 1 && /Gold/.test(o.pop.bad[0]) && /3,280/.test(o.pop.bad[0]) && o.notStarted, "tapping shows exactly what's missing (gold, 3,280 short) and doesn't start");
+  assert.ok(o.started, "with enough gold the same button upgrades");
+  assert.ok(o.busy.some((t) => /free builder/i.test(t) && /Town Hall/.test(t)), "builders busy is explained (which building, time left)");
+  console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
+})().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

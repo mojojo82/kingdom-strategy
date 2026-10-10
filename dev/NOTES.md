@@ -986,3 +986,9 @@
 - They're now one shared setting, doc `assetitems/_mapiso` {tile, base, y} (rules: anyone signed in reads, admins write). Everyone listens to it live; an admin's slider changes save it (0.5 s debounce). If the doc doesn't exist yet, the first admin to open the game publishes their own values (after waiting up to ~15 s for their saved copy to load, so a fresh browser can't publish the defaults). An old per-account copy arriving later is ignored once the shared one is in.
 - Both shared docs (map look, skin alignment) ignore an incoming copy for 3 s after a local admin edit, so a stale copy can't undo a slider move (a race seen in the test).
 - Test: new g236_shared_map_look.js (admin's tuned look published, new player gets it, admin slider change reaches the other player).
+
+### v1022 — clear "what you're missing" for upgrades and research (TEST)
+- Harley: like Kingshot, give a clear indication of which requirement you lack (Town Hall 7 couldn't be upgraded and the screen didn't say why - it was gold).
+- Buildings: in "Next:" each cost you can't pay is red. The Upgrade/Build button is no longer greyed-out-dead: when something is missing it's dimmed but tappable and opens a checklist (same brown popup as research): required buildings (Lv needed / you have), "A free builder" (or which building is busy and how long), and each resource (need / you have / red −shortfall), ✓ or ✗ on every line. Locked buildings get a "🔒 Requirements" button with the same list. When nothing's missing the button upgrades as before.
+- Research popup: if you can't research yet it lists RP and the extra resource (need / have / −short) and a busy research slot.
+- Test: new g237_needs.js (gold 120 → only gold ✗ "−3,280", no upgrade; enough gold → upgrades; second building → "free builder ✗ Busy: Town Hall (1h left)").

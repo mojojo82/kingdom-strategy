@@ -2260,6 +2260,14 @@
   #buildingsModeContent button:not(.secondary):not(.dev-btn), #troopsModeContent button:not(.secondary):not(.dev-btn), #researchModeContent button, #fortressModeContent button, #espersModeContent button { background:#b3985f; color:#362f28; border:1.5px solid #6f5c38; border-radius:10px; font-family:var(--bodyfont); font-weight:800; text-shadow:none; box-shadow:inset 0 0 0 2px #b3985f, inset 0 0 0 3px #ddc98f, 0 2px 0 #6f5c38; }
   #researchModeContent button.secondary, #troopsModeContent button.secondary { background:#b3985f; color:#362f28; border:1.5px solid #6f5c38; box-shadow:inset 0 0 0 2px #b3985f, inset 0 0 0 3px #ddc98f, 0 2px 0 #6f5c38; }
   #troopsModeContent .formation-actions button.secondary.active { background:linear-gradient(180deg,#f3e8cf,#d9c48f); color:#3a2612; border-color:#f0c95f; }
+  /* v1022 (Harley: "like Kingshot - a clear indication of what you're lacking"): a cost you can't pay shows red; a blocked Upgrade stays tappable (dimmed) and opens a checklist */
+  .cost-short { color:#ff6b5e; font-weight:800; } .cost-ok { color:inherit; }
+  #buildingsModeContent button.blocked, #rtDetail button.blocked { opacity:.55; }
+  .rq-list { margin:8px 0 4px; display:flex; flex-direction:column; gap:5px; text-align:left; }
+  .rq-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(0,0,0,.28); border:1px solid rgba(185,138,76,.45); font-size:12.5px; }
+  .rq-row .rq-ic { width:22px; text-align:center; flex:none; } .rq-row .rq-ic .ri { width:18px; height:18px; vertical-align:-3px; }
+  .rq-row .rq-t { flex:1; min-width:0; } .rq-row .rq-t small { display:block; opacity:.8; font-size:11px; }
+  .rq-row .rq-s { flex:none; font-weight:800; } .rq-row.ok .rq-s { color:#7fe08a; } .rq-row.no { border-color:#c0504a; } .rq-row.no .rq-s { color:#ff6b5e; }
   #researchModeContent button:disabled, #troopsModeContent button:disabled, #buildingsModeContent button:disabled, #fortressModeContent button:disabled, #espersModeContent button:disabled { opacity:.5; cursor:not-allowed; }
   #fortressModeContent button.dev-btn, #cardsModeContent .dev-speed-btn { background:#4a3b24; color:#cbb98a; border:1px solid #6b5730; border-radius:9px; font-weight:700; box-shadow:none; font-family:var(--bodyfont); }
   /* tab strip (screen bar + research tabs) like the chat tabs */
@@ -10892,7 +10900,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1021"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1022"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11547,6 +11555,18 @@ function renderBuildingProdStats() {
     el.appendChild(div);
   });
 }
+/* v1022: what's stopping this upgrade - a checklist (✓ / ✗) of building requirements, a free builder and each resource (need / have / missing) */
+function rqRow(ok, ic, title, sub, stat) { return '<div class="rq-row ' + (ok ? "ok" : "no") + '"><span class="rq-ic">' + ic + '</span><span class="rq-t">' + title + (sub ? "<small>" + sub + "</small>" : "") + '</span><span class="rq-s">' + (stat || (ok ? "✓" : "✗")) + '</span></div>'; }
+function bldNeedsOpen(key) {
+  var def = BUILDING_DEFS[key], b = game.state.buildings[key], to = b.level + 1, cost = costFor(key, to), R = game.state.resources, rows = "";
+  Object.keys(def.requires || {}).forEach(function (r) { var have = game.state.buildings[r].level, need = def.requires[r]; rows += rqRow(have >= need, BUILDING_ICON[r] || "🏗️", BUILDING_DEFS[r].name + " Lv " + need, "You have Lv " + have); });
+  var busy = Object.keys(game.state.buildings).filter(function (k) { return game.state.buildings[k].upgrading; }), qOk = game.buildQueueUsed() < game.buildQueueSlots();
+  rows += rqRow(qOk, "🔨", "A free builder", qOk ? "" : "Busy: " + busy.map(function (k) { return BUILDING_DEFS[k].name + " (" + fmtTime((game.state.buildings[k].upgrading.finishAt - vnow()) / 1000) + " left)"; }).join(", "));
+  Object.keys(cost).forEach(function (r) { var have = Math.floor(R[r] || 0), ok = have >= cost[r]; rows += rqRow(ok, RES_ICON[r], fmt(cost[r]) + " " + r.charAt(0).toUpperCase() + r.slice(1), "You have " + fmt(have), ok ? "✓" : "−" + fmt(cost[r] - have)); });
+  var pop = rtPopEl(); pop.setAttribute("data-k", "bld:" + key);
+  document.getElementById("rtDetail").innerHTML = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dn" style="margin-bottom:2px">' + (BUILDING_ICON[key] || "🏗️") + " " + def.name + '</div><div style="opacity:.85">' + (b.level === 0 ? "Build" : "Upgrade to Lv " + to) + " - requirements:</div>" + '<div class="rq-list">' + rows + '</div>';
+  pop.style.display = "flex";
+}
 function renderBuildings() {
   var el = document.getElementById("buildingsList");
   el.innerHTML = "";
@@ -11574,7 +11594,7 @@ function renderBuildings() {
       infoHtml += '<div class="sub">✅ Max level</div>';
     } else {
       var cost = costFor(key, b.level + 1), t = timeFor(key, b.level + 1) / game.buildSpeedMult();
-      var costTxt = Object.keys(cost).map(function (r) { return RES_ICON[r] + fmt(cost[r]); }).join(" ");
+      var costTxt = Object.keys(cost).map(function (r) { return '<span class="' + ((game.state.resources[r] || 0) >= cost[r] ? "cost-ok" : "cost-short") + '">' + RES_ICON[r] + fmt(cost[r]) + '</span>'; }).join(" ");
       infoHtml += '<div class="sub">Next: ' + costTxt + ' · ' + fmtTime(t) + '</div>';
     }
     if (def.trains && b.level > 0 && b.queue.length) {
@@ -11600,13 +11620,12 @@ function renderBuildings() {
     infoDiv.className = "info";
     infoDiv.innerHTML = infoHtml;
     row.appendChild(infoDiv);
-    if (meets && !b.upgrading && b.level < def.maxLevel) {
+    if (!b.upgrading && b.level < def.maxLevel) {
       var btn = document.createElement("button");
-      btn.textContent = qFull ? "Builders busy" : (b.level === 0 ? "Build" : "Upgrade");
-      if (qFull) btn.disabled = true;
-      var cost2 = costFor(key, b.level + 1);
-      if (!Object.keys(cost2).every(function (r) { return game.state.resources[r] >= cost2[r]; })) btn.disabled = true;
-      btn.onclick = function () { game.startUpgrade(key); persist(); render(); };
+      var cost2 = costFor(key, b.level + 1), short2 = !Object.keys(cost2).every(function (r) { return game.state.resources[r] >= cost2[r]; });
+      btn.textContent = !meets ? "🔒 Requirements" : qFull ? "Builders busy" : (b.level === 0 ? "Build" : "Upgrade");
+      if (!meets || qFull || short2) btn.className = "blocked"; /* v1022: tappable - shows what's missing */
+      btn.onclick = function () { if (!game.meetsRequirements(key) || game.buildQueueUsed() >= game.buildQueueSlots() || !Object.keys(cost2).every(function (r) { return game.state.resources[r] >= cost2[r]; })) { bldNeedsOpen(key); return; } game.startUpgrade(key); persist(); render(); };
       row.appendChild(btn);
     }
     el.appendChild(row);
@@ -12752,8 +12771,10 @@ function techTreeDetail(key) {
   if (rq && rq.key === key) h += '<div style="margin-top:6px;color:#ffd978;font-weight:700">⏳ Researching level ' + rq.toLevel + ' · <span data-rt-left="1"></span></div>';
   else if (!maxed && unlocked) {
     var cost = game.techCostFor(key, level + 1), extraC = game.techExtraFor(key, level + 1), exIc = { gold: ico("gold"), stone: ico("stone"), energon: ico("energon"), food: ico("food"), wood: ico("wood") };
+    if (st !== "can") { var Rr = game.state.resources, rpHave = Math.floor(game.state.researchPoints); h += '<div class="rq-list">' + rqRow(rpHave >= cost, ico("rp"), fmt(cost) + " Research Points", "You have " + fmt(rpHave), rpHave >= cost ? "✓" : "−" + fmt(cost - rpHave)) +
+      Object.keys(extraC).map(function (r) { var hv = Math.floor(r === "energon" ? game.state.energon : (Rr[r] || 0)); return rqRow(hv >= extraC[r], exIc[r], fmt(extraC[r]) + " " + r.charAt(0).toUpperCase() + r.slice(1), "You have " + fmt(hv), hv >= extraC[r] ? "✓" : "−" + fmt(extraC[r] - hv)); }).join("") +
+      (rq ? rqRow(false, "🔬", "A free research slot", "Busy: " + TECH_DEFS[rq.key].name + " Lv " + rq.toLevel) : "") + '</div>'; } /* v1022: what's missing */
     h += '<button class="secondary" id="rtGo"' + (st === "can" ? "" : " disabled") + '>Research (' + fmt(cost) + ' RP' + Object.keys(extraC).map(function (r) { return " + " + exIc[r] + fmt(extraC[r]); }).join("") + ') ⏱ ' + fmtTime(game.techTimeFor(key, level + 1)) + '</button>';
-    if (rq) h += '<div style="opacity:.75;margin-top:4px;font-size:11px">Another research is running.</div>';
   }
   box.innerHTML = h;
   var go = document.getElementById("rtGo"); if (go) go.onclick = function () { game.researchTech(key); persist(); document.getElementById("rtPop").style.display = "none"; render(); renderTechs(); };
