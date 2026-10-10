@@ -1105,3 +1105,7 @@
 - Harley: "Various images have reset just now" (boss showed the emoji placeholder). Cause: v1034 stopped reading phone copies of shared art, but the game's own built-in defaults (OWNER_DEFAULTS: boss sprite, enemy archer/lancer, Kessa combat sprite, Aries esper, grass overlay, older card pictures, hero art) are delivered by seeding them into the phone's storage - so they were ignored too.
 - artLocal() now falls back to OWNER_DEFAULTS for shared keys (still never a phone copy); getCardArt = shared upload > v1035 built-in card art > OWNER_DEFAULTS card art; the phone-copy cleanup leaves seeded defaults alone.
 - Nothing was deleted from the shared area. g244 now also checks the defaults show (fails on v1037, passes now).
+
+## v1039 - Conquest: Stats + fortress-type pick moved (temporary) (TEST)
+- Harley (screenshot with arrows): "Temporarily relocate stats and the type toggle down here" - both now sit in the empty space right of the Forge, under the 3 small slots (.cq-quick in the Conquest .ps-row2), the type pick laid out sideways. The backpack stays where it was. Arena's Stats button unchanged.
+- Temporary: to undo, delete the v1039 block after the backpack/fort IIFE (the elements are only moved).

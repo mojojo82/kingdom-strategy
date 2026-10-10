@@ -889,6 +889,12 @@
   .formation-fort { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 2px; font-size:12px; color:#f0c95f; font-weight:700; }
   .lb2-fort { margin-top:6px; font-size:12.5px; color:#f0d98c; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; }
   .idle-fort { position:absolute; top:78px; left:13px; z-index:2; }
+  .cq-quick { position:absolute; right:12px; bottom:8px; z-index:3; display:flex; align-items:center; gap:8px; }
+  .cq-quick .idle-stats-btn { position:static; }
+  .cq-quick .idle-fort { position:static; }
+  .cq-quick .idle-fort .fort-pick { flex-direction:row; }
+  .cq-quick .idle-fort .fort-pick button { padding:3px 7px !important; font-size:11px !important; }
+  .cq-quick .idle-fort .fort-pick button + button { border-top:none !important; border-left:1px solid #4a3b24 !important; }
   .idle-fort .fort-pick { flex-direction:column; border-radius:8px; }
   .idle-fort .fort-pick button { padding:2px 4px !important; font-size:10.5px !important; text-align:center; }
   .idle-fort .fort-pick button + button { border-left:none !important; border-top:1px solid #4a3b24 !important; }
@@ -11123,7 +11129,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1038"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1039"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26141,6 +26147,14 @@ setInterval(function () { /* refresh only when something changed (so taps never 
 (function () { var mb = document.getElementById("mapBagBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); bagOpen(); };
   var sp = document.getElementById("idleSkillSpacer"); if (sp && !sp.querySelector(".idle-bag-btn")) { var bb = document.createElement("button"); bb.type = "button"; bb.className = "idle-bag-btn"; bb.title = "Backpack"; bb.setAttribute("aria-label", "Backpack"); bb.innerHTML = BAG_SVG; bb.onclick = bagOpen; sp.appendChild(bb); }
   if (sp && !sp.querySelector(".idle-fort")) { var fw = document.createElement("div"); fw.className = "idle-fort"; fw.innerHTML = fortPickHtml("conquest"); sp.appendChild(fw); } /* v1033: Conquest fortress type */ })();
+/* v1039 (Harley: "temporarily relocate stats and the type toggle down here"): Conquest's Stats button and fortress-type pick move to the
+   empty space right of the Forge, under the 3 small slots. Temporary - to undo, delete this block (both are only moved, not changed). */
+(function () {
+  var row = document.querySelector("#idlePowerSlots + .ps-row2"), sb = document.getElementById("idleStatsBtn"), fw = document.querySelector("#idleSkillSpacer .idle-fort");
+  if (!row || !sb || !fw) return;
+  var box = document.createElement("div"); box.className = "cq-quick";
+  row.style.position = "relative"; box.appendChild(sb); box.appendChild(fw); row.appendChild(box);
+})();
 // ================= v727: Forge UI (Energon, Equipment, idle rewards bucket) =================
 var forgeAuto = false, forgeLast = null, forgeDetailId = null, forgeDetailSlot = null, forgePanelEl = null, forgeBtnEl = null;
 var FG_STAT_NAMES = { skill: "Skill Damage", boss: "Boss Damage", support: "Support Power" };
