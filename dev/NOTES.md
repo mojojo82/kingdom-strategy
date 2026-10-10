@@ -1254,3 +1254,6 @@
 - Harley's Base Water Lab settings for the Ghost Galleon: BASE_WATER2_SKIN.pirate = fpW 0.66, fpD 0.54, fpX 0.115, fpY 0.09, rot -28, taper -0.17, glow 0.29, rim 0.19, ringA 0.19, ringDur 6.5 (diamond shape, turned to follow the hull).
 - He still likes the old look, so it's back as an option. Dev Tools: "🌊 Base water: New (glow + rings) / Classic (foam strip)". It's a shared admin setting (BASE_WATER_STYLE_KEY via assetSyncUpload + the sync apply list), so it's for all players. The v951-v1059 builder is restored as baseWaterBuildClassic / baseWaterHtmlClassic (from git v1059). baseWaterSheet(src, classic) caches each style separately. The on/off switch still works for both.
 - g200 extended: the style button switches to Classic (.city-water) and back (.city-water2). Passes.
+
+## v1067 - Watchtower base water from Base Water Lab (TEST)
+- BASE_WATER2_SKIN.tower = round 1.15, glow 0.49, glowSize 0.05, rim 0.17, ringA 0.18, ringW 0.016, ringEnd 1.26, ringDur 4.8 (tighter glow, short faint slow rings). Castle and Ghost Galleon keep their earlier settings (this paste only had the Watchtower). g200 passes.
