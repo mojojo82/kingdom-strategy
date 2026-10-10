@@ -1,0 +1,38 @@
+/* v1045: admin "Find lost art" finds this account's older cloud copy of a shared picture and puts it back for everyone. Run: node dev/simfork/g247_lost_art.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g247@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  const K = "kingdom_prototype_enemyarcher_v1", ART = "data:image/png;base64,REALARCHER";
+  const o = {};
+  await P.evaluate(async ([K, ART]) => { KS_BACKEND.isAdmin = true; await assetSyncDb.doc(assetSyncPersonalDocIdFor(K)).set({ data: ART, ts: 1 }); window.confirm = () => true; findLostArt(); }, [K, ART]);
+  await P.waitForTimeout(1500);
+  o.list = await P.evaluate(() => document.querySelector("#rtDetail .la-list").innerText.replace(/\s+/g, " "));
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "lost_art.png" });
+  await P.evaluate(() => document.querySelector("#rtDetail [data-la]").click()); await P.waitForTimeout(1200);
+  o.shared = (store["envs/test/assetitems/" + K] || {}).data || null;
+  o.shown = await P.evaluate((K) => assetSyncGet(K), K);
+  o.nonAdmin = await P.evaluate(() => { KS_BACKEND.isAdmin = false; findLostArt(); return document.querySelector("#rtDetail .la-list").innerText; });
+  console.log(JSON.stringify(o), errs);
+  assert.ok(/enemyarcher/.test(o.list) && /cloud copy/.test(o.list), "finds the account's older cloud copy");
+  assert.strictEqual(o.shared, ART, "Use this -> saved to the shared art");
+  assert.strictEqual(o.shown, ART, "and shown");
+  assert.ok(/Admins only/.test(o.nonAdmin));
+  assert.deepStrictEqual(errs, []);
+  await b.close(); console.log("g247 OK");
+})().catch((e) => { console.error(e); process.exit(1); });

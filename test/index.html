@@ -3104,6 +3104,7 @@
             <div class="dev-sub">
               <div class="dev-sub-header" data-target="devSubEnemies"><span class="dev-sub-arrow">▸</span> ⚔️ Enemies</div>
               <div class="dev-sub-body" id="devSubEnemies" style="display:none;">
+                <div class="dev-tools-row"><button class="secondary" id="devFindLostArt">🧯 Find lost art (admin)</button><span class="dev-tools-hint">Looks for older copies of shared pictures (your account's cloud copies + this phone) and lets you put one back for everyone.</span></div>
                 <div class="dev-tools-row">
                   <div class="boss-sprite-thumb" id="enemyInfantryWrap" title="Click to set the sprite used for infantry-type enemies">
                     <img id="enemyInfantryImg" style="display:none;">
@@ -4577,6 +4578,34 @@ function initDeviceLock(db) {
 // are still empty - this is how the art Harley uploaded on his own account becomes everyone's art.
 /* v1034: once the shared art has loaded, an admin's phone copy of a picture the shared area doesn't have at all is uploaded to it.
    (v1043: phone copies are no longer deleted - see below.) */
+/* v1045 (Harley's archer / lancer enemy art went missing): admin tool - lists every older copy of a shared picture that still exists
+   (this account's own cloud copies, players/<id>/assetitems/<key>, and this phone's storage) next to what players see now, with a
+   "Use this" button that uploads it to the shared art. Reads only this account's own data. */
+function findLostArt() {
+  var pop = rtPopEl(), box = document.getElementById("rtDetail");
+  pop.setAttribute("data-k", "lostart"); pop.style.display = "flex";
+  box.innerHTML = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dn">🧯 Find lost art</div><div class="la-list" style="max-height:62vh;overflow:auto;margin-top:8px">Searching…</div>';
+  var list = box.querySelector(".la-list"), found = [];
+  if (!assetIsAdmin()) { list.textContent = "Admins only (Google sign-in)."; return; }
+  var label = function (k) { return k.replace("kingdom_prototype_", "").replace(/_v\d+_?/, " ").replace(/_/g, " "); };
+  function add(k, src, from) { if (!src || typeof src !== "string" || src.indexOf("data:image") !== 0) return; if (cloudAssetMap[k] === src) return; if (OWNER_DEFAULTS[k] === src) return; if (found.some(function (f) { return f.k === k && f.src === src; })) return; found.push({ k: k, src: src, from: from }); }
+  try { for (var i = 0; i < localStorage.length; i++) { var lk = localStorage.key(i); if (lk && lk.slice(-4) !== "__ts" && assetIsShared(lk)) add(lk, localStorage.getItem(lk), "this phone"); } } catch (e) {}
+  var personal = PLAYER_ID === "owner" ? Promise.resolve([]) : assetSyncDb.doc(assetSyncIndexDoc()).get().then(function (snap) {
+    var keys = ((snap.exists && snap.data() && snap.data().keys) || []).filter(assetIsShared);
+    ["kingdom_prototype_enemyarcher_v1", "kingdom_prototype_enemylancer_v1", "kingdom_prototype_enemyinfantry_v1", "kingdom_prototype_bosssprite_v1"].forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+    return Promise.all(keys.map(function (k) { return assetSyncDb.doc(assetSyncPersonalDocIdFor(k)).get().then(function (d) { var v = d.exists && d.data(); if (v && v.data) add(k, v.data, "your account's cloud copy"); }).catch(function () {}); }));
+  }).catch(function () {});
+  personal.then(function () {
+    if (!found.length) { list.innerHTML = "Nothing found - no older copies exist on this account or this phone. The pictures need re-uploading (or send them to Claude to build them into the game)."; return; }
+    found.sort(function (a, b) { return a.k < b.k ? -1 : 1; });
+    list.innerHTML = found.map(function (f, n) { var cur = cloudAssetMap[f.k] || OWNER_DEFAULTS[f.k] || "";
+      return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #4a3b24"><div style="flex:1;min-width:0;font-size:12px"><b>' + escapeHtml(label(f.k)) + '</b><br><span style="opacity:.75">' + f.from + '</span></div>' +
+        '<div style="text-align:center;font-size:10px">now<br><img src="' + cur + '" style="width:44px;height:44px;object-fit:contain;background:#0006;border-radius:6px"></div>' +
+        '<div style="text-align:center;font-size:10px">found<br><img src="' + f.src + '" style="width:44px;height:44px;object-fit:contain;background:#0006;border-radius:6px"></div>' +
+        '<button class="secondary" data-la="' + n + '">Use this</button></div>'; }).join("");
+    list.querySelectorAll("[data-la]").forEach(function (b) { b.onclick = function () { var f = found[+b.getAttribute("data-la")]; if (!confirm("Put this picture back for ALL players (" + label(f.k) + ")?")) return; assetSyncUpload(f.k, f.src); b.textContent = "✓ Saved"; b.disabled = true; try { render(); } catch (e) {} }; });
+  });
+}
 function sharedArtClearPhoneCopies(isAdmin) {
   var keys = [];
   try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.slice(-4) !== "__ts" && assetIsShared(k)) keys.push(k); } } catch (e) { return; }
@@ -11151,7 +11180,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1044"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1045"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23389,6 +23418,7 @@ function devSkinAlignSync() {
 })();
 document.getElementById("devAddValor").onclick = function () { game.state.idle.valor += 5000; persist(); render(); };
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
+(function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
 (function () { var t = document.getElementById("devCardsOffToggle"); if (!t) return; t.checked = devCardsOff(); t.onchange = function () { try { localStorage.setItem(DEV_CARDS_OFF_KEY, t.checked ? "1" : "0"); } catch (e) {} try { render(); } catch (e2) {} }; })();
 // Hoisted to named functions (not local closures) so the SAME sync logic

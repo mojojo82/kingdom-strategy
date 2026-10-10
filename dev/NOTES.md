@@ -1134,3 +1134,8 @@
 ## v1044 - Conquest side slots: Troops shortcut + wrench (TEST)
 - Harley: of the 5 empty slots next to the backpack, one = an icon that goes straight to the troops area, another = a wrench icon.
 - Slot 2: helmet icon (same brown/bronze SVG style as the backpack) -> setScreen("city", "troops"). Slot 3: wrench icon, no action yet (waiting for Harley to say what it opens). 3 slots still empty.
+
+## v1045 - Admin "Find lost art" tool (TEST)
+- Harley's screenshots: "Harley H" IS an admin account, and the archer/lancer enemy art is still the placeholder after opening it - so the automatic migration found nothing to restore (most likely the shared slot already held the placeholder, so it was never filled).
+- New Dev Tools > Enemies > "🧯 Find lost art (admin)": lists every older copy of a shared picture that still exists - this account's own cloud copies (players/<id>/assetitems/<key>; always checks enemy archer/lancer/infantry + boss) and this phone's storage - next to what players see now, skipping copies identical to the current or built-in one. "Use this" (with a confirm) uploads it to the shared art. Reads only this account's own data. If nothing is found, the pictures need re-uploading.
+- Test: new g247_lost_art.js.
