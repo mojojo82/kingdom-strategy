@@ -980,3 +980,9 @@
 - The CI workflow (server tests + rules/functions deploy) had failed since v998, so rules and functions stopped deploying after v997 (nothing server-side changed until v1019's chat limit). Found while deploying the 2,000-character chat rule. The raw CI log can't be downloaded from this session, so the workflow now also prints failing test lines as annotations (readable with `gh api .../check-runs/<job>/annotations`).
 - The failing e2e check was real: "dev tools hidden for normal players". The rule hiding the More > Dev Tools tile from non-admins sat in the phone-only CSS, so on a PC-width screen normal players saw the tile. Moved into the global non-admin style.
 - Lesson: after each push, check the firebase workflow result, not just the Pages deploy.
+
+### v1021 — the map look (tile / base size / base height) is shared with every player (TEST)
+- Harley (screenshot from another account): bases were off their squares again. Cause: the isometric sliders were saved per account (only Harley's admin account had his tuned values) and the per-skin alignment (v1013) was tuned on top of those, so every other account was off.
+- They're now one shared setting, doc `assetitems/_mapiso` {tile, base, y} (rules: anyone signed in reads, admins write). Everyone listens to it live; an admin's slider changes save it (0.5 s debounce). If the doc doesn't exist yet, the first admin to open the game publishes their own values (after waiting up to ~15 s for their saved copy to load, so a fresh browser can't publish the defaults). An old per-account copy arriving later is ignored once the shared one is in.
+- Both shared docs (map look, skin alignment) ignore an incoming copy for 3 s after a local admin edit, so a stale copy can't undo a slider move (a race seen in the test).
+- Test: new g236_shared_map_look.js (admin's tuned look published, new player gets it, admin slider change reaches the other player).

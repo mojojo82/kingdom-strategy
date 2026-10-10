@@ -4302,6 +4302,7 @@ function initDeviceLock(db) {
             try { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); renderMapIsoBtn(); renderMarch3dBtn(); } catch (e) {} /* v892: a synced iso setting arriving after load kept the old scroll, so the view jumped elsewhere */
           } },
         { key: MAP_ISO_CFG_KEY, apply: function (v) {
+            if (typeof isoSharedOn !== "undefined" && isoSharedOn) return; /* v1021: the shared map look wins over an old per-account copy */
             try { var c = JSON.parse(v); ["tile", "base", "y"].forEach(function (k) { if (typeof c[k] === "number") isoCfg[k] = c[k]; }); localStorage.setItem(MAP_ISO_CFG_KEY, v); } catch (e) {}
             try { syncIsoSliders(); if (mapIso) { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); } } catch (e) {}
           } },
@@ -9204,9 +9205,30 @@ function skinAlign(id) { var a = SKIN_ALIGN[id] || {}; return { x: isFinite(+a.x
 function skinAlignSet(v) { if (!v || typeof v !== "object") return; SKIN_ALIGN = v; try { localStorage.setItem(SKIN_ALIGN_LS, JSON.stringify(v)); } catch (e) {} try { renderVisibleTiles(); } catch (e) {} try { devSkinAlignSync(); } catch (e) {} }
 var skinAlignSyncOn = false;
 function startSkinAlignSync() { if (skinAlignSyncOn || !cloudDb) return; skinAlignSyncOn = true;
-  cloudDb.doc(SKIN_ALIGN_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data(); if (!d || typeof d.data !== "string") return; try { var v = JSON.parse(d.data); if (JSON.stringify(v) !== JSON.stringify(SKIN_ALIGN)) skinAlignSet(v); } catch (e) {} }, function () {}); }
+  cloudDb.doc(SKIN_ALIGN_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data(); if (!d || typeof d.data !== "string") return; if (typeof skinAlignLocalEditAt !== "undefined" && Date.now() - skinAlignLocalEditAt < 3000) return; /* v1021: don't undo a local edit */ try { var v = JSON.parse(d.data); if (JSON.stringify(v) !== JSON.stringify(SKIN_ALIGN)) skinAlignSet(v); } catch (e) {} }, function () {}); }
+/* v1021 (Harley: other accounts saw bases off their squares): the map look sliders (tile size, base art size, base height) were saved per account,
+   so only the admin who tuned them saw it right (and per-skin alignment was tuned on top of those). They are now one shared setting
+   (doc assetitems/_mapiso): everyone uses it, admins' slider changes save it, and if it doesn't exist yet the first admin to open the game publishes theirs. */
+var MAP_ISO_DOC = "assetitems/_mapiso", isoSharedOn = false, isoSyncStarted = false, isoSaveT = 0, isoLocalEditAt = 0;
+function isoApply(c) {
+  var ch = false; ["tile", "base", "y"].forEach(function (k) { if (typeof c[k] === "number" && isFinite(c[k]) && isoCfg[k] !== c[k]) { isoCfg[k] = c[k]; ch = true; } });
+  isoSharedOn = true; if (!ch) return;
+  try { localStorage.setItem(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); } catch (e) {}
+  try { syncIsoSliders(); if (mapIso) { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); } } catch (e) {}
+}
+function isoSaveShared() { isoLocalEditAt = Date.now(); clearTimeout(isoSaveT); isoSaveT = setTimeout(function () { if (!cloudDb || !assetIsAdmin()) return; cloudDb.doc(MAP_ISO_DOC).set({ tile: isoCfg.tile, base: isoCfg.base, y: isoCfg.y, ts: Date.now() }).catch(function (e) { console.error("map look save failed", e && e.message); }); }, 500); }
+function startMapIsoSync() { if (isoSyncStarted || !cloudDb) return; isoSyncStarted = true;
+  cloudDb.doc(MAP_ISO_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data();
+    if (d) { if (Date.now() - isoLocalEditAt < 3000) return; isoApply(d); return; } /* an older copy arriving while an admin is mid-edit doesn't undo it */
+    (function pub(n) { /* none yet: an admin publishes theirs - waiting (up to ~15 s) for their own saved copy to load, so a fresh browser doesn't publish the defaults */
+      var own = cloudAssetMap[MAP_ISO_CFG_KEY];
+      if (assetIsAdmin() && (own || n <= 5)) { try { if (own) { var c = JSON.parse(own); ["tile", "base", "y"].forEach(function (k) { if (typeof c[k] === "number" && isFinite(c[k])) isoCfg[k] = c[k]; }); } } catch (e) {} isoSaveShared(); }
+      else if (n > 0) setTimeout(function () { pub(n - 1); }, 3000);
+    })(10);
+  }, function () {}); }
 var skinAlignSaveT = 0;
-function skinAlignSave(cb) { clearTimeout(skinAlignSaveT); skinAlignSaveT = setTimeout(function () { if (!cloudDb) { cb && cb(false); return; }
+var skinAlignLocalEditAt = 0;
+function skinAlignSave(cb) { skinAlignLocalEditAt = Date.now(); clearTimeout(skinAlignSaveT); skinAlignSaveT = setTimeout(function () { if (!cloudDb) { cb && cb(false); return; }
   cloudDb.doc(SKIN_ALIGN_DOC).set({ data: JSON.stringify(SKIN_ALIGN), ts: Date.now() }).then(function () { cb && cb(true); }, function (e) { cb && cb(false, e); }); }, 500); }
 function citySkinIdAt(tileId) { var k = citySkinByTile[tileId]; return CITY_SKINS[k] ? k : "tower"; }
 function otherCityIconSrc(tileId) { return CITY_SKINS[citySkinIdAt(tileId)].src; }
@@ -10870,7 +10892,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1020"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1021"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16236,6 +16258,7 @@ function startCitySync() {
   if (citySyncStarted || !cloudDb) return;
   citySyncStarted = true;
   try { startSkinAlignSync(); } catch (e) {}
+  try { startMapIsoSync(); } catch (e) {}
   cloudDb.collection(serverPrefix() + "cities").onSnapshot(function (qsnap) {
     var seen = {};
     qsnap.docs.forEach(function (doc) {
@@ -23179,7 +23202,7 @@ function syncIsoSliders() {
 }
 [["devIsoTile", "tile"], ["devIsoBase", "base"], ["devIsoY", "y"]].forEach(function (r) {
   document.getElementById(r[0]).addEventListener("input", function () {
-    isoCfg[r[1]] = parseFloat(this.value); try { localStorage.setItem(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); } catch (e) {} assetSyncUpload(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg));
+    isoCfg[r[1]] = parseFloat(this.value); try { localStorage.setItem(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); } catch (e) {} assetSyncUpload(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); try { isoSaveShared(); } catch (e) {} /* v1021: shared for every player */
     syncIsoSliders();
     if (!mapIso) return;
     mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles();

@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (10 Oct 2026, TEST game v1020):** everything below is built and tested; TEST is deployed (v951-v1020 are TEST only). The live game link still serves the
+**State at handover (10 Oct 2026, TEST game v1021):** everything below is built and tested; TEST is deployed (v951-v1021 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -157,6 +157,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   `service-862432836712@gcp-sa-pubsub.iam.gserviceaccount.com` -> Service Account Token Creator; `862432836712-compute@developer.gserviceaccount.com`
   -> Cloud Run Invoker AND Eventarc Event Receiver. After that set saveTriggers=true and push. (Emulator/CI tests always run it.)
 - **No base may cover a resource** (Harley, v1000): any tile of a base's 3x3 block holding a resource makes the spot illegal for every placement (claim, teleport, new-player spot, random bots, bot alliances) until that tile stops being a resource (tileBlockReason). Bases placed before v1000 are not moved.
+- **Map look is shared** (v1021): the isometric sliders (tile size, base art size, base height in Dev Tools > Visuals > Effects & Sound) are one setting for every player (doc `assetitems/_mapiso`); an admin moving them saves it for all. Per-skin alignment sits on top of it.
 - **Base skin alignment** (Harley, v1013): each base skin's picture has its own left/right, up/down (in tiles) and size, set by an admin in Dev Tools > Visuals > 🏰 Base skin alignment and shared with every player (doc `assetitems/_skinalign`). The 3x3 squares (grid) never move. New skins start at 0 / 0 / x1.
 - **Idle Chest** (Harley, v1003): fills 24/7 (online and offline) up to 8h; Field Logistics research raises it to 16h and makes drops a little faster (20 → 16 min). Holds Energon, Valor, 25% of resource production and an item every 20 min. Regular items: draw tickets, speedups, Research Points. Rare: hero shards (owned, non-VIP heroes), Conquest Books. **Never gems, weapon fragments or cards.** Pops up only when full; otherwise the 🌙 World map icon. Rolled in the game (client side), like the rest of the save.
 - **The game runs on the server's clock** (Harley, v1004): on load and whenever the app comes back to the front it reads the web server's time (the page's Date header); if the phone is over a minute off, the difference is added to the game clock (`ksClockSkew`, inside `vnow()`). The game doesn't tick until that check is done (5 s timeout, then it carries on and re-checks every 10 min). Don't add game timing on raw `Date.now()`; use `vnow()`.
