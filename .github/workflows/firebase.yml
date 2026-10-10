@@ -35,6 +35,11 @@ jobs:
             echo "== emulator tests" &&
             npx -y firebase-tools@13 emulators:exec --project demo-kingdom --only auth,firestore,functions "node ci/integration.test.js && echo == end-to-end game test && node ci/e2e.test.js"
           } 2>&1 | tee ci-out/test.log
+      - name: Failures as annotations (readable through the API when the log isn't)
+        if: always()
+        run: |
+          grep -nE "FAIL|not ok|AssertionError|Error:|CRASH|rc=|failed" ci-out/test.log | grep -v "PERMISSION_DENIED" | head -40 | sed 's/\x1b\[[0-9;]*m//g' | while IFS= read -r l; do echo "::error::${l:0:900}"; done || true
+          tail -5 ci-out/test.log | sed 's/\x1b\[[0-9;]*m//g' | while IFS= read -r l; do echo "::warning::tail ${l:0:900}"; done || true
       - name: Restore real admin list
         if: always()
         run: cp /tmp/admins.real.json functions/admins.json && node tools/build-rules.js
