@@ -37,10 +37,13 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.bCfg2 = await B.evaluate(() => JSON.stringify(isoCfg));
   /* an old per-account copy arriving later doesn't override the shared look */
   o.bAfterOld = await B.evaluate(() => { try { localStorage.setItem("kingdom_prototype_mapisocfg_v2", JSON.stringify({ tile: 30, base: 3.2, y: 0 })); } catch (e) {} return isoSharedOn; });
+  /* v1025: tap the FPS / version label → map look check */
+  o.diag = await B.evaluate(() => { setScreen("world"); document.getElementById("fpsCounter").click(); return document.getElementById("rtDetail").innerText.replace(/\s+/g, " "); });
   console.log(JSON.stringify(o));
   assert.ok(o.doc && o.doc.base === 3.6 && o.doc.y === 14, "the admin's tuned look was published");
   assert.strictEqual(o.bCfg, o.aCfg, "a new player gets the admin's look");
   assert.ok(/"y":-8/.test(o.bCfg2), "admin slider changes reach other players");
   assert.ok(o.bAfterOld, "shared look is in charge");
+  assert.ok(/Map look check/.test(o.diag) && /Shared setting/.test(o.diag) && /height -8/.test(o.diag), "the check shows the shared look in use");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

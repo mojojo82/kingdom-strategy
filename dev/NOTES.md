@@ -1013,3 +1013,8 @@
 - Backpack Resources tab: Kingshot-style coloured tiles (grey 100, green 1K / Lv.1, blue 10K / Lv.2, purple 100K / Lv.3, gold 1M) with the amount / level on top; detail with − slider + / Max quantity, the four resource choices for Custom chests, Use (and Details for supply chests); shows what you got. Chest icons are emoji placeholders (📦 / 🧰) until there's art.
 - game.useItem(id, n, choice) / game.addItem(id, n). Admins get a "dev: + test chests & packs" link in the Backpack. No way to earn them yet (mail / events / shop to decide).
 - g238 extended (pick required, 2x Lv.2 → 200K Food, Max uses all, supply chest odds + 10K of one resource).
+
+### v1025 — "map look check" (tap the FPS / version label on the World map) (TEST)
+- Harley: base alignment looked reset again on another account; everything set on the admin account for this is for all players. Couldn't tell from here which side is wrong (the shared docs are Harley's data, not read from this session).
+- Tapping the "60 FPS · vNNNN" label on the World map opens a read-only check: the map look this game is using (and whether it's the shared one), the shared map look and skin alignment as last heard from the server (and how long ago, or the read error), the alignment in use, admin/player, your skin, iso on/off. Compare screenshots of it from both accounts.
+- g236 extended.

@@ -625,7 +625,7 @@
   #mapviewport::-webkit-scrollbar { display:none; width:0; height:0; }
   #mapviewport.dragging { cursor:grabbing; user-select:none; -webkit-user-select:none; }
   #mapviewportWrap { position:relative; width:100%; max-width:420px; margin:0 auto; }
-  #fpsCounter { position:absolute; top:6px; left:6px; z-index:5; pointer-events:none;
+  #fpsCounter { position:absolute; top:6px; left:6px; z-index:5; pointer-events:auto; cursor:pointer; /* v1025: tap = map-look check */
     font:700 11px/1 "Segoe UI", monospace; font-variant-numeric:tabular-nums;
     background:rgba(0,0,0,.55); color:#5fd67a; padding:3px 7px; border-radius:5px;
     border:1px solid rgba(255,255,255,.15); }
@@ -9279,7 +9279,7 @@ function skinAlign(id) { var a = SKIN_ALIGN[id] || {}; return { x: isFinite(+a.x
 function skinAlignSet(v) { if (!v || typeof v !== "object") return; SKIN_ALIGN = v; try { localStorage.setItem(SKIN_ALIGN_LS, JSON.stringify(v)); } catch (e) {} try { renderVisibleTiles(); } catch (e) {} try { devSkinAlignSync(); } catch (e) {} }
 var skinAlignSyncOn = false;
 function startSkinAlignSync() { if (skinAlignSyncOn || !cloudDb) return; skinAlignSyncOn = true;
-  cloudDb.doc(SKIN_ALIGN_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data(); if (!d || typeof d.data !== "string") return; if (typeof skinAlignLocalEditAt !== "undefined" && Date.now() - skinAlignLocalEditAt < 3000) return; /* v1021: don't undo a local edit */ try { var v = JSON.parse(d.data); if (JSON.stringify(v) !== JSON.stringify(SKIN_ALIGN)) skinAlignSet(v); } catch (e) {} }, function () {}); }
+  cloudDb.doc(SKIN_ALIGN_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data(); window.__saDocSeen = d ? { data: d.data, ts: d.ts, at: Date.now() } : { none: true, at: Date.now() }; if (!d || typeof d.data !== "string") return; if (typeof skinAlignLocalEditAt !== "undefined" && Date.now() - skinAlignLocalEditAt < 3000) return; /* v1021: don't undo a local edit */ try { var v = JSON.parse(d.data); if (JSON.stringify(v) !== JSON.stringify(SKIN_ALIGN)) skinAlignSet(v); } catch (e) {} }, function (e) { window.__saDocErr = (e && (e.code || e.message)) || "error"; }); }
 /* v1021 (Harley: other accounts saw bases off their squares): the map look sliders (tile size, base art size, base height) were saved per account,
    so only the admin who tuned them saw it right (and per-skin alignment was tuned on top of those). They are now one shared setting
    (doc assetitems/_mapiso): everyone uses it, admins' slider changes save it, and if it doesn't exist yet the first admin to open the game publishes theirs. */
@@ -9293,13 +9293,14 @@ function isoApply(c) {
 function isoSaveShared() { isoLocalEditAt = Date.now(); clearTimeout(isoSaveT); isoSaveT = setTimeout(function () { if (!cloudDb || !assetIsAdmin()) return; cloudDb.doc(MAP_ISO_DOC).set({ tile: isoCfg.tile, base: isoCfg.base, y: isoCfg.y, ts: Date.now() }).catch(function (e) { console.error("map look save failed", e && e.message); }); }, 500); }
 function startMapIsoSync() { if (isoSyncStarted || !cloudDb) return; isoSyncStarted = true;
   cloudDb.doc(MAP_ISO_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data();
+    window.__isoDocSeen = d ? { tile: d.tile, base: d.base, y: d.y, ts: d.ts, at: Date.now() } : { none: true, at: Date.now() }; /* v1025 diag */
     if (d) { if (Date.now() - isoLocalEditAt < 3000) return; isoApply(d); return; } /* an older copy arriving while an admin is mid-edit doesn't undo it */
     (function pub(n) { /* none yet: an admin publishes theirs - waiting (up to ~15 s) for their own saved copy to load, so a fresh browser doesn't publish the defaults */
       var own = cloudAssetMap[MAP_ISO_CFG_KEY];
       if (assetIsAdmin() && (own || n <= 5)) { try { if (own) { var c = JSON.parse(own); ["tile", "base", "y"].forEach(function (k) { if (typeof c[k] === "number" && isFinite(c[k])) isoCfg[k] = c[k]; }); } } catch (e) {} isoSaveShared(); }
       else if (n > 0) setTimeout(function () { pub(n - 1); }, 3000);
     })(10);
-  }, function () {}); }
+  }, function (e) { window.__isoDocErr = (e && (e.code || e.message)) || "error"; }); }
 var skinAlignSaveT = 0;
 var skinAlignLocalEditAt = 0;
 function skinAlignSave(cb) { skinAlignLocalEditAt = Date.now(); clearTimeout(skinAlignSaveT); skinAlignSaveT = setTimeout(function () { if (!cloudDb) { cb && cb(false); return; }
@@ -10966,7 +10967,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1024"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1025"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25816,6 +25817,18 @@ function bagOpen() {
   if (!bagItemsFor(bagState.cat).length) { var firstFull = BAG_CATS.filter(function (c) { return bagItemsFor(c[0]).length; })[0]; if (firstFull) bagState.cat = firstFull[0]; }
   pop.style.display = "flex"; var dv = pop.querySelector(".bg-dev"); if (dv) dv.style.display = assetIsAdmin() ? "block" : "none"; bagRender();
 }
+/* v1025: tap the FPS / version label on the World map for a small "map look check" - the shared map look and skin alignment this game is using,
+   and when it last heard from the server - so two accounts can be compared from screenshots. Read-only, nothing private in it. */
+(function () { var f = document.getElementById("fpsCounter"); if (!f) return; f.addEventListener("click", function (e) { e.stopPropagation();
+  var pop = rtPopEl(), ago = function (t) { return t ? Math.round((Date.now() - t) / 1000) + "s ago" : "never"; }, iso = window.__isoDocSeen, sa = window.__saDocSeen, my = CITY_SKINS[myCitySkinId()] ? myCitySkinId() : "?";
+  pop.setAttribute("data-k", "diag");
+  document.getElementById("rtDetail").innerHTML = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dn">Map look check · ' + escapeHtml(KS_BUILD) + '</div><div class="rq-list">' +
+    rqRow(isoSharedOn, "🗺️", "Map look in use: tile " + isoCfg.tile + " · size " + isoCfg.base + " · height " + isoCfg.y, isoSharedOn ? "Shared setting" : "NOT the shared setting (this account's own)") +
+    rqRow(!!(iso && !iso.none), "☁️", "Shared map look on the server", iso ? (iso.none ? "none saved yet" : "tile " + iso.tile + " · size " + iso.base + " · height " + iso.y + " · heard " + ago(iso.at)) : (window.__isoDocErr ? "can't read: " + window.__isoDocErr : "not heard yet")) +
+    rqRow(!!(sa && !sa.none), "🏰", "Skin alignment on the server", sa ? (sa.none ? "none saved yet" : escapeHtml(sa.data) + " · heard " + ago(sa.at)) : (window.__saDocErr ? "can't read: " + window.__saDocErr : "not heard yet")) +
+    rqRow(true, "🎨", "Skin alignment in use", escapeHtml(JSON.stringify(SKIN_ALIGN)), " ") +
+    rqRow(true, "👤", (KS_BACKEND && KS_BACKEND.isAdmin ? "Admin" : "Player") + " · your skin: " + my + " · iso " + (mapIso ? "on" : "off"), "", " ") + '</div>';
+  pop.style.display = "flex"; }); })();
 var bagSig = "";
 setInterval(function () { /* refresh only when something changed (so taps never land on a rebuilt button); the timers tick on their own */
   var pop = document.getElementById("bagPop"); if (!pop || pop.style.display !== "flex") return;
