@@ -1063,3 +1063,13 @@
 - Harley: "A player can research any tree they want" - researchFortress no longer refuses the non-active type. Research > Fortress I / III shows that tree (fortressViewType); More > Fortress still shows the active type.
 - Still to do (v1033): pick the fortress type per World PvP formation, and once for Arena and once for Conquest.
 - Test: g242 rewritten for the hub (both fortress trees, research Fortress III while Type I is active).
+
+## v1033 - Fortress type per formation / Arena / Conquest (TEST)
+- Harley: "A player can research any tree they want, the decision is what fortress type they apply to each formation in world pvp, arena and conquest mode. So arena and conquest can only have 1 selected at a time".
+- One research map still holds both trees; each fight gets a copy with _type set (fortMapAs):
+  - Conquest: map._type (as before) - new [💣 I | 🛡️ III] pick under the backpack in Conquest.
+  - Arena: state.arenaFort - pick under "Your record" on the Arena page (myArenaFortMap is used for your side's stats and power).
+  - World PvP: each formation's .fort (pick on every formation card, City Guard too). The march carries it (sendMarch 5th arg -> march.fort); the defender uses its City Guard's / chosen formation's .fort (defenderFromSave -> def.fort). Gauntlet uses the active formation's.
+  - Unset = falls back to the Conquest type, so old saves fight exactly as before.
+- Saved: formations[i].fort, arenaFort. Balance: `run.js --only meta` output identical to v1032 (the existing meta warning is unchanged).
+- Test: new g243_fort_type.js.

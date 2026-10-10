@@ -882,6 +882,16 @@
   #techTabs .rh-back { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:9px; padding:5px 10px; font-weight:800; font-size:12.5px; }
   #techTabs .rh-tname { flex:1; text-align:center; color:#f0d98c; font-weight:800; font-size:14px; padding-right:60px; }
   #techTabs:has(.rh-back) { display:flex; align-items:center; gap:8px; }
+  .fort-pick { display:inline-flex; border:1.5px solid #b3985f; border-radius:9px; overflow:hidden; vertical-align:middle; background:#14100b; }
+  .fort-pick button { all:unset; cursor:pointer; padding:3px 8px !important; font-size:11.5px !important; font-weight:800 !important; color:#a3906a !important; font-family:var(--bodyfont) !important; line-height:1.3 !important; background:transparent !important; border:none !important; box-shadow:none !important; border-radius:0 !important; width:auto !important; min-width:0 !important; margin:0 !important; text-shadow:none !important; transform:none !important; }
+  .fort-pick button + button { border-left:1px solid #4a3b24 !important; }
+  .fort-pick button.on { background:#57cfdf !important; color:#0e3440 !important; }
+  .formation-fort { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 2px; font-size:12px; color:#f0c95f; font-weight:700; }
+  .lb2-fort { margin-top:6px; font-size:12.5px; color:#f0d98c; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .idle-fort { position:absolute; top:78px; left:13px; z-index:2; }
+  .idle-fort .fort-pick { flex-direction:column; border-radius:8px; }
+  .idle-fort .fort-pick button { padding:2px 4px !important; font-size:10.5px !important; text-align:center; }
+  .idle-fort .fort-pick button + button { border-left:none !important; border-top:1px solid #4a3b24 !important; }
   #techFortressHost .tf-title { color:#f0d98c; font-weight:800; font-size:14px; text-align:center; margin:2px 0 8px; text-shadow:0 1px 3px #000a; }
   #mapviewportWrap #tileinfo.pretty.tp-mini { padding:0; border:none; background:none; box-shadow:none; overflow:visible; }
   #tileinfo.tp-mini .tic-btn { margin:0; box-shadow:0 3px 10px rgba(0,0,0,.55); }
@@ -4813,6 +4823,33 @@ function fortressNodeUnlocked(map, key) {
 // map = {nodeKey: level}. null = this side has no fortress bonus at all.
 function fortressTypeOf(map) { return (map && map._type === 3) ? 3 : 1; }
 function fortressTreeOf(map) { return fortressTypeOf(map) === 3 ? FORTRESS3_TREE : FORTRESS1_TREE; }
+/* v1033 (Harley: "the decision is what fortress type they apply to each formation in world pvp, arena and conquest mode"): one research map holds
+   BOTH trees; a fight gets a copy with _type set to the type chosen for it. Conquest = map._type (as before); Arena = state.arenaFort;
+   World PvP = the formation's .fort (march.fort / def.fort). Unset = falls back to the Conquest type. */
+function fortMapAs(map, t) { var m = Object.assign({}, map || {}); if (t === 3) m._type = 3; else delete m._type; return m; }
+function myArenaFortMap() { var st = game.state; return fortMapAs(st.fortressTech, st.arenaFort === 1 || st.arenaFort === 3 ? st.arenaFort : fortressTypeOf(st.fortressTech)); }
+/* Picker: [💣 I][🛡️ III]. data-fp = "conquest" | "arena" | "f<formation index>" */
+function fortPickCur(which) {
+  var st = game.state;
+  if (which === "conquest") return fortressTypeOf(st.fortressTech);
+  if (which === "arena") return fortressTypeOf(myArenaFortMap());
+  var f = st.formations[+which.slice(1)]; return formationFortType(f, st.fortressTech);
+}
+function fortPickHtml(which) {
+  var c = fortPickCur(which);
+  return '<span class="fort-pick" data-fp="' + which + '"><button type="button" data-ft="1"' + (c === 1 ? ' class="on"' : '') + ' title="Fortress I - Heavy Cannon">💣 I</button><button type="button" data-ft="3"' + (c === 3 ? ' class="on"' : '') + ' title="Fortress III - Bulwark">🛡️ III</button></span>';
+}
+function fortPickSync() { document.querySelectorAll(".fort-pick").forEach(function (p) { var c = fortPickCur(p.getAttribute("data-fp")); p.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-ft") === c); }); }); }
+document.addEventListener("click", function (e) {
+  var b = e.target && e.target.closest && e.target.closest(".fort-pick button"); if (!b) return;
+  e.stopPropagation();
+  var which = b.closest(".fort-pick").getAttribute("data-fp"), t = +b.getAttribute("data-ft") === 3 ? 3 : 1, st = game.state;
+  if (which === "conquest") { fortressSetType(t); }
+  else if (which === "arena") { st.arenaFort = t; persist(); try { if (mapMode === "arena") renderArena(); } catch (e2) {} }
+  else { var f = st.formations[+which.slice(1)]; if (f) { f.fort = t; persist(); } }
+  fortPickSync();
+}, true);
+function formationFortType(f, map) { return f && (f.fort === 1 || f.fort === 3) ? f.fort : fortressTypeOf(map); }
 function fortressBonusFrom(map) {
   if (!map) return { cannon: 0, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1 };
   if (fortressTypeOf(map) === 3) {
@@ -6371,7 +6408,7 @@ function createGame(opts) {
   // read from state.serverId (or grandfathered to the legacy one) instead,
   // and this never runs for them.
   function regenerateMap(seed, size, populatedSize) { state.map = buildMap(size, seed, populatedSize); }
-  function sendMarch(army, tileId, action, heroKeys) {
+  function sendMarch(army, tileId, action, heroKeys, fort) {
     var total = totalTroops(army);
     if (total <= 0) return { ok: false, reason: "empty_army" };
     for (var t in army) if (army[t] > (state.troops[t] || 0)) return { ok: false, reason: "not_enough_" + t };
@@ -6393,6 +6430,7 @@ function createGame(opts) {
     var march = { id: state.nextMarchId++, army: army, tileId: tileId, action: action,
       status: "outbound", heroKeys: heroArr, heroKey: heroArr[0] || null, // heroKey kept as first-hero alias for any older display code
       travelSec: travelSec, arriveAt: now() + travelSec * 1000, actionEnd: null, returnAt: null, result: null };
+    if (fort === 1 || fort === 3) march.fort = fort; /* v1033: the formation's fortress type */
     state.marches.push(march);
     var ledBy = heroArr.length ? " led by " + heroArr.map(function (hk) { return HERO_DEFS[hk].name; }).join(", ") : "";
     log("March #" + march.id + " departed toward " + tileId + " (" + action + ")" + ledBy + ", ETA " + Math.round(travelSec) + "s");
@@ -8979,6 +9017,7 @@ function createGame(opts) {
     // tracked production against.
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
+    if (saved.arenaFort === 1 || saved.arenaFort === 3) state.arenaFort = saved.arenaFort; /* v1033: fortress type used in the Arena */
     state.mailApplied = (saved.mailApplied && typeof saved.mailApplied === "object") ? saved.mailApplied : {}; /* v911: mails whose items are already in this save */
     state.mailSaved = (saved.mailSaved && typeof saved.mailSaved === "object") ? saved.mailSaved : {}; /* v914: mails the player starred (Saved tab) */
     if (typeof saved.lastRaidApplied === "number") state.lastRaidApplied = saved.lastRaidApplied;
@@ -8986,6 +9025,7 @@ function createGame(opts) {
       saved.formations.forEach(function (f, idx) {
         if (!state.formations[idx] || !f) return;
         if (typeof f.name === "string") state.formations[idx].name = f.name;
+        if (f.fort === 1 || f.fort === 3) state.formations[idx].fort = f.fort; /* v1033 */
         if (f.troops) Object.assign(state.formations[idx].troops, f.troops);
         if (Array.isArray(f.heroKeys)) {
           // Only real, currently-owned, non-governor heroes survive the
@@ -11016,7 +11056,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1032"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1033"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13108,6 +13148,9 @@ function renderFormations() {
       });
       card.appendChild(heroGrid);
 
+      var fortRow = document.createElement("div"); /* v1033: fortress type this formation fights with (World PvP) */
+      fortRow.className = "formation-fort"; fortRow.innerHTML = '<span>🏰 Fortress</span>' + fortPickHtml("f" + idx);
+      card.appendChild(fortRow);
       var actions = document.createElement("div");
       actions.className = "formation-actions";
       var saveBtn = document.createElement("button");
@@ -13137,6 +13180,7 @@ function renderFormations() {
   }
   // Every render (including the very first, right after building above):
   // only the active-state visuals get touched, never an <input>.value.
+  fortPickSync(); /* v1033 */
   formationCardEls.forEach(function (c, idx) {
     var isGuard = !!game.state.formations[idx].guard;
     var isActive = isGuard ? !!game.state.guardOn : game.state.activeFormation === idx;
@@ -17122,7 +17166,7 @@ function defenderFromSave(saved, opts) { // v798: split out of fetchDefenderForm
     var garmy = {};
     if (st.guardOn && g) for (var gt in g.troops) { if (!TROOP_DEFS[gt]) continue; var gn = Math.min(g.troops[gt] || 0, stock[gt] || 0); if (gn > 0) garmy[gt] = Math.floor(gn); }
     if (!sum(garmy)) return { army: {}, heroKeys: [], sim: dsim, undefended: true };
-    return { army: garmy, heroKeys: (g.heroKeys || []).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && st.heroes[k] && st.heroes[k].owned; }), sim: dsim };
+    return { army: garmy, heroKeys: (g.heroKeys || []).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && st.heroes[k] && st.heroes[k].owned; }), sim: dsim, fort: formationFortType(g, st.fortressTech) };
   }
   var pick = null, ai = st.activeFormation;
   if (ai != null && forms[ai] && sum(forms[ai].troops || {}) > 0) pick = forms[ai];
@@ -17130,7 +17174,7 @@ function defenderFromSave(saved, opts) { // v798: split out of fetchDefenderForm
   var army = {}, src = pick ? pick.troops : stock;
   for (var t in src) { if (!TROOP_DEFS[t]) continue; var n = Math.min(src[t] || 0, stock[t] || 0); if (n > 0) army[t] = Math.floor(n); }
   var heroKeys = (pick ? (pick.heroKeys || []) : (st.conquestRoster || [])).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && st.heroes[k] && st.heroes[k].owned; });
-  return { army: army, heroKeys: heroKeys, sim: dsim };
+  return { army: army, heroKeys: heroKeys, sim: dsim, fort: formationFortType(pick, st.fortressTech) };
 }
 function fetchDefenderFormation(ownerId) {
   var docPath = (ownerId === "owner") ? "save/main" : botSaveDocPath(ownerId);
@@ -17191,11 +17235,11 @@ function worldPvpBattle(march, def, ownerId, opts) {
   var atkEsper = opts.atkEsper !== undefined ? opts.atkEsper : (opts.noEsper ? null : (asim.state.equippedEsper || null));
   // Fortress tech: HP bonus applies to both sides; only the defender fires a cannon (simulator overrides: atkFort / defFort).
   var atkExtraHp = opts.atkBaseHp != null ? opts.atkBaseHp : (asim === game ? arenaBaseHpPlayer : 0);
-  var atkStats = arenaSideStats(atkKeys, asim.state.heroes, asim.state.buildings.townhall.level, atkExtraHp, true, atkEsper, opts.atkFort !== undefined ? opts.atkFort : (asim.state.fortressTech || {}), opts.atkAtkPerPower, opts.atkBonus !== undefined ? opts.atkBonus : bonusOf(asim)); // HP tech follows the army; the attacker still has no cannon
+  var atkStats = arenaSideStats(atkKeys, asim.state.heroes, asim.state.buildings.townhall.level, atkExtraHp, true, atkEsper, opts.atkFort !== undefined ? opts.atkFort : (march.fort ? fortMapAs(asim.state.fortressTech, march.fort) : (asim.state.fortressTech || {})), opts.atkAtkPerPower, opts.atkBonus !== undefined ? opts.atkBonus : bonusOf(asim)); // HP tech follows the army; the attacker still has no cannon
   var dsim = def.sim;
   var defStats = arenaSideStats(def.heroKeys, dsim.state.heroes, dsim.state.buildings.townhall.level, opts.defBaseHp != null ? opts.defBaseHp : arenaBaseHpAi, false,
     opts.defEsper !== undefined ? opts.defEsper : (dsim.state.equippedEsper || null),
-    opts.defFort !== undefined ? opts.defFort : (dsim.state.fortressTech || {}), opts.defAtkPerPower, opts.defBonus !== undefined ? opts.defBonus : bonusOf(dsim));
+    opts.defFort !== undefined ? opts.defFort : (def.fort ? fortMapAs(dsim.state.fortressTech, def.fort) : (dsim.state.fortressTech || {})), opts.defAtkPerPower, opts.defBonus !== undefined ? opts.defBonus : bonusOf(dsim));
   // Simulator override: super-burst chance (only has an effect if that side has Fortress tech, which is what sets the crit multiplier)
   if (opts.atkCritRate != null && atkStats.critRate > 0) atkStats.critRate = opts.atkCritRate;
   if (opts.defCritRate != null && defStats.critRate > 0) defStats.critRate = opts.defCritRate;
@@ -17593,7 +17637,7 @@ function buildFormationAttackForm(tile, action) {
       var army = {};
       // Send what's actually at home if the saved formation is bigger than the available troops (e.g. some are still out / were lost).
       Object.keys(f.troops).forEach(function (t) { army[t] = Math.max(0, Math.min(f.troops[t] || 0, Math.floor(game.state.troops[t] || 0))); });
-      var result = game.sendMarch(army, tile.id, action, f.heroKeys);
+      var result = game.sendMarch(army, tile.id, action, f.heroKeys, formationFortType(f, game.state.fortressTech));
       if (!result.ok) return;
       selectedTile = null; lastArmyFormTile = null; /* v848: march sent - close the tile card */
       persist(); render(); try { renderVisibleTiles(); renderTileInfo(); } catch (e) {}
@@ -17756,14 +17800,14 @@ function gauntletFormation() {
   var st = game.state, f = st.formations[st.activeFormation || 0] || { troops: {}, heroKeys: [] }, army = {}, n = 0;
   for (var t in (f.troops || {})) { if (!TROOP_DEFS[t]) continue; var c = Math.min(f.troops[t] || 0, st.troops[t] || 0); if (c > 0) { army[t] = Math.floor(c); n += army[t]; } }
   var heroKeys = (f.heroKeys || []).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && st.heroes[k] && st.heroes[k].owned; });
-  return { army: army, troops: n, heroKeys: heroKeys, name: f.name || "Formation" };
+  return { army: army, troops: n, heroKeys: heroKeys, name: f.name || "Formation", fort: formationFortType(f, st.fortressTech) };
 }
 function gauntletFight() {
   var g = game.state.gauntlet, f = g.floor, ladder = gauntletLadder;
   if (!ladder || f > GAUNTLET_FLOORS) return;
   var form = gauntletFormation(); if (form.troops <= 0 && !form.heroKeys.length) return;
   var ent = ladder[f - 1], def = defenderFromSave(ent.saved), seed = "gauntlet|" + f;
-  var res = worldPvpBattle({ id: seed, tileId: "gauntlet", army: form.army, heroKeys: form.heroKeys }, def, seed, { seed: seed });
+  var res = worldPvpBattle({ id: seed, tileId: "gauntlet", army: form.army, heroKeys: form.heroKeys, fort: form.fort }, def, seed, { seed: seed });
   var rw = res.win ? gauntletReward(f) : null;
   if (rw) game.gauntletClear(rw);
   persist();
@@ -26025,7 +26069,8 @@ setInterval(function () { /* refresh only when something changed (so taps never 
   [].forEach.call(pop.querySelectorAll("[data-bfin]"), function (e) { e.textContent = fmtTime(Math.max(0, (+e.getAttribute("data-bfin") - vnow()) / 1000)) + " left"; });
 }, 1000);
 (function () { var mb = document.getElementById("mapBagBtn"); if (mb) mb.onclick = function (e) { e.stopPropagation(); bagOpen(); };
-  var sp = document.getElementById("idleSkillSpacer"); if (sp && !sp.querySelector(".idle-bag-btn")) { var bb = document.createElement("button"); bb.type = "button"; bb.className = "idle-bag-btn"; bb.title = "Backpack"; bb.setAttribute("aria-label", "Backpack"); bb.innerHTML = BAG_SVG; bb.onclick = bagOpen; sp.appendChild(bb); } })();
+  var sp = document.getElementById("idleSkillSpacer"); if (sp && !sp.querySelector(".idle-bag-btn")) { var bb = document.createElement("button"); bb.type = "button"; bb.className = "idle-bag-btn"; bb.title = "Backpack"; bb.setAttribute("aria-label", "Backpack"); bb.innerHTML = BAG_SVG; bb.onclick = bagOpen; sp.appendChild(bb); }
+  if (sp && !sp.querySelector(".idle-fort")) { var fw = document.createElement("div"); fw.className = "idle-fort"; fw.innerHTML = fortPickHtml("conquest"); sp.appendChild(fw); } /* v1033: Conquest fortress type */ })();
 // ================= v727: Forge UI (Energon, Equipment, idle rewards bucket) =================
 var forgeAuto = false, forgeLast = null, forgeDetailId = null, forgeDetailSlot = null, forgePanelEl = null, forgeBtnEl = null;
 var FG_STAT_NAMES = { skill: "Skill Damage", boss: "Boss Damage", support: "Support Power" };
@@ -27643,7 +27688,7 @@ function rerollArenaLeaderboardSeed() {
 function generateArenaLeaderboard() {
   var seed = ensureArenaLeaderboardSeed();
   var p = arenaPlayerRosterAndHeroes();
-  var playerPower = arenaGovernorPower(game.state.buildings.townhall.level, p.roster, p.heroes, game.state.fortressTech);
+  var playerPower = arenaGovernorPower(game.state.buildings.townhall.level, p.roster, p.heroes, myArenaFortMap());
   var record = game.state.arena.record;
   var entries = seed.map(function (s) {
     return {
@@ -27744,7 +27789,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
   var bn = bonus !== undefined ? (bonus || ZERO_BONUS) : ((isPlayerSide && atkPerPower == null) ? { atk: heroBonusTotal("atk"), hp: heroBonusTotal("hp"), def: heroBonusTotal("def"), skill: heroBonusTotal("skill") } : ZERO_BONUS); // this side's own ATK / HP / DEF bonus % (real player = Dev Tools value; bots / other saves bring their own)
   var bnA = 1 + (bn.atk || 0) / 100, bnH = 1 + (bn.hp || 0) / 100, bnD = 1 + (bn.def || 0) / 100;
   var atkPerPowerV = atkPerPower != null ? atkPerPower : heroAtkPerPowerEffective(); // sim-only override of the "4" constant — see PvP/Boss Simulator's "Attack power constant" field. Real Arena/Border Skirmish never pass this, so they fall back to the Dev Tools override (if set) or the real HERO_ATK_PER_POWER default.
-  if (fortressMap === undefined) fortressMap = isPlayerSide ? (game.state.fortressTech || {}) : null; // null = no fortress bonus
+  if (fortressMap === undefined) fortressMap = isPlayerSide ? myArenaFortMap() : null; // null = no fortress bonus
   var fb = fortressBonusFrom(fortressMap);
   var ek = esperOverride !== undefined ? esperOverride : (isPlayerSide ? game.state.equippedEsper : null);
   if (ek && !ESPER_DEFS[ek]) ek = null;
@@ -29653,7 +29698,7 @@ function renderArenaLeaderboard() {
   el.innerHTML =
     '<div class="lb2' + (SHOW_LB_FRAMES ? "" : " noframe") + '">' +
       '<div class="lb2-banner">' +
-        '<div class="lb2-banner-s">Your record ' + record.wins + 'W – ' + record.losses + 'L' + (record.draws ? ' – ' + record.draws + 'D' : '') + '</div></div>' +
+        '<div class="lb2-banner-s">Your record ' + record.wins + 'W – ' + record.losses + 'L' + (record.draws ? ' – ' + record.draws + 'D' : '') + '</div><div class="lb2-fort">🏰 Fortress ' + fortPickHtml("arena") + '</div></div>' +
       '<div class="lb2-list">' +
         '<div class="lb2-head"><span>Ranking</span><span>Lord</span><span>Arena Points</span></div>' +
         rowsHtml +
@@ -29700,7 +29745,7 @@ function renderArenaBattleScreen() {
         '<span id="arenaTimerSub">' + Math.round(ARENA_MAX_DURATION_MS / 1000) + 's</span>' +
       '</div>' +
       '<div class="arena-canvas-footer">' +
-        '<span id="arenaPlayerSub" class="arena-power-clickable" title="Tap for a breakdown">' + POWER_ICON_HTML + ' ' + fmt(arenaGovernorPower(game.state.buildings.townhall.level, p.roster, p.heroes, game.state.fortressTech)) + '</span>' +
+        '<span id="arenaPlayerSub" class="arena-power-clickable" title="Tap for a breakdown">' + POWER_ICON_HTML + ' ' + fmt(arenaGovernorPower(game.state.buildings.townhall.level, p.roster, p.heroes, myArenaFortMap())) + '</span>' +
         '<div class="arena-actions" id="arenaActions">' +
           '<button class="dev-btn active" id="arenaAttackBtn">⚔️ Attack</button>' +
           '<button class="dev-btn" id="arenaNewOpponentBtn" title="New Opponent">🎲 New</button>' +
@@ -29732,7 +29777,7 @@ function renderArenaBattleScreen() {
     if (openBreakdownSide === side) { breakdownEl.style.display = "none"; openBreakdownSide = null; return; }
     var opp = arenaOpponent;
     var html = side === "player"
-      ? arenaGovernorPowerBreakdownHtml("🛡️ You", game.state.buildings.townhall.level, p.roster, p.heroes, game.state.fortressTech)
+      ? arenaGovernorPowerBreakdownHtml("🛡️ You", game.state.buildings.townhall.level, p.roster, p.heroes, myArenaFortMap())
       : arenaGovernorPowerBreakdownHtml("⚔️ " + opp.name, opp.townhallLevel, opp.roster, opp.heroes, opp.fortressTech);
     breakdownEl.innerHTML = html;
     breakdownEl.style.display = "";
