@@ -1217,3 +1217,10 @@
 ## v1059 - Ghost Galleon wake from Wake Lab (TEST)
 - Harley pasted his Wake Lab settings. The only change from the defaults is the Ghost Galleon: trail length 2.5 tiles (was 7) and strength 0.16 (was 0.75). Voidspire keeps the defaults.
 - MARCH_WATER.pirate = { wakeLen: 2.5, wakeOp: 0.16 }. (Wake Lab's "bob" isn't used in the game; the game keeps its own Dev Tools bob slider.) g251 passes.
+
+## v1060 - New base water: soft glow + ripple rings (TEST)
+- Harley (screen recording of another game): bigger, smoother water round the base. Tuned in Base Water Lab (dev/labs/base-water-lab.html); he sent settings for the Royal Castle, every other base uses the lab defaults.
+- Replaces the v951 14-frame strip. Per base skin, built once at load time from the art: a still glow picture (shallow-water tint fading out from the base's ground footprint, plus a soft foam line on the edge) and a soft ring picture. Each base shows the ring 3 times (BASE_WATER2.rings), each copy growing 1 -> 1.55x and fading over 3.4 s, staggered, with a per-tile offset so neighbours aren't in step. CSS transform/opacity only (compositor), no per-frame JS.
+- Footprint = the iso diamond found from the art (widest row = side corners, lowest pixel = front corner), with width/depth/up-down/roundness settings.
+- Settings: BASE_WATER2 (defaults) + BASE_WATER2_SKIN[skin] (castle: round 1.05, glowSize 0.055, ringA 0.16, ringW 0.016). The same Dev Tools base-water switch still turns it off. Pictures are blob links so the tile markup stays short. Ghost Galleon hasn't been tuned yet (the diamond is a guess under a ship).
+- Test g200_base_water updated for the new markup (glow + 3 rings behind the base, same box as the art, rings animate, no water next to land, switch works) and passes.
