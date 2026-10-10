@@ -1139,3 +1139,8 @@
 - Harley's screenshots: "Harley H" IS an admin account, and the archer/lancer enemy art is still the placeholder after opening it - so the automatic migration found nothing to restore (most likely the shared slot already held the placeholder, so it was never filled).
 - New Dev Tools > Enemies > "🧯 Find lost art (admin)": lists every older copy of a shared picture that still exists - this account's own cloud copies (players/<id>/assetitems/<key>; always checks enemy archer/lancer/infantry + boss) and this phone's storage - next to what players see now, skipping copies identical to the current or built-in one. "Use this" (with a confirm) uploads it to the shared art. Reads only this account's own data. If nothing is found, the pictures need re-uploading.
 - Test: new g247_lost_art.js.
+
+## v1046 - FIX: built-in archer / lancer back (TEST)
+- "Find lost art" found nothing - because nothing was lost: the archer (small sprite) and lancer (skeleton warrior) are BUILT-IN (OWNER_DEFAULTS). Built-ins are copied to a phone only ONCE (seedOwnerDefaults flag); v1034-v1037 deleted those copies and they were never re-copied, and the enemy sprite slots (makeEnemySpriteSlot) had no built-in fallback, so the placeholders showed.
+- Fix: makeEnemySpriteSlot falls back to OWNER_DEFAULTS; and every load, any missing built-in IMAGE is copied back to the phone (empty slots only, never overwrites).
+- Test: new g248_enemy_defaults.js (fails on v1045, passes now).

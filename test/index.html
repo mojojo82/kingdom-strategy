@@ -3543,6 +3543,9 @@ var OWNER_DEFAULTS = {"kingdomMapCitySkin_v1":"tower","kingdom_prototype_arenaBa
 (function seedOwnerDefaults() {
   try {
     var FLAG = "kingdom_prototype_ownerDefaultsSeeded_v1";
+    /* v1046: v1034-v1037 deleted seeded built-in pictures from phones, and this seeding only ran once per device - so put back any
+       missing built-in IMAGE every load (only if the slot is empty; never overwrites anything). */
+    Object.keys(OWNER_DEFAULTS).forEach(function (k) { var v = OWNER_DEFAULTS[k]; if (typeof v === "string" && v.indexOf("data:image") === 0 && localStorage.getItem(k) == null) { try { localStorage.setItem(k, v); } catch (e) {} } });
     if (localStorage.getItem(FLAG)) return;
     Object.keys(OWNER_DEFAULTS).forEach(function (k) { if (localStorage.getItem(k) == null) { try { localStorage.setItem(k, OWNER_DEFAULTS[k]); } catch (e) {} } });
     localStorage.setItem(FLAG, "1");
@@ -10953,7 +10956,8 @@ function makeEnemySpriteSlot(storageKey, flipKey) {
     get: function () {
       var cloud = assetSyncGet(storageKey);
       if (cloud) return cloud;
-      try { return localStorage.getItem(storageKey) || null; } catch (e) { return null; }
+      var loc = null; try { loc = localStorage.getItem(storageKey); } catch (e) {}
+      return loc || (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[storageKey]) || null; /* v1046: the built-in archer / lancer if the phone copy is gone */
     },
     set: function (dataUrl) {
       try { localStorage.setItem(storageKey, dataUrl); assetSyncUpload(storageKey, dataUrl); return true; }
@@ -11180,7 +11184,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1045"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1046"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
