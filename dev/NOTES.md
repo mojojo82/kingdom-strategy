@@ -1049,3 +1049,11 @@
 - Harley: "You removed the red illegal location indicator. I said to remove the info card." v1029 deselected a too-close tile, which also removed its red 3x3 block.
 - Now the tile stays selected (red block shows) and only the card is hidden (empty, no has-sel, arrow hidden).
 - g241 updated: too-close tile stays selected with .tile.fp.bad showing and no card.
+
+## v1031 - Fortress tree inside Research (TEST)
+- Harley: "we need the fortress tech trees in this same area so new players don't miss it".
+- City > Research now has a 4th tab, 🏰 Fortress, showing the same Fortress tree (I or III, whichever you have) with its title and boosts summary; tap a node to upgrade as usual. More > Fortress still works.
+- One #fortressBody is moved between the Research panel (#techFortressHost) and More > Fortress (fortressBodyHome). In Research it is only rebuilt when levels / affordability / type / width change (renderTechs runs every second); the RP line updates in place.
+- Fortress CSS re-scoped from #fortressModeContent to #fortressBody so it looks the same in both places.
+- The Fortress dev buttons (+500 RP / Max / Reset) are now hidden from non-admins (html.ks-noadmin .ft-dev); they were showing to everyone.
+- Test: new g242_research_fortress.js; g231 still passes.
