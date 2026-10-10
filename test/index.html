@@ -858,6 +858,30 @@
   #tileinfo.pretty .tic-btn { display:block; width:100%; margin:5px 0 3px; font-family:var(--bodyfont) !important; background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; padding:7px 12px; font-size:13px; font-weight:800; text-shadow:none; -webkit-text-stroke:0; box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 2px 0 #1f6c80; } /* v854: same shape as the city Upgrade buttons, in the game's cyan */
   #tileinfo.pretty .tic-btn:active { transform:translateY(1px); box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 1px 0 #1f6c80; }
   #tileinfo.pretty .tic-btn:disabled { filter:grayscale(.8) brightness(.85); }
+  #techList .rh-banner { margin:14px auto 10px; width:74%; text-align:center; padding:6px 0; font-weight:900; font-size:16px; letter-spacing:.04em; clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%); }
+  #techList .rh-banner.eco { background:#57cfdf; color:#0e3440; }
+  #techList .rh-banner.war { background:#d9774f; color:#3a160a; }
+  #techList .rh-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 4px; }
+  #techList .rh-card { position:relative; border-radius:6px 14px 14px 14px; background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 8px,transparent 8px 16px),linear-gradient(180deg,#3a2f20,#211910); border:1.5px solid #6b5634; box-shadow:inset 0 0 0 2px #241b12,0 3px 0 #120d08; padding:12px 6px 0; text-align:center; overflow:hidden; cursor:pointer; }
+  #techList .rh-card:active { transform:translateY(1px); }
+  #techList .rh-hex { width:78px; height:88px; margin:0 auto; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#c9a24e; position:relative; }
+  #techList .rh-hex i { position:absolute; inset:4px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:radial-gradient(circle at 50% 40%,#1f7a86,#0f3f4a); display:flex; align-items:center; justify-content:center; font-style:normal; font-size:36px; }
+  #techList .rh-bar { margin:10px -6px 0; background:linear-gradient(180deg,#4a3b24,#2c2417); border-top:1.5px solid #b3985f; padding:5px 0 8px; }
+  #techList .rh-cnt { font-size:12px; font-weight:800; color:#f3e8cf; }
+  #techList .rh-prog { height:5px; margin:3px 16px 4px; background:#14100b; border-radius:3px; overflow:hidden; }
+  #techList .rh-prog b { display:block; height:100%; background:#4fd1c5; }
+  #techList .rh-card.done .rh-prog b { background:#f0c95f; } #techList .rh-card.done .rh-cnt { color:#f0c95f; }
+  #techList .rh-nm { font-size:14px; font-weight:900; color:#f0c95f; text-shadow:0 1px 2px #000; }
+  #techList .rh-badge { position:absolute; top:6px; right:6px; width:28px; height:28px; border-radius:50%; background:#57cfdf; border:2px solid #0e3440; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 4px #0008; z-index:2; }
+  #techList .rh-badge.run { background:#f0c95f; border-color:#7a5512; }
+  #techList .rh-q { display:flex; align-items:center; gap:8px; margin:14px 4px 0; background:linear-gradient(180deg,#2c2417,#1e1810); border:1px solid #4a3b24; border-radius:12px; padding:7px 8px; }
+  #techList .rh-qi { width:32px; height:32px; flex:0 0 32px; border-radius:8px; background:#0f3f4a; border:1.5px solid #c9a24e; display:flex; align-items:center; justify-content:center; font-size:17px; }
+  #techList .rh-qt { flex:1; min-width:0; font-size:11.5px; line-height:1.25; color:#f3e8cf; } #techList .rh-qt b { display:block; font-size:12.5px; color:#f0c95f; }
+  #techList .rh-qm { height:6px; background:#14100b; border-radius:4px; margin-top:3px; overflow:hidden; } #techList .rh-qm i { display:block; height:100%; background:#4fd1c5; }
+  #techList .rh-qs { flex:0 0 auto; display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; max-width:45%; }
+  #techTabs .rh-back { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:9px; padding:5px 10px; font-weight:800; font-size:12.5px; }
+  #techTabs .rh-tname { flex:1; text-align:center; color:#f0d98c; font-weight:800; font-size:14px; padding-right:60px; }
+  #techTabs:has(.rh-back) { display:flex; align-items:center; gap:8px; }
   #techFortressHost .tf-title { color:#f0d98c; font-weight:800; font-size:14px; text-align:center; margin:2px 0 8px; text-shadow:0 1px 3px #000a; }
   #mapviewportWrap #tileinfo.pretty.tp-mini { padding:0; border:none; background:none; box-shadow:none; overflow:visible; }
   #tileinfo.tp-mini .tic-btn { margin:0; box-shadow:0 3px 10px rgba(0,0,0,.55); }
@@ -6677,7 +6701,7 @@ function createGame(opts) {
     var def = fortressNode(key);
     if (!def) return { ok: false, reason: "unknown_node" };
     if (!state.fortressTech) state.fortressTech = {};
-    if (def.tree !== fortressTypeOf(state.fortressTech)) return { ok: false, reason: "wrong_fortress_type" };
+    /* v1032 (Harley): players can research BOTH fortress trees; which type a fight uses is chosen per formation / mode */
     var cur = state.fortressTech[key] || 0;
     if (cur >= def.maxLevel) return { ok: false, reason: "max_level" };
     if (!fortressNodeUnlocked(state.fortressTech, key)) return { ok: false, reason: "locked" };
@@ -10992,7 +11016,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1031"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1032"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -11406,7 +11430,7 @@ function renderModeTabs() {
       if (mapMode === "weapons") renderWeapons();
       if (mapMode === "recon") renderRecon();
       else { var _ri = document.getElementById("reconInfoOverlay"); if (_ri) _ri.style.display = "none"; reconSel = null; }
-      if (mapMode === "fortress") { fortressBodyHome(); renderFortress(); }
+      if (mapMode === "fortress") { fortressViewType = null; fortressBodyHome(); renderFortress(); }
       if (mapMode === "bosssim") initBossSim();
       if (mapMode === "pvpsim") initPvpSim();
       if (mapMode === "skins") renderSkinsScreen();
@@ -12719,7 +12743,7 @@ function setEquippedEsper(key) {
   renderPowerSlots();
 }
 
-var activeTechCategory = "growth";
+var activeTechCategory = "hub"; /* v1032: "hub" = the card page; growth / economy / battle / fortress1 / fortress3 = a tree */
 
 // Formats a tech's bonus at a given level as human-readable text, e.g.
 // "+18% Food Production" or "-9% Army Losses in Battle" or "+900 Storage Capacity".
@@ -12732,16 +12756,62 @@ function techBonusText(def, level) {
   return (def.invert ? "-" : "+") + pct + "% " + def.statLabel;
 }
 
-function renderTechTabs() {
+/* v1032 (Harley, from a reference screenshot + approved mockup): Research opens on a hub - banners "Economy" (Growth, Economy) and "Warfare"
+   (Battle, Fortress I, Fortress III) with one card per tree: hex icon, levels done / total + bar, 👍 when something can be researched now,
+   ⏳ when that tree is researching. Tap a card to open its tree; "‹ All research" goes back. The running research shows at the bottom. */
+var RESEARCH_HUB = [
+  { banner: "Economy", cls: "eco", cards: [{ key: "growth", name: "Growth", icon: "🌱" }, { key: "economy", name: "Economy", icon: "💰" }] },
+  { banner: "Warfare", cls: "war", cards: [{ key: "battle", name: "Battle", icon: "⚔️" }, { key: "fortress1", name: "Fortress I", icon: "💣" }, { key: "fortress3", name: "Fortress III", icon: "🛡️" }] }
+];
+function researchHubCardInfo(key) {
+  var st = game.state, done = 0, total = 0, can = false, run = false;
+  if (key === "fortress1" || key === "fortress3") {
+    var T = key === "fortress3" ? FORTRESS3_TREE : FORTRESS1_TREE, map = st.fortressTech || {};
+    Object.keys(T).forEach(function (k) { var l = Math.min(T[k].maxLevel, map[k] || 0); done += l; total += T[k].maxLevel; if (l < T[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1)) can = true; });
+  } else {
+    Object.keys(TECH_DEFS).forEach(function (k) { if (TECH_DEFS[k].category !== key) return; done += Math.min(TECH_DEFS[k].maxLevel, st.tech[k] || 0); total += TECH_DEFS[k].maxLevel; if (techNodeState(k) === "can") can = true; if (st.researchQueue && st.researchQueue.key === k) run = true; });
+  }
+  return { done: done, total: total, can: can && !run, run: run };
+}
+var researchHubSig = "";
+function renderResearchHub() {
+  var el = document.getElementById("techList");
+  var sig = RESEARCH_HUB.map(function (g) { return g.cards.map(function (c) { var i = researchHubCardInfo(c.key); return i.done + "/" + i.total + (i.can ? "c" : "") + (i.run ? "r" : ""); }).join(","); }).join("|");
+  if (sig !== researchHubSig || !el.querySelector(".rh-grid")) {
+    researchHubSig = sig;
+    var h = "";
+    RESEARCH_HUB.forEach(function (g) {
+      h += '<div class="rh-banner ' + g.cls + '">' + g.banner + '</div><div class="rh-grid">';
+      g.cards.forEach(function (c) {
+        var i = researchHubCardInfo(c.key), pct = i.total ? Math.round(i.done / i.total * 100) : 0;
+        h += '<div class="rh-card' + (i.done >= i.total ? " done" : "") + '" data-rh="' + c.key + '">' + (i.run ? '<span class="rh-badge run">⏳</span>' : i.can ? '<span class="rh-badge">👍</span>' : "") +
+          '<div class="rh-hex"><i>' + c.icon + '</i></div><div class="rh-bar"><div class="rh-cnt">' + i.done + "/" + i.total + '</div><div class="rh-prog"><b style="width:' + pct + '%"></b></div><div class="rh-nm">' + c.name + '</div></div></div>';
+      });
+      h += '</div>';
+    });
+    h += '<div class="rh-q" id="rhQ"></div>';
+    el.innerHTML = h;
+    el.querySelectorAll(".rh-card").forEach(function (cd) { cd.onclick = function () { activeTechCategory = cd.getAttribute("data-rh"); techTreeSig = ""; techFortressSig = ""; renderTechs(); try { document.getElementById("techQueueBar").scrollIntoView({ block: "nearest" }); } catch (e) {} }; });
+  }
+  var q = document.getElementById("rhQ"), rq = game.state.researchQueue;
+  if (q) {
+    if (rq && TECH_DEFS[rq.key]) {
+      var left = Math.max(0, (rq.finishAt - vnow()) / 1000), dur = rq.duration || Math.max(1, (rq.finishAt - (rq.startedAt || rq.finishAt)) / 1000), pc = dur ? Math.max(0, Math.min(100, 100 - left / dur * 100)) : 0;
+      var qk = rq.key + rq.toLevel;
+      if (q.getAttribute("data-k") !== qk) { q.setAttribute("data-k", qk); q.innerHTML = '<div class="rh-qi">' + TECH_DEFS[rq.key].icon + '</div><div class="rh-qt"><b>' + TECH_DEFS[rq.key].name + ' Lv' + rq.toLevel + '</b><span class="rh-ql"></span><div class="rh-qm"><i></i></div></div><div class="rh-qs">' + speedupBtnsHtml("research", null) + '</div>'; }
+      q.querySelector(".rh-ql").textContent = fmtTime(left); q.querySelector(".rh-qm i").style.width = pc + "%"; q.style.display = "";
+    } else { q.setAttribute("data-k", ""); q.innerHTML = '<div class="rh-qt" style="text-align:center;color:#a3906a">🔬 Nothing researching - tap a card to pick one</div>'; }
+  }
+}
+function renderTechTabs() { /* v1032: replaced by the hub - inside a tree this is the "‹ All research" bar with the tree's name */
   var el = document.getElementById("techTabs");
-  el.innerHTML = "";
-  TECH_CATEGORIES.concat([{ key: "fortress", name: "Fortress", icon: "🏰" }]).forEach(function (cat) { /* v1031: Fortress tree as a 4th tab so new players find it */
-    var tab = document.createElement("div");
-    tab.className = "techtab" + (activeTechCategory === cat.key ? " active" : "");
-    tab.textContent = cat.icon + " " + cat.name;
-    tab.onclick = function () { activeTechCategory = cat.key; renderTechs(); };
-    el.appendChild(tab);
-  });
+  if (activeTechCategory === "hub") { el.style.display = "none"; el.innerHTML = ""; return; }
+  el.style.display = "";
+  var nm = ""; RESEARCH_HUB.forEach(function (g) { g.cards.forEach(function (c) { if (c.key === activeTechCategory) nm = c.icon + " " + c.name; }); });
+  if (el.getAttribute("data-k") === activeTechCategory && el.querySelector(".rh-back")) return;
+  el.setAttribute("data-k", activeTechCategory);
+  el.innerHTML = '<button class="rh-back">‹ All research</button><span class="rh-tname">' + nm + '</span>';
+  el.querySelector(".rh-back").onclick = function () { activeTechCategory = "hub"; researchHubSig = ""; renderTechs(); };
 }
 
 /* v1031 (Harley: "we need the fortress tech trees in this same area so new players don't miss it"): Research > 🏰 Fortress shows the same
@@ -12759,12 +12829,13 @@ function fortressBodyHome() { /* put the tree back on the More > Fortress page *
   if (body && fm && body.parentNode !== fm) { fm.appendChild(body); techFortressSig = ""; }
 }
 function renderTechFortress() {
+  fortressViewType = activeTechCategory === "fortress3" ? 3 : 1;
   var host = techFortressHost(), body = document.getElementById("fortressBody"), tl = document.getElementById("techList");
   tl.style.display = "none"; host.style.display = "";
   var moved = false;
   if (body.parentNode !== host) { host.innerHTML = '<div class="tf-title" id="tfTitle"></div>'; host.appendChild(body); moved = true; }
-  var st = game.state, map = st.fortressTech || {}, TREE = fortressTreeOf(map);
-  var sig = [fortressTypeOf(map), host.clientWidth, JSON.stringify(map)].concat(Object.keys(TREE).map(function (k) { var l = map[k] || 0; return l < TREE[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1) ? 1 : 0; })).join("|");
+  var st = game.state, map = st.fortressTech || {}, TREE = fortressViewType === 3 ? FORTRESS3_TREE : FORTRESS1_TREE;
+  var sig = [fortressViewType, host.clientWidth, JSON.stringify(map)].concat(Object.keys(TREE).map(function (k) { var l = map[k] || 0; return l < TREE[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1) ? 1 : 0; })).join("|");
   if (moved || sig !== techFortressSig || !body.querySelector(".rt-board")) { techFortressSig = sig; renderFortress(); }
   else { var hd = body.querySelector(".ft-head b"); if (hd) hd.textContent = "🔬 Research: " + fmt(st.researchPoints); }
   var tt = document.getElementById("tfTitle"), ft = document.getElementById("fortressTitle"); if (tt && ft) tt.textContent = ft.textContent;
@@ -12775,8 +12846,11 @@ function renderTechs() {
   var tqb = document.getElementById("techQueueBar"), rqq = game.state.researchQueue;
   tqb.innerHTML = '<span>🔬 Research: <b>' + (rqq ? 1 : 0) + '/1</b>' + (rqq ? ' · ' + TECH_DEFS[rqq.key].name + ' Lv' + rqq.toLevel : ' · idle') + '</span>' + (rqq ? speedupBtnsHtml("research", null) : "") + '<a href="#" id="devRFin" style="color:#7a6a4a;">dev: finish</a>';
   tqb.querySelector("#devRFin").onclick = function (e) { e.preventDefault(); game.researchFinishNow(); persist(); render(); };
-  if (activeTechCategory === "fortress") { renderTechFortress(); return; }
+  tqb.style.display = activeTechCategory === "hub" ? "none" : "";
+  if (activeTechCategory === "fortress1" || activeTechCategory === "fortress3") { renderTechFortress(); return; }
+  fortressViewType = null;
   techFortressHide();
+  if (activeTechCategory === "hub") { renderResearchHub(); return; }
   renderTechTree(); return;
   var el = document.getElementById("techList");
   el.innerHTML = "";
@@ -13359,6 +13433,7 @@ function pvpSimRun(n) {
 
 // ---- Fortress I tech tree screen -------------------------------------------
 var fortressSel = "heavyShells";
+var fortressViewType = null; /* v1032: 1 / 3 = the tree Research shows; null = the active type (More > Fortress) */
 function fortressDesc(d, lvl) {
   var v = fortressNodePer(d) * lvl * 100; v = Math.round(v * 10) / 10;
   if (d.stat === "haste") return "Cannon cooldown -" + v + "%";
@@ -13384,10 +13459,11 @@ function wireFortressTypeRow() {
 }
 function renderFortress() {
   var body = document.getElementById("fortressBody"); if (!body) return;
-  var st = game.state, map = st.fortressTech || {}, b = fortressBonusFrom(map);
-  var fType = fortressTypeOf(map), titleEl = document.getElementById("fortressTitle");
+  var st = game.state, map0 = st.fortressTech || {}, fType = fortressViewType || fortressTypeOf(map0);
+  var map = Object.assign({}, map0); if (fType === 3) map._type = 3; else delete map._type; /* v1032: show the tree being viewed (Research > Fortress I / III), not only the active type */
+  var b = fortressBonusFrom(map), titleEl = document.getElementById("fortressTitle");
   if (titleEl) titleEl.textContent = fType === 3 ? "🏰 Fortress III — Bulwark" : "🏰 Fortress I — Heavy Cannon";
-  var TREE = fortressTreeOf(map);
+  var TREE = fType === 3 ? FORTRESS3_TREE : FORTRESS1_TREE;
   if (!TREE[fortressSel]) { fortressSel = Object.keys(TREE).filter(function (k) { return TREE[k].row === 0; })[0]; renderFortress.scrolled = false; }
   /* v1011 (Harley): same look as the research tree (bronze board, teal hexes, cyan lines, level pill); here the lines ARE the unlock order */
   var maxRow = 0; Object.keys(TREE).forEach(function (k) { maxRow = Math.max(maxRow, TREE[k].row); });
@@ -13441,7 +13517,7 @@ function renderFortress() {
 function fortressOpen(k) { var pop = rtPopEl(); pop.setAttribute("data-k", "ft:" + k); fortressDetail(k); pop.style.display = "flex"; }
 function fortressDetail(k) { /* v1011: the node popup (same box as research) - Now / Next / cost / what it needs / Upgrade */
   var box = document.getElementById("rtDetail"); if (!box) return;
-  var st = game.state, map = st.fortressTech || {}, TREE = fortressTreeOf(map), d = TREE[k]; if (!d) return;
+  var st = game.state, map = st.fortressTech || {}, d = fortressNode(k); if (!d) return;
   var lv = map[k] || 0, maxed = lv >= d.maxLevel, unl = fortressNodeUnlocked(map, k), cost = maxed ? 0 : fortressNodeCost(k, lv + 1), can = unl && !maxed && st.researchPoints >= cost;
   var stt = maxed ? "max" : !unl ? "locked" : can ? "can" : "";
   var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + stt + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + d.icon + '</i></div></div><div><div class="rt-dn">' + escapeHtml(d.name) + '</div><div>' + (maxed ? "MAX" : "Level " + lv + " / " + d.maxLevel) + '</div></div></div>';

@@ -1057,3 +1057,9 @@
 - Fortress CSS re-scoped from #fortressModeContent to #fortressBody so it looks the same in both places.
 - The Fortress dev buttons (+500 RP / Max / Reset) are now hidden from non-admins (html.ks-noadmin .ft-dev); they were showing to everyone.
 - Test: new g242_research_fortress.js; g231 still passes.
+
+## v1032 - Research hub + both Fortress trees researchable (TEST)
+- Harley approved the mockup (reference: a "Tech" page of tree cards under banners). City > Research now opens on a hub: banner "Economy" (Growth, Economy) and "Warfare" (Battle, Fortress I, Fortress III). Each card: hex icon, levels done/total + bar, 👍 = something researchable now, ⏳ = researching. Tap a card -> its tree with a "‹ All research" bar; the running research shows at the bottom of the hub (with speedups). The old tab row is gone (RESEARCH_HUB, renderResearchHub, activeTechCategory "hub").
+- Harley: "A player can research any tree they want" - researchFortress no longer refuses the non-active type. Research > Fortress I / III shows that tree (fortressViewType); More > Fortress still shows the active type.
+- Still to do (v1033): pick the fortress type per World PvP formation, and once for Arena and once for Conquest.
+- Test: g242 rewritten for the hub (both fortress trees, research Fortress III while Type I is active).
