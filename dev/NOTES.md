@@ -1229,3 +1229,6 @@
 - Harley: the Ghost Galleon's bow foam runs well ahead of the hull; he wants it touching the front of the ship.
 - The Galleon's long bowsprit makes the model longer than the hull, so its centre isn't the hull's centre. "Foam ring length" alone can't fit it (shrinking it also pulls the back foam inward).
 - New setting hullShift ("Foam ring forward / back" in Wake Lab's Hull shape box): + slides the foam ring, bow wave and ripples toward the bow, - toward the stern, in half-lengths. Game: MARCH_WATER_DEF.hullShift = 0, read per model like the rest. Wake Lab republished with the slider. g251 passes.
+
+## v1062 - Ghost Galleon water from Wake Lab (TEST)
+- Harley's Wake Lab settings ("fine for now"). MARCH_WATER.pirate = hullLen 0.54, hullShift -0.13, sternPos 0.55, wakeLen 3, wakeOp 0.21, wakeStart 0.35, wakeSpread 0.225, foam 0.35, foamSize 0.7. The bow foam now sits on the hull, and the wake is short and soft. Voidspire stays on the defaults. g251 passes.
