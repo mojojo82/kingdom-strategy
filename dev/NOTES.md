@@ -1174,3 +1174,10 @@
 ## v1052 - March route arrows under the bases (TEST)
 - Harley: move the targeting arrows underneath the base rather than on top, same at the destination.
 - Route arrows (.march-path) now live in their own #mapPathLayer (z 5 on the iso map, 1 on the flat map), below every base / island / resource (iso art tiles are 10 + x + y), so they start under your base and end under the target. Ships, badges and 3D ships stay on top in #mapMarchLayer.
+
+## v1053 - Ghost Galleon march ship is sharp now (TEST)
+- Harley: the pirate march model looked blurry, like a 2D filter; low poly should still have sharp edges.
+- Cause: colours were per corner (blended across each face) and normals were smoothed, so faces melted together.
+- Fix: re-made the model flat-shaded: each face has one solid colour (averaged from only the original triangles that collapsed into it) and its own normal, so edges stay hard. A bit more detail too (6724 faces, was 4570). The model ships as shared corners + one colour per face (`fc`), and `build()` splits faces apart on load (20172 GPU verts, fits 16-bit indices).
+- Checked headless with the game's own march shader (rendered through marchGLDraw, read back with readPixels): crisp faces, no WebGL errors. g249 passes. Still needs a look on a phone.
+- dev/glb: decimate_flat.py + encode_flat.py added.
