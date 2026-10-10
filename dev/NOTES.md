@@ -1109,3 +1109,8 @@
 ## v1039 - Conquest: Stats + fortress-type pick moved (temporary) (TEST)
 - Harley (screenshot with arrows): "Temporarily relocate stats and the type toggle down here" - both now sit in the empty space right of the Forge, under the 3 small slots (.cq-quick in the Conquest .ps-row2), the type pick laid out sideways. The backpack stays where it was. Arena's Stats button unchanged.
 - Temporary: to undo, delete the v1039 block after the backpack/fort IIFE (the elements are only moved).
+
+## v1040 - Flat empty gear spaces (TEST)
+- Harley: the 10 equipment spaces should match the pieces' shape, with no rim or shadow - just a flat colour; same for the gear boxes bottom-left (remove the border).
+- Measured: pieces and empty spaces were both 50x50, but the pieces' tile corners are ~8% (TURRET_ICON_LIBRARY masks, ~4-5px) vs the empty 9px, and empty spaces had a dark rim + inner shadow.
+- Now: empty equipment spaces = flat rgba(0,0,0,.2), corner = 8% of the space, no rim/shadow. All gear boxes (.power-slot, Conquest + Arena rows, incl. the "sunken" weapon space) = flat, border transparent (so nothing shifts), no shadow.
