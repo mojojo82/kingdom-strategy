@@ -633,6 +633,8 @@
   /* A plain child of #mapworld — it scrolls with the tiles for free, so
      marker positions never need re-measuring against the viewport. */
   #mapMarchLayer { position:absolute; top:0; left:0; pointer-events:none; z-index:3; }
+  #mapPathLayer { position:absolute; top:0; left:0; pointer-events:none; z-index:1; } /* v1052 (Harley): route arrows run UNDER the bases and islands, at both ends */
+  #mapworld.iso #mapPathLayer { z-index:5; } /* iso tiles with art sit at 10 + x + y */
   #mapworld .tile.lod { --lsz:6px; border:none; background:none; box-shadow:none; border-radius:2px; width:var(--lsz); height:var(--lsz); min-width:0; min-height:0; padding:0; margin-left:calc((var(--tile-px) - var(--lsz)) / 2); margin-top:calc((var(--tile-px) - var(--lsz)) / 2); transform:none; animation:none; overflow:hidden; } /* v865: fixed on-screen marker size, centred on the tile */
   #mapworld.iso .tile.lod, #mapworld.iso .tile.lod:hover { transform:scaleY(0.5736) rotate(45deg); }
   #mapworld .tile.lod-res.gold { background:#f0c95f; } #mapworld .tile.lod-res.food { background:#8fd14f; } #mapworld .tile.lod-res.wood { background:#c08a52; } #mapworld .tile.lod-res.stone { background:#c3cad3; }
@@ -2833,7 +2835,7 @@
             <button id="mapBagBtn" type="button" title="Backpack" aria-label="Backpack"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#3b2a17" stroke-width="5" stroke-linecap="round"/><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#a87440" stroke-width="2.5" stroke-linecap="round"/><rect x="11" y="14" width="42" height="44" rx="10" fill="#8a5a2b" stroke="#3b2a17" stroke-width="3"/><rect x="17" y="34" width="30" height="18" rx="5" fill="#6b4220" stroke="#3b2a17" stroke-width="2.5"/><path d="M13 26 Q32 34 51 26 L51 20 Q51 15 46 15 L18 15 Q13 15 13 20 Z" fill="#a8703a" stroke="#3b2a17" stroke-width="2.5" stroke-linejoin="round"/><rect x="28" y="24" width="8" height="10" rx="2" fill="#f0c95f" stroke="#3b2a17" stroke-width="2"/><line x1="32" y1="38" x2="32" y2="48" stroke="#3b2a17" stroke-width="2" opacity=".6"/><path d="M16 18 Q14 22 15 28" stroke="#c99560" stroke-width="2" fill="none" opacity=".7"/></svg></button><button id="mapIdleBtn" type="button" title="Idle Chest" aria-label="Idle Chest"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
             <div id="mapviewport">
               <div id="mapworld">
-                <div id="mapMarchLayer"></div>
+                <div id="mapPathLayer"></div><div id="mapMarchLayer"></div>
               </div>
             </div>
             <div id="tileinfo"></div>
@@ -11190,7 +11192,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1051"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1052"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16547,7 +16549,7 @@ function updateMarchMarkers(manual) {
         if (m.status === "outbound" || m.status === "returning") { /* v856: route arrows */
           var pA = m.status === "returning" ? targetPx : homePx, pB = m.status === "returning" ? homePx : targetPx, pdx = pB.x - pA.x, pdy = pB.y - pA.y, plen = Math.sqrt(pdx * pdx + pdy * pdy);
           var pe = marchPathEls[m.id];
-          if (!pe) { pe = document.createElement("div"); layer.insertBefore(pe, layer.firstChild); marchPathEls[m.id] = pe; }
+          if (!pe) { pe = document.createElement("div"); (document.getElementById("mapPathLayer") || layer).appendChild(pe); marchPathEls[m.id] = pe; }
           var pc = "march-path " + (m.foreign ? "foe" : m.status === "returning" ? "back" : "out"); if (pe.className !== pc) pe.className = pc;
           pe.style.left = pA.x + "px"; pe.style.top = pA.y + "px"; pe.style.width = Math.max(0, plen) + "px"; pe.style.transform = "rotate(" + Math.atan2(pdy, pdx) + "rad)";
           pathSeen[m.id] = true;

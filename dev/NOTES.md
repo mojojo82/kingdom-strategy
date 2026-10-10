@@ -1170,3 +1170,7 @@
 - The march WebGL renderer now holds several models (marchGL.models: void, pirate; one buffer set each, bound per ship) and a per-vertex colour mode (uVC, lit, both sides lit for the sails). MARCH_SKINS entry "Ghost Galleon" (model: "pirate", size 1.15, own thumbnail rendered from the model).
 - Tools (no libraries): dev/glb/. Original .glb in art/originals/.
 - Checked headless: both models draw with no WebGL errors (the headless screenshot can't capture the 3D layer, so it still needs a look on a phone). g249 passes.
+
+## v1052 - March route arrows under the bases (TEST)
+- Harley: move the targeting arrows underneath the base rather than on top, same at the destination.
+- Route arrows (.march-path) now live in their own #mapPathLayer (z 5 on the iso map, 1 on the flat map), below every base / island / resource (iso art tiles are 10 + x + y), so they start under your base and end under the target. Ships, badges and 3D ships stay on top in #mapMarchLayer.
