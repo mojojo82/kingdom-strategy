@@ -1181,3 +1181,10 @@
 - Fix: re-made the model flat-shaded: each face has one solid colour (averaged from only the original triangles that collapsed into it) and its own normal, so edges stay hard. A bit more detail too (6724 faces, was 4570). The model ships as shared corners + one colour per face (`fc`), and `build()` splits faces apart on load (20172 GPU verts, fits 16-bit indices).
 - Checked headless with the game's own march shader (rendered through marchGLDraw, read back with readPixels): crisp faces, no WebGL errors. g249 passes. Still needs a look on a phone.
 - dev/glb: decimate_flat.py + encode_flat.py added.
+
+## v1054 - Attack marches fire at their target (TEST, visual only)
+- Harley (screen recording of another game): the march stops by the target and fires shots at it while the battle resolves. Just a visual, nothing to do with the battle maths.
+- Attack marches now park short of the target (3D ship: half its length + 1.1 tiles back; flat sprite: 1.5 tiles; never more than 60% of the trip) for the 5 s fight, and come home from there. Gathering marches still park on the tile.
+- While fighting, about once a second the ship fires a volley of 2-3 glowing orange shells (with a muzzle flash) that burst into an explosion on the target. Plain DOM + CSS animations in the march layer (marchFxVolley), cleaned up after each volley. Shows for other players' attacks too. resolveAction is untouched.
+- Bug found while testing: 3D ships vanished when the march's x+y was over ~690 (the depth went out of range). Depth is now relative to the ships on screen, so far-away bases see their ships again.
+- Test: dev/simfork/g250_march_fx.js (shells appear, ship parks short, 3D ship really drawn). g249 still passes.

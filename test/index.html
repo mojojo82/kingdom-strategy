@@ -671,6 +671,16 @@
   .march-marker.acting { animation:marchMarkerPulse 1s ease-in-out infinite; }
   .march-ship-inner { display:block; width:calc(var(--tile-px, 38px) * 1.1); max-width:none; height:auto; }
   .march-badge { position:absolute; right:-4px; bottom:-4px; font-size:10px; filter:drop-shadow(0 1px 1px #000c); }
+  /* v1054: attack visuals only — shells fly from the parked ship to the target and burst on it (battle maths unchanged) */
+  .mfx-shot { position:absolute; pointer-events:none; border-radius:50%; transform-origin:100% 50%; z-index:3;
+    background:linear-gradient(90deg, #ff7a1a00 0%, #ff8a2a 55%, #ffd27a 85%, #fffbe6 100%); box-shadow:0 0 6px 1px #ff9a2acc;
+    animation:mfxShot var(--fly) linear var(--dl) both; }
+  @keyframes mfxShot { 0% { transform:translate(0,0) rotate(var(--a)); opacity:0; } 8% { opacity:1; } 92% { opacity:1; } 100% { transform:translate(var(--dx),var(--dy)) rotate(var(--a)); opacity:0; } }
+  .mfx-flash, .mfx-boom { position:absolute; pointer-events:none; border-radius:50%; transform:translate(-50%,-50%) scale(0); z-index:3; }
+  .mfx-flash { background:radial-gradient(circle, #fffbe6 0%, #ffc04d 40%, #ff7a1a00 72%); animation:mfxFlash .16s ease-out var(--dl) both; }
+  .mfx-boom { background:radial-gradient(circle, #fffbe0 0%, #ffd060 22%, #ff8a1e 48%, #d9360c99 64%, #3a1a0a00 74%); animation:mfxBoom .5s ease-out var(--dl) both; }
+  @keyframes mfxFlash { 0% { transform:translate(-50%,-50%) scale(.3); opacity:1; } 100% { transform:translate(-50%,-50%) scale(1.1); opacity:0; } }
+  @keyframes mfxBoom { 0% { transform:translate(-50%,-50%) scale(.2); opacity:1; } 45% { opacity:1; } 100% { transform:translate(-50%,-50%) scale(1.25); opacity:0; } }
   @keyframes marchMarkerPulse { 0%,100% { transform:translate(-50%,-50%) scale(1); } 50% { transform:translate(-50%,-50%) scale(1.3); } }
   .tile { position:absolute; width:var(--tile-px); height:var(--tile-px); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:calc(var(--tile-px) * 0.447); cursor:pointer; border:2px solid transparent; transition:transform .08s, border-color .1s; }
   .tile:hover { transform:scale(1.12); z-index:2; border-color:#fff8; }
@@ -11192,7 +11202,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1053"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1054"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16504,6 +16514,7 @@ function marchGLDraw(ships, u) {
   var now = performance.now(), dt = G.last ? Math.min(0.1, (now - G.last) / 1000) : 0.016; G.last = now;
   var L = G.loc; G.bound = null;
   gl.uniform2f(L.uRes, W, H); gl.uniform1f(L.uU, u);
+  var zRef = 0; ships.forEach(function (sh) { zRef += sh.tx + sh.ty; }); zRef /= ships.length;
   ships.forEach(function (sh) {
     // heading: bow is -x in the model, so rotate it onto the travel direction; ease toward the target angle so turns at the end of a leg aren't instant
     var want = Math.atan2(sh.gz, -sh.gx), cur = G.ang[sh.id];
@@ -16512,7 +16523,7 @@ function marchGLDraw(ships, u) {
     var bob = Math.sin(now / 420 + sh.id * 1.7) * 0.06 * (march3dBob / 100);
     gl.uniform2f(L.uOrg, sh.ox - G.ox, sh.oy - G.oy); gl.uniform2f(L.uCS, Math.cos(cur), Math.sin(cur));
     var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], mo = G.models[mk.model || "void"] || G.models.void, S = march3dSize * (mk.size || 1) / (2 * mo.M.h[0]); G.bind(mo); /* v1048: the march's skin; v1051: and its model */
-    gl.uniform1f(L.uS, S); gl.uniform1f(L.uLift, mo.M.h[1] * S + 0.14 + bob); gl.uniform1f(L.uZ0, (sh.tx + sh.ty) * 0.70711 * 0.81915);
+    gl.uniform1f(L.uS, S); gl.uniform1f(L.uLift, mo.M.h[1] * S + 0.14 + bob); gl.uniform1f(L.uZ0, (sh.tx + sh.ty - zRef) * 0.70711 * 0.81915); /* v1054: depth relative to the ships on screen — absolute tile coords pushed far-off ships (x+y > ~690) out of the depth range so they vanished */
     gl.uniform3fv(L.uLo, mk.lo); gl.uniform3fv(L.uHi, mk.hi); gl.uniform3fv(L.uGlow, mk.glow); gl.uniform3fv(L.uHot, mk.hot); gl.uniform1f(L.uVC, mo.vc);
     gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0);
   });
@@ -16540,21 +16551,25 @@ function updateMarchMarkers(manual) {
         if (!tile) return;
         var hm = m._home || home, homePx = marchTileCenterPx(hm); // shouldn't happen, but never crash the overlay over a stale/bad tileId
         var targetPx = marchTileCenterPx(tile);
-        var fromPx = homePx, toPx = targetPx, t = 1;
+        /* v1054: an attack parks just short of its target (like a ship lining up a broadside) instead of on top of it, then fires at it while the fight runs */
+        var isAtk = m.action === "attack", tdx = tile.x - hm.x, tdy = tile.y - hm.y, tdist = Math.sqrt(tdx * tdx + tdy * tdy), sf = isAtk && tdist > 0 ? Math.min(use3d ? march3dSize * 0.5 + 1.1 : MARCH_FX_STANDOFF, tdist * 0.6) / tdist : 0; /* 3D ship is ~march3dSize tiles long: keep its bow clear of the target */
+        var stopPx = sf ? { x: targetPx.x + (homePx.x - targetPx.x) * sf, y: targetPx.y + (homePx.y - targetPx.y) * sf } : targetPx, stopX = tile.x - tdx * sf, stopY = tile.y - tdy * sf;
+        var fromPx = homePx, toPx = stopPx, t = 1;
         if (m.status === "outbound") {
           var outStart = m.arriveAt - m.travelSec * 1000;
           t = m.travelSec > 0 ? clamp01((vnow() - outStart) / (m.travelSec * 1000)) : 1;
         } else if (m.status === "returning") {
-          fromPx = targetPx; toPx = homePx;
+          fromPx = stopPx; toPx = homePx;
           var backStart = m.returnAt - m.travelSec * 1000;
           t = m.travelSec > 0 ? clamp01((vnow() - backStart) / (m.travelSec * 1000)) : 1;
         } else {
-          // "acting": parked at the target, pulsing (see .march-marker.acting)
-          fromPx = targetPx; toPx = targetPx;
+          // "acting": parked at the target (attacks: just short of it), pulsing (see .march-marker.acting)
+          fromPx = stopPx; toPx = stopPx;
         }
         var px = fromPx.x + (toPx.x - fromPx.x) * t;
         var py = fromPx.y + (toPx.y - fromPx.y) * t;
         seen[m.id] = true;
+        if (m.status === "acting" && isAtk) marchFxVolley(m.id, px, py, targetPx, layer);
         if (m.status === "outbound" || m.status === "returning") { /* v856: route arrows */
           var pA = m.status === "returning" ? targetPx : homePx, pB = m.status === "returning" ? homePx : targetPx, pdx = pB.x - pA.x, pdy = pB.y - pA.y, plen = Math.sqrt(pdx * pdx + pdy * pdy);
           var pe = marchPathEls[m.id];
@@ -16589,8 +16604,8 @@ function updateMarchMarkers(manual) {
         if (use3d) { /* v830: the ship itself is drawn by the WebGL layer; the marker keeps only its badge + tooltip */
           el.innerHTML = badge;
           var ghx = tile.x - hm.x, ghz = tile.y - hm.y; if (m.status === "returning") { ghx = -ghx; ghz = -ghz; }
-          var tt = m.status === "acting" ? 1 : t, fx = m.status === "returning" ? tile.x + (hm.x - tile.x) * tt : hm.x + (tile.x - hm.x) * tt, fy = m.status === "returning" ? tile.y + (hm.y - tile.y) * tt : hm.y + (tile.y - hm.y) * tt;
-          if (m.status === "acting") { fx = tile.x; fy = tile.y; }
+          var tt = m.status === "acting" ? 1 : t, fx = m.status === "returning" ? stopX + (hm.x - stopX) * tt : hm.x + (stopX - hm.x) * tt, fy = m.status === "returning" ? stopY + (hm.y - stopY) * tt : hm.y + (stopY - hm.y) * tt;
+          if (m.status === "acting") { fx = stopX; fy = stopY; }
           ships3d.push({ id: m._sid || m.id, ox: px, oy: py, tx: fx, ty: fy, gx: ghx, gz: ghz, skin: m.skin || "voidspire" });
         } else {
         el.innerHTML = '<img class="march-ship-inner" src="' + MARCH_SHIP_SPRITES[dirIdx] + '" alt="ship">' + badge;
@@ -16604,8 +16619,32 @@ function updateMarchMarkers(manual) {
       if (!seen[id]) { marchMarkerEls[id].remove(); delete marchMarkerEls[id]; }
     });
     Object.keys(marchPathEls).forEach(function (id) { if (!pathSeen[id]) { marchPathEls[id].remove(); delete marchPathEls[id]; } });
+    Object.keys(marchFx).forEach(function (id) { if (!seen[id]) delete marchFx[id]; });
   }
   if (manual !== true) marchAnim.rafId = requestAnimationFrame(updateMarchMarkers);
+}
+// v1054: attack visuals — every ~1s a volley of 2-3 glowing shells flies from the parked ship to the target and bursts on it. Purely cosmetic: the fight itself is still worked out by resolveAction.
+var MARCH_FX_STANDOFF = 1.5, marchFx = {};
+function marchFxVolley(id, sx, sy, to, layer) {
+  var now = performance.now(), st = marchFx[id];
+  if (!st) st = marchFx[id] = { next: now + 200 };
+  if (now < st.next) return;
+  st.next = now + 800 + Math.random() * 450;
+  var u = tilePxZ(), n = 2 + (Math.random() * 2 | 0), made = [], longest = 0;
+  for (var i = 0; i < n; i++) {
+    var dl = i * 90 + Math.random() * 70;
+    var ax = sx + (Math.random() - 0.5) * u * 0.3, ay = sy - u * 0.15 + (Math.random() - 0.5) * u * 0.15; /* gun on the ship */
+    var bx = to.x + (Math.random() - 0.5) * u * 0.7, by = to.y - u * 0.3 + (Math.random() - 0.5) * u * 0.4; /* somewhere on the target */
+    var dx = bx - ax, dy = by - ay, len = Math.sqrt(dx * dx + dy * dy) || 1, fly = Math.max(160, Math.min(420, len / u * 140)), w = Math.max(12, u * 0.6), h = Math.max(2.5, u * 0.1);
+    var sh = document.createElement("div"); sh.className = "mfx-shot";
+    sh.style.cssText = "left:" + (ax - w) + "px;top:" + (ay - h / 2) + "px;width:" + w + "px;height:" + h + "px;--dx:" + dx + "px;--dy:" + dy + "px;--a:" + Math.atan2(dy, dx) + "rad;--fly:" + fly + "ms;--dl:" + dl + "ms";
+    var fl = document.createElement("div"), fs = u * 0.32; fl.className = "mfx-flash";
+    fl.style.cssText = "left:" + ax + "px;top:" + ay + "px;width:" + fs + "px;height:" + fs + "px;--dl:" + dl + "ms";
+    var bm = document.createElement("div"), bs = u * (0.6 + Math.random() * 0.45); bm.className = "mfx-boom";
+    bm.style.cssText = "left:" + bx + "px;top:" + by + "px;width:" + bs + "px;height:" + bs + "px;--dl:" + (dl + fly) + "ms";
+    layer.appendChild(sh); layer.appendChild(fl); layer.appendChild(bm); made.push(sh, fl, bm); longest = Math.max(longest, dl + fly + 520);
+  }
+  setTimeout(function () { made.forEach(function (e) { e.remove(); }); }, longest + 50);
 }
 function startMarchAnim() {
   if (marchAnim.running) return;
