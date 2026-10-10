@@ -115,7 +115,8 @@ const P = (s) => R + s;
   await t("world chat: post as yourself only, max 500 chars, no edits", async () => {
     await setDoc(doc(A.db, P("worldchat/1_" + A.uid)), { pid: A.uid, name: "A", text: "hi", ts: 1 });
     await denied(setDoc(doc(A.db, P("worldchat/2_" + A.uid)), { pid: B.uid, name: "B", text: "fake", ts: 2 }));
-    await denied(setDoc(doc(A.db, P("worldchat/3_" + A.uid)), { pid: A.uid, name: "A", text: "x".repeat(501), ts: 3 }));
+    await setDoc(doc(A.db, P("worldchat/4_" + A.uid)), { pid: A.uid, name: "A", text: "x".repeat(2000), ts: 4 }); /* v1019: up to 2000 characters */
+    await denied(setDoc(doc(A.db, P("worldchat/3_" + A.uid)), { pid: A.uid, name: "A", text: "x".repeat(2001), ts: 3 }));
     await denied(updateDoc(doc(A.db, P("worldchat/1_" + A.uid)), { text: "edited" }));
   });
   await t("painted map: admin only", async () => {

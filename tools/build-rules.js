@@ -36,11 +36,11 @@ const BODY = `
         allow delete: if isAdmin() || (resource.data.owner == request.auth.uid && !resource.data.keys().hasAny(hpKeys()));
       }
 
-      // ---- world chat: post as yourself only, max 500 characters, no edits ----
+      // ---- world chat: post as yourself only, max 2000 characters (v1019: was 500 - emoji art got cut), no edits ----
       match /worldchat/{mid} {
         allow read: if signedIn();
         allow create: if open() && signedIn() && request.resource.data.pid == request.auth.uid
-                      && request.resource.data.text is string && request.resource.data.text.size() <= 500
+                      && request.resource.data.text is string && request.resource.data.text.size() <= 2000
                       && request.resource.data.ts is number;
         allow update, delete: if isAdmin();
       }

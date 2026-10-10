@@ -25,10 +25,14 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const r = t.getBoundingClientRect(), rr = tr.getBoundingClientRect();
     return { fits: t.scrollWidth <= t.clientWidth + 1, right: Math.round(r.right), width: Math.round(r.width), fs: getComputedStyle(t).fontSize, trRight: rr.left >= r.right - 1, pageW: document.documentElement.scrollWidth}; });
   await P.screenshot({ path: (process.env.OUT || "/tmp/") + "chat_art.png" });
+  /* v1019: a 25-row art (well over the old 500 limit) arrives whole */
+  const big = Array.from({ length: 25 }, () => "🟦".repeat(38)).join("\n");
+  o.bigLen = big.length; o.saved = await P.evaluate((big) => { postWorldChat(big); return new Promise((res) => setTimeout(() => res(getChatMessages().some((m) => m.text === big)), 1500)); }, big);
   console.log(JSON.stringify(o));
   assert.ok(o.fits, "the whole art is visible (no cut-off)");
   assert.ok(o.width <= 330 && o.right <= 430 && o.pageW <= 430, "normal bubble width, on screen");
   assert.ok(o.trRight, "translate button on the right, as before");
   assert.ok(parseFloat(o.fs) < 15, "the art was scaled down");
+  assert.ok(o.bigLen > 500 && o.bigLen <= 2000 && o.saved, "a 25-row emoji art is sent whole");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

@@ -970,3 +970,8 @@
 - Harley (phone screenshot of v1017): the box got wider but not taller; put the width back, and if someone pastes large art just scale the font / emoji down.
 - Art bubbles are back to the normal width with the translate button on the right; a too-wide art shrinks to fit the bubble (chatFitArt, minimum now 4 px so very wide art still fits). The bubble's height follows the art (no height limit).
 - g235 updated: 39-wide emoji art fits a ~308 px bubble at ~5.8 px, translate on the right.
+
+### v1019 — chat messages up to 2,000 characters (TEST + rules)
+- Harley: a big emoji art in chat looked flat; the original had been cut. Messages were capped at 500 characters and each coloured-square emoji counts as 2, so art was cut after ~6 rows of 40. Harley: 2000.
+- CHAT_MAX_LEN = 2000 for World and Alliance chat (the box allows 2000 too); firestore.rules worldchat text.size() <= 2000 (rules deploy with CI). Roughly 25 rows of 40 squares.
+- Tests: g235 sends a 25-row art (1,924 characters) and it arrives whole; ci/integration.test.js now checks 2000 allowed, 2001 refused.

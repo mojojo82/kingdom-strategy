@@ -2685,7 +2685,7 @@
       <h2>💬 Chat <span class="chat-name-edit" id="chatNameEdit" title="Click to change your display name"></span><span id="chatTabsDesk" class="chat-tabs-desk"></span></h2>
       <div id="chatMessages" class="chat-messages"></div>
       <div class="chat-input-row">
-        <textarea id="worldChatInput" rows="1" maxlength="1500" placeholder="Say something to the realm..."></textarea>
+        <textarea id="worldChatInput" rows="1" maxlength="2000" placeholder="Say something to the realm..."></textarea>
         <button id="worldChatSendBtn">Send</button>
       </div>
     </div>
@@ -10870,7 +10870,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1018"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1019"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25292,7 +25292,7 @@ function sendAllianceChat(text) {
   if (!ALLY.my || !cloudDb) return Promise.resolve(false);
   text = String(text || "").replace(/\s+$/, ""); if (!text.trim()) return Promise.resolve(false);
   var ts = Date.now();
-  return cloudDb.doc(allyPath("alliances/" + ALLY.my.aid + "/chat/" + ts + "_" + PLAYER_ID)).set({ pid: PLAYER_ID, name: getPlayerName(), text: text.slice(0, 500), ts: ts }).then(function () { return true; });
+  return cloudDb.doc(allyPath("alliances/" + ALLY.my.aid + "/chat/" + ts + "_" + PLAYER_ID)).set({ pid: PLAYER_ID, name: getPlayerName(), text: text.slice(0, CHAT_MAX_LEN), ts: ts }).then(function () { return true; });
 }
 function allyRefreshMyMemberInfo() { /* keep my name/power on the roster current (only on change) */
   if (!ALLY.my || !cloudDb) return; var m = ALLY.members[PLAYER_ID]; if (!m) return;
@@ -26358,7 +26358,7 @@ function postWorldChat(text, loc) { /* returns a promise; shared feed when onlin
   var now = Date.now();
   if (now - WCHAT.lastSend < 1500) { try { miniToast("Slow down a moment…"); } catch (e) {} return Promise.resolve(false); } /* simple anti-spam */
   WCHAT.lastSend = now;
-  var m = { pid: PLAYER_ID || "local", name: getPlayerName(), text: text.slice(0, 500), ts: now }; if (loc) m.loc = loc;
+  var m = { pid: PLAYER_ID || "local", name: getPlayerName(), text: text.slice(0, CHAT_MAX_LEN), ts: now }; if (loc) m.loc = loc;
   if (WCHAT.on && cloudDb) {
     WCHAT.msgs = WCHAT.msgs.concat([m]); worldChatNotify(); /* show it straight away; the snapshot replaces it */
     return cloudDb.doc(worldChatPath(now + "_" + m.pid)).set(m).then(function () { return true; }, function (e) { console.error("world chat send", e && e.message); try { miniToast("Message not sent"); } catch (x) {} return false; });
@@ -26431,6 +26431,7 @@ function chatFitArt(el) { /* v1017: shrink a too-wide art message until it fits 
     if (t.scrollWidth > t.clientWidth + 1 && nf > 4) t.style.fontSize = Math.max(4, nf * t.clientWidth / t.scrollWidth * 0.97).toFixed(2) + "px";
   });
 }
+var CHAT_MAX_LEN = 2000; /* v1019 (Harley): was 500 - an emoji counts as 2, so emoji art was cut after ~6 rows. Server rule matches (firestore.rules). */
 function sendWorldChatMessage() {
   var input = document.getElementById("worldChatInput");
   var text = input.value.replace(/^(\s*\n)+/, "").replace(/\s+$/, "");
