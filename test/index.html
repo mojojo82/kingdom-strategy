@@ -4643,6 +4643,7 @@ var TECH_DEFS_RAW = {
   pavedRoads:         { name: "Paved Roads",         icon: "🛣️", category: "growth",  maxLevel: 5, baseCost: 60,  costMult: 1.55, effectType: "marchSpeedMult",   effectTarget: null,   perLevel: 0.05, unit: "pct",  statLabel: "March Speed" },
   efficientBuilders:  { name: "Efficient Builders",  icon: "👷", category: "growth",  maxLevel: 5, baseCost: 70,  costMult: 1.55, effectType: "buildSpeedMult",   effectTarget: null,   perLevel: 0.05, unit: "pct",  statLabel: "Construction Speed" },
   drillSergeant:      { name: "Drill Sergeant",      icon: "📯", category: "growth",  maxLevel: 5, baseCost: 70,  costMult: 1.55, effectType: "trainSpeedMult",   effectTarget: null,   perLevel: 0.05, unit: "pct",  statLabel: "Troop Training Speed" },
+  campExpansion:      { name: "Camp Expansion",      icon: "⛺", category: "growth",  maxLevel: 5, baseCost: 70,  costMult: 1.55, effectType: "trainCapFlat",     effectTarget: null,   perLevel: 100,  unit: "flat", statLabel: "Training Capacity (per batch)" }, /* v1028: +50 per level, +500 at level 10 (Kingshot's Camp Expansion) */
   scholarlyPursuit:   { name: "Scholarly Pursuit",   icon: "🧠", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "rpProductionMult", effectTarget: null,   perLevel: 0.06, unit: "pct",  statLabel: "Research Point Production", reqBuilding: "academy", reqBuildingLevel: 1 },
   energonSiphon:      { name: "Energon Siphon",      icon: "🔋", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "idleEnergonFlat",  effectTarget: null,   perLevel: 40,   unit: "flat", statLabel: "Idle Energon per hour" }, /* v921: +20/h per level (10 levels, +200/h) */
   fieldLogistics:     { name: "Field Logistics",     icon: "🧰", category: "growth",  maxLevel: 5, baseCost: 90,  costMult: 1.6,  effectType: "idleCapHours",     effectTarget: null,   perLevel: 1.6,  unit: "hours", statLabel: "Idle Chest max time" }, /* v1003: +0.8h per level (8h -> 16h at level 10), drops come a little faster too */
@@ -5151,7 +5152,10 @@ function timeFor(key, level) {
   var tm = def.timeMult || 1.35;
   return Math.round(def.baseTime * Math.pow(tm, level - 1));
 }
-var TRAIN_CAP_BASE = 20, TRAIN_CAP_PER_LEVEL = 10; // v1027: per-batch training cap = 20 + 10 x building level
+/* v1028 (Harley: "in Kingshot I'm building 2k+ at a time"): per-batch training cap by training building level = Kingshot's own curve
+   (Lv1 17 ... Lv30 209, kingshotdata.com) x TRAIN_CAP_MULT, plus the Camp Expansion research (+500 at max). Lv30 + full research = 2,068. */
+var TRAIN_CAP_KS = [17,22,26,30,35,39,43,48,52,56,61,65,69,76,84,92,101,109,117,126,134,142,151,159,167,176,184,192,201,209];
+var TRAIN_CAP_MULT = 7.5;
 function troopCost(type, count) {
   var def = TROOP_DEFS[type];
   var cost = {};
@@ -6238,12 +6242,12 @@ function createGame(opts) {
     for (var t = 1; t <= TROOP_MAX_TIER; t++) { if (b.level >= TROOP_TIER_UNLOCK_LEVEL[t]) best = t; }
     return best;
   }
-  // v1027: most troops one Train tap can start (per batch), grows with the
-  // training building's level (Lv1 = 30 ... Lv28 = 300, like the Kingshot ref).
+  // v1027/v1028: most troops one Train tap can start (per batch): training building level
+  // (Kingshot curve x7.5: Lv1 128 ... Lv30 1,568) + Camp Expansion research (up to +500).
   function trainCap(buildingKey) {
     var b = state.buildings[buildingKey];
     if (!b || b.level < 1) return 0;
-    return TRAIN_CAP_BASE + TRAIN_CAP_PER_LEVEL * b.level;
+    return Math.round(TRAIN_CAP_KS[Math.min(b.level, TRAIN_CAP_KS.length) - 1] * TRAIN_CAP_MULT) + Math.round(techBonusSum("trainCapFlat"));
   }
   // Most of this troop the player can train right now: the cap, or fewer if
   // resources run out first.
@@ -10983,7 +10987,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1027"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1028"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

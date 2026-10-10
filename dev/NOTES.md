@@ -1032,3 +1032,9 @@
 - Per-batch cap = 20 + 10 x training building level (TRAIN_CAP_BASE / TRAIN_CAP_PER_LEVEL): Lv1 30, Lv10 120, Lv28 300, Lv30 320. Engine `trainCap(key)`, `maxTrainNow(key, tier)` (cap or fewer if resources run out). `queueTraining` clamps to the cap.
 - Train row: tier picker on its own line, then − / slider / + / number box / Train. Box starts at maxTrainNow (the cap when rich); the number you pick is kept until you train (troopTrainCount), then refills with the new max. Under it: duration, "max N per batch", and red "resources for N" when resources are the limit.
 - Test: new g240_train_cap.js.
+
+## v1028 - Bigger training caps + Camp Expansion research (TEST)
+- Harley: "in Kingshot I'm building 2k+ troops at a time" (his screenshot of the Kingshot Range table matches kingshotdata.com: Lv1 17 ... Lv30 209).
+- Building cap = Kingshot's table (TRAIN_CAP_KS) x TRAIN_CAP_MULT 7.5: Lv1 128, Lv10 420, Lv20 945, Lv30 1,568.
+- New Growth research Camp Expansion (effect trainCapFlat): +50 per level, +500 at level 10. Lv30 + full research = 2,068 per batch.
+- Test: g240_train_cap.js updated (Lv10 420, Lv30 1,568, full 2,068).
