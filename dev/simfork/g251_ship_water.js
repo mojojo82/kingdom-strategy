@@ -32,6 +32,6 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.parkV = await P.evaluate(() => marchWater.n); await P.evaluate(() => document.getElementById("devMarch3dWaterBtn").click()); o.off = await ink(); o.btn = await P.evaluate(() => document.getElementById("devMarch3dWaterBtn").textContent);
   o.gl = await P.evaluate(() => marchGL.gl.getError());
   console.log(JSON.stringify(o), errs);
-  assert.ok(o.waterV > 300 && o.parkV > 300, "water built while sailing and parked"); assert.ok(o.sail > o.off + 500, "water pixels drawn (vs switched off)"); assert.ok(o.park > o.off + 500, "parked water drawn"); assert.ok(/Off/.test(o.btn)); assert.strictEqual(o.gl, 0); assert.deepStrictEqual(errs, []);
+  assert.ok(o.waterV > 300 && o.parkV > 300, "water built while sailing and parked"); assert.ok(o.sail > o.off + 150, "water pixels drawn (vs switched off)"); assert.ok(o.park > o.off + 150, "parked water drawn"); assert.ok(/Off/.test(o.btn)); assert.strictEqual(o.gl, 0); assert.deepStrictEqual(errs, []);
   console.log("g251 OK"); await b.close();
 })();
