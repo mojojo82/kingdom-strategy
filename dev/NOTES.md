@@ -1249,3 +1249,8 @@
 ## v1065 - Base water shapes: oval / box / boat, rotation, left-right (TEST)
 - Harley: too hard to match the Ghost Galleon's shape in Base Water Lab; wants shape type, rotation and left/right.
 - New per-skin settings, in Base Water Lab and the game (BASE_WATER2): shape (0 diamond using roundness, 1 oval, 2 rounded box, 3 boat = oval with one pointed end), taper (boat point sharpness, - points left / + right), rot (degrees, turns the footprint on screen), fpX (left/right, fraction of the art width). The glow/ring pictures are sized to the turned shape. Defaults keep the old look (diamond, no turn), so nothing changes until he sends settings. g200 passes.
+
+## v1066 - Ghost Galleon base water + New/Classic base water switch (TEST)
+- Harley's Base Water Lab settings for the Ghost Galleon: BASE_WATER2_SKIN.pirate = fpW 0.66, fpD 0.54, fpX 0.115, fpY 0.09, rot -28, taper -0.17, glow 0.29, rim 0.19, ringA 0.19, ringDur 6.5 (diamond shape, turned to follow the hull).
+- He still likes the old look, so it's back as an option. Dev Tools: "🌊 Base water: New (glow + rings) / Classic (foam strip)". It's a shared admin setting (BASE_WATER_STYLE_KEY via assetSyncUpload + the sync apply list), so it's for all players. The v951-v1059 builder is restored as baseWaterBuildClassic / baseWaterHtmlClassic (from git v1059). baseWaterSheet(src, classic) caches each style separately. The on/off switch still works for both.
+- g200 extended: the style button switches to Classic (.city-water) and back (.city-water2). Passes.

@@ -47,5 +47,12 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(!(await look()).water, "switched off"); assert.strictEqual(await P.evaluate(() => localStorage.getItem("kingdom_baseWater_v1")), "0");
   await P.evaluate(() => { const el = document.getElementById("devBaseWaterToggle"); el.checked = true; el.onchange(); }); await P.waitForTimeout(300);
   assert.ok((await look()).water, "back on");
+  /* v1066: Dev Tools switch between the new look and the classic foam strip */
+  const kind = () => P.evaluate(() => { const d = document.querySelector(".tile.mycity"); return d && d.querySelector(".city-water2") ? "new" : d && d.querySelector(".city-water") ? "classic" : "none"; });
+  await P.evaluate(() => document.getElementById("devBaseWaterStyleBtn").click()); await P.waitForTimeout(1500); await P.evaluate(() => renderVisibleTiles());
+  const k1 = await kind(), lbl = await P.evaluate(() => document.getElementById("devBaseWaterStyleBtn").textContent), stored = await P.evaluate(() => localStorage.getItem("kingdom_baseWaterStyle_v1"));
+  await P.evaluate(() => document.getElementById("devBaseWaterStyleBtn").click()); await P.waitForTimeout(800); await P.evaluate(() => renderVisibleTiles());
+  const k2 = await kind(); console.log("style:", k1, lbl, stored, "->", k2);
+  assert.ok(k1 === "classic" && /Classic/.test(lbl) && stored === "classic" && k2 === "new", "style switch");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

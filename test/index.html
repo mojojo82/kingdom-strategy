@@ -2968,6 +2968,7 @@
                     <input type="checkbox" id="devBaseWaterToggle" autocomplete="off"> World map: foam + ripples round bases on the sea
                   </label>
                 </div>
+                <div class="dev-tools-row"><span class="dev-tools-hint">Base water look (all players):</span><button class="dev-btn" id="devBaseWaterStyleBtn">🌊 Base water: New</button></div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devWhitecapToggle" autocomplete="off"> World map: whitecaps on the open sea
@@ -3743,7 +3744,7 @@ function assetSyncIsImageKey(key) {
   nonImageKeys[CANNON_ORIGIN_X_KEY] = true;
   nonImageKeys[ORBIT_SHIELD_KEY] = true; nonImageKeys[HEX_SHIELD_KEY] = true; nonImageKeys[ECUBE_KEY] = true;
   nonImageKeys[CANNON_ORIGIN_Y_KEY] = true;
-  nonImageKeys[BEAM_CLIP_KEY] = true; nonImageKeys[MISSILE_EXH_KEY] = true; nonImageKeys[HERO_HOP_KEY] = true; nonImageKeys[GARETH_CHANGER_KEY] = true; nonImageKeys[OOZE_BLOB_KEY] = true; nonImageKeys[MAP_ISO_KEY] = true; nonImageKeys[MAP_ISO_CFG_KEY] = true; nonImageKeys[MARCH3D_KEY] = true; nonImageKeys[MARCH3D_SIZE_KEY] = true; nonImageKeys[MARCH3D_BOB_KEY] = true; nonImageKeys[MARCH3D_WATER_KEY] = true; nonImageKeys[MELEE_REACH_KEY] = true; nonImageKeys[TERRAIN_DEV_KEY] = true; nonImageKeys[RUN_BLEND_KEY] = true; nonImageKeys[GROUND_HIDE_KEY] = true; nonImageKeys[HERO_DUST_KEY] = true; nonImageKeys[HERO_DUST_CFG_KEY] = true; nonImageKeys[HERO_KO_CFG_KEY] = true;
+  nonImageKeys[BEAM_CLIP_KEY] = true; nonImageKeys[MISSILE_EXH_KEY] = true; nonImageKeys[HERO_HOP_KEY] = true; nonImageKeys[GARETH_CHANGER_KEY] = true; nonImageKeys[OOZE_BLOB_KEY] = true; nonImageKeys[MAP_ISO_KEY] = true; nonImageKeys[MAP_ISO_CFG_KEY] = true; nonImageKeys[MARCH3D_KEY] = true; nonImageKeys[MARCH3D_SIZE_KEY] = true; nonImageKeys[MARCH3D_BOB_KEY] = true; nonImageKeys[MARCH3D_WATER_KEY] = true; nonImageKeys[BASE_WATER_STYLE_KEY] = true; nonImageKeys[MELEE_REACH_KEY] = true; nonImageKeys[TERRAIN_DEV_KEY] = true; nonImageKeys[RUN_BLEND_KEY] = true; nonImageKeys[GROUND_HIDE_KEY] = true; nonImageKeys[HERO_DUST_KEY] = true; nonImageKeys[HERO_DUST_CFG_KEY] = true; nonImageKeys[HERO_KO_CFG_KEY] = true;
   nonImageKeys[ARENA_SHARED_TIMING_KEY] = true; nonImageKeys[ARENA_HERO_HP_KEY] = true; nonImageKeys[ARENA_DMGNUM_KEY] = true; nonImageKeys[HERO_ATTACK_TIMING_KEY] = true; nonImageKeys[SKILL_FULL_CD_KEY] = true; nonImageKeys[ARENA_RANGED_HERO_KEY] = true; nonImageKeys[MAP_ICONS_KEY] = true; nonImageKeys[MAP_CITY_SKIN_KEY] = true;
   nonImageKeys[FORT_LIFE_KEY] = true; nonImageKeys[FORT_FLASH_KEY] = true;
   if (nonImageKeys[key]) return false;
@@ -4480,6 +4481,7 @@ function initDeviceLock(db) {
         { key: MARCH3D_BOB_KEY, apply: function (v) {
             var n = parseFloat(v); if (n >= 0) { march3dBob = n; try { localStorage.setItem(MARCH3D_BOB_KEY, v); var el = document.getElementById("devMarch3dBob"), lb = document.getElementById("devMarch3dBobVal"); if (el) el.value = n; if (lb) lb.textContent = n + "%"; } catch (e) {} }
           } },
+        { key: BASE_WATER_STYLE_KEY, apply: function (v) { setBaseWaterStyle(v, false); } },
         { key: MARCH3D_WATER_KEY, apply: function (v) {
             march3dWater = v !== "0";
             try { localStorage.setItem(MARCH3D_WATER_KEY, v); renderMarch3dWaterBtn(); } catch (e) {}
@@ -11224,7 +11226,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1065"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1066"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14682,19 +14684,22 @@ function baseWaterAllSea(tile) {
   for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) if (terrainAt(tile.x + dx, tile.y + dy) > 0) return false;
   return true;
 }
-function baseWaterSheet(src) {
-  var m = baseWaterSheets[src]; if (m) return m.url ? m : null;
-  m = baseWaterSheets[src] = { url: "" };
+function baseWaterSheet(src, classic) {
+  var key = (classic ? "c:" : "n:") + src, m = baseWaterSheets[key]; if (m) return m.url ? m : null;
+  m = baseWaterSheets[key] = { url: "" };
   var im = new Image();
-  im.onload = function () { try { baseWaterBuild(m, im); } catch (e) {} };
+  im.onload = function () { try { if (classic) baseWaterBuildClassic(m, im); else baseWaterBuild(m, im); } catch (e) {} };
   im.src = src;
   return null;
 }
 /* v1060: base water v2, from Base Water Lab (dev/labs/base-water-lab.html). Per base skin: one still glow picture (shallow-water tint + foam line hugging the
    base's ground footprint) and one soft ring picture; the ring is shown BASE_WATER2 rings times, each copy growing and fading on a loop with CSS (cheap on phones).
    Footprint = the iso diamond found from the art (its widest row = side corners, lowest pixel = front corner), rounded by "round". Sizes are fractions of the art width. */
+var BASE_WATER_STYLE_KEY = "kingdom_baseWaterStyle_v1", baseWaterStyle = "new"; /* v1066: "new" (glow + rings, Base Water Lab) or "classic" (v951 foam strip) - set by the admin in Dev Tools, for all players */
+try { if (localStorage.getItem(BASE_WATER_STYLE_KEY) === "classic") baseWaterStyle = "classic"; } catch (e) {}
+function setBaseWaterStyle(v, sync) { baseWaterStyle = v === "classic" ? "classic" : "new"; try { localStorage.setItem(BASE_WATER_STYLE_KEY, baseWaterStyle); } catch (e) {} if (sync) assetSyncUpload(BASE_WATER_STYLE_KEY, baseWaterStyle); try { renderBaseWaterStyleBtn(); renderVisibleTiles(); } catch (e) {} }
 var BASE_WATER2 = { shape: 0, fpX: 0, rot: 0, taper: 0.6, fpW: 1, fpD: 1, fpY: 0, round: 1.6, glow: 0.45, glowSize: 0.13, rim: 0.35, rimW: 0.014, rings: 3, ringA: 0.4, ringW: 0.03, ringEnd: 1.55, ringDur: 3.4, glowCol: "#4fc0e8", rimCol: "#cfeeff" };
-var BASE_WATER2_SKIN = { castle: { round: 1.05, glowSize: 0.055, ringA: 0.16, ringW: 0.016 } }; /* Harley's Base Water Lab settings per skin */
+var BASE_WATER2_SKIN = { castle: { round: 1.05, glowSize: 0.055, ringA: 0.16, ringW: 0.016 }, pirate: { fpW: 0.66, fpD: 0.54, fpX: 0.115, fpY: 0.09, rot: -28, taper: -0.17, glow: 0.29, rim: 0.19, ringA: 0.19, ringDur: 6.5 } /* v1066 */ }; /* Harley's Base Water Lab settings per skin */
 function baseWater2Cfg(src) { var id = null; for (var k in CITY_SKINS) if (CITY_SKINS[k].src === src) id = k; var o = (id && BASE_WATER2_SKIN[id]) || {}, c = {}; for (var q in BASE_WATER2) c[q] = o[q] !== undefined ? o[q] : BASE_WATER2[q]; return c; }
 function baseWaterBuild(m, im) {
   var P = baseWater2Cfg(im.src), R = 420, Hs = Math.max(1, Math.round(im.naturalHeight * R / im.naturalWidth));
@@ -14838,6 +14843,73 @@ function whitecapSync() {
     im.addEventListener("animationend", (function (e) { return function () { if (e.parentNode) wcPlace(e, false); }; })(el)); wcap.els.push(el); wcPlace(el, true); }
   if (wcap.lastZoom !== u) { wcap.lastZoom = u; wcap.els.forEach(function (e) { wcPlace(e, true); }); }
 }
+function baseWaterBuildClassic(m, im) { /* v951-v1059 look, kept as the "Classic" base water style (v1066) */
+  var C = BASE_WATER, R = C.ref, Hs = Math.max(1, Math.round(im.naturalHeight * R / im.naturalWidth)), reach = C.reach, V = 1.74, Dg = Math.hypot(1, V);
+  var c = document.createElement("canvas"); c.width = R; c.height = Hs; var x = c.getContext("2d"); x.drawImage(im, 0, 0, R, Hs);
+  var a = x.getImageData(0, 0, R, Hs).data, first = -1, maxb = -1, i, X, Y;
+  for (i = 0; i < R * Hs; i++) if (a[i * 4 + 3] > 40) { Y = (i / R) | 0; if (first < 0) first = Y; maxb = Y; }
+  if (maxb < 0) return;
+  /* where the base meets the water: everything from its widest row (the side corners) down. v951 used the lowest 16% (missed the side corners
+     of square bases); v952 the whole ground plate (too high - foam on parts that sit above the water). */
+  var from = Math.floor(maxb - (maxb - first) * 0.45), pw = 0, r, q;
+  var rw = [];
+  for (r = from; r <= maxb; r++) { var lo = -1, hi = -1; for (q = 0; q < R; q++) if (a[(r * R + q) * 4 + 3] > 40) { if (lo < 0) lo = q; hi = q; } rw[r] = lo >= 0 ? hi - lo + 1 : 0; pw = Math.max(pw, rw[r]); }
+  /* v953 (Harley): only what's below the base's widest line (its side corners) is in the water - nothing above it gets foam or ripples */
+  var bandTop = from; for (r = maxb; r >= from; r--) if (rw[r] >= pw * 0.97) { bandTop = r; break; }
+  /* v1050 (Harley, pirate ship): a skin with waterLine {x0, x1} (fractions of the picture's width) only meets the water along the bottom edge
+     of its hull between x0 and x1 - foam and ripples start from that edge only, and nothing is drawn above it (sails, bowsprit, hanging chain). */
+  var wl = null; for (var wk in CITY_SKINS) if (CITY_SKINS[wk].src === im.src && CITY_SKINS[wk].waterLine) wl = CITY_SKINS[wk].waterLine;
+  var wlBot = null, wc0 = 0, wc1 = R - 1;
+  if (wl) {
+    wc0 = Math.max(0, Math.round(wl.x0 * R)); wc1 = Math.min(R - 1, Math.round(wl.x1 * R)); wlBot = [];
+    for (q = 0; q < R; q++) { wlBot[q] = -1; for (r = Hs - 1; r >= 0; r--) if (a[(r * R + q) * 4 + 3] > 40) { wlBot[q] = r; break; } }
+    var topEdge = Hs; for (q = wc0; q <= wc1; q++) if (wlBot[q] >= 0) topEdge = Math.min(topEdge, wlBot[q]);
+    for (q = wc0; q <= wc1; q++) if (wlBot[q] < 0) wlBot[q] = topEdge;
+    bandTop = Math.max(0, topEdge - 3);
+  }
+  var wlEdge = function (sx) { var c = sx < wc0 ? wc0 : sx > wc1 ? wc1 : sx; return wlBot[c]; };
+  var pad = Math.ceil(reach + 2), padB = Math.ceil(reach / V + 3), y0 = Math.max(0, bandTop - 2);
+  var FW = R + 2 * pad, FH = maxb + padB - y0 + 1, N = C.frames;
+  /* distance from the base's lower band, measured with the map's 35deg squash (up/down counts ~1.74x), in this frame's own pixels */
+  var full = new Uint8Array(FW * FH), dist = new Float32Array(FW * FH);
+  for (Y = 0; Y < FH; Y++) for (X = 0; X < FW; X++) { var sx = X - pad, sy = Y + y0, k = Y * FW + X;
+    var op = sx >= 0 && sx < R && sy < Hs && a[(sy * R + sx) * 4 + 3] > 40; full[k] = op ? 1 : 0;
+    dist[k] = wl ? (op && sx >= wc0 && sx <= wc1 && sy >= wlBot[sx] - 3 ? 0 : 1e9) : (op && sy >= bandTop ? 0 : 1e9); }
+  for (Y = 0; Y < FH; Y++) for (X = 0; X < FW; X++) { i = Y * FW + X; var d = dist[i];
+    if (X > 0) d = Math.min(d, dist[i - 1] + 1); if (Y > 0) { d = Math.min(d, dist[i - FW] + V); if (X > 0) d = Math.min(d, dist[i - FW - 1] + Dg); if (X < FW - 1) d = Math.min(d, dist[i - FW + 1] + Dg); } dist[i] = d; }
+  for (Y = FH - 1; Y >= 0; Y--) for (X = FW - 1; X >= 0; X--) { i = Y * FW + X; var e = dist[i];
+    if (X < FW - 1) e = Math.min(e, dist[i + 1] + 1); if (Y < FH - 1) { e = Math.min(e, dist[i + FW] + V); if (X < FW - 1) e = Math.min(e, dist[i + FW + 1] + Dg); if (X > 0) e = Math.min(e, dist[i + FW - 1] + Dg); } dist[i] = e; }
+  /* soft fixed noise so the lines look broken up like water, not neon rings */
+  var seed = 7, rnd = function () { return (seed = (seed * 16807) % 2147483647) / 2147483647; }, gw = Math.ceil(FW / 6) + 2, gh = Math.ceil(FH / 6) + 2, g = new Float32Array(gw * gh);
+  for (i = 0; i < g.length; i++) g[i] = rnd();
+  var sheet = document.createElement("canvas"); sheet.width = FW * N; sheet.height = FH; var sx2 = sheet.getContext("2d"), out = sx2.createImageData(FW * N, FH), o = out.data;
+  var gap = reach / 2.2, period = gap / C.speed;
+  for (Y = 0; Y < FH; Y++) for (X = 0; X < FW; X++) {
+    i = Y * FW + X; var dd = dist[i]; if (full[i] || dd >= reach || Y + y0 < bandTop) continue;
+    if (wl && Y + y0 < wlEdge(X - pad) - 1) continue; /* v1050: only below the hull's waterline */
+    var gx = X / 6, gy = Y / 6, x0 = gx | 0, yy0 = gy | 0, fx = gx - x0, fy = gy - yy0;
+    var n = g[yy0 * gw + x0] * (1 - fx) * (1 - fy) + g[yy0 * gw + x0 + 1] * fx * (1 - fy) + g[(yy0 + 1) * gw + x0] * (1 - fx) * fy + g[(yy0 + 1) * gw + x0 + 1] * fx * fy;
+    var fw = C.foamW, base = 0; if (dd <= fw) base = Math.min(1, C.foamA * (0.3 + 0.9 * n) * (1 - Math.max(0, dd - 1) / fw * 0.85)); /* v996b: broken up by the noise and fading outward, so it reads as foam, not a solid border */ if (dd <= fw + 2.5) base = Math.max(base, 0.2 * (1 - dd / (fw + 2.5)));
+    for (var f = 0; f < N; f++) {
+      var al = base;
+      if (dd > 1.5) { var t = f * period / N, ph = ((dd - t * C.speed) % gap + gap) % gap, w = Math.max(0, 1 - Math.abs(ph - gap / 2) / 1.1);
+        if (w) { var fade = 1 - dd / reach; al = Math.max(al, w * C.strength * Math.sqrt(fade) * (0.45 + 0.7 * n) * (n > 0.28 ? 1 : 0.3)); } }
+      if (al > 0.004) { var q = (Y * FW * N + f * FW + X) * 4, wh = al <= base + 1e-6 && dd <= fw; o[q] = wh ? 255 : 222; o[q + 1] = wh ? 255 : 244; o[q + 2] = wh ? 255 : 252; o[q + 3] = Math.round(Math.min(1, al) * 255); } /* foam pure white, ripples keep their blue-white */
+    }
+  }
+  sx2.putImageData(out, 0, 0);
+  m.n = N; m.dur = period; m.wf = FW / R; m.ar = FH / FW; m.bottom = (Hs - 1 - (maxb + padB)) / R; /* where the strip's bottom sits vs the art's bottom, in art widths */
+  /* a short blob: link, not a long data: string - the tile markup is compared every render, so it has to stay small */
+  var done = function (u) { m.url = u; try { renderVisibleTiles(); } catch (e) {} };
+  try { if (sheet.toBlob) sheet.toBlob(function (bl) { done(bl ? URL.createObjectURL(bl) : sheet.toDataURL("image/png")); }, "image/png"); else done(sheet.toDataURL("image/png")); } catch (e) {}
+}
+/* the water layer's markup for one base: same centre / width maths as the base image itself (see visitTile), so it lines up at any zoom */
+function baseWaterHtmlClassic(src, widthMul, isoBottomTiles, marginLeft) {
+  var m = baseWaterSheet(src, true); if (!m) return "";
+  var wexpr = "var(--tile-px) * var(--city-w, 2.2) * " + widthMul.toFixed(3);
+  var st = "width:calc(" + wexpr + " * " + m.wf.toFixed(4) + ");aspect-ratio:" + (1 / m.ar).toFixed(4) + ";bottom:calc(var(--tile-px) * " + (isoBottomTiles || 0).toFixed(3) + " + " + wexpr + " * " + m.bottom.toFixed(4) + ")" + (marginLeft ? ";margin-left:" + marginLeft : "");
+  return '<div class="city-water" style="' + st + '"><img src="' + m.url + '" alt="" draggable="false" style="width:' + (m.n * 100) + '%;animation-duration:' + m.dur.toFixed(3) + 's;animation-timing-function:steps(' + m.n + ')"></div>';
+}
 function setTileHtml(div, html) { /* v825: tile content always sits in a .tile-up wrapper (see CSS) */
   var w = div.firstElementChild;
   if (!w || !w.classList.contains("tile-up")) { div.innerHTML = '<div class="tile-up"></div>'; w = div.firstElementChild; }
@@ -14978,7 +15050,7 @@ function renderVisibleTiles() {
           cityImgStyleParts.push("margin-left:" + cMl);
           cityImgStyleParts.push("bottom:calc(var(--tile-px) * " + cBot.toFixed(3) + ")");
         }
-        var waterHtml = baseWaterOn && lod <= 1 && baseWaterAllSea(tile) ? baseWaterHtml(citySrc, cwMul, cBot, cMl, tile.id) : ""; /* v951; v1060: new look */
+        var waterHtml = baseWaterOn && lod <= 1 && baseWaterAllSea(tile) ? (baseWaterStyle === "classic" ? baseWaterHtmlClassic(citySrc, cwMul, cBot, cMl) : baseWaterHtml(citySrc, cwMul, cBot, cMl, tile.id)) : ""; /* v951; v1060: new look */
         var cityImgStyle = cityImgStyleParts.length ? (' style="' + cityImgStyleParts.join(";") + '"') : "";
         var ctag = isMyCity ? (ALLY.my ? ALLY.my.tag : "") : allyTagOf(occupiedTileIds[tile.id]); /* v895: alliance tag over the base */
         setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : isAlly(occupiedTileIds[tile.id]) ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
@@ -16397,6 +16469,11 @@ updateMapHideButtons(); // reflect any persisted on/off state from a previous se
   });
   sel.value = mapCitySkin;
   sel.onchange = function () { setMapCitySkin(sel.value); };
+})();
+function renderBaseWaterStyleBtn() { var b = document.getElementById("devBaseWaterStyleBtn"); if (!b) return; b.textContent = "🌊 Base water: " + (baseWaterStyle === "classic" ? "Classic (foam strip)" : "New (glow + rings)"); }
+(function initBaseWaterStyleBtn() { /* v1066 */
+  var b = document.getElementById("devBaseWaterStyleBtn"); if (!b) return; renderBaseWaterStyleBtn();
+  b.onclick = function () { setBaseWaterStyle(baseWaterStyle === "classic" ? "new" : "classic", true); };
 })();
 (function initWhitecapToggle() { /* v1064 */
   var el = document.getElementById("devWhitecapToggle"); if (!el) return;
