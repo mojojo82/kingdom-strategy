@@ -1188,3 +1188,7 @@
 - While fighting, about once a second the ship fires a volley of 2-3 glowing orange shells (with a muzzle flash) that burst into an explosion on the target. Plain DOM + CSS animations in the march layer (marchFxVolley), cleaned up after each volley. Shows for other players' attacks too. resolveAction is untouched.
 - Bug found while testing: 3D ships vanished when the march's x+y was over ~690 (the depth went out of range). Depth is now relative to the ships on screen, so far-away bases see their ships again.
 - Test: dev/simfork/g250_march_fx.js (shells appear, ship parks short, 3D ship really drawn). g249 still passes.
+
+## v1055 - Firing range is a flat 3 tiles (TEST)
+- Harley: make the attack stop distance a flat "3 tiles back" for every ship, then he'll check it in game.
+- MARCH_FX_STANDOFF = 3 for 3D and flat ships, every skin (no longer based on ship size). Still capped at 60% of the trip so a very close target doesn't make the ship fire from home. g250 passes.
