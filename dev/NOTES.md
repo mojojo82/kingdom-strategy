@@ -960,3 +960,8 @@
 - Harley (screenshot): every other player in World chat showed the 👤 placeholder. Chat only ever drew your own avatar; others were hard-coded to 👤.
 - Chat rows now use the sender's avatar (by the message's pid) from the same profile cache as the map (re-read after a minute). When avatars arrive the chat redraws once (batched, keeps the scroll position). World and Alliance chat both.
 - g232 extended (B sees A's avatar on A's chat message).
+
+### v1017 — chat art messages get the full width and shrink to fit (TEST)
+- Harley (screenshot): a wide emoji-art message was cut off on the right; make the message window bigger.
+- Multi-line messages (emoji / text art) now use the whole row: the bubble spans the width next to the avatar, the translate button drops underneath it, and if the art is still wider than the bubble its font shrinks until it fits (chatFitArt, never below 6 px). Normal one-line messages are unchanged.
+- Test: new g235_chat_art.js (16-wide emoji art fits, bubble ~356 px on a 430 px screen, translate under it, no sideways page scroll).
