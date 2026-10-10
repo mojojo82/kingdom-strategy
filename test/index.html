@@ -4342,7 +4342,7 @@ function initDeviceLock(db) {
             try { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); renderMapIsoBtn(); renderMarch3dBtn(); } catch (e) {} /* v892: a synced iso setting arriving after load kept the old scroll, so the view jumped elsewhere */
           } },
         { key: MAP_ISO_CFG_KEY, apply: function (v) {
-            if (typeof isoSharedOn !== "undefined" && isoSharedOn) return; /* v1021: the shared map look wins over an old per-account copy */
+            return; /* v1026: per-account copies of the map look are ignored - only the shared (admin) setting is used */
             try { var c = JSON.parse(v); ["tile", "base", "y"].forEach(function (k) { if (typeof c[k] === "number") isoCfg[k] = c[k]; }); localStorage.setItem(MAP_ISO_CFG_KEY, v); } catch (e) {}
             try { syncIsoSliders(); if (mapIso) { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); } } catch (e) {}
           } },
@@ -9274,9 +9274,9 @@ var citySkinByTile = {};
 /* v1013 (Harley): per-skin picture alignment - left/right and up/down in tiles, and size - set by an admin in Dev Tools > Visuals > Base skin
    alignment and shared with every player (doc assetitems/_skinalign; anyone signed in reads it, only admins write). The 3x3 squares never move. */
 var SKIN_ALIGN = {}, SKIN_ALIGN_DOC = "assetitems/_skinalign", SKIN_ALIGN_LS = "kingdom_prototype_skinalign_v1", skinAlignPreview = null;
-try { var saL = JSON.parse(localStorage.getItem(SKIN_ALIGN_LS) || "null"); if (saL && typeof saL === "object") SKIN_ALIGN = saL; } catch (e) {}
+try { localStorage.removeItem(SKIN_ALIGN_LS); } catch (e) {} /* v1026: no copy on the phone - only the server's (admin's) values are used */
 function skinAlign(id) { var a = SKIN_ALIGN[id] || {}; return { x: isFinite(+a.x) ? +a.x : 0, y: isFinite(+a.y) ? +a.y : 0, s: isFinite(+a.s) && +a.s > 0 ? +a.s : 1 }; }
-function skinAlignSet(v) { if (!v || typeof v !== "object") return; SKIN_ALIGN = v; try { localStorage.setItem(SKIN_ALIGN_LS, JSON.stringify(v)); } catch (e) {} try { renderVisibleTiles(); } catch (e) {} try { devSkinAlignSync(); } catch (e) {} }
+function skinAlignSet(v) { if (!v || typeof v !== "object") return; SKIN_ALIGN = v; try { renderVisibleTiles(); } catch (e) {} try { devSkinAlignSync(); } catch (e) {} }
 var skinAlignSyncOn = false;
 function startSkinAlignSync() { if (skinAlignSyncOn || !cloudDb) return; skinAlignSyncOn = true;
   cloudDb.doc(SKIN_ALIGN_DOC).onSnapshot(function (sn) { var d = sn && sn.exists && sn.data(); window.__saDocSeen = d ? { data: d.data, ts: d.ts, at: Date.now() } : { none: true, at: Date.now() }; if (!d || typeof d.data !== "string") return; if (typeof skinAlignLocalEditAt !== "undefined" && Date.now() - skinAlignLocalEditAt < 3000) return; /* v1021: don't undo a local edit */ try { var v = JSON.parse(d.data); if (JSON.stringify(v) !== JSON.stringify(SKIN_ALIGN)) skinAlignSet(v); } catch (e) {} }, function (e) { window.__saDocErr = (e && (e.code || e.message)) || "error"; }); }
@@ -9287,7 +9287,6 @@ var MAP_ISO_DOC = "assetitems/_mapiso", isoSharedOn = false, isoSyncStarted = fa
 function isoApply(c) {
   var ch = false; ["tile", "base", "y"].forEach(function (k) { if (typeof c[k] === "number" && isFinite(c[k]) && isoCfg[k] !== c[k]) { isoCfg[k] = c[k]; ch = true; } });
   isoSharedOn = true; if (!ch) return;
-  try { localStorage.setItem(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); } catch (e) {}
   try { syncIsoSliders(); if (mapIso) { mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles(); if (!mapUserMovedMap) centerMapOnHome(); renderVisibleTiles(); } } catch (e) {}
 }
 function isoSaveShared() { isoLocalEditAt = Date.now(); clearTimeout(isoSaveT); isoSaveT = setTimeout(function () { if (!cloudDb || !assetIsAdmin()) return; cloudDb.doc(MAP_ISO_DOC).set({ tile: isoCfg.tile, base: isoCfg.base, y: isoCfg.y, ts: Date.now() }).catch(function (e) { console.error("map look save failed", e && e.message); }); }, 500); }
@@ -10967,7 +10966,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1025"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1026"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13969,7 +13968,7 @@ var mapZoom = 1;
 })();
 /* v826: iso look knobs (Dev Tools): tile = tile size in px at zoom 1, base = base art width in tiles, y = how far below the footprint centre the art's feet sit (% of a tile). */
 var MAP_ISO_CFG_KEY = "kingdom_prototype_mapisocfg_v2", isoCfg = { tile: 30, base: 3.2, y: 0 };
-try { var _ic = JSON.parse(localStorage.getItem(MAP_ISO_CFG_KEY) || "null"); if (_ic) ["tile", "base", "y"].forEach(function (k) { if (typeof _ic[k] === "number") isoCfg[k] = _ic[k]; }); } catch (e) {}
+/* v1026: the map look is never read from the phone - built-in defaults until the shared (admin) setting arrives from the server */
 function tilePxZ() { return (mapIso ? isoCfg.tile : MARCH_TILE_PX) * mapZoom; }
 function gapPxZ() { return MARCH_GAP_PX * mapZoom; }
 var KINGDOM_MARGIN = 1; /* v870: one kingdom's width of open sea around ours, so neighbouring kingdoms (Kingdom 1 for now) have somewhere to be drawn */
@@ -14246,8 +14245,13 @@ function centerMapOnHome() { worldMapKeep = null; /* v923: an explicit move beat
 }
 var cityArtMetrics = {};
 /* Where the art's foundation sits: centroid (as fractions of the image) of the opaque pixels in its lowest 22%, plus the image aspect. Measured once per image; until it loads a sensible guess is used and the map redraws. */
+/* v1026 (Harley: bases jumped well off their squares "on their own"): where each built-in skin's foundation sits in its picture, measured once
+   (headless) and built in, so no phone has to measure it. A phone that failed to measure used to fall back to a rough guess about half a tile off. */
+var CITY_ART_BAKED = { tower: { fx: 0.4916, fy: 0.7181, aspect: 1.0625 }, tower2: { fx: 0.5006, fy: 0.6559, aspect: 0.8321 }, mecha: { fx: 0.5541, fy: 0.7736, aspect: 1.3125 },
+  castle: { fx: 0.5256, fy: 0.6981, aspect: 0.9482 }, citadel: { fx: 0.5012, fy: 0.6784, aspect: 0.8929 }, titan: { fx: 0.5176, fy: 0.8112, aspect: 1.4846 } };
 function cityArtGet(src) {
   var m = cityArtMetrics[src]; if (m) return m;
+  for (var bk in CITY_ART_BAKED) if (CITY_SKINS[bk] && CITY_SKINS[bk].src === src) return (cityArtMetrics[src] = CITY_ART_BAKED[bk]);
   m = cityArtMetrics[src] = { fx: 0.5, fy: 0.85, aspect: 1 };
   var im = new Image();
   im.onload = function () {
@@ -23291,7 +23295,7 @@ function syncIsoSliders() {
 }
 [["devIsoTile", "tile"], ["devIsoBase", "base"], ["devIsoY", "y"]].forEach(function (r) {
   document.getElementById(r[0]).addEventListener("input", function () {
-    isoCfg[r[1]] = parseFloat(this.value); try { localStorage.setItem(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); } catch (e) {} assetSyncUpload(MAP_ISO_CFG_KEY, JSON.stringify(isoCfg)); try { isoSaveShared(); } catch (e) {} /* v1021: shared for every player */
+    isoCfg[r[1]] = parseFloat(this.value); /* v1026: not kept on the phone */ try { isoSaveShared(); } catch (e) {} /* v1021: shared for every player */
     syncIsoSliders();
     if (!mapIso) return;
     mapWorldSizedForTiles = null; ensureMapWorldSized(); repositionAllTiles();
@@ -25827,6 +25831,7 @@ function bagOpen() {
     rqRow(!!(iso && !iso.none), "☁️", "Shared map look on the server", iso ? (iso.none ? "none saved yet" : "tile " + iso.tile + " · size " + iso.base + " · height " + iso.y + " · heard " + ago(iso.at)) : (window.__isoDocErr ? "can't read: " + window.__isoDocErr : "not heard yet")) +
     rqRow(!!(sa && !sa.none), "🏰", "Skin alignment on the server", sa ? (sa.none ? "none saved yet" : escapeHtml(sa.data) + " · heard " + ago(sa.at)) : (window.__saDocErr ? "can't read: " + window.__saDocErr : "not heard yet")) +
     rqRow(true, "🎨", "Skin alignment in use", escapeHtml(JSON.stringify(SKIN_ALIGN)), " ") +
+    rqRow(true, "📐", "Base picture measurements", "built into the game (v1026) - " + escapeHtml(JSON.stringify(cityArtGet(CITY_SKINS[my] ? CITY_SKINS[my].src : ""))), " ") +
     rqRow(true, "👤", (KS_BACKEND && KS_BACKEND.isAdmin ? "Admin" : "Player") + " · your skin: " + my + " · iso " + (mapIso ? "on" : "off"), "", " ") + '</div>';
   pop.style.display = "flex"; }); })();
 var bagSig = "";

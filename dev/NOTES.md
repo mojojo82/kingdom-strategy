@@ -1018,3 +1018,11 @@
 - Harley: base alignment looked reset again on another account; everything set on the admin account for this is for all players. Couldn't tell from here which side is wrong (the shared docs are Harley's data, not read from this session).
 - Tapping the "60 FPS · vNNNN" label on the World map opens a read-only check: the map look this game is using (and whether it's the shared one), the shared map look and skin alignment as last heard from the server (and how long ago, or the read error), the alignment in use, admin/player, your skin, iso on/off. Compare screenshots of it from both accounts.
 - g236 extended.
+
+### v1026 — base alignment no longer depends on the phone (TEST)
+- Harley: alignment kept going a long way off "on its own" with nobody touching the tool, while the settings matched on both accounts.
+- Two phone-side things fed into it:
+  1. Each phone measured where the foundation sits in each base picture (cityArtGet, canvas getImageData) on every load; if that failed it silently used a guess (fy 0.85, aspect 1) - about half a tile off for the castle / mecha (titan more). Now the six built-in skins' measurements are built in (CITY_ART_BAKED, measured headless); only unknown pictures are still measured.
+  2. The phone kept its own copies of the map look and skin alignment (localStorage, plus an old per-account cloud copy) and used them until the server copy arrived. Now neither is read or written: built-in defaults until the shared (admin) values arrive, then only those. Old copies are removed.
+- The "map look check" also shows the built-in measurement for your skin.
+- Test: new g239_no_phone_copy.js (stale phone copies ignored; measuring broken → still the built-in numbers). The v1025 game fails it (falls back to the guess).
