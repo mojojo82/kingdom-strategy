@@ -1237,3 +1237,11 @@
 - Harley: add opacity to Wake Lab.
 - New per-ship setting "Water opacity (everything)" (opacity, 0-1, default 1) at the top of Wake Lab's Hull shape box. It fades the wake, churn, foam, bow wave, ripples and the foam over the hull edge together. Renamed the existing sliders to "Wake opacity" (wakeOp) and "Foam opacity" (foam).
 - Game: MARCH_WATER_DEF.opacity = 1; marchWaterBuild sets marchWater.op per ship and mwV multiplies every vertex alpha by it (opacity 0 skips the ship). g251 passes.
+
+## v1064 - Sea whitecaps + light/dark sea patches (TEST)
+- Harley (screen recording of another game): animated waves on the sea. That game uses a full-sea GPU layer; we do a light version that only shows at normal zoom. Tuned in Whitecap Lab (dev/labs/whitecap-lab.html); WHITECAPS holds his settings.
+- Each whitecap is a flip-book: a thin wandering streak that forms, then crumbles from its edges. There are 6 variants of 40 frames, drawn once after the map opens, one variant every 30 ms so the first open doesn't stall. Only 5 whitecaps exist at once. Each plays at a random spot in view that's open sea (empty tiles, no land, no base within a tile or two), then moves to a new spot (animationend). CSS steps + a slow sideways drift; no per-frame JS.
+- They fade out between 0.75x and 1.15x of fadeZoom (22 px per tile) and are removed when zoomed further out. whitecapSync() runs from renderVisibleTiles (scroll/zoom), so the count is right and they're re-placed after a zoom change.
+- A faint, seamless light/dark patch picture (tint 0.15, patch size 6.5 tiles) tiles across the whole sea in #mapSeaLayer, which sits under the path arrows and tiles.
+- Dev Tools (next to the base-water switch): "World map: whitecaps on the open sea". It's per device (localStorage), like the base-water switch.
+- Test: dev/simfork/g252_whitecaps.js. g200 still passes.

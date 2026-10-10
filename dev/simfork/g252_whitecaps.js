@@ -1,0 +1,35 @@
+/* v1064: sea whitecaps (Whitecap Lab): built after the map opens, a fixed number alive, gone when zoomed far out, back when zoomed in, Dev Tools switch. Run: node dev/simfork/g252_whitecaps.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const OUT = process.env.OUT || "/tmp/";
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g252@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Wet"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => setScreen("world")); await P.waitForTimeout(2500);
+  await P.waitForTimeout(3000);
+  const st = () => P.evaluate(() => ({ u: tilePxZ() + gapPxZ(), zoom: mapZoom, strips: wcap.strips.filter((s) => s.url).length, els: wcap.els.length, vis: wcap.els.filter((e) => +e.style.opacity > 0).length, tint: document.getElementById("mapSeaTint").style.display, tw: document.getElementById("mapSeaTint").style.width }));
+  const o = { start: await st() };
+  await P.screenshot({ path: (process.env.OUT || "/tmp/") + "wc_a.png" }); await P.waitForTimeout(1500); await P.screenshot({ path: (process.env.OUT || "/tmp/") + "wc_b.png" });
+  await P.evaluate(() => setMapZoom(0.3)); await P.waitForTimeout(800); o.far = await st();
+  await P.evaluate(() => setMapZoom(1)); await P.waitForTimeout(800); o.back = await st();
+  await P.evaluate(() => document.getElementById("devWhitecapToggle").click()); await P.waitForTimeout(300); o.off = await st();
+  console.log(JSON.stringify(o), errs);
+  assert.ok(o.start.strips === 6 && o.start.els === 5 && o.start.tint === "block", "5 whitecaps + sea patches at normal zoom");
+  assert.strictEqual(o.far.els, 0, "none when zoomed far out"); assert.strictEqual(o.back.els, 5, "back when zoomed in");
+  assert.ok(o.off.els === 0 && o.off.tint === "none", "switch turns it off"); assert.deepStrictEqual(errs, []);
+  console.log("g252 OK"); await b.close();
+})();
