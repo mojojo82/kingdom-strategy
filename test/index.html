@@ -11212,7 +11212,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1060"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1061"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16424,7 +16424,7 @@ try { march3dOn = localStorage.getItem(MARCH3D_KEY) !== "0"; /* v933: on by defa
 /* v1057: water round the 3D march ships (hull foam, bow wave, wake trail, ripples while fighting). Numbers come from Wake Lab (dev/labs/wake-lab.html); MARCH_WATER holds per-model overrides when Harley tunes a ship. Visual only. */
 var MARCH3D_WATER_KEY = "kingdom_prototype_march3dwater_v1", march3dWater = true;
 try { march3dWater = localStorage.getItem(MARCH3D_WATER_KEY) !== "0"; } catch (e) {}
-var MARCH_WATER_DEF = { sink: 0.2, hullLen: 1, hullBeam: 1, sternPos: 0.85, wakeLen: 7, wakeOp: 0.75, wakeStart: 0.75, wakeSpread: 0.11, streaks: 3, streakW: 0.05, wobble: 0.06, churn: 0.35, foam: 0.7, foamSize: 1, foamSpeed: 1, bow: 0.8, front: 0.55, ripples: 0.6 };
+var MARCH_WATER_DEF = { sink: 0.2, hullLen: 1, hullShift: 0, hullBeam: 1, sternPos: 0.85, wakeLen: 7, wakeOp: 0.75, wakeStart: 0.75, wakeSpread: 0.11, streaks: 3, streakW: 0.05, wobble: 0.06, churn: 0.35, foam: 0.7, foamSize: 1, foamSpeed: 1, bow: 0.8, front: 0.55, ripples: 0.6 };
 var MARCH_WATER = { void: {}, pirate: { wakeLen: 2.5, wakeOp: 0.16 } /* v1059: Harley's Wake Lab settings for the Ghost Galleon (shorter, fainter trail) */ }, marchWaterCache = {};
 function marchWaterCfg(model) { var c = marchWaterCache[model]; if (c) return c; c = {}; var o = MARCH_WATER[model] || {}; Object.keys(MARCH_WATER_DEF).forEach(function (k) { c[k] = o[k] !== undefined ? o[k] : MARCH_WATER_DEF[k]; }); return (marchWaterCache[model] = c); }
 /* v1048 (Harley: "an option that would let us use a certain model/skin for each march/formation"): march ship skins, chosen per formation in
@@ -16654,7 +16654,7 @@ function marchWaterBuild(ships, u, G) {
     var P = function (wx, wz) { var X = wx - sh.tx, Z = wz - sh.ty; return [cx + (X - Z) * 0.70711 * u, cy + (X + Z) * 0.40558 * u]; };
     var L = march3dSize * (mk.size || 1), len = L / 2, half = len * c.hullLen, beam = len * (mo.M.h[2] / mo.M.h[0]) * c.hullBeam;
     var ang = G.ang[sh.id]; if (ang === undefined) ang = Math.atan2(sh.gz, -sh.gx);
-    var cs = Math.cos(ang), sn = Math.sin(ang), W2 = function (lx, lz) { return [sh.tx + lx * cs + lz * sn, sh.ty - lx * sn + lz * cs]; };
+    var cs = Math.cos(ang), sn = Math.sin(ang), W2 = function (lx, lz) { lx -= c.hullShift * len; return [sh.tx + lx * cs + lz * sn, sh.ty - lx * sn + lz * cs]; }; /* v1061: hullShift slides the foam ring toward the bow (+) */
     var moving = sh.st === "acting" ? 0 : 1, tf = now * c.foamSpeed;
     // wake trail
     var gl2 = Math.sqrt(sh.gx * sh.gx + sh.gz * sh.gz) || 1, Dx = sh.gx / gl2, Dz = sh.gz / gl2, Rx = Dz, Rz = -Dx;

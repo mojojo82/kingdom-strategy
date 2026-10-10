@@ -1224,3 +1224,8 @@
 - Footprint = the iso diamond found from the art (widest row = side corners, lowest pixel = front corner), with width/depth/up-down/roundness settings.
 - Settings: BASE_WATER2 (defaults) + BASE_WATER2_SKIN[skin] (castle: round 1.05, glowSize 0.055, ringA 0.16, ringW 0.016). The same Dev Tools base-water switch still turns it off. Pictures are blob links so the tile markup stays short. Ghost Galleon hasn't been tuned yet (the diamond is a guess under a ship).
 - Test g200_base_water updated for the new markup (glow + 3 rings behind the base, same box as the art, rings animate, no water next to land, switch works) and passes.
+
+## v1061 - Ship foam ring can slide forward/back (TEST)
+- Harley: the Ghost Galleon's bow foam runs well ahead of the hull; he wants it touching the front of the ship.
+- The Galleon's long bowsprit makes the model longer than the hull, so its centre isn't the hull's centre. "Foam ring length" alone can't fit it (shrinking it also pulls the back foam inward).
+- New setting hullShift ("Foam ring forward / back" in Wake Lab's Hull shape box): + slides the foam ring, bow wave and ripples toward the bow, - toward the stern, in half-lengths. Game: MARCH_WATER_DEF.hullShift = 0, read per model like the rest. Wake Lab republished with the slider. g251 passes.
