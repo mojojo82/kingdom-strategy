@@ -14,5 +14,5 @@ Rule (Harley, 8 Oct 2026): every new art asset is kept twice - the original here
 | watchtower2.png | Watchtower II city skin (lighthouse base), as sent | 1254x1254 | CITY_SKINS.tower2: trimmed, squashed to 88.6% height (its ground was ~33deg, our map is 35deg-from-flat ISO_K), 560x466 webp, map scale 1.15 |
 
 Still missing originals: Gareth idle (8 frames) and attack (11 frames).
-| cards_grid_18.png | Card art for the 18 named cards, as sent (one 6x3 grid from GPT, ~290px per card). Harley will regenerate each in hi-res later | 1774x887 | not in the game yet (mockup shown 10 Oct) |
+| cards_grid_18.png | Card art for the 18 named cards, as sent (one 6x3 grid from GPT, ~290px per card). Harley will regenerate each in hi-res later | 1774x887 | CARD_ART_BUILTIN (180x180 webp each, v1035) |
 | cards/01_iron_vanguard.png ... cards/18_drop_signal.png | The grid cut into one file per card (290x290), in card order | 290x290 | - |

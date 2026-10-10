@@ -1085,3 +1085,9 @@
 ## Note (no version) - Fortress I vs III balance decision
 - Sims (dev/balance/f1vf3.js, World PvP engine, mirror match): Type I wins small no-hero fights (cannon = most of the damage) but loses badly once heroes/troops grow (5 heroes Lv80: 0%). Cause: Type I's bonus is the cannon (fixed size), Type III's is +HP / -damage taken on the whole side (scales with the army).
 - Harley: leave both fortress tech trees as they are; Type I gets help through CARDS and HERO support instead. Re-run `node dev/balance/f1vf3.js` to measure any such card/hero change.
+
+## v1035 - Built-in card art (TEST)
+- Harley sent art for the 18 named cards (one 6x3 grid from GPT, ~290px each): "Add them in. They aren't permanent but they are better than nothing" - he'll regenerate each in hi-res later.
+- Originals: art/originals/cards_grid_18.png + art/originals/cards/01..18_*.png. In game: CARD_ART_BUILTIN (180px webp), matched by card name (follows the card if slots move), else its default slot; a slot renamed to something else shows no picture. An admin upload (shared art) still wins.
+- To swap in a hi-res picture later: replace that card's entry in CARD_ART_BUILTIN (keep the original in art/originals/cards/).
+- Test: new g245_card_art.js.
