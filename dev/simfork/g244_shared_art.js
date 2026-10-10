@@ -1,4 +1,4 @@
-/* v1034/v1038: admin art (cards etc.) is the same for every player - no device shows or pushes its own copy; an upload that fails says so. Run: node dev/simfork/g244_shared_art.js */
+/* v1034/v1038/v1043: admin art (cards etc.) is the same for every player - no device shows or pushes its own copy; an upload that fails says so. Run: node dev/simfork/g244_shared_art.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -42,11 +42,10 @@ const store = { "envs/test/assetitems/_shared_index": { keys: [K0] }, ["envs/tes
   assert.deepStrictEqual(o.defaults, { boss: true, kessa: true, aries: true, grass: true, lyra: true, card15: true }, "built-in default art still shows when nothing is uploaded (v1038)");
   assert.strictEqual(o.load.shown, "data:image/png;base64,SHARED", "the shared picture shows, not the phone's newer-stamped copy");
   assert.strictEqual(o.cloudAfterLoad, "data:image/png;base64,SHARED", "the phone copy was NOT pushed over the shared one");
-  assert.ok(o.load.local0 === null && o.load.local1 === null, "old phone copies removed");
-  assert.deepStrictEqual(o.admin, { shown0: "data:image/png;base64,SHARED", shown1: "data:image/png;base64,PHONEONLY", local0: null, local1: null });
+  assert.deepStrictEqual(o.admin, { shown0: "data:image/png;base64,SHARED", shown1: "data:image/png;base64,PHONEONLY", local0: "data:image/png;base64,OLDPHONE", local1: "data:image/png;base64,PHONEONLY" }, "shared copy shown; v1043: phone copies are KEPT, never deleted");
   assert.deepStrictEqual(o.cloud, { k0: "data:image/png;base64,SHARED", k1: "data:image/png;base64,PHONEONLY" }, "phone-only picture filled the empty shared slot; the existing one untouched");
-  assert.ok(o.fail.after === "data:image/png;base64,SHARED" && o.fail.msgs.length === 1 && /did NOT save/.test(o.fail.msgs[0]) && o.fail.local === null, "failed upload: shows what players see + says so");
-  assert.ok(o.ok.shown === "data:image/png;base64,NEWGOOD" && o.ok.local === null && o.cloudOk === "data:image/png;base64,NEWGOOD", "good upload goes to the shared copy only");
+  assert.ok(o.fail.after === "data:image/png;base64,SHARED" && o.fail.msgs.length === 1 && /did NOT save/.test(o.fail.msgs[0]) && o.fail.local === "data:image/png;base64,NEWFAILS", "failed upload (phone copy kept): shows what players see + says so");
+  assert.ok(o.ok.shown === "data:image/png;base64,NEWGOOD" && o.cloudOk === "data:image/png;base64,NEWGOOD", "good upload goes to the shared copy only");
   assert.deepStrictEqual(errs, []);
   await b.close(); console.log("g244 OK");
 })().catch((e) => { console.error(e); process.exit(1); });

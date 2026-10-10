@@ -3746,7 +3746,7 @@ function assetSyncUpload(key, dataUrl) {
   if (!assetSyncDb || !dataUrl || !PLAYER_ID) return;
   if (assetIsShared(key) && !assetIsAdmin()) return; /* v982: shared art - admins only */ // !PLAYER_ID: identity hasn't resolved yet (brief async window, or the welcome overlay is still up) — assetSyncDocIdFor would otherwise build a bogus "players/null/..." path. Whatever triggered this already wrote to localStorage regardless; it'll sync next time this same value changes.
   var previous = cloudAssetMap[key];
-  if (assetIsShared(key)) { if (!(key in assetSharedPrev)) assetSharedPrev[key] = previous || null; try { localStorage.removeItem(key); localStorage.removeItem(key + "__ts"); } catch (e) {} } /* v1034 */
+  if (assetIsShared(key)) { if (!(key in assetSharedPrev)) assetSharedPrev[key] = previous || null; } /* v1043: the phone copy is kept (a failed upload must never lose the picture) */ /* v1034 */
   cloudAssetMap[key] = dataUrl;
   // Stamp when THIS device chose it (a real user upload, not the automatic backfill), so other devices can tell which copy is newer.
   if (!assetSyncBackfilling && !assetIsShared(key)) { try { localStorage.setItem(key + "__ts", String(Date.now())); } catch (e) {} }
@@ -4575,16 +4575,16 @@ function initDeviceLock(db) {
 
 // v982: load the shared admin art; then (admin only, once admin status is known) copy the admin's own per-player art into shared keys that
 // are still empty - this is how the art Harley uploaded on his own account becomes everyone's art.
-/* v1034: once the shared art has loaded, old copies of it on this phone are removed (they could hide what players really see). An admin's
-   phone copy of a picture the shared area doesn't have at all is uploaded first, so nothing that only lived on the phone is lost. */
+/* v1034: once the shared art has loaded, an admin's phone copy of a picture the shared area doesn't have at all is uploaded to it.
+   (v1043: phone copies are no longer deleted - see below.) */
 function sharedArtClearPhoneCopies(isAdmin) {
   var keys = [];
   try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.slice(-4) !== "__ts" && assetIsShared(k)) keys.push(k); } } catch (e) { return; }
   keys.forEach(function (k) {
     var v = null; try { v = localStorage.getItem(k); } catch (e) {}
     if (isAdmin && v && !sharedArtKnownKeys[k] && !cloudAssetMap[k] && !(typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k] === v)) { assetSyncBackfilling = true; try { assetSyncUpload(k, v); } catch (e) {} finally { assetSyncBackfilling = false; } }
-    if (typeof OWNER_DEFAULTS !== "undefined" && OWNER_DEFAULTS[k] === v) return; /* v1038: the game's own seeded default - leave it */
-    try { localStorage.removeItem(k); localStorage.removeItem(k + "__ts"); } catch (e) {}
+    /* v1043: NEVER delete phone copies any more. v1034-v1042 deleted them on a non-admin account without uploading first (Harley's archer /
+       lancer enemy art lived only on his phone and was lost). The getters already ignore phone copies of shared art, so keeping them is harmless. */
   });
 }
 function assetSyncLoadShared() {
@@ -11151,7 +11151,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1042"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1043"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

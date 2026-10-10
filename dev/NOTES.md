@@ -1124,3 +1124,9 @@
 - Harley: the 6 boxes bottom-left in Conquest (one was the Esper slot) now all show equipped cards - just the art, filling the square. renderConquestCardSlots(): #idlePowerSlots' 3 + the row below's 3, in equip order (CARD_EQUIP_MAX is 5, so the 6th stays empty); refreshed from renderIdleHeader with a signature. The Esper no longer shows there (Arena's slots unchanged).
 - Dev Tools > Speed & Testing: "🃏 Card effects OFF (this device only)". While on, YOUR cards (game.state) give no effects anywhere but stay equipped and shown; bots and the PvP/Boss simulators' card picks are unaffected. Admins only; stored in localStorage ks_dev_cardsoff_v1 (not the save, not shared). Gate is in equippedCardEffects(), which every card effect goes through.
 - Test: new g246_card_slots.js; g215 still passes.
+
+## v1043 - FIX: never delete art from the phone (TEST)
+- Harley: "Enemy images defaulting again" (archer / lancer showed the placeholder drawings). Cause: v1034's cleanup deleted the phone's copies of shared art on a NON-admin account (his "Harley H" test account, same phone) without uploading them first; the archer/lancer pictures were only on that phone, not in the shared art, so they were lost and the seeded placeholders came back.
+- Now nothing deletes phone copies: sharedArtClearPhoneCopies only uploads (admin, shared slot empty); an admin upload no longer removes the phone copy either (a failed upload can't lose the picture). The getters still show only the shared copy / built-in default, so v1034's goal (admin sees what players see) holds.
+- Recovery: opening the game on the ADMIN (Google) account runs the v982 migration, which fills empty shared slots from the admin account's own older cloud copies - if the archer/lancer art was ever saved there it comes back. Otherwise Harley re-uploads them.
+- g244 updated (phone copies kept).
