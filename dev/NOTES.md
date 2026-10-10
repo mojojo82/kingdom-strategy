@@ -1081,3 +1081,7 @@
 - After the shared art loads, old phone copies are deleted (sharedArtClearPhoneCopies); on an admin phone, a picture the shared area doesn't have at all is uploaded first so nothing is lost.
 - An admin upload that still fails after its retries puts back the shared picture on that phone and shows "That picture did NOT save, so players won't see it".
 - Test: new g244_shared_art.js.
+
+## Note (no version) - Fortress I vs III balance decision
+- Sims (dev/balance/f1vf3.js, World PvP engine, mirror match): Type I wins small no-hero fights (cannon = most of the damage) but loses badly once heroes/troops grow (5 heroes Lv80: 0%). Cause: Type I's bonus is the cannon (fixed size), Type III's is +HP / -damage taken on the whole side (scales with the army).
+- Harley: leave both fortress tech trees as they are; Type I gets help through CARDS and HERO support instead. Re-run `node dev/balance/f1vf3.js` to measure any such card/hero change.
