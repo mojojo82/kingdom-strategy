@@ -7,6 +7,7 @@ Standalone pages Harley uses to try looks before they go into the game. Each one
 | wake-lab.html | https://claude.ai/artifact/HWDRaxNT6uQY23zTbwjVE9 | March ship on game water with hull foam + wake trail sliders; "Copy settings" gives the numbers to put in the game. Uses the game's march shader and models (Ghost Galleon, Voidspire). |
 | model-bay.html | https://claude.ai/artifact/JZNQ1YjokrgEJGwPonmpsa | 3D .glb previewer: front / left / iso 35° cameras, PNG download with transparent background. |
 | base-water-lab.html | https://claude.ai/artifact/8cg2NUZVGrgVSbJvymuFmt | Base water preview: soft glow + ripple rings round each city skin (2 still pictures per base, rings grow/fade by CSS), old vs new switch, 9-base speed test, per-base sliders + Copy settings. |
+| whitecap-lab.html | https://claude.ai/artifact/MvaWPAjjUKFSfZmRiinsDU | Sea whitecaps: flip-book whitecaps that form and crumble (drawn once at load, CSS steps), fixed count on screen, fade out below a zoom level, light/dark sea patches; their sea from Harley's recording loops beside it for comparison. |
 | neptune-filter.html | https://claude.ai/artifact/UnauJDs83DVMv6TorvhyBS | Image filter that gives pictures the Neptune (Titan Fountain) heavy-shading look, with sliders. |
 
 To update one: edit the file here, then republish it to the same artifact URL.
