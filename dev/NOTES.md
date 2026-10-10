@@ -1232,3 +1232,8 @@
 
 ## v1062 - Ghost Galleon water from Wake Lab (TEST)
 - Harley's Wake Lab settings ("fine for now"). MARCH_WATER.pirate = hullLen 0.54, hullShift -0.13, sternPos 0.55, wakeLen 3, wakeOp 0.21, wakeStart 0.35, wakeSpread 0.225, foam 0.35, foamSize 0.7. The bow foam now sits on the hull, and the wake is short and soft. Voidspire stays on the defaults. g251 passes.
+
+## v1063 - Overall water opacity per ship (TEST)
+- Harley: add opacity to Wake Lab.
+- New per-ship setting "Water opacity (everything)" (opacity, 0-1, default 1) at the top of Wake Lab's Hull shape box. It fades the wake, churn, foam, bow wave, ripples and the foam over the hull edge together. Renamed the existing sliders to "Wake opacity" (wakeOp) and "Foam opacity" (foam).
+- Game: MARCH_WATER_DEF.opacity = 1; marchWaterBuild sets marchWater.op per ship and mwV multiplies every vertex alpha by it (opacity 0 skips the ship). g251 passes.
