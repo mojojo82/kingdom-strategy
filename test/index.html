@@ -5151,6 +5151,7 @@ function timeFor(key, level) {
   var tm = def.timeMult || 1.35;
   return Math.round(def.baseTime * Math.pow(tm, level - 1));
 }
+var TRAIN_CAP_BASE = 20, TRAIN_CAP_PER_LEVEL = 10; // v1027: per-batch training cap = 20 + 10 x building level
 function troopCost(type, count) {
   var def = TROOP_DEFS[type];
   var cost = {};
@@ -6237,6 +6238,22 @@ function createGame(opts) {
     for (var t = 1; t <= TROOP_MAX_TIER; t++) { if (b.level >= TROOP_TIER_UNLOCK_LEVEL[t]) best = t; }
     return best;
   }
+  // v1027: most troops one Train tap can start (per batch), grows with the
+  // training building's level (Lv1 = 30 ... Lv28 = 300, like the Kingshot ref).
+  function trainCap(buildingKey) {
+    var b = state.buildings[buildingKey];
+    if (!b || b.level < 1) return 0;
+    return TRAIN_CAP_BASE + TRAIN_CAP_PER_LEVEL * b.level;
+  }
+  // Most of this troop the player can train right now: the cap, or fewer if
+  // resources run out first.
+  function maxTrainNow(buildingKey, tier) {
+    var def = BUILDING_DEFS[buildingKey], cap = trainCap(buildingKey);
+    if (!def || !def.trains || !cap) return 0;
+    var unit = TROOP_DEFS[troopKey(def.trains, tier || 1)].cost, n = cap;
+    for (var r in unit) if (unit[r] > 0) n = Math.min(n, Math.floor((state.resources[r] || 0) / unit[r]));
+    return Math.max(0, n);
+  }
   function queueTraining(buildingKey, count, tier) {
     var b = state.buildings[buildingKey], def = BUILDING_DEFS[buildingKey];
     if (!b || !def.trains) return { ok: false, reason: "not_a_training_building" };
@@ -6244,7 +6261,7 @@ function createGame(opts) {
     tier = Math.max(1, Math.min(TROOP_MAX_TIER, Math.floor(tier) || 1));
     if (tier > maxTrainableTier(buildingKey)) return { ok: false, reason: "tier_locked" };
     var tkey = troopKey(def.trains, tier);
-    count = Math.max(1, Math.floor(count));
+    count = Math.max(1, Math.min(trainCap(buildingKey), Math.floor(count) || 1));
     var cost = troopCost(tkey, count);
     if (!canAfford(cost)) return { ok: false, reason: "cannot_afford" };
     spend(cost);
@@ -9099,7 +9116,7 @@ function createGame(opts) {
     healSpeedMult: healSpeedMult, techTimeFor: techTimeFor, researchFinishNow: researchFinishNow, techCostFor: techCostFor, techExtraFor: techExtraFor, techExtraAffordable: techExtraAffordable, meetsTechRequirements: meetsTechRequirements, buildSpeedMult: buildSpeedMult,
     marchSpeedMult: marchSpeedMult, trainSpeedMult: trainSpeedMult, rpProductionMult: rpProductionMult,
     gatherBonusMult: gatherBonusMult, lossReductionAmt: lossReductionAmt, resourceMult: resourceMult,
-    troopAtkMult: troopAtkMult, maxTrainableTier: maxTrainableTier, governorBonus: governorBonus,
+    troopAtkMult: troopAtkMult, maxTrainableTier: maxTrainableTier, trainCap: trainCap, maxTrainNow: maxTrainNow, governorBonus: governorBonus,
     accountUsdValue: accountUsdValue,
     heroLevelCost: heroLevelCost, recruitHero: recruitHero, levelUpHero: levelUpHero, starUpHero: starUpHero, grantFragments: grantFragments, grantRandomFragments: grantRandomFragments, heroCanAffordLevel: heroCanAffordLevel, heroCanAffordStar: heroCanAffordStar, setGovernor: setGovernor,
     clearGovernor: clearGovernor, attemptConquest: attemptConquest, idlePower: idlePower,
@@ -10966,7 +10983,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1026"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1027"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13739,6 +13756,7 @@ function renderInfirmary() {
     btn.onclick = function () { game.healWounded(btn.getAttribute("data-heal"), 1e9); persist(); render(); };
   });
 }
+var troopTrainCount = { infantry: 0, archer: 0, cavalry: 0 }; // v1027: number the player picked (0 = fill with the max)
 var troopTrainTier = { infantry: 1, archer: 1, cavalry: 1 }; // which tier each type's Train button builds (kept outside renderTroops, which rebuilds every render)
 // Counts focused tier-select/count-input elements in the Troops screen. The periodic 1s render() call
 // rebuilds this screen's DOM from scratch, which on iOS closes an open native <select> picker before the
@@ -13810,28 +13828,63 @@ function renderTroops() {
       sel.onfocus = function () { troopsUiBusy++; };
       sel.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); };
       sel.onchange = function () { troopTrainTier[type] = parseInt(sel.value, 10) || 1; renderTroops(); };
+      // v1027: per-batch cap + the box starts at the most you can train now
+      // (cap, or fewer if resources run out), with -/slider/+ like Kingshot.
+      var cap = game.trainCap(trainingBuildingKey), canNow = game.maxTrainNow(trainingBuildingKey, tier);
+      var hiN = Math.max(1, canNow || cap);
+      var startN = troopTrainCount[type] ? Math.min(hiN, troopTrainCount[type]) : hiN;
       var input = document.createElement("input");
-      input.type = "number"; input.min = "1"; input.value = "5";
+      input.type = "number"; input.min = "1"; input.max = String(cap); input.value = String(startN);
+      input.className = "train-n";
+      input.style.cssText = "width:62px;flex:0 0 auto;";
       input.onfocus = function () { troopsUiBusy++; };
-      input.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); };
+      input.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); setN(input.value); };
+      var slider = document.createElement("input");
+      slider.type = "range"; slider.min = "1"; slider.max = String(hiN); slider.value = String(startN);
+      slider.className = "train-slider";
+      slider.style.cssText = "flex:1 1 auto;min-width:60px;";
+      slider.onfocus = function () { troopsUiBusy++; };
+      slider.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); };
+      function stepBtn(txt, d) {
+        var sb = document.createElement("button");
+        sb.textContent = txt; sb.className = "train-step";
+        sb.style.cssText = "padding:4px 9px;min-width:30px;flex:0 0 auto;";
+        sb.onclick = function () { setN((parseInt(input.value, 10) || 1) + d); };
+        return sb;
+      }
       var durSpan = document.createElement("div");
       durSpan.className = "sub"; durSpan.style.cssText = "color:var(--muted);font-size:11px;flex:1 1 100%;";
-      function updateDur() {
-        var n = Math.max(1, parseInt(input.value, 10) || 1);
-        var t = (def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult();
-        durSpan.textContent = "⏱ " + fmt(n) + "x " + def.name + " = " + fmtTime(t);
+      function setN(v) {
+        var n = Math.max(1, Math.min(cap, parseInt(v, 10) || 1));
+        input.value = String(n); slider.value = String(Math.min(n, hiN));
+        troopTrainCount[type] = n;
+        updateDur();
       }
-      input.oninput = updateDur;
+      function updateDur() {
+        var n = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1));
+        var t = (def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult();
+        durSpan.innerHTML = "⏱ " + fmt(n) + "x " + def.name + " = " + fmtTime(t) +
+          ' · <span style="color:var(--gold)">max ' + fmt(cap) + ' per batch</span>' +
+          (canNow < cap ? ' · <span class="cost-short">resources for ' + fmt(canNow) + '</span>' : '');
+      }
+      input.oninput = function () { if (input.value !== "") { troopTrainCount[type] = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1)); slider.value = String(Math.min(troopTrainCount[type], hiN)); } updateDur(); };
+      slider.oninput = function () { setN(slider.value); };
       updateDur();
       var btn = document.createElement("button");
       btn.textContent = "Train";
       btn.onclick = function () {
-        var n = parseInt(input.value, 10) || 1;
-        game.queueTraining(trainingBuildingKey, n, tier);
+        var n = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1));
+        var res = game.queueTraining(trainingBuildingKey, n, tier);
+        if (res && res.ok) troopTrainCount[type] = 0; // next time the box refills with the new max
         persist(); render();
       };
-      wrap.appendChild(sel); wrap.appendChild(input); wrap.appendChild(btn);
+      wrap.appendChild(sel);
       row.appendChild(wrap);
+      var wrap2 = document.createElement("div");
+      wrap2.style.cssText = "display:flex;gap:5px;align-items:center;flex:1 1 100%;margin-top:5px;";
+      wrap2.appendChild(stepBtn("−", -1)); wrap2.appendChild(slider); wrap2.appendChild(stepBtn("+", 1));
+      wrap2.appendChild(input); wrap2.appendChild(btn);
+      row.appendChild(wrap2);
       row.appendChild(durSpan);
     } else {
       var lockDiv = document.createElement("div");

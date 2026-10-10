@@ -1026,3 +1026,9 @@
   2. The phone kept its own copies of the map look and skin alignment (localStorage, plus an old per-account cloud copy) and used them until the server copy arrived. Now neither is read or written: built-in defaults until the shared (admin) values arrive, then only those. Old copies are removed.
 - The "map look check" also shows the built-in measurement for your skin.
 - Test: new g239_no_phone_copy.js (stale phone copies ignored; measuring broken → still the built-in numbers). The v1025 game fails it (falls back to the guess).
+
+## v1027 - Troop training cap + box starts at max (TEST)
+- Harley: "caps on how much troops someone can train at once" and "the max a player can train at once is already typed in the box" (Kingshot-style; his recording shows -/slider/+ with 300 pre-filled).
+- Per-batch cap = 20 + 10 x training building level (TRAIN_CAP_BASE / TRAIN_CAP_PER_LEVEL): Lv1 30, Lv10 120, Lv28 300, Lv30 320. Engine `trainCap(key)`, `maxTrainNow(key, tier)` (cap or fewer if resources run out). `queueTraining` clamps to the cap.
+- Train row: tier picker on its own line, then − / slider / + / number box / Train. Box starts at maxTrainNow (the cap when rich); the number you pick is kept until you train (troopTrainCount), then refills with the new max. Under it: duration, "max N per batch", and red "resources for N" when resources are the limit.
+- Test: new g240_train_cap.js.
