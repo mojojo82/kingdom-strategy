@@ -1130,3 +1130,7 @@
 - Now nothing deletes phone copies: sharedArtClearPhoneCopies only uploads (admin, shared slot empty); an admin upload no longer removes the phone copy either (a failed upload can't lose the picture). The getters still show only the shared copy / built-in default, so v1034's goal (admin sees what players see) holds.
 - Recovery: opening the game on the ADMIN (Google) account runs the v982 migration, which fills empty shared slots from the admin account's own older cloud copies - if the archer/lancer art was ever saved there it comes back. Otherwise Harley re-uploads them.
 - g244 updated (phone copies kept).
+
+## v1044 - Conquest side slots: Troops shortcut + wrench (TEST)
+- Harley: of the 5 empty slots next to the backpack, one = an icon that goes straight to the troops area, another = a wrench icon.
+- Slot 2: helmet icon (same brown/bronze SVG style as the backpack) -> setScreen("city", "troops"). Slot 3: wrench icon, no action yet (waiting for Harley to say what it opens). 3 slots still empty.
