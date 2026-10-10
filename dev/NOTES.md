@@ -1192,3 +1192,7 @@
 ## v1055 - Firing range is a flat 3 tiles (TEST)
 - Harley: make the attack stop distance a flat "3 tiles back" for every ship, then he'll check it in game.
 - MARCH_FX_STANDOFF = 3 for 3D and flat ships, every skin (no longer based on ship size). Still capped at 60% of the trip so a very close target doesn't make the ship fire from home. g250 passes.
+
+## v1056 - Close targets: fire from your own city (TEST)
+- Harley: if the enemy city is less than 3 tiles away, that's the only time the 3-tile rule breaks: the ship just sits on your city and fires from there.
+- Dropped the 60% cap: the ship stops 3 tiles back, or at home if the target is 3 tiles or closer. g250 passes.
