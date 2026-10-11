@@ -11452,7 +11452,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1096"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1097"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -27353,7 +27353,7 @@ function sopSwordCreate(els) {
     gl.useProgram(pr); swordBufs.forEach(function (sb) { gl.bindBuffer(gl.ARRAY_BUFFER, sb.b); gl.enableVertexAttribArray(sb.l); gl.vertexAttribPointer(sb.l, sb.n, gl.FLOAT, false, 0, 0); }); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
     gl.uniform1f(U.uFire, fireOn ? flick * (1 + 0.5 * flare) : 0); gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    var cam = [0, 0.15, 4.5], P = persp(0.62, W / Math.max(1, H), 0.1, 20), V = look(cam, [0, 0.0, 0]);
+    var asp = W / Math.max(1, H), fy = 2 * Math.atan(0.2693 / asp), ty = -1.44 + 4.5 * Math.tan(fy / 2), cam = [0, ty + 0.15, 4.5], P = persp(fy, asp, 0.1, 20), V = look(cam, [0, ty, 0]); /* v1097: framing locked to the WIDTH (the phone framing Harley approved: 2.42 units across, altar 0.44 units above the bottom edge) so PC and every phone look the same */
     var c = Math.cos(ang), s = Math.sin(ang), Mx = [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1];
     gl.uniformMatrix4fv(U.uM, false, new Float32Array(Mx)); gl.uniformMatrix4fv(U.uVP, false, new Float32Array(mul(P, V))); gl.uniform3fv(U.uCam, cam);
     gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
