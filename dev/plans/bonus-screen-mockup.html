@@ -30,6 +30,9 @@ p { margin: 0; }
 .lane { background: var(--bronze); border: 2px solid var(--bronzeLine); border-radius: 12px; padding: 8px 6px 8px; display: grid; justify-items: center; gap: 4px; text-align: center; }
 .obj { width: 74px; height: 86px; position: relative; }
 .obj svg { width: 100%; height: 100%; display: block; }
+.obj .gem3d { position: absolute; inset: -6px -10px 0; width: calc(100% + 20px); height: calc(100% + 6px); display: block; }
+.obj:not(.has3d) .gem3d { display: none; }
+.obj.has3d svg { visibility: hidden; }
 .obj .glow { position: absolute; inset: 8px 4px 18px; border-radius: 50%; filter: blur(14px); opacity: .45; }
 .lane .name { font-weight: 800; font-size: 12.5px; color: var(--sand); letter-spacing: .04em; }
 .lane .lv { font-family: var(--display); font-size: 15px; color: var(--gold); }
@@ -137,7 +140,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
   LANES.forEach(function (L) {
     var d = document.createElement("div"); d.className = "lane";
     d.innerHTML = '<div class="obj"><div class="glow" style="background:' + L.col + '"></div><svg viewBox="0 0 74 86" aria-hidden="true">' +
-      '<ellipse cx="37" cy="80" rx="26" ry="5" fill="#1a120b"/>' + ART[L.k] + '</svg></div>' +
+      '<ellipse cx="37" cy="80" rx="26" ry="5" fill="#1a120b"/>' + ART[L.k] + '</svg><canvas class="gem3d" id="g3_' + L.k + '" aria-hidden="true"></canvas></div>' +
       '<div class="name">' + L.name + ' BONUS</div><div class="lv" id="lv_' + L.k + '"></div>' +
       '<div class="tot" style="color:' + L.col + '" id="tot_' + L.k + '"></div><div class="nx" id="nx_' + L.k + '"></div>' +
       '<div class="cost" id="cost_' + L.k + '"></div><button class="btn" type="button" id="up_' + L.k + '">Upgrade</button>';
@@ -174,5 +177,74 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
   document.getElementById("big").addEventListener("click", function () { st = { own: 248500, atk: 2380, hp: 2412, def: 2366, claimed: 236 }; draw(); });
   document.getElementById("reset").addEventListener("click", function () { st = JSON.parse(JSON.stringify(start)); draw(); });
   draw();
+  init3d();
+
+  /* 3D gems: a tiny home-made renderer (no library) - each gem is a faceted lathe shape (profile spun round its axis), drawn face by face on a small
+     2D canvas with flat shading + a white highlight, spinning very slowly (~30 s a turn). Falls back to the flat drawings if canvas is missing. */
+  function init3d() {
+    var still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var SHAPES = {
+      /* ruby: round brilliant - pointed pavilion, thin girdle, crown up to a flat table */
+      atk: { pts: [[0, -0.78], [0.62, -0.32], [1, 0], [1, 0.07], [0.78, 0.3], [0.55, 0.42], [0, 0.42]], seg: 16, off: 0, sx: 1, sy: 1, rgb: [216, 31, 63], spin: 0.21, start: 0 },
+      /* emerald: step cut - 8 sides stretched into a long octagon, stepped crown and pavilion */
+      hp: { pts: [[0, -0.5], [0.5, -0.46], [0.8, -0.3], [1, -0.06], [1, 0.08], [0.86, 0.26], [0.7, 0.38], [0, 0.38]], seg: 8, off: Math.PI / 8, sx: 0.78, sy: 1.15, rgb: [23, 178, 103], spin: 0.18, start: 2.1 },
+      /* sapphire: oval brilliant - like the ruby but stretched */
+      def: { pts: [[0, -0.72], [0.6, -0.3], [1, 0], [1, 0.06], [0.76, 0.28], [0.52, 0.4], [0, 0.4]], seg: 16, off: 0, sx: 0.8, sy: 1.12, rgb: [42, 99, 232], spin: 0.24, start: 4.2 }
+    };
+    function norm(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+    var LIGHT = norm([0.5, 0.7, 1]), HALF = norm([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
+    function build(S) {
+      /* vertices of the lathe: profile point i at angle j; gem axis = local y (table up) */
+      var V = [], F = [], n = S.pts.length;
+      for (var i = 0; i < n; i++) for (var j = 0; j < S.seg; j++) { var a = S.off + j / S.seg * Math.PI * 2, r = S.pts[i][0]; V.push([Math.cos(a) * r * S.sx, S.pts[i][1], Math.sin(a) * r * S.sy]); }
+      for (i = 0; i < n - 1; i++) for (j = 0; j < S.seg; j++) {
+        var j2 = (j + 1) % S.seg, q = [i * S.seg + j, i * S.seg + j2, (i + 1) * S.seg + j2, (i + 1) * S.seg + j];
+        if (S.pts[i][0] === 0) q = [q[0], q[2], q[3]]; else if (S.pts[i + 1][0] === 0) q = [q[0], q[1], q[2]];
+        F.push(q);
+      }
+      return { V: V, F: F };
+    }
+    var gems = [];
+    Object.keys(SHAPES).forEach(function (k) {
+      var cv = document.getElementById("g3_" + k), ctx = cv && cv.getContext && cv.getContext("2d"); if (!ctx) return;
+      var dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth || 94, h = cv.clientHeight || 92;
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.scale(dpr, dpr);
+      gems.push({ ctx: ctx, w: w, h: h, S: SHAPES[k], M: build(SHAPES[k]), ang: SHAPES[k].start });
+      cv.parentNode.classList.add("has3d");
+    });
+    if (!gems.length) return;
+    var TILT = -(Math.PI / 2 - 0.35), ct = Math.cos(TILT), st = Math.sin(TILT);
+    function draw1(g) {
+      var c = g.ctx, S = g.S, ca = Math.cos(g.ang), sa = Math.sin(g.ang), size = Math.min(g.w, g.h) * 0.42, cx = g.w / 2, cy = g.h * 0.47, P = [], W = [];
+      g.M.V.forEach(function (v) {
+        /* tip the gem so its table faces the viewer (rotate about x), then spin about the screen's vertical axis */
+        var x = v[0], y = v[1] * ct - v[2] * st, z = v[1] * st + v[2] * ct;
+        var x2 = x * ca + z * sa, z2 = -x * sa + z * ca, y2 = y;
+        W.push([x2, y2, z2]); var pz = 4.2 / (4.2 - z2); P.push([cx + x2 * size * pz, cy - y2 * size * pz]);
+      });
+      var faces = g.M.F.map(function (f) {
+        var a = W[f[0]], b = W[f[1]], d = W[f[f.length - 1]], u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+        var nrm = norm([u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]), z = 0;
+        f.forEach(function (i) { z += W[i][2]; });
+        return { f: f, n: nrm, z: z / f.length };
+      }).sort(function (p, q) { return p.z - q.z; });
+      c.clearRect(0, 0, g.w, g.h);
+      faces.forEach(function (F) {
+        var nz = F.n[2], back = nz < 0, n = back ? [-F.n[0], -F.n[1], -F.n[2]] : F.n;
+        var dif = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]), spec = Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 60);
+        var lit = back ? 0.35 + 0.35 * dif : 0.45 + 0.75 * dif, col = S.rgb.map(function (ch) { return Math.min(255, Math.round(ch * lit + 255 * spec * 0.5)); });
+        c.beginPath(); F.f.forEach(function (i, m) { var p = P[i]; if (m) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath();
+        c.fillStyle = "rgba(" + col.join(",") + "," + (back ? 0.9 : 0.86) + ")"; c.fill();
+        if (!back) { c.strokeStyle = "rgba(255,255,255," + (0.1 + 0.25 * spec) + ")"; c.lineWidth = 0.6; c.stroke(); }
+      });
+    }
+    var last = performance.now();
+    function frame(t) {
+      var dt = Math.min(0.1, (t - last) / 1000); last = t;
+      gems.forEach(function (g) { if (!still) g.ang += g.S.spin * dt; draw1(g); });
+      if (!still) requestAnimationFrame(frame);
+    }
+    gems.forEach(draw1); requestAnimationFrame(frame);
+  }
 })();
 </script>
