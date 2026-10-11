@@ -183,26 +183,37 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
      2D canvas with flat shading + a white highlight, spinning very slowly (~30 s a turn). Falls back to the flat drawings if canvas is missing. */
   function init3d() {
     var still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    /* Same shapes as the flat drawings, standing straight (no tilt), spinning about the screen's vertical axis.
+       ring = the gem's outline at the girdle (unit size); pts = profile [size of the ring, height along the gem's axis].
+       view "side": axis points up (the ruby, seen from the side: flat table on top, point down). view "face": axis points at the viewer (table facing you). */
+    function circle(n, sx, sy) { var r = []; for (var j = 0; j < n; j++) { var a = j / n * Math.PI * 2; r.push([Math.cos(a) * sx, Math.sin(a) * sy]); } return r; }
     var SHAPES = {
-      /* ruby: round brilliant - pointed pavilion, thin girdle, crown up to a flat table */
-      atk: { pts: [[0, -0.78], [0.62, -0.32], [1, 0], [1, 0.07], [0.78, 0.3], [0.55, 0.42], [0, 0.42]], seg: 16, off: 0, sx: 1, sy: 1, rgb: [216, 31, 63], spin: 0.21, start: 0 },
-      /* emerald: step cut - 8 sides stretched into a long octagon, stepped crown and pavilion */
-      hp: { pts: [[0, -0.5], [0.5, -0.46], [0.8, -0.3], [1, -0.06], [1, 0.08], [0.86, 0.26], [0.7, 0.38], [0, 0.38]], seg: 8, off: Math.PI / 8, sx: 0.78, sy: 1.15, rgb: [23, 178, 103], spin: 0.18, start: 2.1 },
-      /* sapphire: oval brilliant - like the ruby but stretched */
-      def: { pts: [[0, -0.72], [0.6, -0.3], [1, 0], [1, 0.06], [0.76, 0.28], [0.52, 0.4], [0, 0.4]], seg: 16, off: 0, sx: 0.8, sy: 1.12, rgb: [42, 99, 232], spin: 0.24, start: 4.2 }
+      /* ruby: round brilliant from the side - crown 12, table 18 wide, pavilion 46 deep on a 38-wide girdle (as drawn) */
+      atk: { view: "side", ring: circle(16, 1, 1), pts: [[0, -2.42], [0.5, -1.2], [1, 0], [1, 0.06], [0.75, 0.38], [0.47, 0.63], [0, 0.63]], rgb: [216, 31, 63], spin: 0.21, start: 0 },
+      /* emerald: step cut, tall rectangle with clipped corners (46 x 64 as drawn), three steps down to a flat table */
+      hp: { view: "face", ring: [[0.72, -0.72], [0.72, 0.72], [0.44, 1], [-0.44, 1], [-0.72, 0.72], [-0.72, -0.72], [-0.44, -1], [0.44, -1]], pts: [[0, -0.42], [0.55, -0.36], [0.82, -0.2], [1, 0], [1, 0.06], [0.88, 0.2], [0.68, 0.32], [0, 0.32]], rgb: [23, 178, 103], spin: 0.18, start: 0 },
+      /* sapphire: oval brilliant, tall oval (48 x 64 as drawn) */
+      def: { view: "face", ring: circle(16, 0.75, 1), pts: [[0, -0.55], [0.55, -0.25], [1, 0], [1, 0.05], [0.72, 0.24], [0.45, 0.34], [0, 0.34]], rgb: [42, 99, 232], spin: 0.24, start: 0 }
     };
     function norm(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
     var LIGHT = norm([0.5, 0.7, 1]), HALF = norm([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
     function build(S) {
-      /* vertices of the lathe: profile point i at angle j; gem axis = local y (table up) */
-      var V = [], F = [], n = S.pts.length;
-      for (var i = 0; i < n; i++) for (var j = 0; j < S.seg; j++) { var a = S.off + j / S.seg * Math.PI * 2, r = S.pts[i][0]; V.push([Math.cos(a) * r * S.sx, S.pts[i][1], Math.sin(a) * r * S.sy]); }
-      for (i = 0; i < n - 1; i++) for (j = 0; j < S.seg; j++) {
-        var j2 = (j + 1) % S.seg, q = [i * S.seg + j, i * S.seg + j2, (i + 1) * S.seg + j2, (i + 1) * S.seg + j];
+      /* model space: y = up the screen, z = toward the viewer, x = across */
+      var V = [], F = [], n = S.pts.length, m = S.ring.length;
+      for (var i = 0; i < n; i++) for (var j = 0; j < m; j++) {
+        var r = S.pts[i][0], h = S.pts[i][1], u = S.ring[j][0] * r, w = S.ring[j][1] * r;
+        V.push(S.view === "side" ? [u, h, w] : [u, w, h]);
+      }
+      for (i = 0; i < n - 1; i++) for (j = 0; j < m; j++) {
+        var j2 = (j + 1) % m, q = [i * m + j, i * m + j2, (i + 1) * m + j2, (i + 1) * m + j];
         if (S.pts[i][0] === 0) q = [q[0], q[2], q[3]]; else if (S.pts[i + 1][0] === 0) q = [q[0], q[1], q[2]];
         F.push(q);
       }
-      return { V: V, F: F };
+      /* centre it and work out a scale that fits the canvas at every turn */
+      var y0 = Infinity, y1 = -Infinity, rr = 0;
+      V.forEach(function (v) { y0 = Math.min(y0, v[1]); y1 = Math.max(y1, v[1]); rr = Math.max(rr, Math.hypot(v[0], v[2])); });
+      var mid = (y0 + y1) / 2; V.forEach(function (v) { v[1] -= mid; });
+      return { V: V, F: F, halfH: (y1 - y0) / 2, rad: rr };
     }
     var gems = [];
     Object.keys(SHAPES).forEach(function (k) {
@@ -213,14 +224,13 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       cv.parentNode.classList.add("has3d");
     });
     if (!gems.length) return;
-    var TILT = -(Math.PI / 2 - 0.35), ct = Math.cos(TILT), st = Math.sin(TILT);
     function draw1(g) {
-      var c = g.ctx, S = g.S, ca = Math.cos(g.ang), sa = Math.sin(g.ang), size = Math.min(g.w, g.h) * 0.42, cx = g.w / 2, cy = g.h * 0.47, P = [], W = [];
+      var c = g.ctx, S = g.S, ca = Math.cos(g.ang), sa = Math.sin(g.ang), cx = g.w / 2, cy = g.h * 0.5, P = [], W = [];
+      var size = Math.min(g.w * 0.38 / g.M.rad, g.h * 0.38 / g.M.halfH);
       g.M.V.forEach(function (v) {
-        /* tip the gem so its table faces the viewer (rotate about x), then spin about the screen's vertical axis */
-        var x = v[0], y = v[1] * ct - v[2] * st, z = v[1] * st + v[2] * ct;
-        var x2 = x * ca + z * sa, z2 = -x * sa + z * ca, y2 = y;
-        W.push([x2, y2, z2]); var pz = 4.2 / (4.2 - z2); P.push([cx + x2 * size * pz, cy - y2 * size * pz]);
+        /* spin about the vertical axis only - the gem stays straight */
+        var x2 = v[0] * ca + v[2] * sa, z2 = -v[0] * sa + v[2] * ca, y2 = v[1];
+        W.push([x2, y2, z2]); var pz = 6 / (6 - z2 * size / 30); P.push([cx + x2 * size * pz, cy - y2 * size * pz]);
       });
       var faces = g.M.F.map(function (f) {
         var a = W[f[0]], b = W[f[1]], d = W[f[f.length - 1]], u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
