@@ -1289,3 +1289,7 @@
   - No heroes: F3 wins early (F1 5% at 0, 35% at 200k), even ~1M (54%), then F1 leads (85-94% from 5M).
   - 1 hero Lv20: F1 never above 16%. 3 heroes Lv20: 0% until 10M, then 16%. 3 heroes Lv40: 0% until 20M, rising to 34% at max. 5 heroes Lv40: at most 5%. 5 heroes Lv80: 0% at every step.
   - So Fortress I never has an early window. F3 is ahead from the first point spent whenever heroes are in, and heroes, not tree depth, decide it.
+- (after v1071) dev/balance/f1cards.js: prototype Fortress I helper effects (injected into the sim's copy of the game only), on the equal-spend ladder, 20 seeds x both orders:
+  - The 5 crit/cannon ideas (Gunnery = +X% army damage while the cannon fires, Armor Breaker = super burst cancels the enemy fortress's damage reduction for 4-8 s, Shared Fire = army gets a share of the crit multiplier during a super burst, Spotter's Mark = +X% damage for 5 s after a super burst, Rapid Battery = +X% super burst chance per hero) all help Fortress I LATE, not early, because they feed off its own tree (crit mult x2 at the start, x41 maxed). With heroes, Fortress I still loses 0-1M spent with every one of them.
+  - A flat Fortress-I-only army damage bonus gives the wanted shape. At +70%: 100% wins from 0-200k with every hero setup, ~40% (even, attacker-side split) from ~5M, and 0-10% late vs a Lv80 5* team. At +50% there's a sharp cliff at 200k. At +100% it lasts too long (100% to ~10M).
+  - Card 6 (t1Def, 30% less damage taken) only triggers in Fortress I vs Fortress I fights (st.fortType === 1 && ost.fortType === 1).
