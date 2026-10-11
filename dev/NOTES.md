@@ -1409,3 +1409,14 @@
 - March listeners only for the patches wanted now at the normal zooms (+ my base's patch) - not for lingering base listeners or the Middle zoom.
 - Tried and dropped: a separate dots canvas (it doubled the existing markers).
 - Test: new g261_middle_zoom (no patch on screen missing from near zoom down to ~2.4 px tiles; my alliance coloured; march listeners <= 6 at Middle, <= 30 near). g255, g256, g257, g229, g259 (cap check now 72), g260 pass.
+
+## v1085 - world map plan phase 4c: crossing into the neighbour kingdom (TEST)
+- Neighbour kingdoms close up: a neighbour's tile (x,y) sits at (x + dx*n, y + dy*n) in our grid and uses that as its id (outside 0..n-1, so it never clashes with ours). The normal tile drawing (skins, tags, HP, water) works on them unchanged; game actions only look at our own map, so a march / teleport over the border is refused ("invalid_target").
+- NBR (nbrInit, after the kingdom is known; TEST only): per atlas neighbour its own WorldMap from its seed (land + resources), and its bases from its patch lists (servers/<id>/patches, Atlantis patches/) - only the patches on screen at the normal zooms, max 24 listeners, linger 20 s (nbrSyncSubs / nbrApplyPatch). Drawn by nbrVisit from renderVisibleTiles (the view range before clamping to our kingdom).
+- "Entering <kingdom>" banner (Harley: keep it) when the middle of the screen crosses a border (also back into your own; not on first opening the map).
+- Tapping something over the border: an info card "<base or node> · <kingdom> X/Y" with Attack / Teleport here / Gather greyed out and "Borders are closed: actions into another kingdom open only through admin controls or an event. Looking is always free."
+- Our own whole-list base listener (Atlantis) no longer wipes the neighbour's bases.
+- Atlantis on TEST now also claims / gives up / re-skins bases through the server (patchWriteMode), so its patch lists stay right for Vanaheim players looking in. Bases claimed before this aren't in them yet: Dev Tools has "🔁 Rebuild this kingdom's patch lists (admin)" - Harley to press it once in Atlantis on TEST (and in Vanaheim after any doubt). Bot tools rebuild automatically.
+- Not yet for the neighbour: its painted terrain/forests/decor, its marches (ships stay inside their own kingdom anyway with borders closed), fires on its bases, and resource amounts (shown full).
+- Measured (headless): at the border 2-4 neighbour patch listeners; fps 45-60.
+- Test: new g262_border (both directions: neighbour bases near the border drawn exactly, banner, closed-border card with 3 greyed buttons, march refused, own list updates keep the neighbour's bases, Atlantis claim writes its patch, banner on the way back). g200, g229, g250, g252, g254, g255-g261 pass.

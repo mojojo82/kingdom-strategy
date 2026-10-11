@@ -662,6 +662,9 @@
   #mapBorder .kd-shade { position:absolute; background:rgba(8,20,40,.32); }
   #mapBorder .kd-label { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:800; letter-spacing:.5px; color:rgba(255,255,255,.8); text-shadow:0 1px 3px #000; text-align:center; transition:opacity .25s; }
   #mapBorder .kd-label.mine { color:#f0c95f; }
+  #kdBanner { position:absolute; left:50%; top:86px; transform:translate(-50%,-6px); z-index:30; pointer-events:none; opacity:0; transition:opacity .45s, transform .45s; background:rgba(8,14,26,.85); border:1.5px solid #f0c95f; color:#f0c95f; font-weight:800; font-size:14px; letter-spacing:.4px; padding:4px 14px; border-radius:999px; white-space:nowrap; }
+  #kdBanner.on { opacity:1; transform:translate(-50%,0); }
+  .kd-foreign { display:grid; gap:6px; } .kd-f-t { font-weight:800; padding-left:24px; padding-right:58px; } .kd-f-row { display:flex; gap:6px; flex-wrap:wrap; } .kd-f-row button[disabled] { opacity:.5; filter:grayscale(1); } .kd-f-why { font-size:12px; opacity:.85; }
   #mapBorder .kd-sub { display:block; font-weight:700; letter-spacing:0; color:rgba(220,232,246,.85); }
   #mapProvinces { position:absolute; left:0; top:0; pointer-events:none; z-index:1; }
   #mapProvinces .prov-label { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:800; font-size:12px; color:rgba(255,255,255,.85); text-shadow:0 1px 2px #000, 0 0 3px rgba(0,0,0,.6); text-align:center; line-height:1.1; letter-spacing:.3px; }
@@ -2972,7 +2975,7 @@
                   </label>
                 </div>
                 <div class="dev-tools-row"><span class="dev-tools-hint">Base water look (all players):</span><button class="dev-btn" id="devBaseWaterStyleBtn">🌊 Base water: New</button></div>
-                <div class="dev-tools-row"><span class="dev-tools-hint">Other kingdoms' bases (this device, reload to apply):</span><button class="dev-btn" id="devPatchModeBtn">📦 Bases: by patch</button></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint">Other kingdoms' bases (this device, reload to apply):</span><button class="dev-btn" id="devPatchModeBtn">📦 Bases: by patch</button><button class="dev-btn" id="devPatchRebuildBtn">🔁 Rebuild this kingdom's patch lists (admin)</button><span class="dev-tools-hint" id="devPatchRebuildSt"></span></div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devWhitecapToggle" autocomplete="off"> World map: whitecaps on the open sea
@@ -9619,7 +9622,7 @@ function otherCityIconSrc(tileId) { return CITY_SKINS[citySkinIdAt(tileId)].src;
 function publishMyCitySkin() { /* write my skin onto my city doc (only when it differs from what's there) */
   var home = game.state.homeTileId; if (!cloudDb || !home || occupiedTileIds[home] !== PLAYER_ID) return;
   var sk = myCitySkinId(); if (citySkinByTile[home] === sk) return; citySkinByTile[home] = sk;
-  if (patchMode()) { KS_BACKEND.call("setCitySkin", { tileId: home, sk: sk }).catch(function (e) { delete citySkinByTile[home]; console.error("skin publish failed", e && e.message); }); return; } /* v1081 */
+  if (patchWriteMode()) { KS_BACKEND.call("setCitySkin", { tileId: home, sk: sk }).catch(function (e) { delete citySkinByTile[home]; console.error("skin publish failed", e && e.message); }); return; } /* v1081 */
   cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(home)).update({ sk: sk }).catch(function (e) { delete citySkinByTile[home]; console.error("skin publish failed", e && e.message); });
 }
 var BUILDING_ICON = {
@@ -11305,7 +11308,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1084"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1085"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14441,7 +14444,7 @@ var lodResCache = null;
 function lodCandidates(minX, maxX, minY, maxY) { /* the only tiles that can show anything when zoomed out (v864: resources only from the chunks in view) */
   var out = (mapLod() === 1 && minX != null) ? (game.state.map.isWorld ? game.state.map.resourcesIn(minX, maxX, minY, maxY) : game.state.map.filter(function (t) { return t.type === "resource" && t.x >= minX && t.x <= maxX && t.y >= minY && t.y <= maxY; })) : [], seen = {};
   out.forEach(function (t) { seen[t.id] = 1; });
-  [game.state.homeTileId, selectedTile].concat(Object.keys(occupiedTileIds)).forEach(function (id) { if (id && !seen[id]) { var t = mapTileById(game.state.map, id); if (t) { out.push(t); seen[id] = 1; } } });
+  [game.state.homeTileId, selectedTile].concat(Object.keys(occupiedTileIds)).forEach(function (id) { if (id && !seen[id] && !isForeignTile(id)) { var t = mapTileById(game.state.map, id); if (t) { out.push(t); seen[id] = 1; } } }); /* v1085: neighbours' are added by nbrVisit */
   return out;
 }
 var MAP_ZOOM_KEY = "kingdomMapZoom_v1";
@@ -15023,15 +15026,15 @@ function renderVisibleTiles() {
   // never shows a blank flash before the next render/scroll-triggered pass
   // catches up.
   var buffer = 2;
-  var minX = Math.max(0, Math.floor((viewport.scrollLeft - padPxZ()) / pitch) - buffer);
-  var maxX = Math.min(size - 1, Math.ceil((viewport.scrollLeft + vpW - padPxZ()) / pitch) + buffer);
-  var minY = Math.max(0, Math.floor((viewport.scrollTop - padPxZ()) / pitch) - buffer);
-  var maxY = Math.min(size - 1, Math.ceil((viewport.scrollTop + vpH - padPxZ()) / pitch) + buffer);
+  var rawX0 = Math.floor((viewport.scrollLeft - padPxZ()) / pitch) - buffer, rawX1 = Math.ceil((viewport.scrollLeft + vpW - padPxZ()) / pitch) + buffer;
+  var rawY0 = Math.floor((viewport.scrollTop - padPxZ()) / pitch) - buffer, rawY1 = Math.ceil((viewport.scrollTop + vpH - padPxZ()) / pitch) + buffer; /* v1085: before clamping to our kingdom - neighbours are drawn from these */
+  var minX = Math.max(0, rawX0), maxX = Math.min(size - 1, rawX1), minY = Math.max(0, rawY0), maxY = Math.min(size - 1, rawY1);
   var isoG = null, isoRect = null;
   if (mapIso) { /* v825: bounding box (in tile coords) of the viewport rectangle, then an exact centre-in-rectangle test per tile below */
     isoG = isoGeom(); var M = 5 * isoG.p, L = viewport.scrollLeft - M, R = viewport.scrollLeft + vpW + M, T = viewport.scrollTop - M, B = viewport.scrollTop + vpH + M;
     isoRect = { L: L, R: R, T: T, B: B }; minX = size; maxX = -1; minY = size; maxY = -1;
     [[L, T], [R, T], [L, B], [R, B]].forEach(function (c) { var a = (c[0] - isoG.offX) / isoG.r2, b = (c[1] - isoG.offY) / (isoG.r2 * ISO_K), tx = (a + b) / 2, ty = (b - a) / 2; minX = Math.min(minX, Math.floor(tx) - 1); maxX = Math.max(maxX, Math.ceil(tx) + 1); minY = Math.min(minY, Math.floor(ty) - 1); maxY = Math.max(maxY, Math.ceil(ty) + 1); });
+    rawX0 = minX; rawX1 = maxX; rawY0 = minY; rawY1 = maxY;
     minX = Math.max(0, minX); minY = Math.max(0, minY); maxX = Math.min(size - 1, maxX); maxY = Math.min(size - 1, maxY);
   }
   try { terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG); } catch (e) { console.error(e); }
@@ -15166,6 +15169,7 @@ function renderVisibleTiles() {
   else for (var vy = minY; vy <= maxY; vy++) for (var vx = minX; vx <= maxX; vx++) {
     if (isoRect) { var qx = isoG.offX + (vx - vy) * isoG.r2, qy = isoG.offY + (vx + vy) * isoG.r2 * ISO_K; if (qx < isoRect.L || qx > isoRect.R || qy < isoRect.T || qy > isoRect.B) continue; } /* v866: off-screen corner of the bounding box - skip before even looking the tile up */
     var vt = mapTileAt(game.state.map, vx, vy); if (vt) visitTile(vt); }
+  try { nbrVisit(rawX0, rawX1, rawY0, rawY1, lod, isoRect, isoG, visitTile); } catch (e) { console.error(e); } /* v1085: the neighbouring kingdoms' land and bases */
   // Drop tiles that scrolled out of the (buffered) visible range — same
   // seen-map-diff idea used for march markers, just over tile ids instead.
   Object.keys(mapTileEls).forEach(function (id) {
@@ -16578,6 +16582,8 @@ function renderBaseWaterStyleBtn() { var b = document.getElementById("devBaseWat
   function off() { try { return localStorage.getItem("ks_patch_off_v1") === "1"; } catch (e) { return false; } }
   function paint() { b.textContent = off() ? "📋 Bases: whole list (old)" : "📦 Bases: by patch"; }
   paint(); b.onclick = function () { try { localStorage.setItem("ks_patch_off_v1", off() ? "0" : "1"); } catch (e) {} paint(); };
+  var rb = document.getElementById("devPatchRebuildBtn"), st = document.getElementById("devPatchRebuildSt"); /* v1085: once for Atlantis (its bases were claimed before patches existed), or after any doubt */
+  if (rb) rb.onclick = function () { if (!window.KS_BACKEND || !KS_BACKEND.call) return; st.textContent = "Rebuilding…"; KS_BACKEND.call("adminRebuildPatches", {}).then(function (r) { st.textContent = "✓ " + r.bases + " bases in " + r.patches + " patches (" + r.wrote + " written, " + r.fixed + " fixed, " + r.removed + " removed)"; }, function (e) { st.textContent = "Failed: " + (e && e.message); }); };
 })();
 (function initWhitecapToggle() { /* v1064 */
   var el = document.getElementById("devWhitecapToggle"); if (!el) return;
@@ -17252,7 +17258,7 @@ function startCitySync() {
       if (applyCityRecord(tileId, doc.data())) changed = true;
       if (occupiedTileIds[tileId]) seen[tileId] = true;
     });
-    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id]) { delete occupiedTileIds[id]; delete citySkinByTile[id]; changed = true; } });
+    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id] && !isForeignTile(id)) { delete occupiedTileIds[id]; delete citySkinByTile[id]; changed = true; } }); /* v1085: neighbours' bases are kept up by their own listeners */
     try { publishMyCitySkin(); } catch (e) {} /* v1012: older city docs get the skin added */
     if (changed) { try { renderVisibleTiles(); } catch (e) {} try { nearBasesSave(); } catch (e) {} } /* v1076: draw bases the moment they arrive (they used to wait for the 1 s game tick) */
   }, function (e) { console.error("City sync error:", e && e.code, e && e.message); });
@@ -17278,6 +17284,7 @@ function patchMode() {
   var off = false; try { off = localStorage.getItem(PATCH_OFF_KEY) === "1"; } catch (e) {}
   return !off && !!cloudDb && window.KS_BACKEND && KS_BACKEND.env === "test" && CURRENT_SERVER_ID !== LEGACY_SERVER_ID;
 }
+function patchWriteMode() { return !!cloudDb && !!window.KS_BACKEND && KS_BACKEND.env === "test"; } /* v1085: on TEST every kingdom (Atlantis too) claims / gives up / re-skins bases through the server, so its patch lists stay right for neighbours looking in */
 function patchIdOfTile(x, y) { return Math.floor(x / PATCH_TILES) + "_" + Math.floor(y / PATCH_TILES); }
 function patchesWanted() {
   var w = {}; Object.keys(patchViewWanted).forEach(function (k) { w[k] = 1; });
@@ -17338,6 +17345,82 @@ function startPatchSync() {
   if (patchSyncStarted) return; patchSyncStarted = true;
   try { mapWorldSizedForTiles = null; renderVisibleTiles(); } catch (e) {} syncPatchSubs(); setInterval(syncPatchSubs, 3000);
 }
+/* ---- v1085: the neighbouring kingdoms, close up (world map plan, phase 4c) ----
+   A neighbour's tiles live just past the edges of our own grid: its tile (x,y) is drawn as (x + dx*n, y + dy*n), and that is also its id here
+   ("-1150,40" etc. - outside 0..n-1, so it can never clash with one of ours). That way the normal drawing (bases, skins, tags, HP, water) works
+   unchanged. Game actions only ever look at our own map, so nothing can be sent across a border (closed until admin controls / events open them).
+   Each neighbour's land comes from its own seed; its bases from its patch lists (servers/<id>/patches, Atlantis: patches/), only the patches on screen. */
+var NBR = {}, nbrSubs = {}, nbrBannerKd = null, nbrBannerT = 0;
+function nbrInit() {
+  var n = mapSizeTiles(); NBR = {};
+  if (!window.KS_BACKEND || KS_BACKEND.env !== "test") return; /* TEST only for now */
+  atlasNeighbours(CURRENT_SERVER_ID).forEach(function (k) { if (!k.id) return; NBR[k.id] = { id: k.id, name: k.name, ox: k.dx * n, oy: k.dy * n, map: new WorldMap(n, seedForServer(k.id), WORLD_MAP_POPULATED_SIZE), prefix: k.id === LEGACY_SERVER_ID ? "" : "servers/" + k.id + "/", cache: {} }; });
+}
+function isForeignTile(id) { if (id == null) return false; var xy = tileXY(id), n = mapSizeTiles(); return xy[0] < 0 || xy[1] < 0 || xy[0] >= n || xy[1] >= n; }
+function nbrOf(gx, gy) { var n = mapSizeTiles(); for (var k in NBR) { var b = NBR[k]; if (gx >= b.ox && gy >= b.oy && gx < b.ox + n && gy < b.oy + n) return b; } return null; }
+function nbrTileAt(gx, gy) { /* a neighbour's tile, as a tile object in our (extended) grid */
+  var b = nbrOf(gx, gy); if (!b) return null; var id = gx + "," + gy, c = b.cache[id]; if (c) return c;
+  var t = b.map.tileAt(gx - b.ox, gy - b.oy); if (!t) return null;
+  if (Object.keys(b.cache).length > 6000) b.cache = {};
+  return (b.cache[id] = { id: id, x: gx, y: gy, type: t.type === "home" ? "empty" : t.type, resourceType: t.resourceType, amountLeft: t.amountLeft, foreign: b.id });
+}
+function nbrVisit(x0, x1, y0, y1, lod, isoRect, isoG, visitTile) {
+  var n = mapSizeTiles();
+  Object.keys(NBR).forEach(function (k) {
+    var b = NBR[k], ax = Math.max(x0, b.ox), bx = Math.min(x1, b.ox + n - 1), ay = Math.max(y0, b.oy), by = Math.min(y1, b.oy + n - 1); if (ax > bx || ay > by) return;
+    if (lod > 0) { /* zoomed out: resources (near zoom only) + bases */
+      var list = lod === 1 ? b.map.resourcesIn(ax - b.ox, bx - b.ox, ay - b.oy, by - b.oy).map(function (t) { return nbrTileAt(t.x + b.ox, t.y + b.oy); }) : [];
+      Object.keys(occupiedTileIds).forEach(function (id) { var xy = tileXY(id); if (xy[0] >= ax && xy[0] <= bx && xy[1] >= ay && xy[1] <= by) { var t = nbrTileAt(xy[0], xy[1]); if (t) list.push(t); } });
+      list.forEach(function (t) { if (t) visitTile(t); }); return;
+    }
+    for (var y = ay; y <= by; y++) for (var x = ax; x <= bx; x++) {
+      if (isoRect) { var qx = isoG.offX + (x - y) * isoG.r2, qy = isoG.offY + (x + y) * isoG.r2 * ISO_K; if (qx < isoRect.L || qx > isoRect.R || qy < isoRect.T || qy > isoRect.B) continue; }
+      var t = nbrTileAt(x, y); if (t) visitTile(t);
+    }
+  });
+  nbrSyncSubs(x0, x1, y0, y1, lod); nbrBanner();
+}
+function nbrSyncSubs(x0, x1, y0, y1, lod) { /* the neighbour patches on screen (normal zooms), like our own */
+  var want = {}, n = mapSizeTiles(), nowMs = Date.now();
+  if (lod <= 1 && cloudDb) Object.keys(NBR).forEach(function (k) {
+    var b = NBR[k], ax = Math.max(x0, b.ox), bx = Math.min(x1, b.ox + n - 1), ay = Math.max(y0, b.oy), by = Math.min(y1, b.oy + n - 1); if (ax > bx || ay > by) return;
+    for (var px = Math.floor((ax - b.ox) / PATCH_TILES); px <= Math.floor((bx - b.ox) / PATCH_TILES); px++) for (var py = Math.floor((ay - b.oy) / PATCH_TILES); py <= Math.floor((by - b.oy) / PATCH_TILES); py++) want[k + "|" + px + "_" + py] = 1;
+  });
+  var keys = Object.keys(want); if (keys.length > 24) keys = keys.slice(0, 24);
+  keys.forEach(function (key) {
+    if (nbrSubs[key]) { nbrSubs[key].wantedAt = nowMs; return; }
+    var k = key.split("|")[0], pid = key.split("|")[1], b = NBR[k], sub = nbrSubs[key] = { wantedAt: nowMs };
+    sub.unsub = cloudDb.doc(b.prefix + "patches/" + pid).onSnapshot(function (snap) { nbrApplyPatch(b, pid, snap && snap.exists && snap.data() ? snap.data().b : null); }, function (e) { console.error("Neighbour patch sync error:", key, e && e.code, e && e.message); });
+  });
+  Object.keys(nbrSubs).forEach(function (key) { if (!want[key] && nowMs - nbrSubs[key].wantedAt > PATCH_LINGER_MS) { try { nbrSubs[key].unsub(); } catch (e) {} delete nbrSubs[key]; } });
+}
+function nbrApplyPatch(b, pid, entries) {
+  var p = pid.split("_"), x0 = +p[0] * PATCH_TILES + b.ox, y0 = +p[1] * PATCH_TILES + b.oy, seen = {}, changed = false;
+  Object.keys(entries || {}).forEach(function (cid) {
+    var e = entries[cid], m = /^(\d+)_(\d+)$/.exec(cid); if (!e || !e.o || !m) return; var gid = (+m[1] + b.ox) + "," + (+m[2] + b.oy); seen[gid] = 1;
+    if (applyCityRecord(gid, { owner: e.o, sk: e.sk, bn: e.bn, hp: e.hp, hpT: e.hpT, burnLeft: e.burnLeft })) changed = true;
+  });
+  Object.keys(occupiedTileIds).forEach(function (id) { if (seen[id]) return; var xy = tileXY(id); if (xy[0] < x0 || xy[0] >= x0 + PATCH_TILES || xy[1] < y0 || xy[1] >= y0 + PATCH_TILES) return; delete occupiedTileIds[id]; delete citySkinByTile[id]; delete cityHp[id]; changed = true; });
+  if (changed) { try { renderVisibleTiles(); } catch (e) {} }
+}
+function nbrBanner() { /* "Entering <kingdom>" when the middle of the screen crosses into another kingdom (Harley: keep it) */
+  var vp = document.getElementById("mapviewport"), world = document.getElementById("mapworld"); if (!vp || !world || mapLod() > 1 || !Object.keys(NBR).length) return;
+  var cx = vp.scrollLeft - (parseFloat(world.style.marginLeft) || 0) + vp.clientWidth / 2, cy = vp.scrollTop - (parseFloat(world.style.marginTop) || 0) + vp.clientHeight / 2, t;
+  if (mapIso) { var g = isoGeom(), a = (cx - g.offX) / g.r2, c = (cy - g.offY) / (g.r2 * ISO_K); t = [Math.round((a + c) / 2), Math.round((c - a) / 2)]; }
+  else { var P = tilePxZ() + gapPxZ(); t = [Math.floor((cx - padPxZ()) / P), Math.floor((cy - padPxZ()) / P)]; }
+  var b = nbrOf(t[0], t[1]), n = mapSizeTiles(), mine = t[0] >= 0 && t[1] >= 0 && t[0] < n && t[1] < n, kd = b ? b.id : mine ? CURRENT_SERVER_ID : null;
+  if (!kd || kd === nbrBannerKd) return;
+  var first = nbrBannerKd === null; nbrBannerKd = kd; if (first && mine) return; /* not on opening the map */
+  var el = document.getElementById("kdBanner"); if (!el) { el = document.createElement("div"); el.id = "kdBanner"; vp.parentNode.appendChild(el); }
+  el.textContent = "Entering " + serverDisplayName(kd); el.classList.add("on"); clearTimeout(nbrBannerT); nbrBannerT = setTimeout(function () { el.classList.remove("on"); }, 2600);
+}
+function foreignTileInfoHtml(id) {
+  var xy = tileXY(id), b = nbrOf(xy[0], xy[1]), owner = occupiedTileIds[id], kd = b ? b.name : "another kingdom", lx = b ? xy[0] - b.ox : xy[0], ly = b ? xy[1] - b.oy : xy[1];
+  var what = owner ? ((owner.indexOf(BOT_OWNER_PREFIX) === 0 && botNameByOwner[owner]) || "A player's base") + (allyTagOf(owner) ? " [" + escapeHtml(allyTagOf(owner)) + "]" : "") : (function () { var t = nbrTileAt(xy[0], xy[1]); return t && t.type === "resource" ? (ITEM_RES_NAME[t.resourceType] || t.resourceType) + " node" : "Open land"; })();
+  return '<div class="kd-foreign"><div class="kd-f-t">' + escapeHtml(what) + ' · ' + escapeHtml(kd) + ' <span class="sub">X:' + lx + ' Y:' + ly + '</span></div>'
+    + '<div class="kd-f-row"><button class="dev-btn" disabled>⚔️ Attack</button><button class="dev-btn" disabled>🛰️ Teleport here</button><button class="dev-btn" disabled>⛏️ Gather</button></div>'
+    + '<div class="kd-f-why">Borders are closed: actions into another kingdom open only through admin controls or an event. Looking is always free.</div></div>';
+}
 /* the patches around a tile, read once (for picking a free spot to start on) */
 function loadPatchesAround(x, y, r) {
   var ids = {}; [[-r, -r], [r, -r], [-r, r], [r, r], [0, 0]].forEach(function (d) { var xx = x + d[0], yy = y + d[1]; if (xx >= 0 && yy >= 0) ids[patchIdOfTile(xx, yy)] = 1; });
@@ -17355,7 +17438,7 @@ function pickRandomUnclaimedEmptyTile() { /* v864: sample random spots instead o
 function claimCityTile(tileId) {
   if (!cloudDb) return Promise.resolve({ ok: false, reason: "no_db" });
   if (isTileTooCloseToCity(tileId)) return Promise.resolve({ ok: false, reason: "too_close" });
-  if (patchMode()) return KS_BACKEND.call("claimCity", { tileId: tileId, sk: myCitySkinId() }).then(function () { occupiedTileIds[tileId] = PLAYER_ID; citySkinByTile[tileId] = myCitySkinId(); return { ok: true }; }, function (e) { return { ok: false, reason: (e && e.message) === "taken" ? "taken" : "busy" }; }); /* v1081 */
+  if (patchWriteMode()) return KS_BACKEND.call("claimCity", { tileId: tileId, sk: myCitySkinId() }).then(function () { occupiedTileIds[tileId] = PLAYER_ID; citySkinByTile[tileId] = myCitySkinId(); return { ok: true }; }, function (e) { return { ok: false, reason: (e && e.message) === "taken" ? "taken" : "busy" }; }); /* v1081 */
   var ref = cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tileId));
   var holder = PLAYER_ID || worldLeaseHolderFallback;
   return ref.acquire({ holder: holder, ttlMs: 6000 }).then(function (res) {
@@ -17373,7 +17456,7 @@ function claimCityTile(tileId) {
 function releaseCityTile(tileId) {
   if (!cloudDb || !tileId) return Promise.resolve();
   delete occupiedTileIds[tileId];
-  if (patchMode()) return KS_BACKEND.call("releaseCity", { tileId: tileId }).catch(function (e) { console.error("Failed to release old city tile:", e && e.message); }); /* v1081 */
+  if (patchWriteMode()) return KS_BACKEND.call("releaseCity", { tileId: tileId }).catch(function (e) { console.error("Failed to release old city tile:", e && e.message); }); /* v1081 */
   return cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tileId)).delete().catch(function (e) { console.error("Failed to release old city tile:", e && e.code, e && e.message); });
 }
 // ---- Dev Tools: generate/destroy fake "other player" cities ----
@@ -17565,7 +17648,7 @@ function destroyBotAlliances(onlyAid) { /* removes bot alliances (all, or one) w
   })).then(function () { return { removed: aids.length }; });
 }
 /* v1081: Dev Tools bot tools write bases directly, so in patch mode an admin's game rebuilds the kingdom's patch lists afterwards */
-function patchRebuildAfter(fn) { return function () { return fn.apply(this, arguments).then(function (r) { if (!patchMode() || !KS_BACKEND.isAdmin) return r; return KS_BACKEND.call("adminRebuildPatches", {}).then(function () { return r; }, function (e) { console.error("patch rebuild failed", e && e.message); return r; }); }); }; }
+function patchRebuildAfter(fn) { return function () { return fn.apply(this, arguments).then(function (r) { if (!patchWriteMode() || !KS_BACKEND.isAdmin) return r; return KS_BACKEND.call("adminRebuildPatches", {}).then(function () { return r; }, function (e) { console.error("patch rebuild failed", e && e.message); return r; }); }); }; }
 generateRandomPlayers = patchRebuildAfter(generateRandomPlayers); destroyAllBotPlayers = patchRebuildAfter(destroyAllBotPlayers); generateBotAlliance = patchRebuildAfter(generateBotAlliance); destroyBotAlliances = patchRebuildAfter(destroyBotAlliances);
 function renderDevBotAllyList() {
   var el = document.getElementById("devBaList"); if (!el) return;
@@ -17794,7 +17877,7 @@ function assignServerForNewPlayer(inviteId) {
 // subscribe to anything — those two read CURRENT_SERVER_ID indirectly via
 // serverPrefix(), so it must be correct before they start.
 function resolveServerAssignment() {
-  function afterResolved() { try { if (nearBasesSeed()) renderVisibleTiles(); } catch (e) {} startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
+  function afterResolved() { try { nbrInit(); mapWorldSizedForTiles = null; } catch (e) { console.error(e); } try { if (nearBasesSeed()) renderVisibleTiles(); } catch (e) {} startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
   if (IS_GUEST_LINK || !cloudDb) {
     // Guests ride along the legacy world; offline/no-db has no multiplayer
     // concept to assign anyway. CURRENT_SERVER_ID is already correct
@@ -25075,6 +25158,7 @@ function renderTileInfoInner() {
     el.innerHTML = '<span class="sub">Click a tile on the map to inspect it and send troops.</span>';
     return;
   }
+  if (isForeignTile(selectedTile)) { lastArmyFormTile = null; currentArmyInputs = null; el.innerHTML = foreignTileInfoHtml(selectedTile); return; } /* v1085: borders are closed */
   var tile = mapTileById(game.state.map, selectedTile);
   if (!tile) {
     lastArmyFormTile = null; currentArmyInputs = null;
