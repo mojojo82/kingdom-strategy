@@ -133,6 +133,22 @@ const P = (s) => R + s;
     const moved = (await getDoc(doc(A.db, K("cities/12_12")))).data(); assert.strictEqual(moved.owner, A.uid); assert.strictEqual(moved.hp, hit.hp); assert.strictEqual(moved.sk, "castle");
     assert.ok(!(await getDoc(doc(A.db, P("cities/12_12")))).exists(), "nothing written into Atlantis");
   });
+  await t("v1081: bases by patch - the server keeps patches/<px>_<py> in step (claim, hit, teleport, skin, give up), players can only read them", async () => {
+    const K = (x) => P("servers/server1/" + x), pb = async (id) => { const d = await getDoc(doc(B.db, K("patches/" + id))); return d.exists() ? d.data().b : null; };
+    await Cc.call("claimCity", { srv: "server1", tileId: "70,70", sk: "tower" });
+    assert.deepStrictEqual(await pb("1_1"), { "70_70": { o: Cc.uid, sk: "tower" } });
+    await fnErr(B.call("claimCity", { srv: "server1", tileId: "70,70" }), /taken/);
+    const h = await B.call("hitBase", { srv: "server1", home: "30,30", tileId: "70,70" });
+    assert.strictEqual((await pb("1_1"))["70_70"].hp, h.after);
+    await Cc.call("relocateCity", { srv: "server1", from: "70,70", to: "120,10" });
+    assert.strictEqual(await pb("1_1"), null, "empty patch removed"); assert.strictEqual((await pb("2_0"))["120_10"].hp, h.after);
+    await Cc.call("setCitySkin", { srv: "server1", tileId: "120,10", sk: "castle" }); assert.strictEqual((await pb("2_0"))["120_10"].sk, "castle");
+    await fnErr(Cc.call("releaseCity", { srv: "server1", tileId: "120,10" }), /damaged/);
+    await denied(setDoc(doc(Cc.db, K("patches/2_0")), { b: {} }));
+    const rb = await ADM.call("adminRebuildPatches", { srv: "server1" }); assert.ok(rb.bases >= 3, JSON.stringify(rb));
+    assert.strictEqual((await pb("0_0"))["30_30"].o, B.uid, "rebuild picks up a base written straight to cities (the earlier test)"); assert.strictEqual((await pb("2_0"))["120_10"].o, Cc.uid);
+    await fnErr(B.call("adminRebuildPatches", { srv: "server1" }), /admin only|permission/);
+  });
   await t("world chat: post as yourself only, max 500 chars, no edits", async () => {
     await setDoc(doc(A.db, P("worldchat/1_" + A.uid)), { pid: A.uid, name: "A", text: "hi", ts: 1 });
     await denied(setDoc(doc(A.db, P("worldchat/2_" + A.uid)), { pid: B.uid, name: "B", text: "fake", ts: 2 }));

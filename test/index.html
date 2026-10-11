@@ -2968,6 +2968,7 @@
                   </label>
                 </div>
                 <div class="dev-tools-row"><span class="dev-tools-hint">Base water look (all players):</span><button class="dev-btn" id="devBaseWaterStyleBtn">🌊 Base water: New</button></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint">Other kingdoms' bases (this device, reload to apply):</span><button class="dev-btn" id="devPatchModeBtn">📦 Bases: by patch</button></div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devWhitecapToggle" autocomplete="off"> World map: whitecaps on the open sea
@@ -9614,6 +9615,7 @@ function otherCityIconSrc(tileId) { return CITY_SKINS[citySkinIdAt(tileId)].src;
 function publishMyCitySkin() { /* write my skin onto my city doc (only when it differs from what's there) */
   var home = game.state.homeTileId; if (!cloudDb || !home || occupiedTileIds[home] !== PLAYER_ID) return;
   var sk = myCitySkinId(); if (citySkinByTile[home] === sk) return; citySkinByTile[home] = sk;
+  if (patchMode()) { KS_BACKEND.call("setCitySkin", { tileId: home, sk: sk }).catch(function (e) { delete citySkinByTile[home]; console.error("skin publish failed", e && e.message); }); return; } /* v1081 */
   cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(home)).update({ sk: sk }).catch(function (e) { delete citySkinByTile[home]; console.error("skin publish failed", e && e.message); });
 }
 var BUILDING_ICON = {
@@ -11292,7 +11294,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1080"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1081"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15011,6 +15013,7 @@ function renderVisibleTiles() {
   try { forestRender(minX, maxX, minY, maxY, isoRect, isoG); } catch (e) { console.error(e); }
   var lod = mapLod();
   try { noteWorldViewChunks(minX, maxX, minY, maxY, lod); } catch (e) { console.error(e); } /* v919 */
+  try { notePatchView(minX, maxX, minY, maxY, lod); } catch (e) { console.error(e); } /* v1081 */
   if (lod !== mapLodLast) { Object.keys(mapTileEls).forEach(function (id) { mapTileEls[id].remove(); }); mapTileEls = {}; tilePool.forEach(function (d) { d.remove(); }); tilePool = []; mapLodLast = lod; } /* v862: rebuild tiles when the detail level changes */
   if (lod > 0) world.style.setProperty("--lodk", String(Math.max(1, 7 / tilePxZ())));
   world.classList.toggle("notags", lod > 0 && tilePxZ() < 13); /* v1009: bases drawn small at LOD 1 - their alliance tags would pile up, so they go below 13 px tiles */
@@ -16542,6 +16545,12 @@ function renderBaseWaterStyleBtn() { var b = document.getElementById("devBaseWat
   var b = document.getElementById("devBaseWaterStyleBtn"); if (!b) return; renderBaseWaterStyleBtn();
   b.onclick = function () { setBaseWaterStyle(baseWaterStyle === "classic" ? "new" : "classic", true); };
 })();
+(function initPatchModeBtn() { /* v1081: whole-list vs by-patch base loading, for comparing (Atlantis always uses the whole list for now) */
+  var b = document.getElementById("devPatchModeBtn"); if (!b) return;
+  function off() { try { return localStorage.getItem("ks_patch_off_v1") === "1"; } catch (e) { return false; } }
+  function paint() { b.textContent = off() ? "📋 Bases: whole list (old)" : "📦 Bases: by patch"; }
+  paint(); b.onclick = function () { try { localStorage.setItem("ks_patch_off_v1", off() ? "0" : "1"); } catch (e) {} paint(); };
+})();
 (function initWhitecapToggle() { /* v1064 */
   var el = document.getElementById("devWhitecapToggle"); if (!el) return;
   el.checked = whitecapsOn; el.onchange = function () { whitecapsOn = el.checked; try { localStorage.setItem(WHITECAP_KEY, whitecapsOn ? "1" : "0"); } catch (e) {} whitecapSync(); };
@@ -17206,21 +17215,94 @@ function startCitySync() {
   citySyncStarted = true;
   try { startSkinAlignSync(); } catch (e) {}
   try { startMapIsoSync(); } catch (e) {}
+  if (patchMode()) { startPatchSync(); return; } /* v1081: bases by map patch */
   cloudDb.collection(serverPrefix() + "cities").onSnapshot(function (qsnap) {
     var seen = {}, changed = false;
     qsnap.docs.forEach(function (doc) {
       if (!doc.exists) return;
-      var data = doc.data();
       var tileId = docIdToTileId(doc.id);
-      if (data && data.owner && (occupiedTileIds[tileId] !== data.owner || (citySkinByTile[tileId] || "") !== (CITY_SKINS[data.sk] ? data.sk : ""))) changed = true; /* v1076 */
-      if (data && data.owner) { occupiedTileIds[tileId] = data.owner; seen[tileId] = true; if (CITY_SKINS[data.sk]) citySkinByTile[tileId] = data.sk; else delete citySkinByTile[tileId]; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
-      if (data && typeof data.hp === "number") cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; else delete cityHp[tileId]; /* v894: base HP */
-      if (tileId === game.state.homeTileId && data && data.raidedAt) applyRaidIfNew(data.raidedAt);
+      if (applyCityRecord(tileId, doc.data())) changed = true;
+      if (occupiedTileIds[tileId]) seen[tileId] = true;
     });
     Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id]) { delete occupiedTileIds[id]; delete citySkinByTile[id]; changed = true; } });
     try { publishMyCitySkin(); } catch (e) {} /* v1012: older city docs get the skin added */
     if (changed) { try { renderVisibleTiles(); } catch (e) {} try { nearBasesSave(); } catch (e) {} } /* v1076: draw bases the moment they arrive (they used to wait for the 1 s game tick) */
   }, function (e) { console.error("City sync error:", e && e.code, e && e.message); });
+}
+/* one base's shared record -> the local lookups (owner, skin, bot name, HP / fire, raid on my base). Returns true if something visible changed. */
+function applyCityRecord(tileId, data) {
+  var changed = false;
+  if (data && data.owner && (occupiedTileIds[tileId] !== data.owner || (citySkinByTile[tileId] || "") !== (CITY_SKINS[data.sk] ? data.sk : ""))) changed = true; /* v1076 */
+  if (data && data.owner) { occupiedTileIds[tileId] = data.owner; if (CITY_SKINS[data.sk]) citySkinByTile[tileId] = data.sk; else delete citySkinByTile[tileId]; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
+  if (data && typeof data.hp === "number") { var ch = cityHp[tileId]; if (!ch || ch.hp !== data.hp || ch.hpT !== (data.hpT || 0) || ch.burnLeft !== (data.burnLeft || 0)) changed = true; cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; } else delete cityHp[tileId]; /* v894: base HP */
+  if (tileId === game.state.homeTileId && data && data.raidedAt) applyRaidIfNew(data.raidedAt);
+  return changed;
+}
+
+/* ---- v1081: bases by map patch (world map plan, phase 2) ----
+   Instead of the whole kingdom's base list, the game listens only to the 50x50-tile patches on screen plus one ring around them, and always to
+   the patch with your own base. Patches you scroll away from stop updating after PATCH_LINGER_MS but stay in memory, so scrolling back is instant.
+   The server keeps patches/<px>_<py> in step with the bases (functions). On for every kingdom except Atlantis on TEST; Dev Tools can switch it off on this device. */
+var PATCH_TILES = 50, PATCH_SUB_MAX = 30, PATCH_LINGER_MS = 20000, PATCH_OFF_KEY = "ks_patch_off_v1";
+var patchSubs = {}, patchViewWanted = {}, patchSyncStarted = false;
+function patchMode() {
+  var off = false; try { off = localStorage.getItem(PATCH_OFF_KEY) === "1"; } catch (e) {}
+  return !off && !!cloudDb && window.KS_BACKEND && KS_BACKEND.env === "test" && CURRENT_SERVER_ID !== LEGACY_SERVER_ID;
+}
+function patchIdOfTile(x, y) { return Math.floor(x / PATCH_TILES) + "_" + Math.floor(y / PATCH_TILES); }
+function patchesWanted() {
+  var w = {}; Object.keys(patchViewWanted).forEach(function (k) { w[k] = 1; });
+  var h = game.state.homeTileId; if (h) { var xy = tileXY(h); w[patchIdOfTile(xy[0], xy[1])] = 1; }
+  return w;
+}
+function notePatchView(minX, maxX, minY, maxY, lod) { /* called by renderVisibleTiles with the visible tile range */
+  if (!patchSyncStarted) return;
+  var v = {};
+  if (lod <= 1 && maxX >= minX && maxY >= minY) {
+    var n = Math.ceil(mapSizeTiles() / PATCH_TILES) - 1;
+    var px0 = Math.max(0, Math.floor(minX / PATCH_TILES) - 1), px1 = Math.min(n, Math.floor(maxX / PATCH_TILES) + 1), py0 = Math.max(0, Math.floor(minY / PATCH_TILES) - 1), py1 = Math.min(n, Math.floor(maxY / PATCH_TILES) + 1); /* + one ring */
+    for (var px = px0; px <= px1; px++) for (var py = py0; py <= py1; py++) v[px + "_" + py] = 1;
+  }
+  var a = Object.keys(v).sort().join(","), b = Object.keys(patchViewWanted).sort().join(",");
+  if (a !== b) { patchViewWanted = v; syncPatchSubs(); }
+}
+function applyPatchData(pid, b) {
+  var p = pid.split("_"), x0 = +p[0] * PATCH_TILES, y0 = +p[1] * PATCH_TILES, seen = {}, changed = false;
+  Object.keys(b || {}).forEach(function (cid) {
+    var e = b[cid], tileId = docIdToTileId(cid); if (!e || !e.o) return; seen[tileId] = 1;
+    if (applyCityRecord(tileId, { owner: e.o, sk: e.sk, bn: e.bn, hp: e.hp, hpT: e.hpT, burnLeft: e.burnLeft, raidedAt: e.raidedAt })) changed = true;
+  });
+  Object.keys(occupiedTileIds).forEach(function (id) { /* bases in this patch that are gone (incl. remembered ones from v1076) */
+    if (seen[id] || occupiedTileIds[id] === "?") return; var xy = tileXY(id);
+    if (xy[0] < x0 || xy[0] >= x0 + PATCH_TILES || xy[1] < y0 || xy[1] >= y0 + PATCH_TILES) return;
+    if (id === game.state.homeTileId && occupiedTileIds[id] === PLAYER_ID) return; /* my own base: the server copy can be a moment behind my claim */
+    delete occupiedTileIds[id]; delete citySkinByTile[id]; delete cityHp[id]; changed = true;
+  });
+  if (changed) { try { renderVisibleTiles(); } catch (e) {} try { nearBasesSave(); } catch (e) {} }
+  try { publishMyCitySkin(); } catch (e) {}
+}
+function syncPatchSubs() {
+  if (!patchSyncStarted || !cloudDb) return;
+  var want = patchesWanted(), nowMs = Date.now(), n = Object.keys(patchSubs).length;
+  function dropSub(id) { try { patchSubs[id].unsub && patchSubs[id].unsub(); } catch (e) {} delete patchSubs[id]; n--; }
+  Object.keys(want).forEach(function (id) {
+    if (patchSubs[id]) { patchSubs[id].wantedAt = nowMs; return; }
+    if (!/^\d+_\d+$/.test(id)) return;
+    if (n >= PATCH_SUB_MAX) { var old = Object.keys(patchSubs).filter(function (k) { return !want[k]; }).sort(function (a, b) { return patchSubs[a].wantedAt - patchSubs[b].wantedAt; })[0]; if (old == null) return; dropSub(old); }
+    var sub = patchSubs[id] = { wantedAt: nowMs, unsub: null }; n++;
+    sub.unsub = cloudDb.doc(serverPrefix() + "patches/" + id).onSnapshot(function (snap) { sub.loaded = true; applyPatchData(id, snap && snap.exists && snap.data() ? snap.data().b : null); },
+      function (e) { console.error("Patch sync error:", id, e && e.code, e && e.message); });
+  });
+  Object.keys(patchSubs).forEach(function (id) { if (!want[id] && nowMs - patchSubs[id].wantedAt >= PATCH_LINGER_MS) dropSub(id); });
+}
+function startPatchSync() {
+  if (patchSyncStarted) return; patchSyncStarted = true;
+  try { mapWorldSizedForTiles = null; renderVisibleTiles(); } catch (e) {} syncPatchSubs(); setInterval(syncPatchSubs, 3000);
+}
+/* the patches around a tile, read once (for picking a free spot to start on) */
+function loadPatchesAround(x, y, r) {
+  var ids = {}; [[-r, -r], [r, -r], [-r, r], [r, r], [0, 0]].forEach(function (d) { var xx = x + d[0], yy = y + d[1]; if (xx >= 0 && yy >= 0) ids[patchIdOfTile(xx, yy)] = 1; });
+  return Promise.all(Object.keys(ids).map(function (id) { return cloudDb.doc(serverPrefix() + "patches/" + id).get().then(function (snap) { applyPatchData(id, snap.exists && snap.data() ? snap.data().b : null); }); }));
 }
 function pickRandomUnclaimedEmptyTile() { /* v864: sample random spots instead of listing every tile in the world */
   var n = mapSizeTiles();
@@ -17234,6 +17316,7 @@ function pickRandomUnclaimedEmptyTile() { /* v864: sample random spots instead o
 function claimCityTile(tileId) {
   if (!cloudDb) return Promise.resolve({ ok: false, reason: "no_db" });
   if (isTileTooCloseToCity(tileId)) return Promise.resolve({ ok: false, reason: "too_close" });
+  if (patchMode()) return KS_BACKEND.call("claimCity", { tileId: tileId, sk: myCitySkinId() }).then(function () { occupiedTileIds[tileId] = PLAYER_ID; citySkinByTile[tileId] = myCitySkinId(); return { ok: true }; }, function (e) { return { ok: false, reason: (e && e.message) === "taken" ? "taken" : "busy" }; }); /* v1081 */
   var ref = cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tileId));
   var holder = PLAYER_ID || worldLeaseHolderFallback;
   return ref.acquire({ holder: holder, ttlMs: 6000 }).then(function (res) {
@@ -17251,6 +17334,7 @@ function claimCityTile(tileId) {
 function releaseCityTile(tileId) {
   if (!cloudDb || !tileId) return Promise.resolve();
   delete occupiedTileIds[tileId];
+  if (patchMode()) return KS_BACKEND.call("releaseCity", { tileId: tileId }).catch(function (e) { console.error("Failed to release old city tile:", e && e.message); }); /* v1081 */
   return cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tileId)).delete().catch(function (e) { console.error("Failed to release old city tile:", e && e.code, e && e.message); });
 }
 // ---- Dev Tools: generate/destroy fake "other player" cities ----
@@ -17441,6 +17525,9 @@ function destroyBotAlliances(onlyAid) { /* removes bot alliances (all, or one) w
     }).then(function () { return cloudDb.doc(allyPath("alliances/" + aid)).delete(); });
   })).then(function () { return { removed: aids.length }; });
 }
+/* v1081: Dev Tools bot tools write bases directly, so in patch mode an admin's game rebuilds the kingdom's patch lists afterwards */
+function patchRebuildAfter(fn) { return function () { return fn.apply(this, arguments).then(function (r) { if (!patchMode() || !KS_BACKEND.isAdmin) return r; return KS_BACKEND.call("adminRebuildPatches", {}).then(function () { return r; }, function (e) { console.error("patch rebuild failed", e && e.message); return r; }); }); }; }
+generateRandomPlayers = patchRebuildAfter(generateRandomPlayers); destroyAllBotPlayers = patchRebuildAfter(destroyAllBotPlayers); generateBotAlliance = patchRebuildAfter(generateBotAlliance); destroyBotAlliances = patchRebuildAfter(destroyBotAlliances);
 function renderDevBotAllyList() {
   var el = document.getElementById("devBaList"); if (!el) return;
   var aids = Object.keys(ALLY.list || {}).filter(function (k) { return ALLY.list[k].bot; });
@@ -17464,6 +17551,7 @@ function ensureHomeTileAssigned() {
   // live subscription's first delivery isn't guaranteed synchronous, and
   // picking against a still-empty cache here would risk colliding with an
   // existing player's claim that just hasn't arrived yet.
+  if (patchMode()) return attempt(6); /* v1081: no whole-kingdom read - each try reads just the patches around its spot */
   return cloudDb.collection(serverPrefix() + "cities").get().then(function (qsnap) {
     qsnap.docs.forEach(function (doc) {
       if (doc.exists && doc.data() && doc.data().owner) occupiedTileIds[docIdToTileId(doc.id)] = doc.data().owner;
@@ -17471,6 +17559,13 @@ function ensureHomeTileAssigned() {
     return attempt(6);
   });
   function attempt(triesLeft) {
+    if (patchMode()) {
+      var c0 = pickRandomUnclaimedEmptyTile(); if (!c0) return Promise.resolve();
+      return loadPatchesAround(c0.x, c0.y, 6).then(function () {
+        if (occupiedTileIds[c0.id] || isTileTooCloseToCity(c0.id)) return triesLeft > 0 ? attempt(triesLeft - 1) : undefined;
+        return claimCityTile(c0.id).then(function (res) { if (res.ok) { game.setHomeTile(c0.id); persist(); return; } occupiedTileIds[c0.id] = occupiedTileIds[c0.id] || "?"; if (triesLeft > 0) return attempt(triesLeft - 1); });
+      });
+    }
     var candidate = pickRandomUnclaimedEmptyTile();
     if (!candidate) return Promise.resolve(); // no empty tiles left at all — extreme edge case, leave unassigned
     return claimCityTile(candidate.id).then(function (res) {

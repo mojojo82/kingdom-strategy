@@ -10,6 +10,8 @@ const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules
 const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 const { makeCrowd, removeCrowd } = require("./crowd.js");
 const arg = (i, d) => (process.argv[i] === undefined ? d : +process.argv[i]);
+const PATCH = process.env.MODE === "patch"; /* v1081: MODE=patch measures bases by patch (phase 2); default = the whole-list way */
+const C = require(path.join(ROOT, "functions/core.js")), ADMIN = require(path.join(ROOT, "functions/admins.json"))[0];
 const BASES = arg(2, 1000), MARCHES = arg(3, 300), CHANGES = arg(4, 150);
 const HOOK = `;(function () { /* load meter: wraps listeners and one-off reads */
   var M = window.__ksLoad = { reads: 0, listens: {} }, db = firebase.firestore();
@@ -43,6 +45,7 @@ const r1 = (x) => Math.round(x * 10) / 10;
     await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
     await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
     await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    await ctx.addInitScript((off) => { try { localStorage.setItem("ks_patch_off_v1", off ? "1" : "0"); } catch (e) {} }, !PATCH);
     const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message)); pages.push(P);
     await P.goto("https://mojojo82.github.io/kingdom-strategy/test/?k=vanaheim"); await P.waitForSelector("#ksAuth .box");
     await P.fill("#ksE", email); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
@@ -68,7 +71,9 @@ const r1 = (x) => Math.round(x * 10) / 10;
       if (t && t.type === "empty" && !occupiedTileIds[t.id] && !isTileTooCloseToCity(t.id)) { occupiedTileIds[t.id] = "?"; held.push(t.id); out.push({ id: t.id }); } }
     held.forEach((id) => { delete occupiedTileIds[id]; }); return out; }, BASES);
   const crowd = makeCrowd(tiles, { prefix: "envs/test/servers/server1/", marches: MARCHES });
-  Object.assign(store, crowd); await notifyAll(); await A.waitForTimeout(3000);
+  Object.assign(store, crowd);
+  if (PATCH) { const r = JSON.parse(await call("adminRebuildPatches", JSON.stringify({ env: "test", srv: "server1" }), JSON.stringify({ uid: ADMIN, token: { firebase: { sign_in_provider: "google.com" } } }))); out.rebuild = r.data || r; }
+  await notifyAll(); await A.waitForTimeout(3000);
   out.crowdDocs = Object.keys(crowd).length;
 
   await A.context().close(); pages.splice(pages.indexOf(A), 1); /* only one game running while measuring */
@@ -76,8 +81,9 @@ const r1 = (x) => Math.round(x * 10) / 10;
   const B = await player("load-b@test.dev");
   const sB = await snapOf(B);
   const cityKey = Object.keys(sB.listens).find((k) => /server1\/cities$/.test(k)), marchKey = Object.keys(sB.listens).find((k) => /server1\/marches$/.test(k));
-  out.crowdedOpen = { reads: sB.reads, cityDocs: sB.listens[cityKey].first, marchDocs: sB.listens[marchKey].first,
-    cityFirstMs: r1(sB.listens[cityKey].ms[0] || 0), marchFirstMs: r1(sB.listens[marchKey].ms[0] || 0), longTasks: sB.longTasks, longTaskMs: sB.longTaskMs,
+  const baseKeys = Object.keys(sB.listens).filter((k) => /server1\/(cities$|patches\/)/.test(k)), sum = (f) => baseKeys.reduce((a, k) => a + f(sB.listens[k]), 0);
+  out.crowdedOpen = { reads: sB.reads, baseListeners: baseKeys.length, baseReads: sum((l) => l.billed), cityDocs: cityKey ? sB.listens[cityKey].first : null, marchDocs: sB.listens[marchKey].first,
+    baseFirstMs: r1(sum((l) => l.ms[0] || 0)), marchFirstMs: r1(sB.listens[marchKey].ms[0] || 0), longTasks: sB.longTasks, longTaskMs: sB.longTaskMs,
     topListens: Object.entries(sB.listens).map(([k, l]) => [k.replace("envs/test/", ""), l.billed]).sort((x, y) => y[1] - x[1]).slice(0, 8) };
   out.crowdedFpsIdle = await fps(B, 4000);
   out.drawn = await B.evaluate(() => ({ marches: foreignMarchList(vnow()).length + game.state.marches.length, shipMarkers: Object.keys(marchMarkerEls).length, routeArrows: Object.keys(marchPathEls).length }));
@@ -99,19 +105,21 @@ const r1 = (x) => Math.round(x * 10) / 10;
   const fpsDuring = fps(B, Math.max(4000, CHANGES * 60));
   for (let i = 0; i < CHANGES; i++) {
     const kind = i % 3, now = Date.now();
-    if (kind === 0) { const k = owners[i % owners.length]; store[k] = Object.assign({}, store[k], { hp: 50 + (i % 50), hpT: now, burnLeft: 0 }); }
+    if (kind === 0) { const k = owners[(i * 7919) % owners.length]; store[k] = Object.assign({}, store[k], { hp: 50 + (i % 50), hpT: now, burnLeft: 0 });
+      if (PATCH) { const cid = k.split("/").pop(), pk = "envs/test/servers/server1/patches/" + C.patchIdOfCity(cid), pd = store[pk] || { b: {} }; pd.b = Object.assign({}, pd.b); pd.b[cid] = C.patchEntry(store[k]); store[pk] = Object.assign({}, pd, { t: now }); } } /* what the server does on a hit */
     else if (kind === 1) { const src = store[marchKeys[i % marchKeys.length]]; if (src) store[src.ownerId ? "envs/test/servers/server1/marches/" + src.ownerId + "_lx" + i : "x"] = Object.assign({}, src, { mid: "lx" + i, arriveAt: now + 120000, actionEnd: now + 125000, returnAt: now + 245000, updatedAt: now }); }
     else { const k = marchKeys[i % marchKeys.length]; delete store[k]; }
     await notifyAll(); await B.waitForTimeout(40);
   }
   await B.waitForTimeout(1500);
   const after = await snapOf(B);
-  const ms = [].concat(after.listens[cityKey].ms.slice(before.listens[cityKey].ms.length), after.listens[marchKey].ms.slice(before.listens[marchKey].ms.length));
-  out.perChange = { readsForThisPlayer: after.reads - before.reads, readsPerChange: r1((after.reads - before.reads) / CHANGES), updates: ms.length,
+  const ms = [].concat(...Object.keys(after.listens).filter((k) => /server1\/(cities$|patches\/|marches$)/.test(k)).map((k) => after.listens[k].ms.slice(before.listens[k] ? before.listens[k].ms.length : 0)));
+  const baseReadsDuring = Object.keys(after.listens).filter((k) => /server1\/(cities$|patches\/)/.test(k)).reduce((a, k) => a + after.listens[k].billed - (before.listens[k] ? before.listens[k].billed : 0), 0);
+  out.perChange = { readsForThisPlayer: after.reads - before.reads, readsPerChange: r1((after.reads - before.reads) / CHANGES), baseChanges: Math.ceil(CHANGES / 3), baseReadsForThem: baseReadsDuring, updates: ms.length,
     msMedian: r1(pct(ms, 0.5)), msP95: r1(pct(ms, 0.95)), msMax: r1(Math.max(0, ...ms)), longTasks: after.longTasks - before.longTasks, longTaskMs: after.longTaskMs - before.longTaskMs, fps: await fpsDuring };
   out.errors = errs.slice(0, 5);
   out.removed = removeCrowd(store);
-  fs.writeFileSync(path.join(__dirname, "baseline-results.json"), JSON.stringify(out, null, 1));
+  fs.writeFileSync(path.join(__dirname, PATCH ? "patch-results.json" : "baseline-results.json"), JSON.stringify(out, null, 1));
   console.log(JSON.stringify(out, null, 1));
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

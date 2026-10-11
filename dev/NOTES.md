@@ -1370,3 +1370,16 @@
 - tools/build-rules.js: the kingdom collections (cities, worldchat, terrain, mapdecor, alliances, allyindex, chunks, marches, world) are one block (KINGDOM), placed at the root (Atlantis) and again inside match /servers/{sid} for every other kingdom, for live and test. Players, purchases, config, bans etc. stay global. Checked: no line of the old rules is lost.
 - Added patches/{d} (bases by map patch, phase 2): read for signed-in players, written by the server only.
 - CI emulator test (real rules + functions): servers/server1 claim / HP-field denial / marches, chunks, allyindex, chat writes / terrain + patches write denied / hitBase in server1 / other_kingdom / bad_kingdom / relocate in server1 keeps HP and skin, nothing written into Atlantis.
+
+## v1081 - world map plan phase 2: bases by patch (TEST, kingdoms other than Atlantis)
+- The kingdom map is cut into 50x50-tile patches. patches/<px>_<py> = { b: { "<x>_<y>": { o owner, sk, bn, hp, hpT, burnLeft, raidedAt } }, t }.
+- Server (functions, TEST env only - patchesOn): every base change made by the server rewrites that base's patch entry in the SAME transaction (hitBase, repairBase, extinguishBase, extinguishAllyBase, relocateCity = both tiles). New callables used in patch mode: claimCity, releaseCity (refused if damaged, like the rules), setCitySkin, and admin-only adminRebuildPatches {srv} (rebuild from the bases; reports wrote/fixed/removed). Patches are server-written only (rules, v1080). No Firestore trigger needed (those still wait on the 3 IAM grants).
+- Game: patchMode() = TEST + not Atlantis + not switched off (Dev Tools "📦 Bases: by patch", this device, reload). Listens to the patches on screen + one ring (computed in renderVisibleTiles via notePatchView, at the near/middle zoom), always the patch with your base; max 30 listeners; unwanted ones stop after 20 s but their bases stay in memory. applyPatchData also removes bases that are gone from that patch (incl. remembered ones). Claim / give up / skin go through the server. A new player's start spot reads only the patches around each try (no whole-kingdom read). Dev Tools bot tools trigger an admin rebuild afterwards.
+- Atlantis unchanged (whole list) until phase 5. Marches unchanged (phase 3).
+- Gate (g259_patches, 1,000 bots in Vanaheim): at home and 6 random pans the bases in every loaded patch match the server exactly - 0 missing, 0 extra, 0 owners twice; another player's teleport next to you and their attack on a bot on your screen show up; Atlantis still uses the whole list.
+- Reads (dev/load/baseline.js vs MODE=patch, 1,000 bots + 300 marches; results in dev/load/baseline-results.json / patch-results.json):
+  - Opening the game, bases: 2,003 reads (new player; ~1,001 returning) -> 16.
+  - 50 base changes spread over the kingdom: 50 reads for this player -> 2 (only changes in patches near you).
+  - Marches unchanged (300 on open, every change to everyone) - phase 3.
+- CI emulator test extended (claim / taken / hit / teleport across patches / skin / damaged release / patch write denied / admin rebuild / non-admin refused).
+- Tests: g259 new; g200, g250, g255, g256, g257, g258 pass; functions core tests pass.

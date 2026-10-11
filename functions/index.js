@@ -63,6 +63,21 @@ const walletRef = (R, uid) => db.doc(R + "players/" + uid + "/wallet/main");
 /* v1079: kingdoms. d.srv = the kingdom the game is in ("server0" = Atlantis, the original unprefixed paths; others live under servers/<id>/). */
 function kingdomRoot(R, srv) { const s = String(srv || "server0"); if (!/^server\d{1,4}$/.test(s)) throw new C.GameError("invalid-argument", "bad_kingdom"); return s === "server0" ? R : R + "servers/" + s + "/"; }
 const cityRef = (R, tileId, srv) => db.doc(kingdomRoot(R, srv) + "cities/" + C.cityDocId(tileId));
+/* v1081: bases by map patch. On TEST, every server change to a base also rewrites its patch entry in the same transaction (base and patch can't disagree).
+   patchesRead = reads (must come before any write in the transaction), patchPut = new state of one base, patchesWrite = the writes. */
+const patchesOn = (R) => R === "envs/test/";
+async function patchesRead(tx, R, srv, tileIds) {
+  if (!patchesOn(R)) return null;
+  const K = kingdomRoot(R, srv), P = {};
+  tileIds.forEach((t) => { const cid = C.cityDocId(t), pid = C.patchIdOfCity(cid); if (pid && !P[pid]) P[pid] = { ref: db.doc(K + "patches/" + pid), b: null }; });
+  for (const pid of Object.keys(P)) { const s = await tx.get(P[pid].ref); P[pid].b = Object.assign({}, (s.exists && s.data() && s.data().b) || {}); }
+  return P;
+}
+function patchPut(P, tileId, city) {
+  if (!P) return; const cid = C.cityDocId(tileId), pe = P[C.patchIdOfCity(cid)]; if (!pe) return;
+  const e = C.patchEntry(city); if (e) pe.b[cid] = e; else delete pe.b[cid]; pe.dirty = true;
+}
+function patchesWrite(tx, P) { if (!P) return; Object.keys(P).forEach((pid) => { const pe = P[pid]; if (!pe.dirty) return; if (Object.keys(pe.b).length) tx.set(pe.ref, { b: pe.b, t: Date.now() }); else tx.delete(pe.ref); }); }
 /* Borders: an action on someone else's base needs your own base in that same kingdom (cross-kingdom actions are closed until admin controls / events open them). */
 async function homeInKingdom(tx, R, uid, d) {
   if (d.srv === undefined && d.home === undefined) return; /* the LIVE game (older version) sends neither and only knows Atlantis - unchanged for it */
@@ -89,16 +104,18 @@ function ownCityCheck(city, uid) { if (!city || city.owner !== uid) throw new C.
 exports.extinguishBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
   const cs = await tx.get(cityRef(R, d.tileId, d.srv)), ws = await tx.get(walletRef(R, uid));
   const city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
-  const r = C.decideExtinguish(city, Date.now()), left = C.needGems(ws.data(), r.cost);
+  const r = C.decideExtinguish(city, Date.now()), left = C.needGems(ws.data(), r.cost), P = await patchesRead(tx, R, d.srv, [d.tileId]);
   tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "extinguish", d.tileId);
+  patchPut(P, d.tileId, Object.assign({}, city, r.cityPatch)); patchesWrite(tx, P);
   return { gems: left, city: r.cityPatch };
 }));
 
 exports.repairBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
   const cs = await tx.get(cityRef(R, d.tileId, d.srv)), ws = await tx.get(walletRef(R, uid));
   const city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
-  const r = C.decideRepair(city, Date.now()), left = C.needGems(ws.data(), r.cost);
+  const r = C.decideRepair(city, Date.now()), left = C.needGems(ws.data(), r.cost), P = await patchesRead(tx, R, d.srv, [d.tileId]);
   tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "repair", d.tileId);
+  patchPut(P, d.tileId, Object.assign({}, city, r.cityPatch)); patchesWrite(tx, P);
   return { gems: left, city: r.cityPatch };
 }));
 
@@ -114,8 +131,8 @@ exports.extinguishAllyBase = wrap(async (req, uid, R, d) => db.runTransaction(as
   if (city.owner === uid) throw new C.GameError("failed-precondition", "use_extinguishBase");
   await homeInKingdom(tx, R, uid, d);
   if (!(await sameAlliance(tx, R, uid, city.owner, d.srv))) throw new C.GameError("permission-denied", "not_allies");
-  const r = C.decideExtinguish(city, Date.now(), { free: true });
-  tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch);
+  const r = C.decideExtinguish(city, Date.now(), { free: true }), P = await patchesRead(tx, R, d.srv, [d.tileId]);
+  tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); patchPut(P, d.tileId, Object.assign({}, city, r.cityPatch)); patchesWrite(tx, P);
   return { city: r.cityPatch };
 }));
 
@@ -128,8 +145,8 @@ exports.hitBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) =>
   if (city.owner && !String(city.owner).startsWith("bot_") && await sameAlliance(tx, R, uid, city.owner, d.srv)) throw new C.GameError("failed-precondition", "ally_city");
   const limRef = db.doc(R + "players/" + uid + "/wallet/hits_" + (d.srv && d.srv !== "server0" ? d.srv + "_" : "") + C.cityDocId(d.tileId));
   const lim = await tx.get(limRef); C.checkHitCooldown(lim.exists ? lim.data().at : 0, Date.now());
-  const now = Date.now(), r = C.decideHit(city, now);
-  tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); tx.set(limRef, { at: now });
+  const now = Date.now(), r = C.decideHit(city, now), P = await patchesRead(tx, R, d.srv, [d.tileId]);
+  tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); tx.set(limRef, { at: now }); patchPut(P, d.tileId, Object.assign({}, city, r.cityPatch)); patchesWrite(tx, P);
   return { before: r.before, after: r.after, zeroed: r.zeroed, city: r.cityPatch };
 }));
 
@@ -219,9 +236,46 @@ exports.relocateCity = wrap(async (req, uid, R, d) => db.runTransaction(async (t
   if (ts.exists && ts.data() && ts.data().owner) throw new C.GameError("failed-precondition", "taken");
   const moved = { owner: uid, claimedAt: Date.now() };
   ["hp", "hpT", "burnLeft", "raidedAt", "sk"].forEach((k) => { if (from[k] !== undefined) moved[k] = from[k]; });
-  tx.set(toRef, moved); tx.delete(fromRef);
+  const P = await patchesRead(tx, R, d.srv, [d.from, d.to]);
+  tx.set(toRef, moved); tx.delete(fromRef); patchPut(P, d.from, null); patchPut(P, d.to, moved); patchesWrite(tx, P);
   return { ok: true };
 }));
+
+/* v1081: in patch mode the game claims, gives up and re-skins its base through the server, so the patch lists stay right (patches are server-written only). */
+const SKIN_RE = /^[a-z0-9_-]{1,24}$/;
+exports.claimCity = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
+  const ref = cityRef(R, d.tileId, d.srv), cs = await tx.get(ref), cur = cs.exists ? cs.data() : null;
+  if (cur && cur.owner && cur.owner !== uid) throw new C.GameError("failed-precondition", "taken");
+  if (cur && cur.owner === uid) return { ok: true, already: true };
+  const P = await patchesRead(tx, R, d.srv, [d.tileId]), city = { owner: uid, claimedAt: Date.now() };
+  if (d.sk && SKIN_RE.test(String(d.sk))) city.sk = String(d.sk);
+  tx.set(ref, city); patchPut(P, d.tileId, city); patchesWrite(tx, P);
+  return { ok: true };
+}));
+exports.releaseCity = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
+  const ref = cityRef(R, d.tileId, d.srv), cs = await tx.get(ref), city = cs.exists ? cs.data() : null;
+  if (!city) return { ok: true }; ownCityCheck(city, uid);
+  if (["hp", "hpT", "burnLeft", "raidedAt"].some((k) => city[k] !== undefined)) throw new C.GameError("failed-precondition", "damaged"); /* same as the rules: a damaged base can't just be dropped */
+  const P = await patchesRead(tx, R, d.srv, [d.tileId]); tx.delete(ref); patchPut(P, d.tileId, null); patchesWrite(tx, P);
+  return { ok: true };
+}));
+exports.setCitySkin = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
+  if (!SKIN_RE.test(String(d.sk || ""))) throw new C.GameError("invalid-argument", "bad_skin");
+  const ref = cityRef(R, d.tileId, d.srv), cs = await tx.get(ref), city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
+  const P = await patchesRead(tx, R, d.srv, [d.tileId]); tx.update(ref, { sk: String(d.sk) }); patchPut(P, d.tileId, Object.assign({}, city, { sk: String(d.sk) })); patchesWrite(tx, P);
+  return { ok: true };
+}));
+/* Admin: rebuild a kingdom's patch lists from its bases (after Dev Tools bot tools write bases directly, or as a check). Returns what changed. */
+exports.adminRebuildPatches = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req); if (!patchesOn(R)) throw new C.GameError("failed-precondition", "patches are TEST only for now");
+  const K = kingdomRoot(R, d.srv), cs = await db.collection(K + "cities").get(), ps = await db.collection(K + "patches").get();
+  const want = C.buildPatches(cs.docs.map((x) => ({ id: x.id, data: x.data() }))), have = {}; ps.docs.forEach((x) => { have[x.id] = (x.data() || {}).b || {}; });
+  let wrote = 0, removed = 0, fixed = 0; const ops = [], now = Date.now();
+  Object.keys(want).forEach((pid) => { if (JSON.stringify(want[pid]) !== JSON.stringify(have[pid] || null)) { ops.push([db.doc(K + "patches/" + pid), { b: want[pid], t: now }]); wrote++; if (have[pid]) fixed++; } });
+  Object.keys(have).forEach((pid) => { if (!want[pid]) { ops.push([db.doc(K + "patches/" + pid), null]); removed++; } });
+  for (let i = 0; i < ops.length; i += 400) { const batch = db.batch(); ops.slice(i, i + 400).forEach(([r, v]) => { if (v) batch.set(r, v); else batch.delete(r); }); await batch.commit(); } /* a batch takes at most 500 writes */
+  return { bases: cs.docs.length, patches: Object.keys(want).length, wrote, fixed, removed };
+});
 
 // ---- purchases ----
 // Delivers a paid pack exactly once per payment receipt: purchases/<provider>_<receipt> + wallet + ledger, all in one transaction.

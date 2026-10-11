@@ -481,5 +481,18 @@ function secSummary(rows, bans, now) {
   return out;
 }
 
-module.exports = { AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+/* v1081: bases by map patch (world map plan, phase 2). A kingdom's map is cut into 50x50-tile patches; patches/<px>_<py> = { b: { "<x>_<y>": entry }, t }.
+   An entry is what other players need to draw a base: owner, skin, bot name, HP / fire. */
+const PATCH_TILES = 50;
+function patchIdOfCity(cid) { const m = /^(\d+)_(\d+)$/.exec(String(cid)); return m ? Math.floor(+m[1] / PATCH_TILES) + "_" + Math.floor(+m[2] / PATCH_TILES) : null; }
+function patchEntry(city) {
+  if (!city || !city.owner) return null;
+  const e = { o: String(city.owner) };
+  [["sk", "sk"], ["bn", "bn"], ["hp", "hp"], ["hpT", "hpT"], ["burnLeft", "burnLeft"], ["raidedAt", "raidedAt"]].forEach(([k, j]) => { if (city[k] !== undefined && city[k] !== null) e[j] = city[k]; });
+  return e;
+}
+function buildPatches(cities) { /* cities: [{id, data}] -> { pid: { cid: entry } } */
+  const P = {}; cities.forEach((c) => { const pid = patchIdOfCity(c.id), e = patchEntry(c.data); if (!pid || !e) return; (P[pid] = P[pid] || {})[c.id] = e; }); return P;
+}
+module.exports = { PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
