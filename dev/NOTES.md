@@ -1448,3 +1448,7 @@
 - HERO_SKILL_COSTS = [7, 40, 110, 280] (1->2, 2->3, 3->4, 4->5); max a skill = 437 (was 40/72/130/233 = 475). Power from skill levels follows the same table, so already-upgraded skills count a little less power.
 - Still open: books from Conquest (levels / bosses) - to look at together with the RP-rate / Chapter 5 balance sim Harley asked for.
 - Test: new g265_skill_books (costs; 15 books -> one first upgrade, 8 left, not enough for the next; three upgrades = 157).
+- (after v1089) RP rate sim (dev/balance/rp_ch5.js, results/rp_ch5.json). Only Fortress research affects Conquest (the normal tree is troops/economy/growth). Fortress I bought cheapest-level-first with a growing RP budget; Conquest climbed until stuck; Academy rate 3 RP/s per level.
+  - Gareth+Lyra Lv20 TH10 (a "stuck in chapter 5" player): wall 5-10 with no research, 5-18 at 300k RP, 6-11 at 1M (past chapter 5), 7-8 at 3M.
+  - 4 heroes Lv30: 6-13 -> 7-16 (1M) -> 8-14 (3M) -> 11-1 (10M). 5 heroes Lv40: 8-4 -> 8-19 (1M) -> 9-20 (3M) -> 11-11 (10M).
+  - Getting through chapter 5 needs about 1M RP of Fortress research: timers 13.9 h; earning it at Academy 10 takes 8.9 h now (timers are the only barrier - matches Harley), 17.7 h at half rate, 35.5 h at a quarter. Same ratio at every budget (RP time ~0.6-1.1x the timers now; ~1.3-2.3x at half).
