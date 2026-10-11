@@ -1314,7 +1314,7 @@
 - World map plan, Harley's decisions (11 Oct):
   - Test kingdom = Vanaheim (server1), placed bottom-left / left of Atlantis (the "Kingdom 1" placeholder is top-left).
   - Testers join via a plain link that anyone can pass on; no special access.
-  - Cross-kingdom actions are OFF by default; borders open via admin controls or special events.
+  - Cross-kingdom ACTIONS are OFF by default (attack/teleport/rally/gather); borders open via admin controls or special events. Viewing is never restricted: anyone can pan, explore and zoom into any kingdom.
   - Bots: keep or clear decided at the time. Fake crowd may be written to the TEST Firebase, clearly labelled as bots so it can be pulled.
   - Patch size 50x50.
   - Plan page: dev/plans/world-map-plan.html (artifact https://claude.ai/artifact/HYPo5V9Z9MSWoiXptPkgDQ).
