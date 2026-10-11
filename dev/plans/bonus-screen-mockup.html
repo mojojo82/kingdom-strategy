@@ -188,12 +188,12 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
        view "side": axis points up (the ruby, seen from the side: flat table on top, point down). view "face": axis points at the viewer (table facing you). */
     function circle(n, sx, sy) { var r = []; for (var j = 0; j < n; j++) { var a = j / n * Math.PI * 2; r.push([Math.cos(a) * sx, Math.sin(a) * sy]); } return r; }
     var SHAPES = {
-      /* ruby: round brilliant from the side - crown 12, table 18 wide, pavilion 46 deep on a 38-wide girdle (as drawn) */
-      atk: { view: "side", ring: circle(16, 1, 1), pts: [[0, -2.42], [0.5, -1.2], [1, 0], [1, 0.06], [0.75, 0.38], [0.47, 0.63], [0, 0.63]], rgb: [216, 31, 63], spin: 0.21, start: 0 },
-      /* emerald: step cut, tall rectangle with clipped corners (46 x 64 as drawn), three steps down to a flat table */
-      hp: { view: "face", ring: [[0.72, -0.72], [0.72, 0.72], [0.44, 1], [-0.44, 1], [-0.72, 0.72], [-0.72, -0.72], [-0.44, -1], [0.44, -1]], pts: [[0, -0.42], [0.55, -0.36], [0.82, -0.2], [1, 0], [1, 0.06], [0.88, 0.2], [0.68, 0.32], [0, 0.32]], rgb: [23, 178, 103], spin: 0.18, start: 0 },
-      /* sapphire: oval brilliant, tall oval (48 x 64 as drawn) */
-      def: { view: "face", ring: circle(16, 0.75, 1), pts: [[0, -0.55], [0.55, -0.25], [1, 0], [1, 0.05], [0.72, 0.24], [0.45, 0.34], [0, 0.34]], rgb: [42, 99, 232], spin: 0.24, start: 0 }
+      /* very basic, few facets. ruby: 8 sides, from the side - flat table on top, straight cone down to a point */
+      atk: { view: "side", ring: circle(8, 1, 1), pts: [[0, -2.42], [1, 0], [0.5, 0.6], [0, 0.6]], rgb: [216, 31, 63], spin: 0.21, start: Math.PI / 8 },
+      /* emerald: tall octagon (rectangle with clipped corners), one bevel each side, same front and back */
+      hp: { view: "face", ring: [[0.72, -0.72], [0.72, 0.72], [0.44, 1], [-0.44, 1], [-0.72, 0.72], [-0.72, -0.72], [-0.44, -1], [0.44, -1]], pts: [[0, -0.3], [0.72, -0.3], [1, 0], [0.72, 0.3], [0, 0.3]], rgb: [23, 178, 103], spin: 0.18, start: 0 },
+      /* sapphire: tall oval, 10 sides, one bevel each side, same front and back so it stays upright as it turns */
+      def: { view: "face", ring: circle(10, 0.75, 1).map(function (p) { return [p[1] * 0.75 / 1, p[0] / 0.75]; }), pts: [[0, -0.3], [0.6, -0.3], [1, 0], [0.6, 0.3], [0, 0.3]], rgb: [42, 99, 232], spin: 0.24, start: 0 }
     };
     function norm(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
     var LIGHT = norm([0.5, 0.7, 1]), HALF = norm([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
@@ -204,10 +204,15 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
         var r = S.pts[i][0], h = S.pts[i][1], u = S.ring[j][0] * r, w = S.ring[j][1] * r;
         V.push(S.view === "side" ? [u, h, w] : [u, w, h]);
       }
-      for (i = 0; i < n - 1; i++) for (j = 0; j < m; j++) {
-        var j2 = (j + 1) % m, q = [i * m + j, i * m + j2, (i + 1) * m + j2, (i + 1) * m + j];
-        if (S.pts[i][0] === 0) q = [q[0], q[2], q[3]]; else if (S.pts[i + 1][0] === 0) q = [q[0], q[1], q[2]];
-        F.push(q);
+      for (i = 0; i < n - 1; i++) {
+        var flatTop = S.pts[i + 1][0] === 0 && S.pts[i + 1][1] === S.pts[i][1], flatBot = S.pts[i][0] === 0 && S.pts[i][1] === S.pts[i + 1][1], ring = [];
+        if (flatTop) { for (j = 0; j < m; j++) ring.push(i * m + j); F.push(ring); continue; }            /* a flat table: one face, no spokes */
+        if (flatBot) { for (j = m - 1; j >= 0; j--) ring.push((i + 1) * m + j); F.push(ring); continue; }
+        for (j = 0; j < m; j++) {
+          var j2 = (j + 1) % m, q = [i * m + j, i * m + j2, (i + 1) * m + j2, (i + 1) * m + j];
+          if (S.pts[i][0] === 0) q = [q[0], q[2], q[3]]; else if (S.pts[i + 1][0] === 0) q = [q[0], q[1], q[2]];
+          F.push(q);
+        }
       }
       /* centre it and work out a scale that fits the canvas at every turn */
       var y0 = Infinity, y1 = -Infinity, rr = 0;
@@ -245,7 +250,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
         var lit = back ? 0.35 + 0.35 * dif : 0.45 + 0.75 * dif, col = S.rgb.map(function (ch) { return Math.min(255, Math.round(ch * lit + 255 * spec * 0.5)); });
         c.beginPath(); F.f.forEach(function (i, m) { var p = P[i]; if (m) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath();
         c.fillStyle = "rgba(" + col.join(",") + "," + (back ? 0.9 : 0.86) + ")"; c.fill();
-        if (!back) { c.strokeStyle = "rgba(255,255,255," + (0.1 + 0.25 * spec) + ")"; c.lineWidth = 0.6; c.stroke(); }
+        if (!back && F.f.length !== 3) { c.strokeStyle = "rgba(255,255,255," + (0.1 + 0.25 * spec) + ")"; c.lineWidth = 0.6; c.stroke(); }
       });
     }
     var last = performance.now();
