@@ -1285,3 +1285,7 @@
 - Harley: power jumped from ~500k to 24.5M after v1069.
 - Cause: power (and arena power, and account USD value) counted fortress research at its NEW price. Normal research has counted at its old price (techLegacyCost) since the v1015 repricing, precisely so power wouldn't explode. I missed that in v1069.
 - Fix: fortressLegacyCost(key, level) = new cost x 1,916,769 / 100M (the old full Fortress I tree / the new one). Each level keeps its share of the tree, and a full tree is worth what it was. A maxed Fortress I or III adds ~61.3M power, the same as before v1069. Used in powerFromFortressTech, fortressUsdOf and arena power. g253 now checks maxed-tree power for I and III. Passes.
+- (after v1071) New sim dev/balance/f1vf3_ladder.js: Fortress I vs III with EQUAL research spent on each tree, at 13 steps from 0 to 100M (trees filled row by row). F1 win %, 40 seeds x both orders:
+  - No heroes: F3 wins early (F1 5% at 0, 35% at 200k), even ~1M (54%), then F1 leads (85-94% from 5M).
+  - 1 hero Lv20: F1 never above 16%. 3 heroes Lv20: 0% until 10M, then 16%. 3 heroes Lv40: 0% until 20M, rising to 34% at max. 5 heroes Lv40: at most 5%. 5 heroes Lv80: 0% at every step.
+  - So Fortress I never has an early window. F3 is ahead from the first point spent whenever heroes are in, and heroes, not tree depth, decide it.
