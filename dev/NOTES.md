@@ -1302,3 +1302,7 @@
 - Conquest: cardT1ArmyMul(state) multiplies hero damage (idleAttackerDamage, so skills too) and cannon bullets when the Conquest fortress is Fortress I.
 - How players get it is still open (Harley is leaning towards a Conquest boss first-clear; cards from achievements were discussed). No card art yet.
 - Test: g254_cannon_doctrine (text in slot 17; Conquest x1.7 on F1, x1 on F3; World PvP fresh F1 vs fresh F3 with 5 heroes Lv40: 0/10 without the card, 10/10 with it; does nothing for an F3 attacker). g245, g246, g253 pass. The run.js meta warning is unchanged (pre-existing; that check has no cards).
+
+## v1073 - Cannon Doctrine adds itself to the shared card list (TEST)
+- Harley: why not just name the card yourself? Card text lives in the shared catalog on Firebase (assetitems/cardcatalog, admin-write only). It overrides code defaults, and we don't read or write his Firebase from here.
+- Like Drop Signal: when an admin opens the game (cardCatalogSettle) and no card is named "Cannon Doctrine", it's written into slot 17 if that's free, else the first free slot, and the catalog is pushed, so every player sees it. g254 extended (admin whose slot 17 is taken -> placed in a free slot, catalog saved). Passes.

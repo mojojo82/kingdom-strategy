@@ -1,4 +1,4 @@
-/* v1072: Cannon Doctrine card - text in card slot 17, +70% damage in Conquest only on a Fortress I, and in World PvP it turns an early Fortress I vs Fortress III loss into a win. Run: node dev/simfork/g254_cannon_doctrine.js */
+/* v1072/v1073: Cannon Doctrine card - text in card slot 17 (or an admin's game adds it to the shared list), +70% damage in Conquest only on a Fortress I, and in World PvP it turns an early Fortress I vs Fortress III loss into a win. Run: node dev/simfork/g254_cannon_doctrine.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -33,7 +33,16 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     let wNo = 0, wCard = 0, wCardOnF3 = 0; for (let s = 1; s <= 10; s++) { if (fight(mk("base"), mk("t3"), s, false)) wNo++; if (fight(mk("base"), mk("t3"), s, true)) wCard++; if (fight(mk("t3"), mk("base"), s, true)) wCardOnF3++; }
     r.pvp = { noCard: wNo, card: wCard, cardOnF3: wCardOnF3 };
     st.equippedCards = []; return r; });
+  /* v1073: an admin whose shared card list already uses slot 17 gets Cannon Doctrine put in the first free slot, and the list is saved */
+  o.admin = await P.evaluate(async () => { const K = window.KS_BACKEND; const was = [K.isAdmin, K.adminChecked]; K.isAdmin = true; K.adminChecked = true;
+    const cat = []; for (let i = 0; i < CARD_COUNT; i++) cat.push({ name: "", type: "", effect: "", narrative: "" }); cat[0] = { name: "Iron Vanguard", type: "", effect: "x", narrative: "" }; cat[16] = { name: "Something Else", type: "", effect: "y", narrative: "" };
+    cardCatalogRaw = cat; cardCatalogSettle(); await new Promise((r) => setTimeout(r, 1500));
+    const idx = game.state.cards.findIndex((c) => (c.name || "").toLowerCase() === "cannon doctrine"); K.isAdmin = was[0]; K.adminChecked = was[1];
+    return { idx, slot17: game.state.cards[16].name }; });
+  o.pushed = Object.entries(store).some(([k, v]) => /cardcatalog/.test(k) && JSON.stringify(v).indexOf("Cannon Doctrine") >= 0);
   console.log(JSON.stringify(o), errs);
+  assert.ok(o.admin.idx >= 0 && o.admin.idx !== 16 && o.admin.slot17 === "Something Else", "goes into a free slot when 17 is taken");
+  assert.ok(o.pushed, "saved to the shared card list");
   assert.deepStrictEqual(o.card, ["Cannon Doctrine", "Fortress I"], "card text in slot 17");
   assert.ok(o.conquest[1] > o.conquest[0] && Math.abs(o.conquest[1] - o.conquest[0] * 1.7) <= 1, "Conquest: +70% on Fortress I (rounded)");
   assert.strictEqual(o.conquest[2], o.conquest[0], "Conquest: nothing on Fortress III");
