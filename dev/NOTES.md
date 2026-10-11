@@ -1518,3 +1518,6 @@
   fortship_base (foot 3, scale 0.8 - fits a base spot), fortship_large (foot 4, ~2 bases long), fortship_huge (foot 6, ~3 bases long - Harley: 3 bases for now; 4-5 would need a bigger render to stay sharp at max zoom).
 - Placement: fw 1 (hull spans the footprint diamond), fx 0.5 / fy 0.6 (middle of the hull at the waterline), aspect 0.6298. Purely decoration like the other map sprites.
 - Checked on a 430x932 map next to a base: dev/simfork/fortship_sizes.png. At max zoom on a high-res phone the huge one is ~1.6x stretched (slightly soft); re-render at 3000-4000 px wide to fix.
+
+## v1099 - fortress ship sprite: Harley's ChatGPT 2D-painted version (TEST)
+- Harley ran his Rhino render through ChatGPT's 2D filter (bold outlines, cel shading, gold trim, red diamond banners, glowing windows). Original art/originals/fortress_ship_iso_2d.png; drone removed (separate piece), cropped 1332x787 -> 1240x733 webp (151 KB). FORT_SHIP_SRC swapped, aspect 0.5911; same 3 sizes / placement numbers. Screenshot dev/simfork/fortship_sizes.png.

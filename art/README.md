@@ -24,3 +24,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | sword_shrine_bg.png | Dark stone shrine with an altar, from ChatGPT, as sent | 1024x1536 | SOP_SHRINE (v1096): 640x960 webp (69 KB), Sword of Power top half; its altar (x 345-680, top face y ~852) takes the sword tip |
 | stone_pedestal.png | Stone pedestal, as sent (white background) | 1254x1254 | not in the game (used in the concept, replaced by the shrine's own altar) |
 | fortress_ship_iso.png | Fortress ship rendered by Harley in Rhino at ~35 deg (transparent background, with the small drone above it) | 1689x931 | v1098: map sprite FORT_SHIP_SRC (drone removed, 1240x781 webp), 3 sizes in the paint sprite list (base, ~2 bases, ~3 bases) |
+| fortress_ship_iso_2d.png | The same fortress ship after Harley's ChatGPT 2D-paint filter (with the drone) | 1688x932 | v1099: FORT_SHIP_SRC (drone removed, 1240x733 webp) - the 3 map sprite sizes use this one |
