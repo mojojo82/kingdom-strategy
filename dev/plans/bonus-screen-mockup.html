@@ -148,7 +148,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
     var b = document.createElement("div"); b.className = "bar"; b.innerHTML = '<i id="bar_' + L.k + '" style="background:' + L.col + '"></i>'; trackEl.appendChild(b);
     document.getElementById("up_" + L.k).addEventListener("click", function () {
       var c = cost(st[L.k]); if (st.own < c) return;
-      st.own -= c; st[L.k] += 1; say(L.name + " Bonus Lv " + st[L.k] + "  (+" + PER + "%)"); draw();
+      st.own -= c; st[L.k] += 1; if (window.gemShake) window.gemShake(L.k); say(L.name + " Bonus Lv " + st[L.k] + "  (+" + PER + "%)"); draw();
     });
   });
   var toastT;
@@ -225,12 +225,16 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       var cv = document.getElementById("g3_" + k), ctx = cv && cv.getContext && cv.getContext("2d"); if (!ctx) return;
       var dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth || 94, h = cv.clientHeight || 92;
       cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); ctx.scale(dpr, dpr);
-      gems.push({ ctx: ctx, w: w, h: h, S: SHAPES[k], M: build(SHAPES[k]), ang: SHAPES[k].start });
+      gems.push({ k: k, ctx: ctx, w: w, h: h, S: SHAPES[k], M: build(SHAPES[k]), ang: SHAPES[k].start, shakeAt: -1e9 });
       cv.parentNode.classList.add("has3d");
     });
     if (!gems.length) return;
+    /* upgrade shake: a quick side-to-side wobble that dies out over ~0.45 s */
+    window.gemShake = function (k) { if (still) return; gems.forEach(function (g) { if (g.k === k) g.shakeAt = performance.now(); }); };
     function draw1(g) {
-      var c = g.ctx, S = g.S, ca = Math.cos(g.ang), sa = Math.sin(g.ang), cx = g.w / 2, cy = g.h * 0.5, P = [], W = [];
+      var shk = (performance.now() - g.shakeAt) / 1000, sx = 0, sy = 0;
+      if (shk >= 0 && shk < 0.45) { var dec = 1 - shk / 0.45; sx = Math.sin(shk * 70) * 4 * dec; sy = Math.cos(shk * 55) * 1.5 * dec; }
+      var c = g.ctx, S = g.S, ca = Math.cos(g.ang), sa = Math.sin(g.ang), cx = g.w / 2 + sx, cy = g.h * 0.5 + sy, P = [], W = [];
       var size = Math.min(g.w * 0.38 / g.M.rad, g.h * 0.38 / g.M.halfH);
       g.M.V.forEach(function (v) {
         /* spin about the vertical axis only - the gem stays straight */
