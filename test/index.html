@@ -2110,6 +2110,10 @@
   #trainPop .tg-hero canvas.tg-emb { mix-blend-mode:screen; pointer-events:none; }
   #trainPop .tg-shrine { position:absolute; left:0; top:0; width:100%; max-width:none; height:auto; pointer-events:none; user-select:none; }
   #trainPop .tg-glow { position:absolute; left:0; top:0; width:10px; height:10px; border-radius:50%; pointer-events:none; mix-blend-mode:screen; background:radial-gradient(closest-side, rgba(255,140,50,.75), rgba(200,70,10,.3) 55%, rgba(0,0,0,0)); }
+  /* v1097: TEST-only view switch for Harley (admin): "Full" = the whole shrine (top half takes the spare height), "Close" = a short top half (60% of the width) like a small phone */
+  #trainPop .tg-box.tg-compact { height:auto; max-height:94vh; }
+  #trainPop .tg-box.tg-compact .tg-hero { flex:0 0 auto; height:calc(min(400px, 96vw) * 0.6); }
+  #trainPop .tg-view { position:absolute; right:10px; bottom:8px; z-index:3; border:1px solid #b98a4c; background:rgba(23,15,9,.8); color:#f5e2c0; font-weight:800; font-size:11px; border-radius:999px; padding:4px 10px; cursor:pointer; }
   #trainPop .tg-hint { position:absolute; left:14px; top:40px; font-size:10.5px; color:#9fb1cc; pointer-events:none; z-index:3; }
   #trainPop .tg-err { position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:20px; font-size:13px; color:#9fb1cc; }
   #trainPop .tg-panel { flex:0 0 auto; display:flex; flex-direction:column; gap:8px; padding:10px 10px 12px; background:radial-gradient(120% 60% at 50% 0%, #3b2a1b 0%, #24180f 55%, #170f09 100%); border-top:2px solid #b98a4c; box-shadow:inset 0 10px 18px -10px rgba(0,0,0,.7); }
@@ -11452,7 +11456,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1096"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1097"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -27353,7 +27357,7 @@ function sopSwordCreate(els) {
     gl.useProgram(pr); swordBufs.forEach(function (sb) { gl.bindBuffer(gl.ARRAY_BUFFER, sb.b); gl.enableVertexAttribArray(sb.l); gl.vertexAttribPointer(sb.l, sb.n, gl.FLOAT, false, 0, 0); }); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
     gl.uniform1f(U.uFire, fireOn ? flick * (1 + 0.5 * flare) : 0); gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    var cam = [0, 0.15, 4.5], P = persp(0.62, W / Math.max(1, H), 0.1, 20), V = look(cam, [0, 0.0, 0]);
+    var sc0 = Math.max(W / 1024, H / 1536), tipY = Math.min(0, Math.max(H - 1536 * sc0, H - 0.151 * W - 852 * sc0)) + 852 * sc0, uu = sc0 * 335 / (1.25 * 0.95), fy = 2 * Math.atan(H / (2 * uu * 4.5)), ty = (tipY - H / 2) / uu - 1, cam = [0, ty, 4.5], P = persp(fy, W / Math.max(1, H), 0.1, 20), V = look(cam, [0, ty, 0]); /* v1097: the SHRINE sets the framing (Harley's approved concept screenshot): it fills the width so both columns and torches show, the altar sits ~15% of the width above the bottom edge (higher if the picture would run out at the top), and the camera is worked out so the sword is the approved size for that altar and its tip lands exactly on it. Same look on PC and every phone. */
     var c = Math.cos(ang), s = Math.sin(ang), Mx = [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1];
     gl.uniformMatrix4fv(U.uM, false, new Float32Array(Mx)); gl.uniformMatrix4fv(U.uVP, false, new Float32Array(mul(P, V))); gl.uniform3fv(U.uCam, cam);
     gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
@@ -27408,7 +27412,7 @@ function trainOpen() {
       return '<div class="tg-lane"><div class="tg-obj"><div class="glow" style="background:' + U.col + '"></div><canvas id="tgGem_' + k + '"></canvas></div><div class="tg-name">' + U.name + ' BONUS</div><div class="tg-lv" id="tgLv_' + k + '"></div>' +
         '<div class="tg-tot" style="color:' + U.col + '" id="tgTot_' + k + '"></div><div class="tg-nx">next: +' + TRAIN_PER_LEVEL + '%</div><div class="tg-cost" id="tgCost_' + k + '"></div><button class="tg-up" type="button" data-tup="' + k + '">Upgrade</button></div>'; }).join("");
     pop.innerHTML = '<div class="tg-box"><div class="tg-hero"><img class="tg-shrine" alt="" draggable="false" src="' + SOP_SHRINE + '"><div class="tg-glow"></div><canvas class="tg-sw" aria-label="The Sword of Power"></canvas><canvas class="tg-emb" aria-hidden="true"></canvas>' +
-      '<div class="tg-top"><span class="tg-t">Sword of Power</span><button class="tg-x" type="button" aria-label="Close">✕</button></div><div class="tg-hint">drag to turn · tap to stoke</div><div class="tg-err">The sword needs WebGL, which is switched off on this device.</div></div><div class="tg-panel">' +
+      '<div class="tg-top"><span class="tg-t">Sword of Power</span><button class="tg-x" type="button" aria-label="Close">✕</button></div><div class="tg-hint">drag to turn · tap to stoke</div><button class="tg-view" type="button" style="display:none"></button><div class="tg-err">The sword needs WebGL, which is switched off on this device.</div></div><div class="tg-panel">' +
       '<div class="tg-own">' + ico("essence") + '<div><div class="n" id="tgOwn">0</div><div class="l">Essence owned</div></div><div class="src">From: Conquest chapters,<br>Gauntlet every 10 floors</div></div>' +
       '<div class="tg-lanes">' + lanes + '</div>' +
       '<div class="tg-ms"><div class="h"><b id="tgMsT"></b><span id="tgMsLow"></span></div><div class="tg-track">' + TRAIN_LANES.map(function (k) { return '<div class="tg-bar"><i id="tgBar_' + k + '" style="background:' + TRAIN_UI[k].col + '"></i></div>'; }).join("") + '</div>' +
@@ -27425,15 +27429,19 @@ function trainOpen() {
       if (t.closest && t.closest("#tgClaim")) { var c = game.trainClaimMilestone();
         if (c.ok) { if (trainSword) trainSword.flare(1.4); trainSay("Milestone! +" + c.bonus + "% ATK, HP and DEF + " + c.reward.tickets + " tickets, " + c.reward.books + " books, " + c.reward.general_1h + " speedups"); persist(); try { renderStats(); } catch (er) {} }
         trainRender(); return; }
+      if (t.closest && t.closest(".tg-view")) { var bx = pop.querySelector(".tg-box"), on = !bx.classList.contains("tg-compact"); bx.classList.toggle("tg-compact", on); try { localStorage.setItem("ks_sop_view", on ? "close" : "full"); } catch (er) {} trainViewLabel(); return; }
       if (t.closest && t.closest(".tg-dev")) { e.preventDefault(); game.state.training.essence += 100; persist(); trainRender(); return; }
     });
   }
   try { game.trainSync(); } catch (e) {}
   var dv = pop.querySelector(".tg-dev"); if (dv) dv.style.display = (typeof assetIsAdmin === "function" && assetIsAdmin()) ? "block" : "none";
+  var vb = pop.querySelector(".tg-view"), isAdm = typeof assetIsAdmin === "function" && assetIsAdmin(); if (vb) vb.style.display = isAdm ? "block" : "none";
+  var vClose = false; try { vClose = isAdm && localStorage.getItem("ks_sop_view") === "close"; } catch (er) {} pop.querySelector(".tg-box").classList.toggle("tg-compact", vClose); trainViewLabel();
   pop.style.display = "flex"; trainRender(); trainGemsStart();
   if (!trainSword) { var hero = pop.querySelector(".tg-hero"); try { trainSword = sopSwordCreate({ hero: hero, cv: hero.querySelector(".tg-sw"), emb: hero.querySelector(".tg-emb"), shrine: hero.querySelector(".tg-shrine"), glow: hero.querySelector(".tg-glow"), err: hero.querySelector(".tg-err") }); } catch (e) { trainSword = null; } }
   if (trainSword) trainSword.start();
 }
+function trainViewLabel() { var pop = document.getElementById("trainPop"), vb = pop && pop.querySelector(".tg-view"); if (vb) vb.textContent = "View: " + (pop.querySelector(".tg-box").classList.contains("tg-compact") ? "Close" : "Full") + " ⇄"; }
 function trainClose() { var pop = document.getElementById("trainPop"); if (pop) pop.style.display = "none"; if (trainSword) trainSword.stop(); if (trainRaf) cancelAnimationFrame(trainRaf); trainRaf = 0; }
 function trainSay(t) { var e = document.getElementById("tgToast"); if (!e) return; e.textContent = t; clearTimeout(trainToastT); trainToastT = setTimeout(function () { e.textContent = ""; }, 2200); }
 function trainRender() {
