@@ -33,7 +33,7 @@ p { margin: 0; }
 .obj .glow { position: absolute; inset: 8px 4px 18px; border-radius: 50%; filter: blur(14px); opacity: .45; }
 .lane .name { font-weight: 800; font-size: 12.5px; color: var(--sand); letter-spacing: .04em; }
 .lane .lv { font-family: var(--display); font-size: 15px; color: var(--gold); }
-.lane .tot { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lane .tot { font-size: 14px; white-space: nowrap; font-weight: 800; font-variant-numeric: tabular-nums; }
 .lane .nx { font-size: 11px; color: var(--sand2); }
 .cost { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 3px; }
 .cost .ic { width: 15px; height: 15px; }
@@ -93,7 +93,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       </div>
       <div class="toast" id="toast" aria-live="polite"></div>
     </div>
-    <div class="dev"><button type="button" id="give">+200 Essence (test)</button><button type="button" id="reset">Reset</button></div>
+    <div class="dev"><button type="button" id="give">+200 Essence (test)</button><button type="button" id="big">Late game (test)</button><button type="button" id="reset">Reset</button></div>
     <div class="hint">Tap Upgrade to try it. Get all three lanes to the milestone and the gold Claim button shows up.</div>
   </div>
 
@@ -156,7 +156,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
     LANES.forEach(function (L) {
       var lv = st[L.k], c = cost(lv);
       document.getElementById("lv_" + L.k).textContent = "Lv " + lv;
-      document.getElementById("tot_" + L.k).textContent = "+" + (lv * PER + msBonus()) + "%";
+      document.getElementById("tot_" + L.k).textContent = "+" + (lv * PER + msBonus()).toLocaleString() + "%";
       document.getElementById("nx_" + L.k).textContent = "next: +" + PER + "%";
       var ce = document.getElementById("cost_" + L.k);
       ce.className = "cost" + (st.own < c ? " short" : "");
@@ -171,6 +171,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
   }
   document.getElementById("claim").addEventListener("click", function () { st.claimed += 1; say("Milestone! +" + MS_BONUS + "% to all three + Gold Chest"); draw(); });
   document.getElementById("give").addEventListener("click", function () { st.own += 200; draw(); });
+  document.getElementById("big").addEventListener("click", function () { st = { own: 248500, atk: 2380, hp: 2412, def: 2366, claimed: 236 }; draw(); });
   document.getElementById("reset").addEventListener("click", function () { st = JSON.parse(JSON.stringify(start)); draw(); });
   draw();
 })();
