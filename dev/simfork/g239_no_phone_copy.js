@@ -1,5 +1,6 @@
 /* v1026: base alignment never depends on the phone - stale copies of the map look / skin alignment in the phone's storage are ignored, and the
    base-picture measurements are built in (a phone that couldn't measure used to fall back to a guess ~half a tile off). Run: node dev/simfork/g239_no_phone_copy.js */
+const BUILTIN_ALIGN = { castle: { x: 0, y: -0.2, s: 1 }, citadel: { x: 0, y: 0.18, s: 0.63 }, titan: { x: 0, y: -0.14, s: 1 }, tower: { x: 0, y: -0.24, s: 1 }, mecha: { x: 0.06, y: -0.34, s: 1 }, pirate: { x: -0.44, y: 0.34, s: 1.42 } };
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -25,7 +26,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const o = await P.evaluate(() => ({ iso: JSON.stringify(isoCfg), align: JSON.stringify(SKIN_ALIGN), castle: cityArtGet(CITY_SKINS.castle.src), mecha: cityArtGet(CITY_SKINS.mecha.src) }));
   console.log(JSON.stringify(o));
   assert.strictEqual(o.iso, JSON.stringify({ tile: 30, base: 3.2, y: 0 }), "the phone's old map look copy is not used");
-  assert.strictEqual(o.align, "{}", "the phone's old skin alignment copy is not used");
+  assert.strictEqual(o.align, JSON.stringify(BUILTIN_ALIGN), "the phone's old skin alignment copy is not used (v1078: the built-in copy is)");
   assert.ok(Math.abs(o.castle.fy - 0.6981) < 1e-4 && Math.abs(o.mecha.aspect - 1.3125) < 1e-4, "built-in measurements even when the phone can't measure");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

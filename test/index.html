@@ -9576,7 +9576,9 @@ function myCityIconSrc() { return CITY_SKINS[myCitySkinId()].src; }
 var citySkinByTile = {};
 /* v1013 (Harley): per-skin picture alignment - left/right and up/down in tiles, and size - set by an admin in Dev Tools > Visuals > Base skin
    alignment and shared with every player (doc assetitems/_skinalign; anyone signed in reads it, only admins write). The 3x3 squares never move. */
-var SKIN_ALIGN = {}, SKIN_ALIGN_DOC = "assetitems/_skinalign", SKIN_ALIGN_LS = "kingdom_prototype_skinalign_v1", skinAlignPreview = null;
+/* v1078: built-in copy of the shared alignment (Harley's admin values, 11 Oct) so bases are drawn in the right spot from the first frame instead of dropping into place when the shared values arrive. The shared (admin) values still replace these as soon as they arrive. */
+var SKIN_ALIGN_BUILTIN = { castle: { x: 0, y: -0.2, s: 1 }, citadel: { x: 0, y: 0.18, s: 0.63 }, titan: { x: 0, y: -0.14, s: 1 }, tower: { x: 0, y: -0.24, s: 1 }, mecha: { x: 0.06, y: -0.34, s: 1 }, pirate: { x: -0.44, y: 0.34, s: 1.42 } };
+var SKIN_ALIGN = JSON.parse(JSON.stringify(SKIN_ALIGN_BUILTIN)), SKIN_ALIGN_DOC = "assetitems/_skinalign", SKIN_ALIGN_LS = "kingdom_prototype_skinalign_v1", skinAlignPreview = null;
 try { localStorage.removeItem(SKIN_ALIGN_LS); } catch (e) {} /* v1026: no copy on the phone - only the server's (admin's) values are used */
 function skinAlign(id) { var a = SKIN_ALIGN[id] || {}; return { x: isFinite(+a.x) ? +a.x : 0, y: isFinite(+a.y) ? +a.y : 0, s: isFinite(+a.s) && +a.s > 0 ? +a.s : 1 }; }
 function skinAlignSet(v) { if (!v || typeof v !== "object") return; SKIN_ALIGN = v; try { renderVisibleTiles(); } catch (e) {} try { devSkinAlignSync(); } catch (e) {} }
@@ -11290,7 +11292,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1077"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1078"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15116,7 +15118,9 @@ function renderVisibleTiles() {
         var waterHtml = baseWaterOn && lod <= 1 && baseWaterAllSea(tile) ? (baseWaterStyle === "classic" ? baseWaterHtmlClassic(citySrc, cwMul, cBot, cMl) : baseWaterHtml(citySrc, cwMul, cBot, cMl, tile.id)) : ""; /* v951; v1060: new look */
         var cityImgStyle = cityImgStyleParts.length ? (' style="' + cityImgStyleParts.join(";") + '"') : "";
         var ctag = isMyCity ? (ALLY.my ? ALLY.my.tag : "") : allyTagOf(occupiedTileIds[tile.id]); /* v895: alliance tag over the base */
-        setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : isAlly(occupiedTileIds[tile.id]) ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
+        var cAlly = !isMyCity && isAlly(occupiedTileIds[tile.id]);
+        if (!allyIndexLoaded) { /* v1078: until the alliance list arrives, use the tags remembered on this device */ var rt = isMyCity ? nearBasesMe : nearBasesTags[occupiedTileIds[tile.id]]; if (rt) { ctag = rt[0] || ""; cAlly = !isMyCity && !!(rt[1] && nearBasesMe && rt[1] === nearBasesMe[1]); } }
+        setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : cAlly ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
       }
     } else if (hiddenAsEmpty) {
       setTileHtml(div, "");
@@ -17175,10 +17179,12 @@ var citySyncStarted = false;
 /* v1076: the bases near your own base are remembered on this device, so on opening the game they're drawn together with your base
    instead of popping in once the kingdom's base list has downloaded. The live list then corrects them (a base that moved or left disappears). */
 var NEAR_BASES_KEY = "ks_nearbases_v1", NEAR_BASES_R = 40, NEAR_BASES_MAX = 300, nearBasesSig = "";
+var allyIndexLoaded = false, nearBasesTags = {}, nearBasesMe = null; /* v1078: alliance tags remembered with the bases (owner -> [tag, alliance id]; mine) */
 function nearBasesSeed(sid) {
   var c = null; try { c = JSON.parse(localStorage.getItem(NEAR_BASES_KEY) || "null"); } catch (e) {}
   if (!c || !c.b || c.sid !== (sid || CURRENT_SERVER_ID) || Date.now() - (c.at || 0) > 7 * 86400000) return 0;
-  var n = 0; Object.keys(c.b).forEach(function (id) { if (occupiedTileIds[id] || id === game.state.homeTileId) return; occupiedTileIds[id] = c.b[id][0]; if (CITY_SKINS[c.b[id][1]]) citySkinByTile[id] = c.b[id][1]; n++; });
+  var n = 0; Object.keys(c.b).forEach(function (id) { var e = c.b[id]; if (e[2]) nearBasesTags[e[0]] = [e[2], e[3] || ""]; if (occupiedTileIds[id] || id === game.state.homeTileId) return; occupiedTileIds[id] = e[0]; if (CITY_SKINS[e[1]]) citySkinByTile[id] = e[1]; n++; });
+  if (c.me && c.me[0]) nearBasesMe = c.me;
   return n;
 }
 function nearBasesSave() {
@@ -17187,10 +17193,13 @@ function nearBasesSave() {
   Object.keys(occupiedTileIds).forEach(function (id) {
     var o = occupiedTileIds[id]; if (!o || o === "?" || id === home || n >= NEAR_BASES_MAX) return;
     var c = id.indexOf(","), x = +id.slice(0, c), y = +id.slice(c + 1); if (Math.abs(x - hx) > NEAR_BASES_R || Math.abs(y - hy) > NEAR_BASES_R) return;
-    b[id] = [o, citySkinByTile[id] || ""]; n++;
+    var tg = allyIndexLoaded ? (ALLY.index[o] ? [ALLY.index[o].tag || "", ALLY.index[o].aid || ""] : null) : nearBasesTags[o];
+    b[id] = tg && tg[0] ? [o, citySkinByTile[id] || "", tg[0], tg[1]] : [o, citySkinByTile[id] || ""]; n++;
   });
-  var sig = CURRENT_SERVER_ID + home + JSON.stringify(b); if (sig === nearBasesSig) return; nearBasesSig = sig;
-  try { localStorage.setItem(NEAR_BASES_KEY, JSON.stringify({ sid: CURRENT_SERVER_ID, at: Date.now(), b: b })); } catch (e) {}
+  var me = allyIndexLoaded ? (ALLY.my ? [ALLY.my.tag || "", ALLY.my.aid || ""] : null) : nearBasesMe;
+  var sig = CURRENT_SERVER_ID + home + JSON.stringify(b);
+  sig += JSON.stringify(me); if (sig === nearBasesSig) return; nearBasesSig = sig;
+  try { localStorage.setItem(NEAR_BASES_KEY, JSON.stringify({ sid: CURRENT_SERVER_ID, at: Date.now(), b: b, me: me })); } catch (e) {}
 }
 function startCitySync() {
   if (citySyncStarted || !cloudDb) return;
@@ -26190,7 +26199,7 @@ function startAllianceSync() {
   if (allySyncStarted || !cloudDb || !PLAYER_ID) return; allySyncStarted = true;
   cloudDb.collection(allyPath("allyindex")).onSnapshot(function (q) {
     var idx = {}; q.docs.forEach(function (d) { if (d.exists && d.data() && d.data().aid) idx[d.id] = d.data(); });
-    ALLY.index = idx; ALLY.my = idx[PLAYER_ID] || null;
+    ALLY.index = idx; ALLY.my = idx[PLAYER_ID] || null; allyIndexLoaded = true; try { nearBasesSave(); } catch (e) {}
     var aid = ALLY.my ? ALLY.my.aid : null; if (aid !== ALLY.subAid) subscribeMyAlliance(aid);
     allyNotify();
   }, function (e) { console.error("alliance index sync", e && e.message); });

@@ -22,7 +22,8 @@ let SLOW = 0; const store = {}, call = require(ROOT + "/dev/tests/fnrunner.js")(
   await A.waitForSelector("#ksN", { timeout: 15000 }); await A.fill("#ksN", "Pop"); await A.click("#ksGo"); await A.waitForTimeout(6000);
   const home = await A.evaluate(() => { setScreen("world"); return game.state.homeTileId; });
   const [hx, hy] = home.split(",").map(Number); let n = 0;
-  for (let dx = -8; dx <= 8; dx += 4) for (let dy = -8; dy <= 8; dy += 4) { if (!dx && !dy) continue; store["envs/test/cities/" + (hx + dx) + "_" + (hy + dy)] = { owner: "bot_pop" + n++, claimedAt: 1, sk: "castle" }; }
+  for (let dx = -8; dx <= 8; dx += 4) for (let dy = -8; dy <= 8; dy += 4) { if (!dx && !dy) continue; if (n % 2 === 0) store["envs/test/allyindex/bot_pop" + n] = { aid: "atag", tag: "USA2" }; store["envs/test/cities/" + (hx + dx) + "_" + (hy + dy)] = { owner: "bot_pop" + n++, claimedAt: 1, sk: "castle" }; }
+  store["envs/test/assetitems/_skinalign"] = { data: JSON.stringify({ castle: { x: 0, y: -0.2, s: 1 }, citadel: { x: 0, y: 0.18, s: 0.63 }, titan: { x: 0, y: -0.14, s: 1 }, tower: { x: 0, y: -0.24, s: 1 }, mecha: { x: 0.06, y: -0.34, s: 1 }, pirate: { x: -0.44, y: 0.34, s: 1.42 } }), ts: 1 }; /* the shared (admin) values, same as the built-in copy */
   await A.evaluate(() => window.__fbNotify()); await A.waitForTimeout(1500); const cache = await A.evaluate(() => localStorage.getItem("ks_nearbases_v1")); await A.context().close();
   const gone = "envs/test/cities/" + (hx + 4) + "_" + (hy + 4), goneId = (hx + 4) + "," + (hy + 4); delete store[gone];
   const B = await page(); await B.fill("#ksE", "pop@test.dev"); await B.fill("#ksP", "secret123");
@@ -48,8 +49,16 @@ let SLOW = 0; const store = {}, call = require(ROOT + "/dev/tests/fnrunner.js")(
   assert.ok(lat.length >= 1 && lat.every((x) => x >= 0 && x < 300), "new bases drawn as soon as they arrive: " + lat);
   /* v1077: reopening (save + memory on this phone): the nearby bases are there in the first frame, before signing in / Firebase connecting */
   await B.evaluate(() => persist()); SLOW = 1500; /* a slow phone connection: every Firebase answer takes 1.5 s */ await B.reload(); await B.waitForTimeout(400);
-  const boot = await B.evaluate(() => ({ auth: !!document.querySelector("#ksAuth .box"), home: game.state.homeTileId, bots: Object.keys(occupiedTileIds).filter((id) => /^bot_/.test(occupiedTileIds[id])).length }));
-  console.log("boot", JSON.stringify(boot)); SLOW = 0;
+  const boot = await B.evaluate(() => ({ auth: !!document.querySelector("#ksAuth .box"), home: game.state.homeTileId, bots: Object.keys(occupiedTileIds).filter((id) => /^bot_/.test(occupiedTileIds[id])).length, tags: [...document.querySelectorAll(".city-tag")].filter((e) => e.textContent === "[USA2]").length, idx: allyIndexLoaded,
+    castleY: skinAlign("castle").y }));
+  const rectOf = () => B.evaluate(() => { const id = Object.keys(mapTileEls).find((k) => /^bot_/.test(occupiedTileIds[k] || "") && mapTileEls[k].querySelector("img")); const r = id && mapTileEls[id].querySelector("img").getBoundingClientRect(); return r ? { id, x: Math.round(r.left), y: Math.round(r.top), h: Math.round(r.height) } : null; });
+  const r0 = await rectOf();
+  console.log("boot", JSON.stringify(boot)); SLOW = 0; await B.waitForTimeout(5000);
+  const r1 = await B.evaluate(() => ({ heard: !!(window.__saDocSeen && window.__saDocSeen.data) })), r2 = await rectOf();
+  console.log("drop", JSON.stringify({ r0, r2, r1 }));
+  assert.ok(r1.heard && r0 && r2 && r0.id === r2.id && Math.abs(r0.y - r2.y) <= 1 && Math.abs(r0.x - r2.x) <= 1 && r0.h === r2.h, "bases don't move when the shared alignment arrives");
+  assert.ok(boot.tags >= 3 && !boot.idx, "remembered alliance tags drawn at boot, before the alliance list: " + JSON.stringify(boot));
+  assert.strictEqual(boot.castleY, -0.2, "built-in skin alignment in use before the shared one arrives");
   assert.ok(boot.home && boot.bots >= n - 1, "remembered bases ready at boot: " + JSON.stringify(boot));
   assert.deepStrictEqual(errs, []); console.log("g257 OK");
   await b.close();
