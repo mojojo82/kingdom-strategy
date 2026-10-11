@@ -11122,7 +11122,7 @@ var game = createGame({ deferConquest: true, manualResults: true, seed: WORLD_MA
 // servers ever collide on a tile id, a claimed city, or a chunk doc.
 var LEGACY_SERVER_ID = "server0";
 var SERVER_PLAYER_CAP = 1000; // once a server's registry doc reports this many players, new signups roll over to the next server
-var SERVER_DISPLAY_NAMES = { server0: "Atlantis" }; // extend this as real names get assigned to new servers; serverDisplayName() falls back to "Server N" for anything not listed here
+var SERVER_DISPLAY_NAMES = { server0: "Atlantis", server1: "Vanaheim" }; // v1074: Vanaheim = the play-tester kingdom. extend this as real names get assigned to new servers; serverDisplayName() falls back to "Server N" for anything not listed here
 // Set once per page load by resolveServerAssignment() (called from
 // initCloudSave, before startWorldTileSync/startCitySync ever run) — every
 // db path helper below reads this, so it MUST be correct before those two
@@ -11136,6 +11136,26 @@ function serverPrefix() {
 }
 function serverDisplayName(id) {
   return SERVER_DISPLAY_NAMES[id] || ("Server " + String(id).replace(/^server/, ""));
+}
+/* v1074: invite kingdoms. A link with ?k=vanaheim sends a brand-new player (never had a base anywhere) to that kingdom; existing players are never moved.
+   Their registry doc has status "invite", so normal sign-ups (which only fill "open" kingdoms) never land there, and overflow numbering starts above them. */
+var INVITE_KINGDOMS = { vanaheim: "server1" };
+var RESERVED_SERVER_MAX = 1; /* overflow kingdoms are numbered server2 and up, so they never take Vanaheim's id */
+var JOIN_KINGDOM_ID = (function () { try { var k = (new URLSearchParams(window.location.search).get("k") || "").trim().toLowerCase(); return INVITE_KINGDOMS[k] || null; } catch (e) { return null; } })();
+/* v1074: world atlas - where each kingdom sits on the world grid (x = iso top-left/bottom-right axis, y = iso top-right/bottom-left axis, in kingdom widths).
+   Atlantis 0,0; Vanaheim bottom-left of it; "Kingdom 1" top-left is still only a drawn placeholder.
+   Borders: actions (attack, teleport, rally, gather) never cross a kingdom edge unless admin controls or an event open them (nothing can cross yet);
+   looking, panning and zooming into any kingdom is always free. */
+var WORLD_ATLAS = [
+  { id: "server0", x: 0, y: 0 },
+  { id: "server1", x: 0, y: 1 },
+  { id: null, name: "Kingdom 1", x: -1, y: 0 }
+];
+function atlasNeighbours(curId) { /* kingdoms that share an edge with ours, as {name, dx, dy}; only edge neighbours fit the sea margin drawn around a kingdom today */
+  var me = WORLD_ATLAS.filter(function (k) { return k.id === curId; })[0];
+  if (!me) return []; /* overflow kingdoms (server2+) aren't placed on the atlas yet */
+  return WORLD_ATLAS.filter(function (k) { return k !== me && Math.abs(k.x - me.x) + Math.abs(k.y - me.y) === 1; })
+    .map(function (k) { return { id: k.id, name: k.name || serverDisplayName(k.id), dx: k.x - me.x, dy: k.y - me.y }; });
 }
 // Deterministic per-server map seed — costs nothing extra to store (no
 // per-server seed needs writing to the registry doc) and means every
@@ -11270,7 +11290,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1073"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1074"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14497,7 +14517,7 @@ function tileTopLeftPx(tile) {
 }
 function ensureMapWorldSized() {
   var size = Math.round(Math.sqrt(game.state.map.length));
-  var sizeKey = size + ":" + mapZoom + ":" + (mapIso ? "iso" : "flat");
+  var sizeKey = size + ":" + mapZoom + ":" + (mapIso ? "iso" : "flat") + ":" + CURRENT_SERVER_ID; /* v1074: neighbours depend on which kingdom we're in */
   if (mapWorldSizedForTiles === sizeKey) return;
   var world = document.getElementById("mapworld");
   if (!world) return;
@@ -14577,7 +14597,7 @@ function drawProvinces() { /* dotted borders (same style as the kingdom edge) + 
   });
   box.innerHTML = html;
 }
-var NEIGHBOUR_KINGDOMS = [{ name: "Kingdom 1", dx: -1, dy: 0 }]; /* v870: placeholder; dx/dy in kingdom widths from ours */
+/* v1074: neighbours now come from WORLD_ATLAS (atlasNeighbours) instead of a fixed list */
 // v858: dotted line around the edge of the kingdom (a diamond in the isometric map, a square in the flat one), like Kingshot
 function drawMapBorder() { /* v865: four thin dashed lines (a picture the size of the whole 1200x1200 world would be far too big for a phone) */
   var world = document.getElementById("mapworld"); if (!world) return;
@@ -14599,7 +14619,7 @@ function drawMapBorder() { /* v865: four thin dashed lines (a picture the size o
     return pts;
   }
   /* v870: placeholder neighbour - Kingdom 1, same size, just past our top-left edge (iso) / left edge (flat). Shaded, dotted edge, name in the middle. */
-  NEIGHBOUR_KINGDOMS.forEach(function (k) {
+  atlasNeighbours(CURRENT_SERVER_ID).forEach(function (k) {
     var q = [[-0.5, -0.5], [n - 0.5, -0.5], [n - 0.5, n - 0.5], [-0.5, n - 0.5]].map(function (c) { return corner(c[0] + k.dx * n, c[1] + k.dy * n); });
     var x0 = Math.min.apply(null, q.map(function (v) { return v.x; })), y0 = Math.min.apply(null, q.map(function (v) { return v.y; }));
     var x1 = Math.max.apply(null, q.map(function (v) { return v.x; })), y1 = Math.max.apply(null, q.map(function (v) { return v.y; }));
@@ -17530,10 +17550,17 @@ function ensureServerRegistryDoc(id, extra) {
 var SERVER_LOCK_TTL_MS = 2500;
 var SERVER_LOCK_RETRY_MS = 400;
 var SERVER_LOCK_MAX_TRIES = 60; // ~24s of budget — outlasts ~9 other signups queued ahead of this one back-to-back (9 * 2.5s = 22.5s), comfortably covering a real launch-day burst
-function assignServerForNewPlayer() {
+function assignServerForNewPlayer(inviteId) {
   var lockRef = cloudDb.doc("servers/_registryLock");
   var holder = PLAYER_ID || worldLeaseHolderFallback;
   function pickAndReserve() {
+    if (inviteId) { /* v1074: joined through an invite link - take a seat in that kingdom unless it's full, then fall back to the normal pick */
+      return ensureServerRegistryDoc(inviteId, { status: "invite" }).then(function (d) {
+        var count = (d.playerCount || 0) + 1;
+        if (count > SERVER_PLAYER_CAP) { inviteId = null; return pickAndReserve(); }
+        return cloudDb.doc("servers/" + inviteId).update({ playerCount: count }).then(function () { return inviteId; });
+      });
+    }
     return ensureServerRegistryDoc(LEGACY_SERVER_ID).then(function () {
       return cloudDb.collection("servers").get();
     }).then(function (qsnap) {
@@ -17549,7 +17576,7 @@ function assignServerForNewPlayer() {
       }
       // No open server (or the only one just filled) — open the next one,
       // numbered one past the highest existing server id.
-      var maxN = 0;
+      var maxN = RESERVED_SERVER_MAX; /* v1074: never reuse an invite kingdom's id */
       candidates.forEach(function (doc) {
         var n = parseInt(String(doc.id).replace(/^server/, ""), 10);
         if (!isNaN(n)) maxN = Math.max(maxN, n);
@@ -17612,7 +17639,7 @@ function resolveServerAssignment() {
   // Genuinely new — never claimed a city anywhere — goes through the
   // registry, which may hand back the legacy server (if it's not full yet)
   // or a brand new one.
-  return assignServerForNewPlayer().then(function (id) {
+  return assignServerForNewPlayer(JOIN_KINGDOM_ID).then(function (id) {
     game.setServerId(id);
     CURRENT_SERVER_ID = id;
     persist();
