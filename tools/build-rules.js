@@ -25,6 +25,26 @@ const BODY = `
       match /assets/{d} { allow read, write: if isAdmin(); }
       match /assetitems/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
 
+      // ---- maintenance switch (v942): anyone may read it (shown before sign-in too), only the server writes it ----
+      match /config/{d} { allow read: if true; allow write: if false; }
+      match /packs/{d} { allow read: if signedIn(); allow write: if false; } // v943: shop packs / mail bundles - made in the admin panel (server writes)
+
+      // ---- server bookkeeping ----
+      match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
+      match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
+      // ---- v995 Security panel: bans (a player may read only their own, to show the notice), config, audit log, pre-flag snapshots ----
+      match /bans/{d} { allow read: if isAdmin() || isMe(d); allow write: if false; }
+      match /secconfig/{d} { allow read: if isAdmin(); allow write: if false; }
+      match /secaudit/{d} { allow read: if isAdmin(); allow write: if false; }
+      match /acsnap/{d} { allow read: if isAdmin(); allow write: if false; }
+
+      // ---- kingdom registry + leases (global) ----
+      match /servers/{d} { allow read, write: if signedIn(); }
+      match /_leases/{d} { allow read, write: if signedIn(); }
+`;
+/* v1080: everything that belongs to ONE kingdom. Atlantis (server0) keeps it at the root; every other kingdom has the same rules under servers/<id>/
+   (before v1080 nothing under servers/<id>/ was allowed at all, so a second kingdom could not work on the real server). */
+const KINGDOM = `
       // ---- cities: anyone signed in can claim an empty tile as their own; HP / fire fields are server-only ----
       match /cities/{cid} {
         allow read: if signedIn();
@@ -49,29 +69,17 @@ const BODY = `
       match /terrain/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
       match /mapdecor/{d} { allow read: if signedIn(); allow write: if isAdmin(); }
 
-      // ---- maintenance switch (v942): anyone may read it (shown before sign-in too), only the server writes it ----
-      match /config/{d} { allow read: if true; allow write: if false; }
-      match /packs/{d} { allow read: if signedIn(); allow write: if false; } // v943: shop packs / mail bundles - made in the admin panel (server writes)
-
-      // ---- server bookkeeping ----
-      match /adminlog/{d} { allow read: if isAdmin(); allow write: if false; }
-      match /acplayers/{d} { allow read: if isAdmin(); allow write: if false; } // anti-cheat flags (v920): server writes, admins read
-      // ---- v995 Security panel: bans (a player may read only their own, to show the notice), config, audit log, pre-flag snapshots ----
-      match /bans/{d} { allow read: if isAdmin() || isMe(d); allow write: if false; }
-      match /secconfig/{d} { allow read: if isAdmin(); allow write: if false; }
-      match /secaudit/{d} { allow read: if isAdmin(); allow write: if false; }
-      match /acsnap/{d} { allow read: if isAdmin(); allow write: if false; }
-
       // ---- shared world state used by every client (stage 2 will move these behind the server too) ----
       match /alliances/{aid} { allow read: if signedIn(); allow write: if signedIn() && open(); }
       match /alliances/{aid}/{sub}/{d} { allow read: if signedIn(); allow write: if signedIn() && open(); }
       match /allyindex/{pid} { allow read: if signedIn(); allow write: if signedIn() && open(); }
       match /chunks/{d} { allow read: if signedIn(); allow write: if signedIn() && open(); }
       match /marches/{d} { allow read: if signedIn(); allow write: if signedIn() && open(); }
-      match /servers/{d} { allow read, write: if signedIn(); }
       match /world/{d} { allow read, write: if signedIn(); }
-      match /_leases/{d} { allow read, write: if signedIn(); }
+      // ---- v1080: bases by map patch (50x50 tiles), kept in step with cities by the server only ----
+      match /patches/{d} { allow read: if signedIn(); allow write: if false; }
 `;
+const KBODY = KINGDOM + "\n      match /servers/{sid} {" + KINGDOM.replace(/^      /gm, "        ") + "      }\n";
 
 const MAINT_LIVE = "/databases/$(database)/documents/config/maintenance", MAINT_TEST = "/databases/$(database)/documents/envs/$(env)/config/maintenance";
 /* v995: a suspended / banned player (or one whose game an admin is rolling back) can't write anything. kind "ban" = for good, others until untilMs. */
@@ -91,12 +99,12 @@ service cloud.firestore {
 
     // ===== live =====
     function liveOpen() { return isAdmin() || (!(exists(${MAINT_LIVE}) && get(${MAINT_LIVE}).data.on == true) && ${notBanned(BAN_LIVE)}); } // v942: maintenance locks player writes; v995: so does a ban / suspension
-${BODY.replace(/open\(\)/g, "liveOpen()")}
+${(BODY + KBODY).replace(/open\(\)/g, "liveOpen()")}
     // ===== test (same rules) =====
     match /envs/{env} {
       allow read, write: if false;
       function testOpen() { return isAdmin() || (!(exists(${MAINT_TEST}) && get(${MAINT_TEST}).data.on == true) && ${notBanned(BAN_TEST)}); }
-${BODY.replace(/^      /gm, "        ").replace(/open\(\)/g, "testOpen()")}
+${(BODY + KBODY).replace(/^      /gm, "        ").replace(/open\(\)/g, "testOpen()")}
     }
   }
 }

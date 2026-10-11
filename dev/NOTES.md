@@ -1364,3 +1364,9 @@
 - Game: KS_BACKEND.call adds srv (CURRENT_SERVER_ID) and home to every call.
 - LIVE safety: functions are shared with LIVE, whose older game sends neither srv nor home - treated exactly as before (Atlantis, no border check). Checked with a no-srv hitBase call.
 - Test: new g258_kingdom_actions (Vanaheim attack hits the Vanaheim base, Atlantis untouched; teleport stays in Vanaheim and keeps the skin; Atlantis player gets no_city / other_kingdom (forged) / bad_kingdom). functions core tests, g192, g218, g229, g255, g257 pass.
+
+## v1080 - Firestore rules for every kingdom (rules are shared with LIVE; root rules unchanged)
+- Found while starting phase 2: the rules only covered the root paths (Atlantis) and the registry doc servers/<id>. Nothing under servers/<id>/... (cities, marches, chunks, alliances, chat, world config) was allowed, so on the real server a Vanaheim player would get "permission denied" for everything. The fake server in headless tests doesn't check rules, which is why g255 passed.
+- tools/build-rules.js: the kingdom collections (cities, worldchat, terrain, mapdecor, alliances, allyindex, chunks, marches, world) are one block (KINGDOM), placed at the root (Atlantis) and again inside match /servers/{sid} for every other kingdom, for live and test. Players, purchases, config, bans etc. stay global. Checked: no line of the old rules is lost.
+- Added patches/{d} (bases by map patch, phase 2): read for signed-in players, written by the server only.
+- CI emulator test (real rules + functions): servers/server1 claim / HP-field denial / marches, chunks, allyindex, chat writes / terrain + patches write denied / hitBase in server1 / other_kingdom / bad_kingdom / relocate in server1 keeps HP and skin, nothing written into Atlantis.

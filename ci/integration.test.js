@@ -112,6 +112,27 @@ const P = (s) => R + s;
     assert.ok(!(await getDoc(doc(A.db, P("cities/10_10")))).exists());
     await fnErr(A.call("relocateCity", { from: "20,20", to: "40,40" }), /taken/);
   });
+  await t("v1080: a second kingdom (servers/server1) has the same rules; server actions stay in it; borders closed", async () => {
+    const K = (x) => P("servers/server1/" + x);
+    await setDoc(doc(A.db, K("cities/10_10")), { owner: A.uid, claimedAt: Date.now(), sk: "castle" });
+    await setDoc(doc(B.db, K("cities/30_30")), { owner: B.uid, claimedAt: Date.now() });
+    await denied(setDoc(doc(B.db, K("cities/31_31")), { owner: B.uid, hp: 10000, hpT: 1 }));
+    await denied(updateDoc(doc(B.db, K("cities/10_10")), { owner: B.uid }));
+    await setDoc(doc(A.db, K("marches/" + A.uid + "_1")), { ownerId: A.uid, tileId: "30,30" });
+    await setDoc(doc(A.db, K("chunks/0_0")), { tiles: {} });
+    await setDoc(doc(A.db, K("allyindex/" + A.uid)), { aid: "k1", tag: "K1" });
+    await setDoc(doc(A.db, K("worldchat/1_" + A.uid)), { pid: A.uid, name: "A", text: "hi", ts: 1 });
+    await denied(setDoc(doc(A.db, K("terrain/0_0")), { s: "0", t: 1 }));
+    await denied(setDoc(doc(A.db, K("patches/0_0")), { b: {} }));
+    await getDoc(doc(B.db, K("patches/0_0")));
+    const r = await B.call("hitBase", { srv: "server1", home: "30,30", tileId: "10,10" }); assert.ok(r.after < r.before);
+    const hit = (await getDoc(doc(A.db, K("cities/10_10")))).data(); assert.strictEqual(hit.hp, r.after);
+    await fnErr(Cc.call("hitBase", { srv: "server1", home: "20,20", tileId: "10,10" }), /other_kingdom/);
+    await fnErr(B.call("hitBase", { srv: "server1/../x", home: "30,30", tileId: "10,10" }), /bad_kingdom/);
+    await A.call("relocateCity", { srv: "server1", from: "10,10", to: "12,12" });
+    const moved = (await getDoc(doc(A.db, K("cities/12_12")))).data(); assert.strictEqual(moved.owner, A.uid); assert.strictEqual(moved.hp, hit.hp); assert.strictEqual(moved.sk, "castle");
+    assert.ok(!(await getDoc(doc(A.db, P("cities/12_12")))).exists(), "nothing written into Atlantis");
+  });
   await t("world chat: post as yourself only, max 500 chars, no edits", async () => {
     await setDoc(doc(A.db, P("worldchat/1_" + A.uid)), { pid: A.uid, name: "A", text: "hi", ts: 1 });
     await denied(setDoc(doc(A.db, P("worldchat/2_" + A.uid)), { pid: B.uid, name: "B", text: "fake", ts: 2 }));
