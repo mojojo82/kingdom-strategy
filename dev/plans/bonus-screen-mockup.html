@@ -96,13 +96,13 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       </div>
       <div class="toast" id="toast" aria-live="polite"></div>
     </div>
-    <div class="dev"><button type="button" id="give">+5,000 Essence (test)</button><button type="button" id="big">Late game (test)</button><button type="button" id="reset">Reset</button></div>
+    <div class="dev"><button type="button" id="give">+100 Essence (test)</button><button type="button" id="big">Late game (test)</button><button type="button" id="reset">Reset</button></div>
     <div class="hint">Tap Upgrade to try it. Get all three lanes to the milestone and the gold Claim button shows up.</div>
   </div>
 
   <section class="notes">
     <div class="note"><div class="n">How it works</div><div class="s">Each lane adds a flat amount to the game's global ATK / HP / DEF Bonus (the same number Equipment adds to). The cost per level rises slowly. Every 10 levels in all three lanes gives an extra bonus to all three plus a reward, so spreading out beats dumping everything into one lane.</div></div>
-    <div class="note"><div class="n">Placeholder numbers in this mockup</div><div class="s">+10% per level in each lane. Cost = 100 + 400 × level. Milestones every 10 levels: +50% to all three, plus a chest. Late game is around Lv 240 (about +3,500%). Real values come from the balance sims, including your point that HP tends to be the strongest lane.</div></div>
+    <div class="note"><div class="n">Placeholder numbers in this mockup</div><div class="s">+10% per level in each lane. Cost = 5 + 4 × level (about 960 at Lv 240), kept small on purpose. Milestones every 10 levels: +50% to all three, plus a chest. Late game is around Lv 240 (about +3,500%). Real values come from the balance sims, including your point that HP tends to be the strongest lane.</div></div>
     <div class="note"><div class="n">Open questions</div>
       <ol class="s">
         <li>Item name. "Essence" is a stand-in.</li>
@@ -123,10 +123,10 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
     { k: "def", name: "DEF", col: "var(--def)", hex: "#7cb0ff" }
   ];
   var PER = 10, MS_EVERY = 10, MS_BONUS = 50; /* Harley: late game around Lv 240 with about the same strength the old Lv 2,400 test had */
-  var start = { own: 12000, atk: 14, hp: 11, def: 12, claimed: 1 };
+  var start = { own: 150, atk: 14, hp: 11, def: 12, claimed: 1 };
   var st = JSON.parse(JSON.stringify(start));
   function shortN(n) { return n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, "") + "M" : n >= 1e4 ? (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace(/\.0$/, "") + "K" : n.toLocaleString(); }
-  function cost(lv) { return 100 + 400 * lv; } /* 10x fewer levels, each worth 10x, so each level costs about what 10 old levels did */
+  function cost(lv) { return 5 + 4 * lv; } /* Harley: keep the numbers small - fewer items per level just means sources give fewer */
   function low() { return Math.min(st.atk, st.hp, st.def); }
   function msBonus() { return st.claimed * MS_BONUS; }
   var ART = {
@@ -174,8 +174,8 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
     document.getElementById("claim").hidden = !ready;
   }
   document.getElementById("claim").addEventListener("click", function () { st.claimed += 1; say("Milestone! +" + MS_BONUS + "% to all three + Gold Chest"); draw(); });
-  document.getElementById("give").addEventListener("click", function () { st.own += 5000; draw(); });
-  document.getElementById("big").addEventListener("click", function () { st = { own: 2485000, atk: 238, hp: 241, def: 236, claimed: 23 }; draw(); });
+  document.getElementById("give").addEventListener("click", function () { st.own += 100; draw(); });
+  document.getElementById("big").addEventListener("click", function () { st = { own: 24850, atk: 238, hp: 241, def: 236, claimed: 23 }; draw(); });
   document.getElementById("reset").addEventListener("click", function () { st = JSON.parse(JSON.stringify(start)); draw(); });
   draw();
   init3d();
