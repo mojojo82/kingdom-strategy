@@ -7223,6 +7223,19 @@ function createGame(opts) {
   var IDLE_CORNERED_SECONDS = 4;  // a ranged enemy that survives this long becomes point-blank-reachable too, so a melee-only squad is never permanently stuck
   var IDLE_LEVELS_PER_CHAPTER = 20; // v747: chapters are 20 levels long (was 10); the last level of each chapter is the boss
   function idleGlobalLevelNum() { return (state.idle.chapter - 1) * IDLE_LEVELS_PER_CHAPTER + state.idle.levelNum; }
+  /* v1092 (Harley): from chapter 6 on, difficulty climbs in small steps with a bigger gate every 5 chapters. Everything enemy-side is worked out
+     as at 5-20 (CURVE_ANCHOR) and then multiplied by idleStepMult(): +CURVE_STEP per normal chapter, +CURVE_GATE across a gate chapter (10, 15, 20...),
+     spread evenly over the chapter's 20 levels. Chapters 1-5 unchanged. Horde size / count stay at their 5-20 values. Rewards don't use this. */
+  var CURVE_ANCHOR = 100, CURVE_STEP = 0.06, CURVE_GATE = 0.35, CURVE_GATE_EVERY = 5;
+  function idleCurveLvl() { return Math.min(idleGlobalLevelNum(), CURVE_ANCHOR); }
+  function idleStepMultAt(lvl) {
+    if (lvl <= CURVE_ANCHOR) return 1;
+    var ch = Math.ceil(lvl / IDLE_LEVELS_PER_CHAPTER), k = (lvl - 1) % IDLE_LEVELS_PER_CHAPTER + 1, m = 1, first = CURVE_ANCHOR / IDLE_LEVELS_PER_CHAPTER + 1;
+    var inc = function (c) { return c % CURVE_GATE_EVERY === 0 ? CURVE_GATE : CURVE_STEP; };
+    for (var c = first; c < ch; c++) m *= 1 + inc(c);
+    return m * Math.pow(1 + inc(ch), k / IDLE_LEVELS_PER_CHAPTER);
+  }
+  function idleStepMult() { return idleStepMultAt(idleGlobalLevelNum()); }
   // Every ×-10 level (1-10, 2-10, ...) is a boss level: a single, much tougher
   // enemy replaces the normal horde, and clearing it (not a headcount) advances you.
   function idleIsBossLevel() { return !!state.idle.bossPhase; } // v748: EVERY level ends with a boss — the horde quota comes first, then bossPhase flips on
@@ -7236,8 +7249,8 @@ function createGame(opts) {
   function idleEnvironment() { return idleEnvironmentFor(idleDispChapter()); }
   // v749: a level is several HORDES (groups of weak enemies arriving together) followed by the boss
   var HORDE_HP_FRAC = 0.4, HORDE_ATK_FRAC = 0.6, HORDE_GAP_SEC = 0.5, HORDE_REWARD_BOOST = 4.5;
-  function idleHordeSize() { return Math.min(10, 5 + Math.floor((idleGlobalLevelNum() - 1) / 25)); }
-  function idleHordeCount() { return Math.min(8, 4 + Math.floor((idleGlobalLevelNum() - 1) / 30)); }
+  function idleHordeSize() { return Math.min(10, 5 + Math.floor((idleCurveLvl() - 1) / 25)); } /* v1092: frozen after 5-20 */
+  function idleHordeCount() { return Math.min(8, 4 + Math.floor((idleCurveLvl() - 1) / 30)); }
   function idleHordeQuota() { return idleHordeSize() * idleHordeCount(); }
   function idleSpawnHorde() { var left = idleHordeQuota() - state.idle.enemiesKilledInLevel - idleDying.length - state.idle.enemies.length, n = Math.min(idleHordeSize(), left); for (var i = 0; i < n; i++) { idleSpawnEnemy(); var he = state.idle.enemies[state.idle.enemies.length - 1]; he.horde = true; he.arriveRemaining = IDLE_ARRIVE_DELAY + i * 0.45; } /* staggered: a stream, not a clump */ }
   function idleEnemiesPerLevel() { return idleIsBossLevel() ? 1 : idleHordeQuota(); }
@@ -7252,7 +7265,7 @@ function createGame(opts) {
   // the original flat formula (1 + (lvl-1)*0.15) for every level after —
   // long-term/end-game pacing is deliberately left untouched.
   function idleEnemyHpMult() {
-    var lvl = idleGlobalLevelNum();
+    var lvl = idleCurveLvl(); /* v1092 */
     var rampFactor = Math.min(1, 0.4 + 0.6 * (lvl - 1) / 59); // v747: levels are per 20-level chapter now, so the per-level slope/ramp are halved to keep the per-chapter growth the same
     return 1 + (lvl - 1) * 0.075 * rampFactor;
   }
@@ -7261,11 +7274,11 @@ function createGame(opts) {
   // Everything from level end+blend onward is unchanged. hp/atk are the multipliers at level 1..end (flat), tune in the sim.
   var IDLE_EASE = { on: true, hp: 0.15, atk: 0.15, bon: 0, end: 80, blend: 20 };
   function idleEaseT(lvl) { if (!IDLE_EASE.on || lvl >= IDLE_EASE.end + IDLE_EASE.blend) return 1; if (lvl <= IDLE_EASE.end) return 0; return (lvl - IDLE_EASE.end) / IDLE_EASE.blend; }
-  function idleEaseHp() { var t = idleEaseT(idleGlobalLevelNum()); return IDLE_EASE.hp + (1 - IDLE_EASE.hp) * t; }
-  function idleEaseBon() { var t = idleEaseT(idleGlobalLevelNum()); return IDLE_EASE.bon + (1 - IDLE_EASE.bon) * t; }
-  function idleEaseAtk() { var t = idleEaseT(idleGlobalLevelNum()); return IDLE_EASE.atk + (1 - IDLE_EASE.atk) * t; }
+  function idleEaseHp() { var t = idleEaseT(idleCurveLvl()); return IDLE_EASE.hp + (1 - IDLE_EASE.hp) * t; }
+  function idleEaseBon() { var t = idleEaseT(idleCurveLvl()); return IDLE_EASE.bon + (1 - IDLE_EASE.bon) * t; }
+  function idleEaseAtk() { var t = idleEaseT(idleCurveLvl()); return IDLE_EASE.atk + (1 - IDLE_EASE.atk) * t; }
   var BOSS_ATK_BONUS_FACTOR = 1.4, BOSS_ATK_EASE_BLEND = 40; /* v1091 */
-  function idleEaseAtkBoss() { var lvl = idleGlobalLevelNum(), t = !IDLE_EASE.on || lvl >= IDLE_EASE.end + BOSS_ATK_EASE_BLEND ? 1 : lvl <= IDLE_EASE.end ? 0 : (lvl - IDLE_EASE.end) / BOSS_ATK_EASE_BLEND; return IDLE_EASE.atk + (1 - IDLE_EASE.atk) * t; }
+  function idleEaseAtkBoss() { var lvl = idleCurveLvl(), t = !IDLE_EASE.on || lvl >= IDLE_EASE.end + BOSS_ATK_EASE_BLEND ? 1 : lvl <= IDLE_EASE.end ? 0 : (lvl - IDLE_EASE.end) / BOSS_ATK_EASE_BLEND; return IDLE_EASE.atk + (1 - IDLE_EASE.atk) * t; }
   // Equipped-Esper HP bonus — read through esperStatValue() so a Dev Tools
   // override (see the Espers dev-tools editor / ESPER_STAT_OVERRIDES_KEY)
   // takes effect immediately, same as the ESPER_DEFS default would. Read by
@@ -7576,11 +7589,11 @@ function createGame(opts) {
     var type = IDLE_ENEMY_TYPE_ORDER[state.idle.enemySpawnIndex % IDLE_ENEMY_TYPE_ORDER.length];
     state.idle.enemySpawnIndex++;
     var base = IDLE_ENEMY_TYPES[type];
-    var ebp = enemyBonusPct(idleGlobalLevelNum(), false) * idleEaseBon();
-    var hp = Math.max(1, Math.round(HORDE_HP_FRAC * base.hp * idleEnemyHpMult() * idleEaseHp() * (1 + ebp / 100)));
+    var ebp = enemyBonusPct(idleCurveLvl(), false) * idleEaseBon(), stp = idleStepMult();
+    var hp = Math.max(1, Math.round(HORDE_HP_FRAC * base.hp * idleEnemyHpMult() * idleEaseHp() * (1 + ebp / 100) * stp));
     state.idle.nextEnemyId = (state.idle.nextEnemyId || 0) + 1;
     state.idle.enemies.push({
-      id: state.idle.nextEnemyId, type: type, hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100,
+      id: state.idle.nextEnemyId, type: type, hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100 * stp,
       arrived: false, arriveRemaining: IDLE_ARRIVE_DELAY,
       engaged: false, closeRemaining: base.melee ? base.closeTime : 0, aliveSeconds: 0,
       // Randomized starting phase, not a fixed 0 or IDLE_ENEMY_ATTACK_INTERVAL —
@@ -7597,11 +7610,11 @@ function createGame(opts) {
   }
   function idleSpawnBoss() {
     var base = IDLE_ENEMY_TYPES.boss;
-    var ebp = enemyBonusPct(idleGlobalLevelNum(), true) * idleEaseBon();
-    var hp = Math.max(1, Math.round(base.hp * idleEnemyHpMult() * Math.max(BOSS_EASE_HP_FLOOR, idleEaseHp()) * (1 + ebp / 100))); // v757: bosses keep at least half their HP in the eased early chapters, so a boss is a fight, not a pop
+    var ebp = enemyBonusPct(idleCurveLvl(), true) * idleEaseBon(), stp = idleStepMult();
+    var hp = Math.max(1, Math.round(base.hp * idleEnemyHpMult() * Math.max(BOSS_EASE_HP_FLOOR, idleEaseHp()) * (1 + ebp / 100) * stp)); // v757: bosses keep at least half their HP in the eased early chapters, so a boss is a fight, not a pop
     state.idle.nextEnemyId = (state.idle.nextEnemyId || 0) + 1;
     state.idle.enemies.push({
-      id: state.idle.nextEnemyId, type: "boss", hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100,
+      id: state.idle.nextEnemyId, type: "boss", hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100 * stp,
       arrived: false, arriveRemaining: IDLE_ARRIVE_DELAY,
       engaged: false, closeRemaining: 0, aliveSeconds: 0,
       atkCooldown: combatRng() * IDLE_ENEMY_ATTACK_INTERVAL, hitCount: 0
@@ -8914,12 +8927,12 @@ function createGame(opts) {
   function idleEnemyAtk(type) {
     var base = IDLE_ENEMY_TYPES[type];
     if (!base) return 0;
-    var eAtkMult = 1 + enemyBonusPct(idleGlobalLevelNum(), type === "boss") * idleEaseBon() / 100;
+    var eAtkMult = 1 + enemyBonusPct(idleCurveLvl(), type === "boss") * idleEaseBon() / 100;
     if (type === "boss") { /* v1091 (Harley: bosses, not hordes, were the wall from late chapter 5): the boss ATTACK bonus is 1.4x a normal enemy's (was enemyScale.boss = 2.2x, which still sets boss HP), and its easy mode fades out over chapters 5-6 instead of 5 only. Chapters 1-4 unchanged. */
-      var bAtkMult = 1 + enemyBonusPct(idleGlobalLevelNum(), false) * BOSS_ATK_BONUS_FACTOR * idleEaseBon() / 100;
-      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss();
+      var bAtkMult = 1 + enemyBonusPct(idleCurveLvl(), false) * BOSS_ATK_BONUS_FACTOR * idleEaseBon() / 100;
+      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss() * idleStepMult();
     }
-    return base.atk * HORDE_ATK_FRAC * eAtkMult * idleEaseAtk();
+    return base.atk * HORDE_ATK_FRAC * eAtkMult * idleEaseAtk() * idleStepMult(); /* v1092 */
   }
   function idleFortressCannonBulletInterval() { return IDLE_FORTRESS_CANNON_BULLET_INTERVAL; }
   // Fortress Cannon target selection (Dev Tools option). "front" reproduces
@@ -11337,7 +11350,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1091"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1092"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
