@@ -28,7 +28,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.evaluate(() => document.querySelector('#techList .rh-card[data-rh="fortress3"]').click()); await P.waitForTimeout(400);
   o.f3 = await P.evaluate(() => { const h = document.getElementById("techFortressHost"); return { nodes: h.querySelectorAll(".rt-node").length, title: document.getElementById("tfTitle").textContent, back: !!document.querySelector("#techTabs .rh-back"), name: document.querySelector("#techTabs .rh-tname").textContent }; });
   o.stable = await P.evaluate(() => { const b0 = document.querySelector("#techFortressHost .rt-board"); renderTechs(); renderTechs(); return document.querySelector("#techFortressHost .rt-board") === b0; });
-  o.up3 = await P.evaluate(async () => { const st = game.state; const n = document.querySelector("#techFortressHost .rt-node.can"); const k = n.getAttribute("data-k"); n.click(); await new Promise((r) => setTimeout(r, 200)); document.getElementById("ftUpBtn").click(); await new Promise((r) => setTimeout(r, 200)); return { k, lv: st.fortressTech[k] || 0, type: fortressTypeOf(st.fortressTech) }; });
+  /* v1069: fortress research shares the research lane - while Paved Roads runs, no fortress node is "can" and the button is blocked */
+  o.blocked = await P.evaluate(async () => { const can = document.querySelectorAll("#techFortressHost .rt-node.can").length; const n = document.querySelector("#techFortressHost .rt-node:not(.locked):not(.max)"); n.click(); await new Promise((r) => setTimeout(r, 200)); const b = document.getElementById("ftUpBtn"); return { can, disabled: !!(b && b.disabled), busy: /busy/i.test(document.getElementById("rtDetail").textContent) }; });
+  await P.evaluate(async () => { game.researchFinishNow(); await new Promise((r) => setTimeout(r, 2500)); renderTechs(); }); await P.waitForTimeout(300);
+  o.up3 = await P.evaluate(async () => { const st = game.state; const n = document.querySelector("#techFortressHost .rt-node.can"); const k = n.getAttribute("data-k"); n.click(); await new Promise((r) => setTimeout(r, 200)); document.getElementById("ftUpBtn").click(); await new Promise((r) => setTimeout(r, 200)); const queued = !!(st.researchQueue && st.researchQueue.fort && st.researchQueue.key === k); game.researchFinishNow(); await new Promise((r) => setTimeout(r, 2500)); return { k, queued, lv: (st.fortressTech || {})[k] || 0, type: fortressTypeOf(st.fortressTech) }; });
   await P.evaluate(() => { const p = document.getElementById("rtPop"); if (p) p.style.display = "none"; });
   await P.screenshot({ path: (process.env.OUT || "/tmp/") + "research_f3.png" });
   /* back, then Fortress I */
@@ -48,7 +51,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.ok(o.run.badge === "⏳" && /Paved Roads Lv1/.test(o.run.q), "researching tree shows ⏳ and the bottom bar");
   assert.ok(o.f3.nodes > 5 && /III/.test(o.f3.title) && o.f3.back && /Fortress III/.test(o.f3.name), "Fortress III tree opens");
   assert.ok(o.stable, "not rebuilt every tick");
-  assert.ok(o.up3.lv === 1 && o.up3.type === 1, "can research Fortress III while Fortress I is active");
+  assert.ok(o.blocked.can === 0 && o.blocked.disabled && o.blocked.busy, "fortress waits for the research lane");
+  assert.ok(o.up3.queued && o.up3.lv === 1 && o.up3.type === 1, "can research Fortress III while Fortress I is active (queued, then done)");
   assert.ok(o.backHub, "back to the hub");
   assert.ok(/Fortress I —/.test(o.f1) && +o.f1.split(":")[1] > 5, "Fortress I tree opens");
   assert.ok(o.battle >= 5, "Battle tree opens");

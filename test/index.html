@@ -4938,11 +4938,25 @@ var FORTRESS3_COST_SCALE = 108; // knob for this tree's research cost only. 108 
     var base = Math.round(60 * Math.pow(1.3, r[3]) / 5) * 5;
     FORTRESS3_TREE[r[0]] = { name: r[1], icon: r[2], row: r[3], col: r[4], parents: r[5], maxLevel: r[6], perLevel: r[7], stat: r[8], baseCost: base, costMult: 1.5, tree: 3 };
   });
-  Object.keys(FORTRESS1_TREE).forEach(function (k) { FORTRESS1_TREE[k].tree = 1; });
+  Object.keys(FORTRESS1_TREE).forEach(function (k) { FORTRESS1_TREE[k].tree = 1; }); Object.keys(FORTRESS3_TREE).forEach(function (k) { FORTRESS3_TREE[k].tree = 3; });
 })();
 function fortressNode(key) { return FORTRESS1_TREE[key] || FORTRESS3_TREE[key] || null; }
 var FORTRESS_UNLOCK_AT = 3; // parent level needed to unlock a child
-function fortressNodeCost(key, level) { var d = fortressNode(key); return Math.max(1, Math.round(d.baseCost * Math.pow(d.costMult, level - 1) * FORTRESS_COST_SCALE * (d.tree === 3 ? FORTRESS3_COST_SCALE : 1))); }
+/* v1069 (Harley: "as a new player I breezed through 60+ nodes in a minute"): fortress research repriced to the normal research economy (v1015).
+   Each level costs FORTRESS_COST_L1 x g^(row + (level-1)/maxLevel), with g solved per tree so a full tree costs FORTRESS_TREE_TARGET (~ the Battle tree).
+   Nodes side by side on the same row cost the same. Both trees total the same, so neither fortress type is cheaper to max. */
+var FORTRESS_COST_L1 = 1500, FORTRESS_TREE_TARGET = 100e6, fortressCostG = {};
+function fortressCostRaw(d, level, g) { return FORTRESS_COST_L1 * Math.pow(g, d.row + (level - 1) / d.maxLevel); }
+function fortressGrowth(tree) {
+  if (fortressCostG[tree]) return fortressCostG[tree];
+  var T = tree === 3 ? FORTRESS3_TREE : FORTRESS1_TREE, lo = 1.0001, hi = 20;
+  var total = function (g) { var t = 0; for (var k in T) for (var l = 1; l <= T[k].maxLevel; l++) t += fortressCostRaw(T[k], l, g); return t; };
+  for (var i = 0; i < 80; i++) { var mid = (lo + hi) / 2; if (total(mid) > FORTRESS_TREE_TARGET) hi = mid; else lo = mid; }
+  return (fortressCostG[tree] = (lo + hi) / 2);
+}
+function fortressNodeCost(key, level) { var d = fortressNode(key); var c = fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1)) * FORTRESS_COST_SCALE; var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
+/* timers: the same cost -> time curve as normal research (Lv1 ~1.5k = ~2 min, ~10M = ~2 days), fitted to TECH_DEFS */
+function fortressTimeFor(key, level) { return Math.max(5, Math.round(60 * 0.00476 * Math.pow(fortressNodeCost(key, level), 0.826))); }
 function fortressNodeUnlocked(map, key) {
   var d = fortressNode(key); if (!d) return false;
   return d.parents.every(function (p) { return ((map && map[p]) || 0) >= Math.min(FORTRESS_UNLOCK_AT, fortressNode(p).maxLevel); });
@@ -6911,10 +6925,12 @@ function createGame(opts) {
     if (!fortressNodeUnlocked(state.fortressTech, key)) return { ok: false, reason: "locked" };
     var cost = fortressNodeCost(key, cur + 1);
     if (state.researchPoints < cost) return { ok: false, reason: "not_enough_research" };
+    if (state.researchQueue) return { ok: false, reason: "queue_busy" }; /* v1069: fortress upgrades share the one research lane with normal research */
     state.researchPoints -= cost;
-    state.fortressTech[key] = cur + 1;
-    log("🏰 Fortress upgrade: " + def.name + " Lv" + (cur + 1));
-    return { ok: true };
+    var fdur = fortressTimeFor(key, cur + 1);
+    state.researchQueue = { key: key, fort: 1, toLevel: cur + 1, startedAt: now(), duration: fdur, finishAt: now() + fdur * 1000 };
+    log("🏰 Fortress research started: " + def.name + " Lv" + (cur + 1) + " (" + fdur + "s)");
+    return { ok: true, finishAt: state.researchQueue.finishAt };
   }
   function researchTech(key) {
     var def = TECH_DEFS[key];
@@ -8958,8 +8974,8 @@ function createGame(opts) {
       }
     }
     if (state.researchQueue && t >= state.researchQueue.finishAt) {
-      var rq = state.researchQueue; state.tech[rq.key] = rq.toLevel; state.researchQueue = null;
-      log("Research complete: " + TECH_DEFS[rq.key].name + " Lv" + rq.toLevel);
+      var rq = state.researchQueue; if (rq.fort) { if (!state.fortressTech) state.fortressTech = {}; state.fortressTech[rq.key] = Math.max(state.fortressTech[rq.key] || 0, rq.toLevel); } else state.tech[rq.key] = rq.toLevel; state.researchQueue = null;
+      log("Research complete: " + (rq.fort ? (fortressNode(rq.key) || {}).name : TECH_DEFS[rq.key].name) + " Lv" + rq.toLevel);
     }
     while (state.healQueue.length && t >= state.healQueue[0].finishAt) {
       var hj = state.healQueue.shift();
@@ -9017,7 +9033,7 @@ function createGame(opts) {
     if (typeof saved.researchPoints === "number") state.researchPoints = saved.researchPoints;
     if (saved.tech) { state.tech = saved.tech; if (!saved.techV10) { for (var tkM in state.tech) { state.tech[tkM] = Math.min(TECH_LEVELS, (state.tech[tkM] || 0) * 2); } } } // v793: tech went from 5 to 10 half-size levels — an old level counts double
     state.techV10 = true;
-    state.researchQueue = (saved.researchQueue && TECH_DEFS[saved.researchQueue.key]) ? saved.researchQueue : null;
+    state.researchQueue = (saved.researchQueue && (saved.researchQueue.fort ? fortressNode(saved.researchQueue.key) : TECH_DEFS[saved.researchQueue.key])) ? saved.researchQueue : null;
     if (saved.fortressTech) state.fortressTech = saved.fortressTech;
     if (saved.heroBonus) state.heroBonus = Object.assign({ atk: 0, hp: 0, def: 0, skill: 0 }, saved.heroBonus);
     if (saved.buildQueue2 === true) state.buildQueue2 = true;
@@ -11225,7 +11241,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1068"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1069"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13021,14 +13037,16 @@ function renderResearchHub() {
   }
   var q = document.getElementById("rhQ"), rq = game.state.researchQueue;
   if (q) {
-    if (rq && TECH_DEFS[rq.key]) {
+    var rqd = researchQueueDef(rq);
+    if (rq && rqd) {
       var left = Math.max(0, (rq.finishAt - vnow()) / 1000), dur = rq.duration || Math.max(1, (rq.finishAt - (rq.startedAt || rq.finishAt)) / 1000), pc = dur ? Math.max(0, Math.min(100, 100 - left / dur * 100)) : 0;
       var qk = rq.key + rq.toLevel;
-      if (q.getAttribute("data-k") !== qk) { q.setAttribute("data-k", qk); q.innerHTML = '<div class="rh-qi">' + TECH_DEFS[rq.key].icon + '</div><div class="rh-qt"><b>' + TECH_DEFS[rq.key].name + ' Lv' + rq.toLevel + '</b><span class="rh-ql"></span><div class="rh-qm"><i></i></div></div><div class="rh-qs">' + speedupBtnsHtml("research", null) + '</div>'; }
+      if (q.getAttribute("data-k") !== qk) { q.setAttribute("data-k", qk); q.innerHTML = '<div class="rh-qi">' + rqd.icon + '</div><div class="rh-qt"><b>' + rqd.name + ' Lv' + rq.toLevel + '</b><span class="rh-ql"></span><div class="rh-qm"><i></i></div></div><div class="rh-qs">' + speedupBtnsHtml("research", null) + '</div>'; }
       q.querySelector(".rh-ql").textContent = fmtTime(left); q.querySelector(".rh-qm i").style.width = pc + "%"; q.style.display = "";
     } else { q.setAttribute("data-k", ""); q.innerHTML = '<div class="rh-qt" style="text-align:center;color:#a3906a">🔬 Nothing researching - tap a card to pick one</div>'; }
   }
 }
+function researchQueueDef(rq) { if (!rq) return null; if (rq.fort) { var d = fortressNode(rq.key); return d ? { name: d.name + (d.tree === 3 ? " (Fortress III)" : " (Fortress I)"), icon: d.icon } : null; } return TECH_DEFS[rq.key] || null; } /* v1069 */
 function renderTechTabs() { /* v1032: replaced by the hub - inside a tree this is the "‹ All research" bar with the tree's name */
   var el = document.getElementById("techTabs");
   if (activeTechCategory === "hub") { el.style.display = "none"; el.innerHTML = ""; return; }
@@ -13061,7 +13079,7 @@ function renderTechFortress() {
   var moved = false;
   if (body.parentNode !== host) { host.innerHTML = '<div class="tf-title" id="tfTitle"></div>'; host.appendChild(body); moved = true; }
   var st = game.state, map = st.fortressTech || {}, TREE = fortressViewType === 3 ? FORTRESS3_TREE : FORTRESS1_TREE;
-  var sig = [fortressViewType, host.clientWidth, JSON.stringify(map)].concat(Object.keys(TREE).map(function (k) { var l = map[k] || 0; return l < TREE[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1) ? 1 : 0; })).join("|");
+  var sig = [fortressViewType, host.clientWidth, JSON.stringify(map), st.researchQueue ? (st.researchQueue.fort ? "f" : "t") + st.researchQueue.key + st.researchQueue.toLevel : "-"].concat( /* v1069: the lane state changes which nodes can start */ Object.keys(TREE).map(function (k) { var l = map[k] || 0; return l < TREE[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1) ? 1 : 0; })).join("|");
   if (moved || sig !== techFortressSig || !body.querySelector(".rt-board")) { techFortressSig = sig; renderFortress(); }
   else { var hd = body.querySelector(".ft-head b"); if (hd) hd.textContent = "🔬 Research: " + fmt(st.researchPoints); }
   var tt = document.getElementById("tfTitle"), ft = document.getElementById("fortressTitle"); if (tt && ft) tt.textContent = ft.textContent;
@@ -13070,7 +13088,7 @@ function renderTechs() {
   document.getElementById("rpCount").textContent = Math.floor(game.state.researchPoints) + " RP";
   renderTechTabs();
   var tqb = document.getElementById("techQueueBar"), rqq = game.state.researchQueue;
-  tqb.innerHTML = '<span>🔬 Research: <b>' + (rqq ? 1 : 0) + '/1</b>' + (rqq ? ' · ' + TECH_DEFS[rqq.key].name + ' Lv' + rqq.toLevel : ' · idle') + '</span>' + (rqq ? speedupBtnsHtml("research", null) : "") + '<a href="#" id="devRFin" style="color:#7a6a4a;">dev: finish</a>';
+  tqb.innerHTML = '<span>🔬 Research: <b>' + (rqq ? 1 : 0) + '/1</b>' + (rqq && researchQueueDef(rqq) ? ' · ' + researchQueueDef(rqq).name + ' Lv' + rqq.toLevel : ' · idle') + '</span>' + (rqq ? speedupBtnsHtml("research", null) : "") + '<a href="#" id="devRFin" style="color:#7a6a4a;">dev: finish</a>';
   tqb.querySelector("#devRFin").onclick = function (e) { e.preventDefault(); game.researchFinishNow(); persist(); render(); };
   tqb.style.display = activeTechCategory === "hub" ? "none" : "";
   if (activeTechCategory === "fortress1" || activeTechCategory === "fortress3") { renderTechFortress(); return; }
@@ -13140,7 +13158,7 @@ function techNodeState(key) {
   var def = TECH_DEFS[key], lv = game.state.tech[key] || 0, rq = game.state.researchQueue;
   if (lv >= def.maxLevel) return "max";
   if (!game.meetsTechRequirements(key)) return "locked";
-  if (rq && rq.key === key) return "run";
+  if (rq && !rq.fort && rq.key === key) return "run";
   var cost = game.techCostFor(key, lv + 1), ex = game.techExtraFor(key, lv + 1);
   return !rq && game.state.researchPoints >= cost && game.techExtraAffordable(ex) ? "can" : "";
 }
@@ -13193,7 +13211,7 @@ function techTreeDetail(key) {
     var cost = game.techCostFor(key, level + 1), extraC = game.techExtraFor(key, level + 1), exIc = { gold: ico("gold"), stone: ico("stone"), energon: ico("energon"), food: ico("food"), wood: ico("wood") };
     if (st !== "can") { var Rr = game.state.resources, rpHave = Math.floor(game.state.researchPoints); h += '<div class="rq-list">' + rqRow(rpHave >= cost, ico("rp"), fmt(cost) + " Research Points", "You have " + fmt(rpHave), rpHave >= cost ? "✓" : "−" + fmt(cost - rpHave)) +
       Object.keys(extraC).map(function (r) { var hv = Math.floor(r === "energon" ? game.state.energon : (Rr[r] || 0)); return rqRow(hv >= extraC[r], exIc[r], fmt(extraC[r]) + " " + r.charAt(0).toUpperCase() + r.slice(1), "You have " + fmt(hv), hv >= extraC[r] ? "✓" : "−" + fmt(extraC[r] - hv)); }).join("") +
-      (rq ? rqRow(false, "🔬", "A free research slot", "Busy: " + TECH_DEFS[rq.key].name + " Lv " + rq.toLevel) : "") + '</div>'; } /* v1022: what's missing */
+      (rq ? rqRow(false, "🔬", "A free research slot", "Busy: " + (researchQueueDef(rq) || { name: "research" }).name + " Lv " + rq.toLevel) : "") + '</div>'; } /* v1022: what's missing */
     h += '<button class="secondary" id="rtGo"' + (st === "can" ? "" : " disabled") + '>Research (' + fmt(cost) + ' RP' + Object.keys(extraC).map(function (r) { return " + " + exIc[r] + fmt(extraC[r]); }).join("") + ') ⏱ ' + fmtTime(game.techTimeFor(key, level + 1)) + '</button>';
   }
   box.innerHTML = h;
@@ -13727,7 +13745,8 @@ function renderFortress() {
   h += '<div class="rt-board" style="height:' + H + 'px"><svg class="rt-lines" width="' + W + '" height="' + H + '">' + lines + '</svg>';
   Object.keys(TREE).forEach(function (k) {
     var d = TREE[k], lvl = map[k] || 0, p = pos(k), unlocked = fortressNodeUnlocked(map, k), maxed = lvl >= d.maxLevel;
-    var stt = maxed ? "max" : !unlocked ? "locked" : st.researchPoints >= fortressNodeCost(k, lvl + 1) ? "can" : "";
+    var frq = st.researchQueue, running = frq && frq.fort && frq.key === k;
+    var stt = maxed ? "max" : running ? "run" : !unlocked ? "locked" : st.researchPoints >= fortressNodeCost(k, lvl + 1) && !frq ? "can" : "";
     h += '<div class="rt-node ' + stt + '" data-k="' + k + '" style="left:' + p.x + 'px;top:' + p.y + 'px">' +
       '<div class="rt-hex"><i>' + d.icon + '</i></div>' + (stt === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
       '<div class="rt-lv">' + (maxed ? "MAX" : lvl + "/" + d.maxLevel) + '</div><div class="rt-nm">' + escapeHtml(d.name) + '</div></div>';
@@ -13754,7 +13773,12 @@ function fortressDetail(k) { /* v1011: the node popup (same box as research) - N
   h += '<div class="cur">Now: ' + fortressDesc(d, lv) + '</div>';
   if (!maxed) h += '<div class="nxt">Next level: ' + fortressDesc(d, lv + 1) + '</div>';
   if (!unl) h += '<div class="locked">🔒 Needs ' + d.parents.map(function (pk) { return fortressNode(pk).name + " Lv" + Math.min(FORTRESS_UNLOCK_AT, fortressNode(pk).maxLevel); }).join(" and ") + '</div>';
-  if (!maxed) h += '<button class="secondary" id="ftUpBtn"' + (can ? "" : " disabled") + '>Upgrade (' + fmt(cost) + ' 🔬)</button><div style="opacity:.75;margin-top:4px;font-size:11px">You have ' + fmt(st.researchPoints) + ' 🔬</div>';
+  var frq = st.researchQueue, fRun = frq && frq.fort && frq.key === k, fBusy = !!frq && !fRun; /* v1069: one research lane */
+  if (fRun) h += '<div class="nxt">⏳ Researching Lv ' + frq.toLevel + ' - <b data-rt-left>' + fmtTime(Math.max(0, (frq.finishAt - vnow()) / 1000)) + '</b> left</div>';
+  else if (!maxed) {
+    h += '<button class="secondary" id="ftUpBtn"' + (can && !fBusy ? "" : " disabled") + '>Research (' + fmt(cost) + ' 🔬 · ⏱ ' + fmtTime(fortressTimeFor(k, lv + 1)) + ')</button><div style="opacity:.75;margin-top:4px;font-size:11px">You have ' + fmt(st.researchPoints) + ' 🔬</div>';
+    if (fBusy) { var bd = researchQueueDef(frq); h += '<div class="locked">🔬 Research lane busy: ' + escapeHtml(bd ? bd.name : "research") + ' Lv' + frq.toLevel + '</div>'; }
+  }
   box.innerHTML = h;
   var up = document.getElementById("ftUpBtn"); if (up) up.onclick = function () { var r = game.researchFortress(k); if (r.ok) persist(); renderFortress(); };
 }
@@ -26519,7 +26543,7 @@ function bagSpeedUse(kind) { /* the timers this speedup can shorten, each with i
   var st = game.state, out = "";
   Object.keys(st.buildings).forEach(function (k) { var b = st.buildings[k]; if (b.upgrading && game.speedupTargets(kind, "build")) out += bagTarget("🔨 " + BUILDING_DEFS[k].name + " → Lv " + b.upgrading.toLevel, b.upgrading.finishAt, kind, "build", k);
     if (b.queue && b.queue.length && game.speedupTargets(kind, "train")) out += bagTarget("⚔️ Training at " + BUILDING_DEFS[k].name, b.queue[b.queue.length - 1].finishAt, kind, "train", k); });
-  if (st.researchQueue && game.speedupTargets(kind, "research")) out += bagTarget("🔬 " + TECH_DEFS[st.researchQueue.key].name + " Lv " + st.researchQueue.toLevel, st.researchQueue.finishAt, kind, "research", "");
+  if (st.researchQueue && game.speedupTargets(kind, "research")) out += bagTarget("🔬 " + (researchQueueDef(st.researchQueue) || { name: "Research" }).name + " Lv " + st.researchQueue.toLevel, st.researchQueue.finishAt, kind, "research", "");
   return out || '<div style="opacity:.8;margin-top:6px">Nothing ' + (kind === "construction_1h" ? "is being built" : "is running") + ' right now.</div>';
 }
 function bagTarget(label, finishAt, kind, what, key) { return '<div class="bg-tg"><span>' + label + '<br><small style="opacity:.75" data-bfin="' + finishAt + '">' + fmtTime(Math.max(0, (finishAt - vnow()) / 1000)) + ' left</small></span><button type="button" class="su-btn" data-su="' + kind + '" data-suw="' + what + '" data-suk="' + key + '">−1h</button></div>'; }

@@ -1262,3 +1262,14 @@
 - Harley: the TEST page crashed on his phone ("A problem repeatedly occurred" = iOS killed the page, usually out of memory), and zooming lagged badly. He asked to remove the dark patches.
 - Likely cause: v1064's #mapSeaTint was one element the size of the whole world (115k+ px wide at normal zoom) with opacity, so it can get its own huge backing layer, and it was resized/repainted on every zoom. Removed the element, its CSS, wcBuildTint and the tint settings. Whitecaps are unchanged (5 small flip-books).
 - Still to watch: if lag remains, the other new animated layers are the base-water rings (3 per base in view). Both Dev Tools switches (base water, whitecaps) can isolate it. g252 (updated: no tint layer) and g200 pass.
+
+## v1069 - Fortress research repriced + on the research lane with timers (TEST)
+- Harley: as a new player he breezed through 60+ Fortress I nodes in a minute. Cause: the fortress trees never got the v1015 research repricing. Fortress I started at 60 RP, its first 60 levels cost ~30k in total, every upgrade was instant, and the full tree was 1.9M (the Battle tree is ~100M plus timers).
+- He chose: each tree ~100M (same as Battle), and timers on the shared research lane ("a player has to decide which tech their research lane is spending time on").
+- Cost: FORTRESS_COST_L1 (1500) x g^(row + (level-1)/maxLevel). g is solved per tree so the full tree = FORTRESS_TREE_TARGET (100M): Fortress I g≈1.395, Fortress III g≈4.10. Nodes side by side on a row cost the same. Rounded to 3 significant digits. FORTRESS3_COST_SCALE is no longer used.
+  - Fortress I: Lv1 1,500 · first 10 = 20.6k · first 60 = 494k · full 100M (last level 5.49M).
+  - Fortress III: Lv1 1,500 · first 10 = 72.8k · full 100M (last level 22.1M).
+- Time: fortressTimeFor = 60 x 0.00476 x cost^0.826 s, the same cost -> time curve as normal research (1.5k ≈ 2 min, 10M ≈ 2 days). Full Fortress I ≈ 661 h of lane time, Fortress III ≈ 508 h (the Battle tree is roughly 400 h).
+- researchFortress now needs a free research lane and puts {key, fort:1, toLevel, ...} in state.researchQueue. The tick applies it to fortressTech, the save keeps it, speed-ups work on it, and normal research waits for it (and the other way round). researchQueueDef() gives the name/icon for the hub, queue bar, requirement rows and bag speed-up targets. The fortress popup shows "Research (cost · time)", "⏳ Researching … left", or "Research lane busy: …". The board redraws when the lane changes.
+- Side effect: power counts research spent, so players and bots with fortress research get higher fortress power.
+- Tests: g253_fortress_research (new). g242 updated (fortress waits for the lane, then queues). g243 and g240 pass.
