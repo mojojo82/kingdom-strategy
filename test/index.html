@@ -11290,7 +11290,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1074"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1075"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16790,6 +16790,15 @@ function marchGLDraw(ships, u) {
 var marchMarkerEls = {}, marchPathEls = {}; /* v856: route arrow per march */       // march.id -> its <div class="march-marker"> element, kept across frames
 var marchAnim = { running: false, rafId: null };
 
+function clipSegToRect(a, b, r) { /* v1075: the part [t0,t1] of the line a->b inside rect r {x0,y0,x1,y1}, or null if it misses (Liang-Barsky) */
+  var t0 = 0, t1 = 1, dx = b.x - a.x, dy = b.y - a.y, P = [-dx, dx, -dy, dy], Q = [a.x - r.x0, r.x1 - a.x, a.y - r.y0, r.y1 - a.y];
+  for (var i = 0; i < 4; i++) {
+    if (P[i] === 0) { if (Q[i] < 0) return null; continue; }
+    var t = Q[i] / P[i];
+    if (P[i] < 0) { if (t > t1) return null; if (t > t0) t0 = t; } else { if (t < t0) return null; if (t < t1) t1 = t; }
+  }
+  return [t0, t1];
+}
 function marchTileCenterPx(tile) { return tileCenterPx(tile); } /* v825: flat or isometric */
 function clamp01(n) { return n < 0 ? 0 : n > 1 ? 1 : n; }
 
@@ -16801,6 +16810,8 @@ function updateMarchMarkers(manual) {
     var pathSeen = {};
     var vpEl = document.getElementById("mapviewport"), use3d = !!(march3dOn && mapIso && vpEl && marchGLInit()), ships3d = [];
     var mapById = null;
+    /* v1075: only marches on or near the screen are drawn (like the map tiles). view = what's visible in #mapworld pixels plus half a screen each way */
+    var view = vpEl && vpEl.clientWidth ? { x0: vpEl.scrollLeft - vpEl.clientWidth * 0.5, y0: vpEl.scrollTop - vpEl.clientHeight * 0.5, x1: vpEl.scrollLeft + vpEl.clientWidth * 1.5, y1: vpEl.scrollTop + vpEl.clientHeight * 1.5 } : null;
     if (home) {
       var allMarches = game.state.marches.concat(foreignMarchList(vnow()));
       allMarches.forEach(function (m) {
@@ -16825,16 +16836,21 @@ function updateMarchMarkers(manual) {
         }
         var px = fromPx.x + (toPx.x - fromPx.x) * t;
         var py = fromPx.y + (toPx.y - fromPx.y) * t;
-        seen[m.id] = true;
-        if (m.status === "acting" && isAtk) marchFxVolley(m.id, px, py, targetPx, layer);
-        if (m.status === "outbound" || m.status === "returning") { /* v856: route arrows */
-          var pA = m.status === "returning" ? targetPx : homePx, pB = m.status === "returning" ? homePx : targetPx, pdx = pB.x - pA.x, pdy = pB.y - pA.y, plen = Math.sqrt(pdx * pdx + pdy * pdy);
+        var shipIn = !view || (px > view.x0 && px < view.x1 && py > view.y0 && py < view.y1);
+        var pA = m.status === "returning" ? targetPx : homePx, pB = m.status === "returning" ? homePx : targetPx, pclip = view ? clipSegToRect(pA, pB, view) : [0, 1], pathIn = !!pclip;
+        if (shipIn) seen[m.id] = true;
+        if (shipIn && m.status === "acting" && isAtk) marchFxVolley(m.id, px, py, targetPx, layer);
+        if (pathIn && (m.status === "outbound" || m.status === "returning")) { /* v856: route arrows */
+          var pdx = pB.x - pA.x, pdy = pB.y - pA.y, plen = Math.sqrt(pdx * pdx + pdy * pdy);
+          /* v1075: only the part of the arrow near the screen is drawn (a long route used to be one strip up to ~30,000px wide). The start is snapped to the 16px arrow pattern so the arrows don't jump */
+          var poff = Math.floor(plen * pclip[0] / 16) * 16, pend = plen * pclip[1], pux = plen ? pdx / plen : 0, puy = plen ? pdy / plen : 0;
           var pe = marchPathEls[m.id];
           if (!pe) { pe = document.createElement("div"); (document.getElementById("mapPathLayer") || layer).appendChild(pe); marchPathEls[m.id] = pe; }
           var pc = "march-path " + (m.foreign ? "foe" : m.status === "returning" ? "back" : "out"); if (pe.className !== pc) pe.className = pc;
-          pe.style.left = pA.x + "px"; pe.style.top = pA.y + "px"; pe.style.width = Math.max(0, plen) + "px"; pe.style.transform = "rotate(" + Math.atan2(pdy, pdx) + "rad)";
+          pe.style.left = (pA.x + pux * poff) + "px"; pe.style.top = (pA.y + puy * poff) + "px"; pe.style.width = Math.max(0, pend - poff) + "px"; pe.style.transform = "rotate(" + Math.atan2(pdy, pdx) + "rad)";
           pathSeen[m.id] = true;
         }
+        if (!shipIn) return; /* v1075: ship is off screen - no marker, no 3D ship */
         var el = marchMarkerEls[m.id];
         if (!el) { el = document.createElement("div"); layer.appendChild(el); marchMarkerEls[m.id] = el; }
         el.className = "march-marker" + (m.status === "acting" ? " acting" : "");

@@ -80,6 +80,7 @@ const r1 = (x) => Math.round(x * 10) / 10;
     cityFirstMs: r1(sB.listens[cityKey].ms[0] || 0), marchFirstMs: r1(sB.listens[marchKey].ms[0] || 0), longTasks: sB.longTasks, longTaskMs: sB.longTaskMs,
     topListens: Object.entries(sB.listens).map(([k, l]) => [k.replace("envs/test/", ""), l.billed]).sort((x, y) => y[1] - x[1]).slice(0, 8) };
   out.crowdedFpsIdle = await fps(B, 4000);
+  out.drawn = await B.evaluate(() => ({ marches: foreignMarchList(vnow()).length + game.state.marches.length, shipMarkers: Object.keys(marchMarkerEls).length, routeArrows: Object.keys(marchPathEls).length }));
   if (process.env.PROFILE) { const cdp = await B.context().newCDPSession(B); await cdp.send("Profiler.enable"); await cdp.send("Profiler.start"); await B.waitForTimeout(3000);
     const { profile } = await cdp.send("Profiler.stop"); const self = {}, dt = profile.timeDeltas, byId = {}; profile.nodes.forEach((n) => { byId[n.id] = n; });
     profile.samples.forEach((id, i) => { const n = byId[id], k = n.callFrame.functionName + ":" + n.callFrame.lineNumber; self[k] = (self[k] || 0) + (dt[i] || 0); });
