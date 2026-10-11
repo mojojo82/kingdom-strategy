@@ -2975,7 +2975,7 @@
                   </label>
                 </div>
                 <div class="dev-tools-row"><span class="dev-tools-hint">Base water look (all players):</span><button class="dev-btn" id="devBaseWaterStyleBtn">🌊 Base water: New</button></div>
-                <div class="dev-tools-row"><span class="dev-tools-hint">Other kingdoms' bases (this device, reload to apply):</span><button class="dev-btn" id="devPatchModeBtn">📦 Bases: by patch</button><button class="dev-btn" id="devPatchRebuildBtn">🔁 Rebuild this kingdom's patch lists (admin)</button><span class="dev-tools-hint" id="devPatchRebuildSt"></span></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint">Other kingdoms' bases (this device, reload to apply):</span><button class="dev-btn" id="devPatchModeBtn">📦 Bases: by patch</button><button class="dev-btn" id="devPatchKingdomBtn">🌍 This kingdom (all players): by patch</button><button class="dev-btn" id="devPatchRebuildBtn">🔁 Rebuild this kingdom's patch lists (admin)</button><span class="dev-tools-hint" id="devPatchRebuildSt"></span></div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devWhitecapToggle" autocomplete="off"> World map: whitecaps on the open sea
@@ -11308,7 +11308,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1085"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1086"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16582,6 +16582,10 @@ function renderBaseWaterStyleBtn() { var b = document.getElementById("devBaseWat
   function off() { try { return localStorage.getItem("ks_patch_off_v1") === "1"; } catch (e) { return false; } }
   function paint() { b.textContent = off() ? "📋 Bases: whole list (old)" : "📦 Bases: by patch"; }
   paint(); b.onclick = function () { try { localStorage.setItem("ks_patch_off_v1", off() ? "0" : "1"); } catch (e) {} paint(); };
+  var kb = document.getElementById("devPatchKingdomBtn"); /* v1086: the rollback - switches the whole kingdom back to the old whole list (players pick it up on their next open) */
+  function kpaint() { var k = kingdomInfo[CURRENT_SERVER_ID] || {}; kb.textContent = k.patchOff ? "🌍 This kingdom (all players): whole list (old)" : "🌍 This kingdom (all players): by patch"; }
+  if (kb) { kpaint(); setInterval(kpaint, 3000); kb.onclick = function () { if (!cloudDb || !KS_BACKEND.isAdmin) { kb.textContent = "Admin only"; return; } var k = kingdomInfo[CURRENT_SERVER_ID] || {}, nv = !k.patchOff;
+    cloudDb.doc("servers/" + CURRENT_SERVER_ID).set({ patchOff: nv }, { merge: true }).then(function () { kingdomInfo[CURRENT_SERVER_ID] = Object.assign({}, k, { patchOff: nv }); kpaint(); var st2 = document.getElementById("devPatchRebuildSt"); if (st2) st2.textContent = "Saved for all players in " + serverDisplayName(CURRENT_SERVER_ID) + " - reload to apply"; }); }; }
   var rb = document.getElementById("devPatchRebuildBtn"), st = document.getElementById("devPatchRebuildSt"); /* v1085: once for Atlantis (its bases were claimed before patches existed), or after any doubt */
   if (rb) rb.onclick = function () { if (!window.KS_BACKEND || !KS_BACKEND.call) return; st.textContent = "Rebuilding…"; KS_BACKEND.call("adminRebuildPatches", {}).then(function (r) { st.textContent = "✓ " + r.bases + " bases in " + r.patches + " patches (" + r.wrote + " written, " + r.fixed + " fixed, " + r.removed + " removed)"; }, function (e) { st.textContent = "Failed: " + (e && e.message); }); };
 })();
@@ -17280,9 +17284,10 @@ function applyCityRecord(tileId, data) {
 var PATCH_MID_MAX = 60, patchMidTooMany = false; /* v1084: most patches the Middle zoom will load for dots */
 var PATCH_TILES = 50, PATCH_SUB_MAX = 72, PATCH_LINGER_MS = 20000, PATCH_OFF_KEY = "ks_patch_off_v1";
 var patchSubs = {}, patchViewWanted = {}, patchSyncStarted = false;
-function patchMode() {
+function patchMode() { /* v1086 (phase 5): every kingdom on TEST, Atlantis included. Off for a whole kingdom with its registry flag patchOff (admin switch = the rollback), or on this device (Dev Tools) */
   var off = false; try { off = localStorage.getItem(PATCH_OFF_KEY) === "1"; } catch (e) {}
-  return !off && !!cloudDb && window.KS_BACKEND && KS_BACKEND.env === "test" && CURRENT_SERVER_ID !== LEGACY_SERVER_ID;
+  var k = kingdomInfo[CURRENT_SERVER_ID];
+  return !off && !(k && k.patchOff === true) && !!cloudDb && !!window.KS_BACKEND && KS_BACKEND.env === "test";
 }
 function patchWriteMode() { return !!cloudDb && !!window.KS_BACKEND && KS_BACKEND.env === "test"; } /* v1085: on TEST every kingdom (Atlantis too) claims / gives up / re-skins bases through the server, so its patch lists stay right for neighbours looking in */
 function patchIdOfTile(x, y) { return Math.floor(x / PATCH_TILES) + "_" + Math.floor(y / PATCH_TILES); }
@@ -17343,6 +17348,7 @@ function syncPatchSubs() {
 }
 function startPatchSync() {
   if (patchSyncStarted) return; patchSyncStarted = true;
+  setTimeout(patchDailyCheck, 8000); /* v1086 */
   try { mapWorldSizedForTiles = null; renderVisibleTiles(); } catch (e) {} syncPatchSubs(); setInterval(syncPatchSubs, 3000);
 }
 /* ---- v1085: the neighbouring kingdoms, close up (world map plan, phase 4c) ----
@@ -17421,6 +17427,14 @@ function foreignTileInfoHtml(id) {
     + '<div class="kd-f-row"><button class="dev-btn" disabled>⚔️ Attack</button><button class="dev-btn" disabled>🛰️ Teleport here</button><button class="dev-btn" disabled>⛏️ Gather</button></div>'
     + '<div class="kd-f-why">Borders are closed: actions into another kingdom open only through admin controls or an event. Looking is always free.</div></div>';
 }
+/* v1086: once a day an admin's game rebuilds this kingdom's patch lists from its bases and notes anything that was out of step (the plan's nightly check, without a server job) */
+function patchDailyCheck() {
+  if (!patchMode() || !KS_BACKEND.isAdmin) return;
+  var key = "ks_patchcheck_" + CURRENT_SERVER_ID, last = 0; try { last = +localStorage.getItem(key) || 0; } catch (e) {}
+  if (Date.now() - last < 86400000) return; try { localStorage.setItem(key, String(Date.now())); } catch (e) {}
+  KS_BACKEND.call("adminRebuildPatches", {}).then(function (r) { patchLastCheck = r; if (r.wrote || r.removed) { console.warn("patch lists were out of step - fixed", JSON.stringify(r)); try { game.log("🔁 Patch check: " + r.wrote + " patch list(s) fixed, " + r.removed + " removed (" + r.bases + " bases)."); } catch (e) {} } }, function (e) { console.error("patch check failed", e && e.message); });
+}
+var patchLastCheck = null;
 /* the patches around a tile, read once (for picking a free spot to start on) */
 function loadPatchesAround(x, y, r) {
   var ids = {}; [[-r, -r], [r, -r], [-r, r], [r, r], [0, 0]].forEach(function (d) { var xx = x + d[0], yy = y + d[1]; if (xx >= 0 && yy >= 0) ids[patchIdOfTile(xx, yy)] = 1; });
@@ -17877,7 +17891,12 @@ function assignServerForNewPlayer(inviteId) {
 // subscribe to anything — those two read CURRENT_SERVER_ID indirectly via
 // serverPrefix(), so it must be correct before they start.
 function resolveServerAssignment() {
-  function afterResolved() { try { nbrInit(); mapWorldSizedForTiles = null; } catch (e) { console.error(e); } try { if (nearBasesSeed()) renderVisibleTiles(); } catch (e) {} startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
+  function afterResolved() { try { nbrInit(); mapWorldSizedForTiles = null; } catch (e) { console.error(e); } try { if (nearBasesSeed()) renderVisibleTiles(); } catch (e) {}
+    /* v1086: the kingdom's registry doc first (its patchOff switch decides how bases load); never wait more than 2.5 s for it */
+    var go = function () { if (go.done) return; go.done = true; afterResolved2(); };
+    if (cloudDb && !IS_GUEST_LINK) { setTimeout(go, 2500); cloudDb.doc("servers/" + CURRENT_SERVER_ID).get().then(function (d) { if (d.exists) kingdomInfo[CURRENT_SERVER_ID] = d.data(); go(); }, go); } else go();
+  }
+  function afterResolved2() { startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
   if (IS_GUEST_LINK || !cloudDb) {
     // Guests ride along the legacy world; offline/no-db has no multiplayer
     // concept to assign anyway. CURRENT_SERVER_ID is already correct

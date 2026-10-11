@@ -75,9 +75,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   res.push(await compare("after teleport"));
   assert.ok(tp && tp.ok && seen.newBase && seen.oldGone && seen.drawn, "teleport seen through the patches");
   assert.strictEqual(seen.hp, hit, "attack seen through the patches");
-  /* Atlantis still uses the whole list */
+  /* v1086: Atlantis loads by patch too (phase 5) */
   const A = await page(""); await signUp(A, "pa@test.dev", "Pa");
-  assert.strictEqual(await A.evaluate(() => patchMode()), false);
+  assert.strictEqual(await A.evaluate(() => patchMode()), true);
   assert.deepStrictEqual(errs, []);
   console.log("g259 OK"); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

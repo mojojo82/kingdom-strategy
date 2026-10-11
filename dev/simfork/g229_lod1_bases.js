@@ -19,6 +19,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.fill("#ksE", "g229@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(async () => { setScreen("world"); const h = mapTileById(game.state.map, game.state.homeTileId); await generateBotAlliance({ count: 6, name: "Bots", tag: "BOT", x: h.x + 6, y: h.y }); });
+  { const ADMIN = require(path.join(ROOT, "functions/admins.json"))[0]; await call("adminRebuildPatches", JSON.stringify({ env: "test" }), JSON.stringify({ uid: ADMIN, token: { firebase: { sign_in_provider: "google.com" } } })); await P.evaluate(() => window.__fbNotify()); } /* v1086: bases load by patch; an admin's Dev Tools rebuild the lists after the bot tool */
   await P.waitForTimeout(3000);
   const o = {};
   for (const px of [30, 15, 9, 5]) { await P.evaluate((px) => { setMapZoom(mapZoom * px / tilePxZ()); centerMapOnTile(game.state.homeTileId); }, px); await P.waitForTimeout(1200);
