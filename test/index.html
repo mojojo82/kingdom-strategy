@@ -11308,7 +11308,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1087"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1088"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14719,15 +14719,16 @@ function goToWorldTile(tileId) {
   mapUserMovedMap = true; /* v892 */
   var tile = mapTileById(game.state.map, tileId);
   if (!tile) return;
+  worldMapKeep = null; /* v1088: an explicit jump beats "back to where you left it" (v923) - report / chat / bookmark coordinates used to land you back where you'd left the map */
   setScreen("world");
   selectedTile = tileId;
   function place() {
     var viewport = document.getElementById("mapviewport");
     if (!viewport || !viewport.clientWidth || viewport.clientHeight < 50 || viewport.clientHeight > window.innerHeight) return false; /* v861: wait until the map has its real on-screen height (coming from chat it is briefly as tall as the whole world, so it can't scroll vertically and the camera got pinned to the top) */
     try { ensureMapWorldSized(); } catch (e) {}
-    var pos = tileTopLeftPx(tile);
-    viewport.scrollLeft = Math.max(0, pos.x + tilePxZ() / 2 - viewport.clientWidth / 2);
-    viewport.scrollTop = Math.max(0, pos.y + tilePxZ() / 2 - viewport.clientHeight / 2);
+    var pos = tileCenterPx(tile), wEl = document.getElementById("mapworld"); /* v1088: the tile's real centre (flat or iso) + the margins used when zoomed right out */
+    viewport.scrollLeft = Math.max(0, pos.x + (wEl ? parseFloat(wEl.style.marginLeft) || 0 : 0) - viewport.clientWidth / 2);
+    viewport.scrollTop = Math.max(0, pos.y + (wEl ? parseFloat(wEl.style.marginTop) || 0 : 0) - viewport.clientHeight / 2);
     try { renderVisibleTiles(); } catch (e) {}
     renderTileInfo();
     return true;
