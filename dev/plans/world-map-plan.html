@@ -1,0 +1,137 @@
+<title>Seamless World Map Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito+Sans:wght@400;700;800&display=swap">
+<style>
+/* Layout: one reading column; a vertical roadmap of phases with gates between. Single dark look to match the game and its labs. */
+:root {
+  --bg: #0b1424; --panel: #13203a; --panel2: #0f1a2f; --ink: #eef3fb; --muted: #9fb1cc; --line: #2a3d63;
+  --gold: #f0c95f; --cyan: #3fc6e0;
+  --display: "Cinzel", Georgia, serif; --body: "Nunito Sans", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 18px 40px; padding-inline: 16px; display: grid; gap: 22px; }
+h1 { font-family: var(--display); color: var(--gold); font-size: 24px; margin: 0; letter-spacing: .03em; text-wrap: balance; }
+.date { color: var(--muted); font-size: 13px; margin-top: 4px; }
+h2 { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 8px; }
+section { display: grid; gap: 8px; }
+p { margin: 0; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+b { color: #fff; }
+.tbl { overflow-x: auto; border: 1px dotted var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--gold); font-weight: 800; background: var(--panel2); }
+tr:last-child td { border-bottom: 0; }
+.road { display: grid; gap: 0; }
+.phase { background: var(--panel); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; }
+.phase.last { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 10%, var(--panel)); }
+.phase .n { font-weight: 800; font-size: 15px; }
+.phase .s { color: var(--muted); font-size: 13.5px; }
+.gate { display: flex; align-items: center; gap: 10px; padding: 8px 0 8px 22px; color: var(--muted); font-size: 13px; position: relative; }
+.gate::before { content: ""; width: 10px; height: 10px; border: 1.5px solid var(--muted); transform: rotate(45deg); flex: none; }
+.todo { list-style: none; padding: 0; }
+.todo li::before { content: "☐  "; color: var(--gold); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Seamless World Map Plan</h1>
+    <div class="date">11 Oct 2026 · not built yet</div>
+  </header>
+
+  <section>
+    <h2>Goal</h2>
+    <p>One continuous world: a player can zoom out from their base, fly over every kingdom, and zoom back in anywhere. No loading screens, and no sense of changing kingdom except the border line and the name.</p>
+    <ul>
+      <li><b>Zoomed in (normal play):</b> real bases, marches and resources for the area on screen.</li>
+      <li><b>Zoomed out (exploring):</b> one summary per kingdom: name, player count, which alliances hold which areas.</li>
+      <li><b>Cost and phone load depend on what is on screen</b>, not on how many players a kingdom has. 100 kingdoms of 1,000+ players costs each phone about the same as one.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How it works today</h2>
+    <p>Drawing already scales; the shared data does not. Every player downloads, and live-listens to, their whole kingdom's bases and marches.</p>
+    <div class="tbl"><table>
+      <tr><th>Part</th><th>Today</th><th>At 1,000 players per kingdom</th></tr>
+      <tr><td>Map drawing</td><td>Only tiles on screen are built; land and sea load in chunks as you scroll</td><td>Fine</td></tr>
+      <tr><td>Bases</td><td>Whole kingdom's list, live, for every player</td><td>~1,000 on open; every HP / burn / skin / teleport change goes to all 1,000 phones</td></tr>
+      <tr><td>Marches</td><td>Whole kingdom's list, live, for every player</td><td>Every march anywhere goes to all 1,000 phones</td></tr>
+      <tr><td>Kingdoms</td><td>Atlantis is the only real one; "Kingdom 1" beside it is a drawn placeholder</td><td>Each real kingdom is fully separate; new players roll into the next one at 1,000</td></tr>
+    </table></div>
+    <p>Rough cost: 10,000 march updates a day × 1,000 watching players = 10 million Firebase reads a day for one kingdom. Across 100 kingdoms that's likely hundreds of dollars a day. Not a problem at today's player count; it needs fixing before a kingdom passes a couple of hundred active players.</p>
+  </section>
+
+  <section>
+    <h2>The design</h2>
+    <p>The shared data gets organised into map patches, and each phone listens only to the patches on screen, the same way land and sea already load.</p>
+    <p><b>World atlas.</b> One small shared list of every kingdom and its place on a world grid (Atlantis at 0,0, the test kingdom beside it). Each kingdom keeps its own map and data; the atlas only says where to draw it.</p>
+    <p><b>Patches.</b> Each kingdom's map is cut into 50 × 50 tile patches (a 1,200 × 1,200 kingdom = 576 patches). Each patch has one shared list of the bases in it: owner, name, alliance tag, skin, HP and burn state.</p>
+    <p><b>What each phone listens to:</b></p>
+    <ul>
+      <li>The patches on screen plus one ring around them (about 9 to 16 at normal zoom), across kingdom borders.</li>
+      <li>Marches whose route touches those patches.</li>
+      <li>Always, wherever they are: your own marches, your alliance's, and anything attacking you.</li>
+      <li>Patches you scroll away from stop updating but stay in memory, so scrolling back is instant.</li>
+    </ul>
+    <div class="tbl"><table>
+      <tr><th>Zoom</th><th>Shows</th><th>Loads</th></tr>
+      <tr><td>Close (normal play)</td><td>Bases, marches, resources, water effects</td><td>Patches on screen + one ring</td></tr>
+      <tr><td>Middle</td><td>Bases as small markers, alliance colours</td><td>Patch lists only (no march detail)</td></tr>
+      <tr><td>Far (world)</td><td>Kingdom outlines, names, alliance territory</td><td>One summary per kingdom</td></tr>
+    </table></div>
+    <p>Between levels, the closer detail fades in instead of popping. Kingdom summaries are refreshed by a server job every few minutes. Panning into a neighbour loads its patches exactly like your own.</p>
+  </section>
+
+  <section>
+    <h2>The test kingdom</h2>
+    <p>A real second kingdom sits next to Atlantis, replacing the drawn "Kingdom 1" placeholder. Play testers live there.</p>
+    <ul>
+      <li><b>Its own everything:</b> own map, bases and marches, so nothing testers do touches Atlantis players.</li>
+      <li><b>Getting testers in:</b> an admin tool to move an account in (and back), and optionally an invite code for brand-new accounts. Normal sign-ups keep going to Atlantis.</li>
+      <li><b>Fake crowd for load tests:</b> a script fills it with 1,000 bot bases and a few hundred marches. This runs on the local fake server until you OK writing them to the TEST Firebase.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Build order</h2>
+    <p>Everything is built and proven on the test kingdom first. Atlantis players only see a change in phase 5.</p>
+    <div class="road">
+      <div class="phase"><div class="n">1 · Test kingdom and a baseline</div><div>Real second kingdom next to Atlantis, admin tool to move testers in, script for a 1,000-bot crowd.</div><div class="s">Measure today's setup with the crowd: Firebase reads per player, phone time per update.</div></div>
+      <div class="gate">Gate: baseline numbers written down</div>
+      <div class="phase"><div class="n">2 · Bases by patch</div><div>Patch lists kept in step with bases; phones listen only to patches on screen plus one ring.</div><div class="s">Old whole-kingdom list stays behind a switch. Test: same bases visible, reads compared to baseline.</div></div>
+      <div class="gate">Gate: no base missing or doubled across 1,000 bots, reads well down</div>
+      <div class="phase"><div class="n">3 · Marches by patch</div><div>Each march records the patches it crosses; phones load the marches touching their view.</div><div class="s">Own, alliance and incoming marches always live. Test: no attack goes unseen.</div></div>
+      <div class="gate">Gate: every attack seen in scripted tests</div>
+      <div class="phase"><div class="n">4 · World view and crossing kingdoms</div><div>World atlas, kingdom summaries, three zoom levels with fade-in, panning into the neighbour.</div><div class="s">Test: you pan and zoom across both kingdoms on your phone; fps and reads measured again.</div></div>
+      <div class="gate">Gate: your OK on the feel</div>
+      <div class="phase last"><div class="n">5 · Move Atlantis over</div><div>Copy Atlantis's bases and marches into patches, switch on, keep the old way for rollback.</div><div class="s">Then remove the placeholder outline and the old whole-list code.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Decisions for you</h2>
+    <ul class="todo">
+      <li>Test kingdom name</li>
+      <li>Which side of Atlantis it sits on</li>
+      <li>How testers get in: admin moves them, an invite code, or both</li>
+      <li>Cross-kingdom actions: look only to start, or attack / teleport / rally across borders</li>
+      <li>Bot bases: cleared before testers arrive, or kept for a busier map</li>
+      <li>OK to write the fake 1,000-player crowd into the TEST Firebase</li>
+      <li>Patch size: 50 × 50 tiles proposed</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Risks</h2>
+    <div class="tbl"><table>
+      <tr><th>Risk</th><th>What could go wrong</th><th>Guard</th></tr>
+      <tr><td>Patch list out of step</td><td>A base shows in the wrong place or twice after a teleport</td><td>Base and patch change together in one server step; nightly rebuild check</td></tr>
+      <tr><td>Missed attack</td><td>A march coming at you is off screen</td><td>Anything aimed at you or your alliance is always live</td></tr>
+      <tr><td>Moving Atlantis's data</td><td>Bases or marches lost in the switch</td><td>Copy, don't move; old way stays behind a switch; rollback = flip it back</td></tr>
+      <tr><td>Pop-in while panning</td><td>Bases appear late on fast swipes</td><td>Load a ring ahead, cache recent patches, fade bases in</td></tr>
+      <tr><td>Firebase bill</td><td>Hot spots (big battles) still busy</td><td>Measure in phases 1 and 4; cap listeners per phone</td></tr>
+    </table></div>
+  </section>
+</div>
