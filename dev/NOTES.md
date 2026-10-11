@@ -1521,3 +1521,7 @@
 
 ## v1099 - fortress ship sprite: Harley's ChatGPT 2D-painted version (TEST)
 - Harley ran his Rhino render through ChatGPT's 2D filter (bold outlines, cel shading, gold trim, red diamond banners, glowing windows). Original art/originals/fortress_ship_iso_2d.png; drone removed (separate piece), cropped 1332x787 -> 1240x733 webp (151 KB). FORT_SHIP_SRC swapped, aspect 0.5911; same 3 sizes / placement numbers. Screenshot dev/simfork/fortship_sizes.png.
+
+## v1099 - fortress ship sprite: Harley's ChatGPT 2D-painted version (TEST)
+- Harley ran his Rhino render through ChatGPT's 2D filter (bold outlines, cel shading, gold trim, red diamond banners, glowing windows). Original art/originals/fortress_ship_iso_2d.png; drone removed (separate piece), cropped 1332x787 -> 1240x733 webp (151 KB). FORT_SHIP_SRC swapped, aspect 0.5911; same 3 sizes / placement numbers. Screenshot dev/simfork/fortship_sizes.png.
+- In for now: Harley may redo it - the dark patch under the hull came from his Rhino light experiments (next time: ground shadows off, same 35 deg camera, transparent PNG).
