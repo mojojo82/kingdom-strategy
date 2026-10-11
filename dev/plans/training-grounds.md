@@ -1,4 +1,4 @@
-# Training Grounds (working name) - plan
+# Sword of Power (was "Training Grounds") - plan
 
 The ATK / HP / DEF bonus screen. BUILT in TEST v1093 (see dev/NOTES.md). Mockup: dev/plans/bonus-screen-mockup.html
 (artifact https://claude.ai/artifact/73VLDxpy8Ac76eXRHupAaY).
@@ -28,7 +28,7 @@ Other ideas on the table: Arena wins / seasons, Fortress Defense daily runs, Idl
 events and shop (the big amounts, for payers).
 
 ## Open
-- Item name, screen name.
+- Item name (screen name = Sword of Power, Harley v1095).
 - Milestone rewards (chest? Essence back? gems? a card?).
 - Essence amounts (Harley: go with these; he'll watch them on the tomhector account): chapter complete 10 + 2 x chapter; Gauntlet every 10th floor 20 + floor / 2.
 - Achievement #1 (all lanes Lv 20) ties in: dev/plans/achievements.md

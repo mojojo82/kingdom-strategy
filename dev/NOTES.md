@@ -1494,3 +1494,7 @@
 - Bisected with the PC screenshot harness: broken since v998 (Dev Tools moved to More > Dev Tools). v998 added an empty <div id="devScreen"> as the first child of #layout, but its display:none rule sits inside the <=900px media block - on PC it took the first grid column and pushed every column along one.
 - Fix: #devScreen added to the global hide rule next to #moreMenu (line ~1833). The phone rule body[data-screen="more"][data-sub="devtools"] #devScreen is more specific, so More > Dev Tools on phones still shows (checked at 430px: display block, panel inside). Phone layout untouched.
 - After: chat 320x744 on the left, map 410x420 in the middle, heroes right - same as v966.
+
+## v1095 - Training Grounds renamed "Sword of Power" (TEST)
+- Harley: rename Training Grounds to "Sword of Power". Screen title and the slot button's tooltip/label changed; code names (state.training, tg* helpers, #trainPop) unchanged.
+- Concept for a redesign (not in the game yet): top half a burning 3D obsidian sword (Harley's Meshy model + the campfire flame shader), bottom half the panel; upgrades make the sword flare. Artifact https://claude.ai/artifact/WuQwQ99EPhgfqv8TH1AE5b
