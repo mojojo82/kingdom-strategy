@@ -8,7 +8,7 @@ The ATK / HP / DEF bonus screen. Not built yet. Mockup: dev/plans/bonus-screen-m
 - Three lanes: ATK, HP, DEF. Each level adds a flat amount to the game's global ATK / HP / DEF Bonus
   (the same total Equipment adds to: heroBonusTotal). Account-wide, so bots pick it up automatically (botBonusFrom).
 - One item levels all three (working name "Essence"). Screen shows owned vs needed per lane.
-- Milestones: when ALL three lanes reach every 10th level, an extra bonus to all three + a reward (gold Claim button).
+- Milestones: when ALL three lanes reach a milestone level, an extra bonus to all three + a reward (gold Claim button). Spacing: see below.
 - Look: ruby (ATK), emerald (HP), sapphire (DEF); very basic 3D gems, upright, slowly spinning, translucent, shiny,
   little shake on upgrade. Solid borders (no dashed/dotted) on this screen. Smaller bonus number font (numbers get big).
 - Late game is around Lv 240 per lane, about +3,500% (mockup: +10% per level, +50% per milestone).
