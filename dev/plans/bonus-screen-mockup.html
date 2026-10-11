@@ -196,7 +196,7 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       def: { view: "face", ring: circle(10, 0.75, 1).map(function (p) { return [p[1] * 0.75 / 1, p[0] / 0.75]; }), pts: [[0, -0.3], [0.6, -0.3], [1, 0], [0.6, 0.3], [0, 0.3]], rgb: [42, 99, 232], spin: 0.24, start: 0 }
     };
     function norm(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
-    var LIGHT = norm([0.5, 0.7, 1]), HALF = norm([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
+    var LIGHT = norm([0.5, 0.7, 1]), HALF = norm([LIGHT[0], LIGHT[1], LIGHT[2] + 1]), L2 = norm([-0.7, 0.5, 0.6]), HALF2 = norm([L2[0], L2[1], L2[2] + 1]);
     function build(S) {
       /* model space: y = up the screen, z = toward the viewer, x = across */
       var V = [], F = [], n = S.pts.length, m = S.ring.length;
@@ -246,12 +246,22 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       c.clearRect(0, 0, g.w, g.h);
       faces.forEach(function (F) {
         var nz = F.n[2], back = nz < 0, n = back ? [-F.n[0], -F.n[1], -F.n[2]] : F.n;
-        var dif = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]), spec = Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 60);
-        var lit = back ? 0.35 + 0.35 * dif : 0.45 + 0.75 * dif, col = S.rgb.map(function (ch) { return Math.min(255, Math.round(ch * lit + 255 * spec * 0.5)); });
+        var dif = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]), spec = Math.min(1, Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 24) + 0.6 * Math.pow(Math.max(0, n[0] * HALF2[0] + n[1] * HALF2[1] + n[2] * HALF2[2]), 30));
+        var lit = back ? 0.35 + 0.35 * dif : 0.45 + 0.75 * dif, col = S.rgb.map(function (ch) { return Math.min(255, Math.round(ch * lit + 255 * spec * 0.95)); });
         c.beginPath(); F.f.forEach(function (i, m) { var p = P[i]; if (m) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath();
-        c.fillStyle = "rgba(" + col.join(",") + "," + (back ? 0.55 : 0.5) + ")"; c.fill();
-        if (!back && F.f.length !== 3) { c.strokeStyle = "rgba(255,255,255," + (0.2 + 0.3 * spec) + ")"; c.lineWidth = 0.6; c.stroke(); }
+        c.fillStyle = "rgba(" + col.join(",") + "," + (back ? 0.55 : Math.min(0.92, 0.5 + 0.45 * spec)) + ")"; c.fill();
+        if (!back && F.f.length !== 3) { c.strokeStyle = "rgba(255,255,255," + (0.2 + 0.5 * spec) + ")"; c.lineWidth = 0.6; c.stroke(); }
       });
+      /* sparkle: every few seconds a little 4-point star twinkles on the corner nearest the light */
+      var tw = Math.sin(performance.now() / 1000 * 1.3 + g.S.spin * 30), a = still ? 0.8 : Math.pow(Math.max(0, tw), 10);
+      if (a > 0.02) {
+        var best = 0, bs = -1e9; W.forEach(function (w, i) { var sc = w[0] * 0.5 + w[1] * 0.7 + w[2]; if (sc > bs) { bs = sc; best = i; } });
+        var px = P[best][0], py = P[best][1], R = 7 + 3 * a;
+        c.save(); c.globalAlpha = a; c.fillStyle = "#fff";
+        c.beginPath(); c.moveTo(px, py - R); c.quadraticCurveTo(px, py, px + R, py); c.quadraticCurveTo(px, py, px, py + R); c.quadraticCurveTo(px, py, px - R, py); c.quadraticCurveTo(px, py, px, py - R); c.fill();
+        var gl = c.createRadialGradient(px, py, 0, px, py, R * 0.6); gl.addColorStop(0, "rgba(255,255,255,0.9)"); gl.addColorStop(1, "rgba(255,255,255,0)");
+        c.fillStyle = gl; c.beginPath(); c.arc(px, py, R * 0.6, 0, Math.PI * 2); c.fill(); c.restore();
+      }
     }
     var last = performance.now();
     function frame(t) {
