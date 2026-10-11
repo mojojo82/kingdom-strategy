@@ -1461,3 +1461,10 @@
 - g253 updated (first level now ~1.4k RP, follows the shape). g242, g254 pass.
 - (after v1090) Free-player timeline sim: dev/balance/f2p_timeline.js (new account, real engine, 5 sessions a day of ~36 min = Harley's 4-5 check-ins / ~3 h). Important: Conquest only fights while the game is open (advanceCombat caps catch-up at IDLE_MAX_CATCHUP_SEC = 20 s), the Idle Chest is the offline reward. First runs reach 6-20 by day 4 - much faster than Harley's real account, so not trusted yet; asked Harley how many days he took to reach chapters 5 and 6. Not a game change.
 - Harley: the trouble in chapter 5+ was always the BOSSES, not the hordes. Numbers (vs 4-1): boss ATK x5.7 at 5-10, x13 at 5-20, x18.5 at 6-20, x26 at 7-20, x58 at 10-20, while boss HP only goes x4.2 at 5-20 / x8.3 at 7-20 and normal enemy ATK x7.7 / x9.7. Bosses get the enemy bonus x2.2 (enemyScale.boss) AND hit harder with level (IDLE_BOSS_DMG_LEVEL_SCALE 0.5) AND lose the ch1-4 easy mode over chapter 5. Options put to Harley: gentler boss ATTACK from late ch5 on (HP unchanged), and/or his idea of a bigger gate every 5th chapter. Waiting for his pick.
+
+## v1091 - gentler boss attack from late chapter 5 (TEST)
+- Harley: bosses were always the trouble, not hordes; pace reference: ch5 in 1-2 hours, ch6 half a day. Picked "x1.4 + fade over ch 5-6".
+- Boss ATTACK bonus = normal enemy bonus x1.4 (BOSS_ATK_BONUS_FACTOR; enemyScale.boss 2.2 still sets boss HP), and the easy-mode fade for boss attack runs over 40 levels (ch5-6, BOSS_ATK_EASE_BLEND) instead of 20. Chapters 1-4 unchanged (bonus and ease are off there). Normal enemies and boss HP unchanged.
+- Boss attack vs 4-1: 5-15 x8.9 -> x5.0, 5-20 x13.1 -> x6.8, 6-20 x18.5 -> x15.9, 7-20 x25.6 -> x20.9, 10-20 x57.8 -> x43.1.
+- run.js conquest (results boss_before / boss_after): new player 4-7 (same); Gareth+Lyra Lv20 5-11 -> 5-13; 5 heroes Lv40 8-10 -> 8-12; Lv80 5* 12-8 -> 13-3; max 13-10 -> 14-2. So boss attack was part of the wall, not all of it (the duo still stops in late ch5).
+- Meta check: the old warning, unchanged (Arena only; this is a Conquest change).

@@ -7264,6 +7264,8 @@ function createGame(opts) {
   function idleEaseHp() { var t = idleEaseT(idleGlobalLevelNum()); return IDLE_EASE.hp + (1 - IDLE_EASE.hp) * t; }
   function idleEaseBon() { var t = idleEaseT(idleGlobalLevelNum()); return IDLE_EASE.bon + (1 - IDLE_EASE.bon) * t; }
   function idleEaseAtk() { var t = idleEaseT(idleGlobalLevelNum()); return IDLE_EASE.atk + (1 - IDLE_EASE.atk) * t; }
+  var BOSS_ATK_BONUS_FACTOR = 1.4, BOSS_ATK_EASE_BLEND = 40; /* v1091 */
+  function idleEaseAtkBoss() { var lvl = idleGlobalLevelNum(), t = !IDLE_EASE.on || lvl >= IDLE_EASE.end + BOSS_ATK_EASE_BLEND ? 1 : lvl <= IDLE_EASE.end ? 0 : (lvl - IDLE_EASE.end) / BOSS_ATK_EASE_BLEND; return IDLE_EASE.atk + (1 - IDLE_EASE.atk) * t; }
   // Equipped-Esper HP bonus — read through esperStatValue() so a Dev Tools
   // override (see the Espers dev-tools editor / ESPER_STAT_OVERRIDES_KEY)
   // takes effect immediately, same as the ESPER_DEFS default would. Read by
@@ -8913,7 +8915,10 @@ function createGame(opts) {
     var base = IDLE_ENEMY_TYPES[type];
     if (!base) return 0;
     var eAtkMult = 1 + enemyBonusPct(idleGlobalLevelNum(), type === "boss") * idleEaseBon() / 100;
-    if (type === "boss") return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * eAtkMult * idleEaseAtk();
+    if (type === "boss") { /* v1091 (Harley: bosses, not hordes, were the wall from late chapter 5): the boss ATTACK bonus is 1.4x a normal enemy's (was enemyScale.boss = 2.2x, which still sets boss HP), and its easy mode fades out over chapters 5-6 instead of 5 only. Chapters 1-4 unchanged. */
+      var bAtkMult = 1 + enemyBonusPct(idleGlobalLevelNum(), false) * BOSS_ATK_BONUS_FACTOR * idleEaseBon() / 100;
+      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss();
+    }
     return base.atk * HORDE_ATK_FRAC * eAtkMult * idleEaseAtk();
   }
   function idleFortressCannonBulletInterval() { return IDLE_FORTRESS_CANNON_BULLET_INTERVAL; }
@@ -11332,7 +11337,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1090"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1091"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
