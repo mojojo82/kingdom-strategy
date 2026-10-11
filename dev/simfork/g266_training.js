@@ -8,7 +8,7 @@ const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome
 const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
 const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
-  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] }), errs = [];
   const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
   await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
   await ctx.exposeFunction("__fbcall", call);
@@ -46,10 +46,13 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForTimeout(800);
   const ui = await P.evaluate(() => { const b = document.querySelector(".cq-left-grid .lg-train"); if (!b) return { btn: false }; b.click();
     const pop = document.getElementById("trainPop"); return { btn: true, open: pop && pop.style.display, lv: document.getElementById("tgLv_atk").textContent, tot: document.getElementById("tgTot_atk").textContent, ms: document.getElementById("tgMsT").textContent, claimShown: document.getElementById("tgClaim").style.display, cost: document.getElementById("tgCost_hp").textContent }; });
-  await P.waitForTimeout(600);
+  await P.waitForTimeout(1500);
+  const sw = await P.evaluate(() => { const h = document.querySelector("#trainPop .tg-hero"), c = h.querySelector(".tg-sw"), sh = h.querySelector(".tg-shrine");
+    return { started: !!trainSword, err: getComputedStyle(h.querySelector(".tg-err")).display, cv: [c.width, c.height, c.clientWidth, c.clientHeight], hero: h.clientHeight, panel: document.querySelector("#trainPop .tg-panel").clientHeight, shrineW: sh.style.width }; });
   await (await P.$("#trainPop .tg-box")).screenshot({ path: path.join(__dirname, "g266_training.png") });
   const up = await P.evaluate(() => { const before = game.state.training.hp; document.querySelector('[data-tup="hp"]').click(); return [before, game.state.training.hp]; });
-  console.log(JSON.stringify({ r, ui, up, errs }, null, 1));
+  const closed = await P.evaluate(() => { document.querySelector("#trainPop .tg-x").click(); return document.getElementById("trainPop").style.display; });
+  console.log(JSON.stringify({ r, ui, sw, up, closed, errs }, null, 1));
   assert.strictEqual(r.fresh, JSON.stringify({ atk: 0, hp: 0, def: 0, ms: 0, essence: 0, chPaid: 0, gPaid: 0 }));
   assert.deepStrictEqual(r.costs.slice(0, 10), [10, 12, 14, 16, 18, 20, 22, 24, 26, 250], "block 1 sawtooth");
   assert.ok(r.costs[10] === 12 && r.costs[19] === 295 && r.costs[10] < r.costs[9], "resets cheap, each block a bit higher");
@@ -65,6 +68,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.strictEqual(r.capOff, Infinity);
   assert.ok(ui.btn && ui.open === "flex" && ui.lv === "Lv 20" && ui.tot === "+250%" && ui.ms === "All lanes Lv 40" && ui.claimShown === "none");
   assert.deepStrictEqual(up, [20, 21]);
+  assert.ok(sw.started && sw.err === "none" && sw.cv[2] > 300 && sw.cv[3] > 200 && Math.abs(sw.cv[1] / sw.cv[0] - sw.cv[3] / sw.cv[2]) < 0.02, "v1096: the sword canvas is drawing at the hero's real size");
+  assert.ok(sw.hero > sw.panel * 0.6 && parseFloat(sw.shrineW) > 300, "top half = sword in the shrine");
+  assert.strictEqual(closed, "none");
   assert.deepStrictEqual(errs, []);
   console.log("g266 OK");
   await b.close();

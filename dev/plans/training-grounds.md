@@ -1,6 +1,6 @@
 # Sword of Power (was "Training Grounds") - plan
 
-The ATK / HP / DEF bonus screen. BUILT in TEST v1093 (see dev/NOTES.md). Mockup: dev/plans/bonus-screen-mockup.html
+The ATK / HP / DEF bonus screen. BUILT in TEST v1093; burning-sword redesign v1096 (see dev/NOTES.md). Mockup: dev/plans/bonus-screen-mockup.html
 (artifact https://claude.ai/artifact/73VLDxpy8Ac76eXRHupAaY).
 
 ## Decided so far (Harley)

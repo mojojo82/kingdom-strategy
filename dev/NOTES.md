@@ -1498,3 +1498,11 @@
 ## v1095 - Training Grounds renamed "Sword of Power" (TEST)
 - Harley: rename Training Grounds to "Sword of Power". Screen title and the slot button's tooltip/label changed; code names (state.training, tg* helpers, #trainPop) unchanged.
 - Concept for a redesign (not in the game yet): top half a burning 3D obsidian sword (Harley's Meshy model + the campfire flame shader), bottom half the panel; upgrades make the sword flare. Artifact https://claude.ai/artifact/WuQwQ99EPhgfqv8TH1AE5b
+
+## v1096 - Sword of Power redesign activated (TEST)
+- Harley: "lock this in. Activate the sword of power" - the approved concept (https://claude.ai/artifact/WuQwQ99EPhgfqv8TH1AE5b) is now the real screen.
+- Top half: Harley's Meshy obsidian sword, tip down in the altar of his ChatGPT shrine background, burning (campfire flame shader wrapped round the blade, from the tip up past the guard), firelight on the guard/altar, embers + sparks, slow spin, drag to turn, tap to stoke. Upgrades flare it (ATK more), a milestone claim flares it most.
+- Bottom half: the existing panel (Essence, 3 gem lanes, milestone), slightly tighter, on dark bronze (no more navy) with a bronze top edge.
+- Code: SOP_SWORD / SOP_SHRINE data + sopSwordCreate(els) (start / stop / flare) next to the Training screen code; created on first open, runs only while the screen is open (stop on close). Own small WebGL renderer (GGX + normal map from screen derivatives) - no library.
+- Size: +~330 KB to the game file (mesh + 512px webp textures ~240 KB, shrine 640x960 webp ~90 KB as base64). Originals in art/originals (obsidian_sword.glb, sword_shrine_bg.png, stone_pedestal.png) + README rows.
+- g266 extended (WebGL on): sword started, canvas at the hero's real size, top half bigger than 0.6 x the panel, close stops it. Headless only - not checked on a real phone for speed yet.
