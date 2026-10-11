@@ -1436,3 +1436,9 @@
 - CI's end-to-end test (real emulator) failed on v1086: a player hit another player's base that was far from where they were looking. With bases by patch the attacker's game didn't know a base was there (its patch wasn't loaded), so it never asked the server for the hit. Same would happen to a march landing after you've scrolled away (resolveMarchAgainstSharedWorld uses the same lookup). v1086 was not deployed (CI stopped before deploy).
 - Fix: hitBase and attack resolution first read the target's patch once if it isn't loaded (patchKnown / ensurePatchFor, remembered 30 s).
 - g263 extended: B looking far away (A's patch not loaded) hits A's base -> 10000 -> 9000 on the server. g250, g257-g262 pass.
+
+## v1088 - report X/Y takes you there (TEST)
+- Harley: tapping the enemy's X/Y in a battle report didn't go there - once it showed a spot in Vanaheim (where he'd been looking), once near his base.
+- Cause: goToWorldTile scrolled to the tile, then the v923 "back to where you left the map" restore (worldMapKeep) put the view back where it was when he left the World map. centerMapOnHome / centerMapOnTile / centerMapOnMarch already cancelled that restore; goToWorldTile (report, chat and bookmark coordinates) didn't. Now it does. It also centres on the tile's real centre and allows for the zoomed-out margins.
+- Test: new g264_report_coords (left the map at home / far away, read a report, tap X/Y -> lands on 398,227; v1087 landed back at home / the far spot). g232, g233, g250, g256, g257, g262 pass.
+- Harley (for later): in games like this, a report location outside your home kingdom shows the kingdom by the X/Y. Build it with the admin/event "open borders" controls - with borders closed no report can point into another kingdom yet.
