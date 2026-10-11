@@ -1294,3 +1294,11 @@
   - A flat Fortress-I-only army damage bonus gives the wanted shape. At +70%: 100% wins from 0-200k with every hero setup, ~40% (even, attacker-side split) from ~5M, and 0-10% late vs a Lv80 5* team. At +50% there's a sharp cliff at 200k. At +100% it lasts too long (100% to ~10M).
   - Card 6 (t1Def, 30% less damage taken) only triggers in Fortress I vs Fortress I fights (st.fortType === 1 && ost.fortType === 1).
 - Harley: card 6 (t1Def, 30% less damage taken, only when BOTH sides are Fortress I) is deliberately a defense against other Fortress I players. Not a bug; leave it.
+
+## v1072 - Cannon Doctrine card (Fortress I's early-game card) (TEST)
+- Harley: add the card. From the f1cards.js sims: a flat +70% on a Fortress I side wins the early game against Fortress III (100% up to ~1M research with heroes) and fades as Fortress III climbs its tree (even from ~5M, Fortress III ahead late vs strong teams).
+- CARD_EFFECTS_BY_NAME["cannon doctrine"] = { kind: "t1Army", pct: 0.70 }. Bound by NAME only (not a slot code), so it can't switch on for whatever card is in a slot in the shared catalog. Default text in card slot 17 (index 16): "Cannon Doctrine" / type "Fortress I" / "While your fortress is Fortress I (Heavy Cannon), everything on your side - heroes, troops, weapons and the cannon - deals 70% more damage. Does nothing on Fortress III." The catalog/admin text still wins if that slot is already used (then rename any card "Cannon Doctrine" to give it the effect).
+- Arena + World PvP: in the shared engine, toAi/toPlayer x (1 + t1Army) when that side's fortress for the fight is Fortress I (fortType === 1). That's the same as the sim. Bots carry no cards (same as every other card).
+- Conquest: cardT1ArmyMul(state) multiplies hero damage (idleAttackerDamage, so skills too) and cannon bullets when the Conquest fortress is Fortress I.
+- How players get it is still open (Harley is leaning towards a Conquest boss first-clear; cards from achievements were discussed). No card art yet.
+- Test: g254_cannon_doctrine (text in slot 17; Conquest x1.7 on F1, x1 on F3; World PvP fresh F1 vs fresh F3 with 5 heroes Lv40: 0/10 without the card, 10/10 with it; does nothing for an F3 attacker). g245, g246, g253 pass. The run.js meta warning is unchanged (pre-existing; that check has no cards).
