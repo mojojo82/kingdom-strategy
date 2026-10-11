@@ -4984,13 +4984,36 @@ function fortressGrowth(tree) {
   for (var i = 0; i < 80; i++) { var mid = (lo + hi) / 2; if (total(mid) > FORTRESS_TREE_TARGET) hi = mid; else lo = mid; }
   return (fortressCostG[tree] = (lo + hi) / 2);
 }
-function fortressNodeCost(key, level) { var d = fortressNode(key); var c = fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1)) * FORTRESS_COST_SCALE; var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
+function fortressNodeCost(key, level) { var d = fortressNode(key), e = fortressShape(d.tree === 3 ? 3 : 1)[key + "|" + Math.max(1, Math.min(d.maxLevel, level))]; var c = (e ? e.c : fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1))) * FORTRESS_COST_SCALE; /* v1090 */ var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
 /* v1071: power / USD / arena power count fortress research at its OLD (pre-v1069) scale, like normal research uses techLegacyCost: same share of the
    tree, but a full tree is worth what it was (1.917M points), so repricing didn't multiply everyone's power ~50x. */
 var FORTRESS_LEGACY_TOTAL = 1916769;
-function fortressLegacyCost(key, level) { return fortressNodeCost(key, level) * FORTRESS_LEGACY_TOTAL / FORTRESS_TREE_TARGET; }
+function fortressLegacyCost(key, level) { return fortressOldNodeCost(key, level) * FORTRESS_LEGACY_TOTAL / FORTRESS_TREE_TARGET; } /* v1090: power stays on the v1069 curve (the tree's new shape doesn't change anyone's power) */
+function fortressOldNodeCost(key, level) { var d = fortressNode(key); var c = fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1)) * FORTRESS_COST_SCALE; var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
+/* v1090 (Harley: "an f2p should be on fortress tech for at least 3 months"; half the tree went in under a day): a flatter, longer tree.
+   Timers back to back: 25% of the levels ~1 day, 50% ~10 days, 75% ~45 days, all ~105 days (3.5 months). RP cost follows the same shape
+   (a level costs RP in proportion to its timer), still FORTRESS_TREE_TARGET in total. Levels are ranked by row + level-within-node, so nodes on
+   the same row still cost the same. Same shape for both trees. */
+var FORTRESS_TIME_MILESTONES = [[0.25, 1], [0.5, 10], [0.75, 45], [1, 105]], FORTRESS_FIRST_LEVEL_SEC = 120, fortressShapeCache = {};
+function fortressShape(tree) {
+  if (fortressShapeCache[tree]) return fortressShapeCache[tree];
+  var T = tree === 3 ? FORTRESS3_TREE : FORTRESS1_TREE, L = [];
+  Object.keys(T).forEach(function (k) { for (var l = 1; l <= T[k].maxLevel; l++) L.push({ k: k, l: l, x: T[k].row + (l - 1) / T[k].maxLevel }); });
+  L.sort(function (a, b) { return a.x - b.x; });
+  var N = L.length, i = 0; while (i < N) { var j = i; while (j + 1 < N && Math.abs(L[j + 1].x - L[i].x) < 1e-9) j++; var p = ((i + j) / 2 + 0.5) / N; for (var q = i; q <= j; q++) L[q].p = p; i = j + 1; } /* same row + level -> same place */
+  var ctl = [[0, FORTRESS_FIRST_LEVEL_SEC]], doneSec = 0;
+  FORTRESS_TIME_MILESTONES.forEach(function (m) {
+    var p0 = ctl[ctl.length - 1][0], t0 = ctl[ctl.length - 1][1], p1 = m[0], want = m[1] * 86400 - doneSec, seg = L.filter(function (e) { return e.p > p0 && e.p <= p1; });
+    var sumFor = function (t1) { return seg.reduce(function (a, e) { return a + t0 * Math.pow(t1 / t0, (e.p - p0) / (p1 - p0)); }, 0); };
+    var lo = Math.log(t0 / 50), hi = Math.log(t0 * 1e6); for (var it = 0; it < 80; it++) { var mid = (lo + hi) / 2; if (sumFor(Math.exp(mid)) < want) lo = mid; else hi = mid; }
+    var t1 = Math.exp((lo + hi) / 2); seg.forEach(function (e) { e.t = t0 * Math.pow(t1 / t0, (e.p - p0) / (p1 - p0)); }); doneSec += sumFor(t1); ctl.push([p1, t1]);
+  });
+  var tot = L.reduce(function (a, e) { return a + e.t; }, 0), rps = FORTRESS_TREE_TARGET / tot, by = {};
+  L.forEach(function (e) { by[e.k + "|" + e.l] = { t: Math.max(5, Math.round(e.t)), c: e.t * rps }; });
+  return (fortressShapeCache[tree] = by);
+}
 /* timers: the same cost -> time curve as normal research (Lv1 ~1.5k = ~2 min, ~10M = ~2 days), fitted to TECH_DEFS */
-function fortressTimeFor(key, level) { return Math.max(5, Math.round(60 * 0.00476 * Math.pow(fortressNodeCost(key, level), 0.826))); }
+function fortressTimeFor(key, level) { var d = fortressNode(key), e = d && fortressShape(d.tree === 3 ? 3 : 1)[key + "|" + level]; return e ? e.t : Math.max(5, Math.round(60 * 0.00476 * Math.pow(fortressNodeCost(key, level), 0.826))); } /* v1090: from the tree's shape */
 function fortressNodeUnlocked(map, key) {
   var d = fortressNode(key); if (!d) return false;
   return d.parents.every(function (p) { return ((map && map[p]) || 0) >= Math.min(FORTRESS_UNLOCK_AT, fortressNode(p).maxLevel); });
@@ -11309,7 +11332,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1089"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1090"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

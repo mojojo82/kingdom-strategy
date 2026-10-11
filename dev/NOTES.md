@@ -1452,3 +1452,10 @@
   - Gareth+Lyra Lv20 TH10 (a "stuck in chapter 5" player): wall 5-10 with no research, 5-18 at 300k RP, 6-11 at 1M (past chapter 5), 7-8 at 3M.
   - 4 heroes Lv30: 6-13 -> 7-16 (1M) -> 8-14 (3M) -> 11-1 (10M). 5 heroes Lv40: 8-4 -> 8-19 (1M) -> 9-20 (3M) -> 11-11 (10M).
   - Getting through chapter 5 needs about 1M RP of Fortress research: timers 13.9 h; earning it at Academy 10 takes 8.9 h now (timers are the only barrier - matches Harley), 17.7 h at half rate, 35.5 h at a quarter. Same ratio at every budget (RP time ~0.6-1.1x the timers now; ~1.3-2.3x at half).
+
+## v1090 - Fortress research: a flatter, 3.5-month tree (TEST)
+- Harley: an f2p player should be on Fortress I research for at least 3 months; he was halfway up the tree in a day (Academy 3, ch6). Before: 50% of the levels in 0.9 days of timers, all of it in 27.5 days (the top rows were nearly all the time).
+- Proposal he picked: timers back to back reach 25% of the levels in ~1 day, 50% in ~10 days, 75% in ~45 days, the whole tree in ~105 days (3.5 months). fortressShape(tree): levels ranked by row + level-within-node (nodes on the same row stay equal), per-level timer grows geometrically between those milestones (solved at load), first level 2 min, longest level ~37 h. RP cost of a level is proportional to its timer, still 100M per tree. Same shape for Fortress III.
+- Power unchanged: fortressLegacyCost uses the old (v1069) curve via fortressOldNodeCost - a maxed tree is still ~61.3M power.
+- Chapter 5 effect (dev/balance/rp_ch5.js re-run): weak teams now need much longer research to get past it. Gareth+Lyra Lv20: through chapter 5 needed ~1M RP (0.6 d) before; now ~10M RP (~10 d of timers, ~13 d of RP at Academy 3) to reach 6-20. 4 heroes Lv30 / 5 heroes Lv40 get past chapter 5 with no research at all (6-13 / 8-4), so it's the hero-light players who feel it.
+- g253 updated (first level now ~1.4k RP, follows the shape). g242, g254 pass.

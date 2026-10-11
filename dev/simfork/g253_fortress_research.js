@@ -36,10 +36,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.done = await P.evaluate(async () => { game.researchFinishNow(); await new Promise((r) => setTimeout(r, 2500)); return [(game.state.fortressTech || {}).heavyShells || 0, !!game.state.researchQueue]; });
   console.log(JSON.stringify(o), errs);
   assert.ok(Math.abs(o.powMax1 - o.powMax3) / o.powMax1 < 0.01 && o.powMax1 < 2e8, "power of a maxed tree is the old scale, same for I and III (" + o.powMax1 + ")");
-  assert.strictEqual(o.c1, 1500); assert.strictEqual(o.c3, 1500); assert.ok(Math.abs(o.tot1 - 100e6) < 1e6 && Math.abs(o.tot3 - 100e6) < 1e6, "both trees ~100M");
+  assert.ok(o.c1 >= 1000 && o.c1 <= 2000 && o.c3 >= 1000 && o.c3 <= 2500, "first level ~1.5k RP (v1090: follows the tree shape) " + o.c1 + " " + o.c3); assert.ok(Math.abs(o.tot1 - 100e6) < 1e6 && Math.abs(o.tot3 - 100e6) < 1e6, "both trees ~100M");
   assert.ok(o.t1 >= 100 && o.t1 <= 180, "first level ~2 min");
   assert.strictEqual(o.poor, "not_enough_research"); assert.ok(o.started && o.lvNow === 0 && o.q[0] === "heavyShells" && o.q[1] === 1 && o.q[2] === 1, "queued, not instant");
-  assert.strictEqual(o.rpLeft, 98500); assert.strictEqual(o.busyFort, "queue_busy"); assert.strictEqual(o.busyTech, "queue_busy", "one lane for both");
+  assert.strictEqual(o.rpLeft, 100000 - o.c1); assert.strictEqual(o.busyFort, "queue_busy"); assert.strictEqual(o.busyTech, "queue_busy", "one lane for both");
   assert.ok(/Heavy Shells/.test(o.hub), "hub shows it"); assert.deepStrictEqual(o.afterReload, ["heavyShells", 1, 1], "survives reload");
   assert.deepStrictEqual(o.done, [1, false], "finishing applies the level");
   assert.deepStrictEqual(errs, []); console.log("g253 OK"); await b.close();
