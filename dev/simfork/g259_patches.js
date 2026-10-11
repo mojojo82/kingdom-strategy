@@ -53,7 +53,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const missing = Object.keys(truth).filter((t) => mine[t] !== truth[t]), extra = Object.keys(mine).filter((t) => !truth[t]);
     const owners = {}; Object.values(g.occ).forEach((o) => { if (o !== "?") owners[o] = (owners[o] || 0) + 1; }); const twice = Object.keys(owners).filter((o) => owners[o] > 1);
     const r = { label, loaded: g.loaded.length, view: g.view, bases: Object.keys(truth).length, missing: missing.length, extra: extra.length, twice: twice.length };
-    console.log(JSON.stringify(r)); assert.ok(r.bases > 0 && !r.missing && !r.extra && !r.twice, "patches match the server: " + JSON.stringify(r)); assert.ok(r.loaded <= 30); return r;
+    console.log(JSON.stringify(r)); assert.ok(r.bases > 0 && !r.missing && !r.extra && !r.twice, "patches match the server: " + JSON.stringify(r)); assert.ok(r.loaded <= 72); /* v1084: cap PATCH_SUB_MAX */ return r;
   }
   const res = [await compare("home")];
   /* pan to 6 random spots */

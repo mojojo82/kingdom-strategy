@@ -1401,3 +1401,11 @@
 - Your kingdom's edge is gold. Every kingdom has its name + player count (registry playerCount, servers/* read at most every 5 min) or "not open yet"; names fade in as you zoom out (fully on when tiles are ~1px) while province names fade out. Note: Atlantis's registry count only counts players who joined since kingdoms existed, so it reads low.
 - Zoomed right out, the world is centred with margins (it sat in the top-left corner); setMapZoom keeps the point under your fingers right with those margins.
 - Tests: g255 updated (labels now name + count; Vanaheim sees Atlantis top-right and Kingdom 1 straight up). g200, g229, g250, g252, g256, g257, g259, g260 pass.
+
+## v1084 - world map plan phase 4b: Middle zoom (TEST)
+- The far-zoom base markers already existed (LOD 2: gold for mine, teal for everyone else). Now my alliance's bases are the alliance-tag blue (#7fd6ff, .lod-ally); everyone else stays one teal (Harley: no alliance colours for others).
+- Patch mode at the Middle zoom: loads the patches really on screen (no ring) while that's at most PATCH_MID_MAX = 60 (down to tiles ~2.4 px); further out the markers hide (#mapworld.nomid) rather than show a patchy few, and the World zoom names take over. Kingdom names now start fading in from 4 px tiles (was 3) so there's no empty band.
+- notePatchView now picks only patches whose square is on screen (the old tile box around the tilted iso view took in patches you can't see and could go over the listener cap at the zoomed-out end of normal play - some bases wouldn't load). Ring still added at the normal zooms. PATCH_SUB_MAX 30 -> 72.
+- March listeners only for the patches wanted now at the normal zooms (+ my base's patch) - not for lingering base listeners or the Middle zoom.
+- Tried and dropped: a separate dots canvas (it doubled the existing markers).
+- Test: new g261_middle_zoom (no patch on screen missing from near zoom down to ~2.4 px tiles; my alliance coloured; march listeners <= 6 at Middle, <= 30 near). g255, g256, g257, g229, g259 (cap check now 72), g260 pass.
