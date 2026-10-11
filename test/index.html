@@ -4916,6 +4916,7 @@ var FORTRESS1_TREE = {};
     FORTRESS1_TREE[r[0]] = { name: r[1], icon: r[2], row: r[3], col: r[4], parents: r[5], maxLevel: r[6], perLevel: r[7], stat: r[8], baseCost: base, costMult: 1.5 };
   });
 })();
+// v1070 (Harley: a new player would read the 10-node tree as the lesser option): 31 nodes / 143 levels like Fortress I (37 / 171), same totals and same 100M cost; the first 10 nodes keep their keys so saved levels carry over.
 // Fortress type 3 ("Bulwark") tree: the tank tree. Only two stats: "hp" (+% total HP pool) and "dmgRed" (-% damage taken). Totals at max: +65% HP, -18% damage taken (on top of the innate).
 // Balance rule: a maxed tree of each fortress type should land in a similar performance band; what makes each type feel different is meant to come from the card system.
 var FORTRESS3_TREE = {};
@@ -4923,16 +4924,37 @@ var FORTRESS3_COST_SCALE = 108; // knob for this tree's research cost only. 108 
 (function () {
   // [key, name, icon, row, col, parents, maxLevel, perLevel, stat]
   var rows = [
-    ["t3_walls",    "Reinforced Walls",  "🧱", 0, 1, [],                              5, 0.02,  "hp"],
-    ["t3_footings", "Stone Footings",    "🪨", 1, 0, ["t3_walls"],                    5, 0.02,  "hp"],
-    ["t3_ablative", "Ablative Plating",  "🛡️", 1, 2, ["t3_walls"],                    5, 0.008, "dmgRed"],
-    ["t3_bastion",  "Bastion Core",      "🏰", 2, 1, ["t3_footings", "t3_ablative"],  5, 0.025, "hp"],
-    ["t3_deflect",  "Deflection Angles", "📐", 3, 0, ["t3_bastion"],                  5, 0.008, "dmgRed"],
-    ["t3_deep",     "Deep Foundations",  "⛰️", 3, 2, ["t3_bastion"],                  5, 0.02,  "hp"],
-    ["t3_curtain",  "Iron Curtain",      "🚧", 4, 1, ["t3_deflect", "t3_deep"],       5, 0.01,  "dmgRed"],
-    ["t3_living",   "Living Fortress",   "💠", 5, 0, ["t3_curtain"],                  3, 0.025, "hp"],
-    ["t3_seal",     "Bulwark Seal",      "🔰", 5, 2, ["t3_curtain"],                  5, 0.01,  "dmgRed"],
-    ["t3_citadel",  "Citadel Heart",     "❤️", 6, 1, ["t3_living", "t3_seal"],        5, 0.03,  "hp"]
+    ["t3_walls", "Reinforced Walls", "🧱", 0, 1, [], 5, 0.0047, "hp"],
+    ["t3_footings", "Stone Footings", "🪨", 1, 0, ["t3_walls"], 5, 0.0051, "hp"],
+    ["t3_ablative", "Ablative Plating", "🛡️", 1, 2, ["t3_walls"], 5, 0.0017, "dmgRed"],
+    ["t3_bastion", "Bastion Core", "🏰", 2, 1, ["t3_footings", "t3_ablative"], 5, 0.0055, "hp"],
+    ["t3_deflect", "Deflection Angles", "📐", 3, 0, ["t3_bastion"], 5, 0.002, "dmgRed"],
+    ["t3_deep", "Deep Foundations", "⛰️", 3, 2, ["t3_bastion"], 5, 0.0059, "hp"],
+    ["t3_curtain", "Iron Curtain", "🚧", 4, 1, ["t3_deflect", "t3_deep"], 5, 0.0021, "dmgRed"],
+    ["t3_living", "Living Fortress", "💠", 5, 0, ["t3_curtain"], 3, 0.0066, "hp"],
+    ["t3_seal", "Bulwark Seal", "🔰", 5, 2, ["t3_curtain"], 5, 0.0022, "dmgRed"],
+    ["t3_citadel", "Citadel Heart", "❤️", 6, 1, ["t3_living", "t3_seal"], 5, 0.007, "hp"],
+    ["t3_buttress", "Stone Buttresses", "🗼", 7, 0, ["t3_citadel"], 5, 0.0074, "hp"],
+    ["t3_baffles", "Shock Baffles", "🥁", 7, 2, ["t3_citadel"], 5, 0.0025, "dmgRed"],
+    ["t3_keep", "Granite Keep", "🏯", 8, 1, ["t3_buttress", "t3_baffles"], 5, 0.0077, "hp"],
+    ["t3_rampart", "Rampart Layers", "🏗️", 9, 0, ["t3_keep"], 5, 0.0081, "hp"],
+    ["t3_glacis", "Angled Glacis", "📏", 9, 2, ["t3_keep"], 5, 0.0027, "dmgRed"],
+    ["t3_ironbulwark", "Iron Bulwark", "🦾", 10, 1, ["t3_rampart", "t3_glacis"], 5, 0.0028, "dmgRed"],
+    ["t3_cisterns", "Deep Cisterns", "💧", 11, 0, ["t3_ironbulwark"], 5, 0.0089, "hp"],
+    ["t3_spaced", "Spaced Armor", "⚙️", 11, 2, ["t3_ironbulwark"], 5, 0.003, "dmgRed"],
+    ["t3_titanfound", "Titan Foundations", "🗻", 12, 1, ["t3_cisterns", "t3_spaced"], 5, 0.0093, "hp"],
+    ["t3_mortar", "Mortar Fill", "🪣", 13, 0, ["t3_titanfound"], 5, 0.0096, "hp"],
+    ["t3_reactive", "Reactive Plating", "🧲", 13, 2, ["t3_titanfound"], 5, 0.0032, "dmgRed"],
+    ["t3_gate", "Unbreakable Gate", "🚪", 14, 1, ["t3_mortar", "t3_reactive"], 3, 0.0033, "dmgRed"],
+    ["t3_vault", "Vault Chambers", "🔐", 15, 0, ["t3_gate"], 5, 0.0104, "hp"],
+    ["t3_domes", "Deflector Domes", "🫧", 15, 2, ["t3_gate"], 5, 0.0035, "dmgRed"],
+    ["t3_mountain", "Mountain Heart", "🏔️", 16, 1, ["t3_vault", "t3_domes"], 5, 0.0108, "hp"],
+    ["t3_endless", "Endless Ramparts", "🏟️", 17, 0, ["t3_mountain"], 5, 0.0112, "hp"],
+    ["t3_aegis", "Aegis Lattice", "🕸️", 17, 2, ["t3_mountain"], 5, 0.0037, "dmgRed"],
+    ["t3_eternal", "Eternal Bastion", "🔱", 18, 1, ["t3_endless", "t3_aegis"], 3, 0.0038, "dmgRed"],
+    ["t3_colossus", "Colossus Walls", "🗿", 19, 0, ["t3_eternal"], 3, 0.0119, "hp"],
+    ["t3_laststand", "Last Stand", "⚔️", 19, 2, ["t3_eternal"], 3, 0.0039, "dmgRed"],
+    ["t3_immortal", "Immortal Fortress", "👑", 20, 1, ["t3_colossus", "t3_laststand"], 3, 0.0122, "hp"]
   ];
   rows.forEach(function (r) {
     var base = Math.round(60 * Math.pow(1.3, r[3]) / 5) * 5;
@@ -11241,7 +11263,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1069"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1070"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
