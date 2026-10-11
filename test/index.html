@@ -196,7 +196,7 @@
         try { fs.settings({ ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
         var auth = firebase.auth(), fns = firebase.app().functions("us-central1");
         if (EMU) { fs.useEmulator("127.0.0.1", 8080); auth.useEmulator("http://127.0.0.1:9099"); fns.useEmulator("127.0.0.1", 5001); KS.emulator = true; }
-        KS.call = function (name, data) { return fns.httpsCallable(name)(Object.assign({ env: ENV }, data || {})).then(function (r) { return r.data; }); };
+        KS.call = function (name, data) { var k = {}; try { k.srv = window.CURRENT_SERVER_ID || "server0"; if (window.game && game.state && game.state.homeTileId) k.home = game.state.homeTileId; } catch (e) {} /* v1079: which kingdom (and your base in it) */ return fns.httpsCallable(name)(Object.assign({ env: ENV }, k, data || {})).then(function (r) { return r.data; }); };
         KS.signOut = function () { auth.signOut().then(function () { try { localStorage.removeItem("ks_uid"); } catch (e) {} wipeAndReload(); }); };
         return new Promise(function (resolve) {
           var started = false;
@@ -11292,7 +11292,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1078"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1079"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

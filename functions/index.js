@@ -60,7 +60,16 @@ function wrap(fn) {
   });
 }
 const walletRef = (R, uid) => db.doc(R + "players/" + uid + "/wallet/main");
-const cityRef = (R, tileId) => db.doc(R + "cities/" + C.cityDocId(tileId));
+/* v1079: kingdoms. d.srv = the kingdom the game is in ("server0" = Atlantis, the original unprefixed paths; others live under servers/<id>/). */
+function kingdomRoot(R, srv) { const s = String(srv || "server0"); if (!/^server\d{1,4}$/.test(s)) throw new C.GameError("invalid-argument", "bad_kingdom"); return s === "server0" ? R : R + "servers/" + s + "/"; }
+const cityRef = (R, tileId, srv) => db.doc(kingdomRoot(R, srv) + "cities/" + C.cityDocId(tileId));
+/* Borders: an action on someone else's base needs your own base in that same kingdom (cross-kingdom actions are closed until admin controls / events open them). */
+async function homeInKingdom(tx, R, uid, d) {
+  if (d.srv === undefined && d.home === undefined) return; /* the LIVE game (older version) sends neither and only knows Atlantis - unchanged for it */
+  if (!d.home) throw new C.GameError("permission-denied", "other_kingdom");
+  const hs = await tx.get(cityRef(R, d.home, d.srv));
+  if (!hs.exists || !hs.data() || hs.data().owner !== uid) throw new C.GameError("permission-denied", "other_kingdom");
+}
 // Server-only ledger: players/<uid>/ledger/<auto id>. Written in the same transaction as the change it records, so the two can't disagree.
 function ledger(tx, R, uid, item, delta, balance, reason, ref, by) { tx.set(db.collection(R + "players/" + uid + "/ledger").doc(), C.ledgerEntry(item, delta, balance, reason, ref, by, Date.now())); }
 
@@ -78,47 +87,49 @@ exports.claimLevel = wrap(async (req, uid, R, d) => {
 function ownCityCheck(city, uid) { if (!city || city.owner !== uid) throw new C.GameError("permission-denied", "not_your_city"); }
 
 exports.extinguishBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
-  const cs = await tx.get(cityRef(R, d.tileId)), ws = await tx.get(walletRef(R, uid));
+  const cs = await tx.get(cityRef(R, d.tileId, d.srv)), ws = await tx.get(walletRef(R, uid));
   const city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
   const r = C.decideExtinguish(city, Date.now()), left = C.needGems(ws.data(), r.cost);
-  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "extinguish", d.tileId);
+  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "extinguish", d.tileId);
   return { gems: left, city: r.cityPatch };
 }));
 
 exports.repairBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
-  const cs = await tx.get(cityRef(R, d.tileId)), ws = await tx.get(walletRef(R, uid));
+  const cs = await tx.get(cityRef(R, d.tileId, d.srv)), ws = await tx.get(walletRef(R, uid));
   const city = cs.exists ? cs.data() : null; ownCityCheck(city, uid);
   const r = C.decideRepair(city, Date.now()), left = C.needGems(ws.data(), r.cost);
-  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "repair", d.tileId);
+  tx.set(walletRef(R, uid), { gems: left }, { merge: true }); tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); ledger(tx, R, uid, "gems", -r.cost, left, "repair", d.tileId);
   return { gems: left, city: r.cityPatch };
 }));
 
-async function sameAlliance(tx, R, a, b) {
-  const [x, y] = await Promise.all([tx.get(db.doc(R + "allyindex/" + a)), tx.get(db.doc(R + "allyindex/" + b))]);
+async function sameAlliance(tx, R, a, b, srv) {
+  const K = kingdomRoot(R, srv), [x, y] = await Promise.all([tx.get(db.doc(K + "allyindex/" + a)), tx.get(db.doc(K + "allyindex/" + b))]);
   return x.exists && y.exists && !!x.data().aid && x.data().aid === y.data().aid;
 }
 
 // Allies put each other's fires out for free.
 exports.extinguishAllyBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
-  const cs = await tx.get(cityRef(R, d.tileId)); const city = cs.exists ? cs.data() : null;
+  const cs = await tx.get(cityRef(R, d.tileId, d.srv)); const city = cs.exists ? cs.data() : null;
   if (!city) throw new C.GameError("not-found", "no_city");
   if (city.owner === uid) throw new C.GameError("failed-precondition", "use_extinguishBase");
-  if (!(await sameAlliance(tx, R, uid, city.owner))) throw new C.GameError("permission-denied", "not_allies");
+  await homeInKingdom(tx, R, uid, d);
+  if (!(await sameAlliance(tx, R, uid, city.owner, d.srv))) throw new C.GameError("permission-denied", "not_allies");
   const r = C.decideExtinguish(city, Date.now(), { free: true });
-  tx.update(cityRef(R, d.tileId), r.cityPatch);
+  tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch);
   return { city: r.cityPatch };
 }));
 
 // A won attack on someone's city. No friendly fire, one hit per attacker per target every 30s.
 exports.hitBase = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
-  const cs = await tx.get(cityRef(R, d.tileId)); const city = cs.exists ? cs.data() : null;
+  const cs = await tx.get(cityRef(R, d.tileId, d.srv)); const city = cs.exists ? cs.data() : null;
   if (!city) throw new C.GameError("not-found", "no_city");
   if (city.owner === uid) throw new C.GameError("failed-precondition", "own_city");
-  if (city.owner && !String(city.owner).startsWith("bot_") && await sameAlliance(tx, R, uid, city.owner)) throw new C.GameError("failed-precondition", "ally_city");
-  const limRef = db.doc(R + "players/" + uid + "/wallet/hits_" + C.cityDocId(d.tileId));
+  await homeInKingdom(tx, R, uid, d);
+  if (city.owner && !String(city.owner).startsWith("bot_") && await sameAlliance(tx, R, uid, city.owner, d.srv)) throw new C.GameError("failed-precondition", "ally_city");
+  const limRef = db.doc(R + "players/" + uid + "/wallet/hits_" + (d.srv && d.srv !== "server0" ? d.srv + "_" : "") + C.cityDocId(d.tileId));
   const lim = await tx.get(limRef); C.checkHitCooldown(lim.exists ? lim.data().at : 0, Date.now());
   const now = Date.now(), r = C.decideHit(city, now);
-  tx.update(cityRef(R, d.tileId), r.cityPatch); tx.set(limRef, { at: now });
+  tx.update(cityRef(R, d.tileId, d.srv), r.cityPatch); tx.set(limRef, { at: now });
   return { before: r.before, after: r.after, zeroed: r.zeroed, city: r.cityPatch };
 }));
 
@@ -201,13 +212,13 @@ exports.adminImportSave = wrap(async (req, uid, R, d) => {
 
 // Move my city to another tile. Done on the server so damage and fire move with it (teleporting can't be used as a free repair).
 exports.relocateCity = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
-  const fromRef = cityRef(R, d.from), toRef = cityRef(R, d.to);
+  const fromRef = cityRef(R, d.from, d.srv), toRef = cityRef(R, d.to, d.srv);
   if (fromRef.path === toRef.path) throw new C.GameError("invalid-argument", "same_tile");
   const [fs, ts] = await Promise.all([tx.get(fromRef), tx.get(toRef)]);
   const from = fs.exists ? fs.data() : null; ownCityCheck(from, uid);
   if (ts.exists && ts.data() && ts.data().owner) throw new C.GameError("failed-precondition", "taken");
   const moved = { owner: uid, claimedAt: Date.now() };
-  ["hp", "hpT", "burnLeft", "raidedAt"].forEach((k) => { if (from[k] !== undefined) moved[k] = from[k]; });
+  ["hp", "hpT", "burnLeft", "raidedAt", "sk"].forEach((k) => { if (from[k] !== undefined) moved[k] = from[k]; });
   tx.set(toRef, moved); tx.delete(fromRef);
   return { ok: true };
 }));
