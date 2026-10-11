@@ -658,7 +658,9 @@
   #mapworld .tile.lod-city { --lsz:9px; background:#4fd1c5; box-shadow:0 0 0 1px rgba(0,0,0,.75); z-index:4; }
   #mapworld .tile.lod.selected { outline:2px solid #fff; }
   #mapBorder .kd-shade { position:absolute; background:rgba(8,20,40,.32); }
-  #mapBorder .kd-label { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:800; letter-spacing:.5px; color:rgba(255,255,255,.8); text-shadow:0 1px 3px #000; }
+  #mapBorder .kd-label { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:800; letter-spacing:.5px; color:rgba(255,255,255,.8); text-shadow:0 1px 3px #000; text-align:center; transition:opacity .25s; }
+  #mapBorder .kd-label.mine { color:#f0c95f; }
+  #mapBorder .kd-sub { display:block; font-weight:700; letter-spacing:0; color:rgba(220,232,246,.85); }
   #mapProvinces { position:absolute; left:0; top:0; pointer-events:none; z-index:1; }
   #mapProvinces .prov-label { position:absolute; transform:translate(-50%,-50%); white-space:nowrap; font-weight:800; font-size:12px; color:rgba(255,255,255,.85); text-shadow:0 1px 2px #000, 0 0 3px rgba(0,0,0,.6); text-align:center; line-height:1.1; letter-spacing:.3px; }
   #mapProvinces .prov-label span { display:block; font-size:10px; font-weight:700; color:rgba(240,201,95,.9); }
@@ -11155,10 +11157,17 @@ var WORLD_ATLAS = [
   { id: "server1", x: 0, y: 1 },
   { id: null, name: "Kingdom 1", x: -1, y: 0 }
 ];
-function atlasNeighbours(curId) { /* kingdoms that share an edge with ours, as {name, dx, dy}; only edge neighbours fit the sea margin drawn around a kingdom today */
+/* v1083: World zoom shows each kingdom's player count (from its registry doc servers/<id>, read now and then - a handful of small docs). Names + counts only (Harley: no alliance areas or tags for now) */
+var kingdomInfo = {}, kingdomInfoAt = 0;
+function kingdomSubLine(id) { if (!id) return "not open yet"; var k = kingdomInfo[id]; return k && typeof k.playerCount === "number" ? k.playerCount + (k.playerCount === 1 ? " player" : " players") : ""; }
+function refreshKingdomInfo() {
+  if (!cloudDb || Date.now() - kingdomInfoAt < 300000) return; kingdomInfoAt = Date.now();
+  cloudDb.collection("servers").get().then(function (q) { q.docs.forEach(function (d) { if (d.exists && d.id !== "_registryLock") kingdomInfo[d.id] = d.data(); }); mapWorldSizedForTiles = null; try { ensureMapWorldSized(); } catch (e) {} }, function () {});
+}
+function atlasNeighbours(curId) { /* every other kingdom on the atlas, as {id, name, dx, dy} relative to ours (v1083: all of them - the sea margin grows to fit) */
   var me = WORLD_ATLAS.filter(function (k) { return k.id === curId; })[0];
   if (!me) return []; /* overflow kingdoms (server2+) aren't placed on the atlas yet */
-  return WORLD_ATLAS.filter(function (k) { return k !== me && Math.abs(k.x - me.x) + Math.abs(k.y - me.y) === 1; })
+  return WORLD_ATLAS.filter(function (k) { return k !== me; })
     .map(function (k) { return { id: k.id, name: k.name || serverDisplayName(k.id), dx: k.x - me.x, dy: k.y - me.y }; });
 }
 // Deterministic per-server map seed — costs nothing extra to store (no
@@ -11294,7 +11303,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1082"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1083"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14419,7 +14428,7 @@ var MAP_ZOOM_MIN = 0.002, MAP_ZOOM_MAX = 2.5, MAP_ZOOM_STEP = 0.15;
 function mapZoomMin() {
   var vp = document.getElementById("mapviewport"); if (!vp || !vp.clientWidth || !mapZoom) return 0.5;
   var n = Math.round(Math.sqrt(game.state.map.length)), W, H;
-  if (mapIso) { var g = isoGeom(); W = g.W / mapZoom; H = g.H / mapZoom; } else { W = H = (1 + KINGDOM_MARGIN) * n * (tilePxZ() + gapPxZ()) / mapZoom; } /* v870: far enough out to see a neighbouring kingdom */
+  if (mapIso) { var g = isoGeom(); W = g.W / mapZoom; H = g.H / mapZoom; } else { W = H = (1 + 2 * kingdomMargins().f) * n * (tilePxZ() + gapPxZ()) / mapZoom; } /* v870: far enough out to see a neighbouring kingdom */
   return Math.max(MAP_ZOOM_MIN, Math.min(0.5, Math.min(vp.clientWidth / W, vp.clientHeight / H) * 0.95));
 }
 // v862: level of detail, by how big a tile is on screen. 0 = full art; 1 = resources become small markers, bare ground draws nothing;
@@ -14446,8 +14455,16 @@ var MAP_ISO_CFG_KEY = "kingdom_prototype_mapisocfg_v2", isoCfg = { tile: 30, bas
 /* v1026: the map look is never read from the phone - built-in defaults until the shared (admin) setting arrives from the server */
 function tilePxZ() { return (mapIso ? isoCfg.tile : MARCH_TILE_PX) * mapZoom; }
 function gapPxZ() { return MARCH_GAP_PX * mapZoom; }
-var KINGDOM_MARGIN = 1; /* v870: one kingdom's width of open sea around ours, so neighbouring kingdoms (Kingdom 1 for now) have somewhere to be drawn */
-function padPxZ() { return MARCH_PAD_PX * mapZoom + (mapIso ? 0 : KINGDOM_MARGIN * mapSizeTiles() * (tilePxZ() + gapPxZ())); }
+var KINGDOM_MARGIN = 1; /* v870: one kingdom's width of open sea around ours, so neighbouring kingdoms have somewhere to be drawn */
+/* v1083: the sea around our kingdom is as wide as the world atlas needs, so every kingdom on it fits on the map (in kingdom widths; x/y = iso screen axes, f = flat map) */
+var kingdomMarginsCache = null;
+function kingdomMargins() {
+  if (kingdomMarginsCache && kingdomMarginsCache.sid === CURRENT_SERVER_ID) return kingdomMarginsCache;
+  var m = { sid: CURRENT_SERVER_ID, x: KINGDOM_MARGIN, y: KINGDOM_MARGIN, f: KINGDOM_MARGIN };
+  atlasNeighbours(CURRENT_SERVER_ID).forEach(function (k) { m.x = Math.max(m.x, Math.abs(k.dx - k.dy)); m.y = Math.max(m.y, Math.abs(k.dx + k.dy)); m.f = Math.max(m.f, Math.abs(k.dx), Math.abs(k.dy)); });
+  return (kingdomMarginsCache = m);
+}
+function padPxZ() { return MARCH_PAD_PX * mapZoom + (mapIso ? 0 : kingdomMargins().f * mapSizeTiles() * (tilePxZ() + gapPxZ())); }
 // ---- Hide Resource / Hide Threat toggles ----
 // Purely visual, per-device (same localStorage pattern as mapZoom above).
 // A hidden resource/npc tile still fully exists in game.state.map and still
@@ -14503,7 +14520,7 @@ mapIso = true; try { mapIso = localStorage.getItem(MAP_ISO_KEY) !== "0"; } catch
 var ISO_K = Math.sin(35 * Math.PI / 180);
 function isoGeom() {
   var n = Math.round(Math.sqrt(game.state.map.length)), s = tilePxZ(), p = s + gapPxZ(), pad = padPxZ(), r2 = Math.SQRT1_2 * p, dW = s * Math.SQRT2, dH = dW * ISO_K;
-  var padX = pad + KINGDOM_MARGIN * n * r2, padY = pad + KINGDOM_MARGIN * n * r2 * ISO_K; /* v870: room for a neighbouring kingdom (one diamond over shifts by half a diamond each way) */
+  var km = kingdomMargins(), padX = pad + km.x * n * r2, padY = pad + km.y * n * r2 * ISO_K; /* v1083: as much as the atlas needs */ /* v870: room for a neighbouring kingdom (one diamond over shifts by half a diamond each way) */
   return { n: n, s: s, p: p, pad: pad, r2: r2, dW: dW, dH: dH, offX: padX + (n - 1) * r2 + dW / 2, offY: padY + dH / 2, W: 2 * padX + 2 * (n - 1) * r2 + dW, H: 2 * padY + 2 * (n - 1) * r2 * ISO_K + dH };
 }
 function isoCenterG(g, x, y) { return { x: g.offX + (x - y) * g.r2, y: g.offY + (x + y) * g.r2 * ISO_K }; }
@@ -14531,6 +14548,8 @@ function ensureMapWorldSized() {
   world.classList.toggle("iso", !!mapIso);
   world.style.setProperty("--city-w", String(mapIso ? isoCfg.base : 2.2));
   world.style.setProperty("--tile-px", tilePxZ() + "px");
+  try { var vpc = document.getElementById("mapviewport"), wW = parseFloat(world.style.width) || 0, wH = parseFloat(world.style.height) || 0; /* v1083: zoomed right out, the whole world sits in the middle of the screen instead of the top-left corner */
+    world.style.marginLeft = vpc && vpc.clientWidth > wW ? Math.round((vpc.clientWidth - wW) / 2) + "px" : "0px"; world.style.marginTop = vpc && vpc.clientHeight > wH ? Math.round((vpc.clientHeight - wH) / 2) + "px" : "0px"; } catch (e) {}
   mapWorldSizedForTiles = sizeKey;
   try { drawMapBorder(); } catch (e) {}
   try { drawProvinces(); } catch (e) { console.error(e); }
@@ -14605,6 +14624,7 @@ function drawProvinces() { /* dotted borders (same style as the kingdom edge) + 
 // v858: dotted line around the edge of the kingdom (a diamond in the isometric map, a square in the flat one), like Kingshot
 function drawMapBorder() { /* v865: four thin dashed lines (a picture the size of the whole 1200x1200 world would be far too big for a phone) */
   var world = document.getElementById("mapworld"); if (!world) return;
+  try { refreshKingdomInfo(); } catch (e) {} /* v1083 */
   var n = Math.round(Math.sqrt(game.state.map.length)); if (!n) return;
   var box = document.getElementById("mapBorder");
   if (box && box.tagName.toLowerCase() !== "div") { box.remove(); box = null; }
@@ -14612,17 +14632,19 @@ function drawMapBorder() { /* v865: four thin dashed lines (a picture the size o
   var g = mapIso ? isoGeom() : null, p = tilePxZ() + gapPxZ();
   function corner(x, y) { return mapIso ? isoCenterG(g, x, y) : { x: padPxZ() + (x + 0.5) * p - gapPxZ() / 2, y: padPxZ() + (y + 0.5) * p - gapPxZ() / 2 }; }
   var sw = Math.max(1.5, 2.2 * mapZoom), dash = Math.max(6, 12 * mapZoom), gap = Math.max(4, 8 * mapZoom), html = "";
-  function outline(ox, oy) { /* the dotted edge of a kingdom whose tile (0,0) sits at (ox,oy) in our tile grid */
+  function outline(ox, oy, mine) { /* the dotted edge of a kingdom whose tile (0,0) sits at (ox,oy) in our tile grid (v1083: ours in gold) */
     var pts = [[-0.5, -0.5], [n - 0.5, -0.5], [n - 0.5, n - 0.5], [-0.5, n - 0.5]].map(function (c) { return corner(c[0] + ox, c[1] + oy); });
     for (var i = 0; i < 4; i++) {
       var A = pts[i], B = pts[(i + 1) % 4], len = Math.sqrt((B.x - A.x) * (B.x - A.x) + (B.y - A.y) * (B.y - A.y)), ang = Math.atan2(B.y - A.y, B.x - A.x);
-      [["rgba(0,0,0,.35)", sw + 2], ["rgba(255,255,255,.75)", sw]].forEach(function (L) {
+      [["rgba(0,0,0,.35)", sw + 2], [mine ? "rgba(240,201,95,.95)" : "rgba(255,255,255,.75)", sw]].forEach(function (L) {
         html += '<div style="position:absolute;left:' + A.x + 'px;top:' + (A.y - L[1] / 2) + 'px;width:' + len + 'px;height:' + L[1] + 'px;transform-origin:0 50%;transform:rotate(' + ang + 'rad);background:repeating-linear-gradient(90deg,' + L[0] + ' 0 ' + dash + 'px,transparent ' + dash + 'px ' + (dash + gap) + 'px);border-radius:' + L[1] + 'px;"></div>';
       });
     }
     return pts;
   }
-  /* v870: placeholder neighbour - Kingdom 1, same size, just past our top-left edge (iso) / left edge (flat). Shaded, dotted edge, name in the middle. */
+  /* v870: neighbours - same size, shaded, dotted edge, name in the middle. v1083: every kingdom on the atlas, with its player count; names fade in as you zoom out */
+  var tp = tilePxZ(), nameA = Math.max(0, Math.min(1, (3 - tp) / 1.8)); /* 0 at normal zoom, 1 once tiles are ~1px (the World zoom) */
+  function kdLabel(cx, cy, fs, name, sub, mine) { return '<div class="kd-label' + (mine ? ' mine' : '') + '" style="left:' + cx + 'px;top:' + cy + 'px;font-size:' + fs.toFixed(1) + 'px;opacity:' + (mine ? nameA : Math.max(nameA, 0.8)).toFixed(2) + ';">' + escapeHtml(name) + (sub ? '<span class="kd-sub" style="font-size:' + Math.max(9, fs * 0.45).toFixed(1) + 'px">' + escapeHtml(sub) + '</span>' : '') + '</div>'; }
   atlasNeighbours(CURRENT_SERVER_ID).forEach(function (k) {
     var q = [[-0.5, -0.5], [n - 0.5, -0.5], [n - 0.5, n - 0.5], [-0.5, n - 0.5]].map(function (c) { return corner(c[0] + k.dx * n, c[1] + k.dy * n); });
     var x0 = Math.min.apply(null, q.map(function (v) { return v.x; })), y0 = Math.min.apply(null, q.map(function (v) { return v.y; }));
@@ -14630,9 +14652,11 @@ function drawMapBorder() { /* v865: four thin dashed lines (a picture the size o
     html += '<div class="kd-shade" style="left:' + x0 + 'px;top:' + y0 + 'px;width:' + (x1 - x0) + 'px;height:' + (y1 - y0) + 'px;clip-path:polygon(' + q.map(function (v) { return (v.x - x0).toFixed(1) + 'px ' + (v.y - y0).toFixed(1) + 'px'; }).join(',') + ');"></div>';
     outline(k.dx * n, k.dy * n);
     var c = corner((n - 1) / 2 + k.dx * n, (n - 1) / 2 + k.dy * n), fs = Math.max(13, Math.min(34, (x1 - x0) / 9));
-    html += '<div class="kd-label" style="left:' + c.x + 'px;top:' + c.y + 'px;font-size:' + fs.toFixed(1) + 'px;">' + escapeHtml(k.name) + '</div>';
+    html += kdLabel(c.x, c.y, fs, k.name, kingdomSubLine(k.id), false);
   });
-  outline(0, 0);
+  var mpts = outline(0, 0, true), mc = corner((n - 1) / 2, (n - 1) / 2), mx0 = Math.min.apply(null, mpts.map(function (v) { return v.x; })), mx1 = Math.max.apply(null, mpts.map(function (v) { return v.x; }));
+  if (nameA > 0.01) html += kdLabel(mc.x, mc.y, Math.max(13, Math.min(34, (mx1 - mx0) / 9)), serverDisplayName(CURRENT_SERVER_ID), kingdomSubLine(CURRENT_SERVER_ID), true);
+  try { var pv = document.getElementById("mapProvinces"); if (pv) pv.style.opacity = (1 - nameA).toFixed(2); } catch (e) {} /* province names make way for the kingdom names */
   box.innerHTML = html;
 }
 // Re-lays-out every currently-rendered tile div after a zoom change — their
@@ -14671,15 +14695,16 @@ function setMapZoom(newZoom, anchorX, anchorY) {
   if (!viewport || Math.abs(newZoom - mapZoom) < 0.001) { mapZoom = newZoom; return; }
   if (anchorX == null) anchorX = viewport.clientWidth / 2;
   if (anchorY == null) anchorY = viewport.clientHeight / 2;
-  var worldX = viewport.scrollLeft + anchorX, worldY = viewport.scrollTop + anchorY;
+  var wEl = document.getElementById("mapworld"), offL = function () { return wEl ? parseFloat(wEl.style.marginLeft) || 0 : 0; }, offT = function () { return wEl ? parseFloat(wEl.style.marginTop) || 0 : 0; }; /* v1083: the world can be centred with margins when zoomed right out */
+  var worldX = viewport.scrollLeft + anchorX - offL(), worldY = viewport.scrollTop + anchorY - offT();
   var oldZoom = mapZoom;
   mapZoom = newZoom;
   try { localStorage.setItem(MAP_ZOOM_KEY, String(mapZoom)); } catch (e) {}
   ensureMapWorldSized();
   repositionAllTiles();
   var scale = mapZoom / oldZoom;
-  viewport.scrollLeft = Math.max(0, worldX * scale - anchorX);
-  viewport.scrollTop = Math.max(0, worldY * scale - anchorY);
+  viewport.scrollLeft = Math.max(0, worldX * scale - anchorX + offL());
+  viewport.scrollTop = Math.max(0, worldY * scale - anchorY + offT());
   renderVisibleTiles();
   /* v833: 3D ships redraw in this same frame at the new zoom, with a fresh canvas origin (else they lag a frame behind the rescaled map) */
   try { if (marchGL.ok) { marchGL.ox = undefined; updateMarchMarkers(true); } } catch (e) {}

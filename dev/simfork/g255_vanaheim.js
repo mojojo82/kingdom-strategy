@@ -27,9 +27,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   }
   async function info(P) {
     return P.evaluate(() => { try { setScreen("world"); } catch (e) {} mapWorldSizedForTiles = null; try { render(); } catch (e) {}
-      return { sid: game.state.serverId, cur: CURRENT_SERVER_ID, home: game.state.homeTileId, labels: [...document.querySelectorAll("#mapBorder .kd-label")].map((e) => e.textContent),
+      return { sid: game.state.serverId, cur: CURRENT_SERVER_ID, home: game.state.homeTileId, labels: [...document.querySelectorAll("#mapBorder .kd-label")].map((e) => e.firstChild.textContent),
         where: Object.fromEntries([...document.querySelectorAll("#mapBorder .kd-label")].map((e) => { const n = mapSizeTiles(), c = tileCenterPx({ x: (n - 1) / 2, y: (n - 1) / 2 }), x = parseFloat(e.style.left), y = parseFloat(e.style.top);
-          return [e.textContent, (y < c.y - 1 ? "top" : y > c.y + 1 ? "bottom" : "") + "-" + (x < c.x - 1 ? "left" : x > c.x + 1 ? "right" : "")]; })) }; });
+          return [e.firstChild.textContent, (y < c.y - 1 ? "top" : y > c.y + 1 ? "bottom" : "") + "-" + (x < c.x - 1 ? "left" : x > c.x + 1 ? "right" : "")]; })) }; });
   }
   const A = await page(""); await signUp(A, "atl@test.dev", "Atl");
   const a = await info(A);
@@ -45,8 +45,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   console.log(JSON.stringify({ a, v, c, a2, reg, reg0: reg0 && { status: reg0.status, playerCount: reg0.playerCount }, vCity: vCity.length, errs }, null, 1));
   assert.strictEqual(a.sid, "server0"); assert.ok(a.labels.includes("Vanaheim") && a.labels.includes("Kingdom 1"), "Atlantis shows both neighbours");
   assert.deepStrictEqual(a.where, { "Vanaheim": "bottom-left", "Kingdom 1": "top-left" }, "iso placement from Atlantis");
-  assert.deepStrictEqual(v.where, { "Atlantis": "top-right" }, "iso placement from Vanaheim");
-  assert.strictEqual(v.sid, "server1"); assert.strictEqual(v.cur, "server1"); assert.deepStrictEqual(v.labels, ["Atlantis"], "Vanaheim shows Atlantis beside it");
+  assert.deepStrictEqual(v.where, { "Atlantis": "top-right", "Kingdom 1": "top-" }, "iso placement from Vanaheim");
+  assert.strictEqual(v.sid, "server1"); assert.strictEqual(v.cur, "server1"); assert.deepStrictEqual(v.labels.sort(), ["Atlantis", "Kingdom 1"], "Vanaheim shows Atlantis and the Kingdom 1 placeholder");
   assert.ok(v.home && vCity.length === 1, "Vanaheim player's base is stored in Vanaheim");
   assert.ok(reg && reg.status === "invite" && reg.playerCount === 1 && reg.name === "Vanaheim", "registry: invite-only, 1 player");
   assert.strictEqual(c.sid, "server0", "normal sign-up after Vanaheim exists still goes to Atlantis");

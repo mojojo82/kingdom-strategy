@@ -1,0 +1,175 @@
+<title>World View Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito+Sans:wght@400;700;800&display=swap">
+<style>
+/* Layout: phone-shaped map frame on top (the thing being judged), zoom switch under it, then short notes per zoom and the open questions. Single dark look = the game's own. */
+:root {
+  --bg: #0b1424; --panel: #13203a; --panel2: #0f1a2f; --ink: #eef3fb; --muted: #9fb1cc; --line: #2a3d63;
+  --gold: #f0c95f; --cyan: #3fc6e0; --sea: #1f5a86; --sea2: #18486d; --land: #4e7a3c;
+  --display: "Cinzel", Georgia, serif; --body: "Nunito Sans", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 18px 40px; padding-inline: 16px; display: grid; gap: 18px; }
+h1 { font-family: var(--display); color: var(--gold); font-size: 22px; margin: 0; letter-spacing: .03em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+h2 { font-size: 12.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+p { margin: 0; }
+.stage { display: grid; justify-items: center; gap: 10px; }
+.phone { width: min(100%, 360px); aspect-ratio: 9 / 16; border-radius: 22px; border: 2px dashed #6b5a2e; background: var(--sea2); position: relative; overflow: hidden; }
+canvas { width: 100%; height: 100%; display: block; }
+.hud { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; font-size: 11px; font-weight: 800; }
+.chip { background: rgba(8, 14, 26, .78); border: 1px dotted var(--line); border-radius: 8px; padding: 3px 8px; color: var(--muted); }
+.chip b { color: var(--gold); }
+.banner { position: absolute; left: 50%; top: 44px; transform: translateX(-50%); background: rgba(8, 14, 26, .85); border: 1.5px solid var(--gold); color: var(--gold); font-family: var(--display); font-size: 14px; padding: 4px 14px; border-radius: 999px; white-space: nowrap; transition: opacity .5s; }
+.card { position: absolute; left: 12px; right: 12px; bottom: 12px; background: #3a2a1a; border: 2px dashed #8a6a3a; border-radius: 12px; padding: 9px 11px; display: grid; gap: 6px; font-size: 12.5px; transition: opacity .5s; }
+.card .t { font-weight: 800; color: #f5e2c0; }
+.card .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 0; border-radius: 6px; padding: 6px 10px; font: 800 12px var(--body); background: var(--cyan); color: #06202a; }
+.btn.off { background: #4b4f5a; color: #b8bdc8; }
+.card .why { color: #d9c29a; font-size: 11.5px; }
+.zoom { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.zoom button { border: 1.5px solid var(--line); background: var(--panel2); color: var(--ink); font: 800 13px var(--body); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+.zoom button[aria-pressed="true"] { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 18%, var(--panel2)); }
+.zoom button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 12.5px; text-align: center; }
+.notes { display: grid; gap: 10px; }
+.note { background: var(--panel); border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 13px; display: grid; gap: 4px; }
+.note.on { border-color: var(--cyan); }
+.note .n { font-weight: 800; }
+.note .s { color: var(--muted); font-size: 13.5px; }
+ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { .banner, .card { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>World View Mockup</h1>
+    <div class="sub">Phase 4 of the world map plan · a sketch of the look, not the real map art</div>
+  </header>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <canvas id="cv" aria-label="Map mockup"></canvas>
+      <div class="hud"><span class="chip" id="hudL">World</span><span class="chip">You: <b>Atlantis</b></span></div>
+      <div class="banner" id="banner">Entering Vanaheim</div>
+      <div class="card" id="card">
+        <div class="t">Frostgate · Lv 5 · [USA2] · Vanaheim</div>
+        <div class="row"><button class="btn off" type="button" tabindex="-1">⚔️ Attack</button><button class="btn off" type="button" tabindex="-1">🛰️ Teleport here</button><button class="btn" type="button" tabindex="-1">⭐ Bookmark</button></div>
+        <div class="why">Borders are closed: actions into another kingdom open only through admin controls or an event. Looking is always free.</div>
+      </div>
+    </div>
+    <div class="zoom" role="group" aria-label="Zoom level">
+      <button type="button" id="zWorld" aria-pressed="true">🌍 World</button>
+      <button type="button" id="zMid" aria-pressed="false">🗺️ Middle</button>
+      <button type="button" id="zClose" aria-pressed="false">🏰 Close, at the border</button>
+    </div>
+    <div class="hint">On the phone this is pinch zoom; the levels blend into each other instead of switching.</div>
+  </div>
+
+  <section class="notes">
+    <h2>What each zoom shows</h2>
+    <div class="note" id="nWorld"><div class="n">🌍 World</div><div class="s">Every kingdom as one shape on the world grid with its name, player count and the alliances holding the most ground (coloured areas). Your kingdom has the gold edge. One small summary per kingdom, refreshed every few minutes, so it costs the same with 2 kingdoms or 100.</div></div>
+    <div class="note" id="nMid"><div class="n">🗺️ Middle</div><div class="s">Bases become small dots in their alliance colour (yours cyan), province lines and names stay. Loads the patch lists only, no march detail. The neighbour kingdom's dots show across the border the same way.</div></div>
+    <div class="note" id="nClose"><div class="n">🏰 Close</div><div class="s">The normal game view. Panning over the dotted border shows the next kingdom's land, resources, bases and marches exactly like yours, with a short "Entering Vanaheim" banner. Tapping something over there shows its info; attack, teleport, rally and gather are greyed out while borders are closed.</div></div>
+  </section>
+
+  <section>
+    <h2>Questions for you</h2>
+    <ol>
+      <li>Alliance areas at World zoom: soft coloured patches (as drawn), or no colours yet and just names + counts?</li>
+      <li>World zoom labels: name + player count enough, or also the top alliance tag?</li>
+      <li>The "Entering Vanaheim" banner: keep, or just the border line and name?</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  var cv = document.getElementById("cv"), ctx = cv.getContext("2d"), phone = document.getElementById("phone");
+  var banner = document.getElementById("banner"), card = document.getElementById("card"), hudL = document.getElementById("hudL");
+  var css = getComputedStyle(document.documentElement), C = function (n) { return css.getPropertyValue(n).trim(); };
+  var level = 0, shown = 0, from = 0, t0 = 0, DUR = 650;
+  var KINGDOMS = [
+    { name: "Atlantis", x: 0, y: 0, players: 214, mine: true, ally: [["#3fc6e0", 0.3, 0.35, 0.22], ["#e06a5a", 0.65, 0.6, 0.2], ["#9a7be0", 0.4, 0.75, 0.15]] },
+    { name: "Vanaheim", x: 0, y: 1, players: 38, ally: [["#e0b04a", 0.5, 0.45, 0.2], ["#5ad08a", 0.3, 0.7, 0.13]] },
+    { name: "Kingdom 1", x: -1, y: 0, players: 0, placeholder: true, ally: [] }
+  ];
+  function rng(s) { return function () { s = (s * 16807) % 2147483647; return s / 2147483647; }; }
+  /* iso: kingdom grid (x,y) -> screen. A kingdom is a diamond of half-width w, half-height h. */
+  function iso(cx, cy, w, h, kx, ky, u, v) { var X = kx + u, Y = ky + v; return [cx + (X - Y) * w, cy + (X + Y) * h]; }
+  function diamond(cx, cy, w, h, kx, ky) { ctx.beginPath(); [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(function (p, i) { var q = iso(cx, cy, w, h, kx, ky, p[0], p[1]); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.closePath(); }
+  function dashed(col, wd) { ctx.save(); ctx.setLineDash([wd * 3, wd * 2.2]); ctx.lineWidth = wd + 2; ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.stroke(); ctx.lineWidth = wd; ctx.strokeStyle = col; ctx.stroke(); ctx.restore(); }
+  function label(txt, x, y, size, col, font) { ctx.font = (font || "700 " + size + "px Cinzel, Georgia, serif"); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.strokeText(txt, x, y); ctx.fillStyle = col; ctx.fillText(txt, x, y); }
+  function sea(W, H, seed) { ctx.fillStyle = C("--sea2"); ctx.fillRect(0, 0, W, H); var r = rng(seed); ctx.strokeStyle = "rgba(255,255,255,.07)"; ctx.lineWidth = 1; for (var i = 0; i < 60; i++) { var x = r() * W, y = r() * H; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 6, y - 3, x + 12, y); ctx.stroke(); } }
+  function drawWorld(W, H) {
+    sea(W, H, 7); var w = W * 0.3, h = w * 0.57, cx = W * 0.6, cy = H * 0.22;
+    KINGDOMS.forEach(function (k) {
+      diamond(cx, cy, w, h, k.x, k.y); ctx.fillStyle = k.placeholder ? "rgba(255,255,255,.05)" : "rgba(78,122,60,.55)"; ctx.fill();
+      ctx.save(); diamond(cx, cy, w, h, k.x, k.y); ctx.clip();
+      k.ally.forEach(function (a) { var p = iso(cx, cy, w, h, k.x, k.y, a[1], a[2]), g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], w * a[3] * 2.2); g.addColorStop(0, a[0] + "aa"); g.addColorStop(1, a[0] + "00"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); });
+      ctx.restore();
+      diamond(cx, cy, w, h, k.x, k.y); dashed(k.mine ? C("--gold") : "rgba(255,255,255,.7)", k.mine ? 2.4 : 1.6);
+      var c = iso(cx, cy, w, h, k.x, k.y, 0.5, 0.5); label(k.name, c[0], c[1] - 8, 15, k.mine ? C("--gold") : "#eef3fb");
+      label(k.placeholder ? "not open yet" : k.players + " players", c[0], c[1] + 10, 11, "#c9d6ea", "800 11px 'Nunito Sans', system-ui, sans-serif");
+    });
+    var me = iso(cx, cy, w, h, 0, 0, 0.42, 0.3); pin(me[0], me[1]);
+  }
+  function pin(x, y) { ctx.fillStyle = C("--gold"); ctx.beginPath(); ctx.arc(x, y - 9, 6, 0, Math.PI * 2); ctx.moveTo(x - 5, y - 6); ctx.lineTo(x, y); ctx.lineTo(x + 5, y - 6); ctx.fill(); ctx.fillStyle = "#3a2a10"; ctx.beginPath(); ctx.arc(x, y - 9, 2.4, 0, Math.PI * 2); ctx.fill(); }
+  function drawMid(W, H) {
+    sea(W, H, 11); var w = W * 0.95, h = w * 0.57, cx = W * 0.62, cy = -H * 0.12;
+    [[0, 0], [0, 1]].forEach(function (k) { diamond(cx, cy, w, h, k[0], k[1]); ctx.fillStyle = "rgba(78,122,60,.35)"; ctx.fill(); });
+    ctx.save(); ctx.setLineDash([4, 5]); ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 1;
+    for (var i = 1; i < 4; i++) { var a = iso(cx, cy, w, h, 0, 0, i / 4, 0), b = iso(cx, cy, w, h, 0, 0, i / 4, 1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); a = iso(cx, cy, w, h, 0, 0, 0, i / 4); b = iso(cx, cy, w, h, 0, 0, 1, i / 4); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    ctx.restore();
+    var r = rng(3), cols = ["#3fc6e0", "#e06a5a", "#9a7be0", "#e0b04a", "#5ad08a", "#c9d6ea"];
+    for (var n = 0; n < 260; n++) {
+      var ky = r() < 0.4 ? 1 : 0, u = r(), v = ky ? r() * 0.5 : r(), p = iso(cx, cy, w, h, 0, ky, u, v); if (p[0] < -5 || p[0] > W + 5 || p[1] < -5 || p[1] > H + 5) continue;
+      var c = cols[Math.floor(Math.pow(r(), 1.6) * cols.length)]; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(p[0], p[1], 2.6, 0, Math.PI * 2); ctx.fill();
+    }
+    diamond(cx, cy, w, h, 0, 1); dashed("rgba(255,255,255,.75)", 1.8); diamond(cx, cy, w, h, 0, 0); dashed(C("--gold"), 2.2);
+    label("Atlantis", W * 0.66, H * 0.2, 16, C("--gold")); label("Vanaheim", W * 0.3, H * 0.6, 16, "#eef3fb");
+    label("Stormkeep", W * 0.42, H * 0.13, 10, "#c9d6ea", "800 10px 'Nunito Sans', system-ui, sans-serif");
+    var me = iso(cx, cy, w, h, 0, 0, 0.2, 0.62); pin(me[0], me[1]);
+  }
+  function drawClose(W, H) {
+    sea(W, H, 21); var s = 26, k = 0.57, ox = W * 0.5, oy = H * 0.5, r = rng(9);
+    /* border runs along y = 0 in the close view (Atlantis above, Vanaheim below) */
+    function P(x, y) { return [ox + (x - y) * s, oy + (x + y) * s * k]; }
+    for (var y = -14; y <= 14; y++) for (var x = -14; x <= 14; x++) {
+      var p = P(x, y); if (p[0] < -40 || p[0] > W + 40 || p[1] < -40 || p[1] > H + 40) continue;
+      var v = r(); if (v < 0.86) continue;
+      ctx.fillStyle = v < 0.95 ? C("--land") : "#8a7a4a"; ctx.beginPath(); ctx.moveTo(p[0], p[1] - s * k * 0.55); ctx.lineTo(p[0] + s * 0.55, p[1]); ctx.lineTo(p[0], p[1] + s * k * 0.55); ctx.lineTo(p[0] - s * 0.55, p[1]); ctx.closePath(); ctx.fill();
+    }
+    var a = P(-30, 0.5), b = P(30, 0.5); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); dashed("rgba(255,255,255,.8)", 2);
+    function base(x, y, col, tag) { var p = P(x, y); ctx.fillStyle = "#2a3550"; ctx.fillRect(p[0] - 13, p[1] - 22, 26, 22); ctx.fillStyle = col; ctx.fillRect(p[0] - 13, p[1] - 26, 26, 6); ctx.fillStyle = "#c9d6ea"; ctx.fillRect(p[0] - 3, p[1] - 34, 6, 10); if (tag) label("[" + tag + "]", p[0], p[1] + 9, 10, "#eef3fb", "800 10px 'Nunito Sans', system-ui, sans-serif"); }
+    base(-3, -3, "#3fc6e0", "WLF"); base(2, -5, "#e06a5a", "RED"); base(-1, 4, "#e0b04a", "USA2"); base(4, 3, "#5ad08a", null);
+    var sel = P(-1, 4); ctx.strokeStyle = C("--cyan"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sel[0], sel[1] - 30); ctx.lineTo(sel[0] + 22, sel[1] - 12); ctx.lineTo(sel[0], sel[1] + 6); ctx.lineTo(sel[0] - 22, sel[1] - 12); ctx.closePath(); ctx.stroke();
+    label("Atlantis", W * 0.62, H * 0.17, 13, C("--gold")); label("Vanaheim", W * 0.3, H * 0.66, 13, "#eef3fb");
+  }
+  var DRAW = [drawWorld, drawMid, drawClose], NAMES = ["World", "Middle", "Close · at the border"];
+  function frame(now) {
+    var dpr = Math.min(2, window.devicePixelRatio || 1), W = phone.clientWidth, H = phone.clientHeight;
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var p = Math.min(1, (now - t0) / DUR); if (from === level) p = 1;
+    ctx.globalAlpha = 1; DRAW[from](W, H);
+    if (p < 1) { ctx.globalAlpha = p; DRAW[level](W, H); ctx.globalAlpha = 1; requestAnimationFrame(frame); }
+    else { from = level; ctx.globalAlpha = 1; DRAW[level](W, H); }
+  }
+  function go(l) {
+    from = shown; level = l; shown = l; t0 = performance.now();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) from = l;
+    ["zWorld", "zMid", "zClose"].forEach(function (id, i) { document.getElementById(id).setAttribute("aria-pressed", String(i === l)); });
+    ["nWorld", "nMid", "nClose"].forEach(function (id, i) { document.getElementById(id).classList.toggle("on", i === l); });
+    hudL.textContent = NAMES[l]; banner.style.opacity = l === 2 ? 1 : 0; card.style.opacity = l === 2 ? 1 : 0;
+    requestAnimationFrame(frame);
+  }
+  document.getElementById("zWorld").onclick = function () { go(0); };
+  document.getElementById("zMid").onclick = function () { go(1); };
+  document.getElementById("zClose").onclick = function () { go(2); };
+  window.addEventListener("resize", function () { requestAnimationFrame(frame); });
+  document.fonts && document.fonts.ready.then(function () { requestAnimationFrame(frame); });
+  go(0);
+})();
+</script>

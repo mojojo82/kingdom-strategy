@@ -1394,3 +1394,10 @@
 - Reads (1,000 bots + 300 marches, Vanaheim): opening the game 2,342 -> 57 (bases 2,003 -> 6, marches 300 -> 17 for the 7 near me); 150 changes elsewhere in the kingdom: 150 reads for me -> 5. Headless idle fps 41 -> 61 (fewer far-away marches to track). dev/load/baseline-results.json (whole list) / patch-results.json.
 - Possible later saving: a march crossing several of my patches is read once per listener (17 reads for 7 marches here).
 - Tests: g260 new; g250, g255, g256, g257, g258, g259 pass.
+
+## v1083 - world map plan phase 4a: World zoom (TEST)
+- Mockup first (dev/plans/world-view-mockup.html, artifact https://claude.ai/artifact/KgXov28LZDHRrhG9ZpdAxe). Harley's answers: World zoom = kingdom names + player counts only (no alliance areas - "bully kingdoms looking for targets"; no alliance tag for now, may revisit); keep the "Entering <kingdom>" banner. Middle zoom (4b): own alliance coloured, everyone else one neutral colour (same reasoning).
+- The sea around your kingdom now grows to fit the whole WORLD_ATLAS (kingdomMargins: x/y for the iso axes, f for the flat map; Atlantis 1/1, Vanaheim 1/2 because Kingdom 1 is diagonal from it). atlasNeighbours returns every atlas kingdom (was edge neighbours only), so Vanaheim now also shows the Kingdom 1 placeholder.
+- Your kingdom's edge is gold. Every kingdom has its name + player count (registry playerCount, servers/* read at most every 5 min) or "not open yet"; names fade in as you zoom out (fully on when tiles are ~1px) while province names fade out. Note: Atlantis's registry count only counts players who joined since kingdoms existed, so it reads low.
+- Zoomed right out, the world is centred with margins (it sat in the top-left corner); setMapZoom keeps the point under your fingers right with those margins.
+- Tests: g255 updated (labels now name + count; Vanaheim sees Atlantis top-right and Kingdom 1 straight up). g200, g229, g250, g252, g256, g257, g259, g260 pass.
