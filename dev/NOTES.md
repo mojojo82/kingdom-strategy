@@ -1311,3 +1311,10 @@
   - Phases: (1) a real test kingdom (server1) beside Atlantis, replacing the "Kingdom 1" placeholder, plus an admin move-tester tool and a 1,000-bot load test baseline; (2) bases by patch; (3) marches by patch, with own/alliance/incoming always live; (4) world view + crossing kingdoms; (5) move Atlantis over, with rollback.
   - Waiting on Harley's decisions: test kingdom name/side, how testers get in, cross-kingdom actions, bots kept or cleared, OK to write fake players to the TEST Firebase, patch size.
   - Play testers will initially live in the test kingdom.
+- World map plan, Harley's decisions (11 Oct):
+  - Test kingdom = Vanaheim (server1), placed bottom-left / left of Atlantis (the "Kingdom 1" placeholder is top-left).
+  - Testers join via a plain link that anyone can pass on; no special access.
+  - Cross-kingdom actions are OFF by default; borders open via admin controls or special events.
+  - Bots: keep or clear decided at the time. Fake crowd may be written to the TEST Firebase, clearly labelled as bots so it can be pulled.
+  - Patch size 50x50.
+  - Plan page: dev/plans/world-map-plan.html (artifact https://claude.ai/artifact/HYPo5V9Z9MSWoiXptPkgDQ).
