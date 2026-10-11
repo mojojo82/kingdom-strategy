@@ -14,8 +14,11 @@ The ATK / HP / DEF bonus screen. Not built yet. Mockup: dev/plans/bonus-screen-m
 - Late game is around Lv 240 per lane, about +3,500% (mockup: +10% per level, +50% per milestone).
 - Keep item numbers small (cost about 5 + 4 x level in the mockup); small costs just mean sources give fewer.
 - Pacing comes from how much Essence players earn: a free player should NOT reach Lv 10 in week 1; paying is the way to rush.
-- Cost shape under discussion: High Seas Hero style sawtooth - every 10 levels starts cheap, the 10th level is very expensive,
-  then resets (Claude's suggestion: each block starts a bit higher than the last, and the 10th level gives a bigger bonus).
+- Cost shape (Harley: yes): High Seas Hero style sawtooth - every 10 levels starts cheap, the 10th level is very expensive, then resets;
+  each block starts a bit higher than the last. The 10th level gives the SAME bonus as any other level (Harley: no bigger bonus).
+- Milestones get further apart as you go (Harley: "20, then 40, then 120... you get the idea"). Proposal: all lanes at
+  Lv 20, 40, 70, 110, 160, 220 with a growing stat bonus (+50, +100, +150, +200, +250, +300 % = +1,050% total) and a chest that grows too.
+- Level cap by Town Hall / chapter: "maybe" - build it as a switch, off by default.
 
 ## Where Essence comes from
 Harley's first picks:
@@ -26,7 +29,6 @@ events and shop (the big amounts, for payers).
 
 ## Open
 - Item name, screen name.
-- Cap by Town Hall level or Conquest chapter?
 - Milestone rewards (chest? Essence back? gems? a card?).
-- Exact Essence amounts per source; check with the free-player sim once sources are set.
+- Essence amounts (Harley: go with these; he'll watch them on the tomhector account): chapter complete 10 + 2 x chapter; Gauntlet every 10th floor 20 + floor / 2.
 - Achievement #1 (all lanes Lv 20) ties in: dev/plans/achievements.md
