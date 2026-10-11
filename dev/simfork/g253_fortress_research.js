@@ -21,6 +21,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Wet"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   const o = await P.evaluate(() => { const st = game.state, r = {};
     r.c1 = fortressNodeCost("heavyShells", 1); r.c3 = fortressNodeCost("t3_walls", 1); r.t1 = fortressTimeFor("heavyShells", 1);
+    const p0 = game.governorPower(); const keep = st.fortressTech; st.fortressTech = fortressMaxMap(1); const pMax1 = game.governorPower(); st.fortressTech = fortressMaxMap(3); const pMax3 = game.governorPower(); st.fortressTech = keep;
+    r.powMax1 = pMax1 - p0; r.powMax3 = pMax3 - p0; /* v1071: power uses the old scale, a maxed tree = 1.917M points x 4 x POWER_SCALE */
     r.tot1 = fortressTreeTotalCost(); let t3 = 0; for (const k in FORTRESS3_TREE) for (let l = 1; l <= FORTRESS3_TREE[k].maxLevel; l++) t3 += fortressNodeCost(k, l); r.tot3 = t3;
     st.researchPoints = 0; r.poor = game.researchFortress("heavyShells").reason;
     st.researchPoints = 100000; const a = game.researchFortress("heavyShells"); r.started = a.ok; r.lvNow = (st.fortressTech || {}).heavyShells || 0; r.q = st.researchQueue && [st.researchQueue.key, st.researchQueue.fort, st.researchQueue.toLevel];
@@ -33,6 +35,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.afterReload = await P.evaluate(() => { const saved = JSON.parse(localStorage.getItem("kingdom_prototype_save_v1")); game.state.researchQueue = null; game.loadState(saved); const q = game.state.researchQueue; return q && [q.key, q.fort, q.toLevel]; });
   o.done = await P.evaluate(async () => { game.researchFinishNow(); await new Promise((r) => setTimeout(r, 2500)); return [(game.state.fortressTech || {}).heavyShells || 0, !!game.state.researchQueue]; });
   console.log(JSON.stringify(o), errs);
+  assert.ok(Math.abs(o.powMax1 - o.powMax3) / o.powMax1 < 0.01 && o.powMax1 < 2e8, "power of a maxed tree is the old scale, same for I and III (" + o.powMax1 + ")");
   assert.strictEqual(o.c1, 1500); assert.strictEqual(o.c3, 1500); assert.ok(Math.abs(o.tot1 - 100e6) < 1e6 && Math.abs(o.tot3 - 100e6) < 1e6, "both trees ~100M");
   assert.ok(o.t1 >= 100 && o.t1 <= 180, "first level ~2 min");
   assert.strictEqual(o.poor, "not_enough_research"); assert.ok(o.started && o.lvNow === 0 && o.q[0] === "heavyShells" && o.q[1] === 1 && o.q[2] === 1, "queued, not instant");

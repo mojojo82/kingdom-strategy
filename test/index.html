@@ -4977,6 +4977,10 @@ function fortressGrowth(tree) {
   return (fortressCostG[tree] = (lo + hi) / 2);
 }
 function fortressNodeCost(key, level) { var d = fortressNode(key); var c = fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1)) * FORTRESS_COST_SCALE; var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
+/* v1071: power / USD / arena power count fortress research at its OLD (pre-v1069) scale, like normal research uses techLegacyCost: same share of the
+   tree, but a full tree is worth what it was (1.917M points), so repricing didn't multiply everyone's power ~50x. */
+var FORTRESS_LEGACY_TOTAL = 1916769;
+function fortressLegacyCost(key, level) { return fortressNodeCost(key, level) * FORTRESS_LEGACY_TOTAL / FORTRESS_TREE_TARGET; }
 /* timers: the same cost -> time curve as normal research (Lv1 ~1.5k = ~2 min, ~10M = ~2 days), fitted to TECH_DEFS */
 function fortressTimeFor(key, level) { return Math.max(5, Math.round(60 * 0.00476 * Math.pow(fortressNodeCost(key, level), 0.826))); }
 function fortressNodeUnlocked(map, key) {
@@ -9309,7 +9313,7 @@ function createGame(opts) {
     var FT = fortressTreeOf(ft); // only the active type's tree counts
     for (var key in FT) {
       var curLevel = Math.min(FT[key].maxLevel, ft[key] || 0);
-      for (var lvl = 1; lvl <= curLevel; lvl++) total += fortressNodeCost(key, lvl) * POWER_RESOURCE_VALUE.researchPoints;
+      for (var lvl = 1; lvl <= curLevel; lvl++) total += fortressLegacyCost(key, lvl) * POWER_RESOURCE_VALUE.researchPoints;
     }
     return total;
   }
@@ -11263,7 +11267,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1070"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1071"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13567,7 +13571,7 @@ function pvpSimGovernorPower(cfg, isDef) {
 // Research points spent on a fortress tree (active type only), priced like normal research.
 function fortressUsdOf(map) {
   var total = 0, FT = fortressTreeOf(map), m = map || {};
-  for (var key in FT) { var cur = Math.min(FT[key].maxLevel, m[key] || 0); for (var l = 1; l <= cur; l++) total += fortressNodeCost(key, l) * USD_VALUES.researchPoints; }
+  for (var key in FT) { var cur = Math.min(FT[key].maxLevel, m[key] || 0); for (var l = 1; l <= cur; l++) total += fortressLegacyCost(key, l) * USD_VALUES.researchPoints; }
   return total;
 }
 // USD invested by a simulator side (everything built, trained, levelled and researched, priced with the Dev Tools USD values), plus extraUsd for what the form cannot express.
@@ -28105,7 +28109,7 @@ function arenaFortressPower(fortressMap) {
   var FTA = fortressTreeOf(fortressMap);
   for (var fk in FTA) {
     var top = Math.min(FTA[fk].maxLevel, fortressMap[fk] || 0);
-    for (var fl = 1; fl <= top; fl++) raw += fortressNodeCost(fk, fl) * ARENA_POWER_RESOURCE_VALUE.researchPoints;
+    for (var fl = 1; fl <= top; fl++) raw += fortressLegacyCost(fk, fl) * ARENA_POWER_RESOURCE_VALUE.researchPoints;
   }
   return Math.round(raw * ARENA_POWER_SCALE);
 }
