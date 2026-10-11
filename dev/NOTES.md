@@ -1512,3 +1512,9 @@
 - Fix: the shrine sets the framing. It always fills the width (sc = max(W/1024, H/1536)); the altar sits ~15% of the width above the bottom edge (higher if the picture would run out at the top); the camera's field of view and height are worked out each frame so the sword is the approved size for that altar (uu = sc x 335 / (1.25 x 0.95) px per model unit) and its tip lands exactly on the altar. PC 1863x892 and phone 430x932 now look the same.
 - Harley isn't sure on phone between the full top half and a short one (like a small 375x667 phone), so an admin-only switch "View: Full / Close" sits bottom-right of the sword (saved per device, localStorage ks_sop_view). Close = top half 60% of the width, popup shrinks to fit. Players always get Full. Remove the switch once he picks.
 - Known: on a small phone (375x667) in Full the top half is short and the sword's handle runs off the top.
+
+## v1098 - Fortress ship map sprite in 3 sizes (TEST)
+- Harley rendered the fortress ship in Rhino at ~35 deg (art/originals/fortress_ship_iso.png, transparent). The small drone above it was removed (it was a separate piece: its box was cleared), cropped, 1240x781 webp (122 KB), one picture (FORT_SHIP_SRC) shared by 3 entries in the paint mode's sprite list (DECOR_SPRITES):
+  fortship_base (foot 3, scale 0.8 - fits a base spot), fortship_large (foot 4, ~2 bases long), fortship_huge (foot 6, ~3 bases long - Harley: 3 bases for now; 4-5 would need a bigger render to stay sharp at max zoom).
+- Placement: fw 1 (hull spans the footprint diamond), fx 0.5 / fy 0.6 (middle of the hull at the waterline), aspect 0.6298. Purely decoration like the other map sprites.
+- Checked on a 430x932 map next to a base: dev/simfork/fortship_sizes.png. At max zoom on a high-res phone the huge one is ~1.6x stretched (slightly soft); re-render at 3000-4000 px wide to fix.
