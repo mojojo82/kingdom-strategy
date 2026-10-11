@@ -1468,3 +1468,11 @@
 - Boss attack vs 4-1: 5-15 x8.9 -> x5.0, 5-20 x13.1 -> x6.8, 6-20 x18.5 -> x15.9, 7-20 x25.6 -> x20.9, 10-20 x57.8 -> x43.1.
 - run.js conquest (results boss_before / boss_after): new player 4-7 (same); Gareth+Lyra Lv20 5-11 -> 5-13; 5 heroes Lv40 8-10 -> 8-12; Lv80 5* 12-8 -> 13-3; max 13-10 -> 14-2. So boss attack was part of the wall, not all of it (the duo still stops in late ch5).
 - Meta check: the old warning, unchanged (Arena only; this is a Conquest change).
+
+## v1092 - stepped difficulty curve from chapter 6 (TEST)
+- Harley's idea: from chapter 6 on, difficulty climbs in small steps (+6% per chapter, CURVE_STEP) with a bigger gate every 5th chapter (+35% across chapters 10, 15, 20..., CURVE_GATE / CURVE_GATE_EVERY). Enemy numbers are worked out as at 5-20 (CURVE_ANCHOR = 100) and multiplied by idleStepMult(), spread evenly over each chapter's 20 levels. Horde size / count frozen at their 5-20 values. Chapters 1-5 unchanged. Rewards don't use it.
+- Was parked on branch wip-stepped-curve while waiting for Harley's team builds; Harley: the free-player pace "might be ok", put it in. Numbers can still be tuned later (two constants).
+- Sims (curve_after): 5 heroes Lv40 2* 15-8, Lv80 5* 25-12, maxed 28-6; duo Lv20 unchanged 5-13. Free-player timeline: ch10 by day ~2.3, ch15 day 6, ch20 day 12, 29-11 at day 39.
+- Late-game Training bonus test (+3,560% ATK/HP/DEF, mockup numbers, no weapons/gear/research/cards): Lv40 2* 8-9 -> 35-2 on v1091, 15-8 -> 50-7 on this curve; Lv80 5* 13-2 -> 53-10 on v1091, 25-20 -> 60-12 on this curve. On the stepped curve every doubling of power is worth about the same number of chapters.
+- Meta check: the old warning, unchanged (Arena only; this is a Conquest change).
+- Also on main (not game changes): dev/plans/bonus-screen-mockup.html (Training screen mockup, artifact https://claude.ai/artifact/73VLDxpy8Ac76eXRHupAaY) and dev/plans/achievements.md (Harley's running achievements list).
