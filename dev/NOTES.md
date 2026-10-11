@@ -1306,3 +1306,8 @@
 ## v1073 - Cannon Doctrine adds itself to the shared card list (TEST)
 - Harley: why not just name the card yourself? Card text lives in the shared catalog on Firebase (assetitems/cardcatalog, admin-write only). It overrides code defaults, and we don't read or write his Firebase from here.
 - Like Drop Signal: when an admin opens the game (cardCatalogSettle) and no card is named "Cannon Doctrine", it's written into slot 17 if that's free, else the first free slot, and the catalog is pushed, so every player sees it. g254 extended (admin whose slot 17 is taken -> placed in a free slot, catalog saved). Passes.
+- (after v1073) PLAN, not built yet: "Seamless World Map Plan" (claude.ai doc: https://claude.ai/code/artifact/7fb19d34-c852-47b1-ad2a-fb386730f498).
+  - Goal: pan and zoom seamlessly over many kingdoms. Bases and marches load by map patch (50x50 tiles), with a world atlas and kingdom summaries for the far zoom.
+  - Phases: (1) a real test kingdom (server1) beside Atlantis, replacing the "Kingdom 1" placeholder, plus an admin move-tester tool and a 1,000-bot load test baseline; (2) bases by patch; (3) marches by patch, with own/alliance/incoming always live; (4) world view + crossing kingdoms; (5) move Atlantis over, with rollback.
+  - Waiting on Harley's decisions: test kingdom name/side, how testers get in, cross-kingdom actions, bots kept or cleared, OK to write fake players to the TEST Firebase, patch size.
+  - Play testers will initially live in the test kingdom.
