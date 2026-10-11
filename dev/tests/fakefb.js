@@ -41,7 +41,7 @@
   Query.prototype.limit = function (n) { return new Query(this.path, this.f, this.o, n); };
   Query.prototype.run = function (st) {
     var self = this, docs = Object.keys(st).filter(function (k) { return parent(k) === self.path; }).map(function (k) { return { k: k, d: st[k] }; });
-    this.f.forEach(function (f) { docs = docs.filter(function (x) { var v = x.d[f[0]]; return f[1] === "==" ? v === f[2] : f[1] === ">=" ? v >= f[2] : f[1] === "<=" ? v <= f[2] : f[1] === ">" ? v > f[2] : f[1] === "<" ? v < f[2] : true; }); });
+    this.f.forEach(function (f) { docs = docs.filter(function (x) { var v = x.d[f[0]]; return f[1] === "array-contains" ? (Array.isArray(v) && v.indexOf(f[2]) !== -1) : f[1] === "array-contains-any" ? (Array.isArray(v) && v.some(function (x) { return f[2].indexOf(x) !== -1; })) : f[1] === "==" ? v === f[2] : f[1] === ">=" ? v >= f[2] : f[1] === "<=" ? v <= f[2] : f[1] === ">" ? v > f[2] : f[1] === "<" ? v < f[2] : true; }); });
     if (this.o) { var o = this.o; docs = docs.filter(function (x) { return x.d[o[0]] !== undefined; }); docs.sort(function (a, b) { var x = a.d[o[0]], y = b.d[o[0]]; return (x < y ? -1 : x > y ? 1 : 0) * (o[1] === "desc" ? -1 : 1); }); }
     if (this.l) docs = docs.slice(0, this.l);
     return { docs: docs.map(function (x) { return snapDoc(x.k, x.d); }) };

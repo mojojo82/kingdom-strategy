@@ -1383,3 +1383,14 @@
   - Marches unchanged (300 on open, every change to everyone) - phase 3.
 - CI emulator test extended (claim / taken / hit / teleport across patches / skin / damaged release / patch write denied / admin rebuild / non-admin refused).
 - Tests: g259 new; g200, g250, g255, g256, g257, g258 pass; functions core tests pass.
+
+## v1082 - world map plan phase 3: marches by patch (TEST, kingdoms other than Atlantis)
+- A march record now also has: patches (every 50x50 patch its straight route crosses - marchPatchList), targetOwner (whose base it's aimed at), aid (sender's alliance). Written for every kingdom (harmless in Atlantis).
+- In patch mode the game listens to: my own marches (ownerId), marches at me (targetOwner), my alliance's marches (aid) - always, wherever they are - plus one "patches array-contains <id>" listener per base patch it's following (screen + one ring + my base's patch). A march that comes through several listeners is kept while any of them still has it (marchSrc*). Listeners follow the base patch listeners (dropped together).
+- Sending at a base whose patch I haven't loaded (e.g. from a bookmark far away): its patch is read once first so targetOwner is filled in - the target sees it coming.
+- Fake server (dev/tests/fakefb.js) now supports where(..., "array-contains" / "array-contains-any", ...).
+- Load crowd marches are now realistic: 90% to something within 60 tiles of home, 10% anywhere (all-random routes crossed the whole map and made every screen busy).
+- Gate (g260_march_patches): attack at me from ~700 tiles away while I look elsewhere - seen (attacker never loaded my patch; targetOwner filled); a bot march crossing my screen - seen; one far away - not loaded; my own march stays live after I look away while the passing one is dropped; my alliance's march far away - seen. Listeners stay <= 33.
+- Reads (1,000 bots + 300 marches, Vanaheim): opening the game 2,342 -> 57 (bases 2,003 -> 6, marches 300 -> 17 for the 7 near me); 150 changes elsewhere in the kingdom: 150 reads for me -> 5. Headless idle fps 41 -> 61 (fewer far-away marches to track). dev/load/baseline-results.json (whole list) / patch-results.json.
+- Possible later saving: a march crossing several of my patches is read once per listener (17 reads for 7 marches here).
+- Tests: g260 new; g250, g255, g256, g257, g258, g259 pass.

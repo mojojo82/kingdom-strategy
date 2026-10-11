@@ -11294,7 +11294,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1081"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1082"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17294,6 +17294,7 @@ function syncPatchSubs() {
       function (e) { console.error("Patch sync error:", id, e && e.code, e && e.message); });
   });
   Object.keys(patchSubs).forEach(function (id) { if (!want[id] && nowMs - patchSubs[id].wantedAt >= PATCH_LINGER_MS) dropSub(id); });
+  try { syncMarchPatchSubs(); } catch (e) { console.error(e); } /* v1082 */
 }
 function startPatchSync() {
   if (patchSyncStarted) return; patchSyncStarted = true;
@@ -18110,6 +18111,7 @@ function plainClone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 function startWorldMarchSync() {
   if (worldMarchSyncStarted || !cloudDb) { if (!cloudDb) worldMarchesReady = true; return; }
   worldMarchSyncStarted = true;
+  if (patchMode()) { startMarchPatchSync(); return; } /* v1082: marches by patch */
   cloudDb.collection(marchesCol()).onSnapshot(function (qsnap) {
     var seen = {};
     qsnap.docs.forEach(function (doc) { if (doc.exists) { seen[doc.id] = true; worldMarches[doc.id] = doc.data(); } });
@@ -18117,6 +18119,46 @@ function startWorldMarchSync() {
     worldMarchesReady = true;
     try { adoptSharedMarchResults(); } catch (e) {}
   }, function (e) { console.error("World march sync error:", e && e.code, e && e.message); worldMarchesReady = true; });
+}
+/* ---- v1082: marches by patch (world map plan, phase 3) ----
+   Each march record lists the 50x50 patches its route crosses (patches), whose base it targets (targetOwner) and the sender's alliance (aid).
+   In patch mode the game listens to: my own marches, marches at me, my alliance's marches (always, wherever they are), plus one listener per
+   patch the base listeners use (screen + one ring, my base's patch). A march can arrive through several listeners; it's kept while any still has it. */
+function marchPatchList(fromTileId, toTileId) {
+  var a = mapTileById(game.state.map, fromTileId), b = mapTileById(game.state.map, toTileId), out = {}; if (!a || !b) return [];
+  var dx = b.x - a.x, dy = b.y - a.y, n = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) * 4));
+  for (var i = 0; i <= n; i++) { var x = a.x + dx * i / n, y = a.y + dy * i / n; out[patchIdOfTile(Math.floor(x + 0.5), Math.floor(y + 0.5))] = 1; out[patchIdOfTile(Math.floor(x), Math.floor(y))] = 1; }
+  return Object.keys(out).sort();
+}
+var marchSrc = {}, marchSrcSubs = {}, marchAllyAid = null;
+function marchSrcApply(src, docs) { /* docs: [{id, data}] from one listener */
+  var prev = marchSrc[src] || {}, now = {};
+  docs.forEach(function (d) { now[d.id] = 1; worldMarches[d.id] = d.data; });
+  marchSrc[src] = now;
+  Object.keys(prev).forEach(function (id) { if (now[id]) return; if (!Object.keys(marchSrc).some(function (k) { return marchSrc[k][id]; })) delete worldMarches[id]; });
+}
+function marchSrcDrop(src) { var u = marchSrcSubs[src]; if (u) { try { u(); } catch (e) {} } delete marchSrcSubs[src]; marchSrcApply(src, []); delete marchSrc[src]; }
+function marchSrcListen(src, query, onFirst) {
+  if (marchSrcSubs[src]) return;
+  marchSrcSubs[src] = query.onSnapshot(function (q) {
+    marchSrcApply(src, q.docs.filter(function (d) { return d.exists; }).map(function (d) { return { id: d.id, data: d.data() }; }));
+    if (onFirst) { onFirst(); onFirst = null; }
+    try { adoptSharedMarchResults(); } catch (e) {}
+  }, function (e) { console.error("March sync error:", src, e && e.code, e && e.message); if (onFirst) { onFirst(); onFirst = null; } });
+}
+function syncMarchPatchSubs() {
+  if (!worldMarchSyncStarted || !patchMode()) return;
+  var col = cloudDb.collection(marchesCol());
+  Object.keys(patchSubs).forEach(function (pid) { marchSrcListen("p:" + pid, col.where("patches", "array-contains", pid)); });
+  Object.keys(marchSrcSubs).forEach(function (src) { if (src.indexOf("p:") === 0 && !patchSubs[src.slice(2)]) marchSrcDrop(src); });
+  var aid = (ALLY.my && ALLY.my.aid) || null; /* my alliance's marches */
+  if (aid !== marchAllyAid) { if (marchAllyAid) marchSrcDrop("ally"); marchAllyAid = aid; if (aid) marchSrcListen("ally", col.where("aid", "==", aid)); }
+}
+function startMarchPatchSync() {
+  var col = cloudDb.collection(marchesCol());
+  marchSrcListen("mine", col.where("ownerId", "==", PLAYER_ID), function () { worldMarchesReady = true; }); /* my own (also how I see results others wrote for me) */
+  marchSrcListen("atme", col.where("targetOwner", "==", PLAYER_ID)); /* anything coming at me, wherever it is */
+  syncMarchPatchSubs(); setInterval(syncMarchPatchSubs, 3000);
 }
 // Other players' marches as synthetic march objects for the map overlay (position follows from the fixed timeline)
 function foreignMarchList(t) {
@@ -18148,7 +18190,8 @@ function syncMyMarchRecords() {
     if (!pub) {
       var rep = null;
       if (resolved && st.battleReports[0] && st.battleReports[0].marchId === m.id) rep = plainClone(st.battleReports[0]);
-      ops.push({ key: key, kind: "set", data: { skin: m.skin || "voidspire", ownerId: PLAYER_ID, ownerName: (typeof playerDisplayName === "function" ? playerDisplayName() : null) || null, mid: m.id, tileId: m.tileId, homeTileId: st.homeTileId, action: m.action, travelSec: m.travelSec, arriveAt: m.arriveAt, actionEnd: actionEnd, returnAt: returnAt, army: plainClone(m.army), heroKeys: plainClone(m.heroKeys || []), resolved: resolved, result: resolved ? { loot: plainClone((m.result && m.result.loot) || {}) } : null, report: rep, updatedAt: Date.now() } });
+      ops.push({ key: key, kind: "set", data: { skin: m.skin || "voidspire", ownerId: PLAYER_ID, ownerName: (typeof playerDisplayName === "function" ? playerDisplayName() : null) || null, mid: m.id, tileId: m.tileId, homeTileId: st.homeTileId,
+        patches: marchPatchList(st.homeTileId, m.tileId), targetOwner: (occupiedTileIds[m.tileId] && occupiedTileIds[m.tileId] !== "?" ? occupiedTileIds[m.tileId] : null), aid: (ALLY.my && ALLY.my.aid) || null, /* v1082: which map patches it crosses, whose base it targets, my alliance - so other phones can listen only to the marches that matter to them */ action: m.action, travelSec: m.travelSec, arriveAt: m.arriveAt, actionEnd: actionEnd, returnAt: returnAt, army: plainClone(m.army), heroKeys: plainClone(m.heroKeys || []), resolved: resolved, result: resolved ? { loot: plainClone((m.result && m.result.loot) || {}) } : null, report: rep, updatedAt: Date.now() } });
       myMarchPublished[key] = resolved ? "resolved" : "new";
     } else if (pub === "new" && resolved) {
       var rep2 = (st.battleReports[0] && st.battleReports[0].marchId === m.id) ? plainClone(st.battleReports[0]) : null;
@@ -18164,11 +18207,14 @@ function syncMyMarchRecords() {
   Object.keys(worldMarches).forEach(function (k) { var r = worldMarches[k]; if (r && nowMs - r.returnAt > MARCH_RECORD_KEEP_MS && r.ownerId !== PLAYER_ID) ops.push({ key: k, kind: "delete" }); });
   if (!ops.length) return;
   marchSyncBusy = true;
-  Promise.all(ops.map(function (o) {
+  /* v1082: in patch mode, a target base I haven't loaded (e.g. sent from a bookmark far away) - read its patch first so the record names its owner and they see it coming */
+  var unknown = patchMode() ? ops.filter(function (o) { if (o.kind !== "set" || o.data.targetOwner) return false; var t = mapTileById(game.state.map, o.data.tileId); return t && !(patchSubs[patchIdOfTile(t.x, t.y)] || {}).loaded; }) : [];
+  var pre = unknown.length ? Promise.all(unknown.map(function (o) { var t = mapTileById(game.state.map, o.data.tileId); return loadPatchesAround(t.x, t.y, 0).then(function () { var w = occupiedTileIds[o.data.tileId]; if (w && w !== "?") o.data.targetOwner = w; }, function () {}); })) : Promise.resolve();
+  pre.then(function () { return Promise.all(ops.map(function (o) {
     var ref = cloudDb.doc(col + "/" + o.key);
     var p = o.kind === "set" ? ref.set(o.data) : o.kind === "update" ? ref.update(o.data) : ref.delete();
     return p.catch(function (e) { console.error("march record " + o.kind + " failed:", e && e.message); });
-  })).then(function () { marchSyncBusy = false; });
+  })); }).then(function () { marchSyncBusy = false; }, function () { marchSyncBusy = false; });
 }
 // Owner side: a march another client already fought for me -> take the result as if I'd fought it
 function adoptSharedMarchResults() {

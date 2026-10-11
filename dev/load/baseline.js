@@ -82,8 +82,9 @@ const r1 = (x) => Math.round(x * 10) / 10;
   const sB = await snapOf(B);
   const cityKey = Object.keys(sB.listens).find((k) => /server1\/cities$/.test(k)), marchKey = Object.keys(sB.listens).find((k) => /server1\/marches$/.test(k));
   const baseKeys = Object.keys(sB.listens).filter((k) => /server1\/(cities$|patches\/)/.test(k)), sum = (f) => baseKeys.reduce((a, k) => a + f(sB.listens[k]), 0);
-  out.crowdedOpen = { reads: sB.reads, baseListeners: baseKeys.length, baseReads: sum((l) => l.billed), cityDocs: cityKey ? sB.listens[cityKey].first : null, marchDocs: sB.listens[marchKey].first,
-    baseFirstMs: r1(sum((l) => l.ms[0] || 0)), marchFirstMs: r1(sB.listens[marchKey].ms[0] || 0), longTasks: sB.longTasks, longTaskMs: sB.longTaskMs,
+  out.crowdedOpen = { reads: sB.reads, baseListeners: baseKeys.length, baseReads: sum((l) => l.billed), cityDocs: cityKey ? sB.listens[cityKey].first : null,
+    marchListeners: Object.keys(sB.listens).filter((k) => /server1\/marches/.test(k)).length, marchesKnown: await B.evaluate(() => Object.keys(worldMarches).length), marchReads: Object.keys(sB.listens).filter((k) => /server1\/marches/.test(k)).reduce((a, k) => a + sB.listens[k].billed, 0), /* v1082: marches by patch = several listeners */
+    baseFirstMs: r1(sum((l) => l.ms[0] || 0)), longTasks: sB.longTasks, longTaskMs: sB.longTaskMs,
     topListens: Object.entries(sB.listens).map(([k, l]) => [k.replace("envs/test/", ""), l.billed]).sort((x, y) => y[1] - x[1]).slice(0, 8) };
   out.crowdedFpsIdle = await fps(B, 4000);
   out.drawn = await B.evaluate(() => ({ marches: foreignMarchList(vnow()).length + game.state.marches.length, shipMarkers: Object.keys(marchMarkerEls).length, routeArrows: Object.keys(marchPathEls).length }));
@@ -113,7 +114,7 @@ const r1 = (x) => Math.round(x * 10) / 10;
   }
   await B.waitForTimeout(1500);
   const after = await snapOf(B);
-  const ms = [].concat(...Object.keys(after.listens).filter((k) => /server1\/(cities$|patches\/|marches$)/.test(k)).map((k) => after.listens[k].ms.slice(before.listens[k] ? before.listens[k].ms.length : 0)));
+  const ms = [].concat(...Object.keys(after.listens).filter((k) => /server1\/(cities$|patches\/|marches)/.test(k)).map((k) => after.listens[k].ms.slice(before.listens[k] ? before.listens[k].ms.length : 0)));
   const baseReadsDuring = Object.keys(after.listens).filter((k) => /server1\/(cities$|patches\/)/.test(k)).reduce((a, k) => a + after.listens[k].billed - (before.listens[k] ? before.listens[k].billed : 0), 0);
   out.perChange = { readsForThisPlayer: after.reads - before.reads, readsPerChange: r1((after.reads - before.reads) / CHANGES), baseChanges: Math.ceil(CHANGES / 3), baseReadsForThem: baseReadsDuring, updates: ms.length,
     msMedian: r1(pct(ms, 0.5)), msP95: r1(pct(ms, 0.95)), msMax: r1(Math.max(0, ...ms)), longTasks: after.longTasks - before.longTasks, longTaskMs: after.longTaskMs - before.longTaskMs, fps: await fpsDuring };
