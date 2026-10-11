@@ -1431,3 +1431,8 @@
 - Old whole-list code kept for the rollback; remove it (and the "Kingdom 1" placeholder) once Atlantis has run on patches for a while.
 - Marches sent before v1082 have no route patches - other players won't see them under patches; they're gone within minutes anyway.
 - Tests: new g263_atlantis_patches (Atlantis by patch sees a neighbour's base; admin switch -> fresh open uses the whole list and still sees it). g257 and g229 now rebuild the patch lists after writing bases directly (like an admin's bot tools); g259 expects Atlantis by patch. g200, g250, g252, g253, g255-g262 pass.
+
+## v1087 - attacks on bases far off screen (TEST)
+- CI's end-to-end test (real emulator) failed on v1086: a player hit another player's base that was far from where they were looking. With bases by patch the attacker's game didn't know a base was there (its patch wasn't loaded), so it never asked the server for the hit. Same would happen to a march landing after you've scrolled away (resolveMarchAgainstSharedWorld uses the same lookup). v1086 was not deployed (CI stopped before deploy).
+- Fix: hitBase and attack resolution first read the target's patch once if it isn't loaded (patchKnown / ensurePatchFor, remembered 30 s).
+- g263 extended: B looking far away (A's patch not loaded) hits A's base -> 10000 -> 9000 on the server. g250, g257-g262 pass.

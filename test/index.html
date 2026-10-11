@@ -11308,7 +11308,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1086"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1087"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15991,6 +15991,7 @@ function writeCityHp(tileId, rec) {
   return Promise.resolve();
 }
 function hitBase(tileId) { /* -> promise of { before, after, zeroed } */
+  if (patchMode() && !patchKnown(tileId)) return ensurePatchFor(tileId).then(function () { return hitBase(tileId); }); /* v1086: in patch mode the target may be far from what I'm looking at - read its patch first */
   if (ksFb() && isBaseTile(tileId)) { var hb = Math.round(baseHpNow(tileId).hp); return KS_BACKEND.call("hitBase", { tileId: tileId }).then(function (r) { if (r.city) cityHp[tileId] = Object.assign({}, cityHp[tileId] || {}, r.city); try { renderVisibleTiles(); renderTileInfo(); } catch (e) {} return { before: r.before, after: r.after, zeroed: r.zeroed }; }, function (e) { console.warn("hitBase:", e && e.message); return { before: hb, after: hb, zeroed: false }; }); } /* v905: the server applies hits */
   var read = cloudDb && isBaseTile(tileId) ? cloudDb.doc(serverPrefix() + "cities/" + tileIdToDocId(tileId)).get().then(function (snap) { var d = snap.exists ? snap.data() : null; return d && typeof d.hp === "number" ? d : null; }).catch(function () { return cityHp[tileId] || null; }) : Promise.resolve(cityHp[tileId] || null);
   return read.then(function (doc) {
@@ -17435,6 +17436,13 @@ function patchDailyCheck() {
   KS_BACKEND.call("adminRebuildPatches", {}).then(function (r) { patchLastCheck = r; if (r.wrote || r.removed) { console.warn("patch lists were out of step - fixed", JSON.stringify(r)); try { game.log("🔁 Patch check: " + r.wrote + " patch list(s) fixed, " + r.removed + " removed (" + r.bases + " bases)."); } catch (e) {} } }, function (e) { console.error("patch check failed", e && e.message); });
 }
 var patchLastCheck = null;
+/* v1086: is this tile's patch loaded (live, or read in the last 30 s)? If not, read it once - attacks and hits must know who lives on a tile even when it's far off screen */
+var patchOnceAt = {};
+function patchKnown(tileId) { var xy = tileXY(tileId); if (isNaN(xy[0])) return true; var pid = patchIdOfTile(xy[0], xy[1]); return !!((patchSubs[pid] && patchSubs[pid].loaded) || (patchOnceAt[pid] && Date.now() - patchOnceAt[pid] < 30000)); }
+function ensurePatchFor(tileId) {
+  var xy = tileXY(tileId), pid = patchIdOfTile(xy[0], xy[1]);
+  return cloudDb.doc(serverPrefix() + "patches/" + pid).get().then(function (snap) { patchOnceAt[pid] = Date.now(); applyPatchData(pid, snap.exists && snap.data() ? snap.data().b : null); }, function (e) { patchOnceAt[pid] = Date.now(); console.error("patch read failed", e && e.message); });
+}
 /* the patches around a tile, read once (for picking a free spot to start on) */
 function loadPatchesAround(x, y, r) {
   var ids = {}; [[-r, -r], [r, -r], [-r, r], [r, r], [0, 0]].forEach(function (d) { var xx = x + d[0], yy = y + d[1]; if (xx >= 0 && yy >= 0) ids[patchIdOfTile(xx, yy)] = 1; });
@@ -18179,6 +18187,7 @@ function pvpNoBattleReport(m, text) {
 }
 function resolveMarchAgainstSharedWorld(m, G) {
   G = G || game; /* v835: a foreign resolver passes a throwaway sim loaded from the march owner's save */
+  if (m.action === "attack" && patchMode() && !patchKnown(m.tileId)) return ensurePatchFor(m.tileId).then(function () { return resolveMarchAgainstSharedWorld(m, G); }); /* v1086: I may have scrolled away from the target since sending - know who lives there before fighting */
   var localTile = mapTileById(game.state.map, m.tileId);
   if (m.action === "attack" && localTile && localTile.type === "empty" && !(cloudDb && isTileOccupied(m.tileId) && occupiedTileIds[m.tileId] !== PLAYER_ID)) {
     pvpNoBattleReport(m, "No battle: this tile wasn't treated as another player's city (db " + (cloudDb ? "connected" : "NOT connected") + ", tile " + (isTileOccupied(m.tileId) ? "occupied by " + occupiedTileIds[m.tileId] : "not occupied") + ", you are " + PLAYER_ID + ").");

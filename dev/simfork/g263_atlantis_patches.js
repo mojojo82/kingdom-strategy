@@ -34,6 +34,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const sees = async (P) => { await P.evaluate(() => { window.__fbNotify(); setScreen("world"); centerMapOnHome(); renderVisibleTiles(); }); await P.waitForTimeout(1500); return P.evaluate(([t, u]) => ({ mode: patchMode(), whole: !patchMode(), seesB: occupiedTileIds[t] === u }), [near, bUid]); };
   const on = await sees(A); console.log("by patch", JSON.stringify(on));
   assert.ok(a.mode && on.mode && on.seesB, "Atlantis by patch sees the neighbour's base");
+  /* B looks far away (A's patch not loaded), then hits A's base - like a march landing after you've scrolled off (CI e2e found this) */
+  const far = await B.evaluate((h) => { const [x, y] = h.split(",").map(Number), fx = x < 600 ? x + 400 : x - 400, fy = y < 600 ? y + 400 : y - 400; const vp = document.getElementById("mapviewport"), c = tileCenterPx({ x: fx, y: fy }); vp.scrollLeft = c.x - 200; vp.scrollTop = c.y - 400; renderVisibleTiles(); return new Promise((r) => setTimeout(() => { Object.keys(patchSubs).forEach((id) => { patchSubs[id].wantedAt = 0; }); syncPatchSubs(); const xy = tileXY(h); r({ known: patchKnown(h), occ: !!occupiedTileIds[h] }); }, 1500)); }, a.home);
+  const hit = await B.evaluate((h) => hitBase(h), a.home); console.log("far hit", JSON.stringify({ far, hit }));
+  assert.ok(!far.known, "A's patch wasn't loaded on B"); assert.ok(hit && hit.before === 10000 && hit.after === 9000, "far hit landed on the server");
   /* rollback: admin flips the kingdom to the old whole list; a fresh open picks it up */
   store["envs/test/servers/server0"] = Object.assign({}, store["envs/test/servers/server0"], { patchOff: true });
   const A2 = await page(""); await A2.fill("#ksE", "pp@test.dev"); await A2.fill("#ksP", "secret123"); await A2.click("#ksIn"); await A2.waitForTimeout(7000);
