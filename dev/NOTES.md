@@ -1336,3 +1336,11 @@
 - updateMarchMarkers: view = the visible map area plus half a screen each way. A ship outside it gets no marker, no 3D ship (so no ship water) and no cannon fire. A route arrow is drawn only if its line crosses that area, and only that piece of it (clipSegToRect; start snapped to the 16px arrow pattern so arrows don't jump). Before, a long route was one animated, shadowed strip up to ~31,600px wide.
 - Measured (dev/load/baseline.js, 1,000 bots + 300 marches, headless with software graphics, noisy): before - all 300 ships + 295 arrows drawn wherever you look, ~2 fps, 147 s of long tasks during 150 changes. After - 0-2 ships and 2-10 arrows drawn, 18-44 fps idle, 0.5-2.9 s of long tasks. Firebase reads unchanged (that's phases 2-3).
 - Test: g256_march_cull (only the on-screen ship drawn; arrows only for on-screen / passing-through routes, cut to the screen; scrolling there draws the other ship). g250, g251, g255 pass. (g68/g102 fail on v1074 too - old harness.)
+
+## v1076 - nearby bases no longer pop in on opening (TEST)
+- Harley (long-standing): on opening the app only his own base shows; bases near him in view appear 1-2 s later.
+- Cause, two parts: (1) the kingdom's base list is downloaded from Firebase on every open (no on-device cache), while his own base comes from his save; (2) when the list (or any base change) arrived, the cities listener only updated the data - bases weren't drawn until the next 1 s game tick (render()). Reproduced: a new base on screen took 565-703 ms to appear after its data arrived.
+- Fix: the cities listener redraws the visible tiles straight away when an owner/skin changed (not on HP-only changes). And the bases within 40 tiles of your base (max 300) are remembered on the device (localStorage "ks_nearbases_v1", per kingdom, max 7 days old) and drawn as soon as the kingdom is known (afterResolved), before the live list arrives; the live list then corrects them (one that moved/left disappears).
+- After: new base drawn ~20 ms after its data; on opening, the remembered bases show in the same frame as your own base. Headless only; the network part can't be measured here.
+- Fits the world map plan: phase 2 (bases by patch) downloads far less, and the same memory can hold patches.
+- Test: g257_base_popin (fails on v1075, passes now). g200, g250, g252, g255, g256 pass.

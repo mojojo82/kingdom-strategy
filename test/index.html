@@ -11290,7 +11290,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1075"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1076"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17172,23 +17172,45 @@ function tileBlockReason(tileId) {
   return "";
 }
 var citySyncStarted = false;
+/* v1076: the bases near your own base are remembered on this device, so on opening the game they're drawn together with your base
+   instead of popping in once the kingdom's base list has downloaded. The live list then corrects them (a base that moved or left disappears). */
+var NEAR_BASES_KEY = "ks_nearbases_v1", NEAR_BASES_R = 40, NEAR_BASES_MAX = 300, nearBasesSig = "";
+function nearBasesSeed() {
+  var c = null; try { c = JSON.parse(localStorage.getItem(NEAR_BASES_KEY) || "null"); } catch (e) {}
+  if (!c || !c.b || c.sid !== CURRENT_SERVER_ID || Date.now() - (c.at || 0) > 7 * 86400000) return 0;
+  var n = 0; Object.keys(c.b).forEach(function (id) { if (occupiedTileIds[id] || id === game.state.homeTileId) return; occupiedTileIds[id] = c.b[id][0]; if (CITY_SKINS[c.b[id][1]]) citySkinByTile[id] = c.b[id][1]; n++; });
+  return n;
+}
+function nearBasesSave() {
+  var home = game.state.homeTileId; if (!home) return;
+  var hc = home.indexOf(","), hx = +home.slice(0, hc), hy = +home.slice(hc + 1), b = {}, n = 0;
+  Object.keys(occupiedTileIds).forEach(function (id) {
+    var o = occupiedTileIds[id]; if (!o || o === "?" || id === home || n >= NEAR_BASES_MAX) return;
+    var c = id.indexOf(","), x = +id.slice(0, c), y = +id.slice(c + 1); if (Math.abs(x - hx) > NEAR_BASES_R || Math.abs(y - hy) > NEAR_BASES_R) return;
+    b[id] = [o, citySkinByTile[id] || ""]; n++;
+  });
+  var sig = CURRENT_SERVER_ID + home + JSON.stringify(b); if (sig === nearBasesSig) return; nearBasesSig = sig;
+  try { localStorage.setItem(NEAR_BASES_KEY, JSON.stringify({ sid: CURRENT_SERVER_ID, at: Date.now(), b: b })); } catch (e) {}
+}
 function startCitySync() {
   if (citySyncStarted || !cloudDb) return;
   citySyncStarted = true;
   try { startSkinAlignSync(); } catch (e) {}
   try { startMapIsoSync(); } catch (e) {}
   cloudDb.collection(serverPrefix() + "cities").onSnapshot(function (qsnap) {
-    var seen = {};
+    var seen = {}, changed = false;
     qsnap.docs.forEach(function (doc) {
       if (!doc.exists) return;
       var data = doc.data();
       var tileId = docIdToTileId(doc.id);
+      if (data && data.owner && (occupiedTileIds[tileId] !== data.owner || (citySkinByTile[tileId] || "") !== (CITY_SKINS[data.sk] ? data.sk : ""))) changed = true; /* v1076 */
       if (data && data.owner) { occupiedTileIds[tileId] = data.owner; seen[tileId] = true; if (CITY_SKINS[data.sk]) citySkinByTile[tileId] = data.sk; else delete citySkinByTile[tileId]; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
       if (data && typeof data.hp === "number") cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; else delete cityHp[tileId]; /* v894: base HP */
       if (tileId === game.state.homeTileId && data && data.raidedAt) applyRaidIfNew(data.raidedAt);
     });
-    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id]) { delete occupiedTileIds[id]; delete citySkinByTile[id]; } });
+    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id]) { delete occupiedTileIds[id]; delete citySkinByTile[id]; changed = true; } });
     try { publishMyCitySkin(); } catch (e) {} /* v1012: older city docs get the skin added */
+    if (changed) { try { renderVisibleTiles(); } catch (e) {} try { nearBasesSave(); } catch (e) {} } /* v1076: draw bases the moment they arrive (they used to wait for the 1 s game tick) */
   }, function (e) { console.error("City sync error:", e && e.code, e && e.message); });
 }
 function pickRandomUnclaimedEmptyTile() { /* v864: sample random spots instead of listing every tile in the world */
@@ -17629,7 +17651,7 @@ function assignServerForNewPlayer(inviteId) {
 // subscribe to anything — those two read CURRENT_SERVER_ID indirectly via
 // serverPrefix(), so it must be correct before they start.
 function resolveServerAssignment() {
-  function afterResolved() { startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
+  function afterResolved() { try { if (nearBasesSeed()) renderVisibleTiles(); } catch (e) {} startWorldTileSync(); startCitySync(); startWorldMarchSync(); startTerrainSync(); startDecorSync(); try { startAllianceSync(); } catch (e) { console.error(e); } try { startWorldChatSync(); } catch (e) { console.error(e); } try { firebaseSeedWorld(); } catch (e) { console.error(e); } try { ksStartWallet(); } catch (e) { console.error(e); } }
   if (IS_GUEST_LINK || !cloudDb) {
     // Guests ride along the legacy world; offline/no-db has no multiplayer
     // concept to assign anyway. CURRENT_SERVER_ID is already correct
