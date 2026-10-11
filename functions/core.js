@@ -12,8 +12,11 @@ const HIT_COOLDOWN_MS = 30000;        // one base hit per attacker per target ev
 const LEVEL_FLOOR_TOLERANCE = 0.9;    // accept claims at 90% of the measured minimum (timing jitter)
 
 // Conquest pacing (game: idleHordeSize / idleHordeCount). g = global level number, 1-based.
-function hordeSize(g) { return Math.min(10, 5 + Math.floor((g - 1) / 25)); }
-function hordeCount(g) { return Math.min(8, 4 + Math.floor((g - 1) / 30)); }
+// v1092: the game freezes horde size / count at their 5-20 values (CURVE_ANCHOR = 100), so levels past chapter 5 can be cleared faster than before.
+// The floor follows the TEST game; for the LIVE game (hordes still growing) this only makes the check a little looser past 5-20, never stricter.
+const HORDE_FREEZE_AT = 100;
+function hordeSize(g) { return Math.min(10, 5 + Math.floor((Math.min(g, HORDE_FREEZE_AT) - 1) / 25)); }
+function hordeCount(g) { return Math.min(8, 4 + Math.floor((Math.min(g, HORDE_FREEZE_AT) - 1) / 30)); }
 function hordeQuota(g) { return hordeSize(g) * hordeCount(g); }
 // Fastest a level can possibly be cleared, in seconds. Measured in the real game with every enemy dying the instant it appears
 // and the Victory screen skipped (simfork/g160_levelspeed.js): g=1 -> 4.25s, g=41 -> 6.0s, g=181 -> 13.8s.

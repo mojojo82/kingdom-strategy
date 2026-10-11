@@ -19,14 +19,14 @@ t("baseHpAt matches the game", () => {
   }
   ["BASE_HP_MAX = 10000", "BASE_HIT_HP = 1000", "BASE_BURN_MAX = 3000", "BASE_EXTINGUISH_GEMS = 100", "BASE_REPAIR_GEMS = 225", "BASE_REPAIR_HP = 2000"].forEach((s) => assert.ok(html.includes(s), "game constant changed: " + s));
   assert.ok(html.includes("var LEVEL_CLEAR_GEMS = 50") && html.includes("IDLE_LEVELS_PER_CHAPTER = 20"), "level constants changed");
-  assert.ok(html.includes("function idleHordeSize() { return Math.min(10, 5 + Math.floor((idleGlobalLevelNum() - 1) / 25)); }"), "horde size formula changed");
-  assert.ok(html.includes("function idleHordeCount() { return Math.min(8, 4 + Math.floor((idleGlobalLevelNum() - 1) / 30)); }"), "horde count formula changed");
+  assert.ok(html.includes("function idleHordeSize() { return Math.min(10, 5 + Math.floor((idleCurveLvl() - 1) / 25)); }") && html.includes("var CURVE_ANCHOR = 100,"), "horde size formula changed");
+  assert.ok(html.includes("function idleHordeCount() { return Math.min(8, 4 + Math.floor((idleCurveLvl() - 1) / 30)); }"), "horde count formula changed");
 });
 
 t("level floor matches measurements", () => {
   assert.ok(Math.abs(C.levelFloorSec(1) - 4.25) < 0.1);
   assert.ok(Math.abs(C.levelFloorSec(41) - 6.0) < 0.1);
-  assert.ok(Math.abs(C.levelFloorSec(181) - 13.8) < 0.1);
+  assert.ok(Math.abs(C.levelFloorSec(100) - 10.2) < 0.1); assert.ok(Math.abs(C.levelFloorSec(181) - 10.2) < 0.1, "v1092: hordes frozen after 5-20");
   assert.strictEqual(C.globalLevel(1, 1), 1); assert.strictEqual(C.globalLevel(10, 1), 181);
 });
 
