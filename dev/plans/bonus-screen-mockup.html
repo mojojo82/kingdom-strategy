@@ -1,0 +1,174 @@
+<title>Bonus Training Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito+Sans:wght@400;700;800&display=swap">
+<style>
+/* Layout: phone-shaped game screen on top (the thing being judged: 3 lane objects + item count + milestone), then short notes and open questions. Single dark look = the game's own (navy + gold, bronze panels, flat cyan buttons, dashed borders). */
+:root {
+  --bg: #0b1424; --panel: #13203a; --panel2: #0f1a2f; --ink: #eef3fb; --muted: #9fb1cc; --line: #2a3d63;
+  --gold: #f0c95f; --cyan: #3fc6e0; --bronze: #3a2a1a; --bronze2: #2c1f13; --bronzeLine: #8a6a3a; --sand: #f5e2c0; --sand2: #d9c29a;
+  --atk: #ff7a5c; --hp: #3ecf8e; --def: #7cb0ff;
+  --display: "Cinzel", Georgia, serif; --body: "Nunito Sans", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 18px 40px; padding-inline: 16px; display: grid; gap: 18px; }
+h1 { font-family: var(--display); color: var(--gold); font-size: 22px; margin: 0; letter-spacing: .03em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+h2 { font-size: 12.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+p { margin: 0; }
+.stage { display: grid; justify-items: center; gap: 10px; }
+.phone { width: min(100%, 370px); border-radius: 22px; border: 2px dashed #6b5a2e; background: radial-gradient(120% 70% at 50% 30%, #1a2c4d 0%, var(--panel2) 70%); padding: 14px 12px 14px; display: grid; gap: 12px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.topbar .t { font-family: var(--display); color: var(--gold); font-size: 17px; }
+.x { width: 28px; height: 28px; border-radius: 6px; border: 1px dotted var(--line); background: var(--panel2); color: var(--muted); font-weight: 800; display: grid; place-items: center; }
+.own { display: flex; align-items: center; gap: 8px; background: var(--bronze); border: 2px dashed var(--bronzeLine); border-radius: 12px; padding: 7px 11px; }
+.own .ic { width: 26px; height: 26px; flex: none; }
+.own .n { font-weight: 800; color: var(--sand); font-variant-numeric: tabular-nums; font-size: 16px; }
+.own .l { color: var(--sand2); font-size: 12px; }
+.own .src { margin-left: auto; color: var(--sand2); font-size: 11px; text-align: right; }
+.lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lane { background: var(--bronze); border: 2px dashed var(--bronzeLine); border-radius: 12px; padding: 8px 6px 8px; display: grid; justify-items: center; gap: 4px; text-align: center; }
+.obj { width: 74px; height: 86px; position: relative; }
+.obj svg { width: 100%; height: 100%; display: block; }
+.obj .glow { position: absolute; inset: 8px 4px 18px; border-radius: 50%; filter: blur(14px); opacity: .45; }
+.lane .name { font-weight: 800; font-size: 12.5px; color: var(--sand); letter-spacing: .04em; }
+.lane .lv { font-family: var(--display); font-size: 15px; color: var(--gold); }
+.lane .tot { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lane .nx { font-size: 11px; color: var(--sand2); }
+.cost { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 3px; }
+.cost .ic { width: 15px; height: 15px; }
+.cost.short { color: #ff8d8d; }
+.btn { border: 0; border-radius: 6px; padding: 6px 4px; width: 100%; font: 800 12.5px var(--body); background: var(--cyan); color: #06202a; cursor: pointer; }
+.btn:disabled { background: #4b4f5a; color: #b8bdc8; cursor: default; }
+.btn:focus-visible, .claim:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.ms { background: var(--bronze2); border: 2px dashed var(--bronzeLine); border-radius: 12px; padding: 9px 11px; display: grid; gap: 7px; }
+.ms .h { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.ms .h b { color: var(--gold); font-family: var(--display); font-size: 14px; }
+.ms .h span { color: var(--sand2); }
+.track { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.bar { height: 8px; border-radius: 4px; background: #1a120b; border: 1px dotted #5c4526; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; transition: width .35s; }
+.ms .gift { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--sand); }
+.ms .gift .r { flex: 1; min-width: 0; }
+.claim { border: 0; border-radius: 6px; padding: 6px 12px; font: 800 12.5px var(--body); background: linear-gradient(#f0c95f, #c98f1e); color: #2a1a05; cursor: pointer; }
+.claim[hidden] { display: none; }
+.toast { text-align: center; font-size: 12px; color: var(--gold); min-height: 18px; }
+.dev { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.dev button { border: 1.5px solid var(--line); background: var(--panel2); color: var(--ink); font: 800 12.5px var(--body); border-radius: 8px; padding: 6px 11px; cursor: pointer; }
+.dev button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 12.5px; text-align: center; }
+.notes { display: grid; gap: 10px; }
+.note { background: var(--panel); border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 13px; display: grid; gap: 4px; }
+.note .n { font-weight: 800; }
+.note .s { color: var(--muted); font-size: 13.5px; }
+ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="essence" viewBox="0 0 24 24"><path d="M12 2 19 9 12 22 5 9Z" fill="#b48cff"/><path d="M12 2 15 9 12 22 9 9Z" fill="#d9c4ff"/><path d="M5 9h14" stroke="#6b4bb8" stroke-width="1"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <h1>Bonus Training Mockup</h1>
+    <div class="sub">Sketch of the screen, not final art · numbers are placeholders until the sims set them</div>
+  </header>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <div class="topbar"><span class="t">Training</span><span class="x" aria-hidden="true">✕</span></div>
+      <div class="own">
+        <svg class="ic"><use href="#essence"/></svg>
+        <div><div class="n" id="ownN">0</div><div class="l">Essence owned</div></div>
+        <div class="src">From: Conquest bosses,<br>Idle Chest, events</div>
+      </div>
+      <div class="lanes" id="lanes"></div>
+      <div class="ms">
+        <div class="h"><b id="msTitle">All lanes Lv 20</b><span id="msLow">lowest lane 0/20</span></div>
+        <div class="track" id="track"></div>
+        <div class="gift"><div class="r" id="msGift">Reward: +5% ATK, HP and DEF · 1 Gold Chest</div><button class="claim" id="claim" type="button" hidden>Claim</button></div>
+      </div>
+      <div class="toast" id="toast" aria-live="polite"></div>
+    </div>
+    <div class="dev"><button type="button" id="give">+200 Essence (test)</button><button type="button" id="reset">Reset</button></div>
+    <div class="hint">Tap Upgrade to try it. Get all three lanes to the milestone and the gold Claim button shows up.</div>
+  </div>
+
+  <section class="notes">
+    <div class="note"><div class="n">How it works</div><div class="s">Each lane adds a flat amount to the game's global ATK / HP / DEF Bonus (the same number Equipment adds to). The cost per level rises slowly. Every 10 levels in all three lanes gives an extra bonus to all three plus a reward, so spreading out beats dumping everything into one lane.</div></div>
+    <div class="note"><div class="n">Placeholder numbers in this mockup</div><div class="s">+1% per level in each lane. Cost = 10 + 4 × level. Milestones every 10 levels: +5% to all three, plus a chest. Real values come from the balance sims, including your point that HP tends to be the strongest lane.</div></div>
+    <div class="note"><div class="n">Open questions</div>
+      <ol class="s">
+        <li>Item name. "Essence" is a stand-in.</li>
+        <li>Should the max level be capped by Town Hall level or Conquest chapter, so payers can't max it on day one?</li>
+        <li>Milestone every 10 levels, every 20, or getting further apart as you go?</li>
+        <li>What reward at each milestone: a chest, Essence back, gems?</li>
+        <li>The objects: a sword, a heart and a shield here. Real art (statues, crystals, banners?) gets a mockup before it goes in.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var LANES = [
+    { k: "atk", name: "ATK", col: "var(--atk)", hex: "#ff7a5c" },
+    { k: "hp", name: "HP", col: "var(--hp)", hex: "#3ecf8e" },
+    { k: "def", name: "DEF", col: "var(--def)", hex: "#7cb0ff" }
+  ];
+  var PER = 1, MS_EVERY = 10, MS_BONUS = 5;
+  var start = { own: 340, atk: 14, hp: 11, def: 9, claimed: 1 };
+  var st = JSON.parse(JSON.stringify(start));
+  function cost(lv) { return 10 + 4 * lv; }
+  function low() { return Math.min(st.atk, st.hp, st.def); }
+  function msBonus() { return st.claimed * MS_BONUS; }
+  var ART = {
+    atk: '<path d="M37 6l6 6-2 44h-8L31 12Z" fill="#dfe6ef"/><path d="M37 6l3 5-1 45h-2Z" fill="#fff" opacity=".6"/><rect x="24" y="54" width="26" height="6" rx="2" fill="#c98f1e"/><rect x="34" y="60" width="6" height="12" rx="2" fill="#6b4a22"/><circle cx="37" cy="74" r="4" fill="#f0c95f"/>',
+    hp: '<path d="M37 70C20 56 10 46 10 32a13 13 0 0 1 27-6 13 13 0 0 1 27 6c0 14-10 24-27 38Z" fill="#3ecf8e"/><path d="M22 28a7 7 0 0 1 10-3" stroke="#c9ffe6" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    def: '<path d="M37 6 62 15v20c0 18-11 30-25 38C23 65 12 53 12 35V15Z" fill="#7cb0ff"/><path d="M37 13 55 20v15c0 13-8 23-18 29V13Z" fill="#4f8cff"/><path d="M37 13v51C27 58 19 48 19 35V20Z" fill="#a9ccff"/>'
+  };
+  var lanesEl = document.getElementById("lanes"), trackEl = document.getElementById("track");
+  LANES.forEach(function (L) {
+    var d = document.createElement("div"); d.className = "lane";
+    d.innerHTML = '<div class="obj"><div class="glow" style="background:' + L.col + '"></div><svg viewBox="0 0 74 86" aria-hidden="true">' +
+      '<ellipse cx="37" cy="80" rx="26" ry="5" fill="#1a120b"/>' + ART[L.k] + '</svg></div>' +
+      '<div class="name">' + L.name + ' BONUS</div><div class="lv" id="lv_' + L.k + '"></div>' +
+      '<div class="tot" style="color:' + L.col + '" id="tot_' + L.k + '"></div><div class="nx" id="nx_' + L.k + '"></div>' +
+      '<div class="cost" id="cost_' + L.k + '"></div><button class="btn" type="button" id="up_' + L.k + '">Upgrade</button>';
+    lanesEl.appendChild(d);
+    var b = document.createElement("div"); b.className = "bar"; b.innerHTML = '<i id="bar_' + L.k + '" style="background:' + L.col + '"></i>'; trackEl.appendChild(b);
+    document.getElementById("up_" + L.k).addEventListener("click", function () {
+      var c = cost(st[L.k]); if (st.own < c) return;
+      st.own -= c; st[L.k] += 1; say(L.name + " Bonus Lv " + st[L.k] + "  (+" + PER + "%)"); draw();
+    });
+  });
+  var toastT;
+  function say(t) { var e = document.getElementById("toast"); e.textContent = t; clearTimeout(toastT); toastT = setTimeout(function () { e.textContent = ""; }, 1800); }
+  function draw() {
+    document.getElementById("ownN").textContent = st.own.toLocaleString();
+    var target = (st.claimed + 1) * MS_EVERY, ready = low() >= target;
+    LANES.forEach(function (L) {
+      var lv = st[L.k], c = cost(lv);
+      document.getElementById("lv_" + L.k).textContent = "Lv " + lv;
+      document.getElementById("tot_" + L.k).textContent = "+" + (lv * PER + msBonus()) + "%";
+      document.getElementById("nx_" + L.k).textContent = "next: +" + PER + "%";
+      var ce = document.getElementById("cost_" + L.k);
+      ce.className = "cost" + (st.own < c ? " short" : "");
+      ce.innerHTML = '<svg class="ic"><use href="#essence"/></svg>' + st.own.toLocaleString() + " / " + c;
+      document.getElementById("up_" + L.k).disabled = st.own < c;
+      document.getElementById("bar_" + L.k).style.width = Math.min(100, Math.max(0, (lv - st.claimed * MS_EVERY) / MS_EVERY * 100)) + "%";
+    });
+    document.getElementById("msTitle").textContent = "All lanes Lv " + target;
+    document.getElementById("msLow").textContent = "lowest lane " + low() + "/" + target;
+    document.getElementById("msGift").textContent = "Reward: +" + MS_BONUS + "% ATK, HP and DEF · 1 Gold Chest";
+    document.getElementById("claim").hidden = !ready;
+  }
+  document.getElementById("claim").addEventListener("click", function () { st.claimed += 1; say("Milestone! +" + MS_BONUS + "% to all three + Gold Chest"); draw(); });
+  document.getElementById("give").addEventListener("click", function () { st.own += 200; draw(); });
+  document.getElementById("reset").addEventListener("click", function () { st = JSON.parse(JSON.stringify(start)); draw(); });
+  draw();
+})();
+</script>
