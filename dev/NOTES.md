@@ -1488,3 +1488,9 @@
 - State: state.training { atk, hp, def, ms, essence, chPaid, gPaid }, saved with the normal save. Admins see "dev: +100 Essence (test)" on the screen.
 - Not changed: other players' saved bonus as Arena / world opponents (state.heroBonus) doesn't include Training - same as Equipment today.
 - Test g266_training (new). g242, g253, g254, g257, g264, g265 pass. No combat formula changes (a fresh account has 0 Training), so no balance re-run.
+
+## v1094 - PC layout fix (TEST)
+- Harley (on PC for the first time in a few days): World Map selected but chat was front and centre. Reproduced at 1863x892: chat 1147px wide in the middle, the map squeezed into the 340px right box (mapviewport 310x420).
+- Bisected with the PC screenshot harness: broken since v998 (Dev Tools moved to More > Dev Tools). v998 added an empty <div id="devScreen"> as the first child of #layout, but its display:none rule sits inside the <=900px media block - on PC it took the first grid column and pushed every column along one.
+- Fix: #devScreen added to the global hide rule next to #moreMenu (line ~1833). The phone rule body[data-screen="more"][data-sub="devtools"] #devScreen is more specific, so More > Dev Tools on phones still shows (checked at 430px: display block, panel inside). Phone layout untouched.
+- After: chat 320x744 on the left, map 410x420 in the middle, heroes right - same as v966.
