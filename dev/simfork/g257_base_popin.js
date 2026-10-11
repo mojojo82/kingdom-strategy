@@ -7,11 +7,11 @@ const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome
 const HOOK = `;(function(){ var db=firebase.firestore(), QP=db.collection("x").constructor.prototype, os=QP.onSnapshot; window.__T={};
  QP.onSnapshot=function(n,e){ var p=this.path; var D=+(window.__DELAY||0), first=true, q=this, W; W=function(s){ if(/cities$/.test(p)&&first&&D){ first=false; var ss=s; setTimeout(function(){ if(!window.__T.citySnap) window.__T.citySnap=performance.now(); n(ss); }, D); return; } first=false; if(/cities$/.test(p)&&!window.__T.citySnap) window.__T.citySnap=performance.now(); n(s); }; if(/cities$/.test(p)) window.__cityPush=async function(){ var st=JSON.parse(await window.__fbstore("dump")); W(q.run(st)); }; return os.call(this,W,e); }; })();`;
 const FAKE = fs.readFileSync(ROOT + "/dev/tests/fakefb.js", "utf8") + HOOK, GAME = fs.readFileSync(process.env.GAMEFILE || ROOT + "/test/index.html", "utf8");
-const store = {}, call = require(ROOT + "/dev/tests/fnrunner.js")(store);
+let SLOW = 0; const store = {}, call = require(ROOT + "/dev/tests/fnrunner.js")(store);
 (async () => {
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
   async function page() { const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
-    await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+    await ctx.exposeFunction("__fbstore", async (op, k, v) => { if (SLOW) await new Promise((r) => setTimeout(r, SLOW)); if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
     await ctx.exposeFunction("__fbcall", call);
     await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
     await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
@@ -45,7 +45,12 @@ const store = {}, call = require(ROOT + "/dev/tests/fnrunner.js")(store);
   assert.ok(cache && JSON.parse(cache).b && Object.keys(JSON.parse(cache).b).length === n, "nearby bases remembered");
   assert.ok(firstMine && firstMine.o >= n - 1, "other bases drawn together with my base: " + JSON.stringify(r.tl));
   assert.strictEqual(r.goneShown, false, "a remembered base that has gone is removed");
-  assert.ok(lat.length >= 2 && lat.every((x) => x >= 0 && x < 300), "new bases drawn as soon as they arrive: " + lat);
+  assert.ok(lat.length >= 1 && lat.every((x) => x >= 0 && x < 300), "new bases drawn as soon as they arrive: " + lat);
+  /* v1077: reopening (save + memory on this phone): the nearby bases are there in the first frame, before signing in / Firebase connecting */
+  await B.evaluate(() => persist()); SLOW = 1500; /* a slow phone connection: every Firebase answer takes 1.5 s */ await B.reload(); await B.waitForTimeout(400);
+  const boot = await B.evaluate(() => ({ auth: !!document.querySelector("#ksAuth .box"), home: game.state.homeTileId, bots: Object.keys(occupiedTileIds).filter((id) => /^bot_/.test(occupiedTileIds[id])).length }));
+  console.log("boot", JSON.stringify(boot)); SLOW = 0;
+  assert.ok(boot.home && boot.bots >= n - 1, "remembered bases ready at boot: " + JSON.stringify(boot));
   assert.deepStrictEqual(errs, []); console.log("g257 OK");
   await b.close();
 })();

@@ -1344,3 +1344,8 @@
 - After: new base drawn ~20 ms after its data; on opening, the remembered bases show in the same frame as your own base. Headless only; the network part can't be measured here.
 - Fits the world map plan: phase 2 (bases by patch) downloads far less, and the same memory can hold patches.
 - Test: g257_base_popin (fails on v1075, passes now). g200, g250, g252, g255, g256 pass.
+
+## v1077 - remembered bases drawn in the very first frame (TEST)
+- Harley's recording on v1076: bases arrive ~0.6 s after his own (was 1-2 s), all at once. "TEST · connecting..." in the first frame showed why it wasn't instant: v1076 drew the remembered bases only once the cloud save had loaded and the kingdom was confirmed, but his own base is drawn earlier, from the save on the phone.
+- Now the remembered nearby bases are also put in at boot, just before the first render, using the kingdom in the phone's save (serverId, or Atlantis for older saves with a home). The live list still corrects them when it lands.
+- g257 extended: reopen with every Firebase answer slowed to 1.5 s -> v1076 has 0 bot bases at boot, v1077 has all of them. g200, g255, g256 pass.
