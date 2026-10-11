@@ -6391,7 +6391,8 @@ function createGame(opts) {
     if (!h || !h.skillLevels || !h.skillLevels[group]) return 1;
     return h.skillLevels[group][idx] || 1;
   }
-  function heroSkillCost(level) { return Math.round(40 * Math.pow(1.8, level - 1)); } // Conquest Books cost to go from `level` to `level+1`
+  var HERO_SKILL_COSTS = [7, 40, 110, 280]; /* v1089 (Harley): first upgrade almost straight away, the last one the expensive one; 437 to max a skill (was 40/72/130/233 = 475) */
+  function heroSkillCost(level) { return HERO_SKILL_COSTS[Math.max(0, Math.min(HERO_SKILL_COSTS.length - 1, level - 1))]; } // Conquest Books cost to go from `level` to `level+1`
   function levelUpHeroSkill(heroKey, group, idx) {
     var def = HERO_DEFS[heroKey], h = state.heroes[heroKey];
     if (!def || !h || !h.owned || def.class === "governor") return { ok: false, reason: "invalid_hero" };
@@ -11308,7 +11309,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1088"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1089"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

@@ -1442,3 +1442,9 @@
 - Cause: goToWorldTile scrolled to the tile, then the v923 "back to where you left the map" restore (worldMapKeep) put the view back where it was when he left the World map. centerMapOnHome / centerMapOnTile / centerMapOnMarch already cancelled that restore; goToWorldTile (report, chat and bookmark coordinates) didn't. Now it does. It also centres on the tile's real centre and allows for the zoomed-out margins.
 - Test: new g264_report_coords (left the map at home / far away, read a report, tap X/Y -> lands on 398,227; v1087 landed back at home / the far spot). g232, g233, g250, g256, g257, g262 pass.
 - Harley (for later): in games like this, a report location outside your home kingdom shows the kingdom by the X/Y. Build it with the admin/event "open borders" controls - with borders closed no report can point into another kingdom yet.
+
+## v1089 - cheaper first hero skill upgrades (TEST)
+- Harley: on chapter 6 he still couldn't afford a single skill upgrade (first one cost 40 books; he has 15). Book income is roughly 10-15/day at best (Idle Chest rare drop, Recon Elite+, Gauntlet); Conquest itself gives none.
+- HERO_SKILL_COSTS = [7, 40, 110, 280] (1->2, 2->3, 3->4, 4->5); max a skill = 437 (was 40/72/130/233 = 475). Power from skill levels follows the same table, so already-upgraded skills count a little less power.
+- Still open: books from Conquest (levels / bosses) - to look at together with the RP-rate / Chapter 5 balance sim Harley asked for.
+- Test: new g265_skill_books (costs; 15 books -> one first upgrade, 8 left, not enough for the next; three upgrades = 157).

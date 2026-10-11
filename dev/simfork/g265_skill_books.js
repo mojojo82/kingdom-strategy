@@ -1,0 +1,33 @@
+/* v1089: hero skill upgrades cost 7 / 40 / 110 / 280 Conquest Books (was 40 / 72 / 130 / 233). A new player with 15 books can do a first upgrade. Run: node dev/simfork/g265_skill_books.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g265@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => { game.state.researchPoints = 5e6; game.state.buildings.academy.level = 5; setScreen("city", "research"); renderTechs(); }); await P.waitForTimeout(600);
+  const o = await P.evaluate(() => { const st = game.state, hk = Object.keys(st.heroes).find((k) => st.heroes[k].owned && HERO_DEFS[k].class !== "governor");
+    const costs = [1, 2, 3, 4].map((l) => game.heroSkillCost(l)); st.idle.conquestBooks = 15;
+    st.heroes[hk].skillLevels = { conquest: [1, 1, 1], expedition: [1, 1, 1] };
+    const r1 = game.levelUpHeroSkill(hk, "conquest", 0), left1 = st.idle.conquestBooks, r2 = game.levelUpHeroSkill(hk, "conquest", 0);
+    st.idle.conquestBooks = 1000; [2, 3, 4].forEach(() => game.levelUpHeroSkill(hk, "conquest", 1)); const used = 1000 - st.idle.conquestBooks, lv = st.heroes[hk].skillLevels.conquest[1];
+    return { hk, costs, r1: r1.ok, left1, r2: r2.reason, used, lv }; });
+  console.log(JSON.stringify(o));
+  assert.deepStrictEqual(o.costs, [7, 40, 110, 280]);
+  assert.ok(o.r1 && o.left1 === 8 && o.r2 === "not_enough_books", "15 books: one first upgrade, then 8 left (not enough for 40)");
+  assert.ok(o.used === 7 + 40 + 110 && o.lv === 4, "three upgrades cost 157");
+  assert.deepStrictEqual(errs, []); console.log("g265 OK"); await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });
