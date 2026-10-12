@@ -12,6 +12,9 @@ GROUPS = {'spin': ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head'], 'legs':
 KEEP = {b: TAME[g] for g, bs in GROUPS.items() if g in TAME for b in bs}
 # AMP=2.5: exaggerate every bone's motion around the first frame's stance (idles too subtle at sprite size); hip travel too
 AMP = float(os.environ.get('AMP', '1'))
+# LEGREST=1: legs stand in the model's own rest stance (straight, hip-width) and are left out of AMP; hip travel is dropped so the feet stay planted
+LEGREST = os.environ.get('LEGREST') == '1'
+LEGS = set(GROUPS['legs'])
 def blendR(A, B, f):  # rotation f of the way from A to B (f > 1 overshoots)
     ra, rb = Rot.from_matrix(A), Rot.from_matrix(B); return (ra * Rot.from_rotvec((ra.inv() * rb).as_rotvec() * f)).as_matrix()
 FBX, NAME = sys.argv[1], sys.argv[2]; IN_PLACE = len(sys.argv) > 3
@@ -111,7 +114,8 @@ def bakeAt(t):
         if nm in Q:
             Ws, Ws0 = unit(S['mixamorig:' + nm][:3, :3]), unit(S0['mixamorig:' + nm][:3, :3])
             if nm in KEEP: Ws = blendR(unit(SR['mixamorig:' + nm][:3, :3]), Ws, KEEP[nm])
-            if AMP != 1: Ws = blendR(unit(SR['mixamorig:' + nm][:3, :3]), Ws, AMP)
+            if AMP != 1 and not (LEGREST and nm in LEGS): Ws = blendR(unit(SR['mixamorig:' + nm][:3, :3]), Ws, AMP)
+            if LEGREST and nm in LEGS: Ws = Ws0
             Dl = Ws @ Ws0.T @ Q[nm]   # world rotation applied to this bone's rest
             Gi = np.eye(4); Gi[:3, :3] = Dl @ G0[i][:3, :3]
             if i in tpar: Gi[:3, 3] = (G[tpar[i]] @ np.append(base[i][0], 1))[:3]
@@ -119,6 +123,7 @@ def bakeAt(t):
             if nm == 'Hips':
                 d = (S['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) * K
                 if AMP != 1: d = ((SR['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) + (S['mixamorig:Hips'][:3, 3] - SR['mixamorig:Hips'][:3, 3]) * AMP) * K
+                if LEGREST: d = d * 0
                 if 'hips' in TAME: d = ((SR['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) + (S['mixamorig:Hips'][:3, 3] - SR['mixamorig:Hips'][:3, 3]) * TAME['hips']) * K
                 if IN_PLACE: d[0] = d[2] = 0
                 Gi[:3, 3] = G0[i][:3, 3] + d
