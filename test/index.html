@@ -11095,7 +11095,12 @@ var SKIN_LAYOUT_KEY = "kingdom_prototype_skinlayout_v1";
 var skinLayouts = (function () { try { var r = JSON.parse(localStorage.getItem(SKIN_LAYOUT_KEY) || "null"); return r && typeof r === "object" ? r : {}; } catch (e) { return {}; } })();
 function skinLayoutApply(v) { try { var r = typeof v === "string" ? JSON.parse(v) : v; if (r && typeof r === "object") { skinLayouts = r; try { localStorage.setItem(SKIN_LAYOUT_KEY, JSON.stringify(r)); } catch (e) {} } } catch (e) {} }
 function saveSkinLayouts() { var str = JSON.stringify(skinLayouts); try { localStorage.setItem(SKIN_LAYOUT_KEY, str); } catch (e) {} if (typeof assetSyncUpload === "function") assetSyncUpload(SKIN_LAYOUT_KEY, str); }
-function skinLayoutFor(skin) { return (skin && skinLayouts[skin.id]) || null; }
+var skinLayoutsSrc = null;
+function skinLayoutsLive() { // v1110: the shared admin copy wins - a player's game loads it AFTER start-up (assetSyncLoadShared only stores it), so it's picked up here whenever it appears or changes
+  try { var cv = typeof cloudAssetMap !== "undefined" && cloudAssetMap[SKIN_LAYOUT_KEY]; if (cv && cv !== skinLayoutsSrc) { skinLayoutsSrc = cv; skinLayoutApply(cv); } } catch (e) {}
+  return skinLayouts;
+}
+function skinLayoutFor(skin) { return (skin && skinLayoutsLive()[skin.id]) || null; }
 // the box the skin's picture is drawn in: Conquest (withLife = include the hull's hover / recoil) or one Arena side (the bot's side faces left)
 function fortHullBox(w, h, mode, isPlayerSide, withLife) {
   if (mode === "arena") {
@@ -11504,7 +11509,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1109"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1110"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -28936,7 +28941,7 @@ function openSkinLayoutEditor() {
     FORTRESS_SKINS.forEach(function (sk) { var op = document.createElement("option"); op.value = sk.id; op.textContent = sk.name; sel.appendChild(op); });
     slEd = { pop: pop, cv: pop.querySelector(".sl-cv"), sel: sel, pts: null, drag: null, map: null, raf: 0, msg: pop.querySelector(".sl-msg") };
     slEd.skin = function () { return FORTRESS_SKINS.filter(function (k) { return k.id === sel.value; })[0] || FORTRESS_SKINS[0]; };
-    slEd.load = function () { var sk = slEd.skin(), d = skinLayoutDefaults(sk), L = skinLayouts[sk.id] || {}; slEd.pts = {}; SL_POINTS.forEach(function (n) { slEd.pts[n] = (L[n] || d[n]).slice(); }); slEd.saved = !!skinLayouts[sk.id]; };
+    slEd.load = function () { var sk = slEd.skin(), d = skinLayoutDefaults(sk), L = skinLayoutsLive()[sk.id] || {}; slEd.pts = {}; SL_POINTS.forEach(function (n) { slEd.pts[n] = (L[n] || d[n]).slice(); }); slEd.saved = !!skinLayoutsLive()[sk.id]; };
     sel.onchange = function () { slEd.load(); slEd.msg.textContent = slEd.saved ? "This skin has a saved layout." : "No layout yet: the game still uses the old spots (C, H and KO show them; weapons all fire from C - the 1 2 3 dots are just spread out to grab)."; };
     pop.querySelector(".sl-x").onclick = function () { pop.style.display = "none"; cancelAnimationFrame(slEd.raf); };
     pop.querySelector(".sl-save").onclick = function () {

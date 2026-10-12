@@ -1599,3 +1599,9 @@
 - dev/simfork/g271_skinlayout.js: no layout = old spots; editor opens for all 4 skins; a layout moves cannon, missiles, laser, a ranged hero, the Arena muzzle (bot mirrored).
   g174, g207, g204, g202 ALL OK. Not checked on a phone. No layouts are set yet - Harley sets them in the editor.
 
+## v1110 - saved fortress layouts now reach other players (TEST)
+- Harley saved a Voidspire layout on his admin account; the tomhector account didn't change. Cause: a player's game loads shared admin values AFTER start-up
+  (assetSyncLoadShared) and only stores them in cloudAssetMap - the settings "apply" step had already run, so skinLayouts never got the admin's copy.
+- Fix: skinLayoutsLive() - every read takes the shared copy from cloudAssetMap whenever it appears or changes (also covers a save made while the other game is open,
+  once that game re-reads the cloud). dev/simfork/g272_layout_share.js: admin A saves, player B opens afterwards and uses it (failed before). g271 OK.
+
