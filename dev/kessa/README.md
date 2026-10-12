@@ -6,3 +6,4 @@ Same 23-bone mixamorig skeleton as Gareth's knight, so dev/knight/mixamo.py-styl
 - `ANG=0.6 node render.js '{"Running":[0,0.12]}'` renders frames/ (see-through). In the game Kessa faces right.
 Not in the game. Next: Harley's Mixamo cast animation; glue on the gold staff with the green orb; chin/ankle joints can be nudged if needed.
 - `python3 -B mixamo.py <fbx> "<Name>" inplace` (dev/kessa copy of dev/knight/mixamo.py: Kessa's GLB, kessa.json; her rig has no HeadTop_End/Toe_End so those keep their rest direction). Mixamo Idle = art/originals/mixamo_kessa_idle.fbx (8.3 s, subtle).
+- Taming (Harley: less spin/step for the 1H magic attack): `TAME="spin=0.5,legs=0.35,staff=0.25,hips=0.4" python3 -B mixamo.py <fbx> "<Name>" inplace` keeps only that share of each group's motion (spin = hips/spine/neck/head, legs, staff = left arm, hips = hip travel), blending the rest toward the first frame's stance. Cast hand = right (pushes forward at ~1.1 s), staff hand = left.

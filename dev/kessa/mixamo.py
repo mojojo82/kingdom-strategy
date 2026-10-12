@@ -2,7 +2,16 @@
 # usage: python3 mixamo.py <in.fbx> "<Anim Name>" [in_place]
 # Each bone copies the source's world-space rotation change from its rest pose; a per-bone fix maps the knight's
 # A-pose rest onto Mixamo's T-pose rest first. Hips movement is scaled by hip height.
-import re, sys, json, base64, numpy as np
+import re, sys, os, json, base64, numpy as np
+from scipy.spatial.transform import Rotation as Rot, Slerp
+# TAME="spin=0.5,legs=0.4,staff=0.2,hips=0.4": keep only that share of the motion (the rest blends toward the first frame's stance).
+# spin = Hips + spine + neck + head, legs = both legs, staff = the left arm (Kessa's staff hand), hips = hip travel.
+TAME = dict((k, float(v)) for k, v in (p.split('=') for p in os.environ.get('TAME', '').split(',') if p))
+GROUPS = {'spin': ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head'], 'legs': ['RightUpLeg', 'RightLeg', 'RightFoot', 'RightToeBase', 'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase'],
+          'staff': ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand']}
+KEEP = {b: TAME[g] for g, bs in GROUPS.items() if g in TAME for b in bs}
+def blendR(A, B, f):  # rotation f of the way from A to B
+    return Slerp([0, 1], Rot.from_matrix(np.stack([A, B])))([f]).as_matrix()[0]
 FBX, NAME = sys.argv[1], sys.argv[2]; IN_PLACE = len(sys.argv) > 3
 TXT = open(FBX).read()
 
@@ -94,17 +103,19 @@ for b in mapped:
 hipS = S0['mixamorig:Hips'][1, 3]; hipT = G0[tidx['mixamorig:Hips']][1, 3]; K = hipT / hipS
 
 def bakeAt(t):
-    S = sglob(t); G = {}; D = {}
+    S = sglob(t); G = {}; D = {}; SR = S_REF
     for i in order:
         nm = names[i].replace('mixamorig:', '')
         if nm in Q:
             Ws, Ws0 = unit(S['mixamorig:' + nm][:3, :3]), unit(S0['mixamorig:' + nm][:3, :3])
+            if nm in KEEP: Ws = blendR(unit(SR['mixamorig:' + nm][:3, :3]), Ws, KEEP[nm])
             Dl = Ws @ Ws0.T @ Q[nm]   # world rotation applied to this bone's rest
             Gi = np.eye(4); Gi[:3, :3] = Dl @ G0[i][:3, :3]
             if i in tpar: Gi[:3, 3] = (G[tpar[i]] @ np.append(base[i][0], 1))[:3]
             else: Gi[:3, 3] = G0[i][:3, 3]
             if nm == 'Hips':
                 d = (S['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) * K
+                if 'hips' in TAME: d = ((SR['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) + (S['mixamorig:Hips'][:3, 3] - SR['mixamorig:Hips'][:3, 3]) * TAME['hips']) * K
                 if IN_PLACE: d[0] = d[2] = 0
                 Gi[:3, 3] = G0[i][:3, 3] + d
         else:
@@ -112,6 +123,7 @@ def bakeAt(t):
         G[i] = Gi
     return np.stack([G[j] @ IBM[k] for k, j in enumerate(joints)])
 
+S_REF = sglob(0.0)  # the stance the tamed bones lean back toward
 fps = 30; nf = int(round(TL * fps))
 frames = np.array([bakeAt(f / nf * TL) for f in range(nf)])
 d = json.load(open('kessa.json'))
