@@ -1,0 +1,63 @@
+<meta charset="utf-8">
+<title>Boss Sprite Sheet</title>
+<style>
+/* Layout: one battle stage (current boss vs new sheet), control bar under it - game palette */
+:root { --night:#0b1120; --panel:#1a1410; --bronze:#8a6a3a; --gold:#f0c95f; --ink:#e9e4d6; --dim:#9aa3b5; --cyan:#3ec8e0; --cyan-ink:#06222a; color-scheme:dark; }
+html, body { background:var(--night); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.wrap { max-width:900px; margin:0 auto; padding-block:16px 28px; padding-inline:16px; display:grid; gap:12px; }
+h1 { margin:0; font-family:Georgia,serif; color:var(--gold); font-size:1.4rem; }
+.sub { color:var(--dim); font-size:.9rem; margin-top:4px; max-width:65ch; }
+.stage { border:2px solid var(--bronze); border-radius:12px; overflow:hidden; background:var(--panel); }
+canvas { display:block; width:100%; height:340px; }
+.bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; border:2px solid var(--bronze); border-radius:12px; background:var(--panel); padding:10px 12px; }
+.lbl { color:var(--dim); font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; }
+button { font:600 .9rem system-ui,sans-serif; color:var(--cyan-ink); background:var(--cyan); border:0; border-radius:6px; padding:8px 12px; cursor:pointer; }
+button[aria-pressed="false"] { background:transparent; color:var(--cyan); box-shadow:inset 0 0 0 1px var(--cyan); }
+button:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+</style>
+<div class="wrap">
+  <header><h1>Boss Sprite Sheet</h1><div class="sub">The 3D boss rendered into game frames (smooth, no outline), next to the current boss sprite at the same height. Gareth stands where he does at point blank.</div></header>
+  <section class="stage"><canvas id="cv" aria-label="Boss animations"></canvas></section>
+  <div class="bar" role="group" aria-label="Animation">
+    <span class="lbl">Play</span>
+    <button data-m="cycle" aria-pressed="true">Raise cycle</button>
+    <button data-m="low" aria-pressed="false">Low cycle</button>
+    <button data-m="stomp" aria-pressed="false">Stomp</button>
+    <button data-m="idle" aria-pressed="false">Idle</button>
+    <button id="bSlow" aria-pressed="false">Slow-mo</button>
+  </div>
+</div>
+<script>
+(function () {
+  var M = __META__, im = new Image(); im.src = "__SHEET__"; var old = new Image(); old.src = "__OLD__"; var gar = new Image(); gar.src = "__GAR__"; var GM = __GMETA__;
+  var mode = "cycle", slow = false, t0 = performance.now();
+  document.querySelectorAll("[data-m]").forEach(function (b) { b.onclick = function () { mode = b.dataset.m; t0 = performance.now(); document.querySelectorAll("[data-m]").forEach(function (q) { q.setAttribute("aria-pressed", q === b ? "true" : "false"); }); }; });
+  document.getElementById("bSlow").onclick = function () { slow = !slow; this.setAttribute("aria-pressed", slow ? "true" : "false"); };
+  // a plan = list of [row, seconds, reverse?]
+  function plan() {
+    if (mode === "idle") return [["idle", 2]];
+    if (mode === "stomp") return [["idle", 1], ["stomp", 1.6]];
+    var r = mode === "low" ? ["raiseLow", "raisedLow"] : ["raise", "raised"];
+    return [["idle", 2], [r[0], 0.8], [r[1], 2], [r[1], 2], [r[0], 0.8, true]];
+  }
+  function frameAt(t) {
+    var P = plan(), tot = P.reduce(function (a, p) { return a + p[1]; }, 0), u = t % tot;
+    for (var i = 0; i < P.length; i++) { if (u < P[i][1]) { var row = M.rows[P[i][0]], n = row[1], f = Math.min(n - 1, Math.floor(u / P[i][1] * n)); return { row: row[0], f: P[i][2] ? n - 1 - f : f }; } u -= P[i][1]; }
+    return { row: 0, f: 0 };
+  }
+  function loop(now) {
+    var c = document.getElementById("cv"), r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); }
+    var g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.86, bh = H * 0.62;
+    var sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, "#1a2742"); sky.addColorStop(1, "#33476e"); g.fillStyle = sky; g.fillRect(0, 0, W, gy); g.fillStyle = "#2c3a26"; g.fillRect(0, gy, W, H - gy);
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+    if (old.complete && old.naturalWidth) { var os = bh / 200; g.drawImage(old, W * 0.25 - 128 * os, gy - 236 * os, 256 * os, 256 * os); }
+    var t = (now - t0) / 1000 * (slow ? 0.25 : 1), fr = frameAt(t), k = bh / M.bodyH, bx = W * 0.72;
+    if (im.complete && im.naturalWidth) g.drawImage(im, fr.f * M.cw, fr.row * M.ch, M.cw, M.ch, bx - M.ax * k, gy - M.ay * k, M.cw * k, M.ch * k);
+    if (gar.complete && gar.naturalWidth) { var gk = bh * 0.3 / 122; g.drawImage(gar, 0, 0, GM.cw, GM.ch, bx - 40 * k - GM.ax * gk, gy - GM.ay * gk, GM.cw * gk, GM.ch * gk); }
+    g.fillStyle = "#9aa3b5"; g.font = Math.round(12 * d) + "px system-ui"; g.textAlign = "center"; g.fillText("now", W * 0.25, H - 8 * d); g.fillText("new", bx, H - 8 * d);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>

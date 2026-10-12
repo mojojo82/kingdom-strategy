@@ -10,3 +10,9 @@ Poses (boss_pose.py, same method as dev/knight: bones pointed in world direction
   down-forward, left arm lifted + bent (braced). APPROVED.
 - STOMP_UP / STOMP_HIT: alternate low attack - knee to belt height, slam down (fast u^2 segment) a touch inward. Under review.
 Game angle in the preview: "Hold angle" at -0.6 (he faces screen-left like the sprite). Hi-res sprite sheets go to art/originals/sprites_hires/boss when made.
+
+## Sprite sheet (12 Oct 2026, Harley approved the poses)
+`node render.js "$(cat jobs.json)"` (smooth, outline off, angle -0.6) then `python3 pack.py` -> boss_game.webp (171x210 cells, 2736x1260, ~700 KB) + boss_game.json
+(rows idle/raise/raised/raiseLow/raisedLow/stomp, fps, feet anchor, bodyH 200, stomp impact frame 8) and the hi-res rows in art/originals/sprites_hires/boss.
+Preview page: sheet.tpl.html ("Boss Sprite Sheet"). Lowering the arm = the raise row played backwards.
+
