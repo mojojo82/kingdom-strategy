@@ -1,0 +1,149 @@
+<meta charset="utf-8">
+<title>Gareth Slash FX</title>
+<style>
+/* Layout: one big close-up stage + a battle-size strip under it, controls in a bronze bar - game palette (navy night, bronze frames, gold titles, flat cyan buttons) */
+:root {
+  --night: #0b1120; --panel: #1a1410; --bronze: #8a6a3a; --gold: #f0c95f; --ink: #e9e4d6; --dim: #9aa3b5; --cyan: #3ec8e0; --cyan-ink: #06222a;
+  --display: Georgia, "Times New Roman", serif; --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--night); color: var(--ink); font-family: var(--body); }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 16px 28px; padding-inline: 16px; display: grid; gap: 12px; }
+h1 { margin: 0; font-family: var(--display); color: var(--gold); font-size: 1.45rem; }
+.sub { color: var(--dim); font-size: .9rem; margin-top: 4px; max-width: 65ch; }
+.stage { border: 2px solid var(--bronze); border-radius: 12px; overflow: hidden; background: var(--panel); }
+.stage h2 { margin: 0; padding: 8px 12px; font: 600 .78rem/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--bronze); display: flex; justify-content: space-between; gap: 8px; }
+.stage h2 span { color: var(--dim); letter-spacing: .02em; text-transform: none; font-weight: 400; }
+#cBig { display: block; width: 100%; height: 400px; }
+#cSmall { display: block; width: 100%; height: 150px; }
+.bar { display: grid; gap: 10px; border: 2px solid var(--bronze); border-radius: 12px; background: var(--panel); padding: 10px 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lbl { color: var(--dim); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; min-width: 52px; }
+button { font: 600 .9rem var(--body); color: var(--cyan-ink); background: var(--cyan); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+button[aria-pressed="false"] { background: transparent; color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.note { color: var(--dim); font-size: .85rem; max-width: 70ch; margin: 0; }
+</style>
+<div class="wrap">
+  <header><h1>Gareth Slash FX</h1><div class="sub">His real in-game swing (11 frames at 22 fps, the hit on frame 5) with the slash drawn in code. Visual only: hit timing and reach stay exactly as they are.</div></header>
+  <section class="stage"><h2>Close up <span id="styleName"></span></h2><canvas id="cBig" aria-label="Gareth swinging, close up"></canvas></section>
+  <section class="stage"><h2>Battle size <span>about how big he is in a fight</span></h2><canvas id="cSmall" aria-label="Gareth swinging at battle size"></canvas></section>
+  <div class="bar" role="group" aria-label="Controls">
+    <div class="row"><span class="lbl">Style</span>
+      <button data-s="current" aria-pressed="false">Now in game</button>
+      <button data-s="trail" aria-pressed="false">Blade trail</button>
+      <button data-s="crescent" aria-pressed="false">Big crescent</button>
+      <button data-s="storm" aria-pressed="true">Storm</button></div>
+    <div class="row"><span class="lbl">Colour</span>
+      <button data-c="steel" aria-pressed="true">Steel blue</button>
+      <button data-c="gold" aria-pressed="false">Holy gold</button>
+      <button data-c="fire" aria-pressed="false">Fire</button></div>
+    <div class="row"><span class="lbl">Play</span>
+      <button id="bSlow" aria-pressed="false">Slow-mo</button>
+      <button id="bPause" aria-pressed="false">Pause</button></div>
+  </div>
+  <p class="note">Blade trail: a ribbon that follows his actual sword. Big crescent: a wider, longer ribbon reaching past the tip. Storm: the crescent plus sparks off the blade and a flash ring on the hit frame.</p>
+</div>
+<script>
+(function () {
+  var SHEET = "__SHEET__", G = __META__, PATH = __PATH__;
+  var img = new Image(); img.src = SHEET;
+  var NAMES = { current: "the arc he has now", trail: "ribbon on the real blade path", crescent: "wide ribbon past the tip", storm: "crescent + sparks + hit flash" };
+  var COL = { steel: [[255, 255, 255], [160, 215, 255], [70, 130, 255]], gold: [[255, 252, 225], [255, 214, 110], [230, 140, 20]], fire: [[255, 245, 200], [255, 150, 40], [210, 40, 0]] };
+  var style = "storm", col = "steel", slow = false, paused = false, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var clock = 0, last = performance.now();
+  function press(attr, v) { document.querySelectorAll("[data-" + attr + "]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset[attr] === v ? "true" : "false"); }); }
+  document.querySelectorAll("[data-s]").forEach(function (b) { b.onclick = function () { style = b.dataset.s; press("s", style); sparks.length = 0; label(); }; });
+  document.querySelectorAll("[data-c]").forEach(function (b) { b.onclick = function () { col = b.dataset.c; press("c", col); }; });
+  document.getElementById("bSlow").onclick = function () { slow = !slow; this.setAttribute("aria-pressed", slow ? "true" : "false"); };
+  document.getElementById("bPause").onclick = function () { paused = !paused; this.setAttribute("aria-pressed", paused ? "true" : "false"); };
+  function label() { document.getElementById("styleName").textContent = NAMES[style]; } label();
+  function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")"; }
+  // sword path at attack-frame position f (0..11): [tipX, tipY, midX, midY] in sheet px from his feet
+  function pathAt(f) { var n = PATH.pts.length, x = ((f * PATH.perFrame) % n + n) % n, i = Math.floor(x), j = (i + 1) % n, u = x - i, a = PATH.pts[i], b = PATH.pts[j]; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u]; }
+  var STRIKE0 = 2.8, STRIKE1 = 6.9, HIT = 5; // frames where the blade is really moving / the hit
+  function env(f) { if (f < STRIKE0 || f > STRIKE1) return 0; var u = (f - STRIKE0) / (STRIKE1 - STRIKE0); return Math.min(1, u * 4) * Math.min(1, (1 - u) * 3.2); }
+  var sparks = [];
+  function fit(c) { var r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } return d; }
+  function ground(g, W, H, gy, d) {
+    var sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, "#121d36"); sky.addColorStop(1, "#22345a"); g.fillStyle = sky; g.fillRect(0, 0, W, gy);
+    g.fillStyle = "#2a3424"; g.fillRect(0, gy, W, H - gy); g.fillStyle = "#3b4d31"; g.fillRect(0, gy, W, 2 * d);
+  }
+  // ribbon between the blade's mid point and its tip over the last `len` frames (fading toward the tail); reach > 1 pushes the outer edge past the tip
+  function ribbon(g, ox, oy, k, f, len, reach, inner, alpha, cols, wide) {
+    var N = 18, outer = [], innerP = [];
+    for (var i = 0; i <= N; i++) {
+      var ff = f - len * (1 - i / N), p = pathAt(ff), tx = p[0], ty = p[1], mx = p[2], my = p[3];
+      var ex = mx + (tx - mx) * reach, ey = my + (ty - my) * reach, ix = mx + (tx - mx) * inner, iy = my + (ty - my) * inner; ey = Math.min(ey, -1); iy = Math.min(iy, -1); // never below the ground line
+      outer.push([ox + ex * k, oy + ey * k]); innerP.push([ox + ix * k, oy + iy * k]);
+    }
+    var head = outer[N], tail = outer[0];
+    var gr = g.createLinearGradient(tail[0], tail[1], head[0], head[1]);
+    gr.addColorStop(0, rgba(cols[2], 0)); gr.addColorStop(0.55, rgba(cols[1], 0.55 * alpha)); gr.addColorStop(1, rgba(cols[0], 0.95 * alpha));
+    g.fillStyle = gr; g.beginPath(); g.moveTo(outer[0][0], outer[0][1]);
+    for (i = 1; i <= N; i++) g.lineTo(outer[i][0], outer[i][1]);
+    for (i = N; i >= 0; i--) { var t = i / N, w = wide ? 1 : t; g.lineTo(outer[i][0] + (innerP[i][0] - outer[i][0]) * w, outer[i][1] + (innerP[i][1] - outer[i][1]) * w); }
+    g.closePath(); g.fill();
+    // bright leading edge along the outer rim
+    g.strokeStyle = rgba(cols[0], 0.9 * alpha); g.lineWidth = Math.max(1, 1.6 * k / 2.4); g.lineCap = "round";
+    g.beginPath(); for (i = Math.floor(N * 0.35); i <= N; i++) g[i === Math.floor(N * 0.35) ? "moveTo" : "lineTo"](outer[i][0], outer[i][1]); g.stroke();
+  }
+  function current(g, ox, oy, k, f, cols) { // the arc that is in the game now (same maths as drawHeroAnim)
+    var sl = G.slash; if (f < sl.from || f > sl.to) return;
+    var u = (f - sl.from) / (sl.to - sl.from), head = sl.a0 + (sl.a1 - sl.a0) * (1 - Math.pow(1 - u, 1.6)), al = Math.min(1, u * 3.5) * Math.min(1, (1 - u) * 5);
+    var sp = 1.9, tail = head - sp, N = 22, R = sl.R * k, Wd = sl.w * k, cx = ox + sl.cx * k, cy = oy + sl.cy * k, j;
+    var gr = g.createRadialGradient(cx, cy, R * 0.55, cx, cy, R * 1.12);
+    gr.addColorStop(0, "rgba(120,170,255," + (0.35 * al) + ")"); gr.addColorStop(0.7, "rgba(190,225,255," + (0.95 * al) + ")"); gr.addColorStop(1, "rgba(255,255,255," + al + ")");
+    g.fillStyle = gr; g.beginPath();
+    for (j = 0; j <= N; j++) { var t2 = j / N, an = tail + sp * t2, r2 = R + Wd * 0.25 * t2; g[j ? "lineTo" : "moveTo"](cx + Math.cos(an) * r2, cy + Math.sin(an) * r2); }
+    for (j = N; j >= 0; j--) { var t3 = j / N, an2 = tail + sp * t3, r3 = R - Wd * Math.pow(t3, 0.8); g.lineTo(cx + Math.cos(an2) * r3, cy + Math.sin(an2) * r3); }
+    g.closePath(); g.fill();
+  }
+  function draw(c, figPx, f, dt, small) {
+    var d = fit(c), g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.84, k = figPx * d / 122, ox = W * 0.42, oy = gy;
+    g.clearRect(0, 0, W, H); ground(g, W, H, gy, d);
+    // training dummy at the end of his reach
+    var dx = ox + 62 * k; g.fillStyle = "#5a4630"; g.fillRect(dx - 3 * k, gy - 58 * k, 6 * k, 58 * k); g.fillStyle = "#8a6a44"; g.beginPath(); g.ellipse(dx, gy - 46 * k, 11 * k, 16 * k, 0, 0, 7); g.fill();
+    g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(ox, gy + 2 * d, 30 * k, 5 * k, 0, 0, 7); g.fill();
+    // sprite: attack row with the game's cross-dissolve between frames
+    if (img.complete && img.naturalWidth) {
+      var row = G.rows.attack, n = row[1], fi = Math.floor(f) % n, fj = (fi + 1) % n, u = f - Math.floor(f); u = u * u * (3 - 2 * u);
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      g.globalAlpha = 1; g.drawImage(img, fi * G.cw, row[0] * G.ch, G.cw, G.ch, ox - G.ax * k, oy - G.ay * k, G.cw * k, G.ch * k);
+      if (u > 0.02) { g.globalAlpha = u; g.drawImage(img, fj * G.cw, row[0] * G.ch, G.cw, G.ch, ox - G.ax * k, oy - G.ay * k, G.cw * k, G.ch * k); }
+      g.globalAlpha = 1;
+    }
+    var cols = COL[col], a = env(f);
+    g.save(); g.globalCompositeOperation = "lighter";
+    if (style === "current") current(g, ox, oy, k, f, cols);
+    else if (style === "trail" && a > 0) ribbon(g, ox, oy, k, f, 1.5, 1.0, 0.0, a, cols, false);
+    else if ((style === "crescent" || style === "storm") && a > 0) {
+      ribbon(g, ox, oy, k, f, 2.6, 1.32, -0.1, a * 0.45, cols, true);   // soft wide glow
+      ribbon(g, ox, oy, k, f, 2.2, 1.18, 0.15, a, cols, false);          // main crescent
+    }
+    if (style === "storm" && !small) {
+      var p = pathAt(f), tx = ox + p[0] * k, ty = oy + p[1] * k;
+      if (a > 0.25 && dt > 0) for (var s = 0; s < 3; s++) sparks.push({ x: tx, y: ty, vx: (Math.random() - 0.3) * 260 * d, vy: (Math.random() - 0.7) * 220 * d, life: 0, max: 0.25 + Math.random() * 0.3 });
+    }
+    if (style === "storm") {
+      // hit flash ring on the hit frame
+      var hf = f - HIT; if (hf >= 0 && hf < 2.2) { var q = hf / 2.2, ph = pathAt(HIT), hx = ox + (ph[0] + ph[2]) / 2 * k, hy = oy + Math.min((ph[1] + ph[3]) / 2, -14) * k, // where the blade meets the target, above the ground
+        rr = (6 + 30 * q) * k;
+        var gi = g.createRadialGradient(hx, hy, rr * 0.15, hx, hy, rr); gi.addColorStop(0, rgba(cols[0], 0.9 * (1 - q))); gi.addColorStop(0.5, rgba(cols[1], 0.5 * (1 - q))); gi.addColorStop(1, rgba(cols[2], 0));
+        g.fillStyle = gi; g.beginPath(); g.arc(hx, hy, rr, 0, 7); g.fill();
+        g.strokeStyle = rgba(cols[0], 0.85 * (1 - q)); g.lineWidth = 1.6 * k / 2.4 + d; g.beginPath(); g.ellipse(hx, hy, rr * 0.95, rr * 0.7, -0.4, 0, 7); g.stroke(); }
+      if (!small) for (var i = sparks.length - 1; i >= 0; i--) { var sp2 = sparks[i]; if (dt > 0) { sp2.life += dt; sp2.x += sp2.vx * dt; sp2.y += sp2.vy * dt; sp2.vy += 500 * d * dt; } var lf = 1 - sp2.life / sp2.max;
+        if (lf <= 0) { sparks.splice(i, 1); continue; } g.strokeStyle = rgba(cols[0], lf); g.lineWidth = 1.4 * d; g.beginPath(); g.moveTo(sp2.x, sp2.y); g.lineTo(sp2.x - sp2.vx * 0.025, sp2.y - sp2.vy * 0.025); g.stroke(); }
+    }
+    g.restore();
+  }
+  window.__setF = function (v) { clock = v / 22; };
+  function loop(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now; if (paused || still) dt = 0; dt *= slow ? 0.2 : 1; clock += dt;
+    var f = still ? 5.2 : (clock * 22) % 11;
+    draw(document.getElementById("cBig"), 290, f, dt, false); draw(document.getElementById("cSmall"), 42, f, dt, true);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
