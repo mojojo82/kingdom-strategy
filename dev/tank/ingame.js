@@ -1,0 +1,42 @@
+const fs=require("fs"),path=require("path");const ROOT="/home/claude/kingdom-strategy";
+const {chromium}=require("/opt/npm-tools/node_modules/playwright");
+const FAKE=fs.readFileSync(ROOT+"/dev/tests/fakefb.js","utf8"),GAME=fs.readFileSync(ROOT+"/test/index.html","utf8");
+const store={},call=require(ROOT+"/dev/tests/fnrunner.js")(store);
+const parts=JSON.parse(fs.readFileSync("parts.json"));const imgs={};for(const k of Object.keys(parts))imgs[k]="data:image/png;base64,"+fs.readFileSync(k+".png").toString("base64");
+const TKSRC=fs.readFileSync("tankdraw.js","utf8");const HSCALE=+(process.env.HS||1);
+(async()=>{const b=await chromium.launch({executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args:["--no-sandbox"]}),errs=[];
+const ctx=await b.newContext({viewport:{width:430,height:932},deviceScaleFactor:3});
+await ctx.exposeFunction("__fbstore",(op,k,v)=>{if(op==="set")store[k]=JSON.parse(v);else if(op==="del")delete store[k];return JSON.stringify(store)});
+await ctx.exposeFunction("__fbcall",call);
+await ctx.route(/mojojo82\.github\.io/,r=>r.fulfill({status:200,contentType:"text/html",body:GAME}));
+await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/,r=>r.fulfill({status:200,contentType:"application/javascript",body:FAKE}));
+await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/,r=>r.fulfill({status:200,contentType:"application/javascript",body:""}));
+await ctx.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
+const P=await ctx.newPage();P.on("pageerror",e=>errs.push(e.message));
+await P.goto("https://mojojo82.github.io/kingdom-strategy/test/");await P.waitForSelector("#ksAuth .box");
+await P.fill("#ksE","tank@test.dev");await P.fill("#ksP","secret123");await P.click("#ksUp");
+await P.waitForSelector("#ksN",{timeout:15000});await P.fill("#ksN","Tank");await P.click("#ksGo");await P.waitForTimeout(5000);
+await P.evaluate(()=>{setScreen("conquest");const I=game.state.idle;game.state.conquestRoster=["gareth","lyra"];I.skillAuto=false;I.playerHp=1e9;I.levelNum=20;I.chapter=1;I.enemies=[];});
+// wait for the boss
+const ok=await P.evaluate(async()=>{const t0=performance.now();while(performance.now()-t0<90000){await new Promise(r=>setTimeout(r,200));game.state.idle.playerHp=1e9;
+  game.state.idle.enemies.forEach(e=>{if(e.type!=="boss")e.hp=0;else e.hp=Math.max(e.hp,e.maxHp*.6)});
+  if(game.state.idle.enemies.some(e=>e.type==="boss"))return true}return false});
+console.log("boss",ok);
+await P.evaluate(()=>{window.__keep=setInterval(()=>{game.state.idle.playerHp=1e9;game.state.idle.enemies.forEach(e=>{if(e.type==="boss")e.hp=Math.max(e.hp,e.maxHp*.6)})},200)});
+await P.waitForTimeout(4000);
+const rec=async(ms)=>P.evaluate(async(ms)=>{const cv=document.getElementById("idleCanvas");const s=cv.captureStream(30);const mr=new MediaRecorder(s,{mimeType:"video/webm;codecs=vp9",videoBitsPerSecond:9e6});const ch=[];mr.ondataavailable=e=>ch.push(e.data);
+  mr.start();await new Promise(r=>setTimeout(r,ms));await new Promise(r=>{mr.onstop=r;mr.stop()});const bl=new Blob(ch);const buf=new Uint8Array(await bl.arrayBuffer());let s2="";for(let i=0;i<buf.length;i+=32768)s2+=String.fromCharCode.apply(null,buf.subarray(i,i+32768));
+  return {b64:btoa(s2),w:cv.width,h:cv.height,cw:cv.clientWidth,ch:cv.clientHeight}},ms);
+const old=await rec(9000);fs.writeFileSync("old.webm",Buffer.from(old.b64,"base64"));
+await P.screenshot({path:"g_old.png"});
+await P.evaluate(([TKSRC,parts,imgs,HS])=>{eval(TKSRC+";window.TK=TK;");const I={};for(const k in imgs){const im=new Image();im.src=imgs[k];I[k]=im}
+  let st={dist:0,fireT:-9,t:0,moving:false},lastX=null,lastFire=performance.now()/1000;
+  window.drawBossAnim=function(ctx,x,feetY,size){const t=performance.now()/1000;st.t=t;const h=size*HS,k=h/(TK.GROUND-TK.TOP);
+    const w=ctx.canvas.clientWidth||430,half=1460/2*k;const cx=Math.min(x,w-half-4);
+    if(lastX!=null){const dx=cx-lastX;st.dist+=-dx/k;st.moving=Math.abs(dx)>0.05}lastX=cx;
+    if(t-lastFire>3.2){lastFire=t;st.fireT=t}
+    ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.translate(cx,feetY);ctx.scale(k,k);ctx.translate(-TK.CX,-TK.GROUND);TK.draw(ctx,I,parts,st);ctx.restore();return true}},[TKSRC,parts,imgs,HSCALE]);
+await P.waitForTimeout(800);
+const nw=await rec(9000);fs.writeFileSync("tank.webm",Buffer.from(nw.b64,"base64"));
+await P.screenshot({path:"g_tank.png"});
+console.log(JSON.stringify({w:nw.w,h:nw.h,cw:nw.cw,ch:nw.ch,errs:errs.slice(0,5)}));await b.close()})().catch(e=>{console.error(e);process.exit(1)});
