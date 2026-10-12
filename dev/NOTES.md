@@ -1583,3 +1583,19 @@
 - Harley picked Full view for the phone. The admin "View: Full / Close" switch (v1097) is removed: button, click handler, the tg-compact CSS and the ks_sop_view read.
   (A leftover ks_sop_view value in an admin's browser is now simply ignored.) g266 OK. Known (unchanged): on a small 375x667 phone the sword's handle runs off the top in Full.
 
+## v1109 - per-skin fortress layout + admin Layout Editor (TEST)
+- Harley: weapons and heroes sit in the wrong places on the other fortress skins - "maybe we need a weapon and hero position selector for each and every fortress skin".
+  His spec: one layout per skin for Conquest AND Arena; 3 weapon slots + 5 hero slots = a skin's max load; hero slots are for Conquest (the Arena keeps heroes on the
+  ground for now - maybe special cases later); a KO spot in Conquest (the fortress moves there).
+- Data: skinLayouts[skinId] = { c, w0-w2, h0-h4, ko } - each [x, y] as a fraction of the skin's picture (facing right). Shared admin setting kingdom_prototype_skinlayout_v1
+  (added to SHARED_ART_PREFIXES: admin writes, every player reads; nonImageKeys; ASSET_SYNC_SIMPLE_SETTINGS apply). A skin with no layout keeps every old spot.
+- Helpers: fortHullBox (Conquest with/without the hull's hover, or an Arena side - the bot's mirrored), fortLayoutPoint, weaponSlotPoint (equipped weapon i -> slot i;
+  the bot's weapons take slots in the order first seen each match, arenaAiWeaponOrder).
+- Wired: Conquest - main cannon (c), Missile Barrage, Laser/Pulse beams (lv.wid; the laser turret sits on the Laser's slot), Droid Call bolts, Railgun beam; ranged heroes
+  stand on h<roster index> (feet point; replaces the per-hero offset sliders for that skin); KO'd heroes ride at ko (spread a little, move with the hull).
+  Arena - cannon muzzle per side (arenaFortressGeom), weapon volleys per side, beams from the beam weapon's slot. Hull-wide weapons (shields, dome, EMP, IO, wall, wave, clones) unchanged.
+- Editor: Dev Tools > Heroes > "Fortress layout editor": pick a skin, drag C / 1-3 / H1-H5 / KO on the picture (real hero sprites on the H spots at true size, the
+  equipped weapon's icon on each slot), Save for everyone / Reset this skin.
+- dev/simfork/g271_skinlayout.js: no layout = old spots; editor opens for all 4 skins; a layout moves cannon, missiles, laser, a ranged hero, the Arena muzzle (bot mirrored).
+  g174, g207, g204, g202 ALL OK. Not checked on a phone. No layouts are set yet - Harley sets them in the editor.
+

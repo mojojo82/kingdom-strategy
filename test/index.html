@@ -2110,6 +2110,19 @@
   #trainPop .tg-hero canvas.tg-emb { mix-blend-mode:screen; pointer-events:none; }
   #trainPop .tg-shrine { position:absolute; left:0; top:0; width:100%; max-width:none; height:auto; pointer-events:none; user-select:none; }
   #trainPop .tg-glow { position:absolute; left:0; top:0; width:10px; height:10px; border-radius:50%; pointer-events:none; mix-blend-mode:screen; background:radial-gradient(closest-side, rgba(255,140,50,.75), rgba(200,70,10,.3) 55%, rgba(0,0,0,0)); }
+  /* v1109: admin fortress Layout Editor */
+  #slPop { position:fixed; inset:0; z-index:9000; display:none; align-items:center; justify-content:center; background:rgba(4,7,14,.82); padding:12px; }
+  #slPop .sl-box { width:min(440px, 100%); max-height:96vh; overflow:auto; background:linear-gradient(#24180f, #170f09); border:2px solid #b98a4c; border-radius:14px; padding:10px 10px 12px; display:flex; flex-direction:column; gap:8px; color:#f5e2c0; }
+  #slPop .sl-top { display:flex; align-items:center; gap:8px; }
+  #slPop .sl-top b { font-family:Georgia, serif; color:#f0c95f; font-size:16px; flex:1; }
+  #slPop select { background:#0e1626; color:#e9e4d6; border:1px solid #b98a4c; border-radius:6px; padding:4px 6px; font-weight:700; }
+  #slPop .sl-x { background:none; border:0; color:#f5e2c0; font-size:20px; cursor:pointer; }
+  #slPop canvas { width:100%; height:300px; border-radius:10px; border:1px solid #6d5232; touch-action:none; background:#14213d; }
+  #slPop .sl-hint { font-size:11.5px; color:#c9b89a; line-height:1.4; }
+  #slPop .sl-row { display:flex; gap:8px; flex-wrap:wrap; }
+  #slPop .sl-row button { flex:1; border:0; border-radius:8px; padding:9px 10px; font-weight:800; cursor:pointer; background:#3ec8e0; color:#06222a; }
+  #slPop .sl-row button.sl-reset { background:transparent; color:#3ec8e0; box-shadow:inset 0 0 0 1px #3ec8e0; }
+  #slPop .sl-msg { font-size:12px; color:#9fe0a6; min-height:16px; }
   #trainPop .tg-hint { position:absolute; left:14px; top:40px; font-size:10.5px; color:#9fb1cc; pointer-events:none; z-index:3; }
   #trainPop .tg-err { position:absolute; inset:0; display:none; place-items:center; text-align:center; padding:20px; font-size:13px; color:#9fb1cc; }
   #trainPop .tg-panel { flex:0 0 auto; display:flex; flex-direction:column; gap:8px; padding:10px 10px 12px; background:radial-gradient(120% 60% at 50% 0%, #3b2a1b 0%, #24180f 55%, #170f09 100%); border-top:2px solid #b98a4c; box-shadow:inset 0 10px 18px -10px rgba(0,0,0,.7); }
@@ -3410,6 +3423,9 @@
                   <button class="dev-btn danger" id="devResetHeroPosOffsetsBtn">Reset All Positions</button>
                 </div>
                 <div class="dev-tools-row">
+                  <button class="dev-btn" id="devSkinLayoutBtn">🗺️ Fortress layout editor (weapon + hero spots per skin)</button>
+                </div>
+                <div class="dev-tools-row">
                   <div class="boss-sprite-thumb" id="skillIconWrap" title="Click to set the icon shown in this hero's cooldown timer in Border Skirmish">
                     <img id="skillIconImg" style="display:none;">
                     <span id="skillIconPlaceholder">⏱️</span>
@@ -3694,7 +3710,7 @@ var assetSyncReady = false;   // true once the initial load has resolved (succes
 // copies) fills shared keys that are still empty.
 var SHARED_ART_PREFIXES = ["kingdom_prototype_heroart_v1_", "kingdom_prototype_cardart_v1_", "kingdom_prototype_skillicon_v1_", "kingdom_prototype_combatsprite_v1_",
   "kingdom_prototype_espergraphic_v1_", "kingdom_prototype_bosssprite_v1", "kingdom_prototype_enemyinfantry_v1", "kingdom_prototype_enemyarcher_v1", "kingdom_prototype_enemylancer_v1",
-  "kingdom_prototype_treesprite_v1_", "kingdom_prototype_groundtile_v1", "kingdom_prototype_grassoverlay_v1"];
+  "kingdom_prototype_treesprite_v1_", "kingdom_prototype_groundtile_v1", "kingdom_prototype_grassoverlay_v1", "kingdom_prototype_skinlayout_v1"]; /* v1109: + per-skin fortress layout (a setting, not art) */
 var SHARED_ART_INDEX_DOC = "assetitems/_shared_index";
 var sharedArtKnownKeys = {};
 function assetOnFirebase() { var K = window.KS_BACKEND; return !!(K && K.kind === "firebase") && !IS_GUEST_LINK; }
@@ -3801,7 +3817,7 @@ function assetSyncIsImageKey(key) {
   nonImageKeys[CANNON_ORIGIN_Y_KEY] = true;
   nonImageKeys[BEAM_CLIP_KEY] = true; nonImageKeys[MISSILE_EXH_KEY] = true; nonImageKeys[HERO_HOP_KEY] = true; nonImageKeys[GARETH_CHANGER_KEY] = true; nonImageKeys[OOZE_BLOB_KEY] = true; nonImageKeys[MAP_ISO_KEY] = true; nonImageKeys[MAP_ISO_CFG_KEY] = true; nonImageKeys[MARCH3D_KEY] = true; nonImageKeys[MARCH3D_SIZE_KEY] = true; nonImageKeys[MARCH3D_BOB_KEY] = true; nonImageKeys[MARCH3D_WATER_KEY] = true; nonImageKeys[BASE_WATER_STYLE_KEY] = true; nonImageKeys[MELEE_REACH_KEY] = true; nonImageKeys[TERRAIN_DEV_KEY] = true; nonImageKeys[RUN_BLEND_KEY] = true; nonImageKeys[GROUND_HIDE_KEY] = true; nonImageKeys[HERO_DUST_KEY] = true; nonImageKeys[HERO_DUST_CFG_KEY] = true; nonImageKeys[HERO_KO_CFG_KEY] = true;
   nonImageKeys[ARENA_SHARED_TIMING_KEY] = true; nonImageKeys[ARENA_HERO_HP_KEY] = true; nonImageKeys[ARENA_DMGNUM_KEY] = true; nonImageKeys[HERO_ATTACK_TIMING_KEY] = true; nonImageKeys[SKILL_FULL_CD_KEY] = true; nonImageKeys[ARENA_RANGED_HERO_KEY] = true; nonImageKeys[MAP_ICONS_KEY] = true; nonImageKeys[MAP_CITY_SKIN_KEY] = true;
-  nonImageKeys[FORT_LIFE_KEY] = true; nonImageKeys[FORT_FLASH_KEY] = true;
+  nonImageKeys[FORT_LIFE_KEY] = true; nonImageKeys[FORT_FLASH_KEY] = true; nonImageKeys["kingdom_prototype_skinlayout_v1"] = true; /* v1109 (literal: this runs before SKIN_LAYOUT_KEY is defined) */
   if (nonImageKeys[key]) return false;
   return true;
 }
@@ -4330,6 +4346,7 @@ function initDeviceLock(db) {
         { key: ORBIT_SHIELD_KEY, apply: function (v) {
             try { orbitShieldApplyCfg(JSON.parse(v)); localStorage.setItem(ORBIT_SHIELD_KEY, v); orbitShieldSyncPanel(); } catch (e) {}
           } },
+        { key: "kingdom_prototype_skinlayout_v1", apply: function (v) { skinLayoutApply(v); try { if (typeof skinLayoutEditorRedraw === "function") skinLayoutEditorRedraw(); } catch (e) {} } }, // v1109
         { key: ECUBE_KEY, apply: function (v) {
             try { var o = JSON.parse(v); ecubeCfg.on = !!(o && o.on); localStorage.setItem(ECUBE_KEY, v); ecubeSyncPanel(); } catch (e) {}
           } },
@@ -11069,6 +11086,41 @@ function resetCannonOriginOffset() {
 // caller (e.g. a debug marker) can't drift apart from each other.
 function getCannonOriginX(w) { return getFortressNoseX(w) + cannonOriginXOffset + (fortLife.active ? fortLife.dx : 0); } // v568: follows the ship's hover
 function getCannonOriginY(h) { return groundYFor(h) - 18 + cannonOriginYOffset + (fortLife.active ? fortLife.dy : 0); }
+// v1109: per-skin fortress LAYOUT (Harley). One layout per skin, used in Conquest AND the Arena: "c" = the main cannon's muzzle, "w0".."w2" = the 3 weapon slots
+// (equipped weapon 1-3 fires from slot 1-3), "h0".."h4" = the 5 hero slots (Conquest: roster hero 1-5 stands there when he's ranged; the Arena keeps heroes on
+// the ground for now) and "ko" = where knocked-out heroes ride in Conquest. Each point is [x, y] as a fraction of the skin's own picture (0..1 from its left /
+// top edge, facing right), so one layout fits every size and the Arena's left-facing side is just mirrored. A skin with no layout - or a point not set - keeps
+// the old spot. Edited in the admin Layout Editor (Dev Tools > Heroes); a SHARED admin setting, so every player gets it.
+var SKIN_LAYOUT_KEY = "kingdom_prototype_skinlayout_v1";
+var skinLayouts = (function () { try { var r = JSON.parse(localStorage.getItem(SKIN_LAYOUT_KEY) || "null"); return r && typeof r === "object" ? r : {}; } catch (e) { return {}; } })();
+function skinLayoutApply(v) { try { var r = typeof v === "string" ? JSON.parse(v) : v; if (r && typeof r === "object") { skinLayouts = r; try { localStorage.setItem(SKIN_LAYOUT_KEY, JSON.stringify(r)); } catch (e) {} } } catch (e) {} }
+function saveSkinLayouts() { var str = JSON.stringify(skinLayouts); try { localStorage.setItem(SKIN_LAYOUT_KEY, str); } catch (e) {} if (typeof assetSyncUpload === "function") assetSyncUpload(SKIN_LAYOUT_KEY, str); }
+function skinLayoutFor(skin) { return (skin && skinLayouts[skin.id]) || null; }
+// the box the skin's picture is drawn in: Conquest (withLife = include the hull's hover / recoil) or one Arena side (the bot's side faces left)
+function fortHullBox(w, h, mode, isPlayerSide, withLife) {
+  if (mode === "arena") {
+    var sk = isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]), im = sk.cq; if (!im || !im.naturalWidth) return null;
+    var sc = FORTRESS_SHIP_SCALE * sk.cqScale * (24 / 22), sw = im.naturalWidth * sc, sh = im.naturalHeight * sc, cx = isPlayerSide ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X);
+    return { skin: sk, x: cx - sw / 2, y: groundYFor(h) - sh + 14, sw: sw, sh: sh, dir: isPlayerSide ? 1 : -1 };
+  }
+  var s2 = fortressSkin(), im2 = fortressCqImg(); if (!im2 || !im2.naturalWidth) return null;
+  var sc2 = fortressCqScale(), sw2 = im2.naturalWidth * sc2, sh2 = im2.naturalHeight * sc2, lx = withLife && fortLife.active ? fortLife.dx : 0, ly = withLife && fortLife.active ? fortLife.dy : 0;
+  return { skin: s2, x: w * 0.16 - sw2 / 2 + lx, y: groundYFor(h) - sh2 + 14 + ly, sw: sw2, sh: sh2, dir: 1 };
+}
+function fortHullPoint(box, p) { return { x: box.dir > 0 ? box.x + p[0] * box.sw : box.x + box.sw - p[0] * box.sw, y: box.y + p[1] * box.sh }; }
+function fortLayoutPoint(w, h, mode, isPlayerSide, name, withLife) { // null = this skin has no such point: use the old spot
+  var box = fortHullBox(w, h, mode, isPlayerSide, withLife); if (!box) return null;
+  var L = skinLayoutFor(box.skin), p = L && L[name]; if (!p || p.length < 2) return null;
+  return fortHullPoint(box, p);
+}
+var arenaAiWeaponOrder = []; // the bot's weapons in the order first seen this match (its slot 1-3)
+function weaponSlotPoint(w, h, mode, isPlayerSide, weaponId) { // where an equipped weapon fires from: its weapon slot, or null = the old spot
+  if (!weaponId) return null;
+  var list = isPlayerSide ? (game.state.equippedWeapons || []) : arenaAiWeaponOrder;
+  if (!isPlayerSide && list.indexOf(weaponId) < 0 && list.length < 3) list.push(weaponId);
+  var i = list.indexOf(weaponId); if (i < 0 || i > 2) return null;
+  return fortLayoutPoint(w, h, mode, isPlayerSide, "w" + i, mode !== "arena");
+}
 
 // Enemy infantry sprite — swappable/resettable from Dev Tools, stored separately
 // from save data (like the boss sprite / ground tile). Falls back to the default
@@ -11452,7 +11504,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1108"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1109"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -19256,6 +19308,9 @@ function idleBossX(w) { return Math.min(w - 40, w * 0.82); } // bosses hold posi
 function groundYFor(h) { return h * 0.72; }
 var IDLE_SQUAD_POSITIONS = [[0, 0], [-19, 0], [19, 0], [-32, 0], [32, 0]];
 function idleSquadSlotPos(w, h, index, key) {
+  if (key && HERO_DEFS[key] && HERO_DEFS[key].class !== "infantry" && index < 5) { // v1109: the skin's hero slot (feet point) - replaces the per-hero offsets
+    var hsP = fortLayoutPoint(w, h, "cq", true, "h" + index, false); if (hsP) return { x: hsP.x, y: hsP.y - 12 * (heroSpriteVisualScale / 100) };
+  }
   var pos = IDLE_SQUAD_POSITIONS[index] || [0, 0];
   var off = key ? getHeroPosOffset(key) : { x: 0, y: 0 };
   return { x: w * 0.16 + pos[0] + off.x, y: groundYFor(h) - 4 + off.y };
@@ -20253,7 +20308,8 @@ function drawBeamTurret(ctx, w, h, shipX, shipY, shipW, shipH) {
   var im1 = beamTurretImg("base"), im2 = beamTurretImg("barrel");
   if (!im1.complete || !im1.naturalWidth || !im2.complete || !im2.naturalWidth) { bt.on = false; return; }
   var now = performance.now(), dt = Math.min(0.1, (now - (bt.t || now)) / 1000); bt.t = now;
-  var s = c.scale, px = shipX + shipW * c.x, py = shipY + c.y;
+  var tL = skinLayoutFor(fortressSkin()), tI = (game.state.equippedWeapons || []).indexOf("laser_beam"), tP = tL && tI >= 0 && tI < 3 && tL["w" + tI]; // v1109: the turret sits on the Laser's weapon slot
+  var s = c.scale, px = tP ? shipX + shipW * tP[0] : shipX + shipW * c.x, py = tP ? shipY + shipH * tP[1] : shipY + c.y;
   // Target: the point the beam is on, else the nearest enemy, else level.
   var tx = null, ty = null, gy = groundYFor(h);
   Object.keys(idleAnim.laserVis || {}).forEach(function (k) { var lv = idleAnim.laserVis[k]; if (lv && lv.aim && lv.curId != null && idleAnim.enemyById[lv.curId]) { tx = lv.aim.x; ty = lv.aim.y; } });
@@ -20281,10 +20337,11 @@ function drawBeamTurret(ctx, w, h, shipX, shipY, shipW, shipH) {
   ctx.restore();
 }
 function drawLaserBeams(ctx, w, h) {
-  var ox = getCannonOriginX(w), oy = getCannonOriginY(h);
-  if (beamTurret.on) { ox = beamTurret.tipX; oy = beamTurret.tipY; } // v556: beam leaves the turret muzzle
+  var ox0 = getCannonOriginX(w), oy0 = getCannonOriginY(h);
   Object.keys(idleAnim.laserVis).forEach(function (key) {
     var lv = idleAnim.laserVis[key];
+    var ox = ox0, oy = oy0, lbP = weaponSlotPoint(w, h, "cq", true, lv.wid); if (lbP) { ox = lbP.x; oy = lbP.y; } // v1109: from its weapon slot
+    if (beamTurret.on && (lv.wid === "laser_beam" || !lv.wid)) { ox = beamTurret.tipX; oy = beamTurret.tipY; } // v556: beam leaves the turret muzzle (the turret sits on the Laser's slot)
     var vis = lv.curId != null ? idleAnim.enemyById[lv.curId] : null;
     if (!vis) { lv.aim = null; return; }
     var tp = laserBodyPoint(vis, h);
@@ -20479,11 +20536,12 @@ function stepIdleAnim(dtSec, w, h) {
     var fxs = game.state.idle.fxShotLog.shift();
     if (fxs.kind === "drone") {
       var dv = idleAnim.enemyById[fxs.id]; if (!dv) continue;
-      var dFromX = w * 0.16, dFromY = getFortressTopY(h) - 18;
+      var dSP = weaponSlotPoint(w, h, "cq", true, "droid_call"), dFromX = dSP ? dSP.x : w * 0.16, dFromY = dSP ? dSP.y : getFortressTopY(h) - 18; // v1109: its weapon slot
       spawnProjectile(w, h, dFromX, dFromY, dv.x - 4, groundYFor(h) - 18, false, fxs.id, fxs.dmg, false, "drone");
       idleAnim.pendingArrows[fxs.id] = (idleAnim.pendingArrows[fxs.id] || 0) + 1;
     } else if (fxs.kind === "rail") {
-      idleAnim.railFx = { life: 0.35, maxLife: 0.35, y: groundYFor(h) - 18, x0: getFortressNoseX(w) };
+      var rlP = weaponSlotPoint(w, h, "cq", true, "railgun"); // v1109: its weapon slot
+      idleAnim.railFx = { life: 0.35, maxLife: 0.35, y: rlP ? rlP.y : groundYFor(h) - 18, x0: rlP ? rlP.x : getFortressNoseX(w) };
       (fxs.hits || []).forEach(function (rh) { var rv = idleAnim.enemyById[rh.id]; if (!rv) return; applyDisplayedHit(rh.id, rh.dmg); rv.hitFlash = 0.3; spawnDamageNumber(rv.x, rv.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 10 : groundYFor(h) - 30, rh.dmg, false); });
     }
   }
@@ -20495,7 +20553,7 @@ function stepIdleAnim(dtSec, w, h) {
   while (game.state.idle.laserChunkLog && game.state.idle.laserChunkLog.length) {
     var lch = game.state.idle.laserChunkLog.shift();
     var lv = idleAnim.laserVis[lch.beam];
-    if (!lv) lv = idleAnim.laserVis[lch.beam] = { age: 0, dur: lch.dur, chunks: [], next: 0, aim: null, curId: null, accId: null, accDmg: 0, accT: 0, lastBox: null };
+    if (!lv) lv = idleAnim.laserVis[lch.beam] = { wid: lch.wid, age: 0, dur: lch.dur, chunks: [], next: 0, aim: null, curId: null, accId: null, accDmg: 0, accT: 0, lastBox: null };
     lv.chunks.push(lch);
     if (lch.id != null) idleAnim.pendingArrows[lch.id] = (idleAnim.pendingArrows[lch.id] || 0) + 1;
   }
@@ -21206,7 +21264,8 @@ function stepIdleAnim(dtSec, w, h) {
       var wshotSpeed = (game.state.idle.weaponLastShotSpeed || {})[wid];
       var wshotIds = (game.state.idle.weaponLastShotIds || {})[wid];
       var wshotId = wshotIds && wshotIds.length ? wshotIds : (game.state.idle.weaponLastShotId || {})[wid];
-      spawnMissileVolley(getCannonOriginX(w), getCannonOriginY(h), frontVis.x, landY, wshotIds && wshotIds.length ? wshotIds.length : wstats.count, real[0].id, wshotSpeed, wshotId);
+      var msP = weaponSlotPoint(w, h, "cq", true, "missile_barrage"); // v1109: its weapon slot
+      spawnMissileVolley(msP ? msP.x : getCannonOriginX(w), msP ? msP.y : getCannonOriginY(h), frontVis.x, landY, wshotIds && wshotIds.length ? wshotIds.length : wstats.count, real[0].id, wshotSpeed, wshotId);
       // No damage number here anymore, and no sfxWeaponMissile() either (each
       // missile plays its own launch sound as it launches — see the
       // m.launched check in the weaponMissiles update loop below). The
@@ -21374,7 +21433,8 @@ function stepIdleAnim(dtSec, w, h) {
       // height is pinned to the enemy-body line (groundY - 18) regardless of
       // the origin offset, so raising/lowering the origin changes the angle
       // of the shot, not where it lands.
-      spawnProjectile(w, h, getCannonOriginX(w), getCannonOriginY(h), cannonVis.x, groundYFor(h) - 18, false, cannonTid, cannonDmg, true);
+      var cnP = fortLayoutPoint(w, h, "cq", true, "c", true); // v1109: the skin's cannon muzzle
+      spawnProjectile(w, h, cnP ? cnP.x : getCannonOriginX(w), cnP ? cnP.y : getCannonOriginY(h), cannonVis.x, groundYFor(h) - 18, false, cannonTid, cannonDmg, true);
       sfxFortressCannon();
     }
     idleAnim.cannonLaunchCooldown += game.idleFortressCannonBulletInterval();
@@ -22160,7 +22220,9 @@ function drawIdleClones(ctx, w, h) {
 }
 function drawKoHero(ctx, w, h, key, i) {
   var vis = idleAnim.heroVis[key] || idleSquadSlotPos(w, h, i, key);
-  var hScale = heroSpriteVisualScale / 100, feetY = vis.y + 12 * hScale;
+  var hScale = heroSpriteVisualScale / 100;
+  var koP = fortLayoutPoint(w, h, "cq", true, "ko", true); if (koP) vis = { x: koP.x + (i - 2) * 9 * hScale, y: koP.y - 12 * hScale }; // v1109: the skin's KO spot (rides with the hull)
+  var feetY = vis.y + 12 * hScale;
   var ent = game.state.idle.heroHp && game.state.idle.heroHp[key];
   var tot = Math.max(0.1, game.heroKoCfg.reviveSec), left = ent ? Math.max(0, ent.reviveT) : 0;
   var a = HERO_ANIMS[key], topY = feetY - 30 * hScale;
@@ -28850,6 +28912,75 @@ function renderHeroPosOffsetControls() {
   });
 }
 renderHeroPosOffsetControls();
+// v1109: admin Layout Editor - per fortress skin, drag the main cannon (C), weapon slots 1-3, hero slots H1-H5 (feet) and the KO spot onto the picture.
+var SL_POINTS = ["c", "w0", "w1", "w2", "h0", "h1", "h2", "h3", "h4", "ko"], slEd = null;
+function skinLayoutDefaults(skin) { // today's spots as fractions of this skin's picture (what a skin without a layout uses)
+  var im = skin.cq, sc = FORTRESS_SHIP_SCALE * skin.cqScale, sw = ((im && im.naturalWidth) || 170) * sc, sh = ((im && im.naturalHeight) || 100) * sc, hs = heroSpriteVisualScale / 100;
+  var c = [1 + cannonOriginXOffset / sw, (sh - 14 - 18 + cannonOriginYOffset) / sh], deck = (sh - 14 - 4 - 19 + 12 * hs) / sh, o = { c: c, ko: [0.38, deck] };
+  for (var i = 0; i < 3; i++) o["w" + i] = [Math.max(0.05, c[0] - 0.14 * (i + 1)), Math.max(0.05, c[1] - 0.1 * (i + 1))];
+  for (var j = 0; j < 5; j++) o["h" + j] = [0.5 + IDLE_SQUAD_POSITIONS[j][0] / sw, deck];
+  return o;
+}
+function skinLayoutEditorRedraw() { if (slEd && !slEd.drag) slEd.load(); }
+function openSkinLayoutEditor() {
+  var pop = document.getElementById("slPop");
+  if (!pop) {
+    pop = document.createElement("div"); pop.id = "slPop";
+    pop.innerHTML = '<div class="sl-box"><div class="sl-top"><b>Fortress layout</b><select class="sl-skin" aria-label="Fortress skin"></select><button class="sl-x" type="button" aria-label="Close">✕</button></div>' +
+      '<canvas class="sl-cv" aria-label="Drag the dots onto the fortress"></canvas>' +
+      '<div class="sl-hint">Drag the dots onto the ship. <b style="color:#ff7a6b">C</b> main cannon · <b style="color:#5fd3ff">1 2 3</b> weapon slots (your 1st, 2nd, 3rd equipped weapon fires from there) · ' +
+      '<b style="color:#7be08e">H1-H5</b> hero spots, where his feet go (ranged heroes, Conquest) · <b style="color:#c7c7c7">KO</b> where knocked-out heroes ride (Conquest). One layout per skin, used in Conquest and the Arena.</div>' +
+      '<div class="sl-row"><button type="button" class="sl-save">Save for everyone</button><button type="button" class="sl-reset">Reset this skin</button></div><div class="sl-msg"></div></div>';
+    document.body.appendChild(pop);
+    var sel = pop.querySelector(".sl-skin");
+    FORTRESS_SKINS.forEach(function (sk) { var op = document.createElement("option"); op.value = sk.id; op.textContent = sk.name; sel.appendChild(op); });
+    slEd = { pop: pop, cv: pop.querySelector(".sl-cv"), sel: sel, pts: null, drag: null, map: null, raf: 0, msg: pop.querySelector(".sl-msg") };
+    slEd.skin = function () { return FORTRESS_SKINS.filter(function (k) { return k.id === sel.value; })[0] || FORTRESS_SKINS[0]; };
+    slEd.load = function () { var sk = slEd.skin(), d = skinLayoutDefaults(sk), L = skinLayouts[sk.id] || {}; slEd.pts = {}; SL_POINTS.forEach(function (n) { slEd.pts[n] = (L[n] || d[n]).slice(); }); slEd.saved = !!skinLayouts[sk.id]; };
+    sel.onchange = function () { slEd.load(); slEd.msg.textContent = slEd.saved ? "This skin has a saved layout." : "No layout yet: the game still uses the old spots (C, H and KO show them; weapons all fire from C - the 1 2 3 dots are just spread out to grab)."; };
+    pop.querySelector(".sl-x").onclick = function () { pop.style.display = "none"; cancelAnimationFrame(slEd.raf); };
+    pop.querySelector(".sl-save").onclick = function () {
+      var o = {}; SL_POINTS.forEach(function (n) { o[n] = [Math.round(slEd.pts[n][0] * 1000) / 1000, Math.round(slEd.pts[n][1] * 1000) / 1000]; });
+      skinLayouts[slEd.skin().id] = o; saveSkinLayouts(); slEd.saved = true; slEd.msg.textContent = "Saved for " + slEd.skin().name + " - every player gets it.";
+    };
+    pop.querySelector(".sl-reset").onclick = function () { delete skinLayouts[slEd.skin().id]; saveSkinLayouts(); slEd.load(); slEd.msg.textContent = slEd.skin().name + " is back to the old spots."; };
+    function at(e) { var r = slEd.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    slEd.cv.addEventListener("pointerdown", function (e) {
+      if (!slEd.map) return; var p = at(e), best = null, bd = 24;
+      SL_POINTS.forEach(function (n) { var q = slEd.map.toPx(slEd.pts[n]), dd = Math.hypot(q.x - p.x, q.y - p.y); if (dd < bd) { bd = dd; best = n; } });
+      if (best) { slEd.drag = best; slEd.cv.setPointerCapture(e.pointerId); e.preventDefault(); }
+    });
+    slEd.cv.addEventListener("pointermove", function (e) { if (!slEd.drag) return; var f = slEd.map.toFrac(at(e)); slEd.pts[slEd.drag] = [Math.max(-0.2, Math.min(1.3, f[0])), Math.max(-0.5, Math.min(1.2, f[1]))]; });
+    slEd.cv.addEventListener("pointerup", function () { if (slEd.drag) { slEd.drag = null; slEd.msg.textContent = "Moved - tap Save for everyone to keep it."; } });
+  }
+  slEd.sel.value = fortressSkin().id; slEd.load(); slEd.msg.textContent = slEd.saved ? "This skin has a saved layout." : "No layout yet: the game still uses the old spots (C, H and KO show them; weapons all fire from C - the 1 2 3 dots are just spread out to grab).";
+  pop.style.display = "flex";
+  (function frame() {
+    if (pop.style.display === "none") return;
+    var cv = slEd.cv, r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1), W = r.width, H = r.height;
+    if (cv.width !== Math.round(W * d)) { cv.width = Math.round(W * d); cv.height = Math.round(H * d); }
+    var g = cv.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, W, H);
+    var sk = slEd.skin(), im = sk.cq, sc = FORTRESS_SHIP_SCALE * sk.cqScale;
+    var sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, "#14213d"); sky.addColorStop(1, "#2a3e66"); g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    if (im && im.complete && im.naturalWidth) {
+      var nw = im.naturalWidth, nh = im.naturalHeight, E = Math.min(W * 0.86 / nw, H * 0.62 / nh), gy = H * 0.84, x0 = (W - nw * E) / 2, y0 = gy - (nh - 14 / sc) * E;
+      slEd.map = { toPx: function (p) { return { x: x0 + p[0] * nw * E, y: y0 + p[1] * nh * E }; }, toFrac: function (q) { return [(q.x - x0) / (nw * E), (q.y - y0) / (nh * E)]; } };
+      g.fillStyle = "#2c3a26"; g.fillRect(0, gy, W, H - gy); g.fillStyle = "#3d5233"; g.fillRect(0, gy, W, 2);
+      g.drawImage(im, x0, y0, nw * E, nh * E);
+      var F = E / sc, hs = heroSpriteVisualScale / 100, ros = game.state.conquestRoster || [], eq = game.state.equippedWeapons || [];
+      for (var i = 0; i < 5; i++) { var hk = ros[i], hp = slEd.map.toPx(slEd.pts["h" + i]); if (hk && HERO_DEFS[hk] && HERO_DEFS[hk].class !== "infantry" && HERO_ANIMS[hk]) { try { drawHeroAnim(g, hk, hp.x, hp.y, "idle", hs * F, false, i * 0.37); } catch (er) {} } }
+      var koP = slEd.map.toPx(slEd.pts.ko), koKey = ros[0]; if (koKey && HERO_ANIMS[koKey]) { g.save(); g.globalAlpha = 0.45; try { drawHeroAnim(g, koKey, koP.x, koP.y, "idle", hs * F, false, 0); } catch (er) {} g.restore(); }
+      SL_POINTS.forEach(function (n) {
+        var q = slEd.map.toPx(slEd.pts[n]), col = n === "c" ? "#ff7a6b" : n[0] === "w" ? "#5fd3ff" : n[0] === "h" ? "#7be08e" : "#c7c7c7";
+        var lab = n === "c" ? "C" : n === "ko" ? "KO" : n[0] === "w" ? String(+n[1] + 1) + (eq[+n[1]] && WEAPON_DEFS_BY_ID[eq[+n[1]]] ? " " + WEAPON_DEFS_BY_ID[eq[+n[1]]].icon : "") : "H" + (+n[1] + 1);
+        g.beginPath(); g.arc(q.x, q.y, slEd.drag === n ? 9 : 7, 0, 7); g.fillStyle = col; g.globalAlpha = 0.9; g.fill(); g.globalAlpha = 1; g.lineWidth = 2; g.strokeStyle = "#0b1120"; g.stroke();
+        g.font = "bold 11px system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "middle"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)"; g.strokeText(lab, q.x + 10, q.y - 9); g.fillStyle = col; g.fillText(lab, q.x + 10, q.y - 9);
+      });
+    } else { g.fillStyle = "#9fb1cc"; g.font = "13px system-ui"; g.textAlign = "center"; g.fillText("Loading the fortress picture...", W / 2, H / 2); }
+    slEd.raf = requestAnimationFrame(frame);
+  })();
+}
+document.getElementById("devSkinLayoutBtn").onclick = openSkinLayoutEditor;
 var heroPosResetBtn = document.getElementById("devResetHeroPosOffsetsBtn");
 if (heroPosResetBtn) {
   heroPosResetBtn.onclick = function () {
@@ -29412,7 +29543,8 @@ function arenaFortressGeom(w, h, isPlayerSide) {
   var img = skin.cq, sc = FORTRESS_SHIP_SCALE * skin.cqScale * (24 / 22);
   var sw = (img && img.naturalWidth ? img.naturalWidth : 170) * sc;
   var cx = isPlayerSide ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X), dir = isPlayerSide ? 1 : -1;
-  return { cx: cx, nose: cx + dir * sw / 2, muzzleX: cx + dir * (sw / 2 + cannonOriginXOffset), muzzleY: groundYFor(h) - 18 + cannonOriginYOffset, dir: dir };
+  var mzP = fortLayoutPoint(w, h, "arena", isPlayerSide, "c", false); // v1109: the skin's cannon muzzle
+  return { cx: cx, nose: cx + dir * sw / 2, muzzleX: mzP ? mzP.x : cx + dir * (sw / 2 + cannonOriginXOffset), muzzleY: mzP ? mzP.y : groundYFor(h) - 18 + cannonOriginYOffset, dir: dir };
 }
 // v454: real hull contact for Arena cannon bullets, measured from each fortress
 // skin's own art so it works for any skin automatically (no per-skin
@@ -30808,6 +30940,8 @@ function drawArenaFrame(ctx, w, h) {
   arenaAnim.missileImpacts.forEach(function (fx) { drawMissileImpactFx(ctx, fx); });
   if (arenaAnim.beams.length) {
     var bpg = arenaFortressGeom(w, h, true);
+    var bWid = (game.state.equippedWeapons || []).filter(function (q) { var qd = WEAPON_DEFS_BY_ID[q]; return qd && qd.kind === "beam"; })[0], bwP = weaponSlotPoint(w, h, "arena", true, bWid); // v1109: beams leave the beam weapon's slot
+    if (bwP) bpg = { cx: bpg.cx, nose: bpg.nose, muzzleX: bwP.x, muzzleY: bwP.y, dir: bpg.dir };
     var bHit = arenaHullContactPoint(w, h, false, bpg.muzzleX, bpg.muzzleY, groundYFor(h) - 18);
     arenaAnim.beams.forEach(function (bm) {
       var bf = Math.min(1, bm.age / 0.08, Math.max(0, (bm.dur - bm.age) / 0.12));
@@ -31340,7 +31474,7 @@ function renderArenaBattleScreen() {
   arenaAnim.playerRoster = p.roster; arenaAnim.playerHeroesSnap = p.heroes;
   arenaAnim.aiRoster = arenaOpponent.roster; arenaAnim.aiHeroesSnap = arenaOpponent.heroes;
   arenaAnim.opponentName = arenaOpponent.name;
-  arenaAnim.aiFortressSkin = arenaOpponentFortressSkin(arenaOpponent);
+  arenaAnim.aiFortressSkin = arenaOpponentFortressSkin(arenaOpponent); arenaAiWeaponOrder = []; // v1109: the bot's slots start fresh each match
   arenaAnim.playerHp = pStats0.maxHp; arenaAnim.playerMaxHp = pStats0.maxHp;
   arenaAnim.aiHp = aStats0.maxHp; arenaAnim.aiMaxHp = aStats0.maxHp;
   arenaAnim.shield = null; arenaAnim.shieldMax = 0; arenaAnim.shieldHits = 0; arenaAnim.shieldBreaks = 0; // v469
@@ -31496,10 +31630,12 @@ function renderArenaBattleScreen() {
         arenaAnim.beams.push({ age: 0, dur: bf.beamSec, sid: "a" + Math.random().toString(36).slice(2) });
       });
       (state.playerWeaponFires || []).forEach(function (wf) {
-        spawnArenaMissileVolley(pg.muzzleX, pg.muzzleY, ag.nose, groundYFor(h) - 18, wf.count);
+        var pwP = weaponSlotPoint(w, h, "arena", true, wf.id); // v1109
+        spawnArenaMissileVolley(pwP ? pwP.x : pg.muzzleX, pwP ? pwP.y : pg.muzzleY, ag.nose, groundYFor(h) - 18, wf.count);
       });
       (state.aiWeaponFires || []).forEach(function (wf) { /* v962: the bot's weapons fly the other way (beams shown as a short volley) */
-        spawnArenaMissileVolley(ag.muzzleX, ag.muzzleY, pg.nose, groundYFor(h) - 18, Math.min(6, wf.count));
+        var awP = weaponSlotPoint(w, h, "arena", false, wf.id); // v1109
+        spawnArenaMissileVolley(awP ? awP.x : ag.muzzleX, awP ? awP.y : ag.muzzleY, pg.nose, groundYFor(h) - 18, Math.min(6, wf.count));
       });
       // Same shoot/arc sfx dedup as Border Skirmish: at most one of each per
       // tick regardless of how many attackers on either side fired that
