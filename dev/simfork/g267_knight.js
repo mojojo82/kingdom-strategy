@@ -1,4 +1,4 @@
-/* v1100: the 3D-knight Gareth sheet. Screenshots (dev/simfork/out_g267_*.png) of him fighting, charging (Shield Slam), back-hopping and reeling from
+/* v1100: the 3D-knight Gareth sheet (v1101: + Colossal slash shots out_g267_slash0-5). Screenshots (dev/simfork/out_g267_*.png) of him fighting, charging (Shield Slam), back-hopping and reeling from
    a big hit, and checks: no page errors, his sheet + lunge image decode, the hit row plays on a big hit and not on a small one.
    Run: node dev/simfork/g267_knight.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
@@ -23,6 +23,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.evaluate(() => { setScreen("conquest"); const st = game.state.idle; game.state.conquestRoster = ["gareth"]; st.skillAuto = false; st.chapter = 1; st.levelNum = 1; st.playerHp = 1e6; });
   const shotArea = async (n) => { const c = await P.$("#idleCanvas") || await P.$("canvas"); await (c ? c.screenshot({ path: OUT(n) }) : P.screenshot({ path: OUT(n) })); };
   await P.waitForTimeout(9000); await shotArea("fight");
+  for (let q = 0; q < 6; q++) { await P.waitForTimeout(83); await shotArea("slash" + q); } /* v1101: Colossal slash mid-swing */
   const dec = await P.evaluate(() => ({ sheet: !!heroAnimImg("gareth"), lunge: !!heroChargeImg("gareth"), hop: !!heroHopImg("gareth"), w: heroAnimImg("gareth") && heroAnimImg("gareth").naturalWidth }));
   // big vs small hit
   const hit = await P.evaluate(async () => {

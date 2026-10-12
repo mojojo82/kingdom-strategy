@@ -1538,3 +1538,12 @@
 - Tools: dev/knight (run_all.sh rebuilds the previews; render jobs_game.json into game_frames + pack_game.py makes the game sheet). Originals: art/originals/knight_*.glb, mixamo_*.fbx.
 - Checked headless (430x932): dev/simfork/g267_knight.js (fight, big hit vs small hit, hop, charge wind-up/dash - screenshots out_g267_*.png), g173 sword hits ALL OK. Not checked on a phone.
 
+## v1101 - Gareth's Colossal slash (TEST)
+- Harley: "can we go bigger" -> picked "Colossal + steel blue" in the Gareth Slash FX mockup (https://claude.ai/artifact/4h4Q2wf2zHzE4qDAjmxyYL). Purely visual: hit timing / reach untouched.
+- The old arc is replaced (for heroes with slashFx) by drawHeroSlashFx: a 3-layer ribbon swept along his REAL sword path (huge soft glow, main slash, white-hot core),
+  sparks off the blade tip, and on the hit frame (impact 5) a light burst + shockwave ring + 12 rays and a small canvas shake (HERO_SLASH_SHAKE 1.5 px, 120 ms; 0 = off; not for clones).
+- The path: HERO_ANIMS.gareth.slashFx.path = blade tip + a point 35% up the blade per 1/8 attack frame, in sheet px from his feet (dev/knight/slash_path.py, from the 3D data). Never drawn below the ground line.
+- Works flipped (facing left) and on his clone (tinted sprite, untinted slash). Also in the Arena (same drawHeroAnim).
+- Checked headless: dev/simfork/g268_slashfx.js (the game's drawHeroAnim at fixed frames 3.4-6.6, normal / flipped / clone), g267, g173 ALL OK. Not checked on a phone.
+- Known: the shake fires on every swing while he fights (every 0.5 s); if it's too much, lower or zero HERO_SLASH_SHAKE.
+
