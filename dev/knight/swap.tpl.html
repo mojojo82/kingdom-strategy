@@ -37,6 +37,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     <button id="bIdle" data-a="idle" aria-pressed="false">Idle</button>
     <button id="bRun" data-a="run" aria-pressed="false">Run</button>
     <button id="bHit" data-a="hit" aria-pressed="false">Get hit</button>
+    <button id="bCharge" data-a="charge" aria-pressed="false">Charge</button>
+    <button id="bCharge" data-a="charge" aria-pressed="false">Charge</button>
     <button id="bAtk" data-a="attack" aria-pressed="true">Attack</button>
     <button id="bFight" data-a="fight" aria-pressed="false">Run in + fight</button>
     <span class="sep"></span>
@@ -51,11 +53,15 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 </div>
 <script>
 (function () {
-  var OLD = { src: "__OLD__", cw: 111.18, ch: 65.62, ax: 50.87, ay: 64.26, fig: 61, rows: { idle: [0, 8], run: [1, 16], attack: [2, 11] }, fps: { idle: 8, run: 24, attack: 22 }, pixel: true };
+  var OLD = { chargeSrc: "__OLDCHARGE__", charge: __OLDCHARGEMETA__, src: "__OLD__", cw: 111.18, ch: 65.62, ax: 50.87, ay: 64.26, fig: 61, rows: { idle: [0, 8], run: [1, 16], attack: [2, 11] }, fps: { idle: 8, run: 24, attack: 22 }, pixel: true };
   var META = __META__, NEWSRC = "__NEW__";
   var NEW = Object.assign({ src: NEWSRC, fig: 183, pixel: false }, META, { rows: { idle: META.rows.idle, run: META.rows.run, attack: META.rows.attack } });
   var MIX = Object.assign({ src: NEWSRC, fig: 183, pixel: false }, META, { rows: Object.assign({}, META.rows, { attack: META.rows.mixamo, run: META.rows.mixrun }) });
   [OLD, NEW, MIX].forEach(function (s) { s.img = new Image(); s.img.src = s.src; });
+  OLD.cImg = new Image(); OLD.cImg.src = OLD.chargeSrc; // his current single charge image, sized like the game draws it next to his sprite
+  NEW.rows.charge = META.rows.charge; MIX.rows.charge = META.rows.charge;
+  OLD.cImg = new Image(); OLD.cImg.src = OLD.chargeSrc;
+  NEW.rows.charge = META.rows.charge; MIX.rows.charge = META.rows.charge;
   var mode = "attack", zoom = "big", slow = false, push = true, t0 = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   function setPressed(attr, val) { document.querySelectorAll("[data-" + attr + "]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset[attr] === val ? "true" : "false"); }); }
   document.querySelectorAll("[data-a]").forEach(function (b) { b.onclick = function () { mode = b.dataset.a; t0 = performance.now(); setPressed("a", mode); }; });
@@ -65,6 +71,13 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   function fit(c) { var r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } return d; }
   // "Run in + fight": runs 1.2 s, then swings 4 times, then idles 1 s, repeat
   function phase(t, S) {
+    if (mode === "charge") {
+      var u = t % 2.4;
+      if (u < 0.5) return { a: "idle", t: u, x: -0.8 };
+      if (u < 0.7) return { a: "charge", f: u < 0.6 ? 0 : 1, t: 0, x: -0.8 };
+      if (u < 1.1) { var d = (u - 0.7) / 0.4; return { a: "charge", f: 2, t: 0, x: -0.8 + 1.2 * d * d * (3 - 2 * d) }; }
+      return { a: "idle", t: u - 1.1, x: 0.4 };
+    }
     if (mode !== "fight") return { a: mode, t: t, x: 0 };
     var sw = S.rows.attack[1] / S.fps.attack, L = 1.2 + 4 * sw + 1.0, u = t % L;
     if (u < 1.2) return { a: "run", t: u, x: -1 + u / 1.2 };
@@ -78,13 +91,14 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     g.fillStyle = "#2c3a26"; g.fillRect(0, ground, W, H - ground); g.fillStyle = "#3d5233"; g.fillRect(0, ground, W, 3 * d);
     var ph = phase(t, S), scroll = (mode === "run" ? t : 0) * 140 * d;
     g.fillStyle = "#34472c"; for (var k = -1; k < W / (60 * d) + 2; k++) { var gx = ((k * 60 * d - scroll) % (W + 60 * d) + W + 60 * d) % (W + 60 * d) - 30 * d; g.fillRect(gx, ground + 12 * d, 18 * d, 3 * d); }
-    var an = S.rows[ph.a] ? ph.a : "idle", figPx = (zoom === "big" ? 170 : 56) * d, sc = figPx / S.fig, row = S.rows[an], fps = S.fps[an];
-    var n = row[1], f = Math.floor(ph.t * fps) % n;
+    var an = (S.rows[ph.a] || (ph.a === "charge" && S.cImg)) ? ph.a : "idle", figPx = (zoom === "big" ? 170 : 56) * d, sc = figPx / S.fig, row = S.rows[an] || S.rows.idle, fps = S.fps[an] || 8;
+    var n = row[1], f = ph.f != null ? ph.f : Math.floor(ph.t * fps) % n;
     var cx = W * 0.42 + ph.x * W * 0.35;
     if (an === "hit" && push) { var hl = row[1] / fps, ht = (ph.t % hl), back = figPx * 0.16, u = ht < 0.18 ? 1 - Math.pow(1 - ht / 0.18, 3) : 1 - Math.min(1, (ht - 0.18) / (hl - 0.18)); cx -= back * u; }
     g.save(); g.imageSmoothingEnabled = !S.pixel;
     g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(cx, ground + 2 * d, figPx * 0.28, figPx * 0.05, 0, 0, 7); g.fill();
-    if (S.img.complete && S.img.naturalWidth) g.drawImage(S.img, f * S.cw, row[0] * S.ch, S.cw, S.ch, cx - S.ax * sc, ground - S.ay * sc, S.cw * sc, S.ch * sc);
+    if (ph.a === "charge" && S.cImg) { var C = S.charge, k2 = sc * 0.452; if (S.cImg.complete && S.cImg.naturalWidth) g.drawImage(S.cImg, cx - C.ax * k2, ground - C.ay * k2, C.w * k2, C.h * k2); }
+    else if (S.img.complete && S.img.naturalWidth) g.drawImage(S.img, f * S.cw, row[0] * S.ch, S.cw, S.ch, cx - S.ax * sc, ground - S.ay * sc, S.cw * sc, S.ch * sc);
     g.restore();
   }
   function loop(now) {

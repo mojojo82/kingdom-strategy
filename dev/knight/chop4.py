@@ -59,9 +59,10 @@ def pose(t):
         if K[a][0]<=t<=K[a+1][0]:
             u=(t-K[a][0])/(K[a+1][0]-K[a][0]); u=u*u if a==FAST else (u*(2-u) if a==CARRY else ease(u)); A,B=K[a][1],K[a+1][1]
             L=lambda x,y:tuple(np.array(x,float)*(1-u)+np.array(y,float)*u)
+            F4=lambda f:tuple(f)+(0,-1,0,0,0.97)[len(f)-4:] if len(f)>=4 else (f[0],FOOT_Y,f[1],0.0,0,-1,0,0,0.97)
             return ({k:nrm(nrm(A['dir'][k])*(1-u)+nrm(B['dir'][k])*u) for k in A['dir']},
-                    {k:L(A['rot'][k],B['rot'][k]) for k in A['rot']},{k:L(A['feet'][k],B['feet'][k]) for k in A['feet']},L(A['hip'],B['hip']))
-    Z=K[-1][1]; return ({k:nrm(v) for k,v in Z['dir'].items()},Z['rot'],Z['feet'],Z['hip'])
+                    {k:L(A['rot'][k],B['rot'][k]) for k in A['rot']},{k:L(F4(A['feet'][k]),F4(B['feet'][k])) for k in A['feet']},L(A['hip'],B['hip']))
+    Z=K[-1][1]; F4=lambda f:tuple(f)+(0,-1,0,0,0.97)[len(f)-4:] if len(f)>=4 else (f[0],FOOT_Y,f[1],0.0,0,-1,0,0,0.97); return ({k:nrm(v) for k,v in Z['dir'].items()},Z['rot'],{k:F4(v) for k,v in Z['feet'].items()},Z['hip'])
 
 d0=json.load(open('knight2.json')); Rh=np.array(d0['sword']['handR']).reshape(3,3).T
 def vrot(rx,ry,rz):
@@ -94,12 +95,12 @@ def glob(t):
         if nm in CHILD:
             c=idx['mixamorig:'+CHILD[nm]]; cur=(Gi@np.append(base[c][0],1))[:3]-Gi[:3,3]; Gi=about(Gi,align(cur,D[nm]))
         if nm in ('RightUpLeg','LeftUpLeg'):
-            side=nm[0]; H=Gi[:3,3].copy(); x,z=FT[side]; Kp,T=knee(H,np.array([x,FOOT_Y,z]),np.array([0,0,1.0])); LEG[side+'shin']=T-Kp
+            side=nm[0]; H=Gi[:3,3].copy(); x,fy,z,_,dx,dy,dz,w,rf=FT[side]; Tg=(1-w)*np.array([x,fy,z])+w*(H+nrm((dx,dy,dz))*rf*(L1+L2)); Kp,T=knee(H,Tg,np.array([0,-0.3,1.0])); LEG[side+'shin']=T-Kp
             c=nd(side+('ight' if side=='R' else 'eft')+'Leg'); cur=(Gi@np.append(base[c][0],1))[:3]-H; Gi=about(Gi,align(cur,Kp-H))
         if nm in ('RightLeg','LeftLeg'):
             c=nd(nm.replace('Leg','Foot')); cur=(Gi@np.append(base[c][0],1))[:3]-Gi[:3,3]; Gi=about(Gi,align(cur,LEG[nm[0]+'shin']))
         if nm in ('RightFoot','LeftFoot'):   # flat on the ground: same turn as at rest
-            Gi=Gi.copy(); Gi[:3,:3]=REST[i][:3,:3]
+            Gi=Gi.copy(); Gi[:3,:3]=rotX(FT[nm[0]][3])@REST[i][:3,:3]
         if i==hand_node:   # blade points along 'blade' with its flat side kept facing sideways (edge leads the chop)
             Hb=Gi[:3,:3]@IBM[hand_j][:3,:3]; cb=Hb@BLADE_BIND; cf=Hb@FLAT_BIND
             if SIGN[0] is None: SIGN[0]=1.0 if cf[0]>=0 else -1.0
@@ -117,6 +118,23 @@ def pack(fr): return base64.b64encode(np.ascontiguousarray(fr[:,:,:3,:].transpos
 chop=bake(K,TL,2,3)
 RB=copy.deepcopy(READY); RB['hip']=(0.06,0.0); RB['rot']['Spine1']=(9,-5); RB['rot']['Head']=(-7,10); RB['dir']['blade']=(0,-0.52,1); RB['dir']['RightForeArm']=(-0.05,-0.42,1); RB['dir']['LeftForeArm']=(0.15,-0.78,0.5)
 idle=bake([(0,READY),(0.5,RB),(1.0,READY)],1.0)
+# Charge (Gareth's Shield Slam lunge, from Harley's charge art): stand -> crouch -> push off -> airborne charge pose (held).
+# Sprite frames: 0.2 crouch, 0.35 push-off, 0.5 charge.
+CROUCH={'dir':{'RightArm':(-0.25,-0.85,-0.3),'RightForeArm':(-0.05,-0.3,1),'blade':(0,-0.2,1),
+               'LeftArm':(0.35,-0.85,0.25),'LeftForeArm':(0.15,-0.5,0.9)},
+        'feet':{'R':(-0.24,0.22),'L':(0.26,-0.22)},'hip':(0.19,-0.03),
+        'rot':{'Hips':(16,-8),'Spine1':(30,-8),'Head':(-26,8)}}
+LAUNCH={'dir':{'RightArm':(-0.1,-0.35,0.95),'RightForeArm':(0,-0.12,1),'blade':(0,-0.05,1),
+               'LeftArm':(0.3,-0.6,-0.7),'LeftForeArm':(0.15,-0.6,-0.7)},
+        'feet':{'R':(-0.22,0.36,0.40,25),'L':(0.24,0.185,-0.34,0)},'hip':(0.02,0.1),
+        'rot':{'Hips':(26,8),'Spine1':(38,10),'Head':(-36,-8)}}
+CHARGE={'dir':{'RightArm':(-0.05,0.04,1),'RightForeArm':(0,0.04,1),'blade':(0,0.04,1),             # sword arm thrust straight ahead
+               'LeftArm':(0.3,-0.35,-0.9),'LeftForeArm':(0.15,-0.5,-0.85)},
+        # front leg tucked under (knee bent), back leg trailing behind with a slight bend - like Harley's charge art
+        'feet':{'R':(-0.12,0.5,0.0,45,-0.04,-1,-0.25,1,0.72),'L':(0.12,0.5,-0.3,80,0.04,-0.5,-1,1,0.85)},
+        'hip':(-0.16,0.15),
+        'rot':{'Hips':(42,12),'Spine1':(20,12),'Head':(-46,-12)}}                                    # leaning well forward, head up
+charge=bake([(0,READY),(0.2,CROUCH),(0.35,LAUNCH),(0.5,CHARGE),(0.8,CHARGE),(1.0,READY)],1.0)
 d=json.load(open('knight2.json'))
-d['anims']={'Overhead Chop':{'len':1.1,'frames':pack(chop)},'Idle (ready)':{'len':1.0,'frames':pack(idle)}, **d['anims']}
+d['anims']={'Overhead Chop':{'len':1.1,'frames':pack(chop)},'Idle (ready)':{'len':1.0,'frames':pack(idle)},'Charge':{'len':1.0,'frames':pack(charge)}, **d['anims']}
 json.dump(d,open('knight3.json','w')); print('chop',chop.shape,'idle',idle.shape)
