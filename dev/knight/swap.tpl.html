@@ -1,0 +1,95 @@
+<meta charset="utf-8">
+<title>Gareth Sprite Swap</title>
+<style>
+/* Layout: two matching battle stages (current sprite vs new 3D render) over one shared control bar - game palette: navy night, bronze frames, gold titles, flat cyan buttons */
+:root {
+  --night: #0b1120; --panel: #1a1410; --bronze: #8a6a3a; --gold: #f0c95f; --ink: #e9e4d6; --dim: #9aa3b5; --cyan: #3ec8e0; --cyan-ink: #06222a;
+  --display: Georgia, "Times New Roman", serif; --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+html, body { background: var(--night); color: var(--ink); font-family: var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 16px 28px; padding-inline: 16px; display: grid; gap: 14px; }
+h1 { margin: 0; font-family: var(--display); color: var(--gold); font-size: 1.45rem; text-wrap: balance; }
+.sub { color: var(--dim); font-size: .9rem; margin-top: 4px; max-width: 65ch; }
+.stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 640px) { .stages { grid-template-columns: 1fr; } }
+.stage { border: 2px solid var(--bronze); border-radius: 12px; overflow: hidden; background: var(--panel); min-width: 0; }
+.stage h2 { margin: 0; padding: 8px 12px; font: 600 .78rem/1.2 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--bronze); display: flex; justify-content: space-between; gap: 8px; }
+.stage h2 span { color: var(--dim); letter-spacing: .02em; text-transform: none; font-weight: 400; }
+canvas { display: block; width: 100%; height: 260px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border: 2px solid var(--bronze); border-radius: 12px; background: var(--panel); padding: 10px 12px; }
+.bar .lbl { color: var(--dim); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; margin-right: 2px; }
+.bar .sep { width: 1px; height: 24px; background: var(--bronze); margin-inline: 6px; }
+button { font: 600 .9rem var(--body); color: var(--cyan-ink); background: var(--cyan); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+button[aria-pressed="false"] { background: transparent; color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.note { color: var(--dim); font-size: .85rem; max-width: 70ch; }
+</style>
+<div class="wrap">
+  <header><h1>Gareth Sprite Swap</h1><div class="sub">The current pixel Gareth next to the 3D knight rendered as sprite frames from the game's side view, with the chosen Mixamo set (slash, Standard Run, impact) and the earlier overhead chop for comparison. Same frame rates as the game: idle 8 fps, run 24 fps, attack 22 fps.</div></header>
+  <div class="stages">
+    <section class="stage"><h2>Now <span>current</span></h2><canvas id="cOld" aria-label="Current Gareth sprite"></canvas></section>
+    <section class="stage"><h2>New: chop <span>earlier try</span></h2><canvas id="cNew" aria-label="New 3D knight, overhead chop"></canvas></section>
+    <section class="stage"><h2>New: Mixamo set <span>slash · run · hit</span></h2><canvas id="cMix" aria-label="New 3D knight, Mixamo slash"></canvas></section>
+  </div>
+  <div class="bar" role="group" aria-label="Controls">
+    <span class="lbl">Play</span>
+    <button id="bIdle" data-a="idle" aria-pressed="false">Idle</button>
+    <button id="bRun" data-a="run" aria-pressed="false">Run</button>
+    <button id="bHit" data-a="hit" aria-pressed="false">Get hit</button>
+    <button id="bAtk" data-a="attack" aria-pressed="true">Attack</button>
+    <button id="bFight" data-a="fight" aria-pressed="false">Run in + fight</button>
+    <span class="sep"></span>
+    <span class="lbl">Size</span>
+    <button id="zBattle" data-z="battle" aria-pressed="false">Battle size</button>
+    <button id="zBig" data-z="big" aria-pressed="true">Close up</button>
+    <span class="sep"></span>
+    <button id="bSlow" aria-pressed="false">Slow-mo</button>
+  </div>
+  <p class="note">"Idle" for the new knight is a stand-in (breathing ready stance) until a proper idle is made. "Get hit" only exists for the Mixamo set (the others stand idle). Charge is not in this mockup yet.</p>
+</div>
+<script>
+(function () {
+  var OLD = { src: "__OLD__", cw: 111.18, ch: 65.62, ax: 50.87, ay: 64.26, fig: 61, rows: { idle: [0, 8], run: [1, 16], attack: [2, 11] }, fps: { idle: 8, run: 24, attack: 22 }, pixel: true };
+  var META = __META__, NEWSRC = "__NEW__";
+  var NEW = Object.assign({ src: NEWSRC, fig: 183, pixel: false }, META, { rows: { idle: META.rows.idle, run: META.rows.run, attack: META.rows.attack } });
+  var MIX = Object.assign({ src: NEWSRC, fig: 183, pixel: false }, META, { rows: Object.assign({}, META.rows, { attack: META.rows.mixamo, run: META.rows.mixrun }) });
+  [OLD, NEW, MIX].forEach(function (s) { s.img = new Image(); s.img.src = s.src; });
+  var mode = "attack", zoom = "big", slow = false, t0 = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function setPressed(attr, val) { document.querySelectorAll("[data-" + attr + "]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset[attr] === val ? "true" : "false"); }); }
+  document.querySelectorAll("[data-a]").forEach(function (b) { b.onclick = function () { mode = b.dataset.a; t0 = performance.now(); setPressed("a", mode); }; });
+  document.querySelectorAll("[data-z]").forEach(function (b) { b.onclick = function () { zoom = b.dataset.z; setPressed("z", zoom); }; });
+  document.getElementById("bSlow").onclick = function () { slow = !slow; this.setAttribute("aria-pressed", slow ? "true" : "false"); };
+  function fit(c) { var r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } return d; }
+  // "Run in + fight": runs 1.2 s, then swings 4 times, then idles 1 s, repeat
+  function phase(t, S) {
+    if (mode !== "fight") return { a: mode, t: t, x: 0 };
+    var sw = S.rows.attack[1] / S.fps.attack, L = 1.2 + 4 * sw + 1.0, u = t % L;
+    if (u < 1.2) return { a: "run", t: u, x: -1 + u / 1.2 };
+    if (u < 1.2 + 4 * sw) return { a: "attack", t: u - 1.2, x: 0 };
+    return { a: "idle", t: u - 1.2 - 4 * sw, x: 0 };
+  }
+  function draw(c, S, t) {
+    var d = fit(c), g = c.getContext("2d"), W = c.width, H = c.height, ground = H * 0.8;
+    g.clearRect(0, 0, W, H);
+    var sky = g.createLinearGradient(0, 0, 0, ground); sky.addColorStop(0, "#14213d"); sky.addColorStop(1, "#24365a"); g.fillStyle = sky; g.fillRect(0, 0, W, ground);
+    g.fillStyle = "#2c3a26"; g.fillRect(0, ground, W, H - ground); g.fillStyle = "#3d5233"; g.fillRect(0, ground, W, 3 * d);
+    var ph = phase(t, S), scroll = (mode === "run" ? t : 0) * 140 * d;
+    g.fillStyle = "#34472c"; for (var k = -1; k < W / (60 * d) + 2; k++) { var gx = ((k * 60 * d - scroll) % (W + 60 * d) + W + 60 * d) % (W + 60 * d) - 30 * d; g.fillRect(gx, ground + 12 * d, 18 * d, 3 * d); }
+    var an = S.rows[ph.a] ? ph.a : "idle", figPx = (zoom === "big" ? 170 : 56) * d, sc = figPx / S.fig, row = S.rows[an], fps = S.fps[an];
+    var n = row[1], f = Math.floor(ph.t * fps) % n;
+    var cx = W * 0.42 + ph.x * W * 0.35;
+    g.save(); g.imageSmoothingEnabled = !S.pixel;
+    g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(cx, ground + 2 * d, figPx * 0.28, figPx * 0.05, 0, 0, 7); g.fill();
+    if (S.img.complete && S.img.naturalWidth) g.drawImage(S.img, f * S.cw, row[0] * S.ch, S.cw, S.ch, cx - S.ax * sc, ground - S.ay * sc, S.cw * sc, S.ch * sc);
+    g.restore();
+  }
+  function loop(now) {
+    var t = (now - t0) / 1000 * (slow ? 0.25 : 1);
+    if (still) t = 0.2;
+    draw(document.getElementById("cOld"), OLD, t); draw(document.getElementById("cNew"), NEW, t); draw(document.getElementById("cMix"), MIX, t);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>

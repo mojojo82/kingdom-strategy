@@ -1,0 +1,160 @@
+<meta charset="utf-8">
+<title>Knight Sword Fitting</title>
+<style>
+/* Layout: a hero-screen-shaped stage with the animated knight (the thing being judged), a slim control row under it. Single dark look like the game (navy + gold, bronze frame). */
+:root { --night: #070b14; --panel: #101a2e; --line: #26385c; --ink: #eef3fb; --muted: #93a2bd; --gold: #f0c95f; --cyan: #3fc6e0; --bronze: #8a6a3a; color-scheme: dark; }
+[hidden] { display: none !important; }
+html, body { background: var(--night); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 14px 26px; padding-inline: 16px; display: grid; gap: 12px; }
+h1 { margin: 0; font: 700 20px Georgia, serif; color: var(--gold); }
+.sub { color: var(--muted); font-size: 13px; }
+.stage { position: relative; height: min(66vh, 560px); min-height: 360px; border-radius: 14px; overflow: hidden; border: 2px solid var(--bronze); background: radial-gradient(60% 55% at 50% 45%, #2a3e66 0%, #121c33 60%, #070b14 100%); touch-action: none; cursor: grab; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.plate { position: absolute; left: 50%; bottom: 7%; width: 46%; aspect-ratio: 3 / 1; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(240,201,95,.28), rgba(240,201,95,.08) 60%, rgba(0,0,0,0)); pointer-events: none; }
+.name { position: absolute; left: 14px; top: 12px; font: 700 18px Georgia, serif; color: var(--gold); text-shadow: 0 2px 6px rgba(0,0,0,.6); pointer-events: none; }
+.name small { display: block; font: 700 11px system-ui, sans-serif; color: var(--muted); letter-spacing: .06em; }
+.ctl { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: var(--muted); font-weight: 700; }
+.ctl select { background: var(--night); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font: 700 13px system-ui, sans-serif; }
+.ctl input[type=range] { width: 110px; accent-color: var(--cyan); }
+.ctl label { display: flex; align-items: center; gap: 6px; }
+.ctl select:focus-visible, .ctl input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.err { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); padding: 20px; text-align: center; }
+</style>
+<div class="wrap">
+  <header><h1>Knight Sword Fitting</h1><div class="sub">The sword is cut from Harley's sword-holding knight and fixed to the rigged knight's right-hand bone, so it follows every animation without bending · use the grip sliders to seat it in the fist</div></header>
+  <div class="stage" id="stage"><div class="plate"></div><canvas id="cv" aria-label="Animated knight"></canvas><div class="name">Knight<small>HERO PREVIEW</small></div><div class="err" id="err" hidden>WebGL is switched off in this browser.</div></div>
+  <div class="ctl">
+    <label for="anim">Animation <select id="anim"></select></label>
+    <label for="speed">Speed <input type="range" id="speed" min="0.2" max="1.5" step="0.05" value="1"></label>
+    <label for="look">Look <select id="look"><option value="cel">Cel shaded</option><option value="smooth">Smooth</option></select></label>
+    <label for="outline">Outline <select id="outline"><option value="1">On</option><option value="0">Off</option></select></label>
+    <label for="spin">Turn <select id="spin"><option value="2" selected>Game side view</option><option value="0">Hold angle</option><option value="1">Slow spin</option></select></label>
+  </div>
+  <div class="ctl" id="grip">
+    <b style="color:var(--gold)">Grip</b>
+    <label for="rx">Tilt <input type="range" id="rx" min="-180" max="180" step="1"></label>
+    <label for="ry">Twist <input type="range" id="ry" min="-180" max="180" step="1"></label>
+    <label for="rz">Lean <input type="range" id="rz" min="-180" max="180" step="1"></label>
+    <label for="ox">Move X <input type="range" id="ox" min="-0.25" max="0.25" step="0.005"></label>
+    <label for="oy">Move Y <input type="range" id="oy" min="-0.25" max="0.25" step="0.005"></label>
+    <label for="oz">Move Z <input type="range" id="oz" min="-0.25" max="0.25" step="0.005"></label>
+    <label for="ss">Size <input type="range" id="ss" min="0.5" max="1.5" step="0.01"></label>
+    <span id="gripV" style="font:12px ui-monospace,Menlo,monospace;color:var(--ink)"></span>
+  </div>
+</div>
+<script>__KNIGHT__</script>
+<script>
+(function () {
+  var K = window.KNIGHT, cv = document.getElementById("cv"), stage = document.getElementById("stage");
+  var gl = cv.getContext("webgl", { antialias: true, alpha: true });
+  if (!gl) { document.getElementById("err").hidden = false; return; }
+  function dec(b, T) { var s = atob(b), u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return new T(u.buffer); }
+  var P = dec(K.p, Float32Array), N = dec(K.n, Float32Array), UV = dec(K.uv, Float32Array), JI = dec(K.j, Uint8Array), WT = dec(K.w, Float32Array), IDX = dec(K.i, Uint16Array);
+  var NV = P.length / 3, SP = new Float32Array(NV * 3), SN = new Float32Array(NV * 3), NJ = K.nj;
+  var ANIMS = {}; Object.keys(K.anims).forEach(function (k) { ANIMS[k] = { len: K.anims[k].len, f: dec(K.anims[k].frames, Float32Array) }; ANIMS[k].n = ANIMS[k].f.length / (NJ * 12); });
+  var sel = document.getElementById("anim"); Object.keys(ANIMS).concat(["Still"]).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = k; sel.appendChild(o); });
+  var VS = ["attribute vec3 aP; attribute vec3 aN; attribute vec2 aUV; uniform mat4 uVP; uniform mat3 uR; uniform float uOut; varying vec3 vN; varying vec2 vUV;",
+    "void main(){ vec3 n = normalize(uR * aN); vec3 p = uR * aP + n * uOut; vN = n; vUV = aUV; gl_Position = uVP * vec4(p, 1.0); }"].join("\n");
+  var FS = ["precision mediump float; uniform sampler2D tB; uniform vec3 uL, uV; uniform float uCel, uOutPass; varying vec3 vN; varying vec2 vUV;",
+    "void main(){ if (uOutPass > 0.5) { gl_FragColor = vec4(0.07, 0.06, 0.08, 1.0); return; }",
+    "  vec3 base = texture2D(tB, vUV).rgb; vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N; float d = dot(N, uL);",
+    "  float lit = uCel > 0.5 ? (d > 0.15 ? 1.0 : d > -0.35 ? 0.72 : 0.5) : 0.5 + 0.5 * max(d, 0.0) + 0.12;",   /* cel: 3 hard steps; smooth: soft falloff */
+    "  vec3 shadowTint = mix(vec3(0.78, 0.84, 1.08), vec3(1.0), lit);",
+    "  vec3 H = normalize(uL + uV); float sp = uCel > 0.5 ? step(0.94, dot(N, H)) * 0.25 : pow(max(dot(N, H), 0.0), 40.0) * 0.35;",
+    "  float rim = uCel > 0.5 ? step(0.72, 1.0 - max(dot(N, uV), 0.0)) * 0.12 : 0.0;",                                      /* thin pale rim, like the map art */
+    "  gl_FragColor = vec4(min(base * lit * 1.18 * shadowTint + sp + rim, 1.0), 1.0); }"].join("\n");
+  function sh(t, s) { var o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
+  var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+  var U = {}; ["uVP", "uR", "uOut", "tB", "uL", "uV", "uCel", "uOutPass"].forEach(function (k) { U[k] = gl.getUniformLocation(pr, k); });
+  function ab(data, attr, n, dyn) { var b = gl.createBuffer(), l = gl.getAttribLocation(pr, attr); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, dyn ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, n, gl.FLOAT, false, 0, 0); return b; }
+  var bP = ab(SP, "aP", 3, true), bN = ab(SN, "aN", 3, true), uvBuf = ab(UV, "aUV", 2);
+  var ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, IDX, gl.STATIC_DRAW);
+  var tex = gl.createTexture(), im = new Image(); gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([200, 200, 200, 255]));
+  im.onload = function () { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im); gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); };
+  im.src = K.tex; gl.uniform1i(U.tB, 0);
+  /* ---- the sword: its own mesh + texture, carried by the right-hand bone ---- */
+  var S = K.sword, SL = dec(S.p, Float32Array), SNl = dec(S.n, Float32Array), SUV = dec(S.uv, Float32Array), SI = dec(S.i, Uint16Array), SNV = SL.length / 3, KS = 2.43;
+  var SB = new Float32Array(SNV * 3), SBN = new Float32Array(SNV * 3), SW = new Float32Array(SNV * 3), SWN = new Float32Array(SNV * 3);
+  function sbuf(data) { var b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW); return b; }
+  var sbP = sbuf(SW), sbN = sbuf(SWN), sbUV = sbuf(SUV), sib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, SI, gl.STATIC_DRAW);
+  var stex = gl.createTexture(), sim = new Image(); gl.bindTexture(gl.TEXTURE_2D, stex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([200, 200, 200, 255]));
+  sim.onload = function () { gl.bindTexture(gl.TEXTURE_2D, stex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sim); gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); };
+  sim.src = S.tex;
+  var GR = { rx: 0, ry: 90, rz: -90, ox: 0, oy: 0, oz: 0, ss: 1 }; Object.assign(GR, window.__GRIP || {});
+  ["rx", "ry", "rz", "ox", "oy", "oz", "ss"].forEach(function (k) { var el = document.getElementById(k); el.value = GR[k]; el.addEventListener("input", function () { GR[k] = +el.value; seat(); }); });
+  function rot(rx, ry, rz) { var a = rx * Math.PI / 180, b = ry * Math.PI / 180, c = rz * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+    var X = [1, 0, 0, 0, ca, -sa, 0, sa, ca], Y = [cb, 0, sb, 0, 1, 0, -sb, 0, cb], Z = [cc, -sc, 0, sc, cc, 0, 0, 0, 1];
+    function m(p, q) { var o = []; for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) o.push(p[i * 3] * q[j] + p[i * 3 + 1] * q[3 + j] + p[i * 3 + 2] * q[6 + j]); return o; } return m(m(Z, Y), X); }
+  /* bind position of every sword point: hand origin + hand axes x (grip rotation x sword point x size) + nudge */
+  function seat() {
+    var R = rot(GR.rx, GR.ry, GR.rz), H = S.handR, O = S.handO, k = KS * GR.ss;
+    for (var v = 0; v < SNV; v++) for (var pass = 0; pass < 2; pass++) {
+      var src = pass ? SNl : SL, x = src[v * 3], y = src[v * 3 + 1], z = src[v * 3 + 2];
+      var a = R[0] * x + R[1] * y + R[2] * z, b = R[3] * x + R[4] * y + R[5] * z, c = R[6] * x + R[7] * y + R[8] * z;
+      if (!pass) { a = a * k + GR.ox; b = b * k + GR.oy; c = c * k + GR.oz; }
+      var wx = H[0] * a + H[3] * b + H[6] * c, wy = H[1] * a + H[4] * b + H[7] * c, wz = H[2] * a + H[5] * b + H[8] * c;   /* hand-local -> mesh space (H rows = hand X,Y,Z axes) */
+      if (!pass) { SB[v * 3] = wx + O[0]; SB[v * 3 + 1] = wy + O[1]; SB[v * 3 + 2] = wz + O[2]; } else { SBN[v * 3] = wx; SBN[v * 3 + 1] = wy; SBN[v * 3 + 2] = wz; }
+    }
+    document.getElementById("gripV").textContent = "tilt " + GR.rx + " · twist " + GR.ry + " · lean " + GR.rz + " · move " + GR.ox + "/" + GR.oy + "/" + GR.oz + " · size " + GR.ss;
+  }
+  seat();
+  gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE);
+  /* CPU skinning: each vertex = weighted blend of its 4 bones' matrices (frames are 3x4, column-major), blended between the two nearest frames */
+  var MB = new Float32Array(NJ * 12);
+  function pose(a, t) {
+    var A = ANIMS[a]; if (!A) { SP.set(P); SN.set(N); return; }
+    var x = (t % A.len) / A.len * A.n, f0 = Math.floor(x) % A.n, f1 = (f0 + 1) % A.n, u = x - Math.floor(x), o0 = f0 * NJ * 12, o1 = f1 * NJ * 12;
+    for (var i = 0; i < NJ * 12; i++) MB[i] = A.f[o0 + i] * (1 - u) + A.f[o1 + i] * u;
+    for (var v = 0; v < NV; v++) {
+      var m0 = 0, m1 = 0, m2 = 0, m3 = 0, m4 = 0, m5 = 0, m6 = 0, m7 = 0, m8 = 0, m9 = 0, m10 = 0, m11 = 0;
+      for (var k = 0; k < 4; k++) { var w = WT[v * 4 + k]; if (!w) continue; var b = JI[v * 4 + k] * 12;
+        m0 += w * MB[b]; m1 += w * MB[b + 1]; m2 += w * MB[b + 2]; m3 += w * MB[b + 3]; m4 += w * MB[b + 4]; m5 += w * MB[b + 5]; m6 += w * MB[b + 6]; m7 += w * MB[b + 7]; m8 += w * MB[b + 8]; m9 += w * MB[b + 9]; m10 += w * MB[b + 10]; m11 += w * MB[b + 11]; }
+      var px = P[v * 3], py = P[v * 3 + 1], pz = P[v * 3 + 2], nx = N[v * 3], ny = N[v * 3 + 1], nz = N[v * 3 + 2];
+      SP[v * 3] = m0 * px + m3 * py + m6 * pz + m9; SP[v * 3 + 1] = m1 * px + m4 * py + m7 * pz + m10; SP[v * 3 + 2] = m2 * px + m5 * py + m8 * pz + m11;
+      SN[v * 3] = m0 * nx + m3 * ny + m6 * nz; SN[v * 3 + 1] = m1 * nx + m4 * ny + m7 * nz; SN[v * 3 + 2] = m2 * nx + m5 * ny + m8 * nz;
+    }
+  }
+  function persp(f, a, n, fa) { var t = 1 / Math.tan(f / 2); return [t / a, 0, 0, 0, 0, t, 0, 0, 0, 0, (fa + n) / (n - fa), -1, 0, 0, 2 * fa * n / (n - fa), 0]; }
+  function mul(a, b) { var o = new Array(16); for (var c = 0; c < 4; c++) for (var r = 0; r < 4; r++) { var s = 0; for (var k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s; } return o; }
+  function look(e, c) { var z = [e[0] - c[0], e[1] - c[1], e[2] - c[2]], l = Math.hypot(z[0], z[1], z[2]); z = z.map(function (v) { return v / l; }); var x = [z[2], 0, -z[0]], lx = Math.hypot(x[0], x[2]) || 1; x = [x[0] / lx, 0, x[2] / lx];
+    var y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    return [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -(x[0] * e[0] + x[1] * e[1] + x[2] * e[2]), -(y[0] * e[0] + y[1] * e[1] + y[2] * e[2]), -(z[0] * e[0] + z[1] * e[1] + z[2] * e[2]), 1]; }
+  var ui = { anim: sel, speed: document.getElementById("speed"), look: document.getElementById("look"), outline: document.getElementById("outline"), spin: document.getElementById("spin") };
+  var ang = -0.6, t = 0, last = performance.now(), drag = null, W = 0, H = 0, still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (still) ui.anim.value = "Still";
+  function size() { var r = stage.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W * d); cv.height = Math.round(H * d); gl.viewport(0, 0, cv.width, cv.height); }
+  window.__setT = function (v) { t = v; }; window.__setAng = function (v) { ang = v; };
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!document.hidden && !window.__pause) { t += dt * +ui.speed.value; if (ui.spin.value === "1" && !drag) ang += 0.3 * dt; } if (ui.spin.value === "2") { ang = -Math.PI / 2; cv.style.transform = "scaleX(-1)"; } else cv.style.transform = "";
+    pose(ui.anim.value, t);
+    var hb = K.hand * 12, A = ANIMS[ui.anim.value], h = A ? MB : null;
+    for (var v = 0; v < SNV; v++) { var px = SB[v * 3], py = SB[v * 3 + 1], pz = SB[v * 3 + 2], nx = SBN[v * 3], ny = SBN[v * 3 + 1], nz = SBN[v * 3 + 2];
+      if (!h) { SW[v * 3] = px; SW[v * 3 + 1] = py; SW[v * 3 + 2] = pz; SWN[v * 3] = nx; SWN[v * 3 + 1] = ny; SWN[v * 3 + 2] = nz; continue; }
+      SW[v * 3] = h[hb] * px + h[hb + 3] * py + h[hb + 6] * pz + h[hb + 9]; SW[v * 3 + 1] = h[hb + 1] * px + h[hb + 4] * py + h[hb + 7] * pz + h[hb + 10]; SW[v * 3 + 2] = h[hb + 2] * px + h[hb + 5] * py + h[hb + 8] * pz + h[hb + 11];
+      SWN[v * 3] = h[hb] * nx + h[hb + 3] * ny + h[hb + 6] * nz; SWN[v * 3 + 1] = h[hb + 1] * nx + h[hb + 4] * ny + h[hb + 7] * nz; SWN[v * 3 + 2] = h[hb + 2] * nx + h[hb + 5] * ny + h[hb + 8] * nz; }
+    gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.bufferSubData(gl.ARRAY_BUFFER, 0, SP); gl.bindBuffer(gl.ARRAY_BUFFER, bN); gl.bufferSubData(gl.ARRAY_BUFFER, 0, SN);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    var cam = [0, 1.55, 5.2], VP = mul(persp(0.62, W / Math.max(1, H), 0.1, 30), look(cam, [0, 1.15, 0]));
+    var c = Math.cos(ang), s = Math.sin(ang), R = [c, 0, -s, 0, 1, 0, s, 0, c];
+    gl.uniformMatrix4fv(U.uVP, false, new Float32Array(VP)); gl.uniformMatrix3fv(U.uR, false, new Float32Array(R));
+    var L = [-0.55, 0.65, 0.55], ll = Math.hypot(L[0], L[1], L[2]); gl.uniform3fv(U.uL, L.map(function (v) { return v / ll; })); gl.uniform3fv(U.uV, [0, 0.27, 0.96]);
+    gl.uniform1f(U.uCel, ui.look.value === "cel" ? 1 : 0); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+    if (ui.outline.value === "1") { gl.cullFace(gl.FRONT); gl.uniform1f(U.uOutPass, 1); gl.uniform1f(U.uOut, 0.012); gl.drawElements(gl.TRIANGLES, IDX.length, gl.UNSIGNED_SHORT, 0); }
+    gl.cullFace(gl.BACK); gl.disable(gl.CULL_FACE); gl.uniform1f(U.uOutPass, 0); gl.uniform1f(U.uOut, 0); gl.drawElements(gl.TRIANGLES, IDX.length, gl.UNSIGNED_SHORT, 0); gl.enable(gl.CULL_FACE);
+    var lP = gl.getAttribLocation(pr, "aP"), lN = gl.getAttribLocation(pr, "aN"), lU = gl.getAttribLocation(pr, "aUV");
+    gl.bindBuffer(gl.ARRAY_BUFFER, sbP); gl.bufferSubData(gl.ARRAY_BUFFER, 0, SW); gl.vertexAttribPointer(lP, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, sbN); gl.bufferSubData(gl.ARRAY_BUFFER, 0, SWN); gl.vertexAttribPointer(lN, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, sbUV); gl.vertexAttribPointer(lU, 2, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sib); gl.bindTexture(gl.TEXTURE_2D, stex);
+    if (ui.outline.value === "1") { gl.cullFace(gl.FRONT); gl.uniform1f(U.uOutPass, 1); gl.uniform1f(U.uOut, 0.012); gl.drawElements(gl.TRIANGLES, SI.length, gl.UNSIGNED_SHORT, 0); }
+    gl.disable(gl.CULL_FACE); gl.uniform1f(U.uOutPass, 0); gl.uniform1f(U.uOut, 0); gl.drawElements(gl.TRIANGLES, SI.length, gl.UNSIGNED_SHORT, 0); gl.enable(gl.CULL_FACE);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.vertexAttribPointer(lP, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, bN); gl.vertexAttribPointer(lN, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuf); gl.vertexAttribPointer(lU, 2, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bindTexture(gl.TEXTURE_2D, tex);
+    requestAnimationFrame(frame);
+  }
+  stage.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, a: ang }; stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener("pointermove", function (e) { if (drag) ang = drag.a + (e.clientX - drag.x) * 0.01; });
+  stage.addEventListener("pointerup", function () { drag = null; });
+  window.addEventListener("resize", size); if (window.ResizeObserver) new ResizeObserver(size).observe(stage); size(); requestAnimationFrame(frame);
+})();
+</script>
