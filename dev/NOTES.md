@@ -1553,3 +1553,7 @@
   inner edge at 62%), instead of following the blade across his body (that one washed over him). heroSlashArcPath builds it in the blade-path format on first use.
 - Mockup updated ("Colossal overhead" style). Checked headless: g268 (normal / flipped / clone), g267 OK. Not checked on a phone.
 
+## v1103 - Gareth's HP + limit bars a bit higher (TEST)
+- Harley: "move gareths 2 bars up a little more" - they sat on the 3D knight's helmet plume. New per-hero knob barLift (game units x hero scale) on HERO_ANIMS; Gareth 5. Conquest bars only
+  (the Arena draws its own bars). Checked headless before/after at 3x DPR. Not checked on a phone.
+
