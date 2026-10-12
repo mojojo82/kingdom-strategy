@@ -34,7 +34,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       <button data-s="trail" aria-pressed="false">Blade trail</button>
       <button data-s="crescent" aria-pressed="false">Big crescent</button>
       <button data-s="storm" aria-pressed="false">Storm</button>
-      <button data-s="colossal" aria-pressed="true">Colossal</button></div>
+      <button data-s="colossal" aria-pressed="false">Colossal</button>
+      <button data-s="overhead" aria-pressed="true">Colossal overhead</button></div>
     <div class="row"><span class="lbl">Colour</span>
       <button data-c="steel" aria-pressed="true">Steel blue</button>
       <button data-c="gold" aria-pressed="false">Holy gold</button>
@@ -47,11 +48,11 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 </div>
 <script>
 (function () {
-  var SHEET = "__SHEET__", G = __META__, PATH = __PATH__;
+  var SHEET = "__SHEET__", G = __META__, PATH0 = __PATH__;
   var img = new Image(); img.src = SHEET;
-  var NAMES = { current: "the arc he has now", trail: "ribbon on the real blade path", crescent: "wide ribbon past the tip", storm: "crescent + sparks + hit flash", colossal: "huge 3-layer slash + burst + shake" };
+  var NAMES = { current: "the arc he has now", trail: "ribbon on the real blade path", crescent: "wide ribbon past the tip", storm: "crescent + sparks + hit flash", colossal: "huge 3-layer slash + burst + shake", overhead: "Colossal, sweeping over his head" };
   var COL = { steel: [[255, 255, 255], [160, 215, 255], [70, 130, 255]], gold: [[255, 252, 225], [255, 214, 110], [230, 140, 20]], fire: [[255, 245, 200], [255, 150, 40], [210, 40, 0]] };
-  var style = "colossal", col = "steel", slow = false, paused = false, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var style = "overhead", col = "steel", slow = false, paused = false, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   var clock = 0, last = performance.now();
   function press(attr, v) { document.querySelectorAll("[data-" + attr + "]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset[attr] === v ? "true" : "false"); }); }
   document.querySelectorAll("[data-s]").forEach(function (b) { b.onclick = function () { style = b.dataset.s; press("s", style); sparks.length = 0; label(); }; });
@@ -61,7 +62,11 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   function label() { document.getElementById("styleName").textContent = NAMES[style]; } label();
   function rgba(c, a) { return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + Math.max(0, Math.min(1, a)).toFixed(3) + ")"; }
   // sword path at attack-frame position f (0..11): [tipX, tipY, midX, midY] in sheet px from his feet
-  function pathAt(f) { var n = PATH.pts.length, x = ((f * PATH.perFrame) % n + n) % n, i = Math.floor(x), j = (i + 1) % n, u = x - i, a = PATH.pts[i], b = PATH.pts[j]; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u]; }
+  function pathAt(f) { var PATH = style === "overhead" ? ARCPATH : PATH0, n = PATH.pts.length, x = ((f * PATH.perFrame) % n + n) % n, i = Math.floor(x), j = (i + 1) % n, u = x - i, a = PATH.pts[i], b = PATH.pts[j]; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u]; }
+  // Colossal overhead: the same layers, but swept round a fixed circle over his head (like the old arc) instead of along the blade
+  var ARC = { cx: 8, cy: -55, R: 70, inner: 0.62, a0: -2.35, a1: 0.8, from: 2.6, to: 6.4 };
+  var ARCPATH = (function () { var pts = [], A = ARC; for (var q = 0; q < 11 * 8; q++) { var f = q / 8, u = Math.max(0, Math.min(1, (f - A.from) / (A.to - A.from))), e = 1 - Math.pow(1 - u, 1.6), an = A.a0 + (A.a1 - A.a0) * e, c = Math.cos(an), s = Math.sin(an);
+    pts.push([A.cx + c * A.R, A.cy + s * A.R, A.cx + c * A.R * A.inner, A.cy + s * A.R * A.inner]); } return { perFrame: 8, pts: pts }; })();
   var STRIKE0 = 2.8, STRIKE1 = 6.9, HIT = 5; // frames where the blade is really moving / the hit
   function env(f) { if (f < STRIKE0 || f > STRIKE1) return 0; var u = (f - STRIKE0) / (STRIKE1 - STRIKE0); return Math.min(1, u * 4) * Math.min(1, (1 - u) * 3.2); }
   var sparks = [];
@@ -102,7 +107,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   }
   function draw(c, figPx, f, dt, small) {
     var d = fit(c), g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.84, k = figPx * d / 122, ox = W * 0.42, oy = gy;
-    var shk = (style === "colossal" && f >= HIT && f < HIT + 2) ? (1 - (f - HIT) / 2) * 4 * d * (small ? 0.5 : 1) : 0;
+    var shk = ((style === "colossal" || style === "overhead") && f >= HIT && f < HIT + 2) ? (1 - (f - HIT) / 2) * 4 * d * (small ? 0.5 : 1) : 0;
     g.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
     g.clearRect(-20, -20, W + 40, H + 40); ground(g, W, H, gy, d);
     // training dummy at the end of his reach
@@ -124,12 +129,12 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       ribbon(g, ox, oy, k, f, 2.6, 1.32, -0.1, a * 0.45, cols, true);   // soft wide glow
       ribbon(g, ox, oy, k, f, 2.2, 1.18, 0.15, a, cols, false);          // main crescent
     }
-    if (style === "colossal" && a > 0) {
+    if ((style === "colossal" || style === "overhead") && a > 0) {
       ribbon(g, ox, oy, k, f, 3.4, 1.95, -0.35, a * 0.38, cols, true);   // huge soft glow
       ribbon(g, ox, oy, k, f, 2.9, 1.62, 0.0, a, cols, false);           // main slash
       ribbon(g, ox, oy, k, f, 1.7, 1.28, 0.62, a, [[255, 255, 255], cols[0], cols[1]], false); // white-hot core
     }
-    if (style === "colossal") {
+    if (style === "colossal" || style === "overhead") {
       var cp = pathAt(f), ctx2 = ox + cp[0] * k, cty = oy + Math.min(cp[1], -2) * k;
       if (a > 0.2 && dt > 0) for (var s3 = 0; s3 < 5; s3++) sparks.push({ x: ctx2, y: cty, vx: (Math.random() - 0.25) * 420 * d * (small ? 0.4 : 1), vy: (Math.random() - 0.75) * 340 * d * (small ? 0.4 : 1), life: 0, max: 0.3 + Math.random() * 0.4 });
       var hf2 = f - HIT; if (hf2 >= 0 && hf2 < 3.2) { var q2 = hf2 / 3.2, ph2 = pathAt(HIT), bx = ox + (ph2[0] + ph2[2]) / 2 * k, by = oy + Math.min((ph2[1] + ph2[3]) / 2, -14) * k, R2 = (10 + 62 * Math.pow(q2, 0.6)) * k;
@@ -143,14 +148,14 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       var p = pathAt(f), tx = ox + p[0] * k, ty = oy + p[1] * k;
       if (a > 0.25 && dt > 0) for (var s = 0; s < 3; s++) sparks.push({ x: tx, y: ty, vx: (Math.random() - 0.3) * 260 * d, vy: (Math.random() - 0.7) * 220 * d, life: 0, max: 0.25 + Math.random() * 0.3 });
     }
-    if (style === "storm" || style === "colossal") {
+    if (style === "storm" || style === "colossal" || style === "overhead") {
       // hit flash ring on the hit frame
       var hf = f - HIT; if (style === "storm" && hf >= 0 && hf < 2.2) { var q = hf / 2.2, ph = pathAt(HIT), hx = ox + (ph[0] + ph[2]) / 2 * k, hy = oy + Math.min((ph[1] + ph[3]) / 2, -14) * k, // where the blade meets the target, above the ground
         rr = (6 + 30 * q) * k;
         var gi = g.createRadialGradient(hx, hy, rr * 0.15, hx, hy, rr); gi.addColorStop(0, rgba(cols[0], 0.9 * (1 - q))); gi.addColorStop(0.5, rgba(cols[1], 0.5 * (1 - q))); gi.addColorStop(1, rgba(cols[2], 0));
         g.fillStyle = gi; g.beginPath(); g.arc(hx, hy, rr, 0, 7); g.fill();
         g.strokeStyle = rgba(cols[0], 0.85 * (1 - q)); g.lineWidth = 1.6 * k / 2.4 + d; g.beginPath(); g.ellipse(hx, hy, rr * 0.95, rr * 0.7, -0.4, 0, 7); g.stroke(); }
-      if (!small || style === "colossal") for (var i = sparks.length - 1; i >= 0; i--) { var sp2 = sparks[i]; if (dt > 0) { sp2.life += dt; sp2.x += sp2.vx * dt; sp2.y += sp2.vy * dt; sp2.vy += 500 * d * dt; } var lf = 1 - sp2.life / sp2.max;
+      if (!small || style === "colossal" || style === "overhead") for (var i = sparks.length - 1; i >= 0; i--) { var sp2 = sparks[i]; if (dt > 0) { sp2.life += dt; sp2.x += sp2.vx * dt; sp2.y += sp2.vy * dt; sp2.vy += 500 * d * dt; } var lf = 1 - sp2.life / sp2.max;
         if (lf <= 0) { sparks.splice(i, 1); continue; } g.strokeStyle = rgba(cols[0], lf); g.lineWidth = 1.4 * d; g.beginPath(); g.moveTo(sp2.x, sp2.y); g.lineTo(sp2.x - sp2.vx * 0.025, sp2.y - sp2.vy * 0.025); g.stroke(); }
     }
     g.restore();

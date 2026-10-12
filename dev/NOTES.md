@@ -1547,3 +1547,9 @@
 - Checked headless: dev/simfork/g268_slashfx.js (the game's drawHeroAnim at fixed frames 3.4-6.6, normal / flipped / clone), g267, g173 ALL OK. Not checked on a phone.
 - Known: the shake fires on every swing while he fights (every 0.5 s); if it's too much, lower or zero HERO_SLASH_SHAKE.
 
+## v1102 - Colossal slash swept over his head (TEST)
+- Harley: the old slash's overhead path might be better - "do colossal steel blue but the overhead slash effect". Same Colossal layers / sparks / burst / shake and steel blue,
+  but the ribbon now sweeps round a fixed circle over his helmet and down in front (slashFx.arc: centre 8,-55, radius 70 sheet px, angle -2.35 -> 0.8 over attack frames 2.6-6.4,
+  inner edge at 62%), instead of following the blade across his body (that one washed over him). heroSlashArcPath builds it in the blade-path format on first use.
+- Mockup updated ("Colossal overhead" style). Checked headless: g268 (normal / flipped / clone), g267 OK. Not checked on a phone.
+
