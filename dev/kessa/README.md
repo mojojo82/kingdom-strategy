@@ -18,3 +18,6 @@ All of Kessa's sprite frames render in Harley's Blender (needs him on the deskto
 (Key 120 W size 3.5 warm, Fill 50 W size 4 cool, Rim 110 W size 2, world (0.7,0.72,0.78) x0.55, Standard view transform, skin subsurface 0.08, matte), lights mirrored to her front (+Y),
 EXPOSURE -0.85. Camera: ortho 2.6 at azimuth -0.75 from her front, height 1.0 looking at (0,-0.45,0.88). Frames cropped x 150-630 of 900x600, packed with pack_game.py (body = old sprite height).
 Head rule: looks right / slight 3/4 right, never at the camera. Approved frames: art/originals/sprites_hires/kessa/softer (idle 12 + attack 12). Still to render: Arc Burst wind-up/hold/recovery, run, (hit).
+Arc Burst (rendered 13 Oct, softer light): 15 frames in art/originals/sprites_hires/kessa/arcburst (160x200 cells, same crop as idle/attack) - 0-6 wind-up = attack frames 0-6 with the palm energy growing (g=(k/6)^2),
+7-9 hold = attack frame 6 with the full energy ball (scale 0.92/1.08/1.0, loop these while the burst lasts), 10-14 recovery = attack frames 7-11 fading. Bolts NOT baked in (game draws them).
+palms.json = palm point per frame in cell pixels (bolt start). Saved scene on Harley's PC: KingdomArt\kessa_sprites.blend.
