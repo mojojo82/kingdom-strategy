@@ -32,7 +32,7 @@ document.getElementById('fire').onclick=function(){fireT=performance.now()/1000}
 document.getElementById('parts').onclick=function(){showParts=!showParts;this.className=showParts?'':'off'};
 document.getElementById('spd').oninput=function(){spd=+this.value};
 // ---- layout (source pixels)
-var TUR_DY=62, TRK={x0:300,x1:1370,top:646,r:84,th:56}, PITCH=47.67;
+var TUR_DY=74, TRK={x0:300,x1:1370,top:646,r:84,th:56}, PITCH=47.67;
 TRK.cy=TRK.top+TRK.th/2+TRK.r;
 var Lstraight=TRK.x1-TRK.x0, per=2*Lstraight+2*Math.PI*TRK.r, NPL=Math.round(per/PITCH), pitch=per/NPL;
 var GROUND=TRK.cy+TRK.r+TRK.th/2;
@@ -50,7 +50,7 @@ function img(k,dx,dy,ox,oy){var p=P[k];x.drawImage(I[k],p.r[0]+(dx||0),p.r[1]+(d
 function spin(k,cx,cy,rad,ang){var im=I[k],s=rad*2/Math.max(im.width,im.height);x.save();x.translate(cx,cy);x.rotate(ang);x.drawImage(im,-im.width*s/2,-im.height*s/2,im.width*s,im.height*s);x.restore()}
 function loop(ms){
   var t=ms/1000,dt=Math.min(.05,t-last);last=t;
-  var v=drive?90*spd:0; dist+=v*dt;
+  var v=drive?90*spd:0,gl=0; dist+=v*dt;
   var ft=t-fireT, recoil=0,kick=0,rock=0;
   if(ft>=0&&ft<1.2){recoil=ft<.06?ft/.06:Math.max(0,1-(ft-.06)/.7);recoil=Math.pow(recoil,1.5);kick=recoil;rock=Math.sin(Math.min(1,ft/.9)*Math.PI*2.5)*Math.exp(-ft*3)}
   x.clearRect(0,0,c.width,c.height);x.save();x.translate(220,0);
@@ -63,6 +63,13 @@ function loop(ms){
   // hull rocks back on its rear tread end when firing
   x.translate(TRK.x1,GROUND);x.rotate(-rock*0.025);x.translate(-TRK.x1+rock*6,-GROUND+bob);
   // turret + barrel behind hull top? turret sits ON the hull: draw hull first
+  // barrel (behind turret), then turret
+  x.save();x.translate(kick*10,TUR_DY-kick*2);
+  x.translate(900,250);x.rotate(kick*0.03);x.translate(-900,-250);
+  img('barrel',recoil*48,0);img('turret');
+  // furnace glow
+  gl=.25+.2*Math.sin(t*9)+.1*Math.sin(t*23);x.globalCompositeOperation='lighter';x.fillStyle='rgba(255,140,40,'+gl+')';x.fillRect(1094,222,56,78);x.globalCompositeOperation='source-over';
+  x.restore();
   img('hull');
   // dark inside of the track loop hides the hull's painted treads
   x.fillStyle='#16100a';x.beginPath();x.moveTo(TRK.x0,TRK.cy-TRK.r);x.lineTo(TRK.x1,TRK.cy-TRK.r);x.arc(TRK.x1,TRK.cy,TRK.r,-Math.PI/2,Math.PI/2);x.lineTo(TRK.x0,TRK.cy+TRK.r);x.arc(TRK.x0,TRK.cy,TRK.r,Math.PI/2,Math.PI*1.5);x.fill();
@@ -72,13 +79,6 @@ function loop(ms){
     else spin('wheel',wheelsX[i],TRK.cy+TRK.r-TRK.th/2-WR+4,WR,wa);}
   // tread plates
   var pl=I.plate;for(var k=0;k<NPL;k++){var q=trackPoint(k*pitch+dist);x.save();x.translate(q.x,q.y);x.rotate(q.a);x.drawImage(pl,-pl.width/2,-pl.height/2,pl.width*1.02,pl.height);x.restore()}
-  // barrel (behind turret), then turret
-  x.save();x.translate(kick*10,TUR_DY-kick*2);
-  x.translate(900,250);x.rotate(kick*0.03);x.translate(-900,-250);
-  img('barrel',recoil*48,0);img('turret');
-  // furnace glow
-  var gl=.25+.2*Math.sin(t*9)+.1*Math.sin(t*23);x.globalCompositeOperation='lighter';x.fillStyle='rgba(255,140,40,'+gl+')';x.fillRect(1094,222,56,78);x.globalCompositeOperation='source-over';
-  x.restore();
   x.globalCompositeOperation='lighter';x.fillStyle='rgba(255,140,40,'+(gl*.8)+')';x.fillRect(1322,458,46,80);x.globalCompositeOperation='source-over';
   x.restore();
   // muzzle flash
