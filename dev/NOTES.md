@@ -1622,3 +1622,9 @@
 - dev/simfork/g273_boss3d.js: 70 s boss fight with Gareth: 47 shots = 32 orbs (all from the hand) + 14 stomps (+1 in flight), raises/holds, low aim, no errors.
   g181, g173 OK. g172 "boss hit us" fails on the build BEFORE this change as well (its fortress-HP check predates v1106's bar fix) - not this change; test needs updating.
 
+## v1113 - old pixel boss back (TEST)
+- Harley: the realistic-proportioned 3D boss lost screen presence in game - placeholder; put the pixel boss back for now. BOSS3D_ON = false and its 1.8 MB sheet
+  removed from the game file (BOSS3D.src empty; boss3dImg returns null) - all the 3D boss code stays. To bring a 3D boss back: rebuild in dev/boss (new model ->
+  bake_boss.py / boss_pose.py / render.js / pack.py), paste boss_game.webp as BOSS3D.src, update the numbers from boss_game.json + boss_points.json, set BOSS3D_ON.
+  Harley may make a beefier model in Meshy. g181 OK; checked a boss fight headless (pixel boss shows, orbs as before).
+
