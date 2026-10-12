@@ -23,11 +23,14 @@ for i,nm in enumerate(NAMES[1:],1):
     elif nm=='head': piv[nm]=[0.0, 0.0, 0.42]
     elif nm.endswith('up'): piv[nm]=pv(m,'top')
     else: piv[nm]=pv(m,'top')
+foot={}
+for nm in ['FL','FR','BL','BR']:
+    pts=P[T[lab==NAMES.index(nm+'lo')]].reshape(-1,3); lo=pts[pts[:,1]<pts[:,1].min()+0.04]; foot[nm]=[float(lo[:,0].mean()),float(pts[:,1].min()),float(lo[:,2].mean())]
 parent={'cannonL':'body','cannonR':'body','head':'body','FLup':'body','FRup':'body','BLup':'body','BRup':'body','FLlo':'FLup','FRlo':'FRup','BLlo':'BLup','BRlo':'BRup'}
 ti=mat['pbrMetallicRoughness']['baseColorTexture']['index']; tex=imgs[J['textures'][ti]['source']].convert('RGB').resize((2048,2048),Image.LANCZOS)
 b=io.BytesIO(); tex.save(b,'JPEG',quality=88); texs='data:image/jpeg;base64,'+base64.b64encode(b.getvalue()).decode()
 Pv=P[T].reshape(-1,3).astype(np.float32); UVv=UV[T].reshape(-1,2).astype(np.float32); Nf=np.cross(P[T[:,1]]-P[T[:,0]],P[T[:,2]]-P[T[:,0]]); Nf/=np.linalg.norm(Nf,axis=1,keepdims=True)+1e-12
 Nv=(N[T].reshape(-1,3) if N is not None else np.repeat(Nf,3,0)).astype(np.float32); Pid=np.repeat(lab,3).astype(np.float32)
 f32=lambda a: base64.b64encode(np.ascontiguousarray(a,dtype=np.float32).tobytes()).decode()
-json.dump({'p':f32(Pv),'n':f32(Nv),'uv':f32(UVv),'part':f32(Pid),'tex':texs,'names':NAMES,'piv':piv,'parent':parent},open('rhino.json','w'))
+json.dump({'p':f32(Pv),'n':f32(Nv),'uv':f32(UVv),'part':f32(Pid),'tex':texs,'names':NAMES,'piv':piv,'parent':parent,'foot':foot},open('rhino.json','w'))
 print({n:int((lab==i).sum()) for i,n in enumerate(NAMES)}); print(piv)
