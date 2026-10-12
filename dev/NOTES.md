@@ -1641,3 +1641,13 @@
 - The two buttons are hidden by default on every device; Options > "Map zoom buttons" On/Off brings them back (per device, localStorage ks_map_zoom_btns).
 - dev/simfork/g275_map_zoom.js (1280x800). Not checked on a phone or a real touchpad.
 
+
+## v1116 - Boss 2: the Steam Tank (TEST)
+- Harley: swap the steampunk tank in as the chapter boss for now ("Boss 2"); keep the old one with a Dev Tools switch; stats (HP, damage) unchanged - look only.
+- Art: GPT parts sheet (art/originals/tank_boss_gpt_parts.png) cut into hull / turret / barrel / wheel / sprocket / one tread plate (dev/tank). Open hatch lid cut off and a closed lid drawn (hatch.py / lidc.py) - the head popping out to throw bombs at Gareth comes later.
+- Look = Harley's numbers from the live mockup: size 55% of the boss size slot, contrast 89%, colour 42%, brightness 86% (baked into the parts once, no canvas filters), 5% off the right edge, engine rumble 0.5px at 17 jolts/s on hull + turret (tracks stay planted), tracks lengthened under the plow.
+- Cannon aims at the point boss shots fly to (enemy target X/Y = the fortress hull, so it follows any skin); the barrel art's own ~2.8deg upward tilt is corrected (Harley: barrel pointed above the target in the mockup).
+- Boss shots start at the muzzle (bossShotOrigin) as a dark iron shell with orange glow and smoke trail; recoil, turret kick, hull rock, muzzle flash + smoke on every shot; treads roll while it drives in.
+- Dev Tools > Chapter Boss > "Boss look": Classic / Boss 2 (Tank). Shared admin setting kingdom_prototype_bosslook_v1 (default Boss 2).
+- Not changed: boss name + HP bar still sit where the old boss's head was (high above the tank).
+- dev/simfork/g276_tankboss.js. Not checked on a phone.
