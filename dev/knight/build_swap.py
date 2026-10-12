@@ -5,8 +5,6 @@ old = re.search(r'\n  gareth: \{ src: "data:image/webp;base64,([^"]+)"', html).g
 t = open('swap.tpl.html').read()
 c = re.search(r'\n  gareth: \{ src: "data:image/webp;base64,([^"]+)", w: (\d+), h: (\d+), ax: ([\d.]+), ay: ([\d.]+)', html[html.index('var HERO_CHARGE'):])
 t = t.replace('__OLDCHARGE__', 'data:image/webp;base64,' + c.group(1)).replace('__OLDCHARGEMETA__', json.dumps({'w': float(c.group(2)), 'h': float(c.group(3)), 'ax': float(c.group(4)), 'ay': float(c.group(5))}))
-m = re.search(r'\n  gareth: \{ src: "data:image/webp;base64,([^"]+)", w: (\d+), h: (\d+), ax: ([\d.]+), ay: ([\d.]+)', html[html.index('var HERO_CHARGE'):])
-t = t.replace('__OLDCHARGE__', 'data:image/webp;base64,' + m.group(1)).replace('__OLDCHARGEMETA__', json.dumps({'w': float(m.group(2)), 'h': float(m.group(3)), 'ax': float(m.group(4)), 'ay': float(m.group(5))}))
 new = base64.b64encode(open('knight_sheet.webp', 'rb').read()).decode()
 t = t.replace('__OLD__', 'data:image/webp;base64,' + old).replace('__NEW__', 'data:image/webp;base64,' + new).replace('__META__', open('knight_sheet.json').read())
 open('swap.html', 'w').write(t); print('swap.html written')
