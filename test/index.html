@@ -11509,7 +11509,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1110"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1111"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -28935,11 +28935,19 @@ function openSkinLayoutEditor() {
       '<canvas class="sl-cv" aria-label="Drag the dots onto the fortress"></canvas>' +
       '<div class="sl-hint">Drag the dots onto the ship. <b style="color:#ff7a6b">C</b> main cannon · <b style="color:#5fd3ff">1 2 3</b> weapon slots (your 1st, 2nd, 3rd equipped weapon fires from there) · ' +
       '<b style="color:#7be08e">H1-H5</b> hero spots, where his feet go (ranged heroes, Conquest) · <b style="color:#c7c7c7">KO</b> where knocked-out heroes ride (Conquest). One layout per skin, used in Conquest and the Arena.</div>' +
-      '<div class="sl-row"><button type="button" class="sl-save">Save for everyone</button><button type="button" class="sl-reset">Reset this skin</button></div><div class="sl-msg"></div></div>';
+      '<div class="sl-row"><button type="button" class="sl-reset sl-grid">Snap to grid: Off</button><button type="button" class="sl-reset sl-gsize">Grid size: M</button></div>' +
+      '<div class="sl-row"><button type="button" class="sl-save">Save for everyone</button><button type="button" class="sl-reset sl-rs">Reset this skin</button></div><div class="sl-msg"></div></div>';
     document.body.appendChild(pop);
     var sel = pop.querySelector(".sl-skin");
     FORTRESS_SKINS.forEach(function (sk) { var op = document.createElement("option"); op.value = sk.id; op.textContent = sk.name; sel.appendChild(op); });
     slEd = { pop: pop, cv: pop.querySelector(".sl-cv"), sel: sel, pts: null, drag: null, map: null, raf: 0, msg: pop.querySelector(".sl-msg") };
+    // v1111: snap to grid (Harley) - square cells in game units from the picture's top-left corner; on/off + size remembered on this device
+    var SL_GSTEPS = [["S", 3], ["M", 5], ["L", 8]], gSave = {}; try { gSave = JSON.parse(localStorage.getItem("ks_sl_grid") || "{}") || {}; } catch (e) {}
+    slEd.grid = !!gSave.on; slEd.gi = gSave.gi != null ? Math.max(0, Math.min(2, gSave.gi)) : 1;
+    var gBtn = pop.querySelector(".sl-grid"), gsBtn = pop.querySelector(".sl-gsize");
+    function gLabel() { gBtn.textContent = "Snap to grid: " + (slEd.grid ? "On" : "Off"); gBtn.classList.toggle("sl-reset", !slEd.grid); gsBtn.textContent = "Grid size: " + SL_GSTEPS[slEd.gi][0]; try { localStorage.setItem("ks_sl_grid", JSON.stringify({ on: slEd.grid, gi: slEd.gi })); } catch (e) {} }
+    gBtn.onclick = function () { slEd.grid = !slEd.grid; gLabel(); }; gsBtn.onclick = function () { slEd.gi = (slEd.gi + 1) % SL_GSTEPS.length; gLabel(); }; gLabel();
+    slEd.gstep = function () { return SL_GSTEPS[slEd.gi][1]; };
     slEd.skin = function () { return FORTRESS_SKINS.filter(function (k) { return k.id === sel.value; })[0] || FORTRESS_SKINS[0]; };
     slEd.load = function () { var sk = slEd.skin(), d = skinLayoutDefaults(sk), L = skinLayoutsLive()[sk.id] || {}; slEd.pts = {}; SL_POINTS.forEach(function (n) { slEd.pts[n] = (L[n] || d[n]).slice(); }); slEd.saved = !!skinLayoutsLive()[sk.id]; };
     sel.onchange = function () { slEd.load(); slEd.msg.textContent = slEd.saved ? "This skin has a saved layout." : "No layout yet: the game still uses the old spots (C, H and KO show them; weapons all fire from C - the 1 2 3 dots are just spread out to grab)."; };
@@ -28948,14 +28956,16 @@ function openSkinLayoutEditor() {
       var o = {}; SL_POINTS.forEach(function (n) { o[n] = [Math.round(slEd.pts[n][0] * 1000) / 1000, Math.round(slEd.pts[n][1] * 1000) / 1000]; });
       skinLayouts[slEd.skin().id] = o; saveSkinLayouts(); slEd.saved = true; slEd.msg.textContent = "Saved for " + slEd.skin().name + " - every player gets it.";
     };
-    pop.querySelector(".sl-reset").onclick = function () { delete skinLayouts[slEd.skin().id]; saveSkinLayouts(); slEd.load(); slEd.msg.textContent = slEd.skin().name + " is back to the old spots."; };
+    pop.querySelector(".sl-rs").onclick = function () { delete skinLayouts[slEd.skin().id]; saveSkinLayouts(); slEd.load(); slEd.msg.textContent = slEd.skin().name + " is back to the old spots."; };
     function at(e) { var r = slEd.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     slEd.cv.addEventListener("pointerdown", function (e) {
       if (!slEd.map) return; var p = at(e), best = null, bd = 24;
       SL_POINTS.forEach(function (n) { var q = slEd.map.toPx(slEd.pts[n]), dd = Math.hypot(q.x - p.x, q.y - p.y); if (dd < bd) { bd = dd; best = n; } });
       if (best) { slEd.drag = best; slEd.cv.setPointerCapture(e.pointerId); e.preventDefault(); }
     });
-    slEd.cv.addEventListener("pointermove", function (e) { if (!slEd.drag) return; var f = slEd.map.toFrac(at(e)); slEd.pts[slEd.drag] = [Math.max(-0.2, Math.min(1.3, f[0])), Math.max(-0.5, Math.min(1.2, f[1]))]; });
+    slEd.cv.addEventListener("pointermove", function (e) { if (!slEd.drag) return; var f = slEd.map.toFrac(at(e));
+      if (slEd.grid && slEd.map.gx) { f = [Math.round(f[0] / slEd.map.gx) * slEd.map.gx, Math.round(f[1] / slEd.map.gy) * slEd.map.gy]; } // v1111: snap to the nearest grid point
+      slEd.pts[slEd.drag] = [Math.max(-0.2, Math.min(1.3, f[0])), Math.max(-0.5, Math.min(1.2, f[1]))]; });
     slEd.cv.addEventListener("pointerup", function () { if (slEd.drag) { slEd.drag = null; slEd.msg.textContent = "Moved - tap Save for everyone to keep it."; } });
   }
   slEd.sel.value = fortressSkin().id; slEd.load(); slEd.msg.textContent = slEd.saved ? "This skin has a saved layout." : "No layout yet: the game still uses the old spots (C, H and KO show them; weapons all fire from C - the 1 2 3 dots are just spread out to grab).";
@@ -28972,6 +28982,14 @@ function openSkinLayoutEditor() {
       slEd.map = { toPx: function (p) { return { x: x0 + p[0] * nw * E, y: y0 + p[1] * nh * E }; }, toFrac: function (q) { return [(q.x - x0) / (nw * E), (q.y - y0) / (nh * E)]; } };
       g.fillStyle = "#2c3a26"; g.fillRect(0, gy, W, H - gy); g.fillStyle = "#3d5233"; g.fillRect(0, gy, W, 2);
       g.drawImage(im, x0, y0, nw * E, nh * E);
+      var GS = slEd.gstep(); slEd.map.gx = GS / (nw * sc); slEd.map.gy = GS / (nh * sc); // grid cell as a fraction of the picture (square on screen)
+      if (slEd.grid) {
+        var cell = GS * E / sc, gx0 = x0 - Math.ceil(x0 / cell) * cell, gy0 = y0 - Math.ceil(y0 / cell) * cell;
+        g.save(); g.lineWidth = 1;
+        for (var gxx = gx0, gi2 = 0; gxx <= W; gxx += cell, gi2++) { var xi = Math.round((gxx - x0) / cell); g.strokeStyle = xi % 5 === 0 ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.13)"; g.beginPath(); g.moveTo(gxx + 0.5, 0); g.lineTo(gxx + 0.5, H); g.stroke(); }
+        for (var gyy = gy0; gyy <= H; gyy += cell) { var yi = Math.round((gyy - y0) / cell); g.strokeStyle = yi % 5 === 0 ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.13)"; g.beginPath(); g.moveTo(0, gyy + 0.5); g.lineTo(W, gyy + 0.5); g.stroke(); }
+        g.restore();
+      }
       var F = E / sc, hs = heroSpriteVisualScale / 100, ros = game.state.conquestRoster || [], eq = game.state.equippedWeapons || [];
       for (var i = 0; i < 5; i++) { var hk = ros[i], hp = slEd.map.toPx(slEd.pts["h" + i]); if (hk && HERO_DEFS[hk] && HERO_DEFS[hk].class !== "infantry" && HERO_ANIMS[hk]) { try { drawHeroAnim(g, hk, hp.x, hp.y, "idle", hs * F, false, i * 0.37); } catch (er) {} } }
       var koP = slEd.map.toPx(slEd.pts.ko), koKey = ros[0]; if (koKey && HERO_ANIMS[koKey]) { g.save(); g.globalAlpha = 0.45; try { drawHeroAnim(g, koKey, koP.x, koP.y, "idle", hs * F, false, 0); } catch (er) {} g.restore(); }

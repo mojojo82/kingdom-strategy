@@ -1605,3 +1605,9 @@
 - Fix: skinLayoutsLive() - every read takes the shared copy from cloudAssetMap whenever it appears or changes (also covers a save made while the other game is open,
   once that game re-reads the cloud). dev/simfork/g272_layout_share.js: admin A saves, player B opens afterwards and uses it (failed before). g271 OK.
 
+## v1111 - Layout Editor: snap to grid (TEST)
+- Harley: a grid that can be toggled, with dots snapping to grid points, to line parts up straight. "Snap to grid: On/Off" + "Grid size: S/M/L" (3 / 5 / 8 game units,
+  square on screen, counted from the picture's top-left; every 5th line brighter). Dragged dots snap to the nearest grid point. On/off + size remembered per device (ks_sl_grid).
+- Caught by the test before shipping: the new buttons shared the "Reset this skin" button's class and the reset handler attached to the first one (the grid button would
+  have reset the skin). Reset now has its own class (sl-rs). g271 extended (grid on, mouse drag, lands on a grid point). Not checked on a phone.
+

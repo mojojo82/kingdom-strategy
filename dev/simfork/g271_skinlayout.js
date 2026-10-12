@@ -31,6 +31,14 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     await P.evaluate((id) => { openSkinLayoutEditor(); slEd.sel.value = id; slEd.sel.onchange(); }, sk);
     await P.waitForTimeout(400); await (await P.$("#slPop .sl-box")).screenshot({ path: path.join(__dirname, "out_g271_ed_" + sk + ".png") });
   }
+  /* v1111: snap to grid - turn it on, drag H1 with the mouse, it must land on a grid point */
+  await P.evaluate(() => { openSkinLayoutEditor(); slEd.sel.value = "void"; slEd.sel.onchange(); if (!slEd.grid) slEd.pop.querySelector(".sl-grid").click(); });
+  await P.waitForTimeout(300);
+  const cvBox = await (await P.$("#slPop .sl-cv")).boundingBox();
+  const hp = await P.evaluate(() => slEd.map.toPx(slEd.pts.h0));
+  await P.mouse.move(cvBox.x + hp.x, cvBox.y + hp.y); await P.mouse.down(); await P.mouse.move(cvBox.x + hp.x + 23.7, cvBox.y + hp.y - 11.3, { steps: 6 }); await P.mouse.up();
+  const snap = await P.evaluate(() => { const p = slEd.pts.h0, gx = slEd.map.gx, gy = slEd.map.gy; return { p, rx: p[0] / gx, ry: p[1] / gy, on: slEd.grid }; });
+  await P.waitForTimeout(200); await (await P.$("#slPop .sl-box")).screenshot({ path: path.join(__dirname, "out_g271_grid.png") });
   const after = await P.evaluate(async ({ w, h }) => {
     document.getElementById("slPop").style.display = "none";
     const sk = fortressSkin().id, L = { c: [0.9, 0.5], w0: [0.2, 0.3], w1: [0.4, 0.2], w2: [0.6, 0.1], h0: [0.3, 0.4], h1: [0.7, 0.35], h2: [0.5, 0.4], h3: [0.2, 0.4], h4: [0.8, 0.4], ko: [0.1, 0.45] };
@@ -45,9 +53,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
       arenaMuzzle: { x: ag.muzzleX, y: ag.muzzleY }, arenaE: expect(L.c, ab), aiSkin: arenaAnim.aiFortressSkin ? arenaAnim.aiFortressSkin.id : "default", aiMuzzle: { x: agAi.muzzleX }, aiBox: aiB, stored: !!stored[sk] };
   }, before);
   await P.waitForTimeout(2500); await (await P.$("#idleCanvas")).screenshot({ path: path.join(__dirname, "out_g271_conquest.png") });
-  console.log(JSON.stringify({ before, after, errs }, null, 1)); await b.close();
+  console.log(JSON.stringify({ snap, errs })); await b.close();
   const near = (a, e, t) => Math.abs(a.x - e.x) < (t || 0.01) && Math.abs(a.y - e.y) < (t || 0.01);
   assert.deepStrictEqual(errs, []); assert(before.none, "no layout = old spots");
+  assert(snap.on && Math.abs(snap.rx - Math.round(snap.rx)) < 1e-6 && Math.abs(snap.ry - Math.round(snap.ry)) < 1e-6, "a dragged dot lands on a grid point");
   assert(near(after.cP, after.cE) && near(after.mP, after.mE) && near(after.lP, after.lE), "cannon + weapon slots follow the layout");
   assert(Math.abs(after.kS.x - after.kE.x) < 0.01 && Math.abs(after.kS.y + 12 * after.hS - after.kE.y) < 0.01, "ranged hero stands on his slot (feet)");
   assert(Math.abs(after.gS.x - before.kessa.x) > 0 || true);
