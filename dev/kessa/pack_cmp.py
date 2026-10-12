@@ -20,5 +20,12 @@ g = open('../../test/index.html').read(); m = re.search(r'  kessa: \{ src: "(dat
 oim = Image.open(io.BytesIO(base64.b64decode(old.split(',')[1]))).convert('RGBA'); oa = np.asarray(oim)[..., 3] > 40; orow = np.where(oa[:78].any(1))[0]; otop = bodytop(oa[:78, :85])
 cfg = {'new': {'src': new, 'cw': cw, 'ch': H, 'feet': feet, 'top': top, 'hold': hf, 'hand': hand},
        'old': {'src': old, 'cw': 85, 'ch': 78, 'feet': int(orow.max()), 'top': otop}}
+import os
+BL = os.environ.get('BLENDER_ARC')
+if BL:
+    bim = Image.open(BL).convert('RGBA'); ba = np.asarray(bim)[..., 3] > 40
+    # body only (exclude the bolts to the right of the palm): columns left of 55% width
+    sub = ba[:, :int(ba.shape[1] * 0.55)]; brow = np.where(sub.any(1))[0]; btop = bodytop(sub); bb = io.BytesIO(); bim.save(bb, 'WEBP', quality=90)
+    cfg['bl'] = {'src': 'data:image/webp;base64,' + base64.b64encode(bb.getvalue()).decode(), 'w': bim.size[0], 'h': bim.size[1], 'feet': int(brow.max()), 'top': btop}
 t = open('cmp.tpl.html').read().replace('__CFG__', json.dumps(cfg)); open('cmp.html', 'w').write(t)
 print('cell', cw, H, 'feet', feet, 'top', top, 'hand', hand, 'old fig rows', orow.min(), orow.max(), 'KB', len(t) // 1024)

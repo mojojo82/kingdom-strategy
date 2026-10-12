@@ -18,8 +18,8 @@ p{opacity:.8;line-height:1.4}
 <h1>Kessa - current sprite vs 3D model</h1>
 <div class="bar"><button data-m="idle" class="on">Idle</button><button data-m="attack">Attack</button><button data-m="arc">Arc Burst (hold)</button>
 <label>Size <select id="sz"><option value="big" selected>Big (to judge)</option><option value="game">Game size</option></select></label></div>
-<div class="row"><div class="card"><h2>Current sprite</h2><canvas id="a" width="600" height="420"></canvas></div><div class="card"><h2>3D Kessa (tamed Mixamo cast, built staff)</h2><canvas id="b" width="600" height="420"></canvas></div></div>
-<p>Attack = the tamed Mixamo "1H Magic Attack 01" trimmed to its push (12 frames, 0.75 s). Arc Burst = the same wind-up, then the arm-out frame held with a slight tremble while the lightning streams, then the recovery. Idle = a 2 s piece of the Mixamo idle. The staff is built in code and held in her left hand. Lightning is a stand-in.</p>
+<div class="row"><div class="card"><h2>Current sprite</h2><canvas id="a" width="600" height="420"></canvas></div><div class="card"><h2>3D Kessa (tamed Mixamo cast, built staff)</h2><canvas id="b" width="600" height="420"></canvas></div><div class="card" id="blc"><h2>Arc Burst hold - rendered in Blender (soft light, glowing hand)</h2><canvas id="c" width="900" height="420"></canvas></div></div>
+<p>Attack = the tamed Mixamo "1H Magic Attack 01" trimmed to its push (12 frames, 0.75 s). Arc Burst = the same wind-up, then the arm-out frame held with a slight tremble while the lightning streams, then the recovery. Idle = a 2 s piece of the Mixamo idle. The staff is built in code and held in her left hand. Lightning is a stand-in. Bottom card: the Arc Burst hold pose rendered in Harley's Blender with the soft lighting, a glowing energy ball at her palm, blue light on her and haloed bolts (in the game the bolts would be drawn by code so they reach each chained enemy).</p>
 </div>
 <script>
 var C=__CFG__,mode='idle',t0=performance.now(),size='big';
@@ -42,5 +42,8 @@ function draw(id,k,t){var cv=document.getElementById(id),x=cv.getContext('2d'),c
   x.imageSmoothingEnabled=k==='new';var dw=c.cw*s,dh=c.ch*s,X=cv.width*0.32-dw*0.45+dx,Y=ground-c.feet*s+dy;
   x.drawImage(im,f.c*c.cw,f.r*c.ch,c.cw,c.ch,X,Y,dw,dh);
   if(f.bolt){var hx,hy;if(k==='new'){hx=X+c.hand[0]*s;hy=Y+c.hand[1]*s}else{hx=X+dw*0.92;hy=Y+dh*0.45}bolt(x,hx,hy,cv.width-hx-10,size==='big'?1:0.5)}}
-function loop(now){var t=(now-t0)/1000;draw('a','old',t);draw('b','new',t);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function drawBl(t){var cv=document.getElementById('c');if(!cv||!C.bl)return;var x=cv.getContext('2d'),b=C.bl;x.clearRect(0,0,cv.width,cv.height);if(!imgs.bl){imgs.bl=new Image();imgs.bl.src=b.src}var im=imgs.bl;if(!im.complete)return;
+  var figH=(size==='big'?300:75)*0.78,ground=cv.height*0.78,s=figH/(b.feet-b.top),dw=b.w*s,dh=b.h*s,X=cv.width*0.30-dw*0.32+(Math.random()-.5)*1.2,Y=ground-b.feet*s+(Math.random()-.5)*1.2;
+  x.imageSmoothingEnabled=true;x.drawImage(im,X,Y,dw,dh);x.save();x.globalCompositeOperation='lighter';x.globalAlpha=0.12+0.18*Math.random();x.drawImage(im,X,Y,dw,dh);x.restore()}
+function loop(now){var t=(now-t0)/1000;draw('a','old',t);draw('b','new',t);drawBl(t);requestAnimationFrame(loop)}requestAnimationFrame(loop);
 </script></body></html>
