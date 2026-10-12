@@ -33,7 +33,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       <button data-s="current" aria-pressed="false">Now in game</button>
       <button data-s="trail" aria-pressed="false">Blade trail</button>
       <button data-s="crescent" aria-pressed="false">Big crescent</button>
-      <button data-s="storm" aria-pressed="true">Storm</button></div>
+      <button data-s="storm" aria-pressed="false">Storm</button>
+      <button data-s="colossal" aria-pressed="true">Colossal</button></div>
     <div class="row"><span class="lbl">Colour</span>
       <button data-c="steel" aria-pressed="true">Steel blue</button>
       <button data-c="gold" aria-pressed="false">Holy gold</button>
@@ -42,15 +43,15 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       <button id="bSlow" aria-pressed="false">Slow-mo</button>
       <button id="bPause" aria-pressed="false">Pause</button></div>
   </div>
-  <p class="note">Blade trail: a ribbon that follows his actual sword. Big crescent: a wider, longer ribbon reaching past the tip. Storm: the crescent plus sparks off the blade and a flash ring on the hit frame.</p>
+  <p class="note">Colossal: a slash about twice as big as the crescent (glow, body, bright core), a burst of light rays, a shockwave ring and a small shake on the hit. Blade trail: a ribbon that follows his actual sword. Big crescent: a wider, longer ribbon reaching past the tip. Storm: the crescent plus sparks off the blade and a flash ring on the hit frame.</p>
 </div>
 <script>
 (function () {
   var SHEET = "__SHEET__", G = __META__, PATH = __PATH__;
   var img = new Image(); img.src = SHEET;
-  var NAMES = { current: "the arc he has now", trail: "ribbon on the real blade path", crescent: "wide ribbon past the tip", storm: "crescent + sparks + hit flash" };
+  var NAMES = { current: "the arc he has now", trail: "ribbon on the real blade path", crescent: "wide ribbon past the tip", storm: "crescent + sparks + hit flash", colossal: "huge 3-layer slash + burst + shake" };
   var COL = { steel: [[255, 255, 255], [160, 215, 255], [70, 130, 255]], gold: [[255, 252, 225], [255, 214, 110], [230, 140, 20]], fire: [[255, 245, 200], [255, 150, 40], [210, 40, 0]] };
-  var style = "storm", col = "steel", slow = false, paused = false, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var style = "colossal", col = "steel", slow = false, paused = false, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   var clock = 0, last = performance.now();
   function press(attr, v) { document.querySelectorAll("[data-" + attr + "]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset[attr] === v ? "true" : "false"); }); }
   document.querySelectorAll("[data-s]").forEach(function (b) { b.onclick = function () { style = b.dataset.s; press("s", style); sparks.length = 0; label(); }; });
@@ -101,7 +102,9 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   }
   function draw(c, figPx, f, dt, small) {
     var d = fit(c), g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.84, k = figPx * d / 122, ox = W * 0.42, oy = gy;
-    g.clearRect(0, 0, W, H); ground(g, W, H, gy, d);
+    var shk = (style === "colossal" && f >= HIT && f < HIT + 2) ? (1 - (f - HIT) / 2) * 4 * d * (small ? 0.5 : 1) : 0;
+    g.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * 2 * shk, (Math.random() - 0.5) * 2 * shk);
+    g.clearRect(-20, -20, W + 40, H + 40); ground(g, W, H, gy, d);
     // training dummy at the end of his reach
     var dx = ox + 62 * k; g.fillStyle = "#5a4630"; g.fillRect(dx - 3 * k, gy - 58 * k, 6 * k, 58 * k); g.fillStyle = "#8a6a44"; g.beginPath(); g.ellipse(dx, gy - 46 * k, 11 * k, 16 * k, 0, 0, 7); g.fill();
     g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(ox, gy + 2 * d, 30 * k, 5 * k, 0, 0, 7); g.fill();
@@ -121,18 +124,33 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
       ribbon(g, ox, oy, k, f, 2.6, 1.32, -0.1, a * 0.45, cols, true);   // soft wide glow
       ribbon(g, ox, oy, k, f, 2.2, 1.18, 0.15, a, cols, false);          // main crescent
     }
+    if (style === "colossal" && a > 0) {
+      ribbon(g, ox, oy, k, f, 3.4, 1.95, -0.35, a * 0.38, cols, true);   // huge soft glow
+      ribbon(g, ox, oy, k, f, 2.9, 1.62, 0.0, a, cols, false);           // main slash
+      ribbon(g, ox, oy, k, f, 1.7, 1.28, 0.62, a, [[255, 255, 255], cols[0], cols[1]], false); // white-hot core
+    }
+    if (style === "colossal") {
+      var cp = pathAt(f), ctx2 = ox + cp[0] * k, cty = oy + Math.min(cp[1], -2) * k;
+      if (a > 0.2 && dt > 0) for (var s3 = 0; s3 < 5; s3++) sparks.push({ x: ctx2, y: cty, vx: (Math.random() - 0.25) * 420 * d * (small ? 0.4 : 1), vy: (Math.random() - 0.75) * 340 * d * (small ? 0.4 : 1), life: 0, max: 0.3 + Math.random() * 0.4 });
+      var hf2 = f - HIT; if (hf2 >= 0 && hf2 < 3.2) { var q2 = hf2 / 3.2, ph2 = pathAt(HIT), bx = ox + (ph2[0] + ph2[2]) / 2 * k, by = oy + Math.min((ph2[1] + ph2[3]) / 2, -14) * k, R2 = (10 + 62 * Math.pow(q2, 0.6)) * k;
+        var gb = g.createRadialGradient(bx, by, 0, bx, by, R2 * 0.8); gb.addColorStop(0, rgba([255, 255, 255], 0.95 * (1 - q2))); gb.addColorStop(0.35, rgba(cols[0], 0.7 * (1 - q2))); gb.addColorStop(1, rgba(cols[2], 0));
+        g.fillStyle = gb; g.beginPath(); g.arc(bx, by, R2 * 0.8, 0, 7); g.fill();
+        g.strokeStyle = rgba(cols[1], 0.9 * (1 - q2)); g.lineWidth = (3 * (1 - q2) + 0.8) * k / 2.4 * 2; g.beginPath(); g.ellipse(bx, by, R2, R2 * 0.62, -0.35, 0, 7); g.stroke();
+        g.lineCap = "round"; for (var r9 = 0; r9 < 12; r9++) { var an9 = r9 / 12 * 6.283 + 0.3, L0 = R2 * 0.35, L1 = R2 * (0.75 + 0.45 * ((r9 * 7) % 5) / 5); g.strokeStyle = rgba(cols[0], 0.85 * (1 - q2)); g.lineWidth = (2.4 * (1 - q2) + 0.4) * k / 2.4 * 2;
+          g.beginPath(); g.moveTo(bx + Math.cos(an9) * L0, by + Math.sin(an9) * L0 * 0.7); g.lineTo(bx + Math.cos(an9) * L1, by + Math.sin(an9) * L1 * 0.7); g.stroke(); } }
+    }
     if (style === "storm" && !small) {
       var p = pathAt(f), tx = ox + p[0] * k, ty = oy + p[1] * k;
       if (a > 0.25 && dt > 0) for (var s = 0; s < 3; s++) sparks.push({ x: tx, y: ty, vx: (Math.random() - 0.3) * 260 * d, vy: (Math.random() - 0.7) * 220 * d, life: 0, max: 0.25 + Math.random() * 0.3 });
     }
-    if (style === "storm") {
+    if (style === "storm" || style === "colossal") {
       // hit flash ring on the hit frame
-      var hf = f - HIT; if (hf >= 0 && hf < 2.2) { var q = hf / 2.2, ph = pathAt(HIT), hx = ox + (ph[0] + ph[2]) / 2 * k, hy = oy + Math.min((ph[1] + ph[3]) / 2, -14) * k, // where the blade meets the target, above the ground
+      var hf = f - HIT; if (style === "storm" && hf >= 0 && hf < 2.2) { var q = hf / 2.2, ph = pathAt(HIT), hx = ox + (ph[0] + ph[2]) / 2 * k, hy = oy + Math.min((ph[1] + ph[3]) / 2, -14) * k, // where the blade meets the target, above the ground
         rr = (6 + 30 * q) * k;
         var gi = g.createRadialGradient(hx, hy, rr * 0.15, hx, hy, rr); gi.addColorStop(0, rgba(cols[0], 0.9 * (1 - q))); gi.addColorStop(0.5, rgba(cols[1], 0.5 * (1 - q))); gi.addColorStop(1, rgba(cols[2], 0));
         g.fillStyle = gi; g.beginPath(); g.arc(hx, hy, rr, 0, 7); g.fill();
         g.strokeStyle = rgba(cols[0], 0.85 * (1 - q)); g.lineWidth = 1.6 * k / 2.4 + d; g.beginPath(); g.ellipse(hx, hy, rr * 0.95, rr * 0.7, -0.4, 0, 7); g.stroke(); }
-      if (!small) for (var i = sparks.length - 1; i >= 0; i--) { var sp2 = sparks[i]; if (dt > 0) { sp2.life += dt; sp2.x += sp2.vx * dt; sp2.y += sp2.vy * dt; sp2.vy += 500 * d * dt; } var lf = 1 - sp2.life / sp2.max;
+      if (!small || style === "colossal") for (var i = sparks.length - 1; i >= 0; i--) { var sp2 = sparks[i]; if (dt > 0) { sp2.life += dt; sp2.x += sp2.vx * dt; sp2.y += sp2.vy * dt; sp2.vy += 500 * d * dt; } var lf = 1 - sp2.life / sp2.max;
         if (lf <= 0) { sparks.splice(i, 1); continue; } g.strokeStyle = rgba(cols[0], lf); g.lineWidth = 1.4 * d; g.beginPath(); g.moveTo(sp2.x, sp2.y); g.lineTo(sp2.x - sp2.vx * 0.025, sp2.y - sp2.vy * 0.025); g.stroke(); }
     }
     g.restore();
