@@ -22,3 +22,4 @@ Arc Burst (rendered 13 Oct, softer light): 15 frames in art/originals/sprites_hi
 7-9 hold = attack frame 6 with the full energy ball (scale 0.92/1.08/1.0, loop these while the burst lasts), 10-14 recovery = attack frames 7-11 fading. Bolts NOT baked in (game draws them).
 palms.json = palm point per frame in cell pixels (bolt start). Saved scene on Harley's PC: KingdomArt\kessa_sprites.blend.
 Bolt textures: art/originals/sprites_hires/kessa/arcburst/bolts.png = 4 strips (500x100 each, stacked), rendered in Blender (core + 2 halos, BoltMat/BoltHalo/BoltHalo2), brightened x1.9 after (the -0.85 sprite exposure dulled them). Game stretches a strip palm->target, height ~60% of its length scale, swapping strips every ~70 ms.
+LOCKED (Harley, 13 Oct): Arc Burst frames + Blender bolt textures as shown on the "Kessa Arc Burst" page (bolt drawn 60 px tall per 1x scale, 4 strips flickering every ~70 ms, chain bolt thinner/fainter).
