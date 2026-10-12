@@ -16,7 +16,7 @@ button[aria-pressed="false"] { background:transparent; color:var(--cyan); box-sh
 button:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
 </style>
 <div class="wrap">
-  <header><h1>Boss Sprite Sheet</h1><div class="sub">The 3D boss rendered into game frames (smooth, no outline), next to the current boss sprite at the same height. Gareth stands where he does at point blank.</div></header>
+  <header><h1>Boss Sprite Sheet</h1><div class="sub">The 3D boss rendered into game frames (smooth, no outline), next to the current boss sprite, both bodies the same height (feet to helmet). Gareth stands where he does at point blank.</div></header>
   <section class="stage"><canvas id="cv" aria-label="Boss animations"></canvas></section>
   <div class="bar" role="group" aria-label="Animation">
     <span class="lbl">Play</span>
@@ -51,7 +51,7 @@ button:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
     var g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.86, bh = H * 0.62;
     var sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, "#1a2742"); sky.addColorStop(1, "#33476e"); g.fillStyle = sky; g.fillRect(0, 0, W, gy); g.fillStyle = "#2c3a26"; g.fillRect(0, gy, W, H - gy);
     g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
-    if (old.complete && old.naturalWidth) { var os = bh / 200; g.drawImage(old, W * 0.25 - 128 * os, gy - 236 * os, 256 * os, 256 * os); }
+    if (old.complete && old.naturalWidth) { var os = bh / 235; g.drawImage(old, W * 0.25 - 124 * os, gy - 247 * os, 256 * os, 256 * os); } // his body is rows 12-247 of the 256 square: same body height + feet on the ground as the new one
     var t = (now - t0) / 1000 * (slow ? 0.25 : 1), fr = frameAt(t), k = bh / M.bodyH, bx = W * 0.72;
     if (im.complete && im.naturalWidth) g.drawImage(im, fr.f * M.cw, fr.row * M.ch, M.cw, M.ch, bx - M.ax * k, gy - M.ay * k, M.cw * k, M.ch * k);
     if (gar.complete && gar.naturalWidth) { var gk = bh * 0.3 / 122; g.drawImage(gar, 0, 0, GM.cw, GM.ch, bx - 40 * k - GM.ax * gk, gy - GM.ay * gk, GM.cw * gk, GM.ch * gk); }
