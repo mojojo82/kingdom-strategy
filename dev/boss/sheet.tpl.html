@@ -8,7 +8,7 @@ html, body { background:var(--night); color:var(--ink); font-family:system-ui,-a
 h1 { margin:0; font-family:Georgia,serif; color:var(--gold); font-size:1.4rem; }
 .sub { color:var(--dim); font-size:.9rem; margin-top:4px; max-width:65ch; }
 .stage { border:2px solid var(--bronze); border-radius:12px; overflow:hidden; background:var(--panel); }
-canvas { display:block; width:100%; height:340px; }
+canvas { display:block; width:100%; height:420px; }
 .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; border:2px solid var(--bronze); border-radius:12px; background:var(--panel); padding:10px 12px; }
 .lbl { color:var(--dim); font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; }
 button { font:600 .9rem system-ui,sans-serif; color:var(--cyan-ink); background:var(--cyan); border:0; border-radius:6px; padding:8px 12px; cursor:pointer; }
@@ -16,7 +16,7 @@ button[aria-pressed="false"] { background:transparent; color:var(--cyan); box-sh
 button:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
 </style>
 <div class="wrap">
-  <header><h1>Boss Sprite Sheet</h1><div class="sub">The 3D boss rendered into game frames (smooth, no outline), next to the current boss sprite, both bodies the same height (feet to helmet). Gareth stands where he does at point blank.</div></header>
+  <header><h1>Boss Sprite Sheet</h1><div class="sub">The 3D boss rendered into game frames (smooth, no outline, made at double size and shrunk for sharpness), next to the current boss sprite, both bodies the same height (feet to helmet). Gareth stands where he does at point blank.</div></header>
   <section class="stage"><canvas id="cv" aria-label="Boss animations"></canvas></section>
   <div class="bar" role="group" aria-label="Animation">
     <span class="lbl">Play</span>
@@ -42,18 +42,18 @@ button:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
   }
   function frameAt(t) {
     var P = plan(), tot = P.reduce(function (a, p) { return a + p[1]; }, 0), u = t % tot;
-    for (var i = 0; i < P.length; i++) { if (u < P[i][1]) { var row = M.rows[P[i][0]], n = row[1], f = Math.min(n - 1, Math.floor(u / P[i][1] * n)); return { row: row[0], f: P[i][2] ? n - 1 - f : f }; } u -= P[i][1]; }
-    return { row: 0, f: 0 };
+    for (var i = 0; i < P.length; i++) { if (u < P[i][1]) { var an = M.anims[P[i][0]], n = an[1], f = Math.min(n - 1, Math.floor(u / P[i][1] * n)), q = an[0] + (P[i][2] ? n - 1 - f : f); return { col: q % M.cols, row: Math.floor(q / M.cols) }; } u -= P[i][1]; }
+    return { col: 0, row: 0 };
   }
   function loop(now) {
     var c = document.getElementById("cv"), r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
     if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); }
-    var g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.86, bh = H * 0.62;
+    var g = c.getContext("2d"), W = c.width, H = c.height, gy = H * 0.9, bh = Math.min(H * 0.8, M.bodyH * d / 2); // 1 sheet px = 1 screen px on a 2x+ screen: the sharpness the game gets
     var sky = g.createLinearGradient(0, 0, 0, gy); sky.addColorStop(0, "#1a2742"); sky.addColorStop(1, "#33476e"); g.fillStyle = sky; g.fillRect(0, 0, W, gy); g.fillStyle = "#2c3a26"; g.fillRect(0, gy, W, H - gy);
     g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
     if (old.complete && old.naturalWidth) { var os = bh / 235; g.drawImage(old, W * 0.25 - 124 * os, gy - 247 * os, 256 * os, 256 * os); } // his body is rows 12-247 of the 256 square: same body height + feet on the ground as the new one
     var t = (now - t0) / 1000 * (slow ? 0.25 : 1), fr = frameAt(t), k = bh / M.bodyH, bx = W * 0.72;
-    if (im.complete && im.naturalWidth) g.drawImage(im, fr.f * M.cw, fr.row * M.ch, M.cw, M.ch, bx - M.ax * k, gy - M.ay * k, M.cw * k, M.ch * k);
+    if (im.complete && im.naturalWidth) g.drawImage(im, fr.col * M.cw, fr.row * M.ch, M.cw, M.ch, bx - M.ax * k, gy - M.ay * k, M.cw * k, M.ch * k);
     if (gar.complete && gar.naturalWidth) { var gk = bh * 0.3 / 122; g.drawImage(gar, 0, 0, GM.cw, GM.ch, bx - 40 * k - GM.ax * gk, gy - GM.ay * gk, GM.cw * gk, GM.ch * gk); }
     g.fillStyle = "#9aa3b5"; g.font = Math.round(12 * d) + "px system-ui"; g.textAlign = "center"; g.fillText("now", W * 0.25, H - 8 * d); g.fillText("new", bx, H - 8 * d);
     requestAnimationFrame(loop);
