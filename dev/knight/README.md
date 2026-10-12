@@ -22,5 +22,5 @@ for Gareth, and builds two preview pages. Nothing here is in the game yet (Oct 2
 Helpers: `moments.js '[t,...]' "<Anim>" [angle]` screenshots fit.html at given times (m0.png..), `strip.py N out.png [m]` joins them (m = mirror).
 Grip used for the sword: rx 0, ry 90, rz -90, size x2.43 (fit.tpl.html).
 
-Harley's picks so far (12 Oct 2026): attack = Mixamo slash, run = Mixamo run, hit = Mixamo impact. Still to come: proper idle, charge.
+Harley's picks so far (12 Oct 2026): attack = Mixamo slash, run = Mixamo run, hit = Mixamo impact (2nd version). Big hits: the game slides his sprite back a few px on top of the animation (Harley) - the mockup fakes it ("Hit push-back"). Still to come: proper idle, charge.
 The Mixamo slash is 1.5 s; at the game's attack speed (16 frames at 22 fps, ~0.7 s) it is slower than Gareth's 0.5 s swing - trim when it goes in.

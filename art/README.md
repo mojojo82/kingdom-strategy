@@ -29,4 +29,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | knight_with_sword.glb | The same knight posed holding a sword, from Meshy AI, as sent (9.1 MB) | 3D | not in the game - the sword is cut from it and fixed to the rigged knight's right hand (dev/knight/bake2.py) |
 | mixamo_sword_shield_slash.fbx | Mixamo "Sword And Shield Slash", skeleton only, as sent | animation | not in the game yet - Harley's pick for Gareth's attack (put on the knight by dev/knight/mixamo.py, held in place) |
 | mixamo_standard_run.fbx | Mixamo "Standard Run", skeleton only, as sent | animation | not in the game yet - Harley's pick for Gareth's run |
-| mixamo_sword_shield_impact.fbx | Mixamo "Sword And Shield Impact" (hit reaction), skeleton only, as sent | animation | not in the game yet - Gareth's knock-back for now (Harley may swap it later) |
+| mixamo_sword_shield_impact.fbx | Mixamo "Sword And Shield Impact" (hit reaction, the doubled-over one - replaced the first, head-snap version 12 Oct), skeleton only, as sent | animation | not in the game yet - Gareth's hit reaction; on a big hit the game should also slide him back a few px (Harley) |

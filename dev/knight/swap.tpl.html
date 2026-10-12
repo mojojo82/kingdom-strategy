@@ -45,8 +45,9 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     <button id="zBig" data-z="big" aria-pressed="true">Close up</button>
     <span class="sep"></span>
     <button id="bSlow" aria-pressed="false">Slow-mo</button>
+    <button id="bPush" aria-pressed="true">Hit push-back</button>
   </div>
-  <p class="note">"Idle" for the new knight is a stand-in (breathing ready stance) until a proper idle is made. "Get hit" only exists for the Mixamo set (the others stand idle). Charge is not in this mockup yet.</p>
+  <p class="note">"Idle" for the new knight is a stand-in (breathing ready stance) until a proper idle is made. "Get hit" only exists for the Mixamo set (the others stand idle). "Hit push-back" slides him back in code on top of the animation, the way the game would for a big hit. Charge is not in this mockup yet.</p>
 </div>
 <script>
 (function () {
@@ -55,10 +56,11 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   var NEW = Object.assign({ src: NEWSRC, fig: 183, pixel: false }, META, { rows: { idle: META.rows.idle, run: META.rows.run, attack: META.rows.attack } });
   var MIX = Object.assign({ src: NEWSRC, fig: 183, pixel: false }, META, { rows: Object.assign({}, META.rows, { attack: META.rows.mixamo, run: META.rows.mixrun }) });
   [OLD, NEW, MIX].forEach(function (s) { s.img = new Image(); s.img.src = s.src; });
-  var mode = "attack", zoom = "big", slow = false, t0 = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var mode = "attack", zoom = "big", slow = false, push = true, t0 = performance.now(), still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   function setPressed(attr, val) { document.querySelectorAll("[data-" + attr + "]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset[attr] === val ? "true" : "false"); }); }
   document.querySelectorAll("[data-a]").forEach(function (b) { b.onclick = function () { mode = b.dataset.a; t0 = performance.now(); setPressed("a", mode); }; });
   document.querySelectorAll("[data-z]").forEach(function (b) { b.onclick = function () { zoom = b.dataset.z; setPressed("z", zoom); }; });
+  document.getElementById("bPush").onclick = function () { push = !push; this.setAttribute("aria-pressed", push ? "true" : "false"); };
   document.getElementById("bSlow").onclick = function () { slow = !slow; this.setAttribute("aria-pressed", slow ? "true" : "false"); };
   function fit(c) { var r = c.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } return d; }
   // "Run in + fight": runs 1.2 s, then swings 4 times, then idles 1 s, repeat
@@ -79,6 +81,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     var an = S.rows[ph.a] ? ph.a : "idle", figPx = (zoom === "big" ? 170 : 56) * d, sc = figPx / S.fig, row = S.rows[an], fps = S.fps[an];
     var n = row[1], f = Math.floor(ph.t * fps) % n;
     var cx = W * 0.42 + ph.x * W * 0.35;
+    if (an === "hit" && push) { var hl = row[1] / fps, ht = (ph.t % hl), back = figPx * 0.16, u = ht < 0.18 ? 1 - Math.pow(1 - ht / 0.18, 3) : 1 - Math.min(1, (ht - 0.18) / (hl - 0.18)); cx -= back * u; }
     g.save(); g.imageSmoothingEnabled = !S.pixel;
     g.fillStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.ellipse(cx, ground + 2 * d, figPx * 0.28, figPx * 0.05, 0, 0, 7); g.fill();
     if (S.img.complete && S.img.naturalWidth) g.drawImage(S.img, f * S.cw, row[0] * S.ch, S.cw, S.ch, cx - S.ax * sc, ground - S.ay * sc, S.cw * sc, S.ch * sc);
