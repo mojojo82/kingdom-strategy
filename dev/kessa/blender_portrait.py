@@ -12,3 +12,4 @@
 # Head: Harley wants straight right / slight 3/4 right, never looking at us -> Spine2/Neck/Head turned about world Z (+0.135/+0.135/+0.225 from the state after the earlier tests).
 # Saved on his PC: C:\Users\Harley\KingdomArt\kessa_arcburst.blend / .png
 # In-between brightness (Harley, 13 Oct): exposure -0.55 (bright was -0.1). Frames: art/originals/sprites_hires/kessa/mid.
+# Softer (Harley 'tone back slightly more'): exposure -0.85. Frames: art/originals/sprites_hires/kessa/softer.
