@@ -13,3 +13,6 @@
 # Saved on his PC: C:\Users\Harley\KingdomArt\kessa_arcburst.blend / .png
 # In-between brightness (Harley, 13 Oct): exposure -0.55 (bright was -0.1). Frames: art/originals/sprites_hires/kessa/mid.
 # Softer (Harley 'tone back slightly more'): exposure -0.85. Frames: art/originals/sprites_hires/kessa/softer.
+# Hero card / overlord hi-res (Harley spec 13 Oct): full body, transparent, max detail, looping idle. Test: HeroCam persp 85 mm at (-1.05,-4.6,0.95) -> (0,-0.05,0.74),
+# 1600x2400 (body ~2020 px tall), Eevee 96 samples, exposure -0.7, 4096 texture, smooth shading ON. Subdivision BROKE the skinned low-poly mesh (holes in hair, face cracks) - don't use it.
+# Limit: the 10k-face Meshy remesh shows facets in the hair / cheeks at full size -> a higher-poly Meshy export (30-50k+) is needed for card quality. Test on his PC: KingdomArt\kessa_hero_test.png
