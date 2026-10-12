@@ -1557,3 +1557,6 @@
 - Harley: "move gareths 2 bars up a little more" - they sat on the 3D knight's helmet plume. New per-hero knob barLift (game units x hero scale) on HERO_ANIMS; Gareth 5. Conquest bars only
   (the Arena draws its own bars). Checked headless before/after at 3x DPR. Not checked on a phone.
 
+## v1104 - Gareth's bars up a bit more (TEST)
+- Harley: "up a bit more" - barLift 5 -> 9.
+
