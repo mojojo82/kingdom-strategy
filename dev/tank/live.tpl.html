@@ -18,18 +18,19 @@ p{opacity:.75;line-height:1.4;font-size:13px}
 <h1>Steam Tank - live on the village level</h1>
 <canvas id="c"></canvas>
 <div class="ctl">
-<div class="btns"><button id="fire">Fire</button><button id="auto">Auto fire: on</button><button id="roll" class="off">Treads: still</button><button id="old" class="off">Old boss size</button><button id="reset" class="off">Reset</button></div>
+<div class="btns"><button id="fire">Fire</button><button id="auto">Auto fire: on</button><button id="roll" class="off">Treads: still</button><button id="old" class="off">Old boss size</button><button id="hatch" class="off">Hatch: closed</button><button id="reset" class="off">Reset</button></div>
 <div id="sl"></div>
-<p>Live drawing, not a video. The village backdrop is a still from the TEST game at phone size (430px wide); the tank is drawn at the same scale the game uses. Tell me the numbers you land on.</p>
+<p>The dashed gold circle is the cannon's target (rough centre of the fortress hull). Drag "Target height" to fake a taller or shorter fortress skin (e.g. Voidspire). Live drawing, not a video. The village backdrop is a still from the TEST game at phone size (430px wide); the tank is drawn at the same scale the game uses. Tell me the numbers you land on.</p>
 </div></div>
 <script>
 var P=__PARTS__, BG="__BG__", A={x:352.6,feetY:200.76,size:116,w:430};
-var D={size:60,contrast:78,colour:80,bright:90,edge:15};
-var S=JSON.parse(JSON.stringify(D)), defs=[['size','Size %',30,120],['contrast','Contrast %',40,120],['colour','Colour %',30,130],['bright','Brightness %',50,120],['edge','Off-screen %',0,45]];
+var D={size:55,contrast:89,colour:42,bright:86,edge:5,aimy:0};
+var S=JSON.parse(JSON.stringify(D)), defs=[['size','Size %',30,120],['contrast','Contrast %',40,120],['colour','Colour %',30,130],['bright','Brightness %',50,120],['edge','Off-screen %',0,45],['aimy','Target height',-60,40]];
 var sl=document.getElementById('sl');
 defs.forEach(function(d){var r=document.createElement('div');r.className='row';r.innerHTML='<span>'+d[1]+'</span><input type="range" min="'+d[2]+'" max="'+d[3]+'" step="1"><span></span>';
   var inp=r.children[1],out=r.children[2];inp.value=S[d[0]];out.textContent=S[d[0]];inp.oninput=function(){S[d[0]]=+inp.value;out.textContent=inp.value;dirty=true};d.push(inp,out);sl.appendChild(r)});
 document.getElementById('reset').onclick=function(){defs.forEach(function(d){S[d[0]]=D[d[0]];d[4].value=D[d[0]];d[5].textContent=D[d[0]]});dirty=true};
+var hatch=0,hatchOpen=false;document.getElementById('hatch').onclick=function(){hatchOpen=!hatchOpen;this.textContent='Hatch: '+(hatchOpen?'open':'closed');this.className=hatchOpen?'':'off'};
 var auto=true,roll=false,showOld=false;
 document.getElementById('auto').onclick=function(){auto=!auto;this.textContent='Auto fire: '+(auto?'on':'off');this.className=auto?'':'off'};
 document.getElementById('roll').onclick=function(){roll=!roll;this.textContent='Treads: '+(roll?'rolling':'still');this.className=roll?'':'off'};
@@ -39,9 +40,10 @@ c.width=430*dpr;c.height=258*dpr;
 var bg=new Image();bg.src=BG;var SRC={},left=0,I={},dirty=true;
 Object.keys(P).forEach(function(k){left++;var im=new Image();im.onload=function(){if(--left==0){requestAnimationFrame(loop)}};im.src=P[k].src;SRC[k]=im});
 // tank geometry (source pixels)
-var TUR_DY=74,TRK={x0:300,x1:1370,top:646,r:84,th:56};TRK.cy=TRK.top+TRK.th/2+TRK.r;
+var TUR_DY=74,TRK={x0:190,x1:1370,top:646,r:84,th:56};TRK.cy=TRK.top+TRK.th/2+TRK.r;
 var L=TRK.x1-TRK.x0,per=2*L+2*Math.PI*TRK.r,NPL=Math.round(per/47.67),pitch=per/NPL,GROUND=TRK.cy+TRK.r+TRK.th/2,TOP=12+TUR_DY,CX=(36+1460)/2;
-var WR=48,SR=62,wheelsX=[TRK.x0,420,540,660,780,900,1020,1140,1260,TRK.x1];
+var WR=48,SR=62,wheelsX=[TRK.x0];for(var wi=1;wi<=9;wi++)wheelsX.push(TRK.x0+(TRK.x1-TRK.x0)*wi/10);wheelsX.push(TRK.x1);
+var PIV={x:600,y:236},FORT={x:70,y:175};
 function tp(s){s=((s%per)+per)%per;if(s<L)return{x:TRK.x1-s,y:TRK.cy-TRK.r,a:0};s-=L;var arc=Math.PI*TRK.r;
   if(s<arc){var t=s/TRK.r;return{x:TRK.x0-Math.sin(t)*TRK.r,y:TRK.cy-Math.cos(t)*TRK.r,a:-t}}s-=arc;
   if(s<L)return{x:TRK.x0+s,y:TRK.cy+TRK.r,a:Math.PI};s-=L;var t=s/TRK.r;return{x:TRK.x1+Math.sin(t)*TRK.r,y:TRK.cy+Math.cos(t)*TRK.r,a:Math.PI-t}}
@@ -55,7 +57,7 @@ function rebuild(){var k=kNow()*dpr*1.5;
       r=l+(r-l)*Sa;gg=l+(gg-l)*Sa;b=l+(b-l)*Sa;r=((r/255-.5)*C+.5)*255*B;gg=((gg/255-.5)*C+.5)*255*B;b=((b/255-.5)*C+.5)*255*B;
       a[i]=r<0?0:r>255?255:r;a[i+1]=gg<0?0:gg>255?255:gg;a[i+2]=b<0?0:b>255?255:b}
     g.putImageData(d,0,0);I[n]=cv});dirty=false}
-var dist=0,fireT=-9,lastFire=0,last=0,smoke=[];
+var aim=0,muzzleM=null,dist=0,fireT=-9,lastFire=0,last=0,smoke=[];
 document.getElementById('fire').onclick=function(){fireT=performance.now()/1000};
 function img(n,dx,dy){var p=P[n].r;x.drawImage(I[n],p[0]+(dx||0),p[1]+(dy||0),p[2],p[3])}
 function spin(n,cx,cy,rad,ang){var p=P[n].r,s=rad*2/Math.max(p[2],p[3]);x.save();x.translate(cx,cy);x.rotate(ang);x.drawImage(I[n],-p[2]*s/2,-p[3]*s/2,p[2]*s,p[3]*s);x.restore()}
@@ -68,11 +70,17 @@ function loop(ms){var t=ms/1000,dt=Math.min(.05,t-last);last=t;if(dirty)rebuild(
   if(showOld){x.strokeStyle='rgba(232,196,106,.9)';x.setLineDash([3,3]);x.strokeRect(A.x-A.size/2,fy-A.size,A.size,A.size);x.setLineDash([])}
   var ft=t-fireT,recoil=0,kick=0,rock=0;
   if(ft>=0&&ft<1.2){recoil=ft<.06?ft/.06:Math.max(0,1-(ft-.06)/.7);recoil=Math.pow(recoil,1.5);kick=recoil;rock=Math.sin(Math.min(1,ft/.9)*Math.PI*2.5)*Math.exp(-ft*3)}
+  var tx=FORT.x,ty=FORT.y+S.aimy,psx=cx+(PIV.x-CX)*k,psy=fy+(PIV.y+TUR_DY-GROUND)*k;
+  var want=-Math.atan2(ty-psy,psx-tx);want=Math.max(-0.45,Math.min(0.3,want));aim+=(want-aim)*Math.min(1,dt*4);
+  hatch+=((hatchOpen?1:0)-hatch)*Math.min(1,dt*6);
+  x.save();x.strokeStyle='rgba(232,196,106,.8)';x.setLineDash([2,2]);x.beginPath();x.arc(tx,ty,5,0,7);x.stroke();x.setLineDash([]);x.restore();
   x.save();x.translate(cx,fy);x.scale(k,k);x.translate(-CX,-GROUND);
   var bob=roll?Math.sin(dist/pitch*Math.PI*2)*1.2:0;
   x.save();x.translate(TRK.x1,GROUND);x.rotate(-rock*0.025);x.translate(-TRK.x1+rock*6,-GROUND+bob);
   x.save();x.translate(kick*10,TUR_DY-kick*2);x.translate(900,250);x.rotate(kick*0.03);x.translate(-900,-250);
-  img('barrel',recoil*48,0);img('turret');
+  x.save();x.translate(PIV.x,PIV.y);x.rotate(aim);x.translate(-PIV.x,-PIV.y);img('barrel',recoil*48,0);x.translate(36+recoil*48,PIV.y);muzzleM=x.getTransform();x.restore();
+  img('turret');
+  if(hatch<0.5)img('lidc');else{var lp=P.lid.r,sy=(hatch-0.5)*2;x.save();x.translate(0,lp[1]+lp[3]);x.scale(1,sy);x.translate(0,-(lp[1]+lp[3]));img('lid');x.restore()}
   var gl=.22+.18*Math.sin(t*9)+.08*Math.sin(t*23);x.globalCompositeOperation='lighter';x.fillStyle='rgba('+shade()+','+gl+')';x.fillRect(1094,222,56,78);x.globalCompositeOperation='source-over';
   x.restore();
   img('hull');
@@ -81,9 +89,9 @@ function loop(ms){var t=ms/1000,dt=Math.min(.05,t-last);last=t;if(dirty)rebuild(
   for(var i=0;i<wheelsX.length;i++){if(i==0)spin('wheel',wheelsX[i],TRK.cy,TRK.r-TRK.th/2+4,-dist/(TRK.r-24));else if(i==wheelsX.length-1)spin('sprocket',wheelsX[i],TRK.cy,SR,-dist/SR);else spin('wheel',wheelsX[i],TRK.cy+TRK.r-TRK.th/2-WR+4,WR,-dist/WR)}
   var pr=P.plate.r;for(var q=0;q<NPL;q++){var p=tp(q*pitch+dist);x.save();x.translate(p.x,p.y);x.rotate(p.a);x.drawImage(I.plate,-pr[2]/2,-pr[3]/2,pr[2]*1.02,pr[3]);x.restore()}
   x.restore();
-  if(ft>=0&&ft<.2){var f=1-ft/.2,mx=36+recoil*48,my=236+TUR_DY;x.save();x.globalCompositeOperation='lighter';
+  if(ft>=0&&ft<.2&&muzzleM){var f=1-ft/.2,mx=0,my=0;x.save();x.setTransform(muzzleM);x.globalCompositeOperation='lighter';
     for(var j=0;j<3;j++){x.fillStyle=['rgba(255,240,180,','rgba(255,170,60,','rgba(255,90,20,'][j]+(f*.8)+')';x.beginPath();x.ellipse(mx-60-j*30,my,90+j*50,40+j*18,0,0,7);x.fill()}x.restore()}
-  if(ft>=0&&ft<dt*1.5)for(var j=0;j<10;j++)smoke.push({x:0,y:236+TUR_DY,vx:-200-Math.random()*250,vy:(Math.random()-.5)*90,r:25+Math.random()*25,l:0,L:1.1+Math.random()*.7,g:120});
+  if(ft>=0&&ft<dt*1.5)for(var j=0;j<10;j++)smoke.push({x:PIV.x+Math.cos(aim)*(36-PIV.x),y:PIV.y+TUR_DY+Math.sin(aim)*(36-PIV.x),vx:-(200+Math.random()*250)*Math.cos(aim),vy:(Math.random()-.5)*90-(200+Math.random()*250)*Math.sin(aim),r:25+Math.random()*25,l:0,L:1.1+Math.random()*.7,g:120});
   if(Math.random()<dt*5)smoke.push({x:1228+kick*10,y:66+TUR_DY,vx:20,vy:-60-Math.random()*30,r:12,l:0,L:2+Math.random(),g:70});
   for(var j=smoke.length-1;j>=0;j--){var s=smoke[j];s.l+=dt;if(s.l>s.L){smoke.splice(j,1);continue}s.x+=s.vx*dt;s.y+=s.vy*dt;s.vx*=.97;s.r+=dt*s.g*.5;x.fillStyle='rgba('+s.g+','+s.g+','+(s.g+8)+','+((1-s.l/s.L)*.45)+')';x.beginPath();x.arc(s.x,s.y,s.r,0,7);x.fill()}
   x.restore();
