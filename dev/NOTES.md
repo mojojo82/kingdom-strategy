@@ -1571,3 +1571,11 @@
   the defeat waits for it, so the defeat still plays: bar to 0, then the banner). No damage number on a landed shot while the Hex Shield is up (its ripple shows the hit).
 - dev/simfork/g269_hexbar.js: bar = real HP with the shield up (gap 0.0) and without (0 samples below), defeat still shows. Old build fails it. Not checked on a phone.
 
+## v1107 - Death Strike fires with every Shield Slam (TEST)
+- Harley: "The deathstrike seems intermittent. I see it loaded and gareth uses his skill but the deathstrike doesnt activate (sometimes)".
+- Cause: idleFireLimit only counted enemies that had ARRIVED (and were alive after the slam). Shield Slam has no arrival limit (v845), so a slam on an enemy still walking in
+  left the full bar unfired (it waited for the next slam). Repro g270: 1 of 4 slams missed, all "no arrived enemy".
+- Fix: Death Strike targets every living enemy (front first), walking in or not. If the slam killed the last living enemy there is nothing to strike: the bar stays loaded for the next slam.
+  Arena already fired every time (fireLimits) - now the two match.
+- dev/simfork/g270_deathstrike.js: bar kept full, 7 of 7 slams fired it. Balance meta check: same pre-existing warning (Arena sim, untouched). Not checked on a phone.
+

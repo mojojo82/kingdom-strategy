@@ -8655,7 +8655,7 @@ function createGame(opts) {
   function idleFireLimit(key) {
     var L = idleLimitSkill(key), h = state.heroes[key]; if (!L || !h || !h.owned || idleHeroIsKo(key)) return;
     var lm = state.idle.limit || (state.idle.limit = {}); if ((lm[key] || 0) < L.sk.hitsToFill) return;
-    var live = state.idle.enemies.filter(function (e0) { return e0.hp > 0 && e0.arrived; }); if (!live.length) return;
+    var live = state.idle.enemies.filter(function (e0) { return e0.hp > 0; }); if (!live.length) return; // v1107: every living enemy counts, walking in or not - Shield Slam itself has no arrival limit (v845), so a slam on an enemy still walking in left a full Death Strike unfired. Nothing alive (the slam killed the last one) = it stays loaded for the next slam
     var lv = heroSkillLevel(key, "conquest", L.idx), n = L.sk.targetsByLevel[Math.max(1, Math.min(L.sk.targetsByLevel.length, lv)) - 1];
     var dmgL = skillValueAtLevel(key, L.idx, lv, L.sk, h, idleAttackerDamage(key)), ids = [];
     lm[key] = 0; state.idle.limitFires = (state.idle.limitFires || 0) + 1;
@@ -11456,7 +11456,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1106"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1107"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
