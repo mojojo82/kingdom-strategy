@@ -1,0 +1,2 @@
+# 2D cutout test (12 Oct 2026)
+Harley's ChatGPT 2D-filtered rhino (art/originals/rhino_2d_gpt_test.png, checkerboard drawn in - removed by flood fill from the edges) cut into 6 flat parts (head, body, front/back leg pair, 2 cannons - cannons cut as bands round each barrel axis + loose bits) and animated by rotating parts about pivots (cutout.tpl.html: Idle, Fire, Stomp walk, Pieces). The body keeps a little of each joining part (overlap) so no gaps open. Pipeline: clean background -> rhino.png, python3 cut.py -> parts.json, paste into the template.

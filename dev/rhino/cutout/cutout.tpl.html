@@ -1,0 +1,66 @@
+<meta charset="utf-8">
+<title>Rhino Cutout Test</title>
+<style>
+/* Layout: one stage + control row - game palette */
+:root { --night:#0b1120; --bronze:#8a6a3a; --gold:#f0c95f; --ink:#e9e4d6; --dim:#9aa3b5; --panel:#101a2e; color-scheme:dark; }
+html, body { background:var(--night); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+.wrap { max-width:820px; margin:0 auto; padding-block:14px 26px; padding-inline:16px; display:grid; gap:12px; }
+h1 { margin:0; font-family:Georgia,serif; color:var(--gold); font-size:1.35rem; } .sub { color:var(--dim); font-size:.88rem; margin-top:4px; max-width:68ch; }
+.stage { border:2px solid var(--bronze); border-radius:14px; overflow:hidden; background:linear-gradient(#1a2742,#33476e 84%,#2c3a26 84%); }
+canvas { display:block; width:100%; height:auto; aspect-ratio:1536/1124; }
+.ctl { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; background:var(--panel); border:1px solid #2a3a5c; border-radius:12px; padding:10px 12px; font-size:.88rem; }
+select { background:#0e1626; color:var(--ink); border:1px solid #3a4a6c; border-radius:6px; padding:5px 8px; font-weight:600; } select:focus-visible { outline:2px solid var(--gold); }
+</style>
+<div class="wrap">
+  <header><h1>Rhino Cutout Test</h1><div class="sub">Your ChatGPT picture cut into 6 flat pieces (head, body, 2 legs, 2 cannons) that swivel on their joints - no 3D, no new drawing.</div></header>
+  <div class="stage"><canvas id="cv" width="1536" height="1124" aria-label="Animated rhino"></canvas></div>
+  <div class="ctl">
+    <label>Animation <select id="anim"><option>Idle</option><option selected>Fire</option><option>Stomp walk</option><option>Pieces</option></select></label>
+    <label>Speed <select id="spd"><option value="1" selected>Normal</option><option value="0.35">Slow-mo</option></select></label>
+  </div>
+</div>
+<script>
+var PARTS = __PARTS__;
+(function () {
+  var cv = document.getElementById("cv"), g = cv.getContext("2d"), P = {}, ready = 0;
+  PARTS.parts.forEach(function (p) { p.img = new Image(); p.img.onload = function () { ready++; }; p.img.src = p.src; P[p.name] = p; });
+  var D = Math.PI / 180, t = 0, last = performance.now(), flashes = [];
+  // per-part pose: rotation (deg) about its pivot + shift (px). Children of body: head, cannons (they ride the body); legs stay on the ground.
+  function pose(a, t) {
+    var o = { body: { r: 0, x: 0, y: 0 }, head: { r: 0 }, cannonF: { r: 0, x: 0, y: 0 }, cannonB: { r: 0, x: 0, y: 0 }, legF: { r: 0 }, legB: { r: 0 } };
+    if (a === "Idle") { var b = Math.sin(t * 1.7); o.body.y = 4 + b * 4; o.body.r = b * 0.5; o.head.r = Math.sin(t * 1.7 - 0.6) * 2.2; o.cannonF.r = Math.sin(t * 0.9) * 3; o.cannonB.r = Math.sin(t * 0.9 + 1.3) * 3; }
+    else if (a === "Fire") { var c = t % 3.2, aim = Math.min(1, c / 0.5) * (c > 2.6 ? Math.max(0, 1 - (c - 2.6) / 0.5) : 1);
+      function k(t0) { var u = (c - t0) / 0.35; return (u < 0 || u > 1) ? 0 : (u < 0.12 ? u / 0.12 : 1 - (u - 0.12) / 0.88); }
+      var kF = k(0.75) + k(1.55), kB = k(1.15) + k(1.95);
+      o.cannonF.r = -38 * aim + kF * 7; o.cannonB.r = -38 * aim + kB * 7; o.cannonF.x = kF * 14; o.cannonB.x = kB * 14; o.cannonF.y = kF * 4; o.cannonB.y = kB * 4;
+      o.body.x = (kF + kB) * 6; o.body.r = -(kF + kB) * 0.8; o.body.y = 3; o.head.r = -3 * aim;
+      [[0.75, "cannonF"], [1.55, "cannonF"], [1.15, "cannonB"], [1.95, "cannonB"]].forEach(function (s) { var u = (c - s[0]) / 0.25; if (u >= 0 && u < 1) o[s[1]].flash = u; }); }
+    else if (a === "Stomp walk") { var w = t * 3.2, sF = Math.sin(w), sB = Math.sin(w + Math.PI);
+      o.body.y = 4 + Math.abs(Math.sin(w)) * 8; o.body.x = Math.sin(w * 2) * 3; o.body.r = Math.sin(w) * 1.2; o.head.r = Math.sin(w * 2 + 0.5) * 2.5;
+      o.legF.r = sF * 7; o.legF.lift = Math.max(0, Math.cos(w)) * 22; o.legB.r = sB * 7; o.legB.lift = Math.max(0, Math.cos(w + Math.PI)) * 22; o.cannonF.r = Math.sin(w * 2) * 2; o.cannonB.r = Math.sin(w * 2 + 1) * 2; }
+    else { var e = 0.5 + 0.5 * Math.sin(t * 1.6); o.head = { r: 0, x: -120 * e, y: 20 * e }; o.cannonF = { r: 0, x: 40 * e, y: -60 * e }; o.cannonB = { r: 0, x: 110 * e, y: -40 * e }; o.legF = { r: 0, x: -30 * e, y: 90 * e }; o.legB = { r: 0, x: 60 * e, y: 80 * e }; }
+    return o;
+  }
+  function draw(p, q, par) { // draw part p rotated q.r about its pivot (+ shift), inside its parent's transform
+    g.save();
+    if (par) { g.translate(par.px, par.py); g.rotate(par.r * D); g.translate(-par.px + (par.x || 0), -par.py + (par.y || 0)); }
+    g.translate(p.px + (q.x || 0), p.py + (q.y || 0) - (q.lift || 0)); g.rotate((q.r || 0) * D); g.translate(-p.px, -p.py);
+    g.drawImage(p.img, p.x, p.y);
+    if (q.flash != null) { var mz = { cannonF: [1290, 15], cannonB: [1510, 60] }[p.name], s = 1 - q.flash; var gr = g.createRadialGradient(mz[0], mz[1], 2, mz[0], mz[1], 70 * s + 10);
+      gr.addColorStop(0, "rgba(255,250,210," + s + ")"); gr.addColorStop(0.4, "rgba(255,170,60," + (0.8 * s) + ")"); gr.addColorStop(1, "rgba(255,90,0,0)"); g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.beginPath(); g.arc(mz[0], mz[1], 80, 0, 7); g.fill(); g.globalCompositeOperation = "source-over"; }
+    g.restore();
+  }
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000) * +document.getElementById("spd").value; last = now; t += dt;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 1536, 1124); g.translate(0, 95); // headroom for the raised cannons
+    if (ready === PARTS.parts.length) {
+      var o = pose(document.getElementById("anim").value, t), b = Object.assign({ px: P.body.px, py: P.body.py }, o.body);
+      g.fillStyle = "rgba(0,0,0,.28)"; g.beginPath(); g.ellipse(1000, 1000, 520, 26, 0, 0, 7); g.fill();
+      draw(P.legB, o.legB); draw(P.legF, o.legF); draw(P.cannonB, o.cannonB, b); draw(P.cannonF, o.cannonF, b); draw(P.body, o.body); draw(P.head, o.head, b);
+    }
+    requestAnimationFrame(frame);
+  }
+  window.__setT = function (v) { t = v; };
+  requestAnimationFrame(frame);
+})();
+</script>

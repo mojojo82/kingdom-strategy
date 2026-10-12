@@ -36,3 +36,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 
 | rhino_mech_lowpoly.glb | Mech rhino (tank-green weathered armor, twin back cannons) from Meshy AI, low-poly export (5.1k tris, 2 x 4096 textures, 32 MB) | 3D | not in the game yet - future chapter boss; rigid rig in dev/rhino |
 | sprites_hires/rhino/rhino_idle_strip.png | Rhino idle, 12 frames (one breath, 3.9 s) at 1235x847 per frame, plain lighting, transparent, facing left (game angle) - the raw render Harley takes to ChatGPT for the 2D filter | backup | not in the game yet (dev/rhino/render.js) |
+| rhino_2d_gpt_test.png | Mech rhino after Harley's ChatGPT 2D filter (pink/blue pixel style, checkerboard drawn into the picture) | 1536x1024 | not in the game - 2D cutout animation test (dev/rhino/cutout) |
