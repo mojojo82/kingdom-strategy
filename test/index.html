@@ -11146,6 +11146,22 @@ function fortLayoutPoint(w, h, mode, isPlayerSide, name, withLife) { // null = t
   var L = skinLayoutFor(box.skin), p = L && L[name]; if (!p || p.length < 2) return null;
   return fortHullPoint(box, p);
 }
+var fortMassCache = {}; /* v1117: middle of a skin picture's solid pixels (fractions of the picture) - a thin spire or mast barely moves it, so it lands on the hull */
+function fortHullMass(w, h) { /* Conquest: the screen point at the middle of the equipped fortress's hull, or null */
+  var box = fortHullBox(w, h, "conquest", true, true); if (!box) return null;
+  var im = box.skin.cq, key = im && im.src ? im.src.length + ":" + im.src.slice(-40) : ""; var m = fortMassCache[key];
+  if (!m && im && im.naturalWidth) {
+    m = [0.5, 0.5];
+    try {
+      var n = 64, cv = document.createElement("canvas"); cv.width = n; cv.height = n; var cx = cv.getContext("2d"); cx.drawImage(im, 0, 0, n, n);
+      var d = cx.getImageData(0, 0, n, n).data, sx = 0, sy = 0, sa = 0;
+      for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) { var a = d[(y * n + x) * 4 + 3]; if (a > 128) { sx += x + 0.5; sy += y + 0.5; sa++; } }
+      if (sa) m = [sx / sa / n, sy / sa / n];
+    } catch (e) {}
+    fortMassCache[key] = m;
+  }
+  return m ? fortHullPoint(box, m) : null;
+}
 var arenaAiWeaponOrder = []; // the bot's weapons in the order first seen this match (its slot 1-3)
 function weaponSlotPoint(w, h, mode, isPlayerSide, weaponId) { // where an equipped weapon fires from: its weapon slot, or null = the old spot
   if (!weaponId) return null;
@@ -11537,7 +11553,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1116"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1117"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -19447,7 +19463,8 @@ var TANKB = (function () {
     var cx = bx + ((w - half * (1 - 2 * TANK_BOSS.edge)) - idleBossX(w));
     return { k: k, cx: cx, fy: feetY - TANK_BOSS.lift };
   }
-  function target(h) { return { x: st.lastW * (enemyTargetXPct / 100), y: (h || st.lastH || 258) * (enemyTargetYPct / 100) + 0 }; }
+  function target(h) { var hh = h || st.lastH || 258, m = fortHullMass(st.lastW, hh); /* v1117: the equipped skin's hull, not the one fixed enemy-target spot */
+    return m || { x: st.lastW * (enemyTargetXPct / 100), y: hh * (enemyTargetYPct / 100) }; }
   function wantAim(g) {
     var t = target(), psx = g.cx + (PIV.x - CX) * g.k, psy = g.fy + (PIV.y + TUR_DY - GROUND) * g.k;
     var a = -Math.atan2(t.y - psy, psx - t.x) - BASE; return Math.max(-0.5, Math.min(0.3, a));
@@ -19501,7 +19518,7 @@ var TANKB = (function () {
     x.restore();
     return true;
   }
-  return { draw: draw, muzzle: muzzle, fire: function () { st.fireT = performance.now() / 1000; st.smoked = false; } };
+  return { draw: draw, muzzle: muzzle, target: target, fire: function () { st.fireT = performance.now() / 1000; st.smoked = false; } };
 })();
 function drawTankBoss(ctx, x, feetY, size) { return TANKB.draw(ctx, x, feetY, size); }
 /* where a boss shot starts: the tank's muzzle (and the tank fires) or the classic boss's hand */
@@ -19673,6 +19690,7 @@ function spawnEnemyProjectile(fromX, fromY, w, h, arc, dmg, isBossOrb, heroKey) 
   // "-HP" number pops the moment this specific shot actually lands, not
   // when it's fired — see the arrival loop in stepIdleAnim.
   idleAnim.enemyProjectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: w * (enemyTargetXPct / 100), toY: h * (enemyTargetYPct / 100), t: 0, dmg: dmg || 0, orb: !!isBossOrb, shell: !!isBossOrb && tankBossOn(), heroKey: heroKey || null }); /* v1116: shell = the tank's cannonball look */
+  var lp = idleAnim.enemyProjectiles[idleAnim.enemyProjectiles.length - 1]; if (lp.shell && !lp.heroKey) { var tt = TANKB.target(h); lp.toX = tt.x; lp.toY = tt.y; } /* v1117: a shell at the fortress lands where the cannon points */
 }
 // Code-drawn "pop" explosion for a normal enemy's death: a ring of small
 // rotating fragment squares flying outward, plus a quick expanding shockwave

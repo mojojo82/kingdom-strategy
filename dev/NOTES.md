@@ -1662,3 +1662,8 @@
 - Dev Tools > Chapter Boss > "Boss look": Classic / Boss 2 (Tank). Shared admin setting kingdom_prototype_bosslook_v1 (default Boss 2).
 - Not changed: boss name + HP bar still sit where the old boss's head was (high above the tank).
 - dev/simfork/g276_tankboss.js. Not checked on a phone.
+
+## v1117 - Tank cannon aims at the equipped skin's hull (TEST)
+- Harley: with Voidspire equipped the cannon aimed too low. It was aiming at the one fixed enemy-target spot (Dev Tools Enemy Target X/Y), the same for every skin.
+- Now: fortHullMass() = the middle of the equipped skin picture's solid pixels (a thin spire or mast barely moves it), read from the same box the skin is drawn in; the cannon aims there and its shells at the fortress land there. Shells at a hero, and every other enemy's shots, are unchanged. Nothing to set per skin.
+- g276 checks the aim point is inside the skin picture for the default skin and Voidspire and moves with the skin. Not checked on a phone.

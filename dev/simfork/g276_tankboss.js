@@ -34,16 +34,24 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   }, ms);
   const r1 = await run(45000);
   await P.screenshot({ path: path.join(__dirname, "out_g276_tank.png") });
-  await P.evaluate(() => setBossLook("classic"));
+  const sk = await P.evaluate(async () => { /* v1117: the cannon aims at the equipped skin's hull */
+    const h = document.getElementById("idleCanvas").clientHeight, w = document.getElementById("idleCanvas").clientWidth, out = {};
+    for (const id of [FORTRESS_SKINS[0].id, "void"]) { game.state.fortressSkin = id; await new Promise((r) => setTimeout(r, 1500)); const b = fortHullBox(w, h, "conquest", true, true), t = TANKB.target(h);
+      out[id] = { t, box: b && { x: b.x, y: b.y, sw: b.sw, sh: b.sh } }; }
+    return out; });
+  await P.screenshot({ path: path.join(__dirname, "out_g276_void.png") });
+  await P.evaluate(() => { game.state.fortressSkin = FORTRESS_SKINS[0].id; setBossLook("classic"); });
   const r2 = await run(12000);
   await P.screenshot({ path: path.join(__dirname, "out_g276_classic.png") });
   await P.evaluate(() => setBossLook("tank"));
-  console.log(JSON.stringify({ look, tank: { drawn: r1.drawn, shots: r1.shots.slice(0, 4), n: r1.shots.length, boss: r1.boss, w: r1.w }, classic: { drawn: r2.drawn, shots: r2.shots.slice(0, 2), n: r2.shots.length }, errs }));
+  console.log(JSON.stringify({ sk, look, tank: { drawn: r1.drawn, shots: r1.shots.slice(0, 4), n: r1.shots.length, boss: r1.boss, w: r1.w }, classic: { drawn: r2.drawn, shots: r2.shots.slice(0, 2), n: r2.shots.length }, errs }));
   await b.close();
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []); assert.strictEqual(look, "tank", "Boss 2 is the default look"); assert(r1.boss, "boss reached"); assert(r1.drawn > 50, "tank drawn");
     assert(r1.shots.length > 2, "boss shots"); r1.shots.forEach((s) => { assert(s.shell, "tank shot is a shell"); assert(s.x < r1.w && s.x > r1.w * 0.4 && s.y < s.gy, "shot starts at the muzzle (on screen, above the ground)"); });
     assert.strictEqual(r2.drawn, 0, "classic look draws no tank"); r2.shots.forEach((s) => assert(!s.shell, "classic shot is the orb"));
+    Object.values(sk).forEach((o) => { assert(o.box, "skin box"); assert(o.t.x > o.box.x && o.t.x < o.box.x + o.box.sw && o.t.y > o.box.y && o.t.y < o.box.y + o.box.sh, "aim point inside the skin picture"); });
+    assert(Math.abs(sk.void.t.y - sk[Object.keys(sk)[0]].t.y) > 0.5 || Object.keys(sk)[0] === "void", "aim follows the skin");
     console.log("g276 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });
