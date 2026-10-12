@@ -1560,3 +1560,6 @@
 ## v1104 - Gareth's bars up a bit more (TEST)
 - Harley: "up a bit more" - barLift 5 -> 9.
 
+## v1105 - Gareth's slash more see-through (TEST)
+- Harley: "make the slash slightly more see through so i can see the sword". New slashFx.alpha (1 = as before); Gareth 0.6 - the 3 ribbon layers only (sparks / hit burst unchanged). g268 OK.
+
