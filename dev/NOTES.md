@@ -1611,3 +1611,14 @@
 - Caught by the test before shipping: the new buttons shared the "Reset this skin" button's class and the reset handler attached to the first one (the grid button would
   have reset the skin). Reset now has its own class (sl-rs). g271 extended (grid on, mouse drag, lands on a grid point). Not checked on a phone.
 
+## v1112 - the 3D chapter boss (TEST)
+- Harley's rigged Meshy dark knight, hand-posed to his notes (dev/boss: arm-down idle with flared arm + turned-out foot, raise toward the fortress palm-out, a "low"
+  version aimed at infantry under him, and a stomp), rendered at 2x (smooth, no outline) and shrunk to a 340 px body = sharp on a 3x phone. Sheet 3420x2112 webp
+  (~1.8 MB, 68 frames, 12 per line). Hi-res backup art/originals/sprites_hires/boss. Same body height as the old pixel boss.
+- In game (drawBoss3D via drawBossAnim, BOSS3D_ON): arm down while he walks in; his first shot raises the arm (that orb waits for the hand, the rest leave the palm:
+  BOSS3D.hand points measured from the 3D pose); holds while shooting; lowers 4 s after the last shot. An infantry hero within ~half his size of him -> the low aim
+  (220 ms cross-fades between poses). A shot at that hero is a stomp 40% of the time (BOSS3D_STOMP_CHANCE): no orb, the damage number lands with the foot
+  (frame 9) with dust + a 220 ms canvas shake + the hero's big-hit check. Visual only - engine hits untouched. Old sprite / BOSS_ANIM stay as fallbacks.
+- dev/simfork/g273_boss3d.js: 70 s boss fight with Gareth: 47 shots = 32 orbs (all from the hand) + 14 stomps (+1 in flight), raises/holds, low aim, no errors.
+  g181, g173 OK. g172 "boss hit us" fails on the build BEFORE this change as well (its fortress-HP check predates v1106's bar fix) - not this change; test needs updating.
+
