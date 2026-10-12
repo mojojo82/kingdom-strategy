@@ -21,3 +21,4 @@ Head rule: looks right / slight 3/4 right, never at the camera. Approved frames:
 Arc Burst (rendered 13 Oct, softer light): 15 frames in art/originals/sprites_hires/kessa/arcburst (160x200 cells, same crop as idle/attack) - 0-6 wind-up = attack frames 0-6 with the palm energy growing (g=(k/6)^2),
 7-9 hold = attack frame 6 with the full energy ball (scale 0.92/1.08/1.0, loop these while the burst lasts), 10-14 recovery = attack frames 7-11 fading. Bolts NOT baked in (game draws them).
 palms.json = palm point per frame in cell pixels (bolt start). Saved scene on Harley's PC: KingdomArt\kessa_sprites.blend.
+Bolt textures: art/originals/sprites_hires/kessa/arcburst/bolts.png = 4 strips (500x100 each, stacked), rendered in Blender (core + 2 halos, BoltMat/BoltHalo/BoltHalo2), brightened x1.9 after (the -0.85 sprite exposure dulled them). Game stretches a strip palm->target, height ~60% of its length scale, swapping strips every ~70 ms.
