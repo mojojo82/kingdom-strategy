@@ -34,3 +34,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | sprites_hires/gareth/ | Gareth's game frames at full render size (863x606 cells, ~4.5x the game sheet), one lossless webp per row: idle, run, attack, hit, charge, hop | backup | v1100 sheet is made from these frames (dev/knight/pack_game.py) |
 | sprites_hires/boss/ | Boss game frames at full render size, smooth shading, no outline (one lossless webp per row: idle 12, raise 8, raised 12, raiseLow 8, raisedLow 12, stomp 16) | backup | rendered at 2x (779 px body); game sheet (v1112 BOSS3D) = these shrunk to a 340 px body, packed 12 per line (dev/boss/pack.py) |
 
+| rhino_mech_lowpoly.glb | Mech rhino (tank-green weathered armor, twin back cannons) from Meshy AI, low-poly export (5.1k tris, 2 x 4096 textures, 32 MB) | 3D | not in the game yet - future chapter boss; rigid rig in dev/rhino |
