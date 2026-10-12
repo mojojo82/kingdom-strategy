@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kessa 3D Mockup</title>
+<style>
+:root{--bg:#0d1424;--gold:#e8c46a;--txt:#d8dce8;--cy:#3fc6d8;--panel:#141d33}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:12px 16px}
+h1{color:var(--gold);font-size:18px;margin:4px 0 8px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.card{flex:1 1 300px;background:var(--panel);border:2px dashed #6b5a3a;border-radius:8px;padding:8px}
+.card h2{color:var(--gold);font-size:14px;margin:0 0 6px}
+canvas{width:100%;display:block;background:linear-gradient(#2a3552,#3b3a46 78%,#4a3d2c 78%);border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+button{background:#33415e;color:var(--txt);border:0;padding:8px 12px;border-radius:4px;font-weight:700}
+button.on{background:var(--cy);color:#06202a}
+label{display:flex;gap:8px;align-items:center}
+p{opacity:.8;line-height:1.4}
+</style></head><body><div class="wrap">
+<h1>Kessa - current sprite vs 3D model</h1>
+<div class="bar"><button data-m="idle" class="on">Idle</button><button data-m="attack">Attack</button><button data-m="arc">Arc Burst (hold)</button>
+<label>Size <select id="sz"><option value="big" selected>Big (to judge)</option><option value="game">Game size</option></select></label></div>
+<div class="row"><div class="card"><h2>Current sprite</h2><canvas id="a" width="600" height="420"></canvas></div><div class="card"><h2>3D Kessa (tamed Mixamo cast, built staff)</h2><canvas id="b" width="600" height="420"></canvas></div></div>
+<p>Attack = the tamed Mixamo "1H Magic Attack 01" trimmed to its push (12 frames, 0.75 s). Arc Burst = the same wind-up, then the arm-out frame held with a slight tremble while the lightning streams, then the recovery. Idle = a 2 s piece of the Mixamo idle. The staff is built in code and held in her left hand. Lightning is a stand-in.</p>
+</div>
+<script>
+var C=__CFG__,mode='idle',t0=performance.now(),size='big';
+var imgs={};['old','new'].forEach(function(k){var im=new Image();im.src=C[k].src;imgs[k]=im});
+document.querySelectorAll('[data-m]').forEach(function(b){b.onclick=function(){mode=b.dataset.m;t0=performance.now();document.querySelectorAll('[data-m]').forEach(function(x){x.classList.toggle('on',x===b)})}});
+document.getElementById('sz').onchange=function(){size=this.value};
+function frameFor(k,t){ // returns {row,col,shake,bolt}
+  if(k==='old'){if(mode==='idle')return{r:0,c:Math.floor(t*8)%8};var L=8/16+0.5,tt=t%L;return{r:1,c:Math.min(7,Math.floor(tt*16)),bolt:mode==='arc'&&tt>0.25&&tt<0.5}}
+  if(mode==='idle'){var n=Math.floor(t*6)%22;return{r:1,c:n<12?n:22-n}} /* ping-pong the 12 idle frames */
+  if(mode==='attack'){var L=12/16+0.5,tt=t%L;return{r:0,c:Math.min(11,Math.floor(tt*16))}}
+  var hold=C.new.hold,wind=hold/16,HOLD=1.6,rec=(11-hold)/16,L=wind+HOLD+rec+0.6,tt=t%L;
+  if(tt<wind)return{r:0,c:Math.floor(tt*16)};
+  if(tt<wind+HOLD)return{r:0,c:hold,shake:1,bolt:true,bt:tt-wind};
+  return{r:0,c:Math.min(11,hold+1+Math.floor((tt-wind-HOLD)*16))}}
+function bolt(x,ax,ay,len,s){x.save();x.globalCompositeOperation='lighter';for(var p=0;p<2;p++){x.strokeStyle=p?'rgba(230,250,255,.95)':'rgba(90,170,255,.55)';x.lineWidth=(p?1.6:5)*s;x.beginPath();x.moveTo(ax,ay);var px=ax,py=ay;for(var i=1;i<=9;i++){px=ax+len*i/9;py=ay+(Math.random()-.5)*14*s;x.lineTo(px,py)}x.stroke()}
+  var g=x.createRadialGradient(ax,ay,0,ax,ay,14*s);g.addColorStop(0,'rgba(220,245,255,.9)');g.addColorStop(1,'rgba(80,160,255,0)');x.fillStyle=g;x.beginPath();x.arc(ax,ay,14*s,0,7);x.fill();x.restore()}
+function draw(id,k,t){var cv=document.getElementById(id),x=cv.getContext('2d'),c=C[k],im=imgs[k];x.clearRect(0,0,cv.width,cv.height);if(!im.complete)return;
+  var figH=size==='big'?300:75,ground=cv.height*0.78,s=figH/(c.feet-c.top),f=frameFor(k,t);
+  var dx=0,dy=0;if(f.shake){dx=(Math.random()-.5)*1.2*s/ (size==='big'?1:1);dy=(Math.random()-.5)*1.2}
+  x.imageSmoothingEnabled=k==='new';var dw=c.cw*s,dh=c.ch*s,X=cv.width*0.32-dw*0.45+dx,Y=ground-c.feet*s+dy;
+  x.drawImage(im,f.c*c.cw,f.r*c.ch,c.cw,c.ch,X,Y,dw,dh);
+  if(f.bolt){var hx,hy;if(k==='new'){hx=X+c.hand[0]*s;hy=Y+c.hand[1]*s}else{hx=X+dw*0.92;hy=Y+dh*0.45}bolt(x,hx,hy,cv.width-hx-10,size==='big'?1:0.5)}}
+function loop(now){var t=(now-t0)/1000;draw('a','old',t);draw('b','new',t);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+</script></body></html>
