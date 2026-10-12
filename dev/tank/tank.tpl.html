@@ -1,0 +1,97 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tank Boss Cutout</title>
+<style>
+:root{--bg:#0d1424;--panel:#16203a;--gold:#e8c46a;--txt:#d8dce8;--cy:#3fc6d8}
+body{margin:0;background:var(--bg);color:var(--txt);font:14px system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 16px}
+h1{color:var(--gold);font-size:18px;margin:4px 0 10px}
+canvas{width:100%;display:block;background:linear-gradient(#2a3552,#3b3a46 70%,#4a3d2c 70%);border:2px dashed #6b5a3a;border-radius:8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;align-items:center}
+button{background:var(--cy);color:#06202a;border:0;padding:8px 14px;border-radius:4px;font-weight:700;cursor:pointer}
+button.off{background:#33415e;color:var(--txt)}
+label{display:flex;gap:6px;align-items:center}
+p{opacity:.8;line-height:1.4}
+</style></head><body><div class="wrap">
+<h1>Steam Tank boss - cutout test</h1>
+<canvas id="c" width="1800" height="1000"></canvas>
+<div class="bar">
+<button id="drive">Treads: rolling</button>
+<button id="fire">Fire cannon</button>
+<button id="parts" class="off">Show parts</button>
+<label>Speed <input id="spd" type="range" min="0" max="3" step="0.1" value="1"></label>
+</div>
+<p>Built from the GPT parts sheet: hull, turret, barrel, one tread plate, road wheel and sprocket. The track is rebuilt from that single plate and loops forever; wheels spin to match. Firing = barrel recoil, turret kick, hull rock, flash and smoke.</p>
+</div>
+<script>
+var P=__PARTS__;
+var c=document.getElementById('c'),x=c.getContext('2d'),I={},left=0;
+Object.keys(P).forEach(function(k){left++;var im=new Image();im.onload=function(){if(--left==0)requestAnimationFrame(loop)};im.src=P[k].src;I[k]=im});
+var drive=true,spd=1,showParts=false,fireT=-9,dist=0,last=0,smoke=[];
+document.getElementById('drive').onclick=function(){drive=!drive;this.textContent='Treads: '+(drive?'rolling':'stopped');this.className=drive?'':'off'};
+document.getElementById('fire').onclick=function(){fireT=performance.now()/1000};
+document.getElementById('parts').onclick=function(){showParts=!showParts;this.className=showParts?'':'off'};
+document.getElementById('spd').oninput=function(){spd=+this.value};
+// ---- layout (source pixels)
+var TUR_DY=62, TRK={x0:300,x1:1370,top:646,r:84,th:56}, PITCH=47.67;
+TRK.cy=TRK.top+TRK.th/2+TRK.r;
+var Lstraight=TRK.x1-TRK.x0, per=2*Lstraight+2*Math.PI*TRK.r, NPL=Math.round(per/PITCH), pitch=per/NPL;
+var GROUND=TRK.cy+TRK.r+TRK.th/2;
+function trackPoint(s){ // s along perimeter, starting top-left going left->... clockwise when viewed: top run goes right->left
+  s=((s%per)+per)%per;
+  if(s<Lstraight) return {x:TRK.x1-s,y:TRK.cy-TRK.r,a:0};              // top run, moving left
+  s-=Lstraight; var arc=Math.PI*TRK.r;
+  if(s<arc){var t=s/TRK.r;return {x:TRK.x0-Math.sin(t)*TRK.r,y:TRK.cy-Math.cos(t)*TRK.r,a:-t}} // front (left) end
+  s-=arc;
+  if(s<Lstraight) return {x:TRK.x0+s,y:TRK.cy+TRK.r,a:Math.PI};      // bottom run, moving right
+  s-=Lstraight; var t=s/TRK.r;return {x:TRK.x1+Math.sin(t)*TRK.r,y:TRK.cy+Math.cos(t)*TRK.r,a:Math.PI-t}; // rear end
+}
+var WR=48, SR=62, wheelsX=[TRK.x0,420,540,660,780,900,1020,1140,1260,TRK.x1];
+function img(k,dx,dy,ox,oy){var p=P[k];x.drawImage(I[k],p.r[0]+(dx||0),p.r[1]+(dy||0))}
+function spin(k,cx,cy,rad,ang){var im=I[k],s=rad*2/Math.max(im.width,im.height);x.save();x.translate(cx,cy);x.rotate(ang);x.drawImage(im,-im.width*s/2,-im.height*s/2,im.width*s,im.height*s);x.restore()}
+function loop(ms){
+  var t=ms/1000,dt=Math.min(.05,t-last);last=t;
+  var v=drive?90*spd:0; dist+=v*dt;
+  var ft=t-fireT, recoil=0,kick=0,rock=0;
+  if(ft>=0&&ft<1.2){recoil=ft<.06?ft/.06:Math.max(0,1-(ft-.06)/.7);recoil=Math.pow(recoil,1.5);kick=recoil;rock=Math.sin(Math.min(1,ft/.9)*Math.PI*2.5)*Math.exp(-ft*3)}
+  x.clearRect(0,0,c.width,c.height);x.save();x.translate(220,0);
+  // ground stripes scroll under the tank
+  x.fillStyle='#3b3022';for(var g=-300;g<1700;g+=80){x.fillRect(g+(dist%80),GROUND+14,40,6)}
+  x.fillStyle='rgba(0,0,0,.35)';x.beginPath();x.ellipse(830,GROUND+4,620,18,0,0,7);x.fill();
+  if(showParts){x.restore();drawParts();requestAnimationFrame(loop);return}
+  var bob=drive?Math.sin(dist/pitch*Math.PI*2)*1.2:0;
+  x.save();
+  // hull rocks back on its rear tread end when firing
+  x.translate(TRK.x1,GROUND);x.rotate(-rock*0.025);x.translate(-TRK.x1+rock*6,-GROUND+bob);
+  // turret + barrel behind hull top? turret sits ON the hull: draw hull first
+  img('hull');
+  // dark inside of the track loop hides the hull's painted treads
+  x.fillStyle='#16100a';x.beginPath();x.moveTo(TRK.x0,TRK.cy-TRK.r);x.lineTo(TRK.x1,TRK.cy-TRK.r);x.arc(TRK.x1,TRK.cy,TRK.r,-Math.PI/2,Math.PI/2);x.lineTo(TRK.x0,TRK.cy+TRK.r);x.arc(TRK.x0,TRK.cy,TRK.r,Math.PI/2,Math.PI*1.5);x.fill();
+  var wa=-dist/WR; // wheels roll counter-clockwise going left
+  for(var i=0;i<wheelsX.length;i++){var end=(i==0||i==wheelsX.length-1);
+    if(end) spin(i==0?'wheel':'sprocket',wheelsX[i],TRK.cy,i==0?TRK.r-TRK.th/2+4:SR,-dist/(i==0?TRK.r-24:SR));
+    else spin('wheel',wheelsX[i],TRK.cy+TRK.r-TRK.th/2-WR+4,WR,wa);}
+  // tread plates
+  var pl=I.plate;for(var k=0;k<NPL;k++){var q=trackPoint(k*pitch+dist);x.save();x.translate(q.x,q.y);x.rotate(q.a);x.drawImage(pl,-pl.width/2,-pl.height/2,pl.width*1.02,pl.height);x.restore()}
+  // barrel (behind turret), then turret
+  x.save();x.translate(kick*10,TUR_DY-kick*2);
+  x.translate(900,250);x.rotate(kick*0.03);x.translate(-900,-250);
+  img('barrel',recoil*48,0);img('turret');
+  // furnace glow
+  var gl=.25+.2*Math.sin(t*9)+.1*Math.sin(t*23);x.globalCompositeOperation='lighter';x.fillStyle='rgba(255,140,40,'+gl+')';x.fillRect(1094,222,56,78);x.globalCompositeOperation='source-over';
+  x.restore();
+  x.globalCompositeOperation='lighter';x.fillStyle='rgba(255,140,40,'+(gl*.8)+')';x.fillRect(1322,458,46,80);x.globalCompositeOperation='source-over';
+  x.restore();
+  // muzzle flash
+  if(ft>=0&&ft<.2){var f=1-ft/.2,mx=30+recoil*48,my=160+TUR_DY+60;x.save();x.globalCompositeOperation='lighter';
+    for(var j=0;j<3;j++){x.fillStyle=['rgba(255,240,180,','rgba(255,170,60,','rgba(255,90,20,'][j]+(f*.9)+')';x.beginPath();x.ellipse(mx-60-j*30,my,90+j*50,40+j*18,0,0,7);x.fill()}x.restore()}
+  if(ft>=0&&ft<.05&&!smoke.fired){smoke.fired=1;for(var j=0;j<14;j++)smoke.push({x:0,y:160+TUR_DY+60,vx:-200-Math.random()*250,vy:(Math.random()-.5)*90,r:25+Math.random()*25,l:0,L:1.2+Math.random()*.8,g:120})}
+  if(ft>.3)smoke.fired=0;
+  if(Math.random()<dt*6)smoke.push({x:1228+kick*10,y:66+TUR_DY,vx:20+(drive?v*.3:0),vy:-60-Math.random()*30,r:12,l:0,L:2+Math.random(),g:60});
+  for(var j=smoke.length-1;j>=0;j--){var s=smoke[j];s.l+=dt;if(s.l>s.L){smoke.splice(j,1);continue}s.x+=s.vx*dt;s.y+=s.vy*dt;s.vx*=.97;s.r+=dt*s.g*.5;var a=(1-s.l/s.L)*.55;x.fillStyle='rgba('+s.g+','+s.g+','+(s.g+8)+','+a+')';x.beginPath();x.arc(s.x,s.y,s.r,0,7);x.fill()}
+  x.restore();requestAnimationFrame(loop);
+}
+function drawParts(){var ks=['turret','barrel','hull','wheel','sprocket','plate'],px=30,py=30,rowH=0;
+  ks.forEach(function(k){var im=I[k],s=Math.min(1,700/im.width);if(px+im.width*s>1580){px=30;py+=rowH+30;rowH=0}
+    x.strokeStyle='#e8c46a';x.setLineDash([8,6]);x.strokeRect(px-4,py-4,im.width*s+8,im.height*s+8);x.drawImage(im,px,py,im.width*s,im.height*s);
+    x.fillStyle='#e8c46a';x.font='22px system-ui';x.fillText(k,px,py+im.height*s+24);px+=im.width*s+40;rowH=Math.max(rowH,im.height*s+30)})}
+</script></body></html>
