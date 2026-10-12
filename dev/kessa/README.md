@@ -12,3 +12,9 @@ Not in the game. Next: Harley's Mixamo cast animation; glue on the gold staff wi
 - LEGREST=1 (Harley: idle legs looked awkward - bent front knee bulged the robe, mid-step feet): legs held in the rest stance, out of AMP, no hip travel. Current idle: LEGREST=1 AMP=2.6 REFT=5.3.
 - Idle stance (Harley: too stiff, feet looked flat side-on next to the cast): LEGREST=1 LEGMIX=0.45 LEGTURN="30,-10" AMP=2.6 REFT=5.3 - legs 45% back toward the idle stance, right leg turned out 30 deg, left in 10 deg.
 - pack_game.py <frames dir> <out.json>: TEST-mockup sheet (idle ping-pong 22 + attack 12) sized so her body matches the old sprite (dispH); game_shot.js (run from the scratch folder holding kessa_game.json) swaps it into HERO_ANIMS.kessa in the real TEST game and grabs old/new frames.
+
+## LOCKED (Harley, 13 Oct 2026): sprite lighting = Blender "softer"
+All of Kessa's sprite frames render in Harley's Blender (needs him on the desktop app, Blender MCP add-on running) with the dev/kessa/blender_portrait.py soft lights
+(Key 120 W size 3.5 warm, Fill 50 W size 4 cool, Rim 110 W size 2, world (0.7,0.72,0.78) x0.55, Standard view transform, skin subsurface 0.08, matte), lights mirrored to her front (+Y),
+EXPOSURE -0.85. Camera: ortho 2.6 at azimuth -0.75 from her front, height 1.0 looking at (0,-0.45,0.88). Frames cropped x 150-630 of 900x600, packed with pack_game.py (body = old sprite height).
+Head rule: looks right / slight 3/4 right, never at the camera. Approved frames: art/originals/sprites_hires/kessa/softer (idle 12 + attack 12). Still to render: Arc Burst wind-up/hold/recovery, run, (hit).
