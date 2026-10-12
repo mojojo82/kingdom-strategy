@@ -11553,7 +11553,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1117"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1118"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -19480,7 +19480,7 @@ var TANKB = (function () {
   function draw(x, bx, feetY, size) {
     if (!ready()) return false;
     if (x.canvas && x.canvas.clientWidth) { st.lastW = x.canvas.clientWidth; st.lastH = x.canvas.clientHeight; }
-    var g = geom(bx, feetY, size), k = g.k, dpr = Math.min(3, window.devicePixelRatio || 1);
+    var g = geom(bx, feetY, size), k = g.k, dpr = Math.min(3, window.devicePixelRatio || 1); st.lastK = k;
     if (!bakedK || Math.abs(k * dpr - bakedK) / bakedK > 0.15) bake(k * dpr);
     var t = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, t - st.lastT)), main = !!(x.canvas && x.canvas.clientWidth);
     if (main) { st.lastT = t; if (st.lastCx != null) st.dist += -(g.cx - st.lastCx) / k; st.lastCx = g.cx; st.aim += (wantAim(g) - st.aim) * Math.min(1, dt * 4); }
@@ -19518,9 +19518,21 @@ var TANKB = (function () {
     x.restore();
     return true;
   }
-  return { draw: draw, muzzle: muzzle, target: target, fire: function () { st.fireT = performance.now() / 1000; st.smoked = false; } };
+  function box(bx, feetY, size) { /* v1118: the tank's body on screen - colX/halfW/top/bottom = whole tank (missile contact), cx/cy/zx/zy = the hull's middle and the laser's sweep zone */
+    var g = geom(bx, feetY, size), k = g.k, X = function (lx) { return g.cx + (lx - CX) * k; }, Y = function (ly) { return g.fy + (ly - GROUND) * k; };
+    var l = X(60), r = Math.min(X(1460), st.lastW);
+    return { colX: (l + r) / 2, halfW: (r - l) / 2, top: Y(150 + TUR_DY), bottom: g.fy, cx: X(700), cy: Y(520), zx: 260 * k, zy: 100 * k };
+  }
+  return { draw: draw, muzzle: muzzle, target: target, box: box, fire: function () { st.fireT = performance.now() / 1000; st.smoked = false; } };
 })();
 function drawTankBoss(ctx, x, feetY, size) { return TANKB.draw(ctx, x, feetY, size); }
+/* v1118: where the boss's body is on screen (lasers, missiles, shock crawl, damage numbers) - classic boss or the tank */
+function bossBox(vis, h) {
+  var gy = groundYFor(h), size = 58 * bossSpriteScale, x = vis ? vis.x : idleBossX(430); /* no vis = only sizes are wanted */
+  if (tankBossOn()) return TANKB.box(x, gy + 15, size);
+  return { colX: x, halfW: 0.42 * size, top: gy + 15 - 0.9 * size, bottom: gy + 15, cx: x, cy: gy + 15 - 0.5 * size, zx: 0.2 * size, zy: 0.22 * size };
+}
+function bossTopY(h) { return tankBossOn() ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
 /* where a boss shot starts: the tank's muzzle (and the tank fires) or the classic boss's hand */
 function bossShotOrigin(bx, h, fire) {
   var size = 58 * bossSpriteScale, feetY = groundYFor(h) + 15;
@@ -20072,7 +20084,7 @@ function spawnMissileFizzle(x, y) {
 function meleeVisualHit(aid, dmg, frontVis, targetEnemyId, h) {
   (idleAnim.lastMeleeHitAt || (idleAnim.lastMeleeHitAt = {}))[aid] = performance.now(); // v656: the swing animation follows real hits
   if (targetEnemyId != null) applyDisplayedHit(targetEnemyId, dmg); // the enemy's bar drops exactly when this swing visibly lands (never below the engine's real HP)
-  spawnDamageNumber(frontVis.x, frontVis.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 10 : groundYFor(h) - 30, dmg, false);
+  spawnDamageNumber(frontVis.x, frontVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, dmg, false);
   // v501: hit-flash the small/normal enemy that is actually standing at his sword (nearest in reach), else the one being damaged
   var hv = idleAnim.heroVis[aid], flashV = frontVis, bestD = 1e9;
   var tgtInReach = hv && frontVis && meleeD(hv, frontVis) >= -8 && meleeD(hv, frontVis) <= IDLE_BLOCK_GAP + meleeReachExtra; // v655: the enemy actually hit is the one that flashes whenever it's at his sword
@@ -20117,7 +20129,7 @@ function spawnWeaponHitNumber(x, y, amount, enemyId) {
 // Height for a weapon hit's floating damage number — clears the tall boss
 // sprite, or sits just above a regular enemy.
 function weaponHitNumberY(onBoss, h) {
-  return onBoss ? groundYFor(h) + 15 - 58 * bossSpriteScale - 30 : groundYFor(h) - 48;
+  return onBoss ? bossTopY(h) - 30 : groundYFor(h) - 48;
 }
 // Does a missile's movement this frame (x0,y0 -> x1,y1) overlap any enemy
 // body that's actually drawn on screen right now? Checks the same set of
@@ -20145,13 +20157,13 @@ function findMissileContactEnemy(x0, y0, x1, y1, h) {
     var px = x0 + (x1 - x0) * f, py = y0 + (y1 - y0) * f;
     for (var bi = 0; bi < bodies.length; bi++) {
       var v = bodies[bi], halfW, top, bottom;
+      var vx = v.x;
       if (v.type === "boss") {
-        var bSize = 58 * bossSpriteScale;
-        halfW = bSize * 0.42; top = gy + 15 - bSize * 0.9; bottom = gy + 15;
+        var bb = bossBox(v, h); halfW = bb.halfW; top = bb.top; bottom = bb.bottom; vx = bb.colX; /* v1118 */
       } else {
         halfW = 11; top = gy - 16 - 12; bottom = gy - 16 + 12;
       }
-      if (Math.abs(px - v.x) <= halfW && py >= top && py <= bottom) return { vis: v, x: px, y: py };
+      if (Math.abs(px - vx) <= halfW && py >= top && py <= bottom) return { vis: v, x: px, y: py };
     }
   }
   return null;
@@ -20251,7 +20263,7 @@ function generateLightningPath(fromX, fromY, toX, toY, spread) {
 // Beam aim point on an enemy's drawn body (its middle).
 function laserBodyPoint(vis, h) {
   var gy = groundYFor(h);
-  if (vis.type === "boss") { var size = 58 * bossSpriteScale; return { x: vis.x, y: gy + 15 - 0.5 * size, boss: true }; }
+  if (vis.type === "boss") { var bb = bossBox(vis, h); return { x: bb.cx, y: bb.cy, boss: true }; } /* v1118: tank or classic body */
   return { x: vis.x, y: gy - 16, boss: false };
 }
 // v570: laser damage numbers pop more often (same look as before, just every 0.15 s instead of 0.5 s), so the player can see the damage coming from the beam.
@@ -20318,8 +20330,8 @@ function laserWanderPoint(z, age, pick) {
 // Conquest boss hit zone: the central part of the boss sprite's body, as
 // offsets from its middle so the sweep follows the boss if it moves.
 function laserBossZoneOffset() {
-  var size = 58 * bossSpriteScale;
-  return { x: (Math.random() * 2 - 1) * 0.2 * size, y: (Math.random() * 2 - 1) * 0.22 * size }; // v463 calmer: chest and belly
+  var bb = bossBox(null, idleAnim.lastH || 258); /* v1118: only the zone size is used - it follows the tank's hull or the classic boss's chest */
+  return { x: (Math.random() * 2 - 1) * bb.zx, y: (Math.random() * 2 - 1) * bb.zy }; // v463 calmer: chest and belly
 }
 // Arena fortress hit zone: a random SOLID hull point (the pixel and its
 // neighbours are all opaque, so never a gap or a thin spike) in the ship's
@@ -20649,6 +20661,7 @@ function spawnShockCrawl(enemyId) {
 function shockCrawlBodyBox(vis, h) {
   var gy = groundYFor(h);
   if (vis.type === "boss") {
+    if (tankBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
     var size = 58 * bossSpriteScale;
     return { x: vis.x, halfW: 0.42 * size * 0.62, top: gy + 15 - 0.9 * size, bottom: gy + 15 - 0.08 * size };
   }
@@ -20784,7 +20797,7 @@ function stepIdleAnim(dtSec, w, h) {
     } else if (fxs.kind === "rail") {
       var rlP = weaponSlotPoint(w, h, "cq", true, "railgun"); // v1109: its weapon slot
       idleAnim.railFx = { life: 0.35, maxLife: 0.35, y: rlP ? rlP.y : groundYFor(h) - 18, x0: rlP ? rlP.x : getFortressNoseX(w) };
-      (fxs.hits || []).forEach(function (rh) { var rv = idleAnim.enemyById[rh.id]; if (!rv) return; applyDisplayedHit(rh.id, rh.dmg); rv.hitFlash = 0.3; spawnDamageNumber(rv.x, rv.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 10 : groundYFor(h) - 30, rh.dmg, false); });
+      (fxs.hits || []).forEach(function (rh) { var rv = idleAnim.enemyById[rh.id]; if (!rv) return; applyDisplayedHit(rh.id, rh.dmg); rv.hitFlash = 0.3; spawnDamageNumber(rv.x, rv.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, rh.dmg, false); });
     }
   }
   if (idleAnim.railFx) { idleAnim.railFx.life -= dtSec; if (idleAnim.railFx.life <= 0) idleAnim.railFx = null; }
@@ -21439,7 +21452,7 @@ function stepIdleAnim(dtSec, w, h) {
         // this always matches the real damage exactly.
         var skillDmg = skillValueAtLevel(key, 0, game.heroSkillLevel(key, "conquest", 0), skillDef, game.state.heroes[key], game.idleAttackerDamage(key));
         if (game.state.idle.lastSkillDmg && game.state.idle.lastSkillDmg[key] > skillDmg) skillDmg = game.state.idle.lastSkillDmg[key]; // executed: show the full blow
-        spawnDamageNumber(frontVis.x, frontVis.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 10 : groundYFor(h) - 30, skillDmg, true);
+        spawnDamageNumber(frontVis.x, frontVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, skillDmg, true);
       }
       if (skillDef && skillDef.visualStyle === "lightning" && frontVis) {
         var slp = idleSquadSlotPos(w, h, i, key);
@@ -21553,7 +21566,7 @@ function stepIdleAnim(dtSec, w, h) {
       // the old direct-spawn behavior rather than losing the hit entirely.
       var whitVis = idleAnim.enemyById[whit.id];
       if (!whitVis && real.length) whitVis = frontVis;
-      if (whitVis) spawnDamageNumber(whitVis.x, whitVis.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 30 : groundYFor(h) - 48, whit.dmg, true);
+      if (whitVis) spawnDamageNumber(whitVis.x, whitVis.type === "boss" ? bossTopY(h) - 30 : groundYFor(h) - 48, whit.dmg, true);
       else spawnDamageNumber(idleRangedEngageX(w), groundYFor(h) - 48, whit.dmg, true);
       continue;
     }
@@ -21731,7 +21744,7 @@ function stepIdleAnim(dtSec, w, h) {
     idleAnim.pendingArrows[p.targetId] = Math.max(0, (idleAnim.pendingArrows[p.targetId] || 0) - 1);
     applyDisplayedHit(p.targetId, p.dmg);
     var hitVis = idleAnim.enemyById[p.targetId];
-    if (hitVis) spawnDamageNumber(hitVis.x, hitVis.type === "boss" ? groundYFor(h) + 15 - 58 * bossSpriteScale - 10 : groundYFor(h) - 30, p.dmg, false);
+    if (hitVis) spawnDamageNumber(hitVis.x, hitVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, p.dmg, false);
     // If the engine has already removed this enemy for real, and this was
     // the LAST shot still owed to it, its death only becomes visible now —
     // not whenever tick() happened to remove it, and not before.

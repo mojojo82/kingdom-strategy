@@ -40,11 +40,15 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
       out[id] = { t, box: b && { x: b.x, y: b.y, sw: b.sw, sh: b.sh } }; }
     return out; });
   await P.screenshot({ path: path.join(__dirname, "out_g276_void.png") });
+  const lz = await P.evaluate(() => { /* v1118: the laser's aim spot and sweep zone sit on the tank's hull */
+    const h = document.getElementById("idleCanvas").clientHeight, bs = Object.values(idleAnim.enemyById).find((v) => v.type === "boss"); if (!bs) return null;
+    const tp = laserBodyPoint(bs, h), bb = bossBox(bs, h), pts = []; for (let i = 0; i < 40; i++) { const o = laserBossZoneOffset(); pts.push({ x: tp.x + o.x, y: tp.y + o.y }); }
+    return { tp, bb, pts, top: bossTopY(h) }; });
   await P.evaluate(() => { game.state.fortressSkin = FORTRESS_SKINS[0].id; setBossLook("classic"); });
   const r2 = await run(12000);
   await P.screenshot({ path: path.join(__dirname, "out_g276_classic.png") });
   await P.evaluate(() => setBossLook("tank"));
-  console.log(JSON.stringify({ sk, look, tank: { drawn: r1.drawn, shots: r1.shots.slice(0, 4), n: r1.shots.length, boss: r1.boss, w: r1.w }, classic: { drawn: r2.drawn, shots: r2.shots.slice(0, 2), n: r2.shots.length }, errs }));
+  console.log(JSON.stringify({ lz: lz && { tp: lz.tp, bb: lz.bb, top: lz.top }, sk, look, tank: { drawn: r1.drawn, shots: r1.shots.slice(0, 4), n: r1.shots.length, boss: r1.boss, w: r1.w }, classic: { drawn: r2.drawn, shots: r2.shots.slice(0, 2), n: r2.shots.length }, errs }));
   await b.close();
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []); assert.strictEqual(look, "tank", "Boss 2 is the default look"); assert(r1.boss, "boss reached"); assert(r1.drawn > 50, "tank drawn");
@@ -52,6 +56,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert.strictEqual(r2.drawn, 0, "classic look draws no tank"); r2.shots.forEach((s) => assert(!s.shell, "classic shot is the orb"));
     Object.values(sk).forEach((o) => { assert(o.box, "skin box"); assert(o.t.x > o.box.x && o.t.x < o.box.x + o.box.sw && o.t.y > o.box.y && o.t.y < o.box.y + o.box.sh, "aim point inside the skin picture"); });
     assert(Math.abs(sk.void.t.y - sk[Object.keys(sk)[0]].t.y) > 0.5 || Object.keys(sk)[0] === "void", "aim follows the skin");
+    assert(lz, "boss on screen for the laser check");
+    lz.pts.forEach((p) => assert(p.x > lz.bb.colX - lz.bb.halfW && p.x < lz.bb.colX + lz.bb.halfW && p.y > lz.bb.top && p.y < lz.bb.bottom, "laser sweep stays on the tank"));
+    assert(lz.top > lz.bb.top - 1 && lz.top < lz.bb.bottom, "damage numbers start from the tank's top");
     console.log("g276 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });

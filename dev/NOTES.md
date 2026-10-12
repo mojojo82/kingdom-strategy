@@ -1667,3 +1667,9 @@
 - Harley: with Voidspire equipped the cannon aimed too low. It was aiming at the one fixed enemy-target spot (Dev Tools Enemy Target X/Y), the same for every skin.
 - Now: fortHullMass() = the middle of the equipped skin picture's solid pixels (a thin spire or mast barely moves it), read from the same box the skin is drawn in; the cannon aims there and its shells at the fortress land there. Shells at a hero, and every other enemy's shots, are unchanged. Nothing to set per skin.
 - g276 checks the aim point is inside the skin picture for the default skin and Voidspire and moves with the skin. Not checked on a phone.
+
+## v1118 - Weapons hit the tank's body (TEST)
+- Harley: the laser partly missed the tank boss - it still aimed at the classic boss's chest (centred on the boss spot, 58*scale tall).
+- New bossBox(vis, h): where the boss's body is on screen - the tank's real box (whole tank for contact, the hull's middle + a sweep zone for the laser) or the classic boss's old box. bossTopY(h) = top of the boss.
+- Uses it: laser aim spot + its wandering sweep zone (laserBodyPoint / laserBossZoneOffset), missile contact (findMissileContactEnemy), Kessa's shock crawl box, and the 6 boss damage-number heights. Classic boss values unchanged.
+- g276 checks the laser spot and 40 sweep points all land inside the tank, and the numbers start at its top. Checked by eye with the Laser equipped (headless). Not checked on a phone.
