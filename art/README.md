@@ -40,6 +40,8 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | tank_boss_gpt_parts.png | Steampunk siege tank boss, ChatGPT parts sheet (turret+cannon, hull, track loop, road wheel, sprocket), facing left, dark gradient background | 1536x1024 | not in the game - 2D cutout test (dev/tank) |
 | explosions_gpt_sheet.png | 10 rows of pixel explosions from ChatGPT on magenta (fire bursts, ground blasts, smoke, dust) | 1536x1024 | row 7 = tank shell hit, row 5 = big/killing hit (sprites_hires/explosions, dev/tank/boom); mockup only so far |
 | kessa_rigged.glb | Kessa (Stormcaller) 3D: Meshy image-to-3D from kessa_concept_tpose.png, rigged in Meshy (mixamorig, 23 bones, Running + Walking), 10.2k faces, 4096 texture | 3D | not in the game - dev/kessa |
+| mixamo_kessa_idle.fbx | Mixamo idle Harley picked for Kessa (ASCII FBX, without skin, 8.3 s) | anim | dev/kessa preview only |
 | kessa_textured_unrigged.glb | Same model before rigging (textured, 2 textures) | 3D | backup |
 | kessa_concept_tpose.png | Meshy concept image Harley approved (T-pose, sleeves clear of the body, bigger head) | 1024x1024 | source for kessa_rigged.glb |
+| mixamo_kessa_idle.fbx | Mixamo idle Harley picked for Kessa (ASCII FBX, without skin, 8.3 s) | anim | dev/kessa preview only |
 | sprites_hires/tank/*.png | Tank parts cut out at full size (hull, turret, barrel, wheel, sprocket, one tread plate), transparent | backup | not in the game (dev/tank/parts.py) |
