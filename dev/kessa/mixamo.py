@@ -10,8 +10,10 @@ TAME = dict((k, float(v)) for k, v in (p.split('=') for p in os.environ.get('TAM
 GROUPS = {'spin': ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head'], 'legs': ['RightUpLeg', 'RightLeg', 'RightFoot', 'RightToeBase', 'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase'],
           'staff': ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand']}
 KEEP = {b: TAME[g] for g, bs in GROUPS.items() if g in TAME for b in bs}
-def blendR(A, B, f):  # rotation f of the way from A to B
-    return Slerp([0, 1], Rot.from_matrix(np.stack([A, B])))([f]).as_matrix()[0]
+# AMP=2.5: exaggerate every bone's motion around the first frame's stance (idles too subtle at sprite size); hip travel too
+AMP = float(os.environ.get('AMP', '1'))
+def blendR(A, B, f):  # rotation f of the way from A to B (f > 1 overshoots)
+    ra, rb = Rot.from_matrix(A), Rot.from_matrix(B); return (ra * Rot.from_rotvec((ra.inv() * rb).as_rotvec() * f)).as_matrix()
 FBX, NAME = sys.argv[1], sys.argv[2]; IN_PLACE = len(sys.argv) > 3
 TXT = open(FBX).read()
 
@@ -109,12 +111,14 @@ def bakeAt(t):
         if nm in Q:
             Ws, Ws0 = unit(S['mixamorig:' + nm][:3, :3]), unit(S0['mixamorig:' + nm][:3, :3])
             if nm in KEEP: Ws = blendR(unit(SR['mixamorig:' + nm][:3, :3]), Ws, KEEP[nm])
+            if AMP != 1: Ws = blendR(unit(SR['mixamorig:' + nm][:3, :3]), Ws, AMP)
             Dl = Ws @ Ws0.T @ Q[nm]   # world rotation applied to this bone's rest
             Gi = np.eye(4); Gi[:3, :3] = Dl @ G0[i][:3, :3]
             if i in tpar: Gi[:3, 3] = (G[tpar[i]] @ np.append(base[i][0], 1))[:3]
             else: Gi[:3, 3] = G0[i][:3, 3]
             if nm == 'Hips':
                 d = (S['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) * K
+                if AMP != 1: d = ((SR['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) + (S['mixamorig:Hips'][:3, 3] - SR['mixamorig:Hips'][:3, 3]) * AMP) * K
                 if 'hips' in TAME: d = ((SR['mixamorig:Hips'][:3, 3] - S0['mixamorig:Hips'][:3, 3]) + (S['mixamorig:Hips'][:3, 3] - SR['mixamorig:Hips'][:3, 3]) * TAME['hips']) * K
                 if IN_PLACE: d[0] = d[2] = 0
                 Gi[:3, 3] = G0[i][:3, 3] + d
@@ -123,7 +127,7 @@ def bakeAt(t):
         G[i] = Gi
     return np.stack([G[j] @ IBM[k] for k, j in enumerate(joints)])
 
-S_REF = sglob(0.0)  # the stance the tamed bones lean back toward
+S_REF = sglob(float(os.environ.get('REFT', '0')))  # the stance the tamed / exaggerated bones are measured from (REFT seconds)
 fps = 30; nf = int(round(TL * fps))
 frames = np.array([bakeAt(f / nf * TL) for f in range(nf)])
 d = json.load(open('kessa.json'))
