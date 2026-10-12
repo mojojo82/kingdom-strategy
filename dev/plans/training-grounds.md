@@ -18,6 +18,7 @@ The ATK / HP / DEF bonus screen. BUILT in TEST v1093; burning-sword redesign v10
   each block starts a bit higher than the last. The 10th level gives the SAME bonus as any other level (Harley: no bigger bonus).
 - Milestones get further apart as you go (Harley: "20, then 40, then 120... you get the idea"). Proposal: all lanes at
   Lv 20, 40, 70, 110, 160, 220 with a growing stat bonus (+50, +100, +150, +200, +250, +300 % = +1,050% total) and a chest that grows too.
+- Phone view: Full (Harley, v1108) - the admin Full/Close switch is gone.
 - Level cap by Town Hall / chapter: "maybe" - build it as a switch, off by default.
 
 ## Where Essence comes from

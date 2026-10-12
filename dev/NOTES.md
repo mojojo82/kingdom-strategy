@@ -1579,3 +1579,7 @@
   Arena already fired every time (fireLimits) - now the two match.
 - dev/simfork/g270_deathstrike.js: bar kept full, 7 of 7 slams fired it. Balance meta check: same pre-existing warning (Arena sim, untouched). Not checked on a phone.
 
+## v1108 - Sword of Power: Full view locked in (TEST)
+- Harley picked Full view for the phone. The admin "View: Full / Close" switch (v1097) is removed: button, click handler, the tg-compact CSS and the ks_sop_view read.
+  (A leftover ks_sop_view value in an admin's browser is now simply ignored.) g266 OK. Known (unchanged): on a small 375x667 phone the sword's handle runs off the top in Full.
+
