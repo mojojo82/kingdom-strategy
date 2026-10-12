@@ -1635,3 +1635,9 @@
   it (music.gain/cur reset; the decoded track is reused), laser loops dropped. Normal play is untouched.
 - dev/simfork/g274_audio_rebuild.js (simulated interruption + long hide; headless can't fake a real alarm). g172's music hide/resume part unchanged. Not checked on a phone.
 
+## v1115 - world map: scroll-wheel zoom, zoom buttons become an option (TEST)
+- Harley: drop the + / - buttons on PC for scroll-wheel zoom; keep them as an accessibility option in Settings for anyone who can't pinch/scroll.
+- PC: mouse wheel zooms around the pointer (~16% per notch), touchpad pinch (ctrl+wheel) zooms, + / - keys zoom (not while typing in a box, only with the map on screen).
+- The two buttons are hidden by default on every device; Options > "Map zoom buttons" On/Off brings them back (per device, localStorage ks_map_zoom_btns).
+- dev/simfork/g275_map_zoom.js (1280x800). Not checked on a phone or a real touchpad.
+

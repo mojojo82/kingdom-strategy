@@ -2905,8 +2905,8 @@
             <div id="mapOverlayCtl">
           <div style="text-align:center;margin-bottom:6px;">
             <button id="mapCenterHomeBtn" class="secondary" style="font-size:11px;padding:4px 10px;display:none;">🏠 Center on Home</button>
-            <button id="mapZoomOutBtn" class="secondary" style="font-size:11px;padding:4px 10px;">➖</button>
-            <button id="mapZoomInBtn" class="secondary" style="font-size:11px;padding:4px 10px;">➕</button>
+            <button id="mapZoomOutBtn" class="secondary" style="font-size:11px;padding:4px 10px;display:none;" aria-label="Zoom out">➖</button>
+            <button id="mapZoomInBtn" class="secondary" style="font-size:11px;padding:4px 10px;display:none;" aria-label="Zoom in">➕</button>
           </div>
           <div style="text-align:center;margin-bottom:6px;">
             <button id="mapHideResourcesBtn" class="secondary" style="font-size:11px;padding:4px 10px;">🙈 Hide Resources</button>
@@ -11526,7 +11526,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1114"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1115"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16783,6 +16783,26 @@ function baseFireReposition() { Object.keys(baseFireEls).forEach(function (id) {
 document.getElementById("mapCenterHomeBtn").onclick = function () { centerMapOnHome(); };
 document.getElementById("mapZoomInBtn").onclick = function () { setMapZoom(mapZoom * 1.35); }; /* v862: zoom buttons step by a ratio so they work across the much wider range */
 document.getElementById("mapZoomOutBtn").onclick = function () { setMapZoom(mapZoom / 1.35); };
+// v1115: zoom buttons are an accessibility option (Settings > "Zoom buttons", off by default, per device). PC zooms with the scroll wheel / touchpad pinch
+// (around the pointer) and the + / - keys; phones pinch.
+var MAP_ZOOM_BTNS_KEY = "ks_map_zoom_btns", mapZoomBtnsOn = false; try { mapZoomBtnsOn = localStorage.getItem(MAP_ZOOM_BTNS_KEY) === "1"; } catch (e) {}
+function applyMapZoomBtns() { ["mapZoomOutBtn", "mapZoomInBtn"].forEach(function (id) { var b = document.getElementById(id); if (b) b.style.display = mapZoomBtnsOn ? "" : "none"; }); }
+function setMapZoomBtns(on) { mapZoomBtnsOn = !!on; try { localStorage.setItem(MAP_ZOOM_BTNS_KEY, on ? "1" : "0"); } catch (e) {} applyMapZoomBtns(); }
+applyMapZoomBtns();
+(function () {
+  var vp = document.getElementById("mapviewport"); if (!vp) return;
+  vp.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    var r = vp.getBoundingClientRect(), dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY; // lines -> px
+    var f = Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0015)); // touchpad pinch arrives as ctrl+wheel with small steps
+    setMapZoom(mapZoom * Math.max(0.6, Math.min(1.6, f)), e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return; var t = e.target, tag = t && t.tagName; if (tag === "INPUT" || tag === "TEXTAREA" || (t && t.isContentEditable)) return;
+    if (!vp.offsetParent) return; // world map not on screen
+    if (e.key === "+" || e.key === "=") { setMapZoom(mapZoom * 1.25); e.preventDefault(); } else if (e.key === "-" || e.key === "_") { setMapZoom(mapZoom / 1.25); e.preventDefault(); }
+  });
+})();
 document.getElementById("mapHideResourcesBtn").onclick = function () { setMapHideResources(!mapHideResources); };
 document.getElementById("mapHideThreatsBtn").onclick = function () { setMapHideThreats(!mapHideThreats); };
 updateMapHideButtons(); // reflect any persisted on/off state from a previous session immediately, before the first render
@@ -28153,10 +28173,13 @@ function renderOptionsScreen() {
     '<div class="op-row"><span class="op-l">🎵 Music</span><input type="range" id="opMusic" min="0" max="100" step="1" value="' + pct + '"><span class="op-v" id="opMusicV">' + pct + '%</span></div>' +
     '<div class="op-row"><span class="op-l">🔊 Sound FX</span><button type="button" class="op-tg' + (soundFxEnabled ? ' on' : '') + '" id="opSfx">' + (soundFxEnabled ? 'On' : 'Off') + '</button></div>' +
     '<div class="op-note" id="opMusicSt">Music status: ' + musicStatusText() + '</div>' +
+    '<div class="op-row"><span class="op-l">🔍 Map zoom buttons</span><button type="button" class="op-tg' + (mapZoomBtnsOn ? ' on' : '') + '" id="opZoomBtns">' + (mapZoomBtnsOn ? 'On' : 'Off') + '</button></div>' +
+    '<div class="op-note">Shows + and − buttons on the world map, for anyone who can\'t pinch or scroll. PC: scroll wheel or + / − keys also zoom.</div>' +
     '<div class="op-note">Music: "Kites Rising" by Kaazoom.</div>';
   var sl = document.getElementById("opMusic");
   sl.oninput = function () { setMusicVol(sl.value / 100); document.getElementById("opMusicV").textContent = sl.value + "%"; };
   document.getElementById("opSfx").onclick = function () { setSoundFx(!soundFxEnabled); renderOptionsScreen(); };
+  document.getElementById("opZoomBtns").onclick = function () { setMapZoomBtns(!mapZoomBtnsOn); renderOptionsScreen(); };
 }
 
 setInterval(function () {
