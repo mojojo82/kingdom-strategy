@@ -9,3 +9,4 @@ Plan (Harley): only a boss, a couple of animations; the finished sprite sheet go
 
 Feet are planted (Harley): plantLegs() solves each leg (hip + knee, side plane) so its foot stays at its ground spot whatever the body does; the body sits ~0.018 crouched so the
 legs always have bend. Walk: 62% of each step on the ground (foot slides back = planted while he moves forward), 38% lifting forward. Measured: Idle/Fire feet move < 0.001.
+Feet are their own parts (bottom 0.075 of each lower leg, pivot = ankle): the leg solve plants the ANKLE and each foot stays perfectly flat (follows the ankle only, never tilts) - Harley: stand on the flat soles, not toes/heels.

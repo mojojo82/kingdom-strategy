@@ -4,7 +4,7 @@ sys.path.insert(0,'/home/claude/kingdom-strategy/dev/glb')
 from load import load
 from PIL import Image
 J,P,N,UV,I,mat,imgs=load(sys.argv[1] if len(sys.argv)>1 else '../../art/originals/rhino_mech_lowpoly.glb'); T=I.reshape(-1,3); C=P[T].mean(1); x,y,z=C[:,0],C[:,1],C[:,2]
-NAMES=['body','cannonL','cannonR','head','FLup','FLlo','FRup','FRlo','BLup','BLlo','BRup','BRlo']
+NAMES=['body','cannonL','cannonR','head','FLup','FLlo','FRup','FRlo','BLup','BLlo','BRup','BRlo','FLft','FRft','BLft','BRft']
 lab=np.zeros(len(T),int)
 can=(z<-0.33)&(y>0.2); lab[can&(x<-0.05)]=1; lab[can&(x>=-0.05)]=2
 lab[(z>0.42)&(lab==0)]=3
@@ -18,6 +18,7 @@ def pv(mask, how):
     if how=='bottom': return [float(pts[:,0].mean()), float(pts[:,1].min()), float(pts[:,2].mean())]
 piv={'body':[0,0,0]}
 for i,nm in enumerate(NAMES[1:],1):
+    if nm.endswith('ft'): continue   # feet are cut below
     m=lab==i
     if nm.startswith('cannon'): piv[nm]=pv(m,'bottom')
     elif nm=='head': piv[nm]=[0.0, 0.0, 0.42]
@@ -25,8 +26,10 @@ for i,nm in enumerate(NAMES[1:],1):
     else: piv[nm]=pv(m,'top')
 foot={}
 for nm in ['FL','FR','BL','BR']:
-    pts=P[T[lab==NAMES.index(nm+'lo')]].reshape(-1,3); lo=pts[pts[:,1]<pts[:,1].min()+0.04]; foot[nm]=[float(lo[:,0].mean()),float(pts[:,1].min()),float(lo[:,2].mean())]
-parent={'cannonL':'body','cannonR':'body','head':'body','FLup':'body','FRup':'body','BLup':'body','BRup':'body','FLlo':'FLup','FRlo':'FRup','BLlo':'BLup','BRlo':'BRup'}
+    li=NAMES.index(nm+'lo'); m=lab==li; ymin=P[T[m]].reshape(-1,3)[:,1].min(); FT=ymin+0.075
+    fm=m&(y<FT); lab[fm]=NAMES.index(nm+'ft')
+    pts=P[T[fm]].reshape(-1,3); piv[nm+'ft']=[float(pts[:,0].mean()),float(FT),float(pts[:,2].mean())]; foot[nm]=piv[nm+'ft']
+parent={'FLft':'FLlo','FRft':'FRlo','BLft':'BLlo','BRft':'BRlo','cannonL':'body','cannonR':'body','head':'body','FLup':'body','FRup':'body','BLup':'body','BRup':'body','FLlo':'FLup','FRlo':'FRup','BLlo':'BLup','BRlo':'BRup'}
 ti=mat['pbrMetallicRoughness']['baseColorTexture']['index']; tex=imgs[J['textures'][ti]['source']].convert('RGB').resize((2048,2048),Image.LANCZOS)
 b=io.BytesIO(); tex.save(b,'JPEG',quality=88); texs='data:image/jpeg;base64,'+base64.b64encode(b.getvalue()).decode()
 Pv=P[T].reshape(-1,3).astype(np.float32); UVv=UV[T].reshape(-1,2).astype(np.float32); Nf=np.cross(P[T[:,1]]-P[T[:,0]],P[T[:,2]]-P[T[:,0]]); Nf/=np.linalg.norm(Nf,axis=1,keepdims=True)+1e-12

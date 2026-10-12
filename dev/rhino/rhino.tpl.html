@@ -26,8 +26,8 @@ __RHINO__
   var R = window.RHINO, cv = document.getElementById("cv"), stage = document.getElementById("stage"), gl = cv.getContext("webgl", { antialias: true, alpha: true, preserveDrawingBuffer: true });
   function dec(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new Float32Array(u.buffer); }
   var P = dec(R.p), N = dec(R.n), UV = dec(R.uv), PID = dec(R.part), NP = R.names.length, NV = P.length / 3;
-  var vs = "attribute vec3 aP; attribute vec3 aN; attribute vec2 aUV; attribute float aId; uniform mat4 uVP; uniform mat4 uM[12]; varying vec2 vUV; varying vec3 vN;" +
-    "void main(){ mat4 M = uM[0]; for (int i = 1; i < 12; i++) { if (abs(aId - float(i)) < 0.5) M = uM[i]; } vec4 w = M * vec4(aP, 1.0); vN = mat3(M) * aN; vUV = aUV; gl_Position = uVP * w; }";
+  var vs = "attribute vec3 aP; attribute vec3 aN; attribute vec2 aUV; attribute float aId; uniform mat4 uVP; uniform mat4 uM[16]; varying vec2 vUV; varying vec3 vN;" +
+    "void main(){ mat4 M = uM[0]; for (int i = 1; i < 16; i++) { if (abs(aId - float(i)) < 0.5) M = uM[i]; } vec4 w = M * vec4(aP, 1.0); vN = mat3(M) * aN; vUV = aUV; gl_Position = uVP * w; }";
   var fs = "precision mediump float; varying vec2 vUV; varying vec3 vN; uniform sampler2D uT; uniform vec3 uL; uniform float uFlat; void main(){ vec3 c = texture2D(uT, vUV).rgb; vec3 n = normalize(vN); float d = abs(dot(n, uL)); float l = mix(0.42 + 0.72 * d, 1.0, uFlat); gl_FragColor = vec4(c * l, 1.0); }";
   function sh(t, s) { var o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(o); return o; }
   var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr); gl.useProgram(pr);
@@ -102,11 +102,13 @@ __RHINO__
     var Wm = {};
     function wm(n) {
       if (Wm[n]) return Wm[n]; var q = ps[n] || {}, r = q.r || rx(0), d = q.t || [0, 0, 0], L = mul(tr(d[0], d[1], d[2]), about(R.piv[n], r));
-      Wm[n] = R.parent[n] ? mul(wm(R.parent[n]), L) : L; return Wm[n];
+      Wm[n] = R.parent[n] ? mul(wm(R.parent[n]), L) : L;
+      if (/ft$/.test(n)) { var pv = R.piv[n], aw = xf(wm(R.parent[n]), pv); Wm[n] = tr(aw[0] - pv[0], aw[1] - pv[1], aw[2] - pv[2]); } // feet stay perfectly flat: only follow the ankle
+      return Wm[n];
     }
     var all = []; R.names.forEach(function (n) { all = all.concat(wm(n)); }); return all;
   }
-  window.__feet = function (anim, tt) { var ps = pose(anim, tt), W = world(ps), out = {}; ["FL", "FR", "BL", "BR"].forEach(function (L) { var i = IDX[L + "lo"], m = W.slice(i * 16, i * 16 + 16); out[L] = xf(m, R.foot[L]).map(function (v) { return Math.round(v * 1000) / 1000; }); }); return out; };
+  window.__feet = function (anim, tt) { var ps = pose(anim, tt), W = world(ps), out = {}; ["FL", "FR", "BL", "BR"].forEach(function (L) { var i = IDX[L + "lo"], m = W.slice(i * 16, i * 16 + 16); out[L] = xf(W.slice(IDX[L + "ft"] * 16, IDX[L + "ft"] * 16 + 16), R.foot[L]).map(function (v) { return Math.round(v * 1000) / 1000; }); }); return out; };
   var ang = -1.15, t = 0, last = performance.now(), drag = null;
   window.__setT = function (v) { t = v; }; window.__setAng = function (v) { ang = v; }; window.__pause = false;
   stage.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, a: ang }; stage.setPointerCapture(e.pointerId); document.getElementById("turn").value = "hold"; });
