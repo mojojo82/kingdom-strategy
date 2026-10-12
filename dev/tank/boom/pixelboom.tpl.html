@@ -15,7 +15,7 @@ button{background:var(--cy);color:#06202a;border:0;padding:8px 12px;border-radiu
 label{display:flex;gap:8px;align-items:center}
 </style></head><body><div class="wrap">
 <h1>Pixel Boom Lab</h1>
-<p>Top row: explosions I made from scratch in code - clumps of hard pixel puffs, each with its own dark outline and top-left lighting, on a tiny pixel grid with a fixed palette, then blown up with hard pixel edges (the Metal Slug look). Bottom row: your GPT sprites for comparison. They all loop.</p>
+<p>Top row: explosions I made from scratch in code - Metal Slug style: no outlines - white-hot middles, yellow, orange rims and orange seams between the bubbles, flame tongues licking up, hard pixels on a tiny grid with a fixed palette, then blown up with hard pixel edges (the Metal Slug look). Bottom row: your GPT sprites for comparison. They all loop.</p>
 <div class="bar"><button id="sync">Replay all together</button><label>Speed <input id="spd" type="range" min="0.25" max="1.5" step="0.05" value="1"></label></div>
 <div class="grid" id="mine"></div>
 <h2 style="margin-top:16px">GPT sprites</h2>
@@ -23,7 +23,7 @@ label{display:flex;gap:8px;align-items:center}
 </div>
 <script>
 // 8-colour palette, hot -> cold
-var PAL=['#fffbe6','#ffe14d','#ffa21f','#e8521a','#a8281a','#5a2a1c','#4a4440','#2e2a28'],OUT='#120c0a',SMK=['#8a8580','#6a6560','#4a4642'];
+var PAL=['#ffffff','#fff7b4','#ffe03a','#fcab38','#e0701e','#a8401a'],OUT='#120c0a',SMK=['#8a8580','#6a6560','#4a4642'];
 var BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 function rng(seed){return function(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}}
 // recipe: puffs = blobs that grow then cool; sparks = pixels flying out; ring = shock ring
@@ -45,13 +45,18 @@ function frame(ctx,R,B,t){var N=R.N,c=N/2,cy=R.dirt?N*0.72:N*0.55,u=t/R.len,img=
     L.push({x:c+p.x*(0.35+0.65*grow),y:cy+p.y*(0.35+0.65*grow)-p.up*tt*tt,r:rr,heat:p.heat*Math.max(0,1-tt*1.25)+(R.flash&&u<0.1?0.5:0),z:p.y})}
   L.sort(function(a,b){return a.z-b.z});
   L.forEach(function(q){var R2=q.r,x0=Math.floor(q.x-R2-1),x1=Math.ceil(q.x+R2+1),y0=Math.floor(q.y-R2-1),y1=Math.ceil(q.y+R2+1);
-    var fire=q.heat>0.22,base=q.heat>0.9?1:q.heat>0.72?2:q.heat>0.5?3:q.heat>0.32?4:q.heat>0.22?5:(q.heat>0.1?10:11);if(R.dirt&&!fire)base=base===10?13:14;
+    var fire=q.heat>0.2,base=q.heat>0.85?0:q.heat>0.7?1:q.heat>0.55?2:q.heat>0.4?3:q.heat>0.3?4:q.heat>0.2?5:(q.heat>0.1?10:11);if(R.dirt&&!fire)base=base===10?13:14;
     for(var y=y0;y<=y1;y++)for(var x=x0;x<=x1;x++){var dx=x+0.5-q.x,dy=y+0.5-q.y,d=Math.sqrt(dx*dx+dy*dy);
-      if(d>R2+1)continue;if(d>R2){put(x,y,-2);continue}
-      var lt=(-dx-dy*1.2)/(R2*1.5)+(BAYER[y&3][x&3]/16-0.5)*0.25,ci=base;
-      if(fire){if(d<R2*0.38&&q.heat>0.5)ci=Math.max(0,base-2);else if(lt>0.3)ci=Math.max(0,base-1);else if(lt<-0.38)ci=Math.min(5,base+1)}
-      else{var lo=R.dirt?13:10,hi=R.dirt?14:12;if(lt>0.3)ci=Math.max(lo,base-1);else if(lt<-0.3)ci=Math.min(hi,base+1)}
+      if(d>R2)continue;
+      var lt=(-dx*0.6-dy)/(R2*1.3)+(BAYER[y&3][x&3]/16-0.5)*0.2,ci=base;
+      if(fire){if(d>R2-1.1)ci=Math.min(5,base+2);else if(d<R2*0.55||lt>0.25)ci=Math.max(0,base-1);else if(lt<-0.45)ci=Math.min(5,base+1)}
+      else{var lo=R.dirt?13:10,hi=R.dirt?14:12;if(d>R2-1.1)ci=hi;else if(lt>0.3)ci=Math.max(lo,base-1);else if(lt<-0.3)ci=Math.min(hi,base+1)}
       put(x,y,ci)}});
+  // flame tongues: thin jagged spikes rising off the top edge while it is hot
+  if(u>0.06&&u<0.6){var env=Math.sin((u-0.06)/0.54*Math.PI);
+    for(var x=0;x<N;x++){var h0=-1;for(var y=0;y<N;y++){var g=grid[y*N+x];if(g>=0&&g<=5){h0=y;break}}if(h0<0)continue;
+      var hh=((x*73+R.seed*31)%17)/17;if(hh<0.45)continue;var len=Math.round(hh*N*0.16*env);
+      for(var k=1;k<=len;k++){var ci2=k>len*0.6?4:k>len*0.3?3:2;put(x,h0-k,ci2)}}}
   // shock ring
   if(R.ring&&u<0.3){var rr2=N*0.5*u/0.3;for(var a=0;a<64;a++){var an=a/64*Math.PI*2;if((a+((u*40)|0))%3)put(c+Math.cos(an)*rr2,cy+Math.sin(an)*rr2*0.7,u<0.15?1:2)}}
   // sparks / dirt chunks (with gravity)
@@ -62,7 +67,7 @@ function frame(ctx,R,B,t){var N=R.N,c=N/2,cy=R.dirt?N*0.72:N*0.55,u=t/R.len,img=
   // paint + dark outline around everything
   function col(ci){return ci===-2?OUT:ci===13?'#7a5a3a':ci===14?'#4a3424':ci>=10?SMK[ci-10]:PAL[ci]}
   for(var y=0;y<N;y++)for(var x=0;x<N;x++){var g=grid[y*N+x],o=(y*N+x)*4,hex=null;
-    if(g>=0||g===-2)hex=col(g);else{var nb=(x>0&&grid[y*N+x-1]>=0)||(x<N-1&&grid[y*N+x+1]>=0)||(y>0&&grid[(y-1)*N+x]>=0)||(y<N-1&&grid[(y+1)*N+x]>=0);if(nb)hex=OUT}
+    if(g>=0)hex=col(g);
     if(hex){D[o]=parseInt(hex.substr(1,2),16);D[o+1]=parseInt(hex.substr(3,2),16);D[o+2]=parseInt(hex.substr(5,2),16);D[o+3]=255}}
   ctx.putImageData(img,0,0)}
 var spd=1,t0=performance.now(),items=[];
