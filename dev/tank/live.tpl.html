@@ -24,8 +24,8 @@ p{opacity:.75;line-height:1.4;font-size:13px}
 </div></div>
 <script>
 var P=__PARTS__, BG="__BG__", A={x:352.6,feetY:200.76,size:116,w:430};
-var D={size:55,contrast:89,colour:42,bright:86,edge:5,aimy:0};
-var S=JSON.parse(JSON.stringify(D)), defs=[['size','Size %',30,120],['contrast','Contrast %',40,120],['colour','Colour %',30,130],['bright','Brightness %',50,120],['edge','Off-screen %',0,45],['aimy','Target height',-60,40]];
+var D={size:55,contrast:89,colour:42,bright:86,edge:5,aimy:0,rumble:10,rhz:14};
+var S=JSON.parse(JSON.stringify(D)), defs=[['size','Size %',30,120],['contrast','Contrast %',40,120],['colour','Colour %',30,130],['bright','Brightness %',50,120],['edge','Off-screen %',0,45],['aimy','Target height',-60,40],['rumble','Rumble (x0.1px)',0,30],['rhz','Rumble speed',4,30]];
 var sl=document.getElementById('sl');
 defs.forEach(function(d){var r=document.createElement('div');r.className='row';r.innerHTML='<span>'+d[1]+'</span><input type="range" min="'+d[2]+'" max="'+d[3]+'" step="1"><span></span>';
   var inp=r.children[1],out=r.children[2];inp.value=S[d[0]];out.textContent=S[d[0]];inp.oninput=function(){S[d[0]]=+inp.value;out.textContent=inp.value;dirty=true};d.push(inp,out);sl.appendChild(r)});
@@ -77,6 +77,8 @@ function loop(ms){var t=ms/1000,dt=Math.min(.05,t-last);last=t;if(dirty)rebuild(
   x.save();x.translate(cx,fy);x.scale(k,k);x.translate(-CX,-GROUND);
   var bob=roll?Math.sin(dist/pitch*Math.PI*2)*1.2:0;
   x.save();x.translate(TRK.x1,GROUND);x.rotate(-rock*0.025);x.translate(-TRK.x1+rock*6,-GROUND+bob);
+  var RP=[0,-1,0,1,0,-1,1,0],ri=Math.floor(t*S.rhz),ru=RP[ri%RP.length]*S.rumble/10/k,rx=((ri*7)%3-1)*S.rumble/30/k;
+  x.save();x.translate(rx,ru);
   x.save();x.translate(kick*10,TUR_DY-kick*2);x.translate(900,250);x.rotate(kick*0.03);x.translate(-900,-250);
   x.save();x.translate(PIV.x,PIV.y);x.rotate(aim);x.translate(-PIV.x,-PIV.y);img('barrel',recoil*48,0);x.translate(36+recoil*48,PIV.y);muzzleM=x.getTransform();x.restore();
   img('turret');
@@ -85,6 +87,7 @@ function loop(ms){var t=ms/1000,dt=Math.min(.05,t-last);last=t;if(dirty)rebuild(
   x.restore();
   img('hull');
   x.globalCompositeOperation='lighter';x.fillStyle='rgba('+shade()+','+(gl*.8)+')';x.fillRect(1322,458,46,80);x.globalCompositeOperation='source-over';
+  x.restore();
   x.fillStyle='#16100a';x.beginPath();x.moveTo(TRK.x0,TRK.cy-TRK.r);x.lineTo(TRK.x1,TRK.cy-TRK.r);x.arc(TRK.x1,TRK.cy,TRK.r,-Math.PI/2,Math.PI/2);x.lineTo(TRK.x0,TRK.cy+TRK.r);x.arc(TRK.x0,TRK.cy,TRK.r,Math.PI/2,Math.PI*1.5);x.fill();
   for(var i=0;i<wheelsX.length;i++){if(i==0)spin('wheel',wheelsX[i],TRK.cy,TRK.r-TRK.th/2+4,-dist/(TRK.r-24));else if(i==wheelsX.length-1)spin('sprocket',wheelsX[i],TRK.cy,SR,-dist/SR);else spin('wheel',wheelsX[i],TRK.cy+TRK.r-TRK.th/2-WR+4,WR,-dist/WR)}
   var pr=P.plate.r;for(var q=0;q<NPL;q++){var p=tp(q*pitch+dist);x.save();x.translate(p.x,p.y);x.rotate(p.a);x.drawImage(I.plate,-pr[2]/2,-pr[3]/2,pr[2]*1.02,pr[3]);x.restore()}
