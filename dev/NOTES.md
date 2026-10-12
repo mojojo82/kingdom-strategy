@@ -1563,3 +1563,11 @@
 ## v1105 - Gareth's slash more see-through (TEST)
 - Harley: "make the slash slightly more see through so i can see the sword". New slashFx.alpha (1 = as before); Gareth 0.6 - the 3 ribbon layers only (sparks / hit burst unchanged). g268 OK.
 
+## v1106 - fortress HP bar shows the REAL HP (Hex Shield looked broken) (TEST)
+- Harley: "The hex shield seems to not be doing its job. I can see hp being removed from the fortress". The engine was right (the Hex Shield soaks first, real HP untouched);
+  the BAR was wrong: every enemy shot that landed took its RAW damage (count x enemy ATK, before fortress DEF, guard shield and Hex Shield) off idleAnim.displayedPlayerHp,
+  and nothing ever brought it back up. Repro (g269): Hex Shield up -> bar 15.7 HP below real HP; no shield -> bar below real HP in 209 of 211 samples (DEF never shown).
+- Fix: the bar follows the real HP - the reconcile step takes the whole real drop off the bar; a landed shot no longer subtracts its raw damage (except the killing blast while
+  the defeat waits for it, so the defeat still plays: bar to 0, then the banner). No damage number on a landed shot while the Hex Shield is up (its ripple shows the hit).
+- dev/simfork/g269_hexbar.js: bar = real HP with the shield up (gap 0.0) and without (0 samples below), defeat still shows. Old build fails it. Not checked on a phone.
+

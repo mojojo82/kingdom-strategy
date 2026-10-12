@@ -11456,7 +11456,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1105"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1106"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -20988,8 +20988,10 @@ function stepIdleAnim(dtSec, w, h) {
     // than when it actually landed.
     arrived.forEach(function (p) {
       if (p.heroKey) { var ahv = idleAnim.heroVis[p.heroKey]; if (ahv) { spawnDamageNumber(ahv.x, ahv.y - 34 * (heroSpriteVisualScale / 100), p.dmg, false, true); heroBigHitCheck(p.heroKey, p.dmg); } return; } // a hero took this one, not the fortress
-      spawnDamageNumber(w * 0.16, getFortressTopY(h) - 24, p.dmg, false, true);
-      idleAnim.displayedPlayerHp = Math.max(0, idleAnim.displayedPlayerHp - p.dmg);
+      // v1106: the bar follows the fortress's REAL HP (reconcile below), so a shot soaked by the Hex Shield / guard shield / DEF no longer shows as lost HP.
+      // Only the killing blast of a defeat still knocks the bar down here (defeatWait waits for it). No damage number while the Hex Shield is up (its ripple shows the hit).
+      if (!(game.state.idle.shield > 0) || idleAnim.defeatWait > 0) spawnDamageNumber(w * 0.16, getFortressTopY(h) - 24, p.dmg, false, true);
+      if (idleAnim.defeatWait > 0) idleAnim.displayedPlayerHp = Math.max(0, idleAnim.displayedPlayerHp - p.dmg);
     });
   }
   idleAnim.enemyProjectiles = idleAnim.enemyProjectiles.filter(function (p) { return p.t < 1; });
@@ -21039,10 +21041,8 @@ function stepIdleAnim(dtSec, w, h) {
         var consumed = Math.min(actualDrop, idleAnim.playerHpLossAccounted); // v696: engine damage now lands ~0.33s after the shot fires, so accounted hits wait in the ledger until the drop arrives
         idleAnim.playerHpLossAccounted -= consumed;
         var leftover = actualDrop - consumed;
-        if (leftover > 0.01) {
-          spawnDamageNumber(w * 0.16, getFortressTopY(h) - 24, leftover, false, true);
-          idleAnim.displayedPlayerHp = Math.max(0, idleAnim.displayedPlayerHp - leftover);
-        }
+        if (leftover > 0.01) spawnDamageNumber(w * 0.16, getFortressTopY(h) - 24, leftover, false, true);
+        idleAnim.displayedPlayerHp = Math.max(0, idleAnim.displayedPlayerHp - actualDrop); // v1106: the whole real drop (shots no longer subtract their raw damage on landing)
       } else if (actualDrop < 0) {
         var gained = -actualDrop;
         if (gained > 0.01) {
