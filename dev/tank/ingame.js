@@ -29,13 +29,13 @@ const rec=async(ms)=>P.evaluate(async(ms)=>{const cv=document.getElementById("id
   return {b64:btoa(s2),w:cv.width,h:cv.height,cw:cv.clientWidth,ch:cv.clientHeight}},ms);
 const old=await rec(9000);fs.writeFileSync("old.webm",Buffer.from(old.b64,"base64"));
 await P.screenshot({path:"g_old.png"});
-await P.evaluate(([TKSRC,parts,imgs,HS])=>{eval(TKSRC+";window.TK=TK;");const I={};for(const k in imgs){const im=new Image();im.src=imgs[k];I[k]=im}
+await P.evaluate(([TKSRC,parts,imgs,HS,FILT])=>{eval(TKSRC+";window.TK=TK;");window.TKFILTER=FILT;const I={};for(const k in imgs){const im=new Image();im.src=imgs[k];I[k]=im}
   let st={dist:0,fireT:-9,t:0,moving:false},lastX=null,lastFire=performance.now()/1000;
   window.drawBossAnim=function(ctx,x,feetY,size){const t=performance.now()/1000;st.t=t;const h=size*HS,k=h/(TK.GROUND-TK.TOP);
-    const w=ctx.canvas.clientWidth||430,half=1460/2*k;const cx=Math.min(x,w-half-4);
+    const w=ctx.canvas.clientWidth||430,half=1460/2*k;const cx=x+((w-half*0.7)-Math.min(w-40,w*0.82));
     if(lastX!=null){const dx=cx-lastX;st.dist+=-dx/k;st.moving=Math.abs(dx)>0.05}lastX=cx;
     if(t-lastFire>3.2){lastFire=t;st.fireT=t}
-    ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.translate(cx,feetY);ctx.scale(k,k);ctx.translate(-TK.CX,-TK.GROUND);TK.draw(ctx,I,parts,st);ctx.restore();return true}},[TKSRC,parts,imgs,HSCALE]);
+    ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.filter=(window.TKFILTER||'none');ctx.translate(cx,feetY);ctx.scale(k,k);ctx.translate(-TK.CX,-TK.GROUND);TK.draw(ctx,I,parts,st);ctx.restore();return true}},[TKSRC,parts,imgs,HSCALE,process.env.FILT||'none']);
 await P.waitForTimeout(800);
 const nw=await rec(9000);fs.writeFileSync("tank.webm",Buffer.from(nw.b64,"base64"));
 await P.screenshot({path:"g_tank.png"});
