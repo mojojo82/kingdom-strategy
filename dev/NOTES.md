@@ -1628,3 +1628,10 @@
   bake_boss.py / boss_pose.py / render.js / pack.py), paste boss_game.webp as BOSS3D.src, update the numbers from boss_game.json + boss_points.json, set BOSS3D_ON.
   Harley may make a beefier model in Meshy. g181 OK; checked a boss fight headless (pixel boss shows, orbs as before).
 
+## v1114 - sound comes back after a phone alarm (TEST)
+- Harley: an alarm went off on his phone with the game open, then the game's sound was gone. iPhone (WebKit) can leave an interrupted AudioContext "running" but
+  silent - resume() (v591 retries) can't fix it. Now an interruption (state "interrupted", or not running while visible / 0.8 s after coming back) or the page being
+  hidden > 15 s flags sfxNeedsRebuild; the next tap closes the old context and builds a fresh one (sfxRebuild): sound effects use it at once, the music restarts on
+  it (music.gain/cur reset; the decoded track is reused), laser loops dropped. Normal play is untouched.
+- dev/simfork/g274_audio_rebuild.js (simulated interruption + long hide; headless can't fake a real alarm). g172's music hide/resume part unchanged. Not checked on a phone.
+
