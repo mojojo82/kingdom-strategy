@@ -1,0 +1,30 @@
+const fs=require("fs"),path=require("path");const ROOT="/home/claude/kingdom-strategy";
+const {chromium}=require("/opt/npm-tools/node_modules/playwright");
+const FAKE=fs.readFileSync(ROOT+"/dev/tests/fakefb.js","utf8"),GAME=fs.readFileSync(ROOT+"/test/index.html","utf8");
+const store={},call=require(ROOT+"/dev/tests/fnrunner.js")(store);
+const parts=JSON.parse(fs.readFileSync("parts.json"));const imgs={};for(const k of Object.keys(parts))imgs[k]="data:image/png;base64,"+fs.readFileSync(k+".png").toString("base64");
+const TKSRC=fs.readFileSync("tankdraw.js","utf8");const HSCALE=+(process.env.HS||1);
+(async()=>{const b=await chromium.launch({executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args:["--no-sandbox"]}),errs=[];
+const ctx=await b.newContext({viewport:{width:430,height:932},deviceScaleFactor:3});
+await ctx.exposeFunction("__fbstore",(op,k,v)=>{if(op==="set")store[k]=JSON.parse(v);else if(op==="del")delete store[k];return JSON.stringify(store)});
+await ctx.exposeFunction("__fbcall",call);
+await ctx.route(/mojojo82\.github\.io/,r=>r.fulfill({status:200,contentType:"text/html",body:GAME}));
+await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/,r=>r.fulfill({status:200,contentType:"application/javascript",body:FAKE}));
+await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/,r=>r.fulfill({status:200,contentType:"application/javascript",body:""}));
+await ctx.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
+const P=await ctx.newPage();P.on("pageerror",e=>errs.push(e.message));
+await P.goto("https://mojojo82.github.io/kingdom-strategy/test/");await P.waitForSelector("#ksAuth .box");
+await P.fill("#ksE","tank@test.dev");await P.fill("#ksP","secret123");await P.click("#ksUp");
+await P.waitForSelector("#ksN",{timeout:15000});await P.fill("#ksN","Tank");await P.click("#ksGo");await P.waitForTimeout(5000);
+await P.evaluate(()=>{setScreen("conquest");const I=game.state.idle;game.state.conquestRoster=[];I.skillAuto=false;I.levelNum=20;I.chapter=1;I.enemies=[];});
+// wait for the boss
+const ok=await P.evaluate(async()=>{const t0=performance.now();while(performance.now()-t0<90000){await new Promise(r=>setTimeout(r,200));
+  game.state.idle.enemies.forEach(e=>{if(e.type!=="boss")e.hp=0;else e.hp=Math.max(e.hp,e.maxHp*.6)});
+  if(game.state.idle.enemies.some(e=>e.type==="boss"))return true}return false});
+console.log("boss",ok);
+await P.evaluate(()=>{window.__keep=setInterval(()=>{game.state.idle.enemies.forEach(e=>{if(e.type==="boss")e.hp=Math.max(e.hp,e.maxHp*.6)})},200);
+  window.__args=null;window.drawBossAnim=function(ctx,x,feetY,size){window.__args={x,feetY,size,w:ctx.canvas.clientWidth};return true}});
+await P.waitForTimeout(5000);
+const shots=[];for(let i=0;i<31;i++){shots.push(await P.evaluate(()=>document.getElementById("idleCanvas").toDataURL("image/png")));await P.waitForTimeout(170)}
+shots.forEach((d,i)=>fs.writeFileSync("bgf_"+i+".png",Buffer.from(d.split(",")[1],"base64")));const r={png:shots[0],a:await P.evaluate(()=>window.__args)};
+fs.writeFileSync("bg.png",Buffer.from(r.png.split(",")[1],"base64"));console.log(JSON.stringify(r.a),errs.slice(0,3));await b.close()})().catch(e=>{console.error(e);process.exit(1)});
