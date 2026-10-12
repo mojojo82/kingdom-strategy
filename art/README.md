@@ -30,3 +30,6 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | mixamo_sword_shield_slash.fbx | Mixamo "Sword And Shield Slash", skeleton only, as sent | animation | v1100: Gareth's attack row (11 frames; put on the knight by dev/knight/mixamo.py, held in place) |
 | mixamo_standard_run.fbx | Mixamo "Standard Run", skeleton only, as sent | animation | v1100: Gareth's run row (16 frames) |
 | mixamo_sword_shield_impact.fbx | Mixamo "Sword And Shield Impact" (hit reaction, the doubled-over one - replaced the first, head-snap version 12 Oct), skeleton only, as sent | animation | v1100: Gareth's hit row (10 frames) - plays on a big hit with a small slide back (Harley) |
+| boss_dark_knight_rigged.glb | Chapter boss "Heroic Dark Knight" from Meshy AI, rigged (Mixamo names, 23 bones, 11.6k tris, 4096 texture) with Meshy's Idle_11, as sent (33 MB). The zip also had Running/Walking copies (not kept) | 3D | not in the game yet - posed in dev/boss (Boss Pose preview) |
+| sprites_hires/gareth/ | Gareth's game frames at full render size (863x606 cells, ~4.5x the game sheet), one lossless webp per row: idle, run, attack, hit, charge, hop | backup | v1100 sheet is made from these frames (dev/knight/pack_game.py) |
+
