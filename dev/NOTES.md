@@ -1521,7 +1521,20 @@
 
 ## v1099 - fortress ship sprite: Harley's ChatGPT 2D-painted version (TEST)
 - Harley ran his Rhino render through ChatGPT's 2D filter (bold outlines, cel shading, gold trim, red diamond banners, glowing windows). Original art/originals/fortress_ship_iso_2d.png; drone removed (separate piece), cropped 1332x787 -> 1240x733 webp (151 KB). FORT_SHIP_SRC swapped, aspect 0.5911; same 3 sizes / placement numbers. Screenshot dev/simfork/fortship_sizes.png.
-
-## v1099 - fortress ship sprite: Harley's ChatGPT 2D-painted version (TEST)
-- Harley ran his Rhino render through ChatGPT's 2D filter (bold outlines, cel shading, gold trim, red diamond banners, glowing windows). Original art/originals/fortress_ship_iso_2d.png; drone removed (separate piece), cropped 1332x787 -> 1240x733 webp (151 KB). FORT_SHIP_SRC swapped, aspect 0.5911; same 3 sizes / placement numbers. Screenshot dev/simfork/fortship_sizes.png.
 - In for now: Harley may redo it - the dark patch under the hull came from his Rhino light experiments (next time: ground shadows off, same 35 deg camera, transparent PNG).
+
+## v1100 - Gareth is the 3D knight (TEST)
+- Harley: "lets go with all these ... i want to see how these are in the game now". Gareth's pixel sprite is replaced by the Meshy chibi knight (sword from his
+  sword-holding version glued to the right hand bone), rendered side-on as sprite frames. Picked in the "Gareth Sprite Swap" mockup (https://claude.ai/artifact/FNCrmpAy6icYk6FDtakWdE).
+- Animations: idle = stand-in breathing ready stance (Harley: use it for now); run = Mixamo "Standard Run"; attack = Mixamo "Sword And Shield Slash" (whole 1.5 s move in 11 frames
+  at 22 fps = his 0.5 s swing, strike frames packed tight, hit still lands on frame 5); hit = Mixamo "Sword And Shield Impact" (2nd version, 10 frames, 0.5 s);
+  charge (Shield Slam) = hand-keyed from Harley's charge art: crouch + push-off fill the 130 ms wind-up, the lunge pose rides the dash (HERO_CHARGE.gareth);
+  back-hop = hand-keyed 9 frames (crouch, push, tuck, reach, land, absorb, ready), now a row of his sheet (HERO_HOP.gareth row 5).
+- Size on screen: the same figure height as the old Gareth (dispH 35.53, sizeMul 0.75). Sheet 2x the old pixel sheet's detail: 2896x804 webp, 321 KB (+~300 KB to the game file).
+- Big hits (new, visual only): a single hit taking >= 12% of his max HP (HERO_BIG_HIT_FRAC) plays the hit row once and slides him back 5 px (HERO_HIT_PUSH) then eases him home -
+  Harley's idea ("if its a big hit ... slide his sprite back a few px in the code"). Conquest only for now (melee hits and arrows/orbs that reach him). Engine untouched.
+- Slash swoosh refitted to the new swing (circle through the sword tip's path, frames 3-6.6). Charge fire keeps its hue shift; the knight himself is drawn untinted
+  (the hue-rotate filter used to recolour Gareth too - gold went green). The admin "Gareth attack changer" / stored extra attacks (old pixel thrust/slash) no longer play over the 3D knight (model3d flag).
+- Tools: dev/knight (run_all.sh rebuilds the previews; render jobs_game.json into game_frames + pack_game.py makes the game sheet). Originals: art/originals/knight_*.glb, mixamo_*.fbx.
+- Checked headless (430x932): dev/simfork/g267_knight.js (fight, big hit vs small hit, hop, charge wind-up/dash - screenshots out_g267_*.png), g173 sword hits ALL OK. Not checked on a phone.
+

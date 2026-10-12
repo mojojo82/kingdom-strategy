@@ -12,3 +12,5 @@ python3 -B build_fit.py                                               # fit.html
 rm -rf frames && mkdir frames && node render.js "$(cat jobs.json)"    # side-view frames, see-through background
 python3 -B pack.py                                                    # knight_sheet.webp + knight_sheet.json
 python3 -B build_swap.py                                              # swap.html (mockup vs current Gareth)
+rm -rf game_frames && mkdir game_frames && OUT=game_frames node render.js "$(cat jobs_game.json)"   # game rows (exact times per frame)
+python3 -B pack_game.py                                               # gareth_game.webp / gareth_lunge.webp / gareth_game.json for test/index.html

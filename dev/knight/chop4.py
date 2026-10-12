@@ -136,5 +136,20 @@ CHARGE={'dir':{'RightArm':(-0.05,0.04,1),'RightForeArm':(0,0.04,1),'blade':(0,0.
         'rot':{'Hips':(42,12),'Spine1':(20,12),'Head':(-46,-12)}}                                    # leaning well forward, head up
 charge=bake([(0,READY),(0.2,CROUCH),(0.35,LAUNCH),(0.5,CHARGE),(0.8,CHARGE),(1.0,READY)],1.0)
 d=json.load(open('knight2.json'))
-d['anims']={'Overhead Chop':{'len':1.1,'frames':pack(chop)},'Idle (ready)':{'len':1.0,'frames':pack(idle)},'Charge':{'len':1.0,'frames':pack(charge)}, **d['anims']}
+# Back-hop (the game's HERO_HOP: 9 frames, the game lifts him itself while frames 1-5 play). One pose per 0.1 s.
+def RD(**kw):
+    import copy; k=copy.deepcopy(READY)
+    for a,b in kw.items(): k[a]=b
+    return k
+HOPK=[RD(hip=(0.12,0),rot={'Hips':(8,-10),'Spine1':(14,-5),'Head':(-10,10)}),                                   # 0 crouch
+      RD(feet={'R':(-0.24,0.08),'L':(0.26,-0.16)},hip=(-0.06,0),rot={'Hips':(-6,-10),'Spine1':(-6,-5),'Head':(4,10)}), # 1 push off (legs straight)
+      RD(feet={'R':(-0.22,0.36,0.16,25),'L':(0.24,0.4,-0.08,25)},hip=(0.0,0)),                                     # 2-4 tucked in the air
+      RD(feet={'R':(-0.22,0.38,0.18,25),'L':(0.24,0.42,-0.06,25)},hip=(0.0,0)),
+      RD(feet={'R':(-0.22,0.36,0.16,25),'L':(0.24,0.4,-0.08,25)},hip=(0.0,0)),
+      RD(feet={'R':(-0.24,0.24,0.12,10),'L':(0.26,0.26,-0.14,10)},hip=(0.0,0)),                                    # 5 legs reaching down
+      RD(hip=(0.12,0),rot={'Hips':(8,-10),'Spine1':(12,-5),'Head':(-8,10)}),                                       # 6 land
+      RD(hip=(0.17,0),rot={'Hips':(12,-10),'Spine1':(18,-5),'Head':(-14,10)}),                                     # 7 absorb
+      READY]                                                                                                        # 8 ready
+hop=bake([(i*0.1,k) for i,k in enumerate(HOPK)]+[(0.9,READY)],0.9)
+d['anims']={'Hop':{'len':0.9,'frames':pack(hop)},'Overhead Chop':{'len':1.1,'frames':pack(chop)},'Idle (ready)':{'len':1.0,'frames':pack(idle)},'Charge':{'len':1.0,'frames':pack(charge)}, **d['anims']}
 json.dump(d,open('knight3.json','w')); print('chop',chop.shape,'idle',idle.shape)

@@ -12,7 +12,7 @@ const JOBS = JSON.parse(process.argv[2]);
     await p.selectOption("#anim", anim);
     for (let i = 0; i < times.length; i++) {
       await p.evaluate(([v, a]) => { window.__setAng(a); window.__setT(v); }, [times[i], -Math.PI / 2]); await p.waitForTimeout(250);
-      await (await p.$("#cv")).screenshot({ path: `${__dirname}/frames/${anim.replace(/\W/g, "")}_${String(i).padStart(2, "0")}.png`, omitBackground: true });
+      await (await p.$("#cv")).screenshot({ path: `${__dirname}/${process.env.OUT || "frames"}/${anim.replace(/\W/g, "")}_${String(i).padStart(2, "0")}.png`, omitBackground: true });
     }
   }
   console.log("errors", e); await b.close();

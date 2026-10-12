@@ -1,7 +1,7 @@
 # 3D knight -> Gareth sprite frames
 
 Turns the Meshy chibi knight (art/originals/knight_rigged.glb) plus Mixamo animations into side-view sprite frames
-for Gareth, and builds two preview pages. Nothing here is in the game yet (Oct 2026: mockup stage).
+for Gareth, and builds two preview pages. In the TEST game since v1100 (HERO_ANIMS.gareth, HERO_CHARGE.gareth, HERO_HOP.gareth).
 
 **Rebuild everything:** `./run_all.sh` (a couple of minutes). Outputs (git-ignored): `fit.html` (3D preview, "Knight Sword Fitting"),
 `frames/`, `knight_sheet.webp` + `knight_sheet.json` (the sprite sheet + cell size / feet anchor / rows / fps), `swap.html` ("Gareth Sprite Swap" mockup).
@@ -24,3 +24,9 @@ Grip used for the sword: rx 0, ry 90, rz -90, size x2.43 (fit.tpl.html).
 
 Harley's picks so far (12 Oct 2026): attack = Mixamo slash, run = Mixamo run, hit = Mixamo impact (2nd version). Big hits: the game slides his sprite back a few px on top of the animation (Harley) - the mockup fakes it ("Hit push-back"). Charge (his Shield Slam skill): hand-keyed in chop4.py from Harley's charge art - 3 frames: crouch, push-off, the lunge pose (held during the dash). Still to come: proper idle.
 The Mixamo slash is 1.5 s; at the game's attack speed (16 frames at 22 fps, ~0.7 s) it is slower than Gareth's 0.5 s swing - trim when it goes in.
+
+## Game export (v1100)
+`OUT=game_frames node render.js "$(cat jobs_game.json)"` then `python3 pack_game.py` -> gareth_game.webp (sheet), gareth_lunge.webp (charge pose),
+gareth_game.json (cell size, feet anchor, dispH for the old on-screen height, slash swoosh circle, lunge anchor + sword tip for the fire shield).
+jobs_game.json lists the exact times sampled for each game row (attack: 11 frames, strike packed tight, frame 5 = the hit). Paste the numbers into
+test/index.html (HERO_ANIMS.gareth / HERO_CHARGE.gareth / HERO_HOP.gareth) - run_all.sh does the render + pack but not the paste.
