@@ -1832,3 +1832,8 @@
 
 ## v1148 — Gareth's "Shield Slam" is now "Blade Rush" (TEST)
 - Harley: he doesn't use a shield, he darts across with his sword out. Name "Blade Rush", icon 🗡️💨, text "Every 10s, dashes through the enemy, sword first, for bonus damage."; Death Strike now says "his next Blade Rush". Display only - same skill, same numbers, saved skill levels unaffected (by index). Code comments still say Shield Slam in places.
+
+## v1149 — Iron Lily: placeholder hero card (TEST)
+- Harley: new hero Iron Lily (Infantry, Legendary), card only for now. HERO_DEFS.ironlily with comingSoon + vipOnly: "🔒 Coming soon" instead of Recruit, no Equip button, equipConquestHero refuses (coming_soon), never on bots/Arena (vipOnly pools). Placeholder skills: Crimson Tempest (active, 9 s - shown as her main skill) and Iron Will (passive); numbers not used anywhere yet.
+- Card video plays once, then loops the held close-up: one mp4 (intro + blended loop), keyframe at 7.625 s, HERO_CARD_VIDEO.ironlily.loopStart; hcWatchLoop jumps back right before the end (requestVideoFrameCallback, "ended" fallback). Small card uses a built-in still (HERO_STILL_BUILTIN). Fixed a load-order slip (getHeroArt runs before that var at load).
+- Test dev/simfork/g287_ironlily.js (list still, card, coming soon, loop jump, no equip, not on bots); g281, g285, g286 ok. Not checked on a phone.
