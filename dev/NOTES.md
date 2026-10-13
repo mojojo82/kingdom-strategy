@@ -1715,3 +1715,8 @@
 - Harley: a ranged hero that rarely attacks looked wrong (Roran, cavalry, only fired once an enemy had ARRIVED at the front line; with Kessa in the team she usually killed everything on the way in, so 0 Roran hits in a 40 s test). HERO_DEFS.roran.basicAnyTarget = true, same rule as Kessa: he throws at the nearest enemy on screen. Same test now: Roran 25 throws, Kessa 25 orbs.
 - That made teams with Roran stronger (sims, conquest stuck-at): Lv40 2* 15-8 -> 15-18, Lv80 5* 25-12 -> 26-17, maxed 28-6 -> 30-6. Harley: "gently nudge it up" -> CURVE_STEP 0.06 -> 0.07 (the per-chapter step from chapter 6): 15-13 / 25-14 / 28-8; new player + duo Lv20 unchanged (4-5, 5-13). (enemyScale growth 0.068 barely moved the late game, not used.)
 - Results: dev/balance/results/roran_before / roran_after / roran_cs07. Server level floor counts hordes, not HP - unaffected. Not a weapon change, so no meta re-run. g280 passes. Not checked on a phone.
+
+## v1127 — longer boss fights from chapter 6 (TEST)
+- Harley (f2p account): the chapter 10 boss died in a few seconds, no challenge at all. Sim (dev/balance/boss_time.js, free player, 1 s steps while a boss is up): f2p boss fights won in ~5-9 s from chapter 6 to 20.
+- Boss HP only (hordes and boss attack unchanged): x idleBossHpCurve() = (1 + 0.12 x chapters past 5) x 1.25 for each 5th chapter reached from 10 (BOSS_HP_STEP / BOSS_HP_GATE). ch6 x1.12, ch9 x1.48, ch10 x2.0, ch14 x2.6, ch15 x3.4, ch20 x5.5. Aim: ~20 s for f2p in the later chapters, the 5th-chapter bosses a clear step up.
+- Put on TEST for Harley to play; the f2p boss-time and conquest sims are still running (numbers to follow). Not checked on a phone.
