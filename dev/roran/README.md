@@ -5,3 +5,4 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
 - mixamo.py extras: T0/T1 = keep only that source window (s); TAME group `head` (Neck+Head) overrides spin so his eyes stay on the enemy.
 - Throw draft (Harley OK'd the 1.8-3.0 window, face may turn a little if the eyes stay on the enemy): `T0=1.8 T1=3.0 REFT=1.8 TAME="spin=0.4,head=0.15,legs=0.4,hips=0.3" python3 -B mixamo.py ../../art/originals/mixamo_roran_throw_object.fbx "ThrowT" inplace`
 - Harley prefers the ORIGINAL big motion (grander reads better at sprite size). Candidate: `T0=1.8 T1=3.0 REFT=1.8 TAME="head=0.3"` ("ThrowH": full body swing, only the head held toward the enemy). Preview page: claude.ai artifact "Roran Spear Throw".
+- Side view for Roran (faces + throws screen-right like in the game): `ANG=1.3 node render.js ...` (the default -0.6 was Kessa's angle and showed him facing the camera).
