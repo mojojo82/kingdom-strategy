@@ -26,3 +26,9 @@ LOCKED (Harley, 13 Oct): Arc Burst frames + Blender bolt textures as shown on th
 Hero card loop: Mixamo Happy Idle (art/originals/mixamo_kessa_happy_idle.fbx, 2.93 s, loops cleanly), 36 frames (dev/kessa/blcard.json). Staff stays upright: posed at frame 0, then only translated with the grip point (grip band uv 0.15 through the hand skin matrix) - rigid riding made it swing through her body. Preview pass 400x600, 16 samples, HeroCam.
 Hero CARD version (Harley): waist-up, no staff, CardCam persp 85 mm at (0,-3.5,1.72) -> (0,-0.05,1.0) (in front, slightly above), wide frame for the hero detail portrait (grid card crops top-centre). Full-body HeroCam version only for the overlord profile. card_shot*.js drop frames into the real TEST hero detail + grid.
 FINAL hero card loop (13 Oct, approved framing): CardCam at (0,-3.4,2.02) -> (0,-0.05,1.0) (raised per Harley), 1600x1120 RGBA transparent, Eevee 96 samples, exposure -0.7, no staff, 36 frames of Happy Idle (12.3 fps = 2.93 s loop). On Harley's PC: KingdomArt\kessa_card\kessa_card_00..35.png (48.5 MB). Not in the repo / game yet.
+
+## LOCKED (Harley, 13 Oct 2026, v1122): battle sprites use the "Gareth look"
+Gareth's 3D sprite reads as 2D because of his render style (dev/knight/fit.tpl.html "cel"): 3 hard light steps, cool shadow tint, small hard highlight, pale rim, near-black outline.
+Kessa now uses the same: Blender scene KingdomArt\kessa_toon.blend (emission toon material on Material_1 + StaffGold, freestyle off, exposure 0), frames posed from blframes.json,
+then `python3 -B dev/kessa/pack_toon.py` adds the thin 1 px outline (option C1 - Harley picked over the 2 px one) and rebuilds the Arc Burst frames, and swaps the sheet into test/index.html.
+Cell size, anchor, dispH and hand points unchanged (silhouettes match the softer frames within ~0.3 px). The "softer" frames stay as the backup.

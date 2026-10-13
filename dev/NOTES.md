@@ -1691,3 +1691,9 @@
 - Arena Arc Burst now matches Conquest: Kessa plays the cast state (wind-up -> held cast -> recovery, castMiss on a fizzle), and the bolt leaves her palm (castHand) after the wind-up (7/16 s), drawn with the Blender bolt strips that swap each flicker and follow the hero it hit. Player and AI side.
 - arenaAnim.heroCast / arenaAnim.pendingBolts (cleared on battle reset); the old skill-edge attack is skipped for sheets with `seq`.
 - dev/simfork/g279_arena_kessa.js passes (cast state, textured bolt, ~450 ms wind-up delay). AI-side Kessa uses the same code but wasn't hit in the test match. Not checked on a phone.
+
+## v1122 — Kessa in the "Gareth look" (TEST)
+- Why Gareth looks 2D: his sprite was rendered with a cel shader (3 hard light steps, cool shadows, hard highlight, pale rim) and a near-black outline. Kessa had soft studio light.
+- Kessa's idle, attack and Arc Burst frames re-rendered in Harley's Blender with Gareth's shading rebuilt as a material, plus a thin 1 px dark outline (Harley picked C1 over a 2 px one). Arc Burst palm energy carried over from the old frames.
+- Same cell/anchor/size/hand points as v1120; sheet 246 KB (was ~320). dev/kessa/pack_toon.py, frames in art/originals/sprites_hires/kessa/toon.
+- g278 + g279 pass. Not checked on a phone.
