@@ -1710,3 +1710,8 @@
 ## v1125 — Roran: lighting 30% dimmer, done in Blender (TEST)
 - v1124's flat colour dim was too murky (Harley: "the lighting is the issue"). Now the toon shader's light is 30% weaker in Blender (roran_sprites.blend): lit steps 1.0/0.72 -> 0.85/0.654 (shadow step 0.5 unchanged), highlight + rim x0.7. Frames re-rendered (art/originals/sprites_hires/roran), pack_game.py BRIGHT back to 1.0.
 - g280 passes. Not checked on a phone.
+
+## v1126 — Roran throws at any range + difficulty nudged up (TEST)
+- Harley: a ranged hero that rarely attacks looked wrong (Roran, cavalry, only fired once an enemy had ARRIVED at the front line; with Kessa in the team she usually killed everything on the way in, so 0 Roran hits in a 40 s test). HERO_DEFS.roran.basicAnyTarget = true, same rule as Kessa: he throws at the nearest enemy on screen. Same test now: Roran 25 throws, Kessa 25 orbs.
+- That made teams with Roran stronger (sims, conquest stuck-at): Lv40 2* 15-8 -> 15-18, Lv80 5* 25-12 -> 26-17, maxed 28-6 -> 30-6. Harley: "gently nudge it up" -> CURVE_STEP 0.06 -> 0.07 (the per-chapter step from chapter 6): 15-13 / 25-14 / 28-8; new player + duo Lv20 unchanged (4-5, 5-13). (enemyScale growth 0.068 barely moved the late game, not used.)
+- Results: dev/balance/results/roran_before / roran_after / roran_cs07. Server level floor counts hordes, not HP - unaffected. Not a weapon change, so no meta re-run. g280 passes. Not checked on a phone.
