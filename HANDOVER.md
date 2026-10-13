@@ -118,6 +118,10 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Hanzo is blatantly powerful on purpose** (Harley, v992): VIP-pack only (`vipOnly`: can't be recruited with resources, kept off bots for now). Tuned so skill level 3 is worrying, 4 dominant, 5 a force of nature (see NOTES v992). Don't nerf without Harley.
   v993 (Harley): no further buffs - Kessa (Arc Burst knocks him out mid-leap, plus Projection Wall) is his natural counter; "without kessa hes already dominating the whole game".
 - **Weapon build rankings are saved in `dev/balance/WEAPON_BUILDS.md`** - update it after weapon/combat changes so the info is never lost.
+- **Hero card animations: "type 1" / "type 2" (Harley, 14 Oct, v1139).** Harley makes hero card clips with AI (Leonardo, Hailuo), green background, and says which type:
+  - **Type 1 / T1** = the looping cut: a short calm stretch of the clip played forward then backward, so it loops with no jump.
+  - **Type 2 / T2** = the full clip uncut, start to end, then it restarts.
+  Either way: drop frame 1 if it's his grey reference picture, key the green out, bake the hero's rarity colour in (Epic = #9b59d6 -> #6a35a8), H.264 mp4 into HERO_CARD_VIDEO (full card only; the small list card is always a still image). Recipe and files: art/originals/hero_cards/, dev/NOTES.md v1139. Still deciding which he likes, so keep both possible.
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
 ## Open items / to-dos
