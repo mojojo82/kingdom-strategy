@@ -23,11 +23,11 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Card"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => { game.state.heroes.kessa.owned = true; game.state.idle.conquestBooks = 30; game.state.idle.valor = 1e6; setScreen("heroes"); }); await P.waitForTimeout(1500);
   const shot = (n) => P.screenshot({ path: path.join(__dirname, "out_g286_" + n + ".png") });
-  const info = () => P.evaluate(() => { const c = document.getElementById("hcCard").getBoundingClientRect(), v = document.getElementById("hdPortraitVid"); return { w: Math.round(c.width), h: Math.round(c.height), left: Math.round(c.left), title: document.getElementById("hdName").textContent, rows: document.querySelectorAll(".hc-row").length, btns: [...document.querySelectorAll("#hdTabContent .hd-actionbtn")].map((b) => b.textContent), sk: document.querySelectorAll(".hc-sk").length, vid: v && getComputedStyle(v).display !== "none", tab: (document.querySelector(".hd-tab.active") || {}).textContent }; });
+  const info = () => P.evaluate(() => { const c = document.getElementById("hcCard").getBoundingClientRect(), v = document.getElementById("hdPortraitVid"); return { w: Math.round(c.width), h: Math.round(c.height), left: Math.round(c.left), title: document.getElementById("hdName").textContent, rows: document.querySelectorAll(".hc-row").length, btns: [...document.querySelectorAll("#hcActions .hd-actionbtn")].map((b) => b.textContent), sk: document.querySelectorAll(".hc-sk").length, msk: (document.querySelector(".hc-msk-n") || {}).textContent, vid: v && getComputedStyle(v).display !== "none", tab: (document.querySelector(".hd-tab.active") || {}).textContent }; });
   const out = {};
   await P.evaluate(() => openHeroDetail("gareth")); await P.waitForTimeout(1200); out.stats = await info(); await shot("stats");
   const lv0 = await P.evaluate(() => game.state.heroes.gareth.level);
-  await P.evaluate(() => [...document.querySelectorAll("#hdTabContent .hd-actionbtn")][0].click()); await P.waitForTimeout(300);
+  await P.evaluate(() => [...document.querySelectorAll("#hcActions .hd-actionbtn")][0].click()); await P.waitForTimeout(300);
   out.levelUp = [lv0, await P.evaluate(() => game.state.heroes.gareth.level), await P.evaluate(() => document.getElementById("hdName").textContent)];
   await P.evaluate(() => [...document.querySelectorAll(".hd-tab")][1].click()); await P.waitForTimeout(500); out.skills = await info(); await shot("skills");
   await P.evaluate(() => [...document.querySelectorAll(".hd-tab")][2].click()); await P.waitForTimeout(500); out.gear = await info(); await shot("gear");
@@ -45,10 +45,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []);
     assert(out.stats.w > 380 && out.stats.w <= 431 && out.stats.left >= 0, "card fits the phone width");
-    assert(out.stats.rows === 3 && out.stats.btns.length === 3 && out.stats.vid && /^\[Lv\.\d+\] GARETH$/.test(out.stats.title), "stats tab");
+    assert(out.stats.msk === "SHIELD SLAM" && out.gear.btns.length === 3, "main skill + buttons on every tab"); assert(out.stats.rows === 3 && out.stats.btns.length === 3 && out.stats.vid && /^\[Lv\.\d+\] GARETH$/.test(out.stats.title), "stats tab");
     assert(out.levelUp[1] === out.levelUp[0] + 1 && out.levelUp[2].indexOf("[Lv." + out.levelUp[1] + "]") === 0, "level up works and the title follows");
     assert(out.skills.sk >= 2 && out.skills.tab === "Skills" && out.gear.tab === "Gear", "tabs");
     assert(out.kessaCanvas.shown === "block" && out.kessaCanvas.w > 300, "Kessa sheet drawn");
-    assert(out.fontOff !== "none" && out.fontOn === "none", "dev font switch"); assert(out.gov.rows >= 1 && out.unowned.btns.length === 1 && out.closed === "none", "overlord / unowned / close"); console.log("g286 ok");
+    assert(out.fontOff === "none" && out.fontOn !== "none", "dev font switch"); assert(out.gov.rows >= 1 && out.unowned.btns.length === 1 && out.closed === "none", "overlord / unowned / close"); console.log("g286 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });

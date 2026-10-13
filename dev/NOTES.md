@@ -1799,3 +1799,11 @@
 - Harley is torn between the squashed Chakra Petch on the new hero card (default, unchanged) and plain Chakra Petch. Dev Tools checkbox "Hero card: plain Chakra Petch" removes the sideways squash on the title and stat rows; remembered on that phone (localStorage ks_hcPlainFont). Nothing else changes.
 - Also mocked in chat (not in game): option B = underline tabs + Level Up / Star Up as two tiles in the game's button style + long Unequip button, Class line removed. Waiting on Harley.
 - g286 checks the switch. Not checked on a phone.
+
+## v1143 — Hero card: main skill on the card, buttons under it, underline tabs (TEST)
+- Harley: the tabs and buttons were leftovers of the old design. Now:
+  - Tabs: plain words with a glowing gold underline on the active one (option B).
+  - Stats tab: under HP/ATK/DEFENSE the hero's MAIN skill (the one on the timer: first conquest skill with kind "active" and a cooldown - Gareth = Shield Slam, not Death Strike) with an "ACTIVE · 10s" tag and its card text, like the skill spot on Harley's reference. Class line dropped.
+  - Buttons moved under the card, outside the frame, on every tab: Level Up + Star Up as two tiles (game button style, cost under the word), Equip / Set as Overlord / Recruit as one long button (#hcActions).
+  - Text is normal width by default (Harley's "normal font" = the game font setting he uses). The Dev Tools switch now turns the squash ON instead ("Hero card: squashed title/stat text", localStorage ks_hcSquash).
+- g286 updated (main skill, buttons on every tab, switch); g277, g285 ok. Not checked on a phone.
