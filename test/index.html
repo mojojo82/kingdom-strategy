@@ -7710,6 +7710,10 @@ function createGame(opts) {
   /* v1127 (Harley: a f2p boss fight in chapter 10 lasted a few seconds - from chapter 6 they should get longer, up to ~20 s, with every 5th chapter a
      clearly bigger step): extra boss HP only (hordes and boss attack unchanged). +BOSS_HP_STEP per chapter past 5, x(1 + BOSS_HP_GATE) for each 5th chapter reached from 10. */
   var BOSS_HP_STEP = 0.12, BOSS_HP_GATE = 0.25;
+  /* v1128 (Harley: the ch10 boss only just killed Gareth and never touched the fortress): boss ATTACK gets the same kind of curve, gentler -
+     +BOSS_ATK_STEP per chapter past 5, x(1 + BOSS_ATK_GATE) per 5th chapter from 10. ch10 x1.5, ch15 x2.16, ch20 x3.0. */
+  var BOSS_ATK_STEP = 0.05, BOSS_ATK_GATE = 0.2;
+  function idleBossAtkCurve() { var ch = state.idle.chapter || 1; if (ch <= 5) return 1; return (1 + BOSS_ATK_STEP * (ch - 5)) * Math.pow(1 + BOSS_ATK_GATE, Math.max(0, Math.floor(ch / 5) - 1)); }
   function idleBossHpCurve() { var ch = state.idle.chapter || 1; if (ch <= 5) return 1; return (1 + BOSS_HP_STEP * (ch - 5)) * Math.pow(1 + BOSS_HP_GATE, Math.max(0, Math.floor(ch / 5) - 1)); }
   function idleSpawnBoss() {
     var base = IDLE_ENEMY_TYPES.boss;
@@ -9063,7 +9067,7 @@ function createGame(opts) {
     var eAtkMult = 1 + enemyBonusPct(idleCurveLvl(), type === "boss") * idleEaseBon() / 100;
     if (type === "boss") { /* v1091 (Harley: bosses, not hordes, were the wall from late chapter 5): the boss ATTACK bonus is 1.4x a normal enemy's (was enemyScale.boss = 2.2x, which still sets boss HP), and its easy mode fades out over chapters 5-6 instead of 5 only. Chapters 1-4 unchanged. */
       var bAtkMult = 1 + enemyBonusPct(idleCurveLvl(), false) * BOSS_ATK_BONUS_FACTOR * idleEaseBon() / 100;
-      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss() * idleStepMult();
+      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss() * idleStepMult() * idleBossAtkCurve(); /* v1128: x idleBossAtkCurve */
     }
     return base.atk * HORDE_ATK_FRAC * eAtkMult * idleEaseAtk() * idleStepMult(); /* v1092 */
   }
@@ -11558,7 +11562,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1127"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1128"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

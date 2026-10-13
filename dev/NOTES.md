@@ -1721,3 +1721,6 @@
 - Boss HP only (hordes and boss attack unchanged): x idleBossHpCurve() = (1 + 0.12 x chapters past 5) x 1.25 for each 5th chapter reached from 10 (BOSS_HP_STEP / BOSS_HP_GATE). ch6 x1.12, ch9 x1.48, ch10 x2.0, ch14 x2.6, ch15 x3.4, ch20 x5.5. Aim: ~20 s for f2p in the later chapters, the 5th-chapter bosses a clear step up.
 - Put on TEST for Harley to play; the f2p boss-time and conquest sims are still running (numbers to follow). Not checked on a phone.
 - TODO (Harley 13 Oct): fix the simulated free player later - it's far weaker than Harley's real f2p account (tomhector breezes through ch10; the sim loses most first boss tries from ch5). Suspect: Fortress tech (Harley has a separate topic to discuss), plus the sim skips Gauntlet / shop / gathering.
+
+## v1128 — boss attack curve from chapter 6 (TEST)
+- Harley's play-test of v1127: the chapter 10 boss "only just manages to kill Gareth with not a scratch on the fortress". Boss ATK x idleBossAtkCurve() = (1 + 0.05 x chapters past 5) x 1.2 per 5th chapter from 10 (BOSS_ATK_STEP / BOSS_ATK_GATE): ch6 x1.05, ch9 x1.2, ch10 x1.5, ch14 x1.62, ch15 x2.16, ch20 x3.0. Hordes unchanged. Not checked on a phone.
