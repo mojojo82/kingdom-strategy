@@ -3,7 +3,7 @@
 import json, base64, io, re
 from PIL import Image
 H = 'art/originals/sprites_hires/roran/toon/'
-BRIGHT = 0.7   # Harley 13 Oct: "30% back" - the sunny face looked odd against the dreary levels (multiplies the colour, not the outline/alpha)
+BRIGHT = 1.0   # (v1124 tried 0.7 here - too murky; v1125 dims the LIGHTING in Blender instead, shadows unchanged). Harley 13 Oct: "30% back" - the sunny face looked odd against the dreary levels (multiplies the colour, not the outline/alpha)
 from PIL import ImageEnhance
 def dim(im): a = im.split()[3]; o = ImageEnhance.Brightness(im.convert('RGB')).enhance(BRIGHT).convert('RGBA'); o.putalpha(a); return o
 idle = [dim(Image.open(H + 'idle_%02d.png' % k).convert('RGBA')) for k in range(24)]

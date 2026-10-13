@@ -23,3 +23,4 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
 - TODO hero card (Harley 16:37 "don't forget the hi-res version for his hero card"): same as Kessa's card - Blender, Mixamo "Great Sword Idle"
   (art/originals/mixamo_roran_great_sword_idle.fbx, 3.67 s loop), waist-up, transparent, ~1600x1120, ~36-44 frames, soft card lighting; needs the head/hair reweight + fists on the Blender mesh too.
   Hero card: NO lance (Harley 16:38, like Kessa).
+- v1125 lighting (Harley "lighting 30% dimmer"): Roran toon ramp lit steps 0.85 / 0.654 / 0.5 (was 1.0 / 0.72 / 0.5), spec 0.175, rim 0.084. Kessa keeps the full Gareth values.

@@ -1706,3 +1706,7 @@
 
 ## v1124 — Roran 30% darker (TEST)
 - Harley: "30% back in game" on the battle sprite - the sunny face looked odd against the dreary levels. pack_game.py multiplies his frame colours by 0.7 (BRIGHT), outline + see-through edges unchanged. Kessa untouched. g280 passes. Not checked on a phone.
+
+## v1125 — Roran: lighting 30% dimmer, done in Blender (TEST)
+- v1124's flat colour dim was too murky (Harley: "the lighting is the issue"). Now the toon shader's light is 30% weaker in Blender (roran_sprites.blend): lit steps 1.0/0.72 -> 0.85/0.654 (shadow step 0.5 unchanged), highlight + rim x0.7. Frames re-rendered (art/originals/sprites_hires/roran), pack_game.py BRIGHT back to 1.0.
+- g280 passes. Not checked on a phone.
