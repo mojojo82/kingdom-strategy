@@ -1737,3 +1737,8 @@
 
 ## v1131 — Roran + Kessa basic attacks weaker again (TEST)
 - Harley: "still far too strong". Conquest basic hits: Roran x0.45 -> x0.3, Kessa x0.65 -> x0.45 (skills + Arena unchanged). Not checked on a phone.
+
+## v1132 — horde HP curve from chapter 6; Kessa/Roran basic cuts mostly undone (TEST)
+- Harley (f2p tomhector, 10-11, heroes Lv20-33 1-2*, ATK bonus +78.5%, 521/s): basics still one-shot hordes - "that tells me the enemies have too little hp". His screen recording: hits ~65-165; hordes at 10-1 had ~120 HP.
+- New horde HP curve idleHordeHpCurve() = (1 + 0.2 x chapters past 5) x (1 + 0.5 x 5th chapters reached from 10) (HORDE_HP_STEP / HORDE_HP_GATE, additive gates): ch6 x1.2, ch9 x1.8, ch10 x3.0, ch14 x3.6, ch15 x6.0, ch20 x10. 10-1 horde ~120 -> ~326 HP. Horde attack unchanged.
+- Kessa basic back to full (basicMult removed), Roran basicMult 0.3 -> 0.65 (he throws at any range since v1126). Boss curves (v1127/v1129) unchanged. g278 + g280 pass. Not checked on a phone.
