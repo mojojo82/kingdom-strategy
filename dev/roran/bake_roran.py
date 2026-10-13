@@ -33,6 +33,17 @@ JI=acc(J,BIN,A['JOINTS_0']).astype(np.uint8); W=acc(J,BIN,A['WEIGHTS_0']).astype
 img=J['images'][J['textures'][J['materials'][0]['pbrMetallicRoughness']['baseColorTexture']['index']]['source']]; bv=J['bufferViews'][img['bufferView']]
 im=Image.open(io.BytesIO(BIN[bv.get('byteOffset',0):bv.get('byteOffset',0)+bv['byteLength']])).convert('RGB'); print('tex',im.size)
 im=im.resize((1024,1024),Image.LANCZOS); b=io.BytesIO(); im.save(b,'WEBP',quality=88,method=6); tex='data:image/webp;base64,'+base64.b64encode(b.getvalue()).decode()
+# Head fix (Harley: back of the head deformed on the throw): Meshy weighted the big hair partly to the shoulders/neck.
+# Verts above y=1.00 (head joint ~1.019) go 100% to Head; 0.965-1.00 blend toward Head (scarf sits lower).
+import os
+if os.environ.get('HEADFIX','1')=='1':
+    hj=names.index('mixamorig:Head'); y=P[:,1]; f=np.clip((y-0.965)/(1.00-0.965),0,1)
+    for v in np.where(f>0)[0]:
+        has=hj in JI[v]; slot=list(JI[v]).index(hj) if has else int(np.argmin(W[v]))
+        w=W[v]*(1-f[v])
+        if not has: w[slot]=0; JI[v][slot]=hj
+        w[slot]+=f[v]; W[v]=w/w.sum()
+    print('headfix verts',int((f>0).sum()))
 f32=lambda a: base64.b64encode(np.ascontiguousarray(a,dtype=np.float32).tobytes()).decode()
 anims={}
 for an in J['animations']:
