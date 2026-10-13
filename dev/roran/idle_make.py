@@ -5,7 +5,7 @@
 import json, base64, os, numpy as np
 src = open('bake_roran.py').read(); src = src[:src.index('# Head fix')]; ns = {}; exec(src, ns)
 J, names, IBM, nodes, joints, parent, base, trs = ns['J'], ns['names'], ns['IBM'], ns['nodes'], ns['joints'], ns['parent'], ns['base'], ns['trs']
-HEAD = float(os.environ.get('HEAD', '25')); BR = float(os.environ.get('BREATH', '1.5'))
+HEAD = float(os.environ.get('HEAD', '40')); BR = float(os.environ.get('BREATH', '1.5'))
 order = []; seen = set()
 def visit(i):
     if i in seen: return
@@ -23,6 +23,7 @@ def align(cur, tgt):
     if s < 1e-8: return np.eye(3)
     vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]]); return np.eye(3) + vx + vx @ vx * ((1 - c) / s**2)
 X, Y, Z = (1, 0, 0), (0, 1, 0), (0, 0, 1)   # glTF: +Y up, +Z = the way he faces, +X = his left
+TWIST = {'LeftForeArm': float(os.environ.get('TW', '70')), 'RightForeArm': -float(os.environ.get('TW', '70'))}
 CHILD = {'LeftArm': 'LeftForeArm', 'LeftForeArm': 'LeftHand', 'RightArm': 'RightForeArm', 'RightForeArm': 'RightHand'}
 def pose(ph):
     b = np.sin(2 * np.pi * ph) * BR; b2 = np.sin(2 * np.pi * ph + 0.9) * BR   # breath, and a slightly late follow-through for arms/head
@@ -39,6 +40,7 @@ def pose(ph):
         if nm in DIR:
             c = nid['mixamorig:' + CHILD[nm]]; Lc = trs(*base[c]); cur = (Gi @ Lc)[:3, 3] - Gi[:3, 3]
             Gi = about(Gi, align(cur, np.array(DIR[nm], float)))
+            if nm in TWIST: d = np.array(DIR[nm], float); d /= np.linalg.norm(d); Gi = about(Gi, R(d, TWIST[nm]))   # turn the palms in toward the thighs
         if nm == 'Hips': Gi[1, 3] += -0.004 * b    # tiny settle with each breath (feet stay within ~4 mm)
         G[i] = Gi
     return np.stack([G[j] @ IBM[k] for k, j in enumerate(joints)])
