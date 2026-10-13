@@ -1774,3 +1774,11 @@
 - The 44 hi-res card frames from Harley's Blender (Great Sword Idle, 1600x1120, no lance) packed in Blender into an 8x6 sheet of 1050x735 frames (same frame size as Kessa), pulled over in chunks (md5 checked), re-encoded webp q80 (1.8 MB; q90 was 2.6 MB with no visible difference). art/originals/sprites_hires/roran/card/roran_card_sheet.webp.
 - Game: HERO_CARD_ANIM.roran (cols 8, n 44, 12 fps = 3.67 s loop). Hero grid card + profile animate; other heroes keep their still art. Game file +2.4 MB (base64).
 - Test dev/simfork/g284_roran_card.js (copy of g277): grid + profile drawn and animating, no errors; g277 (Kessa) ok. Not checked on a phone.
+- v1138 was pushed by mistake (Harley said halt mid-commit; the command had already run). Binned in v1139 (Harley: "safe to bin").
+
+## v1139 — Hero cards: small card still, full card = AI video (Gareth) (TEST)
+- Harley: hero card animations will be AI-made (Leonardo, Hailuo). The small card in the hero list is always a still image (current art for now, custom later); the animation plays only on the full card that opens when you tap a hero.
+- Removed Roran's Blender card (v1138). Kessa: still art in the list, her Blender sheet stays on her full card.
+- Gareth: Harley's clip (768x768, green bg) -> green keyed out (g - max(r,b), clean edges, despill), Epic purple gradient baked in, frames 2-158 (frame 1 was the grey ref) forward then back so it loops without a jump (Harley likes the camera push-in; to judge in game). H.264 mp4 crf 28, 1.1 MB (+1.5 MB base64). A video, not a sprite sheet: the same clip as a webp sheet was 4.5 MB.
+- Game: HERO_CARD_VIDEO.gareth; #hdPortraitVid (muted, autoplay, loop, playsinline, object-fit contain) with the same purple behind it, paused when the card closes or shows another hero. art/originals/hero_cards/.
+- Test dev/simfork/g285_herocard_video.js: list cards all still images; Gareth's full card plays the video on purple; Kessa's sheet; paused on close; no errors. Headless Chromium has no H.264 (phones do), so the test swaps in a VP9 webm of the same video (dev/simfork/media). g277 updated (grid still). Not checked on a phone - iPhone/Android play H.264 mp4 natively.

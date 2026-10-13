@@ -31,7 +31,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const other = await P.evaluate(() => { const k = HERO_ORDER.find((h) => h !== "kessa"); openHeroDetail(k); return { k, anim: getComputedStyle(document.getElementById("hdPortraitAnim")).display }; });
   console.log(JSON.stringify({ g1, g2, stills, d1, d2, imgHidden, other, errs })); await b.close();
   if (!process.env.NOASSERT) {
-    assert.deepStrictEqual(errs, []); assert(g1 && g1.filled > 50, "grid card drawn"); assert(g1.hash !== g2.hash, "grid card animates");
+    assert.deepStrictEqual(errs, []); assert(g1 === null, "v1139: the small grid card is a still image now");
     assert(d1 && d1.filled > 50 && d1.w > 600, "profile drawn at phone resolution"); assert(d1.hash !== d2.hash, "profile animates"); assert(imgHidden, "still art hidden for Kessa");
     assert.strictEqual(other.anim, "none", "other heroes keep their still art"); console.log("g277 ok");
   }
