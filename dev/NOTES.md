@@ -1748,3 +1748,8 @@
 - Almost all RP comes from the Academy (research per second x level, plus Idle Chest "1h of RP" items that scale with it). Academy research 3 -> 0.5 per second per level (/6).
 - Sims (dev/balance/f2p_timeline.js 10 days, results rp_f2p_*): x1/3 (1/s) still piled up 2.2M; 0.4/s kept RP near empty after each research (2k-90k left) with Fortress nodes 55 vs 65 by day 10 and Conquest 10-18 vs 11-18. Picked 0.5 (a touch softer than 0.4).
 - Existing stockpiles (Harley's 3M) are not touched. Server (functions/) does not check RP income. Not checked on a phone.
+
+## v1134 — Boss retry is back: endless horde after a boss defeat (TEST)
+- Harley: when a boss beats you, the level restarts without counting hordes; you fight enemies forever and retry the boss whenever you like.
+- idleResetLevel: a defeat in the boss fight (or while already farming) sets idle.bossRetry (real game only; sims still retry the whole level). idleAfterKill: while bossRetry and not in the boss phase, kills don't count (quota never fills, no boss). idleStartBossAttempt (re-added): skull button -> clear field, full HP, boss phase on the same level. The existing skull button (#idleBossRetryBtn) and hidden progress bar are reused. bossRetry now survives a reload.
+- Test: dev/simfork/g281_bossretry.js (boss defeat -> retry mode + skull; 25 s farming = 0 kills counted, no boss; dying to the horde keeps retry; skull starts the boss on 2-4). g280 ok. Not checked on a phone.

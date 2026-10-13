@@ -7735,8 +7735,9 @@ function createGame(opts) {
   function idleResetLevel() {
     // v748: dying (horde or boss) = retry the SAME level from its start. The Defeat screen waits for Confirm (real game); sims retry instantly.
     if (state.idle.pending) return;
-    var wasBoss = idleIsBossLevel();
+    var wasBoss = idleIsBossLevel(), wasFarm = !!state.idle.bossRetry;
     state.idle.bossRetry = false; state.idle.bossPhase = false;
+    if (manualResults && (wasBoss || wasFarm)) state.idle.bossRetry = true; /* v1134 (Harley): beaten by the boss -> the level restarts as an endless horde (no quota) and the skull button starts a new boss attempt whenever the player wants. Sims keep retrying the whole level. */
     state.idle.enemiesKilledInLevel = 0;
     if (!manualResults) { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } // v811: with the Defeat screen up HP stays at 0 (refilled on Confirm) so a player who glances back doesn't see "Defeated" with a full bar
     state.idle.shieldOn = false;
@@ -7747,7 +7748,13 @@ function createGame(opts) {
     state.idle.levelRewards = null;
     if (manualResults) state.idle.pending = { type: "defeat", at: now(), label: state.idle.chapter + "-" + state.idle.levelNum, boss: wasBoss };
   }
-  function idleStartBossAttempt() { return false; } // v748: the skull/retry button is gone (every level has its boss)
+  function idleStartBossAttempt() { /* v1134: the skull button is back - from the endless horde after a boss defeat, start a fresh boss attempt (full HP, field cleared) */
+    if (!state.idle.bossRetry || state.idle.pending) return false;
+    state.idle.bossRetry = false; state.idle.bossPhase = true; state.idle.enemiesKilledInLevel = 0;
+    state.idle.enemies = []; state.idle.spawnTimer = null; idleEnemyPendingHits = []; idleDying = [];
+    state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); state.idle.shieldOn = false; state.idle.guardShield = 0; state.idle.levelElapsedSec = 0;
+    return true;
+  }
   // The result screen was confirmed (or the victory timer ran out): fade is done by the UI, this just lets combat run again.
   function idleResolveResult() { var p = state.idle.pending; state.idle.pending = null; idleDying = []; if (p && p.type === "defeat") { state.idle.playerHp = idlePlayerMaxHp(); idleResetHeroHp(); } if (p) { state.idle.enemies = []; state.idle.spawnTimer = null; idleEnemyPendingHits = []; } return p; } // v781: whatever spawned behind the result screen is cleared — the next attempt starts from a clean field
   var LEVEL_CLEAR_GEMS = 50; // every cleared level pays 50 gems
@@ -7841,6 +7848,7 @@ function createGame(opts) {
   }
   // v748: horde quota reached -> boss phase (the boss walks in); boss killed -> level cleared. Returns true when the field was reset (clear).
   function idleAfterKill() {
+    if (state.idle.bossRetry && !idleIsBossLevel()) { state.idle.enemiesKilledInLevel = 0; return false; } /* v1134: endless horde after a boss defeat - kills don't count toward anything */
     if (state.idle.enemiesKilledInLevel < idleEnemiesPerLevel()) return false;
     if (!idleIsBossLevel()) {
       state.idle.bossPhase = true; state.idle.enemiesKilledInLevel = 0; state.idle.spawnTimer = null;
@@ -9452,7 +9460,7 @@ function createGame(opts) {
     /* v812: the live game always opens a session on a FRESH attempt of the saved level. The save holds whatever fight was in flight (frozen boss, fortress at 0 HP behind a Defeat screen, enemies at the wall) and `pending` is never saved, so the first combat step after a load re-defeated the player at once and the Defeat screen was waiting on Conquest. Chapter/level progress is kept; only the in-flight attempt is reset. Sims and the estimator (no deferConquest) are untouched. */
     if (opts.deferConquest) {
       var _ri = state.idle;
-      _ri.enemies = []; _ri.spawnTimer = null; _ri.enemiesKilledInLevel = 0; _ri.bossPhase = false; _ri.bossRetry = false;
+      _ri.enemies = []; _ri.spawnTimer = null; _ri.enemiesKilledInLevel = 0; _ri.bossPhase = false; _ri.bossRetry = !!_ri.bossRetry; /* v1134: a boss defeat stays a retry after reload (endless horde + skull button) */
       _ri.shieldOn = false; _ri.guardShield = 0; _ri.fxT = null; _ri.clones = null; _ri.levelRewards = null; _ri.pending = null; _ri.levelElapsedSec = 0;
       _ri.weaponFlightQueue = []; _ri.heroHp = {};
       try { _ri.playerHp = idlePlayerMaxHp(); } catch (e) { _ri.playerHp = null; }
@@ -11567,7 +11575,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1133"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1134"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
