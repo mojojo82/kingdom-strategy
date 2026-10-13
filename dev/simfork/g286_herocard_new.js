@@ -46,7 +46,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []);
     assert(out.stats.w > 380 && out.stats.w <= 431 && out.stats.left >= 0, "card fits the phone width");
-    assert(out.stats.msk === "SHIELD SLAM" && out.gear.btns.length === 3, "main skill + buttons on every tab"); assert(out.stats.rows === 3 && out.stats.btns.length === 3 && out.stats.vid && /^\[Lv\.\d+\] GARETH$/.test(out.stats.title), "stats tab");
+    assert(out.stats.msk === "BLADE RUSH" && out.gear.btns.length === 3, "main skill + buttons on every tab"); assert(out.stats.rows === 3 && out.stats.btns.length === 3 && out.stats.vid && /^\[Lv\.\d+\] GARETH$/.test(out.stats.title), "stats tab");
     assert(out.levelUp[1] === out.levelUp[0] + 1 && out.levelUp[2].indexOf("[Lv." + out.levelUp[1] + "]") === 0, "level up works and the title follows");
     assert(out.expHidden && out.expShown, "Expedition hidden by default, Dev Tools brings it back"); assert(out.skills.sk >= 2 && out.skills.tab === "Skills" && out.gear.tab === "Gear", "tabs");
     assert(out.kessa.vid && out.kessaCanvas.shown === "none", "Kessa plays her video (v1144)");

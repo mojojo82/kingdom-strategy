@@ -1829,3 +1829,6 @@
 - Harley: the hero card should use the clean font from the new design (what his iPhone showed with "Font: Original" = San Francisco) while the rest of the game stays Chakra Petch. --hcfont = system font stack (-apple-system / Segoe UI / Roboto) on the card, its tabs, its buttons and the bar above it, whatever the More-menu font setting is.
 - Dev Tools "Hero card font: Chakra Petch" switches only the card to Chakra Petch to compare (this phone, localStorage ks_hcChakra). Harley can set the More menu font back to Chakra Petch for the rest of the game.
 - g286 checks the card font vs the game font. Not checked on a phone.
+
+## v1148 — Gareth's "Shield Slam" is now "Blade Rush" (TEST)
+- Harley: he doesn't use a shield, he darts across with his sword out. Name "Blade Rush", icon 🗡️💨, text "Every 10s, dashes through the enemy, sword first, for bonus damage."; Death Strike now says "his next Blade Rush". Display only - same skill, same numbers, saved skill levels unaffected (by index). Code comments still say Shield Slam in places.
