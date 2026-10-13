@@ -22,3 +22,4 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
   - render.js HIDE=anim:t hides the lance from t on (after the release); build_page.py patches the viewer for that (window.__noProp).
 - TODO hero card (Harley 16:37 "don't forget the hi-res version for his hero card"): same as Kessa's card - Blender, Mixamo "Great Sword Idle"
   (art/originals/mixamo_roran_great_sword_idle.fbx, 3.67 s loop), waist-up, transparent, ~1600x1120, ~36-44 frames, soft card lighting; needs the head/hair reweight + fists on the Blender mesh too.
+  Hero card: NO lance (Harley 16:38, like Kessa).
