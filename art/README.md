@@ -41,6 +41,7 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | explosions_gpt_sheet.png | 10 rows of pixel explosions from ChatGPT on magenta (fire bursts, ground blasts, smoke, dust) | 1536x1024 | row 7 = tank shell hit, row 5 = big/killing hit (sprites_hires/explosions, dev/tank/boom); mockup only so far |
 | kessa_rigged.glb | Kessa (Stormcaller) 3D: Meshy image-to-3D from kessa_concept_tpose.png, rigged in Meshy (mixamorig, 23 bones, Running + Walking), 10.2k faces, 4096 texture | 3D | not in the game - dev/kessa |
 | roran_concept_apose.png | Roran chibi concept (A-pose, copper armour, navy cape, no lance) - reference for his Meshy model | concept | not in the game |
+| roran_rigged.glb | Roran Meshy model, rigged (23-bone mixamorig skeleton like Kessa/Gareth, 31k tris, 1 PNG texture; built-in Running/Walking). The 2.1M-tri unrigged original (88 MB) is not kept | model | not in the game yet |
 | mixamo_kessa_idle.fbx | Mixamo idle Harley picked for Kessa (ASCII FBX, without skin, 8.3 s) | anim | dev/kessa preview only |
 | mixamo_kessa_1h_magic_attack.fbx | Mixamo "Standing 1H Magic Attack 01" for Kessa (ASCII FBX, 2.3 s) | anim | dev/kessa preview only |
 | mixamo_kessa_1h_magic_attack_02.fbx | Mixamo "Standing 1H Magic Attack 02" (throw; spins her back to the camera - not picked) | anim | dev/kessa preview only |
