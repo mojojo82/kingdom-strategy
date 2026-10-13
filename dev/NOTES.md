@@ -1824,3 +1824,8 @@
 ## v1146 — Expedition skills hidden on the hero card (TEST)
 - Harley isn't sure Expedition skills stay in the final game: the Skills tab no longer shows the "Expedition Skills" row/panels. Dev Tools checkbox "Hero card: show Expedition skills" brings them back (this phone only, localStorage ks_hcShowExp). The skills themselves are unchanged.
 - g286 checks hidden by default + the switch. Not checked on a phone.
+
+## v1147 — Hero card has its own font (TEST)
+- Harley: the hero card should use the clean font from the new design (what his iPhone showed with "Font: Original" = San Francisco) while the rest of the game stays Chakra Petch. --hcfont = system font stack (-apple-system / Segoe UI / Roboto) on the card, its tabs, its buttons and the bar above it, whatever the More-menu font setting is.
+- Dev Tools "Hero card font: Chakra Petch" switches only the card to Chakra Petch to compare (this phone, localStorage ks_hcChakra). Harley can set the More menu font back to Chakra Petch for the rest of the game.
+- g286 checks the card font vs the game font. Not checked on a phone.
