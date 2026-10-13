@@ -44,6 +44,25 @@ if os.environ.get('HEADFIX','1')=='1':
         if not has: w[slot]=0; JI[v][slot]=hj
         w[slot]+=f[v]; W[v]=w/w.sum()
     print('headfix verts',int((f>0).sum()))
+# Fists (Harley: close his hands into fists). The rig has no finger bones, so the finger verts are curled in the mesh itself:
+# each hand vert past the knuckle line (KN along the forearm->hand direction) is rotated about the knuckle axis, more the further out it is.
+FIST=float(os.environ.get('FIST','-130'))
+if FIST:
+    for side in ('Left','Right'):
+        h=names.index('mixamorig:'+side+'Hand'); fa=names.index('mixamorig:'+side+'ForeArm')
+        hp=np.linalg.inv(IBM[h])[:3,3]; fp=np.linalg.inv(IBM[fa])[:3,3]; d=(hp-fp)/np.linalg.norm(hp-fp)
+        a1=np.cross(d,[0,1.,0]); a1/=np.linalg.norm(a1)
+        # (a1 = d x up curls both hands toward the palm with a negative FIST)
+        KN=float(os.environ.get('KN','0.085')); piv=hp+d*KN
+        wh=(W*(JI==h)).sum(1); sel=np.where(wh>0.5)[0]
+        for v in sel:
+            al=(P[v]-hp)@d
+            if al<=KN: continue
+            th=np.radians(FIST)*min(1,(al-KN)/0.05)
+            k=a1; c,sn=np.cos(th),np.sin(th); x=P[v]-piv
+            P[v]=piv+x*c+np.cross(k,x)*sn+k*(k@x)*(1-c)
+            N[v]=N[v]*c+np.cross(k,N[v])*sn+k*(k@N[v])*(1-c)
+    print('fist',FIST)
 f32=lambda a: base64.b64encode(np.ascontiguousarray(a,dtype=np.float32).tobytes()).decode()
 anims={}
 for an in J['animations']:
