@@ -1794,3 +1794,8 @@
 ## v1141 — Hero card: iPhone text fix (TEST)
 - Harley's iPhone: the frame shrank to fit but the text stayed full size (huge, overlapping). CSS zoom isn't applied to text the same way on iPhone Safari. Now the card is scaled with transform: scale() (holder height set from the card's real height); also refit once fonts load.
 - g286 ok (Chromium only - no WebKit here). Not checked on a phone.
+
+## v1142 — Dev Tools switch: hero card font (TEST)
+- Harley is torn between the squashed Chakra Petch on the new hero card (default, unchanged) and plain Chakra Petch. Dev Tools checkbox "Hero card: plain Chakra Petch" removes the sideways squash on the title and stat rows; remembered on that phone (localStorage ks_hcPlainFont). Nothing else changes.
+- Also mocked in chat (not in game): option B = underline tabs + Level Up / Star Up as two tiles in the game's button style + long Unequip button, Class line removed. Waiting on Harley.
+- g286 checks the switch. Not checked on a phone.

@@ -36,6 +36,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const gov = await P.evaluate(() => HERO_ORDER.find((k) => HERO_DEFS[k].class === "governor")); await P.evaluate((k) => openHeroDetail(k), gov); await P.waitForTimeout(800); out.gov = await info(); await shot("overlord");
   const un = await P.evaluate(() => HERO_ORDER.find((k) => !game.state.heroes[k].owned && HERO_DEFS[k].class !== "governor")); await P.evaluate((k) => openHeroDetail(k), un); await P.waitForTimeout(800); out.unowned = await info(); await shot("unowned");
   await P.click("#hdNavRight"); await P.waitForTimeout(500); out.nav = await P.evaluate(() => heroDetailKey);
+  await P.evaluate(() => openHeroDetail("gareth")); await P.waitForTimeout(500);
+  const tw = () => P.evaluate(() => getComputedStyle(document.querySelector(".hc-title")).transform);
+  out.fontOff = await tw(); await P.evaluate(() => { const t = document.getElementById("devHcFontToggle"); t.checked = true; t.onchange({ target: t }); }); await P.waitForTimeout(200); out.fontOn = await tw(); await shot("plainfont");
+  await P.evaluate(() => { const t = document.getElementById("devHcFontToggle"); t.checked = false; t.onchange({ target: t }); });
   await P.click("#hdClose"); await P.waitForTimeout(300); out.closed = await P.evaluate(() => getComputedStyle(document.getElementById("heroDetailOverlay")).display);
   console.log(JSON.stringify(out, null, 1), JSON.stringify(errs)); await b.close();
   if (!process.env.NOASSERT) {
@@ -45,6 +49,6 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert(out.levelUp[1] === out.levelUp[0] + 1 && out.levelUp[2].indexOf("[Lv." + out.levelUp[1] + "]") === 0, "level up works and the title follows");
     assert(out.skills.sk >= 2 && out.skills.tab === "Skills" && out.gear.tab === "Gear", "tabs");
     assert(out.kessaCanvas.shown === "block" && out.kessaCanvas.w > 300, "Kessa sheet drawn");
-    assert(out.gov.rows >= 1 && out.unowned.btns.length === 1 && out.closed === "none", "overlord / unowned / close"); console.log("g286 ok");
+    assert(out.fontOff !== "none" && out.fontOn === "none", "dev font switch"); assert(out.gov.rows >= 1 && out.unowned.btns.length === 1 && out.closed === "none", "overlord / unowned / close"); console.log("g286 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });
