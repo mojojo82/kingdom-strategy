@@ -1742,3 +1742,9 @@
 - Harley (f2p tomhector, 10-11, heroes Lv20-33 1-2*, ATK bonus +78.5%, 521/s): basics still one-shot hordes - "that tells me the enemies have too little hp". His screen recording: hits ~65-165; hordes at 10-1 had ~120 HP.
 - New horde HP curve idleHordeHpCurve() = (1 + 0.2 x chapters past 5) x (1 + 0.5 x 5th chapters reached from 10) (HORDE_HP_STEP / HORDE_HP_GATE, additive gates): ch6 x1.2, ch9 x1.8, ch10 x3.0, ch14 x3.6, ch15 x6.0, ch20 x10. 10-1 horde ~120 -> ~326 HP. Horde attack unchanged.
 - Kessa basic back to full (basicMult removed), Roran basicMult 0.3 -> 0.65 (he throws at any range since v1126). Boss curves (v1127/v1129) unchanged. g278 + g280 pass. Not checked on a phone.
+
+## v1133 — Research points far scarcer (TEST)
+- Harley (f2p, Academy Lv3, 3M spare RP): RP is never the limit - he only waits for the previous research. Free-player sim agreed: 14.3M spare RP by day 10, research limited only by time.
+- Almost all RP comes from the Academy (research per second x level, plus Idle Chest "1h of RP" items that scale with it). Academy research 3 -> 0.5 per second per level (/6).
+- Sims (dev/balance/f2p_timeline.js 10 days, results rp_f2p_*): x1/3 (1/s) still piled up 2.2M; 0.4/s kept RP near empty after each research (2k-90k left) with Fortress nodes 55 vs 65 by day 10 and Conquest 10-18 vs 11-18. Picked 0.5 (a touch softer than 0.4).
+- Existing stockpiles (Harley's 3M) are not touched. Server (functions/) does not check RP income. Not checked on a phone.
