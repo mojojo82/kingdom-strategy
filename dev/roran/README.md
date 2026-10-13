@@ -8,3 +8,4 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
 - Side view for Roran (faces + throws screen-right like in the game): `ANG=1.3 node render.js ...` (the default -0.6 was Kessa's angle and showed him facing the camera).
 - HEAD FIX (Harley: back of the head deformed on the throw): Meshy weighted the big hair partly to the shoulders and neck, so the arm swing dragged it.
   bake_roran.py (HEADFIX=1, default) moves every vert above y=1.00 fully onto the Head bone, blending 0.965-1.00. The Blender render needs the same reweight (do it on import).
+- Idle: art/originals/mixamo_roran_great_sword_idle.fbx (Mixamo "Great Sword Idle", 3.67 s), `python3 -B mixamo.py ../../art/originals/mixamo_roran_great_sword_idle.fbx "Idle" inplace`. Preview page renamed "Roran Animations" (Throw / Throw eyes-on-enemy / Idle).
