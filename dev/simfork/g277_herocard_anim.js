@@ -1,5 +1,6 @@
 /* v1119: animated hero card (Kessa). Hero grid card and hero profile show a canvas that draws the looping Blender sheet and changes over time;
    other heroes keep their still art; no page errors. Screenshots out_g277_*.png.  Run: node dev/simfork/g277_herocard_anim.js */
+if (!process.env.FORCE) { console.log("g277 retired in v1144: Kessa's full card plays her video now (see g286). FORCE=1 to run anyway."); process.exit(0); }
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");

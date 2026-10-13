@@ -6,7 +6,7 @@ const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome
 const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
 /* headless Chromium has no H.264 (phones do): for the test only, the game's mp4 is swapped for a VP9 webm of the same video */
 const WEBM = "data:video/webm;base64," + fs.readFileSync(process.env.WEBM || path.join(__dirname, "media/gareth_card_test.webm")).toString("base64");
-const GAME2 = GAME.replace(/data:video\/mp4;base64,[A-Za-z0-9+\/=]+/, () => WEBM);
+const GAME2 = GAME.replace(/data:video\/mp4;base64,[A-Za-z0-9+\/=]+/g, () => WEBM);
 const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
@@ -48,7 +48,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert(out.stats.msk === "SHIELD SLAM" && out.gear.btns.length === 3, "main skill + buttons on every tab"); assert(out.stats.rows === 3 && out.stats.btns.length === 3 && out.stats.vid && /^\[Lv\.\d+\] GARETH$/.test(out.stats.title), "stats tab");
     assert(out.levelUp[1] === out.levelUp[0] + 1 && out.levelUp[2].indexOf("[Lv." + out.levelUp[1] + "]") === 0, "level up works and the title follows");
     assert(out.skills.sk >= 2 && out.skills.tab === "Skills" && out.gear.tab === "Gear", "tabs");
-    assert(out.kessaCanvas.shown === "block" && out.kessaCanvas.w > 300, "Kessa sheet drawn");
+    assert(out.kessa.vid && out.kessaCanvas.shown === "none", "Kessa plays her video (v1144)");
     assert(out.fontOff === "none" && out.fontOn !== "none", "dev font switch"); assert(out.gov.rows >= 1 && out.unowned.btns.length === 1 && out.closed === "none", "overlord / unowned / close"); console.log("g286 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });

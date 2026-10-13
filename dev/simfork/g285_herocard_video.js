@@ -6,7 +6,7 @@ const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome
 const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
 /* headless Chromium has no H.264 (phones do): for the test only, the game's mp4 is swapped for a VP9 webm of the same video */
 const WEBM = "data:video/webm;base64," + fs.readFileSync(process.env.WEBM || path.join(__dirname, "media/gareth_card_test.webm")).toString("base64");
-const GAME2 = GAME.replace(/data:video\/mp4;base64,[A-Za-z0-9+\/=]+/, () => WEBM);
+const GAME2 = GAME.replace(/data:video\/mp4;base64,[A-Za-z0-9+\/=]+/g, () => WEBM);
 const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
@@ -34,6 +34,6 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []); assert(grid.canv === 0 && grid.kessaImg, "small cards are still images");
     assert(g1.shown && g1.w === 768 && g2.t > g1.t && /9b59d6|155, 89, 214/.test(g2.bg) && g1.anim === "none" && g1.img === "none", "Gareth's full card plays the video on purple");
-    assert(!k.shown && k.anim === "block" && k.paused, "Kessa keeps her sheet, video hidden + paused"); assert(closed, "video paused when closed"); console.log("g285 ok");
+    assert(k.shown && /171, 179, 186/.test(k.bg), "v1144: Kessa plays her own video on grey"); assert(closed, "video paused when closed"); console.log("g285 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });

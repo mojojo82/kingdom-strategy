@@ -1807,3 +1807,8 @@
   - Buttons moved under the card, outside the frame, on every tab: Level Up + Star Up as two tiles (game button style, cost under the word), Equip / Set as Overlord / Recruit as one long button (#hcActions).
   - Text is normal width by default (Harley's "normal font" = the game font setting he uses). The Dev Tools switch now turns the squash ON instead ("Hero card: squashed title/stat text", localStorage ks_hcSquash).
 - g286 updated (main skill, buttons on every tab, switch); g277, g285 ok. Not checked on a phone.
+
+## v1144 — Kessa's card video + all hero skill texts condensed (TEST)
+- Kessa: Harley's new clip on her full card, as is (Harley: keep the grey, no cut-out, full clip). H.264 crf 28, 0.6 MB; grey fills the card's side strips. Replaces her Blender sheet on the full card (sheet stays in the file, unused there). g277 retired (FORCE=1 runs it).
+- Harley: condense every hero skill description a lot, like Gareth's (no need to check with him). All 35 skill texts rewritten short (desc itself; Death Strike's separate cardDesc folded in). Numbers/rules kept: e.g. Arc Burst "Every 8s, chain lightning strikes an enemy that has closed in."; marches "Fewer losses on his marches." / "Faster marches when he leads."; Shuriken Storm keeps "projectile shields block them".
+- Tests: g285/g286 swap every mp4 for the webm stand-in (headless has no H.264); both ok. Not checked on a phone.
