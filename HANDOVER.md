@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (12 Oct 2026, TEST game v1122):** everything below is built and tested; TEST is deployed (v951-v1122 are TEST only). The live game link still serves the
+**State at handover (12 Oct 2026, TEST game v1123):** everything below is built and tested; TEST is deployed (v951-v1123 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -134,7 +134,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Maintenance mode (v942):** admin panel > 🛠️ Maintenance mode, per environment. Server doc `<root>config/maintenance`; while on, rules refuse player writes and Cloud Functions refuse non-admin calls; the game shows a lock screen (admins get a red bar and can play); turning it off reloads everyone onto the newest version. Live game (root, still v901) has no lock screen yet, but the server lock already applies to it.
 - **Art originals (8 Oct):** every new art asset is kept twice: the full-size original in `art/originals/` (see art/README.md) and a phone-size copy in the game. Never shrink the originals. PC/HD version is parked (mockups on the claude.ai Design canvas "Kingdom Strategy PC Redesign"; PC layout work on branch `wip/pc-layout`, not merged) - Harley is focusing on mobile; PC is just for his checking/testing.
 - **Before a public launch (Harley: "a topic of interest later"):** move the images and sounds out of the single game file into separate cached files, so an update doesn't make every player re-download all the art. Measured 13 Oct (TEST v1118): 16.3 MB (11.1 MB gzipped download), of which 11.3 MB is 307 embedded pictures/sounds and 5.0 MB code; LIVE 13.9 MB. Biggest: Gareth sheet 0.43 MB, a screen background 0.35, laser sound 0.26, fortress skins ~0.25 each, village backdrops ~0.23 each.
-- **Kessa 3D (in progress, dev/kessa/README.md):** 3D Kessa is in TEST (v1120: idle, attack, Arc Burst + Blender bolts; v1121 same cast + bolt in the Arena; v1122 "Gareth look" - his cel shading + thin dark outline, dev/kessa/pack_toon.py) and her animated hero card (v1119).
+- **Kessa 3D (in progress, dev/kessa/README.md):** 3D Kessa is in TEST (v1120: idle, attack, Arc Burst + Blender bolts; v1121 same cast + bolt in the Arena; v1122 "Gareth look" - his cel shading + thin dark outline, dev/kessa/pack_toon.py) and her animated hero card (v1119). 3D Roran in TEST (v1123, dev/roran/README.md): idle made from scratch, Mixamo throw + lance, same Gareth look; Arena still throws the old javelin from his slot.
 - **Before adding the play-testers:** move Vanaheim on the world map to the bottom-left edge of Kingdom 1, i.e. `WORLD_ATLAS` server1 from x:0,y:1 to x:-1,y:1 (two numbers; bases/saves untouched). Harley is keeping it next to Atlantis for now to test Vanaheim-Atlantis interactions.
 - **App stores (later):** thin store app that loads the game from the web (updates skip review); needs Apple/Google in-app payments for gems, a native extra (e.g. push notifications) for Apple, and a "minimum shell version" check.
 

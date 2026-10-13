@@ -1697,3 +1697,9 @@
 - Kessa's idle, attack and Arc Burst frames re-rendered in Harley's Blender with Gareth's shading rebuilt as a material, plus a thin 1 px dark outline (Harley picked C1 over a 2 px one). Arc Burst palm energy carried over from the old frames.
 - Same cell/anchor/size/hand points as v1120; sheet 246 KB (was ~320). dev/kessa/pack_toon.py, frames in art/originals/sprites_hires/kessa/toon.
 - g278 + g279 pass. Not checked on a phone.
+
+## v1123 — 3D Roran in Conquest (TEST)
+- Roran's sprite is now his rigged Meshy model rendered in Harley's Blender with Kessa's Gareth-look shader + 1 px outline (dev/roran): idle made from scratch (upright, feet apart, body toward us, eyes right, fists), throw = Mixamo "Throw Object" 1.8-3.0 s turned side-on and blended in/out of the idle, with a lance built in code that rides his right fist.
+- Basic attack: the throw plays and the spear (new 2D lance sprite, style "spear") leaves his hand on the release frame (0.675 s) and arcs onto the target. heroHandPos / heroReleaseSec / heroSpearImg helpers.
+- Sheet: idle 24 + throw 26 (every 2nd frame, 20 fps), 263x211 cells, 273 KB. Arena draws the new sprite but still throws the old javelin from his slot.
+- dev/simfork/g280_roran3d.js passes (g278 too). Not checked on a phone. Hero card loop being rendered in Blender (not in yet).
