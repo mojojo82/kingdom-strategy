@@ -1,0 +1,22 @@
+const fs=require("fs");const ROOT="/home/claude/kingdom-strategy";
+const {chromium}=require("/opt/npm-tools/node_modules/playwright");
+const FAKE=fs.readFileSync(ROOT+"/dev/tests/fakefb.js","utf8"),GAME=fs.readFileSync(ROOT+"/test/index.html","utf8");
+const store={},call=require(ROOT+"/dev/tests/fnrunner.js")(store);
+(async()=>{const b=await chromium.launch({executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args:["--no-sandbox"]}),errs=[];
+const ctx=await b.newContext({viewport:{width:430,height:932},deviceScaleFactor:3});
+await ctx.exposeFunction("__fbstore",(op,k,v)=>{if(op==="set")store[k]=JSON.parse(v);else if(op==="del")delete store[k];return JSON.stringify(store)});
+await ctx.exposeFunction("__fbcall",call);
+await ctx.route(/mojojo82\.github\.io/,r=>r.fulfill({status:200,contentType:"text/html",body:GAME}));
+await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/,r=>r.fulfill({status:200,contentType:"application/javascript",body:FAKE}));
+await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/,r=>r.fulfill({status:200,contentType:"application/javascript",body:""}));
+await ctx.route(/fonts\.(googleapis|gstatic)\.com/,r=>r.abort());
+const P=await ctx.newPage();P.on("pageerror",e=>errs.push(e.message));
+await P.goto("https://mojojo82.github.io/kingdom-strategy/test/");await P.waitForSelector("#ksAuth .box");
+await P.fill("#ksE","cast@test.dev");await P.fill("#ksP","secret123");await P.click("#ksUp");
+await P.waitForSelector("#ksN",{timeout:15000});await P.fill("#ksN","Cast");await P.click("#ksGo");await P.waitForTimeout(5000);
+await P.evaluate(()=>{setScreen("conquest");const I=game.state.idle;game.state.heroes.kessa.owned=true;game.state.conquestRoster=["gareth","kessa"];I.skillAuto=true;I.levelNum=3;I.chapter=1;
+ window.__keep=setInterval(()=>{const I=game.state.idle;if(I.heroHp)Object.values(I.heroHp).forEach(x=>x.hp=1e12)},200)});
+await P.evaluate(async()=>{const t0=performance.now();while(performance.now()-t0<40000){await new Promise(r=>setTimeout(r,30));if(idleAnim.heroCast&&idleAnim.heroCast.kessa&&performance.now()-idleAnim.heroCast.kessa.t0<60)return}});
+const cv=await P.$("#idleCanvas");const box=await cv.boundingBox();
+for(let i=0;i<16;i++){await P.screenshot({path:`cs_${String(i).padStart(2,"0")}.png`,clip:box});await P.waitForTimeout(110)}
+console.log(JSON.stringify({errs}));await b.close()})().catch(e=>{console.error(e);process.exit(1)});
