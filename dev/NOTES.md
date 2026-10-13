@@ -1820,3 +1820,7 @@
   - first tap anywhere while the card is open starts a paused video (hcVideoKick) - covers Low Power Mode for players;
   - tapping the portrait of a video card no longer opens the admin art picker.
 - g285 checks blob: URLs; g285, g286 ok (Chromium only). Not checked on a phone.
+
+## v1146 — Expedition skills hidden on the hero card (TEST)
+- Harley isn't sure Expedition skills stay in the final game: the Skills tab no longer shows the "Expedition Skills" row/panels. Dev Tools checkbox "Hero card: show Expedition skills" brings them back (this phone only, localStorage ks_hcShowExp). The skills themselves are unchanged.
+- g286 checks hidden by default + the switch. Not checked on a phone.

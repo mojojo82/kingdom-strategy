@@ -29,7 +29,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const lv0 = await P.evaluate(() => game.state.heroes.gareth.level);
   await P.evaluate(() => [...document.querySelectorAll("#hcActions .hd-actionbtn")][0].click()); await P.waitForTimeout(300);
   out.levelUp = [lv0, await P.evaluate(() => game.state.heroes.gareth.level), await P.evaluate(() => document.getElementById("hdName").textContent)];
-  await P.evaluate(() => [...document.querySelectorAll(".hd-tab")][1].click()); await P.waitForTimeout(500); out.skills = await info(); await shot("skills");
+  await P.evaluate(() => [...document.querySelectorAll(".hd-tab")][1].click()); await P.waitForTimeout(500); out.skills = await info(); out.expHidden = await P.evaluate(() => !document.getElementById("hdExpToggle")); await P.evaluate(() => { const t = document.getElementById("devHcExpToggle"); t.checked = true; t.onchange({ target: t }); }); out.expShown = await P.evaluate(() => !!document.getElementById("hdExpToggle")); await P.evaluate(() => { const t = document.getElementById("devHcExpToggle"); t.checked = false; t.onchange({ target: t }); }); await shot("skills");
   await P.evaluate(() => [...document.querySelectorAll(".hd-tab")][2].click()); await P.waitForTimeout(500); out.gear = await info(); await shot("gear");
   await P.evaluate(() => openHeroDetail("kessa")); await P.waitForTimeout(1500); out.kessa = await info(); await shot("kessa");
   out.kessaCanvas = await P.evaluate(() => { const c = document.getElementById("hdPortraitAnim"); return { shown: getComputedStyle(c).display, w: c.width, h: c.height }; });
@@ -47,7 +47,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert(out.stats.w > 380 && out.stats.w <= 431 && out.stats.left >= 0, "card fits the phone width");
     assert(out.stats.msk === "SHIELD SLAM" && out.gear.btns.length === 3, "main skill + buttons on every tab"); assert(out.stats.rows === 3 && out.stats.btns.length === 3 && out.stats.vid && /^\[Lv\.\d+\] GARETH$/.test(out.stats.title), "stats tab");
     assert(out.levelUp[1] === out.levelUp[0] + 1 && out.levelUp[2].indexOf("[Lv." + out.levelUp[1] + "]") === 0, "level up works and the title follows");
-    assert(out.skills.sk >= 2 && out.skills.tab === "Skills" && out.gear.tab === "Gear", "tabs");
+    assert(out.expHidden && out.expShown, "Expedition hidden by default, Dev Tools brings it back"); assert(out.skills.sk >= 2 && out.skills.tab === "Skills" && out.gear.tab === "Gear", "tabs");
     assert(out.kessa.vid && out.kessaCanvas.shown === "none", "Kessa plays her video (v1144)");
     assert(out.fontOff === "none" && out.fontOn !== "none", "dev font switch"); assert(out.gov.rows >= 1 && out.unowned.btns.length === 1 && out.closed === "none", "overlord / unowned / close"); console.log("g286 ok");
   }

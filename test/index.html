@@ -3054,6 +3054,11 @@
                 </div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
+                    <input type="checkbox" id="devHcExpToggle"> Hero card: show Expedition skills on the Skills tab (hidden by default)
+                  </label>
+                </div>
+                <div class="dev-tools-row">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devHcFontToggle"> Hero card: squashed title/stat text (off = normal width, the default)
                   </label>
                 </div>
@@ -11644,7 +11649,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1145"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1146"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24978,6 +24983,7 @@ document.getElementById("devAddValor").onclick = function () { game.state.idle.v
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
+(function () { var t = document.getElementById("devHcExpToggle"); t.checked = hcShowExpedition; t.onchange = function (e) { hcShowExpedition = e.target.checked; try { localStorage.setItem("ks_hcShowExp", hcShowExpedition ? "1" : "0"); } catch (er) {} if (heroDetailKey) renderHeroDetail(); }; })(); /* v1146 */
 (function () { /* v1142 (Harley): try the hero card text at normal width - this phone only, remembered */ var t = document.getElementById("devHcFontToggle"), on = false; try { on = localStorage.getItem("ks_hcSquash") === "1"; } catch (e) {}
   function apply(v) { document.body.classList.toggle("hc-squash", v); t.checked = v; if (typeof heroDetailKey !== "undefined" && heroDetailKey) hcFit(); }
   apply(on); t.onchange = function (e) { apply(e.target.checked); try { localStorage.setItem("ks_hcSquash", e.target.checked ? "1" : "0"); } catch (er) {} }; })();
@@ -26882,6 +26888,7 @@ function heroDetailBadgesHtml(def) {
 
 /* v1140: new hero card helpers */
 /* v1145: iPhone Safari won't play a video from a data: URL (Chrome does) - unpack it once into a blob: URL, which Safari plays */
+var hcShowExpedition = false; try { hcShowExpedition = localStorage.getItem("ks_hcShowExp") === "1"; } catch (e) {}
 var hcVideoUrls = {};
 function hcVideoUrl(key) {
   if (hcVideoUrls[key]) return hcVideoUrls[key];
@@ -27101,8 +27108,10 @@ function renderHeroSkillsTabCombat(content, key, def, h) {
   }
 
   def.conquestSkills.forEach(function (s, i) { html += skillBlock(s, "conquest", i); });
-  html += '<div id="hdExpToggle" class="hc-fold">' + (heroExpeditionOpen ? "▾" : "▸") + ' 🚩 Expedition Skills</div>';
-  if (heroExpeditionOpen) def.expeditionSkills.forEach(function (s, i) { html += skillBlock(s, "expedition", i); });
+  if (hcShowExpedition) { /* v1146 (Harley): Expedition skills hidden unless the Dev Tools switch is on - not sure they stay in the game */
+    html += '<div id="hdExpToggle" class="hc-fold">' + (heroExpeditionOpen ? "▾" : "▸") + ' 🚩 Expedition Skills</div>';
+    if (heroExpeditionOpen) def.expeditionSkills.forEach(function (s, i) { html += skillBlock(s, "expedition", i); });
+  }
   content.innerHTML = html;
   var expTog = document.getElementById("hdExpToggle");
   if (expTog) expTog.onclick = function () { heroExpeditionOpen = !heroExpeditionOpen; try { localStorage.setItem("kingdom_prototype_heroExpOpen_v1", heroExpeditionOpen ? "1" : "0"); } catch (e) {} renderHeroSkillsTabCombat(content, key, def, h); };
