@@ -7707,10 +7707,14 @@ function createGame(opts) {
       atkCooldown: combatRng() * IDLE_ENEMY_ATTACK_INTERVAL, hitCount: 0
     });
   }
+  /* v1127 (Harley: a f2p boss fight in chapter 10 lasted a few seconds - from chapter 6 they should get longer, up to ~20 s, with every 5th chapter a
+     clearly bigger step): extra boss HP only (hordes and boss attack unchanged). +BOSS_HP_STEP per chapter past 5, x(1 + BOSS_HP_GATE) for each 5th chapter reached from 10. */
+  var BOSS_HP_STEP = 0.12, BOSS_HP_GATE = 0.25;
+  function idleBossHpCurve() { var ch = state.idle.chapter || 1; if (ch <= 5) return 1; return (1 + BOSS_HP_STEP * (ch - 5)) * Math.pow(1 + BOSS_HP_GATE, Math.max(0, Math.floor(ch / 5) - 1)); }
   function idleSpawnBoss() {
     var base = IDLE_ENEMY_TYPES.boss;
     var ebp = enemyBonusPct(idleCurveLvl(), true) * idleEaseBon(), stp = idleStepMult();
-    var hp = Math.max(1, Math.round(base.hp * idleEnemyHpMult() * Math.max(BOSS_EASE_HP_FLOOR, idleEaseHp()) * (1 + ebp / 100) * stp)); // v757: bosses keep at least half their HP in the eased early chapters, so a boss is a fight, not a pop
+    var hp = Math.max(1, Math.round(base.hp * idleEnemyHpMult() * Math.max(BOSS_EASE_HP_FLOOR, idleEaseHp()) * (1 + ebp / 100) * stp * idleBossHpCurve())); // v1127: x idleBossHpCurve (longer boss fights from ch6). v757: bosses keep at least half their HP in the eased early chapters, so a boss is a fight, not a pop
     state.idle.nextEnemyId = (state.idle.nextEnemyId || 0) + 1;
     state.idle.enemies.push({
       id: state.idle.nextEnemyId, type: "boss", hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100 * stp,
