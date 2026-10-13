@@ -1731,3 +1731,6 @@
 - Boss ATK curve 0.05/0.2 -> BOSS_ATK_STEP 0.06 / BOSS_ATK_GATE 0.35: ch10 x1.76 (was 1.5), ch15 x2.9, ch20 x4.7.
 - HERO_DEFS.roran.basicMult 0.65: Conquest basic hits x0.65 (idleAttackerHitDamage); his Lance Charge skill and Arena unchanged. Hordes unchanged (the horde-HP curve tried first is not in).
 - Sword of Power untouched (Harley: Conquest tuning only). Balance re-run follows. Not checked on a phone.
+
+## v1130 — Roran + Kessa basic attacks weaker (TEST)
+- Harley: both are "virtually one-shotting ch10 enemies as soon as they enter". Conquest basic hits only (skills + Arena unchanged): Roran basicMult 0.65 -> 0.45, Kessa basicMult 0.65 (new). Not checked on a phone.
