@@ -11,7 +11,8 @@ const JOBS = JSON.parse(process.argv[2]);
   for (const [anim, times] of Object.entries(JOBS)) {
     await p.selectOption("#anim", anim);
     for (let i = 0; i < times.length; i++) {
-      await p.evaluate(([v, a]) => { window.__setAng(a); window.__setT(v); }, [times[i], +(process.env.ANG || -0.6)]); await p.waitForTimeout(250);
+      const hide = process.env.HIDE && process.env.HIDE.split(':')[0] === anim && times[i] >= +process.env.HIDE.split(':')[1];
+      await p.evaluate(([v, a, h]) => { window.__noProp = h; window.__setAng(a); window.__setT(v); }, [times[i], +(process.env.ANG || -0.6), hide]); await p.waitForTimeout(250);
       await (await p.$("#cv")).screenshot({ path: `${__dirname}/${process.env.OUT || "frames"}/${anim.replace(/\W/g, "")}_${String(i).padStart(2, "0")}.png`, omitBackground: true });
     }
   }
