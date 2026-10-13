@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation as Rot, Slerp
 # spin = Hips + spine + neck + head, legs = both legs, staff = the left arm (Kessa's staff hand), hips = hip travel.
 TAME = dict((k, float(v)) for k, v in (p.split('=') for p in os.environ.get('TAME', '').split(',') if p))
 GROUPS = {'spin': ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head'], 'legs': ['RightUpLeg', 'RightLeg', 'RightFoot', 'RightToeBase', 'LeftUpLeg', 'LeftLeg', 'LeftFoot', 'LeftToeBase'],
-          'staff': ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand']}
+          'staff': ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand'], 'head': ['Neck', 'Head']}  # head (Roran): overrides spin for neck + head so he keeps looking at the enemy
 KEEP = {b: TAME[g] for g, bs in GROUPS.items() if g in TAME for b in bs}
 # AMP=2.5: exaggerate every bone's motion around the first frame's stance (idles too subtle at sprite size); hip travel too
 AMP = float(os.environ.get('AMP', '1'))
@@ -136,8 +136,9 @@ def bakeAt(t):
     return np.stack([G[j] @ IBM[k] for k, j in enumerate(joints)])
 
 S_REF = sglob(float(os.environ.get('REFT', '0')))  # the stance the tamed / exaggerated bones are measured from (REFT seconds)
-fps = 30; nf = int(round(TL * fps))
-frames = np.array([bakeAt(f / nf * TL) for f in range(nf)])
+T0 = float(os.environ.get('T0', '0')); T1 = float(os.environ.get('T1', str(TL)))  # T0/T1: keep only that window of the source (seconds)
+fps = 30; TL = T1 - T0; nf = int(round(TL * fps))
+frames = np.array([bakeAt(T0 + f / nf * TL) for f in range(nf)])
 d = json.load(open('roran.json'))
 pk = base64.b64encode(np.ascontiguousarray(frames[:, :, :3, :].transpose(0, 1, 3, 2), dtype=np.float32).tobytes()).decode()
 a = {k: v for k, v in d['anims'].items() if k != NAME}; d['anims'] = {**{k: a[k] for k in list(a)[:1]}, NAME: {'len': TL, 'frames': pk}, **{k: a[k] for k in list(a)[1:]}}
