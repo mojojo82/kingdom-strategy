@@ -74,7 +74,7 @@ const ROOT = path.join(__dirname, "../.."), DAYS = +process.argv[2] || 40;
         const B = L.boss || (L.boss = {});
         for (let i = 0; i < mins * 60; ) { const boss = s.idle.enemies.some((e) => e.type === "boss"); const gl0 = (s.idle.chapter - 1) * 20 + s.idle.levelNum;
           if (boss) { const b = s.idle.enemies.find((e) => e.type === "boss"); const k = gl0; const r = B[k] || (B[k] = { t: 0, won: null, hp: b.maxHp }); C.add(1000); g.tick(); i += 1; if (r.won == null) r.t += 1;
-            const still = s.idle.enemies.some((e) => e.type === "boss" && e.id === b.id), gl1 = (s.idle.chapter - 1) * 20 + s.idle.levelNum; if (!still && r.won == null) r.won = gl1 > gl0; }
+            const still = s.idle.enemies.some((e) => e.type === "boss" && e.id === b.id); if (!still && r.won == null) { r.won = b.hp <= 0 ? true : false; r.bhp = Math.round(100 * Math.max(0, b.hp) / b.maxHp); } }
           else { C.add(10000); g.tick(); i += 10; }
           const gl = (s.idle.chapter - 1) * 20 + s.idle.levelNum; if (!L.reached[gl]) L.reached[gl] = (C.get() - C.start) / 86400000; } }, ONLINE_MIN);
       await P.evaluate(act);
