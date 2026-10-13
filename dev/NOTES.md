@@ -1769,3 +1769,8 @@
 - Cause: the cloud save that got loaded was older than the defeat (closing a phone app can cut the last save short; the background save is every 60 s), so it still had bossPhase on, and loading turned that into a fresh level.
 - Fix: (1) the moment a boss defeat happens the game saves straight away (result screen interval, once per defeat). (2) Loading a save with bossPhase on (closed mid boss fight, or before the defeat got saved) now comes back in retry mode: endless horde + skull, not the horde quota.
 - Test dev/simfork/g283_retryreload.js: before the fix both cases reopened counting enemies; after, both reopen on 2-4 with the skull. g281, g282 ok. Not checked on a phone.
+
+## v1138 — Animated hero card: Roran (TEST)
+- The 44 hi-res card frames from Harley's Blender (Great Sword Idle, 1600x1120, no lance) packed in Blender into an 8x6 sheet of 1050x735 frames (same frame size as Kessa), pulled over in chunks (md5 checked), re-encoded webp q80 (1.8 MB; q90 was 2.6 MB with no visible difference). art/originals/sprites_hires/roran/card/roran_card_sheet.webp.
+- Game: HERO_CARD_ANIM.roran (cols 8, n 44, 12 fps = 3.67 s loop). Hero grid card + profile animate; other heroes keep their still art. Game file +2.4 MB (base64).
+- Test dev/simfork/g284_roran_card.js (copy of g277): grid + profile drawn and animating, no errors; g277 (Kessa) ok. Not checked on a phone.
