@@ -1734,3 +1734,6 @@
 
 ## v1130 — Roran + Kessa basic attacks weaker (TEST)
 - Harley: both are "virtually one-shotting ch10 enemies as soon as they enter". Conquest basic hits only (skills + Arena unchanged): Roran basicMult 0.65 -> 0.45, Kessa basicMult 0.65 (new). Not checked on a phone.
+
+## v1131 — Roran + Kessa basic attacks weaker again (TEST)
+- Harley: "still far too strong". Conquest basic hits: Roran x0.45 -> x0.3, Kessa x0.65 -> x0.45 (skills + Arena unchanged). Not checked on a phone.
