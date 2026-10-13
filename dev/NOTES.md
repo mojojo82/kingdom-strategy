@@ -1724,3 +1724,4 @@
 
 ## v1128 — boss attack curve from chapter 6 (TEST)
 - Harley's play-test of v1127: the chapter 10 boss "only just manages to kill Gareth with not a scratch on the fortress". Boss ATK x idleBossAtkCurve() = (1 + 0.05 x chapters past 5) x 1.2 per 5th chapter from 10 (BOSS_ATK_STEP / BOSS_ATK_GATE): ch6 x1.05, ch9 x1.2, ch10 x1.5, ch14 x1.62, ch15 x2.16, ch20 x3.0. Hordes unchanged. Not checked on a phone.
+- Harley: never touch the Sword of Power for balance - Conquest tuning only (boss HP/ATK curves, CURVE_STEP etc.).
