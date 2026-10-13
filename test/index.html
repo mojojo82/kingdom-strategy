@@ -9460,7 +9460,7 @@ function createGame(opts) {
     /* v812: the live game always opens a session on a FRESH attempt of the saved level. The save holds whatever fight was in flight (frozen boss, fortress at 0 HP behind a Defeat screen, enemies at the wall) and `pending` is never saved, so the first combat step after a load re-defeated the player at once and the Defeat screen was waiting on Conquest. Chapter/level progress is kept; only the in-flight attempt is reset. Sims and the estimator (no deferConquest) are untouched. */
     if (opts.deferConquest) {
       var _ri = state.idle;
-      _ri.enemies = []; _ri.spawnTimer = null; _ri.enemiesKilledInLevel = 0; _ri.bossPhase = false; _ri.bossRetry = !!_ri.bossRetry; /* v1134: a boss defeat stays a retry after reload (endless horde + skull button) */
+      _ri.enemies = []; _ri.spawnTimer = null; _ri.enemiesKilledInLevel = 0; _ri.bossRetry = !!(_ri.bossRetry || _ri.bossPhase); _ri.bossPhase = false; /* v1134/v1137: a boss defeat stays a retry after reload (endless horde + skull button); closed mid boss fight (or before the defeat got saved) = also back with the skull, never back to counting the horde */
       _ri.shieldOn = false; _ri.guardShield = 0; _ri.fxT = null; _ri.clones = null; _ri.levelRewards = null; _ri.pending = null; _ri.levelElapsedSec = 0;
       _ri.weaponFlightQueue = []; _ri.heroHp = {};
       try { _ri.playerHp = idlePlayerMaxHp(); } catch (e) { _ri.playerHp = null; }
@@ -11575,7 +11575,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1136"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1137"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -28360,6 +28360,7 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
   setInterval(function () {
     var p = game.state.idle.pending;
     if (!p) { if (shownKey) hide(); return; }
+    if (p.type === "defeat" && game.state.idle.bossRetry && !p._saved) { p._saved = true; try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} } /* v1137: save the boss-retry mode straight away, so closing the app right after the defeat keeps it */
     var onScene = (appScreen === "conquest" ? (appSub === "scene" || !appSub) : mapMode === "conquest") && !document.hidden; // v779: the desktop/tab-strip layout keeps appScreen on "world" while the Conquest tab is open, so the Defeat/Victory screen never showed there and combat stayed paused forever
     if (!shownKey || shownKey !== p.type + p.at) { if (!p._seen) p._seen = Date.now(); if (onScene) { /* v767: wait for the boss to actually finish dying on screen (its bar drains and the death burst plays) before the screen slides in; never longer than 4.5 s */
           var bossOn = false, evs = idleAnim.enemyById; for (var bk in evs) { if (evs[bk].type === "boss") { bossOn = true; break; } }

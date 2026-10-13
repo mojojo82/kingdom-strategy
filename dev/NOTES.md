@@ -1763,3 +1763,9 @@
 - Cause: the engine counts a shot when fired; the bar (displayedHp) catches up when it lands, so shots in the air at the defeat dropped it behind the Defeat screen.
 - Fix: idleDefeatUp() (Defeat pending) -> applyDisplayedHit does nothing, no enemy damage numbers (projectile landings, melee, weapon hits), and the back-from-background bar catch-up is skipped. Shots still fly and vanish; the field is cleared on Confirm as before.
 - Test dev/simfork/g282_defeatshots.js: 7 shots in the air at the defeat. Before: bar 1e9 -> 999,994,000 after the defeat. After: unchanged. g281, g280 ok. (g126 is stale - points at a missing file, fails the same before.) Not checked on a phone.
+
+## v1137 — Boss-retry mode survives closing the app (TEST)
+- Harley: lost to the boss, skull showed, closed the app, reopened: skull gone and the horde counting again.
+- Cause: the cloud save that got loaded was older than the defeat (closing a phone app can cut the last save short; the background save is every 60 s), so it still had bossPhase on, and loading turned that into a fresh level.
+- Fix: (1) the moment a boss defeat happens the game saves straight away (result screen interval, once per defeat). (2) Loading a save with bossPhase on (closed mid boss fight, or before the defeat got saved) now comes back in retry mode: endless horde + skull, not the horde quota.
+- Test dev/simfork/g283_retryreload.js: before the fix both cases reopened counting enemies; after, both reopen on 2-4 with the skull. g281, g282 ok. Not checked on a phone.
