@@ -9,3 +9,4 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
 - HEAD FIX (Harley: back of the head deformed on the throw): Meshy weighted the big hair partly to the shoulders and neck, so the arm swing dragged it.
   bake_roran.py (HEADFIX=1, default) moves every vert above y=1.00 fully onto the Head bone, blending 0.965-1.00. The Blender render needs the same reweight (do it on import).
 - Idle: art/originals/mixamo_roran_great_sword_idle.fbx (Mixamo "Great Sword Idle", 3.67 s), `python3 -B mixamo.py ../../art/originals/mixamo_roran_great_sword_idle.fbx "Idle" inplace`. Preview page renamed "Roran Animations" (Throw / Throw eyes-on-enemy / Idle).
+- Great Sword Idle = his hero card loop (Harley). Battle idle candidate: art/originals/mixamo_roran_great_sword_idle_2.fbx ("Idle2", 2 s, very still - likely needs AMP like Kessa).

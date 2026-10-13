@@ -43,7 +43,8 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | roran_concept_apose.png | Roran chibi concept (A-pose, copper armour, navy cape, no lance) - reference for his Meshy model | concept | not in the game |
 | roran_rigged.glb | Roran Meshy model, rigged (23-bone mixamorig skeleton like Kessa/Gareth, 31k tris, 1 PNG texture; built-in Running/Walking). The 2.1M-tri unrigged original (88 MB) is not kept | model | not in the game yet |
 | mixamo_roran_throw_object.fbx | Mixamo "Throw Object" for Roran's spear throw (ASCII FBX, 4.87 s; the bend-down pick-up part gets cut) | anim | dev/roran preview only |
-| mixamo_roran_great_sword_idle.fbx | Mixamo "Great Sword Idle" for Roran's idle (ASCII FBX, 3.7 s loop, two-handed grip) | anim | dev/roran preview only |
+| mixamo_roran_great_sword_idle.fbx | Mixamo "Great Sword Idle" for Roran's hero card loop (Harley) (ASCII FBX, 3.7 s loop, two-handed grip) | anim | dev/roran preview only |
+| mixamo_roran_great_sword_idle_2.fbx | Mixamo "Great Sword Idle 2" for Roran's battle idle (ASCII FBX, 2 s loop, wide ready stance) | anim | dev/roran preview only |
 | mixamo_kessa_idle.fbx | Mixamo idle Harley picked for Kessa (ASCII FBX, without skin, 8.3 s) | anim | dev/kessa preview only |
 | mixamo_kessa_1h_magic_attack.fbx | Mixamo "Standing 1H Magic Attack 01" for Kessa (ASCII FBX, 2.3 s) | anim | dev/kessa preview only |
 | mixamo_kessa_1h_magic_attack_02.fbx | Mixamo "Standing 1H Magic Attack 02" (throw; spins her back to the camera - not picked) | anim | dev/kessa preview only |
