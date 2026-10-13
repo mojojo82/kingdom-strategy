@@ -51,3 +51,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | mixamo_kessa_1h_magic_attack_02.fbx | Mixamo "Standing 1H Magic Attack 02" (throw; spins her back to the camera - not picked) | anim | dev/kessa preview only |
 | mixamo_kessa_happy_idle.fbx | Mixamo "Happy Idle" for Kessa's hi-res hero card loop (2.93 s, loops cleanly) | anim | dev/kessa |
 | sprites_hires/tank/*.png | Tank parts cut out at full size (hull, turret, barrel, wheel, sprocket, one tread plate), transparent | backup | not in the game (dev/tank/parts.py) |
+| sprites_hires/kessa/card/kessa_card_sheet.webp | Kessa animated hero card: 36 frames (6x6) of Happy Idle at 1050x735, transparent, Blender soft light (full 1600x1120 PNGs on Harley's PC) | sheet | in the TEST game (HERO_CARD_ANIM.kessa, v1119) |

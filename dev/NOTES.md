@@ -1673,3 +1673,9 @@
 - New bossBox(vis, h): where the boss's body is on screen - the tank's real box (whole tank for contact, the hull's middle + a sweep zone for the laser) or the classic boss's old box. bossTopY(h) = top of the boss.
 - Uses it: laser aim spot + its wandering sweep zone (laserBodyPoint / laserBossZoneOffset), missile contact (findMissileContactEnemy), Kessa's shock crawl box, and the 6 boss damage-number heights. Classic boss values unchanged.
 - g276 checks the laser spot and 40 sweep points all land inside the tank, and the numbers start at its top. Checked by eye with the Laser equipped (headless). Not checked on a phone.
+
+## v1119 - Animated hero card: Kessa (TEST)
+- Harley: hi-res animated hero card (big on screen), transparent background, waist-up for the card (full body only for a possible overlord profile), no staff, camera in front and slightly above.
+- Rendered in Harley's Blender (Blender MCP add-on): Mixamo "Happy Idle" on the rigged Meshy Kessa, soft Kingshot-style lighting, 36 frames 1600x1120 (on his PC: KingdomArt\kessa_card), packed to a 6x6 sheet of 1050x735 frames (1.3 MB webp, art/originals/sprites_hires/kessa/card/kessa_card_sheet.webp).
+- Game: HERO_CARD_ANIM.kessa; makeHeroAnimCanvas() + one shared requestAnimationFrame loop draws every visible canvas.hero-anim-cv (object-fit cover; grid card = top, profile = centre; skips hidden ones, stops when none). Used on the hero grid card and the hero profile (#hdPortraitAnim); other heroes keep their still art. The animation wins over any uploaded Kessa art.
+- File size +1.75 MB (base64). dev/simfork/g277_herocard_anim.js. Not checked on a phone.
