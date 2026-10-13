@@ -11575,7 +11575,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1135"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1136"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -20139,16 +20139,17 @@ function spawnMissileFizzle(x, y) {
 function meleeVisualHit(aid, dmg, frontVis, targetEnemyId, h) {
   (idleAnim.lastMeleeHitAt || (idleAnim.lastMeleeHitAt = {}))[aid] = performance.now(); // v656: the swing animation follows real hits
   if (targetEnemyId != null) applyDisplayedHit(targetEnemyId, dmg); // the enemy's bar drops exactly when this swing visibly lands (never below the engine's real HP)
-  spawnDamageNumber(frontVis.x, frontVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, dmg, false);
+  if (!idleDefeatUp()) spawnDamageNumber(frontVis.x, frontVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, dmg, false);
   // v501: hit-flash the small/normal enemy that is actually standing at his sword (nearest in reach), else the one being damaged
   var hv = idleAnim.heroVis[aid], flashV = frontVis, bestD = 1e9;
   var tgtInReach = hv && frontVis && meleeD(hv, frontVis) >= -8 && meleeD(hv, frontVis) <= IDLE_BLOCK_GAP + meleeReachExtra; // v655: the enemy actually hit is the one that flashes whenever it's at his sword
   if (hv && !tgtInReach) Object.keys(idleAnim.enemyById).forEach(function (eid) { var ev = idleAnim.enemyById[eid], d = meleeD(hv, ev); if (d >= -8 && d <= IDLE_BLOCK_GAP + meleeReachExtra && d < bestD) { bestD = d; flashV = ev; } });
   if (flashV && flashV.type !== "boss") { flashV.hitFlash = 0.3; }
 }
+function idleDefeatUp() { var p = game.state.idle.pending; return !!(p && p.type === "defeat"); } /* v1136 */
 function applyDisplayedHit(enemyId, amount) {
   var disp = idleAnim.displayedHp[enemyId];
-  if (!disp) return;
+  if (!disp || idleDefeatUp()) return; /* v1136 (Harley): shots still in the air when you're defeated don't touch the enemy/boss bars anymore */
   var floorHp = 0;
   var realList = game.state.idle.enemies || [];
   for (var ri = 0; ri < realList.length; ri++) { if (realList[ri].id == enemyId) { floorHp = Math.max(0, realList[ri].hp); break; } }
@@ -20168,6 +20169,7 @@ var WEAPON_NUMBER_STACK_GAP = 16;
 // same moment the number appears — before v448 weapon hits never touched
 // displayedHp at all, so HP bars ignored missile damage entirely.
 function spawnWeaponHitNumber(x, y, amount, enemyId) {
+  if (idleDefeatUp()) return; /* v1136: no damage numbers behind the Defeat */
   if (enemyId != null) applyDisplayedHit(enemyId, amount);
   var nextY = y;
   idleAnim.damageNumbers
@@ -21812,7 +21814,7 @@ function stepIdleAnim(dtSec, w, h) {
     idleAnim.pendingArrows[p.targetId] = Math.max(0, (idleAnim.pendingArrows[p.targetId] || 0) - 1);
     applyDisplayedHit(p.targetId, p.dmg);
     var hitVis = idleAnim.enemyById[p.targetId];
-    if (hitVis) spawnDamageNumber(hitVis.x, hitVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, p.dmg, false);
+    if (hitVis && !idleDefeatUp()) spawnDamageNumber(hitVis.x, hitVis.type === "boss" ? bossTopY(h) - 10 : groundYFor(h) - 30, p.dmg, false);
     // If the engine has already removed this enemy for real, and this was
     // the LAST shot still owed to it, its death only becomes visible now —
     // not whenever tick() happened to remove it, and not before.
@@ -25734,7 +25736,7 @@ function startIdleAnim() {
   (function () {
     var alive = {}; (game.state.idle.enemies || []).forEach(function (e) { alive[e.id] = 1; });
     Object.keys(idleAnim.enemyById || {}).forEach(function (id) { if (!alive[id]) { try { game.idleConfirmDeath(id); } catch (e) {} delete idleAnim.enemyById[id]; delete idleAnim.displayedHp[id]; } });
-    (game.state.idle.enemies || []).forEach(function (e) { var d = idleAnim.displayedHp[e.id]; if (d) d.hp = Math.min(d.hp, Math.max(0, e.hp)); }); /* bars catch up on what happened while you were away */
+    if (!idleDefeatUp()) (game.state.idle.enemies || []).forEach(function (e) { var d = idleAnim.displayedHp[e.id]; if (d) d.hp = Math.min(d.hp, Math.max(0, e.hp)); }); /* bars catch up on what happened while you were away */
   })();
   idleAnim.lastKnownDefeated = game.state.idle.defeated;
   idleAnim.lastKnownEnemyHitCount = {};

@@ -1757,3 +1757,9 @@
 ## v1135 — Skull button waits for the level reset (TEST)
 - Harley: the boss-retry skull showed while the boss that beat you was still on screen. It now stays hidden while the Defeat screen is pending (bossRetry && !pending) and appears once the level has reset (after Confirm).
 - Reproduced in g281 (v1134: skull visible during the pending Defeat); g281 now asserts it is hidden then and shown after Confirm. g281 ok. Not checked on a phone.
+
+## v1136 — Shots in the air at a Defeat no longer hit the boss bar (TEST)
+- Harley: after a defeat, projectiles/attacks still in flight kept taking HP off the boss bar when they landed (old issue back).
+- Cause: the engine counts a shot when fired; the bar (displayedHp) catches up when it lands, so shots in the air at the defeat dropped it behind the Defeat screen.
+- Fix: idleDefeatUp() (Defeat pending) -> applyDisplayedHit does nothing, no enemy damage numbers (projectile landings, melee, weapon hits), and the back-from-background bar catch-up is skipped. Shots still fly and vanish; the field is cleared on Confirm as before.
+- Test dev/simfork/g282_defeatshots.js: 7 shots in the air at the defeat. Before: bar 1e9 -> 999,994,000 after the defeat. After: unchanged. g281, g280 ok. (g126 is stale - points at a missing file, fails the same before.) Not checked on a phone.
