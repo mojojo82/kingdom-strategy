@@ -20,3 +20,5 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
   - compose.py -> "RThrow" (51 frames @30): 6-frame blend idle->throw(1.8 s), throw 1.8-3.0 turned by YAW=-0.95 rad (so it reads side-on, flying right, at the idle's ANG 0.35), 9-frame blend back. Release = frame 27 (0.9 s).
   - lance.py builds the lance (wood, copper collar, steel leaf blade + side prongs) in its own space; lanceanim.py adds it as joint 23 to every anim: follows the right fist, upright in the idle, swings to point at the target (forward + up) during the blend-in; grip slides 0.48 -> 0.78 up the shaft.
   - render.js HIDE=anim:t hides the lance from t on (after the release); build_page.py patches the viewer for that (window.__noProp).
+- TODO hero card (Harley 16:37 "don't forget the hi-res version for his hero card"): same as Kessa's card - Blender, Mixamo "Great Sword Idle"
+  (art/originals/mixamo_roran_great_sword_idle.fbx, 3.67 s loop), waist-up, transparent, ~1600x1120, ~36-44 frames, soft card lighting; needs the head/hair reweight + fists on the Blender mesh too.
