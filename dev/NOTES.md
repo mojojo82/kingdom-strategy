@@ -1753,3 +1753,7 @@
 - Harley: when a boss beats you, the level restarts without counting hordes; you fight enemies forever and retry the boss whenever you like.
 - idleResetLevel: a defeat in the boss fight (or while already farming) sets idle.bossRetry (real game only; sims still retry the whole level). idleAfterKill: while bossRetry and not in the boss phase, kills don't count (quota never fills, no boss). idleStartBossAttempt (re-added): skull button -> clear field, full HP, boss phase on the same level. The existing skull button (#idleBossRetryBtn) and hidden progress bar are reused. bossRetry now survives a reload.
 - Test: dev/simfork/g281_bossretry.js (boss defeat -> retry mode + skull; 25 s farming = 0 kills counted, no boss; dying to the horde keeps retry; skull starts the boss on 2-4). g280 ok. Not checked on a phone.
+
+## v1135 — Skull button waits for the level reset (TEST)
+- Harley: the boss-retry skull showed while the boss that beat you was still on screen. It now stays hidden while the Defeat screen is pending (bossRetry && !pending) and appears once the level has reset (after Confirm).
+- Reproduced in g281 (v1134: skull visible during the pending Defeat); g281 now asserts it is hidden then and shown after Confirm. g281 ok. Not checked on a phone.

@@ -11575,7 +11575,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1134"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1135"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24507,7 +24507,7 @@ function renderIdleHeader() {
     idleHeaderEls = { retryBtn: document.getElementById("idleBossRetryBtn"), retryShown: false, valor: vEl, dps: dEl, defeated: kEl, level: lvlEl, hp: hpEl, horde: hordeEl, books: booksEl, bossBadge: bossBadgeEl };
   }
   var els = idleHeaderEls;
-  if (els.retryBtn) { var wantRetry = !!game.state.idle.bossRetry; if (wantRetry !== els.retryShown) { els.retryShown = wantRetry; els.retryBtn.style.display = wantRetry ? "flex" : "none"; } }
+  if (els.retryBtn) { var wantRetry = !!game.state.idle.bossRetry && !game.state.idle.pending; /* v1135: not while the Defeat screen / the boss that beat you is still up - only once the level has reset */ if (wantRetry !== els.retryShown) { els.retryShown = wantRetry; els.retryBtn.style.display = wantRetry ? "flex" : "none"; } }
   els.valor.textContent = fmt(game.state.idle.valor);
   if (els.books) els.books.textContent = fmt(game.state.idle.conquestBooks);
   els.dps.textContent = fmt(game.idlePower());

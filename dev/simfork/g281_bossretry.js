@@ -48,7 +48,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await b.close();
   assert.deepStrictEqual(errs, []);
   assert(out.atBoss.boss && !out.atBoss.retry, "boss fight first time");
-  assert(out.defeat.pending === "defeat", "defeat screen");
+  assert(out.defeat.pending === "defeat" && !out.defeat.btn && !out.hordeDefeat.btn, "defeat screen, no skull yet");
   assert(out.afterConfirm.retry && !out.afterConfirm.boss && out.afterConfirm.btn, "retry mode + skull after the defeat");
   assert(out.farm.maxKills === 0 && !out.farm.sawBoss && out.farm.distinctEnemies >= 5 && out.farm.state.retry, "endless horde, kills don't count");
   assert(out.hordeDeath.retry && out.hordeDeath.btn, "dying to the horde keeps retry mode");
