@@ -1812,3 +1812,11 @@
 - Kessa: Harley's new clip on her full card, as is (Harley: keep the grey, no cut-out, full clip). H.264 crf 28, 0.6 MB; grey fills the card's side strips. Replaces her Blender sheet on the full card (sheet stays in the file, unused there). g277 retired (FORCE=1 runs it).
 - Harley: condense every hero skill description a lot, like Gareth's (no need to check with him). All 35 skill texts rewritten short (desc itself; Death Strike's separate cardDesc folded in). Numbers/rules kept: e.g. Arc Burst "Every 8s, chain lightning strikes an enemy that has closed in."; marches "Fewer losses on his marches." / "Faster marches when he leads."; Shuriken Storm keeps "projectile shields block them".
 - Tests: g285/g286 swap every mp4 for the webm stand-in (headless has no H.264); both ok. Not checked on a phone.
+
+## v1145 — Hero card videos: iPhone playback hardening (TEST)
+- Harley's iPhone: neither card video playing (Gareth's had played an hour earlier). First cause found: Low Power Mode (iPhones block video autoplay). Still not playing after it was off, so:
+  - videos are unpacked once from the data: URL into a blob: URL (hcVideoUrl) - iPhone Safari is pickier than Chrome about data: video;
+  - muted/defaultMuted/playsInline/webkit-playsinline/preload set before the src;
+  - first tap anywhere while the card is open starts a paused video (hcVideoKick) - covers Low Power Mode for players;
+  - tapping the portrait of a video card no longer opens the admin art picker.
+- g285 checks blob: URLs; g285, g286 ok (Chromium only). Not checked on a phone.
