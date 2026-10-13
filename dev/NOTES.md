@@ -1790,3 +1790,7 @@
 - Skills tab: panels with icon, ACTIVE/LIMIT tag, level, books have/need on the name line, value, description; no "Conquest Skills" header; Expedition fold kept. Death Strike has a shorter card text (cardDesc). Gear tab: 6 placeholder slots (my guess, not decided) + "coming in a future update".
 - Prev/next and close buttons sit in a small bar above the card. Kessa's sheet canvas sizes from its on-screen size (zoom).
 - Test dev/simfork/g286_herocard_new.js: card 414px wide on a 430px phone (Gareth stats tab 769px tall), tabs, level up updates the title, Kessa sheet, Overlord, unowned hero, nav, close, no errors. g277, g281, g285 ok. Not checked on a phone.
+
+## v1141 — Hero card: iPhone text fix (TEST)
+- Harley's iPhone: the frame shrank to fit but the text stayed full size (huge, overlapping). CSS zoom isn't applied to text the same way on iPhone Safari. Now the card is scaled with transform: scale() (holder height set from the card's real height); also refit once fonts load.
+- g286 ok (Chromium only - no WebKit here). Not checked on a phone.
