@@ -3,8 +3,11 @@
 import json, base64, io, re
 from PIL import Image
 H = 'art/originals/sprites_hires/roran/toon/'
-idle = [Image.open(H + 'idle_%02d.png' % k).convert('RGBA') for k in range(24)]
-att = [Image.open(H + 'throw_%02d.png' % k).convert('RGBA') for k in range(0, 51, 2)]
+BRIGHT = 0.7   # Harley 13 Oct: "30% back" - the sunny face looked odd against the dreary levels (multiplies the colour, not the outline/alpha)
+from PIL import ImageEnhance
+def dim(im): a = im.split()[3]; o = ImageEnhance.Brightness(im.convert('RGB')).enhance(BRIGHT).convert('RGBA'); o.putalpha(a); return o
+idle = [dim(Image.open(H + 'idle_%02d.png' % k).convert('RGBA')) for k in range(24)]
+att = [dim(Image.open(H + 'throw_%02d.png' % k).convert('RGBA')) for k in range(0, 51, 2)]
 cw, ch = idle[0].size; n = max(len(idle), len(att))
 sheet = Image.new('RGBA', (cw * n, ch * 2))
 for r, row in enumerate((idle, att)):

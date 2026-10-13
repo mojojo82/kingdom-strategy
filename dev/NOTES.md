@@ -1703,3 +1703,6 @@
 - Basic attack: the throw plays and the spear (new 2D lance sprite, style "spear") leaves his hand on the release frame (0.675 s) and arcs onto the target. heroHandPos / heroReleaseSec / heroSpearImg helpers.
 - Sheet: idle 24 + throw 26 (every 2nd frame, 20 fps), 263x211 cells, 273 KB. Arena draws the new sprite but still throws the old javelin from his slot.
 - dev/simfork/g280_roran3d.js passes (g278 too). Not checked on a phone. Hero card loop being rendered in Blender (not in yet).
+
+## v1124 — Roran 30% darker (TEST)
+- Harley: "30% back in game" on the battle sprite - the sunny face looked odd against the dreary levels. pack_game.py multiplies his frame colours by 0.7 (BRIGHT), outline + see-through edges unchanged. Kessa untouched. g280 passes. Not checked on a phone.
