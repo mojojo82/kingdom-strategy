@@ -11,3 +11,4 @@ Rigged model art/originals/roran_rigged.glb (23-bone mixamorig, 31k tris). Range
 - Idle: art/originals/mixamo_roran_great_sword_idle.fbx (Mixamo "Great Sword Idle", 3.67 s), `python3 -B mixamo.py ../../art/originals/mixamo_roran_great_sword_idle.fbx "Idle" inplace`. Preview page renamed "Roran Animations" (Throw / Throw eyes-on-enemy / Idle).
 - Great Sword Idle = his hero card loop (Harley). Battle idle candidate: art/originals/mixamo_roran_great_sword_idle_2.fbx ("Idle2", 2 s, very still - likely needs AMP like Kessa).
 - Battle idle draft: `AMP=7 REFT=0 python3 -B mixamo.py ../../art/originals/mixamo_roran_great_sword_idle_2.fbx "Idle2A" inplace` (x3 with LEGREST was still frozen - LEGREST drops the hip bob).
+- Harley (16:10): turn his body toward the camera (profile makes chibis look thin), head looking right. mixamo.py HEADTURN=deg turns Spine2/Neck/Head (20/30/50%) about the vertical; +55 = eyes right. Camera options shown: ANG 1.3 side, 0.9, 0.6 (3/4), 0.35.
