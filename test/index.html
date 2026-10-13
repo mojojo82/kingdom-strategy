@@ -11644,7 +11644,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1144"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1145"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26881,6 +26881,18 @@ function heroDetailBadgesHtml(def) {
 }
 
 /* v1140: new hero card helpers */
+/* v1145: iPhone Safari won't play a video from a data: URL (Chrome does) - unpack it once into a blob: URL, which Safari plays */
+var hcVideoUrls = {};
+function hcVideoUrl(key) {
+  if (hcVideoUrls[key]) return hcVideoUrls[key];
+  var src = HERO_CARD_VIDEO[key].src;
+  try { var bin = atob(src.slice(src.indexOf(",") + 1)), n = bin.length, u8 = new Uint8Array(n); for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i); hcVideoUrls[key] = URL.createObjectURL(new Blob([u8], { type: "video/mp4" })); }
+  catch (e) { hcVideoUrls[key] = src; }
+  return hcVideoUrls[key];
+}
+function hcVideoKick() { var v = document.getElementById("hdPortraitVid"); if (v && v.style.display !== "none" && v.paused) { try { var p = v.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {} } }
+document.addEventListener("touchend", function () { if (heroDetailKey) hcVideoKick(); }, true); /* Low Power Mode blocks autoplay: the first tap starts it */
+document.addEventListener("click", function () { if (heroDetailKey) hcVideoKick(); }, true);
 var HC_RARITY_BG = { Epic: "linear-gradient(180deg,#9b59d6,#6a35a8)", Rare: "linear-gradient(180deg,#4f8fd9,#2f5fa3)", Legendary: "linear-gradient(180deg,#f2b632,#d9902a)" };
 var HC_CLASS_SVG = {
   infantry: '<svg viewBox="0 0 24 24" width="84" height="84"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="#f2d497"/><path d="M12 6v12M7.5 10.5h9" stroke="#1a1306" stroke-width="2.2"/></svg>',
@@ -26925,9 +26937,9 @@ function renderHeroDetail() {
   var hdAnim = document.getElementById("hdPortraitAnim");
   if (!hdAnim) { hdAnim = makeHeroAnimCanvas(key, "hd-portrait-anim", "center"); hdAnim.id = "hdPortraitAnim"; img.parentNode.insertBefore(hdAnim, img); }
   var hdVid = document.getElementById("hdPortraitVid"), hdBox = document.getElementById("hdPortrait");
-  if (!hdVid) { hdVid = document.createElement("video"); hdVid.id = "hdPortraitVid"; hdVid.className = "hd-portrait-vid"; hdVid.muted = true; hdVid.loop = true; hdVid.autoplay = true; hdVid.setAttribute("playsinline", ""); hdVid.setAttribute("muted", ""); img.parentNode.insertBefore(hdVid, img); }
+  if (!hdVid) { hdVid = document.createElement("video"); hdVid.id = "hdPortraitVid"; hdVid.className = "hd-portrait-vid"; hdVid.muted = true; hdVid.defaultMuted = true; hdVid.loop = true; hdVid.autoplay = true; hdVid.playsInline = true; hdVid.setAttribute("playsinline", ""); hdVid.setAttribute("webkit-playsinline", ""); hdVid.setAttribute("muted", ""); hdVid.setAttribute("preload", "auto"); img.parentNode.insertBefore(hdVid, img); }
   var cv = HERO_CARD_VIDEO[key];
-  if (cv) { if (hdVid.getAttribute("data-hkey") !== key) { hdVid.setAttribute("data-hkey", key); hdVid.src = cv.src; } hdVid.style.display = "block"; hdBox.style.background = cv.bg; try { var pr = hdVid.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} hdAnim.style.display = "none"; img.style.display = "none"; placeholder.style.display = "none"; } /* v1139 */
+  if (cv) { if (hdVid.getAttribute("data-hkey") !== key) { hdVid.setAttribute("data-hkey", key); hdVid.src = hcVideoUrl(key); } hdVid.style.display = "block"; hdBox.style.background = cv.bg; try { var pr = hdVid.play(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} hdAnim.style.display = "none"; img.style.display = "none"; placeholder.style.display = "none"; } /* v1139 */
   else { hdVid.style.display = "none"; hdVid.pause(); hdBox.style.background = HC_RARITY_BG[def.rarity] || HC_RARITY_BG.Epic;
   if (HERO_CARD_ANIM[key]) { hdAnim.setAttribute("data-hkey", key); hdAnim.style.display = "block"; img.style.display = "none"; placeholder.style.display = "none"; heroCardAnimImg(key); startHeroCardAnim(); } /* v1119 */
   else { hdAnim.style.display = "none";

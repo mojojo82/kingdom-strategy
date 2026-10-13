@@ -25,7 +25,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const grid = await P.evaluate(() => ({ canv: document.querySelectorAll("canvas.hcard-art").length, kessaImg: !!document.querySelector('.hcard img.hcard-art[alt="Kessa"]'), imgs: document.querySelectorAll("img.hcard-art").length }));
   await P.screenshot({ path: path.join(__dirname, "out_g285_grid.png") });
   await P.evaluate(() => openHeroDetail("gareth")); await P.waitForTimeout(2500);
-  const vid = async () => P.evaluate(() => { const v = document.getElementById("hdPortraitVid"), box = document.getElementById("hdPortrait"); return { shown: !!v && getComputedStyle(v).display !== "none", t: v ? v.currentTime : -1, paused: v ? v.paused : null, w: v ? v.videoWidth : 0, bg: getComputedStyle(box).backgroundImage.slice(0, 40), anim: getComputedStyle(document.getElementById("hdPortraitAnim")).display, img: getComputedStyle(document.getElementById("hdPortraitImg")).display }; });
+  const vid = async () => P.evaluate(() => { const v = document.getElementById("hdPortraitVid"), box = document.getElementById("hdPortrait"); return { blob: !!v && v.src.indexOf("blob:") === 0, shown: !!v && getComputedStyle(v).display !== "none", t: v ? v.currentTime : -1, paused: v ? v.paused : null, w: v ? v.videoWidth : 0, bg: getComputedStyle(box).backgroundImage.slice(0, 40), anim: getComputedStyle(document.getElementById("hdPortraitAnim")).display, img: getComputedStyle(document.getElementById("hdPortraitImg")).display }; });
   const g1 = await vid(); await P.waitForTimeout(1500); const g2 = await vid();
   await P.screenshot({ path: path.join(__dirname, "out_g285_gareth.png") });
   await P.evaluate(() => openHeroDetail("kessa")); await P.waitForTimeout(1500); const k = await vid();
@@ -34,6 +34,6 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []); assert(grid.canv === 0 && grid.kessaImg, "small cards are still images");
     assert(g1.shown && g1.w === 768 && g2.t > g1.t && /9b59d6|155, 89, 214/.test(g2.bg) && g1.anim === "none" && g1.img === "none", "Gareth's full card plays the video on purple");
-    assert(k.shown && /171, 179, 186/.test(k.bg), "v1144: Kessa plays her own video on grey"); assert(closed, "video paused when closed"); console.log("g285 ok");
+    assert(k.shown && /171, 179, 186/.test(k.bg), "v1144: Kessa plays her own video on grey"); assert(closed, "video paused when closed"); assert(g1.blob && k.blob, "v1145: played from a blob: URL (iPhone)"); console.log("g285 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });
