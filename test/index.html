@@ -11554,7 +11554,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1120"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1121"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30789,7 +30789,7 @@ function spawnArenaMissileVolley(fromX, fromY, toX, toY, count) {
 // `connects` mirrors Conquest's semantics: false means the burst fizzled
 // (target hadn't closed the distance yet) so the bolt stops short in a stub
 // near Kessa instead of reaching the target.
-function spawnArenaHeroLightning(fromX, fromY, toX, toY, connects) {
+function spawnArenaHeroLightning(fromX, fromY, toX, toY, connects, tex) {
   var endX = connects ? toX : fromX + (toX >= fromX ? 24 : -24);
   var endY = connects ? toY : fromY - 8;
   arenaAnim.heroLightning.push({
@@ -30797,7 +30797,8 @@ function spawnArenaHeroLightning(fromX, fromY, toX, toY, connects) {
     pts: generateLightningPath(fromX, fromY, endX, endY, connects ? 22 : 9),
     // hueShift: see Conquest's spawnHeroLightning for why this exists (a small
     // per-flicker color wobble, rerolled in the flicker-regen block below).
-    flash: 1, flickersLeft: connects ? 22 : 5, hueShift: (Math.random() * 2 - 1) * 16
+    flash: 1, flickersLeft: connects ? 22 : 5, hueShift: (Math.random() * 2 - 1) * 16,
+    tex: !!tex && connects, strip: Math.floor(Math.random() * 4) /* v1121: Kessa's Blender bolt in the Arena too */
   });
 }
 function arenaHeroSprite(key, isPlayerSide) {
@@ -31118,12 +31119,17 @@ function drawArenaFrame(ctx, w, h) {
           var aSp = arenaAnim.atkSuppress || (arenaAnim.atkSuppress = {});
           var skE = flashing && !aFl[flashKey], bsE = aT[flashKey] && aT[flashKey] !== aSn[flashKey];
           aSn[flashKey] = aT[flashKey]; aFl[flashKey] = !!flashing;
-          if (skE) { heroAnimRestart(key); aUn[flashKey] = nA2 + 8 / HERO_ANIMS[key].fps.attack * 1000; aSp[flashKey] = aUn[flashKey]; } // skill cast cuts off the basic attack and holds new ones off until it ends
+          if (skE && !HERO_ANIMS[key].seq) { heroAnimRestart(key); aUn[flashKey] = nA2 + 8 / HERO_ANIMS[key].fps.attack * 1000; aSp[flashKey] = aUn[flashKey]; } // skill cast cuts off the basic attack and holds new ones off until it ends
           else if (bsE && !(aSp[flashKey] && nA2 < aSp[flashKey])) { heroAnimRestart(key); aUn[flashKey] = nA2 + 8 / HERO_ANIMS[key].fps.attack * 1000; }
           var irp = arenaAnim.infRunPrev || (arenaAnim.infRunPrev = {});
           if (isInf && posVis && irp[flashKey] && !infRunning && koE.reach && !arenaAnim.battleEnded && !(aUn[flashKey] && nA2 < aUn[flashKey])) { heroAnimRestart(key); aUn[flashKey] = nA2 + 8 / HERO_ANIMS[key].fps.attack * 1000; } // just arrived at the target: swing right away instead of idling until the next hit lands
           irp[flashKey] = !!infRunning;
           stA = (aUn[flashKey] && nA2 < aUn[flashKey]) ? "attack" : "idle";
+          var akc = HERO_ANIMS[key].seq && arenaAnim.heroCast && arenaAnim.heroCast[flashKey]; /* v1121: Arena Arc Burst - wind-up, held cast, recovery */
+          if (akc) {
+            var acst = akc.miss ? "castMiss" : "cast", acEnd = akc.t0 + HERO_ANIMS[key].seq[acst].length / HERO_ANIMS[key].fps[acst] * 1000;
+            if (nA2 < acEnd) { if (!akc.started) { akc.started = true; heroAnimRestart(key); } stA = acst; aSp[flashKey] = acEnd; aUn[flashKey] = 0; } else delete arenaAnim.heroCast[flashKey];
+          }
         }
         var arRes = drawHeroAnim(ctx, key, slot.x, slot.y + 13, stA, heroSpriteVisualScale / 100, retFlip != null ? retFlip : !isPlayerSide, i * 0.37);
         if (arRes === 2 && isInf) spawnWeldSparks(slot.x + (isPlayerSide ? 24 : -24), slot.y + 13 - 22, isPlayerSide ? 1 : -1, 22); // blade contact (enemy hero / fortress)
@@ -31327,6 +31333,14 @@ function drawArenaFrame(ctx, w, h) {
   arenaAnim.heroLightning.forEach(function (b) {
     var lf = Math.max(0, Math.min(1, b.flash));
     if (lf <= 0) return;
+    var abim = b.tex ? kessaBoltImg() : null;
+    if (abim) { /* v1121: Blender bolt strip, palm -> target, follows the hero it hit */
+      var ats = b.toKey && arenaAnim.heroScreen ? arenaAnim.heroScreen[b.toKey] : null; if (ats) { b.x1 = ats.x; b.y1 = ats.y; }
+      var adx = b.x1 - b.x0, ady = b.y1 - b.y0, aL = Math.sqrt(adx * adx + ady * ady), ah = 19 * (heroSpriteVisualScale / 100);
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = Math.min(1, 0.35 + lf); ctx.translate(b.x0, b.y0); ctx.rotate(Math.atan2(ady, adx));
+      ctx.drawImage(abim, 0, b.strip * 100, 500, 100, -2, -ah / 2, aL + 4, ah); ctx.restore();
+      return;
+    }
     // Same treatment as Conquest's drawIdleAnim copy: dimmer/desaturated on a
     // fizzle, base hue in blue-violet with a per-flicker jitter, and a wide
     // soft corona under the crisp core — see that copy's comments for why.
@@ -31473,6 +31487,16 @@ function stepArenaAnim(dtSec, w, h) {
   arenaAnim.weaponMissiles = arenaAnim.weaponMissiles.filter(function (m) {
     return m.delay > 0 || m.t < 1;
   });
+  if (arenaAnim.pendingBolts && arenaAnim.pendingBolts.length) { /* v1121: Kessa's Arc Burst bolt, released after her wind-up */
+    var apbNow = performance.now();
+    arenaAnim.pendingBolts = arenaAnim.pendingBolts.filter(function (pb) {
+      if (apbNow < pb.at) return true;
+      if (arenaAnim.battleEnded) return false;
+      spawnArenaHeroLightning(pb.x0, pb.y0, pb.toX, pb.toY, pb.landed, true); arenaAnim.heroLightning[arenaAnim.heroLightning.length - 1].toKey = pb.toKey;
+      if (pb.landed) sfxLightning(); else sfxLightningFizzle();
+      return false;
+    });
+  }
   arenaAnim.heroLightning.forEach(function (b) {
     b.flash -= dtSec / 0.11;
     if (b.flash <= 0 && b.flickersLeft > 0) {
@@ -31480,6 +31504,7 @@ function stepArenaAnim(dtSec, w, h) {
       b.flash = b.flickersLeft > 0 ? 0.85 : 0;
       b.pts = generateLightningPath(b.x0, b.y0, b.x1, b.y1, b.connects ? 22 : 9);
       b.hueShift = (Math.random() * 2 - 1) * 16;
+      if (b.tex) b.strip = (b.strip + 1 + Math.floor(Math.random() * 2)) % 4;
     }
   });
   arenaAnim.heroLightning = arenaAnim.heroLightning.filter(function (b) { return b.flash > 0 || b.flickersLeft > 0; });
@@ -31850,7 +31875,7 @@ function renderArenaBattleScreen() {
   arenaAnim.shield = null; arenaAnim.shieldMax = 0; arenaAnim.shieldHits = 0; arenaAnim.shieldBreaks = 0; // v469
   arenaAnim.aiActiveDefs = aStats0.actives;
   arenaAnim.pendingToPlayer = 0; arenaAnim.pendingToAi = 0; arenaAnim.truePlayerHp = pStats0.maxHp; arenaAnim.trueAiHp = aStats0.maxHp;
-  arenaAnim.projectiles = []; arenaAnim.weaponMissiles = []; arenaAnim.missileImpacts = []; arenaAnim.skillEmbers = []; arenaAnim.orbBursts = []; arenaAnim.beams = []; arenaAnim.heroLightning = []; arenaAnim.flashHero = {}; arenaAnim.banner = null; arenaAnim.battleStartTime = null; arenaAnim.battleEnded = false;
+  arenaAnim.projectiles = []; arenaAnim.weaponMissiles = []; arenaAnim.missileImpacts = []; arenaAnim.skillEmbers = []; arenaAnim.orbBursts = []; arenaAnim.beams = []; arenaAnim.heroLightning = []; arenaAnim.pendingBolts = []; arenaAnim.heroCast = {}; arenaAnim.flashHero = {}; arenaAnim.banner = null; arenaAnim.battleStartTime = null; arenaAnim.battleEnded = false;
   arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null; arenaAnim.infX = null; arenaAnim.infRunPrev = null; arenaAnim.heroScreen = null; arenaAnim.heroTickT = 0; arenaAnim.dmgNums = []; arenaAnim.chargeLand = null; arenaAnim.atkUntil = null; arenaAnim.atkTrig = null; // fresh opponent / fresh view: every hero back at home, alive, no ghosts from the last fight
   renderArenaSkillbar();
   // renderArena rebuilds the canvas element from scratch each call — if the
@@ -32041,8 +32066,14 @@ function renderArenaBattleScreen() {
           var lkh = key === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null;
           if (key === "kessa") arenaAnim.projectiles.forEach(function (op) { if (op.owner === "p_" + key && op.t < 0) { op.t = 1; op.cut = true; } });
           var ltP = state.skillTargets && state.skillTargets["p_" + key], ltpP = ltP && ltP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + ltP] : null;
+          if (key === "kessa" && HERO_ANIMS.kessa && HERO_ANIMS.kessa.seq) { /* v1121: wind-up, then the Blender bolt leaves her palm */
+            var kchP = kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, true, true);
+            (arenaAnim.heroCast || (arenaAnim.heroCast = {}))["p_" + key] = { t0: performance.now(), miss: !landed };
+            (arenaAnim.pendingBolts || (arenaAnim.pendingBolts = [])).push({ at: performance.now() + 7 / 16 * 1000, x0: kchP.x, y0: kchP.y, toX: ltpP ? ltpP.x : aiCenter.x, toY: ltpP ? ltpP.y : aiCenter.y, toKey: ltpP ? "a_" + ltP : null, landed: landed });
+          } else {
           spawnArenaHeroLightning(lkh ? lkh.x : slot.x, lkh ? lkh.y : slot.y, ltpP ? ltpP.x : aiCenter.x, ltpP ? ltpP.y : aiCenter.y, landed);
           if (landed) sfxLightning(); else sfxLightningFizzle();
+          }
         } else {
           var pvHit = (a && a.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, false, arenaHullContactPoint(w, h, false, slot.x, slot.y, aiCenter.y)) : null; // v466: lands deep in the enemy hull, like the laser's aim zone (v465 used the surface contact point)
           var tgtP = state.skillTargets && state.skillTargets["p_" + key], tpP = tgtP && tgtP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + tgtP] : null; // melee skill aims at the hero it actually hits, else the fortress
@@ -32059,8 +32090,14 @@ function renderArenaBattleScreen() {
           var lkh2 = key === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null;
           if (key === "kessa") arenaAnim.projectiles.forEach(function (op) { if (op.owner === "a_" + key && op.t < 0) { op.t = 1; op.cut = true; } });
           var ltA = state.skillTargets && state.skillTargets["a_" + key], ltpA = ltA && ltA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + ltA] : null;
+          if (key === "kessa" && HERO_ANIMS.kessa && HERO_ANIMS.kessa.seq) { /* v1121: same wind-up + Blender bolt for the AI's Kessa */
+            var kchA = kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, false, true);
+            (arenaAnim.heroCast || (arenaAnim.heroCast = {}))["a_" + key] = { t0: performance.now(), miss: !aiLanded };
+            (arenaAnim.pendingBolts || (arenaAnim.pendingBolts = [])).push({ at: performance.now() + 7 / 16 * 1000, x0: kchA.x, y0: kchA.y, toX: ltpA ? ltpA.x : playerCenter.x, toY: ltpA ? ltpA.y : playerCenter.y, toKey: ltpA ? "p_" + ltA : null, landed: aiLanded });
+          } else {
           spawnArenaHeroLightning(lkh2 ? lkh2.x : slot.x, lkh2 ? lkh2.y : slot.y, ltpA ? ltpA.x : playerCenter.x, ltpA ? ltpA.y : playerCenter.y, aiLanded);
           if (aiLanded) sfxLightning(); else sfxLightningFizzle();
+          }
         } else {
           var aiPvHit = (aiA && aiA.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, true, arenaHullContactPoint(w, h, true, slot.x, slot.y, playerCenter.y)) : null;
           var tgtA = state.skillTargets && state.skillTargets["a_" + key], tpA = tgtA && tgtA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + tgtA] : null;

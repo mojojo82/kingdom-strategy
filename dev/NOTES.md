@@ -1686,3 +1686,8 @@
 - Arc Burst: she plays the cast; the bolt is released after the wind-up (0.44 s) from her palm (castHand measured off the Blender frames), drawn with the Blender bolt strips (4 variations swapping on each flicker, 19 px tall at 100%), stays on its target while it walks, and arcs to the nearest living enemy if the burst already killed it (damage still lands at the cast). Sound + shock crawl move with the bolt. Misses keep the old coded fizzle.
 - Basic orb leaves her palm on attack frame 6 (KESSA_RELEASE_SEC 6/16, hand from the frames). Arena uses the same palm point; Arena's Arc Burst bolt is still the old coded one.
 - dev/simfork/g278_kessa3d.js (the harness gives her no basic hits from the engine, so phase 2 feeds the visual shot queue). Not checked on a phone.
+
+## v1121 — Kessa's Blender bolt in the Arena (TEST)
+- Arena Arc Burst now matches Conquest: Kessa plays the cast state (wind-up -> held cast -> recovery, castMiss on a fizzle), and the bolt leaves her palm (castHand) after the wind-up (7/16 s), drawn with the Blender bolt strips that swap each flicker and follow the hero it hit. Player and AI side.
+- arenaAnim.heroCast / arenaAnim.pendingBolts (cleared on battle reset); the old skill-edge attack is skipped for sheets with `seq`.
+- dev/simfork/g279_arena_kessa.js passes (cast state, textured bolt, ~450 ms wind-up delay). AI-side Kessa uses the same code but wasn't hit in the test match. Not checked on a phone.
