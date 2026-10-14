@@ -21,10 +21,10 @@ async function run(gameHtml, shotName) {
   await P.fill("#ksE", "g289" + shotName + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Terr"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   await P.evaluate(() => setScreen("world")); await P.waitForTimeout(2000);
-  await P.evaluate(() => { terrainEnsure(); const n = terrainN, X = 40, Y = 10;
-    for (let y = Y; y < Y + 40; y++) for (let x = X; x < X + 45; x++) { const dx = x - X - 22, dy = y - Y - 20, r = Math.hypot(dx, dy * 1.1) + 3 * Math.sin(x * 0.7) * Math.cos(y * 0.5); if (r < 19) terrainArr[y * n + x] = r < 6 ? 4 : r < 9 ? 3 : (x + y) % 9 === 0 ? 2 : 1; }
+  await P.evaluate((big) => { terrainEnsure(); const n = terrainN, X = 40, Y = 10, SZ = big ? 6 : 1;
+    for (let y = Y; y < Y + 40 * SZ; y++) for (let x = X; x < X + 45 * SZ; x++) { const dx = (x - X) / SZ - 22, dy = (y - Y) / SZ - 20, r = Math.hypot(dx, dy * 1.1) + 3 * Math.sin(x * 0.7) * Math.cos(y * 0.5); if (r < 19) terrainArr[y * n + x] = r < 6 ? 4 : r < 9 ? 3 : (x + y) % 9 === 0 ? 2 : 1; }
     for (let cy = 0; cy < Math.ceil(n / TERRAIN_CHUNK); cy++) for (let cx = 0; cx < Math.ceil(n / TERRAIN_CHUNK); cx++) { const x0 = cx * TERRAIN_CHUNK, y0 = cy * TERRAIN_CHUNK; let any = false; for (let y = y0; y < Math.min(n, y0 + TERRAIN_CHUNK) && !any; y++) for (let x = x0; x < Math.min(n, x0 + TERRAIN_CHUNK); x++) if (terrainArr[y * n + x]) { any = true; break; } if (any) terrainLandChunks[cx + "_" + cy] = 1; }
-    terrainClearAll(); try { forestRefreshSoon(); } catch (e) {} setMapZoom(0.7); const vp = document.getElementById("mapviewport"), c = tileCenterPx({ x: 62, y: 30 }); vp.scrollLeft = c.x - vp.clientWidth / 2; vp.scrollTop = c.y - vp.clientHeight / 2; renderVisibleTiles(); });
+    terrainClearAll(); try { forestRefreshSoon(); } catch (e) {} setMapZoom(0.7); const vp = document.getElementById("mapviewport"), c = tileCenterPx({ x: 62, y: 30 }); vp.scrollLeft = c.x - vp.clientWidth / 2; vp.scrollTop = c.y - vp.clientHeight / 2; renderVisibleTiles(); }, !!process.env.BIG);
   await P.waitForTimeout(2500);
   const scroll = await P.evaluate(async () => { let draws = 0; const ctxp = CanvasRenderingContext2D.prototype, od = ctxp.drawImage; ctxp.drawImage = function (img) { if (this.canvas.classList && this.canvas.classList.contains("terr-ch")) draws++; return od.apply(this, arguments); };
     const vp = document.getElementById("mapviewport"), x0 = vp.scrollLeft; for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + k * 6; await new Promise((r) => requestAnimationFrame(r)); } for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + (59 - k) * 6; await new Promise((r) => requestAnimationFrame(r)); }
