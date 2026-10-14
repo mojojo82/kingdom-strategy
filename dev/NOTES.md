@@ -1959,3 +1959,9 @@
 
 ## v1171 — Bonewake hovers lower (TEST)
 - Harley: move it down a little closer to the ground. lift 20 -> 12 pt. g295 ok.
+
+## v1172 — Ghost flames under Bonewake (TEST)
+- Harley wants a flame effect under/around the ship, separate from it so it can be tuned. Video models melted his painted flame design, so the game animates the painted pieces itself: the 4 middle-row trails + 3 small wisps from art/originals/ghost_flames_sheet_magenta.png (magenta keyed, flipped to stream backwards, 200 px webps, ~60 KB).
+- `ghostFlamePass` (skins with `flames: true`): spawns pieces along the keel (amount/s), each drifts back, stretches, flickers and fades; ~60% behind the hull (drawn before the back part), the rest in front of it; half normal / half "lighter" for glow. Conquest ("cq") and both Arena sides (flipped with the bot's ship).
+- Dev Tools (Speed & Testing): On, Amount, Size, Speed, Length, Brightness, Glow, Height + Default (this device; Harley reports numbers to make default). Slider setup runs after load (the settings are defined later in the file).
+- Test g295 now also checks flames exist (some in front). Not checked on a phone.
