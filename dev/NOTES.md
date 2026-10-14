@@ -1863,3 +1863,8 @@
 
 ## v1154 — Dev Tools "Map speed test" switches (TEST, diagnostic)
 - Harley's v1153 readout on PC: L1 (zoom 0.52) 60 FPS, JS 49 ms/s; L0 (zoom 0.61) 25 FPS with JS only 12 ms/s -> the time is the browser DRAWING the full-detail map, not our code. Headless (incl. 6x CPU throttle) can't reproduce his GPU, so: 11 live checkboxes under the map timing switch, each hides/stops one thing - no Shadows (filter/box-shadow), Animations (paused), Painted sprites (.map-decor), Forests, Base water, Base fires, Sea foam, Resource art, Bases, Painted land (terrain canvas), Layers (will-change). One <style> tag, this device, resets on reload. Harley ticks them one at a time at the slow zoom and reports which brings FPS back.
+
+## v1155 — Painted land drawn in chunks (PC map slowdown fix) (TEST)
+- Harley's Dev Tools test on PC: only "no Painted land" brought the FPS back (others did nothing). Cause: at full detail (tile >= 16 px, LOD 0) every corner cell of painted land was its own small rotated canvas on the page - reproduced in a test world with a painted island: 972 canvases (v908 had already fixed the zoomed-out case with one overview canvas). PC browsers composite each one separately.
+- Now cell canvases are drawn off-page and copied (pixel-exact, no smoothing, keeping their 2-texel borders) into one canvas per 8x8-cell chunk with half a tile of margin, placed and rotated like the cells: 27 canvases for the same view, same picture (side-by-side identical, no seams). Painting, redraws, zoom changes and the overview mode unchanged.
+- Test dev/simfork/g289_terrainchunks.js (GAMEFILE2=old build compares). g281, g286 ok. g164 stale (missing files). Not checked on Harley's PC/phone.
