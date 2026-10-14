@@ -1911,3 +1911,9 @@
 - With the GPU land on, trees go into one canvas a bit bigger than the screen (`treeSheet`): same pieces, sizes, ragged edges and spills, drawn back to front; redrawn only when the view leaves it, zoom/land/bases change or a piece finishes loading. During a pinch the last sheet is stretched. Trees just in front of a base or painted sprite stay separate pictures (depth order kept).
 - Look change: resource nodes now always show on top of trees (100+ nodes on a stress screen would have kept most trees as separate pictures). Tree picture otherwise the same (headless screenshot), and the thin seam lines between tree pieces are gone.
 - Headless phone: 2,864 tree pictures -> 0, sheet of ~3,000 pieces drawn in ~17 ms; scroll over forest 5 -> 10 FPS (headless is slow overall). g289, g290, g291 ok. Not checked on a phone.
+
+## v1164 — Arena: the bot's beams and shields are drawn (TEST)
+- Harley: fix the 2 Arena graphics bugs. (1) The bot's Laser / Pulse Beam was drawn as a short missile volley. (2) The bot's Orbit Shield and Hex Shield were never drawn (both checked only the player's own equipped weapons).
+- Sim: a bot beam now goes into `aiBeamFires` (with its length) instead of `aiWeaponFires`; damage unchanged. Arena draws it like the player's beam, from the bot's weapon slot sweeping a solid spot on the player's hull (`arenaLaserZonePoint(..., onPlayer)`).
+- Bot shields: Orbit Shield fireballs (set "arenaAI") and the Hex Shield dome (set "arenaAI", from the sim's aiShield pool: hits ripple, pops when empty) on the bot's fortress. Its hull isn't lit by the fireballs (the player's is).
+- Test g292: bot with Laser + Hex + Orbit, player with none - beam drawn, no missiles, both shields drawn, screenshot out_g292_arena.png. g201, g203, g207, g208 ok. Not checked on a phone.
