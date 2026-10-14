@@ -1850,3 +1850,8 @@
 ## v1152 — Hero list: a frame of each card video (TEST)
 - Harley: the small cards in the hero list should show one frame of each hero's video; Kessa still showed old uploaded art (the giant eye). HERO_STILL_BUILTIN = Gareth, Kessa, Iron Lily (frame 60 of each clip, 3:4 crop, 360x480 webp, 56 KB total). The hero list uses these first, over uploaded art. Elsewhere (skill buttons, profile) getHeroArt is unchanged.
 - g285, g286, g287 ok. Not checked on a phone.
+
+## (no version) — PC map slowdown investigation
+- Harley: on PC, moving the mouse over a big landmass (top-left of his view, near X:58 Y:26) is very slow; same spot on the phone is fine; started some time in the last ~2 weeks.
+- dev/simfork/g288_maphover.js sweeps a mouse over the world map on a 1366x860 desktop page and measures frame times (arg hoverOff neutralises the old .tile:hover rule). Result: 60 FPS both ways - not reproduced. No JS reacts to plain mouse movement on the map, and iso tiles have pointer-events none.
+- Clue: in the test world 58,26 is open sea - Harley's server has hand-painted terrain/decor (terrain tools) that the test world lacks, so the slowdown is probably that painted land being heavy to draw on PC, not hover itself. Asked Harley: still slow with the mouse off the map? with the mouse still? with the land half off screen?
