@@ -1,4 +1,4 @@
-/* v1168: Bonewake test fortress skin (Harley's ChatGPT ghost ship, smooth shrink, 145 pt tall). Conquest + Arena screenshots. Run: node dev/simfork/g295_bonewake.js */
+/* v1168/v1170: Bonewake fortress skin - layered (sails/flags/chain animated behind the heroes, hull in front), 130 pt, hovering 20 pt. Conquest + Arena screenshots. Run: node dev/simfork/g295_bonewake.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -19,9 +19,9 @@ async function run() {
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
   await P.fill("#ksE", "g295@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Bone"); await P.click("#ksGo"); await P.waitForTimeout(5000);
-  await P.evaluate(() => { game.state.fortressSkin = "serpent"; setScreen("conquest"); }); await P.waitForTimeout(7000);
+  await P.evaluate(() => { game.state.fortressSkin = "serpent"; ["kessa", "roran"].forEach((k) => { if (game.state.heroes[k]) game.state.heroes[k].owned = true; }); game.state.conquestRoster = ["gareth", "kessa", "roran"].filter((k) => HERO_DEFS[k]); setScreen("conquest"); }); await P.waitForTimeout(7000);
   const box = async (id) => P.evaluate((id) => { const r = document.getElementById(id).getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; }, id);
-  const info = await P.evaluate(() => { const sk = fortressSkin(), im = sk.cq; return { id: sk.id, loaded: im.complete && im.naturalWidth, hPt: Math.round(im.naturalHeight * fortressCqScale()), wPt: Math.round(im.naturalWidth * fortressCqScale()) }; });
+  const info = await P.evaluate(async () => { const sk = fortressSkin(), im = sk.cq; const t0 = Math.floor(performance.now() / 1000 * sk.anim.fps) % sk.anim.n; await new Promise((r) => setTimeout(r, 400)); const t1 = Math.floor(performance.now() / 1000 * sk.anim.fps) % sk.anim.n; return { id: sk.id, loaded: im.complete && im.naturalWidth, layered: skinAnimReady(sk), sheet: sk.anim.sheet.naturalWidth, frameMoves: t0 !== t1, hPt: Math.round(im.naturalHeight * fortressCqScale()), wPt: Math.round(im.naturalWidth * fortressCqScale()), lift: fortLift(sk), roster: game.state.conquestRoster }; });
   await P.screenshot({ path: path.join(__dirname, "out_g295_cq.png"), clip: await box("idleCanvas") });
   await P.evaluate(() => setScreen("more", "arena")); await P.waitForTimeout(1500);
   await P.evaluate(() => { document.getElementById("arenaQuickMatchBtn").click(); }); await P.waitForTimeout(800);
@@ -31,5 +31,5 @@ async function run() {
   await b.close(); return { info, errs };
 }
 (async () => { const r = await run(); console.log(JSON.stringify(r));
-  if (!process.env.NOASSERT) { assert.deepStrictEqual(r.errs, []); assert(r.info.id === "serpent" && r.info.loaded && Math.abs(r.info.hPt - 145) <= 2, "Bonewake skin, 145 pt tall"); console.log("g295 ok"); }
+  if (!process.env.NOASSERT) { assert.deepStrictEqual(r.errs, []); assert(r.info.id === "serpent" && r.info.loaded && Math.abs(r.info.hPt - 130) <= 2 && r.info.layered && r.info.sheet > 0 && r.info.frameMoves && r.info.lift === 20, "Bonewake: layered, animated, 130 pt, hovering"); console.log("g295 ok"); }
 })().catch((e) => { console.error(e); process.exit(1); });

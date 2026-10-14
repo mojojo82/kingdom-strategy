@@ -1948,3 +1948,11 @@
 
 ## v1169 — Barrel size default 0.26 (TEST)
 - Harley: barrel size 0.26 (was 0.33), from the Dev Tools slider. Devices that moved the slider keep their own value until "Default" is pressed. g293 ok (its Arena step now sets the bot's slot order after changing the bot's weapons, since v1167 fills the order at match start).
+
+## v1170 — Bonewake: layered, animated, hovering (TEST)
+- Harley: "this is a go" - the layered ghost ship from the mockups, 10% smaller (130 pt), softened to match the tank boss's detail, floating above the ground.
+- Source: MiniMax H3 2K clip (art/originals/ghost_ship4_sails_hailuo_2k.mp4) - the hull held still (texture shimmer only). Loop = frames 10-98 (3.7 s, best match). Moving pixels found by their change over the loop (sails, flags, chain); everything else comes from one still frame.
+- Assets (stored at ~2.2x phone pixels = 73% of the 3x size, measured to match the tank's sharpness; 400x285): `serpentCqImg` whole still (sizes, hit masks, Governor); `serpentAnim.back` still parts minus the moving ones; `serpentAnim.front` hull below the deck rail minus moving parts; `serpentAnim.sheet` 45 frames at 12 fps of the moving parts (~1 MB).
+- Conquest: back part drawn before the riding heroes, hull (front) after them, so they stand on deck behind the rail. Arena: both parts at the fortress (heroes fight on the ground there). Orbit Shield lights the hull part.
+- `lift` (skin, pt): Bonewake hovers 20 pt higher - used everywhere the fortress's height is worked out (Conquest box, getFortressTopY, Arena boxes, laser zone, pixel hit, shields). `defLayout` (skin): built-in spots - heroes on deck, barrels on the hull side, cannon at the serpent's mouth, KO on the stern; the layout editor's saved layout wins.
+- Test g295 (layered, animated, 130 pt, lift 20, Conquest + Arena screenshots); g293 (wobble limit 1.0 - headless timing noise), g294, g292, g204 ok. Not checked on a phone.
