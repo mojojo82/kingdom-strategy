@@ -29,10 +29,10 @@ async function run(gameHtml, shotName) {
   const scroll = await P.evaluate(async () => { let draws = 0; const ctxp = CanvasRenderingContext2D.prototype, od = ctxp.drawImage; ctxp.drawImage = function (img) { if (this.canvas.classList && this.canvas.classList.contains("terr-ch")) draws++; return od.apply(this, arguments); };
     const vp = document.getElementById("mapviewport"), x0 = vp.scrollLeft; for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + k * 6; await new Promise((r) => requestAnimationFrame(r)); } for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + (59 - k) * 6; await new Promise((r) => requestAnimationFrame(r)); }
     ctxp.drawImage = od; return draws; });
-  const zoomMs = await P.evaluate(async () => { const out = []; const vp = document.getElementById("mapviewport");
-    for (const z of [0.45, 0.7, 0.45, 0.7, 0.9, 0.45, 0.7]) { let worst = 0, last = performance.now(), go = true; const f = (t) => { worst = Math.max(worst, t - last); last = t; if (go) requestAnimationFrame(f); }; requestAnimationFrame(f);
+  const zoomMs = await P.evaluate(async (zseq) => { const out = []; const vp = document.getElementById("mapviewport");
+    for (const z of (zseq ? zseq.split(",").map(Number) : [0.45, 0.7, 0.45, 0.7, 0.9, 0.45, 0.7])) { let worst = 0, last = performance.now(), go = true; const f = (t) => { worst = Math.max(worst, t - last); last = t; if (go) requestAnimationFrame(f); }; requestAnimationFrame(f);
       await new Promise((r) => requestAnimationFrame(r)); last = performance.now(); setMapZoom(z, vp.clientWidth / 2, vp.clientHeight / 2); renderVisibleTiles(); await new Promise((r) => setTimeout(r, 900)); go = false; out.push(z + ":" + Math.round(worst)); }
-    return out.join(" ") + " | cache " + (typeof terrainCellCache !== "undefined" ? terrainCellCache.size : "-"); });
+    return out.join(" ") + " | cache " + (typeof terrainCellCache !== "undefined" ? terrainCellCache.size : "-"); }, process.env.ZSEQ || "");
   const info = await P.evaluate((sc) => ({ chunked: typeof TERR_USE_CHUNKS !== "undefined" && TERR_USE_CHUNKS, canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom, cellDrawsWhileScrolling: sc }), scroll); info.zoomWorstFrameMs = zoomMs;
   await P.evaluate(() => { document.querySelectorAll("#mapworld .tile, .map-decor, .map-forest, #mapSeaFoam, #fpsCounter, #mapCoords").forEach((e) => e.style.visibility = "hidden"); });
   await P.waitForTimeout(300);
