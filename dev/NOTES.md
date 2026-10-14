@@ -1968,3 +1968,6 @@
 
 ## v1173 — Ghost flames removed (TEST)
 - Harley: "we won't use that, delete the flames". v1172's flame code, sliders and pieces are gone (game file = v1171 + version). The flame sheet stays in art/originals. g295 ok.
+
+### Docs — Kessa's Storm Mark marked WIP (no game change)
+- Harley: "mark that skill as a wip. either it gets completely changed or heavily modified". Logged in HANDOVER (rules): Conquest-only today (the Arena never had it), so it didn't affect the Hanzo vs Kessa Arena sims; don't port or balance around it until he decides.
