@@ -1917,3 +1917,12 @@
 - Sim: a bot beam now goes into `aiBeamFires` (with its length) instead of `aiWeaponFires`; damage unchanged. Arena draws it like the player's beam, from the bot's weapon slot sweeping a solid spot on the player's hull (`arenaLaserZonePoint(..., onPlayer)`).
 - Bot shields: Orbit Shield fireballs (set "arenaAI") and the Hex Shield dome (set "arenaAI", from the sim's aiShield pool: hits ripple, pops when empty) on the bot's fortress. Its hull isn't lit by the fireballs (the player's is).
 - Test g292: bot with Laser + Hex + Orbit, player with none - beam drawn, no missiles, both shields drawn, screenshot out_g292_arena.png. g201, g203, g207, g208 ok. Not checked on a phone.
+
+## v1165 — Weapon barrels on the fortress sides (TEST)
+- Harley: put the weapons on the SIDES of the fortress (the deck is crowded with heroes), barrel only - no base - pivoting where it's bolted on; size = the "15% bigger" mockup. Layout is set with the Dev Tools grid (weapon slots w0-w2).
+- Art: Harley's turret sheet saved (art/originals/weapon_turrets_sheet.png - the old Laser turret came from it); all 18 barrels cut out full size (sprites_hires/weapon_barrels); 200px webp copies in WEAPON_BARREL with pivot (joint above the bracket) and muzzle tip.
+- Barrels: Missile Barrage r1_4, Laser r2_6 (same art as the old turret's barrel), Pulse Beam r2_4, Railgun r3_4, Scatter Rounds r1_3, Flak Burst r2_2, EMP Gun r3_1. Weapons without a barrel (shields, drones, clone, dome, repair, salvo, duplicate, wave, wall) unchanged.
+- drawWeaponBarrels: on the weapon's grid slot (skins with no grid point: two at the front high/low, one at the back), aims at the target (Conquest: beam's hit point / nearest enemy; Arena: the other hull), kicks back when it fires; shots and beams leave the muzzle (weaponSlotPoint returns the tip). Arena: both sides, the bot's mirrored. Size = 0.33 x hull width for a 240px cut (barrels keep their relative sizes).
+- The old Laser base+barrel turret is off while barrels are on. Conquest Flak / Scatter missiles now leave their own slot (were using the Missile Barrage's).
+- Dev Tools: barrels on/off + barrel size slider (this device; Harley to report the number he likes).
+- Test g293 (Conquest 3 barrels + Arena both sides, screenshots); g292, g207, g201 ok. Not checked on a phone.
