@@ -721,6 +721,7 @@
   #mapworld.iso #mapMarchLayer { z-index:100000; }
   #mapTerrainLayer { position:absolute; top:0; left:0; width:0; height:0; pointer-events:none; z-index:0; }
   .terr { position:absolute; image-rendering:pixelated; pointer-events:none; }
+  #mapTerrainLayer.ov-mode .terr-ch { display:none; } /* v1157: zoomed out - kept for zooming back in */
   #mapworld.iso .terr { transform:scaleY(0.5736) rotate(45deg); }
   #terrainPainter { display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:70px; z-index:100001; width:min(400px, calc(100vw - 16px)); background:linear-gradient(180deg,#3a3126,#231c14); border:2px solid #8a7548; border-radius:12px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.55); color:#f3e9d2; font-size:12px; }
   /* v873: sprite palette on the left while painting (dev) */
@@ -11675,7 +11676,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1156"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1157"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16099,8 +16100,9 @@ function terrainOverviewRender() {
 function terrainReposition() { terrainOverviewPlace(); Object.keys(terrainChunks).forEach(function (q) { terrainChunkPlace(terrainChunks[q]); }); } /* v1155: chunks, not cells */
 function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) {
   if (!terrainEnsure()) return;
-  if (terrainOverviewWanted()) { terrainEls = {}; terrainChunksClear(); terrainOverviewRender(); return; } /* v908 */
-  terrainOverviewRemove();
+  var TL = terrainLayer();
+  if (terrainOverviewWanted()) { if (TL && !TL.classList.contains("ov-mode")) { TL.classList.add("ov-mode"); terrainCacheRev = terrainRev; } terrainBuildQ = []; terrainOverviewRender(); return; } /* v908. v1157: full-detail chunks are kept (hidden) for when you zoom back in */
+  if (TL && TL.classList.contains("ov-mode")) { TL.classList.remove("ov-mode"); if (terrainRev !== terrainCacheRev) { terrainEls = {}; terrainChunksClear(); } } /* land edited while zoomed out - rebuild */
   var wanted = {}, i, j;
   if ((maxX - minX + 2) * (maxY - minY + 2) > 6000) { /* v862: a huge window (zoomed far out) - walk painted land only, not every cell */
     var n = terrainN, cand = {};
@@ -16117,17 +16119,33 @@ function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) {
   if (noLand) { terrainEls = {}; terrainChunksClear(); return; } /* v866: nothing painted anywhere */
   /* v1156 (Harley: v1155 made his phone lag there): the chunk is the unit now. A chunk is built ONCE (all its land cells) when it comes into view and
      dropped whole when it is well out of view - before, cells joined/left at the screen edge every scroll frame, so edge chunks were redrawn non-stop. */
-  var CH = TERR_CH, q0 = Math.floor((minX - 1) / CH), q1 = Math.floor((maxX + 2) / CH), r0 = Math.floor((minY - 1) / CH), r1 = Math.floor((maxY + 2) / CH), vis = {};
+  var toBuild = [], CH = TERR_CH, q0 = Math.floor((minX - 1) / CH), q1 = Math.floor((maxX + 2) / CH), r0 = Math.floor((minY - 1) / CH), r1 = Math.floor((maxY + 2) / CH), vis = {};
   for (var qx = q0; qx <= q1; qx++) for (var qy = r0; qy <= r1; qy++) {
     var a = qx * CH, b = qy * CH; if (!hasLand(Math.floor(a / TC), Math.floor(b / TC)) && !hasLand(Math.floor((a + CH) / TC), Math.floor((b + CH) / TC)) && !hasLand(Math.floor((a + CH) / TC), Math.floor(b / TC)) && !hasLand(Math.floor(a / TC), Math.floor((b + CH) / TC))) continue;
-    var q = qx + "_" + qy; vis[q] = 1; if (terrainChunkBuilt[q]) continue; terrainChunkBuilt[q] = 1;
-    for (i = a; i < a + CH; i++) for (j = b; j < b + CH; j++) terrainSyncCell(i, j, false);
+    var q = qx + "_" + qy; vis[q] = 1; if (terrainChunkBuilt[q]) continue;
+    if (terrainOv.el) toBuild.push(q); else terrainBuildChunk(q); /* v1157: the zoomed-out picture is still up - build behind it a few at a time */
   }
   Object.keys(terrainChunkBuilt).forEach(function (q) { if (vis[q]) return; var pr = q.split("_"), qx2 = +pr[0], qy2 = +pr[1];
     if (qx2 >= q0 - 1 && qx2 <= q1 + 1 && qy2 >= r0 - 1 && qy2 <= r1 + 1) return; /* one chunk of slack so a small scroll back doesn't rebuild it */
     delete terrainChunkBuilt[q]; for (var ii = qx2 * CH; ii < qx2 * CH + CH; ii++) for (var jj = qy2 * CH; jj < qy2 * CH + CH; jj++) delete terrainEls[ii + "," + jj];
     if (terrainChunks[q]) { terrainChunks[q].el.remove(); delete terrainChunks[q]; } delete terrainChunkQ[q]; });
   terrainChunksFlush();
+  var mx = (q0 + q1) / 2, my = (r0 + r1) / 2; toBuild.sort(function (u, w) { var a1 = u.split("_"), b1 = w.split("_"); return Math.hypot(a1[0] - mx, a1[1] - my) - Math.hypot(b1[0] - mx, b1[1] - my); });
+  terrainBuildQ = toBuild; if (toBuild.length) terrainBuildPump(); else terrainOverviewRemove();
+}
+/* v1157 (Harley: zooming in over his land hitched): crossing into full detail used to draw every land cell in one go (~0.5 s in a test). Now the
+   zoomed-out overview picture stays on screen underneath while the chunks are built nearest-first, ~6 ms per frame, then it is removed.
+   Zooming back out keeps the built chunks (hidden), so zooming in again is instant. */
+var terrainBuildQ = [], terrainBuildRaf = 0, terrainCacheRev = -1;
+function terrainBuildChunk(q) { if (terrainChunkBuilt[q]) return; terrainChunkBuilt[q] = 1; var pr = q.split("_"), a = +pr[0] * TERR_CH, b = +pr[1] * TERR_CH; for (var i = a; i < a + TERR_CH; i++) for (var j = b; j < b + TERR_CH; j++) terrainSyncCell(i, j, false); }
+function terrainBuildPump() {
+  if (terrainBuildRaf) return;
+  terrainBuildRaf = requestAnimationFrame(function () {
+    terrainBuildRaf = 0; if (terrainOverviewWanted()) return;
+    var t0 = performance.now(); while (terrainBuildQ.length && performance.now() - t0 < 6) terrainBuildChunk(terrainBuildQ.shift());
+    terrainChunksFlush();
+    if (terrainBuildQ.length) terrainBuildPump(); else terrainOverviewRemove();
+  });
 }
 // ---- the painter ----
 var terrainPaint = { active: false, code: 1, brush: 0, pan: false, undo: [], stroke: null, last: null };

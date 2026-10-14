@@ -29,7 +29,9 @@ async function run(gameHtml, shotName) {
   const scroll = await P.evaluate(async () => { let draws = 0; const ctxp = CanvasRenderingContext2D.prototype, od = ctxp.drawImage; ctxp.drawImage = function (img) { if (this.canvas.classList && this.canvas.classList.contains("terr-ch")) draws++; return od.apply(this, arguments); };
     const vp = document.getElementById("mapviewport"), x0 = vp.scrollLeft; for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + k * 6; await new Promise((r) => requestAnimationFrame(r)); } for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + (59 - k) * 6; await new Promise((r) => requestAnimationFrame(r)); }
     ctxp.drawImage = od; return draws; });
-  const info = await P.evaluate((sc) => ({ canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom, cellDrawsWhileScrolling: sc }), scroll);
+  const zoomMs = await P.evaluate(async () => { const out = []; const vp = document.getElementById("mapviewport");
+    for (const z of [0.45, 0.7, 0.45, 0.7, 0.9, 0.7, 1.1, 0.45, 0.7]) { const a = performance.now(); setMapZoom(z, vp.clientWidth / 2, vp.clientHeight / 2); renderVisibleTiles(); out.push(z + ":" + Math.round(performance.now() - a)); await new Promise((r) => setTimeout(r, 300)); } return out.join(" "); });
+  const info = await P.evaluate((sc) => ({ canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom, cellDrawsWhileScrolling: sc }), scroll); info.zoomMs = zoomMs;
   await P.evaluate(() => { document.querySelectorAll("#mapworld .tile, .map-decor, .map-forest, #mapSeaFoam, #fpsCounter, #mapCoords").forEach((e) => e.style.visibility = "hidden"); });
   await P.waitForTimeout(300);
   const vpBox = await P.evaluate(() => { const r = document.getElementById("mapviewport").getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
