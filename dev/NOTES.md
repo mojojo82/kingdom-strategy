@@ -1937,3 +1937,8 @@
 - Barrel: its 3 yellow lights start dark and light one by one, pulsing in the last 15%; sparks appear around the muzzle and get pulled in (from 20% charged, more and faster towards the end), a glow builds at the muzzle from 60%, white flash when it fires.
 - Arena: the bot's weapon slots are known from the start of the match (arenaAiWeaponOrder prefilled), so its barrels show before its first shot.
 - Test g294 (Conquest at 8/4/1.6/0.9 s left, Arena both sides counting down, screenshots); g293, g292, g201 ok. Not checked on a phone.
+
+## v1168 — Test fortress skin "Bonewake" (TEST)
+- Harley: try his new ChatGPT ghost ship in game before animating it in Leonardo - a new fortress skin, plain smooth shrink, 145 pt tall (his Pixel Lab setting "smooth h=145 bg=none").
+- Cut from art/originals/ghost_ship4_magenta.psd (magenta key + pink despill), 617x435 webp (3x phone pixels), FORTRESS_SKINS id "serpent", cqScale 0.3922 -> 145 x 206 pt in Conquest; centred where every fortress sits, so the stern runs ~34 pt off the left edge. Same picture for the Governor screen (govWidth 0.9). No weapon-grid layout yet (barrels use the default spots); bots can roll it too.
+- Test g295 (Conquest + Arena screenshots, 145 pt check). Not checked on a phone.
