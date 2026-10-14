@@ -721,6 +721,7 @@
   #mapworld.iso #mapMarchLayer { z-index:100000; }
   #mapTerrainLayer { position:absolute; top:0; left:0; width:0; height:0; pointer-events:none; z-index:0; }
   .terr { position:absolute; image-rendering:pixelated; pointer-events:none; }
+  .terr-gl { position:absolute; pointer-events:none; } /* v1162: GPU land - one canvas, already in screen orientation */
   #mapworld.iso .terr { transform:scaleY(0.5736) rotate(45deg); }
   #terrainPainter { display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:70px; z-index:100001; width:min(400px, calc(100vw - 16px)); background:linear-gradient(180deg,#3a3126,#231c14); border:2px solid #8a7548; border-radius:12px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.55); color:#f3e9d2; font-size:12px; }
   /* v873: sprite palette on the left while painting (dev) */
@@ -3064,6 +3065,12 @@
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
                   <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button>
                   <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
+                </div>
+                <div class="dev-tools-row" style="flex-wrap:wrap;gap:4px 8px;">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
+                    <input type="checkbox" id="devTerrGLToggle"> ⚡ GPU land drawing (WebGL test) - live, this device, off again on reload. Turns on with the stress-test land
+                  </label>
+                  <span id="devTerrGLNote" style="font-size:11px;color:var(--muted);"></span>
                 </div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
@@ -11684,7 +11691,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1161"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1162"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15767,9 +15774,9 @@ function terrainStressGenerate(landFrac) {
     else if (tnoise(x2 / 12, y2 / 12, 401) > 0.78) code = 2; /* inland dirt */
     terrainArr[i] = code; land++;
   }
-  terrainStress = true; terrainDirty = {}; if (terrainFlushTimer) { clearTimeout(terrainFlushTimer); terrainFlushTimer = null; }
+  terrainStress = true; terrGL.on = true; terrainDirty = {}; /* v1162: stress land uses the GPU land drawing (Dev Tools can switch it off to compare) */ if (terrainFlushTimer) { clearTimeout(terrainFlushTimer); terrainFlushTimer = null; }
   terrainReindexAll(); terrainRev++; terrainClearAll();
-  try { renderVisibleTiles(); } catch (e) {} try { forestRefreshSoon(); } catch (e) {}
+  try { renderVisibleTiles(); } catch (e) {} try { forestRefreshSoon(); } catch (e) {} try { var t = document.getElementById("devTerrGLToggle"); if (t) t.checked = terrGLWanted(); } catch (e) {}
   return land / N;
 }
 function startTerrainSync() {
@@ -16052,6 +16059,7 @@ function terrainCellPlace(el, i, j) {
 }
 // Make cell (i,j) exist (and be up to date) if it has any land in it, or disappear if not.
 function terrainSyncCell(i, j, redraw) {
+  if (terrGLWanted()) { terrainOverviewSoon(); return false; } /* v1162: GPU land draws everything (the overview call below redraws it) */
   if (terrainOverviewWanted()) { terrainOverviewSoon(); return false; } /* v908: zoomed out - the overview canvas shows it */
   var k = i + "," + j, el = terrainEls[k];
   if (el && !redraw) return true;
@@ -16110,6 +16118,7 @@ function terrainOverviewPlace() {
 }
 function terrainOverviewRender() {
   if (!terrainEnsure()) return;
+  if (terrGLWanted() && terrGLRender(false)) { terrainOverviewRemove(); return; } /* v1162 */
   var ks = Object.keys(terrainLandChunks), n = terrainN, TC = TERRAIN_CHUNK;
   if (!ks.length) { terrainOverviewRemove(); return; }
   var c0 = 1e9, c1 = -1e9, r0 = 1e9, r1 = -1e9; ks.forEach(function (k) { var q = k.split("_"), a = +q[0], b = +q[1]; c0 = Math.min(c0, a); c1 = Math.max(c1, a); r0 = Math.min(r0, b); r1 = Math.max(r1, b); });
@@ -16222,8 +16231,106 @@ function terrainRepositionCells() { terrainOverviewPlace(); Object.keys(terrainE
 /* v1157 (Harley: phone first - "it was pretty good on phone before"): PCs (mouse) use the v1155/v1156 chunk canvases, which fixed the PC slowdown;
    phones/tablets (touch) go back to exactly the pre-v1155 drawing (one small canvas per cell), which phones handle well. */
 var TERR_USE_CHUNKS = (function () { try { return localStorage.getItem("ks_terrCells") !== "1"; } catch (e) { return true; } })(); /* v1160: phones too; Dev Tools can switch this device back to the v1157 per-cell drawing */
-function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) { return TERR_USE_CHUNKS ? terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) : terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG); }
-function terrainReposition() { return TERR_USE_CHUNKS ? terrainRepositionChunks() : terrainRepositionCells(); }
+/* v1162 (Harley: 4 continents of stress-test land still lag on his phone while scrolling - every land texel was worked out one by one on the
+   CPU). GPU land: ONE canvas a bit bigger than the screen, drawn by the graphics chip with the same formula as terrainTexel (same noise, hash,
+   colours, Grass 2 texture), so the picture matches. Redrawn only when the view leaves the canvas, the zoom changes or the land changes - a few
+   ms on the GPU. Needs WebGL2 (integer maths for the hash); if it's missing or fails, the normal drawing is used. Test: on with the stress land,
+   Dev Tools switch to compare. */
+var terrGL = { on: false, failed: "", cv: null, gl: null, prog: null, tex: null, g2: null, g2ok: false, L: {}, rev: -1, key: "", box: null };
+function terrGLWanted() { return terrGL.on && !terrGL.failed; }
+var TERR_GL_FS = "#version 300 es\nprecision highp float; precision highp int; precision highp usampler2D;\n" +
+  "uniform usampler2D uT; uniform sampler2D uG2; uniform int uN, uIso, uHd; uniform float uScale, uH, uTexN, uG2W, uG2Per; uniform vec2 uOrig; uniform vec4 uGeo;\n" +
+  "uniform vec3 uGrass[5]; uniform vec3 uDirt[5]; uniform vec3 uSand[3]; uniform vec3 uForest[5]; out vec4 o;\n" +
+  "float th(int x, int y, int s) { uint h = uint(x) * 374761393u + uint(y) * 668265263u + uint(s) * 1442695041u; h = (h ^ (h >> 13u)) * 1274126177u; h = h ^ (h >> 16u); return float(h >> 8u) / 16777216.0; }\n" +
+  "float tn(float x, float y, int s) { float xi = floor(x), yi = floor(y), xf = x - xi, yf = y - yi; xf = xf * xf * (3.0 - 2.0 * xf); yf = yf * yf * (3.0 - 2.0 * yf); int X = int(xi), Y = int(yi);" +
+  " float a = th(X, Y, s), b = th(X + 1, Y, s), c = th(X, Y + 1, s), d = th(X + 1, Y + 1, s); return a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf; }\n" +
+  "int at(int x, int y) { return int(texelFetch(uT, ivec2(clamp(x, 0, uN - 1), clamp(y, 0, uN - 1)), 0).r); }\n" +
+  "vec3 g2(float wx, float wy) { float m = clamp((tn(wx * 0.45, wy * 0.45, 9) - 0.5) * 3.0 + 0.5, 0.0, 1.0); float W = uG2W;" +
+  " float u = fract(wx / uG2Per), v = fract(wy / uG2Per), u2 = 1.0 - fract((wx + 1.7) / uG2Per), v2 = fract((wy + 0.9) / uG2Per);" +
+  " vec3 c1 = texelFetch(uG2, ivec2(min(W - 1.0, floor(u * W)), min(W - 1.0, floor(v * W))), 0).rgb, c2 = texelFetch(uG2, ivec2(min(W - 1.0, floor(u2 * W)), min(W - 1.0, floor(v2 * W))), 0).rgb;" +
+  " return (c1 * m + c2 * (1.0 - m)) * 255.0; }\n" +
+  "void main() {\n" +
+  " vec2 mp = vec2(uOrig.x + gl_FragCoord.x * uScale, uOrig.y + (uH - gl_FragCoord.y) * uScale); float rx, ry;\n" +
+  " if (uIso == 1) { float A = (mp.x - uGeo.x) / uGeo.z, B = (mp.y - uGeo.y) / (uGeo.z * uGeo.w); rx = (A + B) * 0.5; ry = (B - A) * 0.5; } else { rx = (mp.x - uGeo.x) / uGeo.z; ry = (mp.y - uGeo.y) / uGeo.z; }\n" +
+  " int fx = int(floor(rx)), fy = int(floor(ry)); int t00 = at(fx, fy), t10 = at(fx + 1, fy), t01 = at(fx, fy + 1), t11 = at(fx + 1, fy + 1);\n" +
+  " if (t00 + t10 + t01 + t11 == 0) { o = vec4(0.0); return; }\n" +
+  " bool hd = uHd == 1 && (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4); float N = uTexN > 0.0 ? uTexN : (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4 ? 64.0 : 20.0);\n" +
+  " float gxf = floor(rx * N), gyf = floor(ry * N); int gx = int(gxf), gy = int(gyf); float wx = (gxf + 0.5) / N, wy = (gyf + 0.5) / N, u = wx - float(fx), v = wy - float(fy);\n" +
+  " float w00 = (1.0 - u) * (1.0 - v), w10 = u * (1.0 - v), w01 = (1.0 - u) * v, w11 = u * v;\n" +
+  " float f = w00 * float(t00 > 0) + w10 * float(t10 > 0) + w01 * float(t01 > 0) + w11 * float(t11 > 0);\n" +
+  " float nz = (tn(wx * 4.0, wy * 4.0, 1) - 0.5) * 0.26 + (tn(wx * 9.0, wy * 9.0, 2) - 0.5) * 0.1; float dd = f + nz - 0.5, hh = th(gx, gy, 7); vec3 col;\n" +
+  " if (dd >= 0.0) {\n" +
+  "  if (dd < 0.075) col = uSand[min(2, int(floor(hh * 3.0)))];\n" +
+  "  else if (w00 * float(t00 == 2) + w10 * float(t10 == 2) + w01 * float(t01 == 2) + w11 * float(t11 == 2) + (tn(wx * 3.0, wy * 3.0, 3) - 0.5) * 0.5 > 0.5) col = uDirt[min(4, int(floor((0.5 * tn(wx * 5.0, wy * 5.0, 4) + 0.5 * hh) * 5.0)))];\n" +
+  "  else if (w00 * float(t00 == 3) + w10 * float(t10 == 3) + w01 * float(t01 == 3) + w11 * float(t11 == 3) + (tn(wx * 3.0, wy * 3.0, 6) - 0.5) * 0.4 > 0.5) col = uForest[min(4, int(floor((0.55 * tn(wx * 2.2, wy * 2.2, 5) + 0.45 * hh) * 5.0)))];\n" +
+  "  else if (hd && w00 * float(t00 == 4) + w10 * float(t10 == 4) + w01 * float(t01 == 4) + w11 * float(t11 == 4) + (tn(wx * 3.0, wy * 3.0, 8) - 0.5) * 0.4 > 0.5) col = g2(wx, wy);\n" +
+  "  else col = uGrass[min(4, int(floor((0.55 * tn(wx * 2.2, wy * 2.2, 5) + 0.45 * hh) * 5.0)))];\n" +
+  " } else if (dd > -0.045) col = vec3(86.0, 146.0, 186.0); else { o = vec4(0.0); return; }\n" +
+  " o = vec4(floor(col + 0.5) / 255.0, 1.0);\n}\n";
+function terrGLFail(why) {
+  terrGL.failed = why || "failed"; console.warn("GPU land off:", terrGL.failed);
+  if (terrGL.cv) { terrGL.cv.remove(); terrGL.cv = null; } terrGL.gl = null;
+  try { terrainClearAll(); renderVisibleTiles(); } catch (e) {}
+  try { var n = document.getElementById("devTerrGLNote"); if (n) n.textContent = "GPU land not available here: " + terrGL.failed; } catch (e) {}
+}
+function terrGLInit() {
+  if (terrGL.gl) return true; if (terrGL.failed) return false;
+  var cv = document.createElement("canvas"), gl = null; cv.className = "terr-gl";
+  try { gl = cv.getContext("webgl2", { premultipliedAlpha: true, antialias: false, alpha: true, preserveDrawingBuffer: false }); } catch (e) {}
+  if (!gl) { terrGLFail("no WebGL2"); return false; }
+  var sh = function (type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  try {
+    var p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, "#version 300 es\nin vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }\n")); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, TERR_GL_FS));
+    gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    gl.useProgram(p); terrGL.prog = p;
+    var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    var al = gl.getAttribLocation(p, "a"); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+    ["uT", "uG2", "uN", "uIso", "uHd", "uScale", "uH", "uTexN", "uG2W", "uG2Per", "uOrig", "uGeo", "uGrass", "uDirt", "uSand", "uForest"].forEach(function (k) { terrGL.L[k] = gl.getUniformLocation(p, k); });
+    var flat = function (a) { var o = []; a.forEach(function (c) { o.push(c[0], c[1], c[2]); }); return new Float32Array(o); };
+    gl.uniform3fv(terrGL.L.uGrass, flat(TERR_GRASS)); gl.uniform3fv(terrGL.L.uDirt, flat(TERR_DIRT)); gl.uniform3fv(terrGL.L.uSand, flat(TERR_SAND)); gl.uniform3fv(terrGL.L.uForest, flat(TERR_FOREST));
+    gl.uniform1i(terrGL.L.uT, 0); gl.uniform1i(terrGL.L.uG2, 1); gl.uniform1f(terrGL.L.uG2Per, GRASS2_PER);
+    terrGL.tex = gl.createTexture(); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, terrGL.tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    terrGL.g2 = gl.createTexture(); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, terrGL.g2);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+  } catch (e) { terrGLFail("shader: " + (e && e.message)); return false; }
+  cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); terrGLFail("graphics context lost"); });
+  terrGL.cv = cv; terrGL.gl = gl; terrGL.rev = -1; terrGL.key = ""; terrGL.box = null; terrGL.g2ok = false; return true;
+}
+function terrGLRender(force) {
+  if (!terrainEnsure() || !terrGLInit()) return false;
+  var gl = terrGL.gl, L = terrGL.L, vp = document.getElementById("mapviewport"), layer = terrainLayer(); if (!vp || !layer) return false;
+  if (terrGL.cv.parentNode !== layer) layer.appendChild(terrGL.cv);
+  var vw = Math.min(vp.clientWidth, window.innerWidth), vh = Math.min(vp.clientHeight, window.innerHeight), sl = vp.scrollLeft, st = vp.scrollTop, b = terrGL.box;
+  var key = mapZoom + "|" + (mapIso ? 1 : 0) + "|" + terrainN + "|" + vw + "x" + vh + "|" + (grass2Tex ? 1 : 0);
+  var inside = b && sl >= b.x + 8 && st >= b.y + 8 && sl + vw <= b.x + b.w - 8 && st + vh <= b.y + b.h - 8;
+  if (!force && inside && key === terrGL.key && terrGL.rev === terrainRev) return true;
+  var t0 = performance.now();
+  if (terrGL.rev !== terrainRev) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, terrGL.tex); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, terrainN, terrainN, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, terrainArr); terrGL.rev = terrainRev; }
+  if (!terrGL.g2ok && grass2Tex) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, terrGL.g2); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, grass2Tex.w, grass2Tex.w, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(grass2Tex.d.buffer, grass2Tex.d.byteOffset, grass2Tex.d.length)); terrGL.g2ok = true; }
+  var mx = Math.round(vw * 0.35), my = Math.round(vh * 0.35); b = terrGL.box = { x: Math.round(sl - mx), y: Math.round(st - my), w: vw + 2 * mx, h: vh + 2 * my }; terrGL.key = key;
+  var res = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(b.w * res), H = Math.round(b.h * res), cv = terrGL.cv;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  cv.style.left = b.x + "px"; cv.style.top = b.y + "px"; cv.style.width = b.w + "px"; cv.style.height = b.h + "px";
+  var s = tilePxZ(), p = s + gapPxZ(), ov = terrainOverviewWanted(), ON = p >= 10 ? 8 : p >= 5 ? 4 : 2;
+  if (mapIso) { var g = isoGeom(); gl.uniform4f(L.uGeo, g.offX, g.offY, g.r2, ISO_K); } else { var o0 = padPxZ() + s / 2; gl.uniform4f(L.uGeo, o0, o0, p, 0); }
+  gl.uniform1i(L.uIso, mapIso ? 1 : 0); gl.uniform1i(L.uN, terrainN); gl.uniform1i(L.uHd, !ov && grass2Tex ? 1 : 0); gl.uniform1f(L.uTexN, ov ? ON : 0);
+  gl.uniform1f(L.uScale, b.w / W); gl.uniform1f(L.uH, H); gl.uniform2f(L.uOrig, b.x, b.y); gl.uniform1f(L.uG2W, grass2Tex ? grass2Tex.w : 1);
+  gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  terrGL.lastMs = performance.now() - t0; terrGL.draws = (terrGL.draws || 0) + 1;
+  return true;
+}
+function terrGLSet(on) { /* switches the land drawing live (this device, until reload) */
+  terrGL.on = !!on; if (on) terrGL.failed = terrGL.failed === "graphics context lost" ? "" : terrGL.failed;
+  Object.keys(terrainEls).forEach(function (k) { try { terrainEls[k].remove(); } catch (e) {} }); terrainEls = {}; terrainChunksClear(); terrainOverviewRemove();
+  if (!on && terrGL.cv) terrGL.cv.remove();
+  terrGL.key = ""; terrainRev++; try { renderVisibleTiles(); } catch (e) {}
+  var t = document.getElementById("devTerrGLToggle"); if (t) t.checked = terrGLWanted();
+}
+function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) { if (terrGLWanted() && terrGLRender(false)) return; return TERR_USE_CHUNKS ? terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) : terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG); }
+function terrainReposition() { if (terrGLWanted() && terrGLRender(false)) return; return TERR_USE_CHUNKS ? terrainRepositionChunks() : terrainRepositionCells(); }
 // ---- the painter ----
 var terrainPaint = { active: false, code: 1, brush: 0, pan: false, undo: [], stroke: null, last: null };
 var decorPaint = { sel: null }; /* v873: chosen map sprite (key), "erase", or null = painting terrain */
@@ -25161,6 +25268,7 @@ document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeS
   var t0 = performance.now(), fr = terrainStressGenerate(0.4);
   b.textContent = "🔄 Remove stress-test land (reloads)"; note.textContent = "Stress land ON: " + Math.round(fr * 100) + "% land, built in " + Math.round(performance.now() - t0) + " ms. Not saved - reload removes it.";
 }; })();
+(function () { var t = document.getElementById("devTerrGLToggle"); if (!t) return; t.onchange = function () { terrGLSet(t.checked); }; })(); /* v1162 */
 (function () { var t = document.getElementById("devTerrCellsToggle"); if (!t) return; t.checked = !TERR_USE_CHUNKS; t.onchange = function () { try { if (t.checked) localStorage.setItem("ks_terrCells", "1"); else localStorage.removeItem("ks_terrCells"); } catch (e) {} location.reload(); }; })(); /* v1160 */
 (function () { var t = document.getElementById("devMapProfToggle"); t.onchange = function (e) { mapProfSet(e.target.checked); }; })(); /* v1153 */
 (function () { /* v1154: live switches to find what makes the PC map slow at full detail */
