@@ -1926,3 +1926,7 @@
 - The old Laser base+barrel turret is off while barrels are on. Conquest Flak / Scatter missiles now leave their own slot (were using the Missile Barrage's).
 - Dev Tools: barrels on/off + barrel size slider (this device; Harley to report the number he likes).
 - Test g293 (Conquest 3 barrels + Arena both sides, screenshots); g292, g207, g201 ok. Not checked on a phone.
+
+## v1166 — Barrels don't bob on their own (TEST)
+- Harley: the barrels wobble a little at rest; they're bolted to the hull, so only the recoil should move them. Cause: Conquest draws them inside the hull's hover/rock transform (fortLifeBegin) AND their pivot also added the hover offset, so they moved twice as much as the hull. Pivot now without it; the muzzle position for shots gets the hull's hover/rock applied once.
+- g293 measures it: barrel relative to the hull over 60 frames 1.3 px / 0.034 rad (v1165) -> 0.14 px / 0.004 rad (hull itself bobs ~1.9 px). Not checked on a phone.
