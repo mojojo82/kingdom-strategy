@@ -31,9 +31,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   console.log(JSON.stringify({ grid, card, looped, rules, errs })); await b.close();
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []); assert(grid && grid.img, "in the hero list with still art");
-    assert(card.title === "IRON LILY" && card.msk === "CRIMSON TEMPEST" && card.vid === "block" && !card.loop && card.ls === 7.625, "full card + video");
+    assert(card.title === "IRON LILY" && card.msk === "CRIMSON TEMPEST" && card.vid === "block" && !card.loop && Math.abs(card.ls - 5.458) < 0.01, "full card + video");
     assert(card.btns.length === 1 && /Coming soon/.test(card.btns[0]), "coming soon");
-    assert(looped.t >= 7.6 && looped.t < looped.dur - 0.2 && !looped.paused, "after the end it jumps back to the loop start and keeps playing");
+    assert(looped.t >= 5.4 && looped.t < looped.dur - 0.2 && !looped.paused, "after the end it jumps back to the loop start and keeps playing");
     assert(rules.equip === "coming_soon" && rules.arena === -1, "no Conquest, not on bots"); console.log("g287 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -1841,3 +1841,8 @@
 ## v1150 — Card videos fill the portrait box (TEST)
 - Harley: no side strips - zoom the video in. object-fit cover (a square clip in the 5:4 box trims ~19% of the height), positioned 50% 15% so heads stay in and most of the trim comes off the bottom (under the rarity/stars strip). Future clips: Harley will make them 5:4 (Leonardo Custom 1280x1024) so nothing is trimmed.
 - g286, g287 ok. Not checked on a phone.
+
+## v1151 — Iron Lily: new 4:3 card clip (TEST)
+- Harley's new 4:3 clip (1024x768, made from her reference widened to 4:3 so the AI kept her design) - fills the 5:4 card box with almost no trim. Close-up from ~3.5 s, held 5+ s: intro = frames 1-131, loop = frames 132-226 with the last 24 frames blended into the loop start (~4 s loop), keyframe at 5.458 s (loopStart). 0.9 MB.
+- Tip that worked: make the AI's reference picture the same shape as the output (4:3), else it redraws the character.
+- g287 updated; ok. Not checked on a phone.
