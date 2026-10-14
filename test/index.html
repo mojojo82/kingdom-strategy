@@ -3061,6 +3061,9 @@
                     <input type="checkbox" id="devMapProfToggle"> 🗺️ Map timing on the FPS readout (screenshot it when the map is slow)
                   </label>
                 </div>
+                <div class="dev-tools-row" id="devMapPerfRow" style="flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted);">
+                  <span>🗺️ Map speed test - switch off one thing at a time and watch the FPS (this device, resets on reload):</span>
+                </div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devHcChakraToggle"> Hero card font: Chakra Petch (off = clean system font, the default; the rest of the game is unaffected)
@@ -11672,7 +11675,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1153"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1154"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25022,6 +25025,23 @@ document.getElementById("devAddFragments").onclick = function () { Object.keys(g
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
 (function () { var t = document.getElementById("devMapProfToggle"); t.onchange = function (e) { mapProfSet(e.target.checked); }; })(); /* v1153 */
+(function () { /* v1154: live switches to find what makes the PC map slow at full detail */
+  var row = document.getElementById("devMapPerfRow"), st = document.createElement("style"); document.head.appendChild(st);
+  var V = { shadows: ["Shadows", "#mapworld *, #mapworld *::before, #mapworld *::after { filter:none !important; box-shadow:none !important; }"],
+    anims: ["Animations", "#mapworld *, #mapworld *::before, #mapworld *::after, #mapSeaFoam * { animation-play-state:paused !important; }"],
+    decor: ["Painted sprites", ".map-decor { display:none !important; }"],
+    forest: ["Forests", ".map-forest { display:none !important; }"],
+    water: ["Base water", ".city-water, .city-water2 { display:none !important; }"],
+    fires: ["Base fires", ".base-fire { display:none !important; }"],
+    foam: ["Sea foam", "#mapSeaFoam { display:none !important; }"],
+    resart: ["Resource art", ".tile .res-art { display:none !important; }"],
+    bases: ["Bases", "#mapworld .tile.mycity, #mapworld .tile.othercity, #mapworld .tile.npc { visibility:hidden !important; }"],
+    terrain: ["Painted land", "#mapworld canvas { visibility:hidden !important; }"],
+    wchange: ["Layers (will-change)", "#mapworld *, #mapworld *::before { will-change:auto !important; }"] };
+  var on = {};
+  function apply() { st.textContent = Object.keys(on).filter(function (k) { return on[k]; }).map(function (k) { return V[k][1]; }).join("\n"); }
+  Object.keys(V).forEach(function (k) { var l = document.createElement("label"); l.style.cssText = "display:flex;align-items:center;gap:4px;cursor:pointer;"; l.innerHTML = '<input type="checkbox"> no ' + V[k][0]; l.firstChild.onchange = function (e) { on[k] = e.target.checked; apply(); }; row.appendChild(l); });
+})();
 (function () { var t = document.getElementById("devHcChakraToggle"), on = false; try { on = localStorage.getItem("ks_hcChakra") === "1"; } catch (e) {} /* v1147 */
   function apply(v) { document.body.classList.toggle("hc-chakra", v); t.checked = v; if (heroDetailKey) setTimeout(hcFit, 50); }
   apply(on); t.onchange = function (e) { apply(e.target.checked); try { localStorage.setItem("ks_hcChakra", e.target.checked ? "1" : "0"); } catch (er) {} }; })();
