@@ -721,7 +721,8 @@
   #mapworld.iso #mapMarchLayer { z-index:100000; }
   #mapTerrainLayer { position:absolute; top:0; left:0; width:0; height:0; pointer-events:none; z-index:0; }
   .terr { position:absolute; image-rendering:pixelated; pointer-events:none; }
-  .terr-gl { position:absolute; pointer-events:none; } /* v1162: GPU land - one canvas, already in screen orientation */
+  .terr-gl { position:absolute; pointer-events:none; }
+  .tree-sheet { position:absolute; pointer-events:none; } /* v1163: trees drawn in one canvas (with GPU land) */ /* v1162: GPU land - one canvas, already in screen orientation */
   #mapworld.iso .terr { transform:scaleY(0.5736) rotate(45deg); }
   #terrainPainter { display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:70px; z-index:100001; width:min(400px, calc(100vw - 16px)); background:linear-gradient(180deg,#3a3126,#231c14); border:2px solid #8a7548; border-radius:12px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.55); color:#f3e9d2; font-size:12px; }
   /* v873: sprite palette on the left while painting (dev) */
@@ -11691,7 +11692,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1162"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1163"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16326,7 +16327,7 @@ function terrGLSet(on) { /* switches the land drawing live (this device, until r
   terrGL.on = !!on; if (on) terrGL.failed = terrGL.failed === "graphics context lost" ? "" : terrGL.failed;
   Object.keys(terrainEls).forEach(function (k) { try { terrainEls[k].remove(); } catch (e) {} }); terrainEls = {}; terrainChunksClear(); terrainOverviewRemove();
   if (!on && terrGL.cv) terrGL.cv.remove();
-  terrGL.key = ""; terrainRev++; try { renderVisibleTiles(); } catch (e) {}
+  terrGL.key = ""; terrainRev++; treeSheet.key = ""; try { renderVisibleTiles(); } catch (e) {}
   var t = document.getElementById("devTerrGLToggle"); if (t) t.checked = terrGLWanted();
 }
 function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) { if (terrGLWanted() && terrGLRender(false)) return; return TERR_USE_CHUNKS ? terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) : terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG); }
@@ -16579,15 +16580,85 @@ function forestEl(id, pc, x, y, world, wanted, bits) {
   if (el._mkey !== mk) { el._mkey = mk; if (!bits) el.src = forestPieceUrl(pc); else { var mu = forestMaskedUrl(pc, x % 3, y % 3, bits, el); if (mu) el.src = mu; } }
   el.style.zIndex = mapIso ? String(10 + x + y) : "2"; forestPlace(el, x, y); wanted[id] = 1;
 }
+/* v1163 (Harley, GPU land on: "a lot of slow down when trees are in view"; headless: ~2,260 tree pictures on screen over the stress forests,
+   forestRender rewriting every one of them each scroll step). With the GPU land on, trees go into ONE canvas ("tree sheet") a bit bigger than the
+   screen, drawn back to front with the same pieces, sizes and ragged edges, under bases/resources/sprites. Trees just in front of one of those
+   (close enough to overlap it) stay separate pictures as before, so things still hide behind the trees in front of them. Redrawn only when the
+   view leaves the sheet, the zoom changes, the land changes, or a piece finishes loading. */
+var treeSheet = { cv: null, box: null, key: "", imgs: {}, fk: {}, zoom: 0, draws: 0, lastMs: 0 };
+function treeSheetOn() { return terrGLWanted() && mapLod() === 0; }
+function treeSheetImg(url) {
+  var im = treeSheet.imgs[url];
+  if (!im) { im = treeSheet.imgs[url] = new Image(); im.decoding = "async"; im.onload = function () { treeSheet.key = ""; forestRefreshSoon(); }; im.src = url; }
+  return im.complete && im.naturalWidth ? im : null;
+}
+function treeSheetPieceImg(pc, x, y, bits) {
+  if (!bits) return treeSheetImg(forestPieceUrl(pc));
+  var key = pc.src.length + "_" + pc.ax + "_" + pc.ay + "_" + (x % 3) + "_" + (y % 3) + "_" + bits, fk = treeSheet.fk[key];
+  if (!fk) fk = treeSheet.fk[key] = { _mkey: key, set src(v) { treeSheet.key = ""; forestRefreshSoon(); } };
+  var u = forestMaskedUrl(pc, x % 3, y % 3, bits, fk); return u ? treeSheetImg(u) : null;
+}
+function treeObjAt(x, y) { /* bases and painted sprites - big art drawn in depth order with the trees */
+  var id = x + "," + y; return !!(id === game.state.homeTileId || occupiedTileIds[id] || mapDecor[x + "_" + y]);
+  /* resource nodes are NOT in this list: there are 100+ on a screen of stress land and the trees around them would all stay separate pictures.
+     They now always show on top of the trees (small art, so it reads as the node standing in the forest). */
+}
+var TREE_FRONT = (function () { var o = []; for (var d = 0; d <= 3; d++) for (var e = -3; e <= 3; e++) if (((d + e) & 1) === 0) o.push([(d + e) / 2, (d - e) / 2]); return o; })();
+function treeKeepImg(x, y, cache) { /* a tree at (x,y) that is just in front of something depth-sorted stays its own picture */
+  for (var k = 0; k < TREE_FRONT.length; k++) { var ox = x - TREE_FRONT[k][0], oy = y - TREE_FRONT[k][1], id = ox + "," + oy, v = cache[id]; if (v === undefined) v = cache[id] = treeObjAt(ox, oy); if (v) return true; }
+  return false;
+}
+function treeSheetHide() { if (treeSheet.cv) treeSheet.cv.style.display = "none"; treeSheet.key = ""; treeSheet.box = null; }
+function treeSheetUpdate(world) { /* returns the object cache used, so forestRender uses the same answer for which trees stay pictures */
+  var vp = document.getElementById("mapviewport"); if (!vp) return null;
+  var vw = Math.min(vp.clientWidth, window.innerWidth), vh = Math.min(vp.clientHeight, window.innerHeight), sl = vp.scrollLeft, st = vp.scrollTop, b = treeSheet.box;
+  var sig = mapZoom + "|" + (mapIso ? 1 : 0) + "|" + terrainRev + "|" + vw + "x" + vh + "|" + Object.keys(occupiedTileIds).length + "|" + game.state.homeTileId + "|" + Object.keys(mapDecor).length;
+  var inside = b && sl >= b.x + 8 && st >= b.y + 8 && sl + vw <= b.x + b.w - 8 && st + vh <= b.y + b.h - 8;
+  if (inside && sig === treeSheet.key && treeSheet.cv && treeSheet.cv.parentNode) { treeSheet.cv.style.display = ""; return treeSheet.cache; }
+  var t0 = performance.now();
+  if (!treeSheet.cv) { treeSheet.cv = document.createElement("canvas"); treeSheet.cv.className = "tree-sheet"; }
+  var cv = treeSheet.cv; if (cv.parentNode !== world) world.appendChild(cv); cv.style.display = ""; cv.style.zIndex = mapIso ? "9" : "2";
+  var mx = Math.round(vw * 0.35), my = Math.round(vh * 0.35); b = treeSheet.box = { x: Math.round(sl - mx), y: Math.round(st - my), w: vw + 2 * mx, h: vh + 2 * my }; treeSheet.zoom = mapZoom;
+  var res = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(b.w * res), H = Math.round(b.h * res); if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  cv.style.left = b.x + "px"; cv.style.top = b.y + "px"; cv.style.width = b.w + "px"; cv.style.height = b.h + "px";
+  var ctx = cv.getContext("2d"); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); ctx.setTransform(res, 0, 0, res, -b.x * res, -b.y * res);
+  /* tiles under the sheet (plus a few for tall pieces) */
+  var n = terrainN, x0, x1, y0, y1, g = mapIso ? isoGeom() : null, P = 3;
+  if (mapIso) { x0 = 1e9; x1 = -1e9; y0 = 1e9; y1 = -1e9; [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]].forEach(function (c) { var a = (c[0] - g.offX) / g.r2, bb = (c[1] - g.offY) / (g.r2 * ISO_K), tx = (a + bb) / 2, ty = (bb - a) / 2; x0 = Math.min(x0, tx); x1 = Math.max(x1, tx); y0 = Math.min(y0, ty); y1 = Math.max(y1, ty); }); }
+  else { var p0 = tilePxZ() + gapPxZ(), pd = padPxZ(); x0 = (b.x - pd) / p0; x1 = (b.x + b.w - pd) / p0; y0 = (b.y - pd) / p0; y1 = (b.y + b.h - pd) / p0; }
+  x0 = Math.max(0, Math.floor(x0) - P); y0 = Math.max(0, Math.floor(y0) - P); x1 = Math.min(n - 1, Math.ceil(x1) + P); y1 = Math.min(n - 1, Math.ceil(y1) + P);
+  var cache = {}, list = [], TC = TERRAIN_CHUNK, NV = FOREST_PIECES.length, missing = 0, tdw = mapIso ? 2 * g.r2 : tilePxZ() + gapPxZ();
+  for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+    if (!terrainLandChunks[Math.floor(x / TC) + "_" + Math.floor(y / TC)]) { x = (Math.floor(x / TC) + 1) * TC - 1; continue; }
+    if (terrainArr[y * n + x] !== 3) continue;
+    var c = mapIso ? isoCenterG(g, x, y) : tileCenterPx({ x: x, y: y }); if (c.x < b.x - 3 * tdw || c.x > b.x + b.w + 3 * tdw || c.y < b.y - tdw || c.y > b.y + b.h + 4 * tdw) continue;
+    if (treeKeepImg(x, y, cache)) continue;
+    var v = Math.floor(thash(Math.floor(x / 3), Math.floor(y / 3), 11) * NV) % NV, pc = FOREST_PIECES[v][x % 3][y % 3], bits = (isForest(x + 1, y) ? 0 : 1) | (isForest(x, y + 1) ? 0 : 2);
+    list.push([x + y, pc, x, y, bits, c]);
+    for (var sk in pc.spill) { var p2 = sk.split(","), nx = x + +p2[0], ny = y + +p2[1]; if (!isForest(nx, ny)) list.push([x + y, pc.spill[sk], x, y, bits, c]); }
+  }
+  list.sort(function (u, w) { return u[0] - w[0]; });
+  ctx.imageSmoothingEnabled = true;
+  for (var i = 0; i < list.length; i++) { var it = list[i], pc2 = it[1], im = treeSheetPieceImg(pc2, it[2], it[3], it[4]); if (!im) { missing++; continue; }
+    var w = pc2.wk * tdw, h = pc2.hk * tdw; ctx.drawImage(im, it[5].x - pc2.ax * w, it[5].y - pc2.ay * h, w, h); }
+  treeSheet.key = missing ? "" : sig; treeSheet.cache = cache; treeSheet.draws++; treeSheet.lastMs = performance.now() - t0; treeSheet.count = list.length;
+  return cache;
+}
+function treeSheetReposition() { /* during a pinch: stretch the last sheet (map pixels scale with the zoom); it is redrawn at the next render */
+  var cv = treeSheet.cv, b = treeSheet.box; if (!cv || !b || cv.style.display === "none" || !treeSheet.zoom) return; var k = mapZoom / treeSheet.zoom;
+  cv.style.left = b.x * k + "px"; cv.style.top = b.y * k + "px"; cv.style.width = b.w * k + "px"; cv.style.height = b.h * k + "px";
+}
 function forestRender(minX, maxX, minY, maxY, isoRect, isoG) {
   var world = document.getElementById("mapworld"); if (!world || !terrainArr) return;
   var wanted = {}, M = 2, any = false; for (var lk in terrainLandChunks) { any = true; break; }
+  var sheetCache = any && treeSheetOn() ? treeSheetUpdate(world) : null; if (!sheetCache) treeSheetHide(); /* v1163 */
   if (any && mapLod() === 0) {
     var TC = TERRAIN_CHUNK, NV = FOREST_PIECES.length;
     for (var y = Math.max(0, minY - M); y <= Math.min(terrainN - 1, maxY + M); y++) for (var x = Math.max(0, minX - M); x <= Math.min(terrainN - 1, maxX + M); x++) {
       if (!terrainLandChunks[Math.floor(x / TC) + "_" + Math.floor(y / TC)]) { x = (Math.floor(x / TC) + 1) * TC - 1; continue; } /* no land in this chunk */
       if (terrainArr[y * terrainN + x] !== 3) continue;
       if (isoRect) { var q = isoCenterG(isoG, x, y); if (q.x < isoRect.L - 200 || q.x > isoRect.R + 200 || q.y < isoRect.T - 50 || q.y > isoRect.B + 300) continue; }
+      if (sheetCache && !treeKeepImg(x, y, sheetCache)) continue; /* v1163: on the tree sheet */
       var v = Math.floor(thash(Math.floor(x / 3), Math.floor(y / 3), 11) * NV) % NV, pc = FOREST_PIECES[v][x % 3][y % 3], id = x + "," + y;
       var bits = (isForest(x + 1, y) ? 0 : 1) | (isForest(x, y + 1) ? 0 : 2);
       forestEl(id, pc, x, y, world, wanted, bits);
@@ -16596,7 +16667,7 @@ function forestRender(minX, maxX, minY, maxY, isoRect, isoG) {
   }
   Object.keys(forestEls).forEach(function (id) { if (!wanted[id]) { forestEls[id].remove(); delete forestEls[id]; } });
 }
-function forestReposition() { Object.keys(forestEls).forEach(function (id) { var el = forestEls[id]; forestPlace(el, el._x, el._y); }); }
+function forestReposition() { Object.keys(forestEls).forEach(function (id) { var el = forestEls[id]; forestPlace(el, el._x, el._y); }); try { treeSheetReposition(); } catch (e) {} }
 function forestRefreshSoon() { if (forestRefreshT) return; forestRefreshT = requestAnimationFrame(function () { forestRefreshT = null; try { renderVisibleTiles(); } catch (e) {} }); }
 
 // ---- v893: burning bases. A city that loses an attack burns for BASE_BURN_MS: burnUntil on its shared "cities" doc (everyone sees it), mirrored in baseBurnUntil.
