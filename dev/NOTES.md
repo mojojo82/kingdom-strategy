@@ -1884,3 +1884,7 @@
 - terrainCellCache (Map, up to 9000 cells, oldest dropped): a drawn cell canvas is reused when it comes back into view or you zoom back in - no pixel work. Edits redraw (and refresh the cache); an edit made zoomed out drops that cell; a synced change from another player clears the cache (terrainClearAll). Both phone (cells) and PC (chunks) paths.
 - Phone path: when you zoom in from the overview, new cells are drawn ~7 ms per frame while the overview picture stays underneath, then it is removed.
 - Test g289 (worst frame while zooming 0.45<->0.7 etc, painted island): phone mode 831/731/1015 ms (v1157) -> 167/132/132 ms (the remaining ~130 ms is the rest of the map; zooming out costs the same). PC 665/682/516 -> 182/165/217. Picture identical. g281, g286 ok. Not checked on a phone. Not done: making the per-pixel drawing itself faster.
+
+## v1159 — Reverted v1158 (TEST)
+- Harley: with v1158, zooming out over his land sent the phone FPS into the red; before today it only dipped to yellow when zooming out fast. Game file = v1157 again (phones: the pre-v1155 per-cell land drawing; PC: chunks). v1158 kept up to 9000 drawn cell canvases off-page - likely too much canvas memory for iPhone Safari - and left the overview canvas up under the cells while filling in.
+- Still to do, carefully: the zoomed-out overview picture is rebuilt pixel by pixel at each LOD step (up to 1.5M texels) - that is what grows with painted land. Any cache must stay small on phones.
