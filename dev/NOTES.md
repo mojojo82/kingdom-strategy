@@ -1930,3 +1930,10 @@
 ## v1166 — Barrels don't bob on their own (TEST)
 - Harley: the barrels wobble a little at rest; they're bolted to the hull, so only the recoil should move them. Cause: Conquest draws them inside the hull's hover/rock transform (fortLifeBegin) AND their pivot also added the hover offset, so they moved twice as much as the hull. Pivot now without it; the muzzle position for shots gets the hull's hover/rock applied once.
 - g293 measures it: barrel relative to the hull over 60 frames 1.3 px / 0.034 rad (v1165) -> 0.14 px / 0.004 rad (hull itself bobs ~1.9 px). Not checked on a phone.
+
+## v1167 — Railgun countdown is visible (TEST)
+- Harley: how does a player know the Railgun is counting down? -> a timer at the top of the battle scene + the barrel charging up + particles drawn into the barrel.
+- Timer chip "🧲 Rail 7s" with a fill bar (READY when charged and waiting for enemies): Conquest top-left of the battle; Arena under each side's HP bars (the bot's too). Conquest fxT entries now keep `tot` (length of the running countdown); the Arena sim reports railP / railA { t, tot, stun } each tick, smoothed between ticks.
+- Barrel: its 3 yellow lights start dark and light one by one, pulsing in the last 15%; sparks appear around the muzzle and get pulled in (from 20% charged, more and faster towards the end), a glow builds at the muzzle from 60%, white flash when it fires.
+- Arena: the bot's weapon slots are known from the start of the match (arenaAiWeaponOrder prefilled), so its barrels show before its first shot.
+- Test g294 (Conquest at 8/4/1.6/0.9 s left, Arena both sides counting down, screenshots); g293, g292, g201 ok. Not checked on a phone.
