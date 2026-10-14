@@ -1965,3 +1965,6 @@
 - `ghostFlamePass` (skins with `flames: true`): spawns pieces along the keel (amount/s), each drifts back, stretches, flickers and fades; ~60% behind the hull (drawn before the back part), the rest in front of it; half normal / half "lighter" for glow. Conquest ("cq") and both Arena sides (flipped with the bot's ship).
 - Dev Tools (Speed & Testing): On, Amount, Size, Speed, Length, Brightness, Glow, Height + Default (this device; Harley reports numbers to make default). Slider setup runs after load (the settings are defined later in the file).
 - Test g295 now also checks flames exist (some in front). Not checked on a phone.
+
+## v1173 — Ghost flames removed (TEST)
+- Harley: "we won't use that, delete the flames". v1172's flame code, sliders and pieces are gone (game file = v1171 + version). The flame sheet stays in art/originals. g295 ok.
