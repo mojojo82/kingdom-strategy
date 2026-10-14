@@ -1971,3 +1971,8 @@
 
 ### Docs — Kessa's Storm Mark marked WIP (no game change)
 - Harley: "mark that skill as a wip. either it gets completely changed or heavily modified". Logged in HANDOVER (rules): Conquest-only today (the Arena never had it), so it didn't affect the Hanzo vs Kessa Arena sims; don't port or balance around it until he decides.
+
+### Docs/tools (no game change): Pixel Lab plays clips
+- Harley: wants to see the dark knight boss idle clip in the Pixel Lab at game size.
+- dev/pixel/pixel-lab.tpl.html: the file picker takes MP4/WEBM clips too. It reads up to 60 frames (about 12 a second, up to 640 px), removes the background on every frame, crops them all to one shared box (so the height = the box the art fills across the whole clip), and loops it in the scene. Pixel mode uses one palette for every frame so colours don't flicker. Pause/Play button appears for clips. Pictures work as before.
+- Tested in headless Chromium with a made-up magenta WEBM (48 frames, smooth + pixel, pause). Not tested on Harley's phone. Republished the "Pixel Lab" artifact.

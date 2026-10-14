@@ -51,13 +51,13 @@ input[type=range] { width: 100%; accent-color: var(--cyan); }
 <div class="wrap">
   <header>
     <h1>Pixel Lab</h1>
-    <p>Drop in any art, see it at real phone size in the game, tune it, then send Claude the settings line.</p>
+    <p>Drop in any art or a short clip, see it at real phone size in the game, tune it, then send Claude the settings line.</p>
   </header>
   <div class="cols">
     <div class="scene-box">
       <div class="seg" role="group" aria-label="Scene">
         <button id="scCq" aria-pressed="true">Conquest</button><button id="scAr" aria-pressed="false">Arena</button>
-        <button id="cmpBtn" aria-pressed="false">Compare both ways</button>
+        <button id="cmpBtn" aria-pressed="false">Compare both ways</button><button id="playBtn" aria-pressed="false" hidden>Pause</button>
       </div>
       <div class="scene" id="sceneWrap"><canvas id="scene" width="1290" height="660"></canvas></div>
       <p class="note">On a phone this scene is as wide as your screen, like the game, so the art shows at its true game size. The fortress and heroes behind it are real sizes too. Tap the scene to move the art (where you tap = where its feet go).</p>
@@ -65,8 +65,8 @@ input[type=range] { width: 100%; accent-color: var(--cyan); }
       <p class="note">Above: the art itself, blown up 4x so you can see every pixel.</p>
     </div>
     <div class="panel">
-      <div class="drop" id="drop">Drop an image here, or pick one
-        <input type="file" id="file" accept="image/*">
+      <div class="drop" id="drop">Drop an image or a short clip (MP4) here, or pick one
+        <input type="file" id="file" accept="image/*,video/*">
       </div>
       <p class="note" id="srcName">Example loaded: Gareth's charge art.</p>
 
@@ -116,32 +116,47 @@ var bgs = {}, src = null, srcName = "Gareth's charge art", cutCache = null;
 function loadImg(u) { return new Promise(function (ok, no) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = no; i.src = u; }); }
 
 /* ---------- source: background removal + crop to the art ---------- */
+/* the colour in the top-left corner is the background; wipe it from the edges inward */
+function keyData(d, W, H) {
+  if (S.bg === "none") return;
+  var seen = new Uint8Array(W * H), q = new Int32Array(W * H), qh = 0, qt = 0, tol = S.tol;
+  var sr = d[0], sg = d[1], sb = d[2];
+  var isBg = function (o) {
+    var r = d[o], g = d[o + 1], b = d[o + 2];
+    if (d[o + 3] < 10) return true;
+    if (S.bg === "checker") { var mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx - mn < 18 + tol * 0.2 && mn > 190 - tol; }
+    return Math.abs(r - sr) + Math.abs(g - sg) + Math.abs(b - sb) < tol * 3;
+  };
+  var push = function (p) { if (!seen[p] && isBg(p * 4)) { seen[p] = 1; q[qt++] = p; } };
+  for (var x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
+  for (var y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  while (qh < qt) { var p = q[qh++], px = p % W, py = (p - px) / W; d[p * 4 + 3] = 0;
+    if (px > 0) push(p - 1); if (px < W - 1) push(p + 1); if (py > 0) push(p - W); if (py < H - 1) push(p + W); }
+}
+function growBox(b, d, W, H) {
+  for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) if (d[(yy * W + xx) * 4 + 3] > 20) { if (xx < b[0]) b[0] = xx; if (xx > b[2]) b[2] = xx; if (yy < b[1]) b[1] = yy; if (yy > b[3]) b[3] = yy; }
+  return b;
+}
+function cropTo(cv, b) {
+  if (b[2] < 0) b = [0, 0, cv.width - 1, cv.height - 1];
+  var out = document.createElement("canvas"); out.width = b[2] - b[0] + 1; out.height = b[3] - b[1] + 1; out.getContext("2d").drawImage(cv, b[0], b[1], out.width, out.height, 0, 0, out.width, out.height); return out;
+}
 function cutSource() {
   var key = S.bg + "|" + S.tol + "|" + (src && src.src.length);
   if (cutCache && cutCache.key === key) return cutCache.cv;
   var W = src.naturalWidth, H = src.naturalHeight, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   var cx = cv.getContext("2d"); cx.drawImage(src, 0, 0); var id = cx.getImageData(0, 0, W, H), d = id.data;
-  if (S.bg !== "none") {
-    var seen = new Uint8Array(W * H), q = new Int32Array(W * H), qh = 0, qt = 0, tol = S.tol;
-    var sr = d[0], sg = d[1], sb = d[2];
-    var isBg = function (o) {
-      var r = d[o], g = d[o + 1], b = d[o + 2];
-      if (d[o + 3] < 10) return true;
-      if (S.bg === "checker") { var mx = Math.max(r, g, b), mn = Math.min(r, g, b); return mx - mn < 18 + tol * 0.2 && mn > 190 - tol; }
-      return Math.abs(r - sr) + Math.abs(g - sg) + Math.abs(b - sb) < tol * 3;
-    };
-    var push = function (p) { if (!seen[p] && isBg(p * 4)) { seen[p] = 1; q[qt++] = p; } };
-    for (var x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
-    for (var y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
-    while (qh < qt) { var p = q[qh++], px = p % W, py = (p - px) / W; d[p * 4 + 3] = 0;
-      if (px > 0) push(p - 1); if (px < W - 1) push(p + 1); if (py > 0) push(p - W); if (py < H - 1) push(p + W); }
-  }
-  var x0 = W, y0 = H, x1 = -1, y1 = -1;
-  for (var yy = 0; yy < H; yy++) for (var xx = 0; xx < W; xx++) if (d[(yy * W + xx) * 4 + 3] > 20) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
-  if (x1 < 0) { x0 = 0; y0 = 0; x1 = W - 1; y1 = H - 1; }
-  cx.putImageData(id, 0, 0);
-  var out = document.createElement("canvas"); out.width = x1 - x0 + 1; out.height = y1 - y0 + 1; out.getContext("2d").drawImage(cv, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
-  cutCache = { key: key, cv: out }; return out;
+  keyData(d, W, H); var b = growBox([W, H, -1, -1], d, W, H); cx.putImageData(id, 0, 0);
+  var out = cropTo(cv, b); cutCache = { key: key, cv: out }; return out;
+}
+/* a clip: key every frame, then crop them all to one shared box so the art doesn't jump between frames */
+function cutClip() {
+  var key = S.bg + "|" + S.tol + "|" + clip.id;
+  if (clip.cut && clip.cut.key === key) return clip.cut.list;
+  var keyed = [], b = [1e9, 1e9, -1, -1];
+  clip.frames.forEach(function (f) { var W = f.width, H = f.height, cv = document.createElement("canvas"); cv.width = W; cv.height = H; var cx = cv.getContext("2d"); cx.drawImage(f, 0, 0);
+    var id = cx.getImageData(0, 0, W, H); keyData(id.data, W, H); growBox(b, id.data, W, H); cx.putImageData(id, 0, 0); keyed.push(cv); });
+  var list = keyed.map(function (cv) { return cropTo(cv, b); }); clip.cut = { key: key, list: list }; return list;
 }
 /* shrink in halves first, so a big picture doesn't sparkle (close to averaging each block) */
 function shrinkTo(c, W, H) {
@@ -159,14 +174,15 @@ function medianCut(px, n) {
   }
   return boxes.map(function (b) { var s = [0, 0, 0]; b.forEach(function (p) { s[0] += p[0]; s[1] += p[1]; s[2] += p[2]; }); return s.map(function (v) { return Math.round(v / b.length); }); });
 }
-function pixelize(cut, W, H) {
+function pixelize(cut, W, H, palIn) {
   var sm = shrinkTo(cut, W, H), cx = sm.getContext("2d"), id = cx.getImageData(0, 0, W, H), d = id.data;
   if (S.sh > 0) { /* unsharp: push each pixel away from its neighbours' average */
     var o = new Uint8ClampedArray(d), k = S.sh / 100 * 0.9;
     for (var y = 1; y < H - 1; y++) for (var x = 1; x < W - 1; x++) { var i = (y * W + x) * 4; for (var c = 0; c < 3; c++) { var avg = (o[i - 4 + c] + o[i + 4 + c] + o[i - W * 4 + c] + o[i + W * 4 + c]) / 4; d[i + c] = o[i + c] + (o[i + c] - avg) * k; } }
   }
-  var opaque = []; for (var p = 0; p < W * H; p++) if (d[p * 4 + 3] > S.at) opaque.push([d[p * 4], d[p * 4 + 1], d[p * 4 + 2]]);
-  var pal = opaque.length ? medianCut(opaque, S.nc) : [[0, 0, 0]], memo = {};
+  var pal = palIn;
+  if (!pal) { var opaque = []; for (var p = 0; p < W * H; p++) if (d[p * 4 + 3] > S.at) opaque.push([d[p * 4], d[p * 4 + 1], d[p * 4 + 2]]); pal = opaque.length ? medianCut(opaque, S.nc) : [[0, 0, 0]]; }
+  var memo = {};
   var near = function (r, g, b) { var key = (r >> 2) << 12 | (g >> 2) << 6 | (b >> 2); if (memo[key]) return memo[key]; var bd = 1e9, bp = pal[0]; for (var j = 0; j < pal.length; j++) { var q = pal[j], dr = q[0] - r, dg = q[1] - g, db = q[2] - b, dd = dr * dr * 0.3 + dg * dg * 0.59 + db * db * 0.11; if (dd < bd) { bd = dd; bp = q; } } return (memo[key] = bp); };
   var on = new Uint8Array(W * H);
   for (var q2 = 0; q2 < W * H; q2++) { var o2 = q2 * 4; if (d[o2 + 3] > S.at) { var c2 = near(d[o2], d[o2 + 1], d[o2 + 2]); d[o2] = c2[0]; d[o2 + 1] = c2[1]; d[o2 + 2] = c2[2]; d[o2 + 3] = 255; on[q2] = 1; } else d[o2 + 3] = 0; }
@@ -175,15 +191,21 @@ function pixelize(cut, W, H) {
       if (x2 > 0 && on[pp - 1]) nb = pp - 1; else if (x2 < W - 1 && on[pp + 1]) nb = pp + 1; else if (y2 > 0 && on[pp - W]) nb = pp - W; else if (y2 < H - 1 && on[pp + W]) nb = pp + W;
       if (nb < 0) continue; var oo = pp * 4, no = nb * 4; d[oo] = d[no] * 0.25 + 12 * 0.75; d[oo + 1] = d[no + 1] * 0.25 + 10 * 0.75; d[oo + 2] = d[no + 2] * 0.25 + 18 * 0.75; d[oo + 3] = Math.round(255 * f); }
   }
-  cx.putImageData(id, 0, 0); return { cv: sm, colors: pal.length };
+  cx.putImageData(id, 0, 0); return { cv: sm, colors: pal.length, pal: pal };
 }
 /* the sprite in phone-screen pixels (x3) plus the art-pixel version for the zoom */
-function build(mode) {
-  var cut = cutSource(), Hdev = Math.max(4, Math.round(S.h * DPR3)), Wdev = Math.max(1, Math.round(cut.width * Hdev / cut.height));
+function build(mode, cut, pal) {
+  var Hdev = Math.max(4, Math.round(S.h * DPR3)), Wdev = Math.max(1, Math.round(cut.width * Hdev / cut.height));
   if (mode === "smooth") { var sv = shrinkTo(cut, Wdev, Hdev); return { dev: sv, art: sv, w: Wdev, h: Hdev, colors: null }; }
-  var ah = Math.max(4, Math.round(Hdev / S.px)), aw = Math.max(1, Math.round(cut.width * ah / cut.height)), r = pixelize(cut, aw, ah);
+  var ah = Math.max(4, Math.round(Hdev / S.px)), aw = Math.max(1, Math.round(cut.width * ah / cut.height)), r = pixelize(cut, aw, ah, pal);
   var dv = document.createElement("canvas"); dv.width = aw * S.px; dv.height = ah * S.px; var dx = dv.getContext("2d"); dx.imageSmoothingEnabled = false; dx.drawImage(r.cv, 0, 0, dv.width, dv.height);
-  return { dev: dv, art: r.cv, w: aw, h: ah, colors: r.colors };
+  return { dev: dv, art: r.cv, w: aw, h: ah, colors: r.colors, pal: r.pal };
+}
+/* every frame of the art (one for a picture); a clip's frames share one palette so the colours don't flicker */
+function buildSet(mode) {
+  var cuts = clip ? cutClip() : [cutSource()], mid = Math.floor(cuts.length / 2), first = build(mode, cuts[mid]), out = [];
+  cuts.forEach(function (c, i) { out.push(i === mid ? first : build(mode, c, first.pal)); });
+  return out;
 }
 function drawSprite(ctx, spr, fx, fy) {
   var x = Math.round(fx - spr.dev.width / 2), y = Math.round(fy - spr.dev.height);
@@ -191,26 +213,43 @@ function drawSprite(ctx, spr, fx, fy) {
   if (S.flip) { ctx.translate(x + spr.dev.width, y); ctx.scale(-1, 1); ctx.drawImage(spr.dev, 0, 0); } else ctx.drawImage(spr.dev, x, y);
   ctx.restore();
 }
-var busy = false, again = false;
+var busy = false, again = false, sets = null, setsKey = "", frameI = 0, shownI = -1, playing = true, animOn = false;
+function settingsKey() { return [S.mode, S.cmp, S.h, S.px, S.nc, S.sh, S.ol, S.at, S.bg, S.tol, clip ? clip.id : src && src.src.length].join("|"); }
+function prepare() {
+  var k = settingsKey(); if (sets && setsKey === k) return;
+  sets = { main: buildSet(S.mode) }; if (S.cmp) sets.other = buildSet(S.mode === "pixel" ? "smooth" : "pixel"); setsKey = k;
+  var main = sets.main[0];
+  $("outImg").src = (function () { if (!S.flip) return main.art.toDataURL("image/png"); var c = document.createElement("canvas"); c.width = main.art.width; c.height = main.art.height; var x = c.getContext("2d"); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(main.art, 0, 0); return c.toDataURL("image/png"); })();
+  $("stats").textContent = (S.mode === "pixel" ? "Sprite " + main.w + " x " + main.h + " art pixels, each " + S.px + " phone pixel" + (S.px > 1 ? "s" : "") + ", " + main.colors + " colours" : "Sprite " + main.w + " x " + main.h + " phone pixels (smooth)") + " | on screen " + Math.round(main.dev.width / DPR3) + " x " + Math.round(main.dev.height / DPR3) + " pt" + (clip ? " | clip: " + clip.frames.length + " frames at " + clip.fps + " fps" : "");
+}
+function draw(i) {
+  var bg = bgs[S.scene], sc = $("scene"), H = bg.height; if (sc.height !== H) sc.height = H;
+  var ctx = sc.getContext("2d"); ctx.drawImage(bg, 0, 0);
+  var n = sets.main.length; i = i % n;
+  var pos = S.pos[S.scene], fx = pos[0] * SC_W, fy = pos[1] * H, main = sets.main[i];
+  if (S.cmp && sets.other) { var other = sets.other[i % sets.other.length], gap = Math.max(main.dev.width, other.dev.width) * 0.55 + 20;
+    drawSprite(ctx, S.mode === "pixel" ? other : main, fx - gap, fy); drawSprite(ctx, S.mode === "pixel" ? main : other, fx + gap, fy);
+    ctx.font = "600 30px " + getComputedStyle(document.body).fontFamily; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 6;
+    ctx.fillText("smooth", fx - gap, fy + 34); ctx.fillText("pixel", fx + gap, fy + 34); ctx.shadowBlur = 0;
+  } else drawSprite(ctx, main, fx, fy);
+  var z = $("zoom"), Z = 4; if (z.width !== main.art.width * Z) z.width = main.art.width * Z; if (z.height !== main.art.height * Z) z.height = main.art.height * Z; var zx = z.getContext("2d"); zx.imageSmoothingEnabled = false; zx.clearRect(0, 0, z.width, z.height);
+  if (S.flip) { zx.save(); zx.translate(z.width, 0); zx.scale(-1, 1); zx.drawImage(main.art, 0, 0, z.width, z.height); zx.restore(); } else zx.drawImage(main.art, 0, 0, z.width, z.height);
+  shownI = i;
+}
 function render() {
-  if (!src) return; if (busy) { again = true; return; } busy = true;
+  if (!src && !clip) return; if (busy) { again = true; return; } busy = true;
   requestAnimationFrame(function () {
-    try {
-      var bg = bgs[S.scene], sc = $("scene"), H = bg.height; if (sc.height !== H) sc.height = H;
-      var ctx = sc.getContext("2d"); ctx.drawImage(bg, 0, 0);
-      var pos = S.pos[S.scene], fx = pos[0] * SC_W, fy = pos[1] * H, main = build(S.mode);
-      if (S.cmp) { var other = build(S.mode === "pixel" ? "smooth" : "pixel"), gap = Math.max(main.dev.width, other.dev.width) * 0.55 + 20;
-        drawSprite(ctx, S.mode === "pixel" ? other : main, fx - gap, fy); drawSprite(ctx, S.mode === "pixel" ? main : other, fx + gap, fy);
-        ctx.font = "600 30px " + getComputedStyle(document.body).fontFamily; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.shadowColor = "#000"; ctx.shadowBlur = 6;
-        ctx.fillText("smooth", fx - gap, fy + 34); ctx.fillText("pixel", fx + gap, fy + 34); ctx.shadowBlur = 0;
-      } else drawSprite(ctx, main, fx, fy);
-      var z = $("zoom"), Z = 4; z.width = main.art.width * Z; z.height = main.art.height * Z; var zx = z.getContext("2d"); zx.imageSmoothingEnabled = false; zx.clearRect(0, 0, z.width, z.height);
-      if (S.flip) { zx.save(); zx.translate(z.width, 0); zx.scale(-1, 1); zx.drawImage(main.art, 0, 0, z.width, z.height); zx.restore(); } else zx.drawImage(main.art, 0, 0, z.width, z.height);
-      $("outImg").src = (S.flip ? z : main.art).toDataURL("image/png");
-      $("stats").textContent = (S.mode === "pixel" ? "Sprite " + main.w + " x " + main.h + " art pixels, each " + S.px + " phone pixel" + (S.px > 1 ? "s" : "") + ", " + main.colors + " colours" : "Sprite " + main.w + " x " + main.h + " phone pixels (smooth)") + " | on screen " + Math.round(main.dev.width / DPR3) + " x " + Math.round(main.dev.height / DPR3) + " pt";
-    } catch (e) { $("stats").textContent = "Could not process this image: " + e.message; }
+    try { prepare(); draw(frameI); if (clip && !animOn) { animOn = true; requestAnimationFrame(tick); } }
+    catch (e) { $("stats").textContent = "Could not process this " + (clip ? "clip" : "image") + ": " + e.message; }
     busy = false; if (again) { again = false; render(); }
   });
+}
+/* plays the clip on a loop at its own speed */
+function tick(ts) {
+  if (!clip) { animOn = false; return; }
+  if (playing) frameI = Math.floor(ts / 1000 * clip.fps) % clip.frames.length;
+  if (sets && !busy && frameI !== shownI) { try { draw(frameI); } catch (e) {} }
+  requestAnimationFrame(tick);
 }
 /* ---------- controls ---------- */
 function code() { return S.mode === "pixel" ? "pixel h=" + S.h + " px=" + S.px + " colours=" + S.nc + " sharpen=" + S.sh + " outline=" + S.ol + " edge=" + S.at + " bg=" + S.bg + (S.bg !== "none" ? " tol=" + S.tol : "") + (S.flip ? " flip" : "") : "smooth h=" + S.h + " bg=" + S.bg + (S.bg !== "none" ? " tol=" + S.tol : "") + (S.flip ? " flip" : ""); }
@@ -232,8 +271,37 @@ $("resetBtn").onclick = function () { var sc = S.scene, pos = S.pos; Object.assi
 $("copyBtn").onclick = function () { var t = code(), b = this; try { navigator.clipboard.writeText(t).then(function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy settings"; }, 1400); }, function () { selectCode(); }); } catch (e) { selectCode(); } };
 function selectCode() { var r = document.createRange(); r.selectNodeContents($("code")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); $("copyBtn").textContent = "Selected - copy it"; }
 $("sceneWrap").addEventListener("pointerdown", function (e) { var r = $("scene").getBoundingClientRect(); S.pos[S.scene] = [Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), Math.max(0.05, Math.min(1, (e.clientY - r.top) / r.height))]; save(); render(); });
-function useFile(f) { if (!f || !/^image\//.test(f.type)) { $("srcName").textContent = "That file isn't an image. Pick a PNG, JPG or WEBP."; return; }
-  var u = URL.createObjectURL(f); loadImg(u).then(function (im) { src = im; cutCache = null; srcName = f.name; $("srcName").textContent = "Using: " + f.name + " (" + im.naturalWidth + " x " + im.naturalHeight + ")"; render(); }, function () { $("srcName").textContent = "Couldn't open that image."; }); }
+function useFile(f) { if (f && (/^video\//.test(f.type) || /\.(mp4|mov|webm|m4v)$/i.test(f.name))) { useClip(f); return; }
+  if (!f || !/^image\//.test(f.type)) { $("srcName").textContent = "That file isn't an image or a clip. Pick a PNG, JPG, WEBP or MP4."; return; }
+  var u = URL.createObjectURL(f); loadImg(u).then(function (im) { src = im; clip = null; $("playBtn").hidden = true; cutCache = null; srcName = f.name; $("srcName").textContent = "Using: " + f.name + " (" + im.naturalWidth + " x " + im.naturalHeight + ")"; render(); }, function () { $("srcName").textContent = "Couldn't open that image."; }); }
+/* a clip: read up to 60 frames (about 12 a second) into memory at up to 640 px, then the lab treats each like a picture */
+var clip = null, clipNo = 0;
+function useClip(f) {
+  var no = ++clipNo, v = document.createElement("video"), u = URL.createObjectURL(f), msg = $("srcName");
+  v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.src = u; msg.textContent = "Opening the clip...";
+  var wait = function (ev, ms) { return new Promise(function (ok, no2) { var t = setTimeout(function () { no2(new Error("timed out")); }, ms); v.addEventListener(ev, function h() { clearTimeout(t); v.removeEventListener(ev, h); ok(); }); }); };
+  var fail = function () { if (no === clipNo) msg.textContent = "Couldn't read that clip. MP4 or WEBM works best."; };
+  wait("loadeddata", 15000).then(function () { return v.play().then(function () { v.pause(); }, function () {}); }).then(function () {
+    var dur = v.duration; if (!isFinite(dur) || dur <= 0) throw new Error("no length");
+    var fps = Math.min(12, Math.max(1, Math.floor(60 / dur))), n = Math.max(1, Math.min(60, Math.round(dur * fps)));
+    var sc = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight)), W = Math.round(v.videoWidth * sc), H = Math.round(v.videoHeight * sc), frames = [];
+    var grab = function (i) {
+      if (no !== clipNo) return Promise.resolve(null);
+      if (i >= n) return Promise.resolve(frames);
+      msg.textContent = "Reading the clip... " + (i + 1) + " / " + n;
+      var p = wait("seeked", 5000); v.currentTime = Math.min(dur - 0.001, (i + 0.5) / fps);
+      return p.then(function () { var c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(v, 0, 0, W, H); frames.push(c); return grab(i + 1); });
+    };
+    return grab(0).then(function (fr) {
+      if (!fr) return; URL.revokeObjectURL(u);
+      clip = { id: "clip" + no, frames: fr, fps: fps, cut: null }; sets = null; frameI = 0; playing = true;
+      $("playBtn").hidden = false; $("playBtn").textContent = "Pause"; $("playBtn").setAttribute("aria-pressed", "false");
+      msg.textContent = "Using clip: " + f.name + " (" + v.videoWidth + " x " + v.videoHeight + ", " + dur.toFixed(1) + " s, " + fr.length + " frames). Height = the box the art fills across the whole clip.";
+      render();
+    });
+  }).catch(fail);
+}
+$("playBtn").onclick = function () { playing = !playing; this.textContent = playing ? "Pause" : "Play"; this.setAttribute("aria-pressed", String(!playing)); };
 $("file").onchange = function () { useFile(this.files[0]); };
 var dr = $("drop"); ["dragenter", "dragover"].forEach(function (t) { dr.addEventListener(t, function (e) { e.preventDefault(); dr.classList.add("over"); }); });
 ["dragleave", "drop"].forEach(function (t) { dr.addEventListener(t, function (e) { e.preventDefault(); dr.classList.remove("over"); }); });
