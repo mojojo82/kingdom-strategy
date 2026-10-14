@@ -1837,3 +1837,7 @@
 - Harley: new hero Iron Lily (Infantry, Legendary), card only for now. HERO_DEFS.ironlily with comingSoon + vipOnly: "🔒 Coming soon" instead of Recruit, no Equip button, equipConquestHero refuses (coming_soon), never on bots/Arena (vipOnly pools). Placeholder skills: Crimson Tempest (active, 9 s - shown as her main skill) and Iron Will (passive); numbers not used anywhere yet.
 - Card video plays once, then loops the held close-up: one mp4 (intro + blended loop), keyframe at 7.625 s, HERO_CARD_VIDEO.ironlily.loopStart; hcWatchLoop jumps back right before the end (requestVideoFrameCallback, "ended" fallback). Small card uses a built-in still (HERO_STILL_BUILTIN). Fixed a load-order slip (getHeroArt runs before that var at load).
 - Test dev/simfork/g287_ironlily.js (list still, card, coming soon, loop jump, no equip, not on bots); g281, g285, g286 ok. Not checked on a phone.
+
+## v1150 — Card videos fill the portrait box (TEST)
+- Harley: no side strips - zoom the video in. object-fit cover (a square clip in the 5:4 box trims ~19% of the height), positioned 50% 15% so heads stay in and most of the trim comes off the bottom (under the rarity/stars strip). Future clips: Harley will make them 5:4 (Leonardo Custom 1280x1024) so nothing is trimmed.
+- g286, g287 ok. Not checked on a phone.
