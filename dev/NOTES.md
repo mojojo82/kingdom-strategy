@@ -1878,3 +1878,9 @@
 - Harley (phone first): v1156 fixed sitting over his land on the phone but zooming there hitched more than before today. Now TERR_USE_CHUNKS = (hover: hover) and (pointer: fine): mouse devices (PC) use the v1155/v1156 chunk canvases; touch devices use exactly the v1154 code (terrainRenderRangeCells / terrainRepositionCells copied from v1154, terrainSyncCell's old append path). g289 MOBILE=1: 990 canvases like v1154, picture identical.
 - Next (Harley OK'd): tile-set drawing - pre-render each corner combination (with a few variants) once, then cells just paste from the table; must beat the old way on phones (and with a lot of land) before phones switch to it. Parked draft of progressive chunk building: branch wip-terrain-progressive.
 - g281, g286, g289 (PC + MOBILE) ok. Not checked on a phone.
+
+## v1158 — Land: drawn cells remembered + phone fills in behind the overview (TEST)
+- Harley OK'd (with "be prepared to revert" - v1157 is the fallback: git show <v1157 commit>:test/index.html). Kept the look exactly (the land is one continuous noise painting, so a strict tile table would show repeats/seams).
+- terrainCellCache (Map, up to 9000 cells, oldest dropped): a drawn cell canvas is reused when it comes back into view or you zoom back in - no pixel work. Edits redraw (and refresh the cache); an edit made zoomed out drops that cell; a synced change from another player clears the cache (terrainClearAll). Both phone (cells) and PC (chunks) paths.
+- Phone path: when you zoom in from the overview, new cells are drawn ~7 ms per frame while the overview picture stays underneath, then it is removed.
+- Test g289 (worst frame while zooming 0.45<->0.7 etc, painted island): phone mode 831/731/1015 ms (v1157) -> 167/132/132 ms (the remaining ~130 ms is the rest of the map; zooming out costs the same). PC 665/682/516 -> 182/165/217. Picture identical. g281, g286 ok. Not checked on a phone. Not done: making the per-pixel drawing itself faster.

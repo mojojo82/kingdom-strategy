@@ -11675,7 +11675,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1157"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1158"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16017,23 +16017,34 @@ function terrainCellPlace(el, i, j) {
   el.style.width = size + "px"; el.style.height = size + "px"; el.style.left = (cx - size / 2) + "px"; el.style.top = (cy - size / 2) + "px";
 }
 // Make cell (i,j) exist (and be up to date) if it has any land in it, or disappear if not.
+/* v1158 (Harley: zooming in over his land hitched): a drawn cell is remembered (off the page) and reused when it comes back into view or you
+   zoom back in, instead of being worked out again pixel by pixel. Edits redraw it; a synced change from another player clears the lot. */
+var terrainCellCache = new Map(), TERR_CACHE_MAX = 9000, terrainCacheMiss = 0;
+function terrainCacheTake(k) { var cv = terrainCellCache.get(k); if (cv) { terrainCellCache.delete(k); terrainCellCache.set(k, cv); } return cv; }
+function terrainCachePut(k, cv) { terrainCellCache.delete(k); terrainCellCache.set(k, cv); if (terrainCellCache.size > TERR_CACHE_MAX) { var it = terrainCellCache.keys(); for (var n = 0; n < 1000; n++) terrainCellCache.delete(it.next().value); } }
 function terrainSyncCell(i, j, redraw) {
-  if (terrainOverviewWanted()) { terrainOverviewSoon(); return false; } /* v908: zoomed out - the overview canvas shows it */
+  if (terrainOverviewWanted()) { if (redraw) terrainCellCache.delete(i + "," + j); terrainOverviewSoon(); return false; } /* v908: zoomed out - the overview canvas shows it. v1158: an edit made out here makes the remembered cell stale */
   var k = i + "," + j, el = terrainEls[k];
   if (el && !redraw) return true;
   if (!el && !(terrainAt(i - 1, j - 1) || terrainAt(i, j - 1) || terrainAt(i - 1, j) || terrainAt(i, j))) return false; /* v862: all-sea cell - nothing to make (matters when zoomed right out) */
+  if (!el && !redraw) { var hit = terrainCacheTake(k); if (hit) { /* v1158: already drawn earlier - no pixel work */
+    if (!TERR_USE_CHUNKS) { var L1 = terrainLayer(); if (!L1) return false; L1.appendChild(hit); terrainEls[k] = hit; terrainCellPlace(hit, i, j); return true; }
+    if (!terrainLayer()) return false; terrainEls[k] = hit; terrainChunkMark(i, j); return true; } }
   if (!el) { el = document.createElement("canvas"); el.className = "terr"; el.width = TERRAIN_PX + 2 * TERRAIN_EDGE_PX; el.height = el.width; }
+  terrainCacheMiss++;
   if (!TERR_USE_CHUNKS) { /* v1157: phones - the pre-v1155 way, each cell on the page */
-    if (!terrainDrawCell(el, i, j)) { if (terrainEls[k]) { el.remove(); delete terrainEls[k]; } return false; }
+    if (!terrainDrawCell(el, i, j)) { terrainCellCache.delete(k); if (terrainEls[k]) { el.remove(); delete terrainEls[k]; } return false; }
+    terrainCachePut(k, el);
     if (!terrainEls[k]) { var L0 = terrainLayer(); if (!L0) return false; L0.appendChild(el); terrainEls[k] = el; }
     terrainCellPlace(el, i, j); return true;
   }
-  if (!terrainDrawCell(el, i, j)) { if (terrainEls[k]) terrainCellGone(k); return false; }
+  if (!terrainDrawCell(el, i, j)) { terrainCellCache.delete(k); if (terrainEls[k]) terrainCellGone(k); return false; }
+  terrainCachePut(k, el);
   if (!terrainEls[k]) { if (!terrainLayer()) return false; terrainEls[k] = el; }
   terrainChunkMark(i, j); /* v1155: cells are drawn into chunk canvases, not put on the page one by one */ /* v907: size depends on the canvas size, which a redraw can change (Grass 2) */
   return true;
 }
-function terrainClearAll() { Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); }); terrainEls = {}; terrainChunksClear(); terrainRev++; } /* v1157: cells may be on the page (phones) */
+function terrainClearAll() { Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); }); terrainEls = {}; terrainCellCache.clear(); terrainChunksClear(); terrainRev++; } /* v1157: cells may be on the page (phones) */
 /* v1155 (Harley: PC map at 18-25 FPS at full detail over painted land, phone fine; Dev Tools test: only "no Painted land" fixes it). At full detail
    every corner cell of painted land was its own small rotated canvas on the page - hundreds of them, each composited separately (v908 had already
    fixed the zoomed-out case with one overview canvas). Now the cell canvases stay off the page and are copied into one canvas per 8x8-cell chunk,
@@ -16136,11 +16147,10 @@ function terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) {
 }
 function terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG) {
   if (!terrainEnsure()) return;
-  if (terrainOverviewWanted()) { Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); }); terrainEls = {}; terrainOverviewRender(); return; } /* v908 */
-  terrainOverviewRemove();
-  var wanted = {}, i, j;
+  if (terrainOverviewWanted()) { Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); }); terrainEls = {}; terrainFillArgs = null; terrainOverviewRender(); return; } /* v908 */
+  var wanted = {}, i, j, budget = terrainOv.el ? performance.now() + 7 : 0, short = false; /* v1158: with the zoomed-out picture still up, new cells are drawn ~7 ms per frame behind it */
   if ((maxX - minX + 2) * (maxY - minY + 2) > 6000) { /* v862: a huge window (zoomed far out) - walk painted land only, not every cell */
-    var n = terrainN, cand = {};
+    terrainOverviewRemove(); var n = terrainN, cand = {};
     Object.keys(terrainLandChunks).forEach(function (lk) { var lp = lk.split("_"), lcx = +lp[0] * TERRAIN_CHUNK, lcy = +lp[1] * TERRAIN_CHUNK; /* v865: only chunks holding land */
       for (var ly = lcy; ly < Math.min(n, lcy + TERRAIN_CHUNK); ly++) for (var lx = lcx; lx < Math.min(n, lcx + TERRAIN_CHUNK); lx++) { if (!terrainArr[ly * n + lx] || lx < minX - 1 || lx > maxX + 1 || ly < minY - 1 || ly > maxY + 1) continue; cand[lx + "," + ly] = 1; cand[(lx + 1) + "," + ly] = 1; cand[lx + "," + (ly + 1)] = 1; cand[(lx + 1) + "," + (ly + 1)] = 1; } });
     Object.keys(cand).forEach(function (k) { var c0 = k.indexOf(","), ci = +k.slice(0, c0), cj = +k.slice(c0 + 1);
@@ -16151,14 +16161,19 @@ function terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG) {
   }
   var TC = TERRAIN_CHUNK, hasLand = function (bx, by) { return !!(terrainLandChunks[bx + "_" + by] || terrainLandChunks[(bx - 1) + "_" + by] || terrainLandChunks[bx + "_" + (by - 1)] || terrainLandChunks[(bx - 1) + "_" + (by - 1)]); };
   var noLand = true; for (var lk in terrainLandChunks) { noLand = false; break; }
-  if (noLand) { Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); delete terrainEls[k]; }); return; } /* v866: nothing painted anywhere */
+  if (noLand) { terrainOverviewRemove(); Object.keys(terrainEls).forEach(function (k) { terrainEls[k].remove(); delete terrainEls[k]; }); return; } /* v866: nothing painted anywhere */
   for (i = minX; i <= maxX + 1; i++) for (j = minY; j <= maxY + 1; j++) {
     if (!hasLand(Math.floor(i / TC), Math.floor(j / TC))) { j = Math.min(maxY + 1, (Math.floor(j / TC) + 1) * TC - 1); continue; } /* v866: no painted land in or next to this chunk - skip the rest of it in this column */
     if (isoRect) { var c = isoCenterG(isoG, i - 0.5, j - 0.5); if (c.x < isoRect.L || c.x > isoRect.R || c.y < isoRect.T || c.y > isoRect.B) continue; }
-    if (terrainSyncCell(i, j, false)) wanted[i + "," + j] = true;
+    var kk = i + "," + j;
+    if (budget && !terrainEls[kk] && !terrainCellCache.has(kk) && performance.now() > budget) { short = true; continue; } /* v1158: out of time this frame - the overview covers it */
+    if (terrainSyncCell(i, j, false)) wanted[kk] = true;
   }
   Object.keys(terrainEls).forEach(function (k) { if (!wanted[k]) { terrainEls[k].remove(); delete terrainEls[k]; } });
+  if (short) { terrainFillArgs = [minX, maxX, minY, maxY, isoRect, isoG]; if (!terrainFillRaf) terrainFillRaf = requestAnimationFrame(function () { terrainFillRaf = 0; var a = terrainFillArgs; terrainFillArgs = null; if (a && !terrainOverviewWanted()) terrainRenderRangeCells.apply(null, a); }); }
+  else { terrainFillArgs = null; terrainOverviewRemove(); }
 }
+var terrainFillArgs = null, terrainFillRaf = 0; /* v1158 */
 function terrainRepositionCells() { terrainOverviewPlace(); Object.keys(terrainEls).forEach(function (k) { var c = k.indexOf(","); terrainCellPlace(terrainEls[k], parseInt(k.slice(0, c), 10), parseInt(k.slice(c + 1), 10)); }); }
 /* v1157 (Harley: phone first - "it was pretty good on phone before"): PCs (mouse) use the v1155/v1156 chunk canvases, which fixed the PC slowdown;
    phones/tablets (touch) go back to exactly the pre-v1155 drawing (one small canvas per cell), which phones handle well. */
