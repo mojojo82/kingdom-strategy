@@ -3061,6 +3061,10 @@
                     <input type="checkbox" id="devMapProfToggle"> 🗺️ Map timing on the FPS readout (screenshot it when the map is slow)
                   </label>
                 </div>
+                <div class="dev-tools-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
+                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button>
+                  <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
+                </div>
                 <div class="dev-tools-row" id="devMapPerfRow" style="flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted);">
                   <span>🗺️ Map speed test - switch off one thing at a time and watch the FPS (this device, resets on reload):</span>
                 </div>
@@ -11675,7 +11679,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1159"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1160"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15654,6 +15658,7 @@ function spawnTeleportDropExtras(tileId) {
 var TERRAIN_KEY_V2 = "kingdom_prototype_terrain_v2", terrainLandChunks = {}; /* v865: saved per painted chunk; index of chunks holding any land */
 var TERRAIN_KEY = "kingdom_prototype_terrain_v1", TERRAIN_DEV_KEY = "kingdom_prototype_terraindev_v1", terrainDev = false;
 try { terrainDev = localStorage.getItem(TERRAIN_DEV_KEY) === "1"; } catch (e) {}
+var terrainStress = false; /* v1160: dev stress-test land is on (this device only, gone on reload) */
 var TERRAIN_PX = 20, TERRAIN_EDGE_PX = 2, TERRAIN_CHUNK = 20, terrainN = 0, terrainArr = null, terrainEls = {}, terrainDirty = {}, terrainFlushTimer = null, terrainLastWrite = {};
 var TERR_GRASS = [[0x48,0x85,0x2c],[0x68,0x9d,0x2d],[0x79,0xa6,0x2c],[0x89,0xb2,0x2e],[0xa2,0xbf,0x2f]];
 var TERR_DIRT = [[0xb1,0x78,0x47],[0xcd,0x93,0x50],[0xd2,0x99,0x53],[0xd4,0x9c,0x56],[0xe0,0xac,0x63]];
@@ -15692,7 +15697,7 @@ function terrainApplyChunkString(k, str) { /* writes one chunk's 400 codes into 
 function terrainReindexChunk(cx, cy) { var n = terrainN, any = false; for (var y = cy * TERRAIN_CHUNK; y < Math.min(n, (cy + 1) * TERRAIN_CHUNK) && !any; y++) for (var x = cx * TERRAIN_CHUNK; x < Math.min(n, (cx + 1) * TERRAIN_CHUNK); x++) if (terrainArr[y * n + x]) { any = true; break; } if (any) terrainLandChunks[cx + "_" + cy] = 1; else delete terrainLandChunks[cx + "_" + cy]; }
 function terrainReindexAll() { terrainLandChunks = {}; var nc = Math.ceil(terrainN / TERRAIN_CHUNK); for (var cy = 0; cy < nc; cy++) for (var cx = 0; cx < nc; cx++) terrainReindexChunk(cx, cy); }
 function terrainSaveLocal() { /* v865: only chunks with land are stored */
-  if (!terrainArr) return;
+  if (!terrainArr || terrainStress) return; /* v1160: stress-test land is never saved */
   var out = {}; Object.keys(terrainLandChunks).forEach(function (k) { var p = k.split("_"); out[k] = terrainChunkString(+p[0], +p[1]); });
   try { localStorage.setItem(TERRAIN_KEY_V2, JSON.stringify({ chunks: out })); localStorage.removeItem(TERRAIN_KEY); } catch (e) {}
 }
@@ -15703,7 +15708,7 @@ function terrainChunkString(cx, cy) {
 }
 function terrainFlushCloud() {
   terrainFlushTimer = null; terrainSaveLocal();
-  if (!cloudDb || !PLAYER_ID) { terrainDirty = {}; return; }
+  if (terrainStress || !cloudDb || !PLAYER_ID) { terrainDirty = {}; return; } /* v1160: stress-test land never goes to the server */
   var keys = Object.keys(terrainDirty); terrainDirty = {};
   keys.forEach(function (k) {
     var p = k.split("_"), t = Date.now(); terrainLastWrite[k] = t;
@@ -15738,10 +15743,34 @@ function firebaseSeedWorld() {
     });
   }).catch(function (e) { console.error("World seed import failed:", e && e.message); });
 }
+/* v1160: Dev Tools stress test - 4 continents (~40% land) drawn straight into this device's map. Never saved, never sent; reload removes it. */
+function terrainStressGenerate(landFrac) {
+  if (!terrainEnsure()) return 0;
+  var n = terrainN, N = n * n, f = new Float32Array(N), cs = [[0.27, 0.28], [0.73, 0.25], [0.26, 0.74], [0.72, 0.73]], r = 0.2 * n;
+  function fbm(x, y, s) { return tnoise(x / 40, y / 40, s) * 0.55 + tnoise(x / 15, y / 15, s + 7) * 0.3 + tnoise(x / 6, y / 6, s + 13) * 0.15; }
+  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) {
+    var best = 9; for (var c = 0; c < 4; c++) { var dx = x - cs[c][0] * n, dy = y - cs[c][1] * n, d = Math.sqrt(dx * dx + dy * dy) / r; if (d < best) best = d; }
+    f[y * n + x] = best - (fbm(x, y, 101) - 0.5) * 1.1;
+  }
+  var srt = f.slice().sort(), cut = srt[Math.min(N - 1, Math.floor(N * (landFrac || 0.4)))], land = 0;
+  for (var i = 0; i < N; i++) {
+    var v = f[i]; if (v >= cut) { terrainArr[i] = 0; continue; }
+    var x2 = i % n, y2 = (i - x2) / n, code = 1;
+    if (cut - v < 0.06) code = 2; /* sand along the coast */
+    else if (tnoise(x2 / 18, y2 / 18, 211) > 0.62) code = 3; /* forest patches */
+    else if (tnoise(x2 / 22, y2 / 22, 307) > 0.6) code = 4; /* grass 2 patches */
+    else if (tnoise(x2 / 12, y2 / 12, 401) > 0.78) code = 2; /* inland dirt */
+    terrainArr[i] = code; land++;
+  }
+  terrainStress = true; terrainDirty = {}; if (terrainFlushTimer) { clearTimeout(terrainFlushTimer); terrainFlushTimer = null; }
+  terrainReindexAll(); terrainRev++; terrainClearAll();
+  try { renderVisibleTiles(); } catch (e) {} try { forestRefreshSoon(); } catch (e) {}
+  return land / N;
+}
 function startTerrainSync() {
   if (terrainSyncStarted || !cloudDb) return; terrainSyncStarted = true;
   cloudDb.collection(serverPrefix() + "terrain").onSnapshot(function (qsnap) {
-    if (!terrainEnsure()) return;
+    if (!terrainEnsure() || terrainStress) return; /* v1160: keep the stress-test land until reload */
     var changed = false, n = terrainN;
     qsnap.docs.forEach(function (doc) {
       if (!doc.exists) return; var k = doc.id, d = doc.data();
@@ -25096,6 +25125,12 @@ document.getElementById("devAddValor").onclick = function () { game.state.idle.v
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
+(function () { var b = document.getElementById("devStressLandBtn"), note = document.getElementById("devStressLandNote"); if (!b) return; b.onclick = function () { /* v1160 */
+  if (terrainStress) { location.reload(); return; }
+  if (!confirm("Draw 4 test continents (~40% land) on this phone only?\n\nNothing is saved or sent. Reload the game to get your real map back.")) return;
+  var t0 = performance.now(), fr = terrainStressGenerate(0.4);
+  b.textContent = "🔄 Remove stress-test land (reloads)"; note.textContent = "Stress land ON: " + Math.round(fr * 100) + "% land, built in " + Math.round(performance.now() - t0) + " ms. Not saved - reload removes it.";
+}; })();
 (function () { var t = document.getElementById("devMapProfToggle"); t.onchange = function (e) { mapProfSet(e.target.checked); }; })(); /* v1153 */
 (function () { /* v1154: live switches to find what makes the PC map slow at full detail */
   var row = document.getElementById("devMapPerfRow"), st = document.createElement("style"); document.head.appendChild(st);

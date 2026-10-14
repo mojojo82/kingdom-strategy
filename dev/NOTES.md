@@ -1888,3 +1888,8 @@
 ## v1159 — Reverted v1158 (TEST)
 - Harley: with v1158, zooming out over his land sent the phone FPS into the red; before today it only dipped to yellow when zooming out fast. Game file = v1157 again (phones: the pre-v1155 per-cell land drawing; PC: chunks). v1158 kept up to 9000 drawn cell canvases off-page - likely too much canvas memory for iPhone Safari - and left the overview canvas up under the cells while filling in.
 - Still to do, carefully: the zoomed-out overview picture is rebuilt pixel by pixel at each LOD step (up to 1.5M texels) - that is what grows with painted land. Any cache must stay small on phones.
+
+## v1160 — Dev Tools "Stress-test land (this phone only)" (TEST)
+- Harley wants to stress test the map with lots of land (most of the map will be painted one day). New button in Dev Tools > Speed & Testing: draws 4 continents (~40% of the map: grass, sand coasts, inland dirt, forest and grass 2 patches; sea everywhere else) into this device's map only. Tapping it again reloads the game, which puts the real map back.
+- Safe: while it's on (`terrainStress`), nothing is written to the server or the device's land save (painting too), and server land updates are ignored until reload.
+- Test g290 (phone mode, 1200x1200 map): 40% land made in ~1.2 s, server + device save unchanged, no errors. Headless worst frame while zooming: the first zoom-out ~2.5 s, 0.7<->0.25 ~1.1-1.8 s - this is the zoomed-out land picture being rebuilt, the thing the stress test is meant to show. Not checked on a phone.
