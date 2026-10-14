@@ -33,7 +33,7 @@ async function run() {
     const r = (a) => Math.max(...a) - Math.min(...a); return { lifeOn: fortLife.active, hullDyRange: +r(xs.map((q) => q[3])).toFixed(2), tipRelYRange: +r(xs.map((q) => q[1])).toFixed(2), angRange: +r(xs.map((q) => q[2])).toFixed(3) }; });
   await P.evaluate(() => setScreen("more", "arena")); await P.waitForTimeout(1500);
   await P.evaluate(() => { document.getElementById("arenaQuickMatchBtn").click(); }); await P.waitForTimeout(1000);
-  await P.evaluate(() => { arenaOpponent.weapons = { pulse_beam: 20, scatter_rounds: 20, flak_burst: 20 }; document.getElementById("arenaAttackBtn").click(); });
+  await P.evaluate(() => { arenaOpponent.weapons = { pulse_beam: 20, scatter_rounds: 20, flak_burst: 20 }; arenaAiWeaponOrder = Object.keys(arenaOpponent.weapons); document.getElementById("arenaAttackBtn").click(); });
   await P.waitForTimeout(4000);
   const ab = await P.evaluate(() => { const c = document.getElementById("arenaCanvas") || [...document.querySelectorAll("canvas")].sort((a, b) => b.width * b.height - a.width * a.height)[0]; const r = c.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
   for (let i = 0; i < 3; i++) { await P.waitForTimeout(1200); await P.screenshot({ path: path.join(__dirname, "out_g293_arena" + i + ".png"), clip: ab }); }

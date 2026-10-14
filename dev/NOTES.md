@@ -1945,3 +1945,6 @@
 
 ## v1169 — Barrel size default 0.26 (TEST)
 - Harley: barrel size 0.26 (was 0.33), from the Dev Tools slider. Devices that moved the slider keep their own value until "Default" is pressed. g293 ok.
+
+## v1169 — Barrel size default 0.26 (TEST)
+- Harley: barrel size 0.26 (was 0.33), from the Dev Tools slider. Devices that moved the slider keep their own value until "Default" is pressed. g293 ok (its Arena step now sets the bot's slot order after changing the bot's weapons, since v1167 fills the order at match start).
