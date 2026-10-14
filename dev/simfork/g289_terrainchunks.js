@@ -26,7 +26,10 @@ async function run(gameHtml, shotName) {
     for (let cy = 0; cy < Math.ceil(n / TERRAIN_CHUNK); cy++) for (let cx = 0; cx < Math.ceil(n / TERRAIN_CHUNK); cx++) { const x0 = cx * TERRAIN_CHUNK, y0 = cy * TERRAIN_CHUNK; let any = false; for (let y = y0; y < Math.min(n, y0 + TERRAIN_CHUNK) && !any; y++) for (let x = x0; x < Math.min(n, x0 + TERRAIN_CHUNK); x++) if (terrainArr[y * n + x]) { any = true; break; } if (any) terrainLandChunks[cx + "_" + cy] = 1; }
     terrainClearAll(); try { forestRefreshSoon(); } catch (e) {} setMapZoom(0.7); const vp = document.getElementById("mapviewport"), c = tileCenterPx({ x: 62, y: 30 }); vp.scrollLeft = c.x - vp.clientWidth / 2; vp.scrollTop = c.y - vp.clientHeight / 2; renderVisibleTiles(); });
   await P.waitForTimeout(2500);
-  const info = await P.evaluate(() => ({ canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom }));
+  const scroll = await P.evaluate(async () => { let draws = 0; const ctxp = CanvasRenderingContext2D.prototype, od = ctxp.drawImage; ctxp.drawImage = function (img) { if (this.canvas.classList && this.canvas.classList.contains("terr-ch")) draws++; return od.apply(this, arguments); };
+    const vp = document.getElementById("mapviewport"), x0 = vp.scrollLeft; for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + k * 6; await new Promise((r) => requestAnimationFrame(r)); } for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + (59 - k) * 6; await new Promise((r) => requestAnimationFrame(r)); }
+    ctxp.drawImage = od; return draws; });
+  const info = await P.evaluate((sc) => ({ canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom, cellDrawsWhileScrolling: sc }), scroll);
   await P.evaluate(() => { document.querySelectorAll("#mapworld .tile, .map-decor, .map-forest, #mapSeaFoam, #fpsCounter, #mapCoords").forEach((e) => e.style.visibility = "hidden"); });
   await P.waitForTimeout(300);
   const vpBox = await P.evaluate(() => { const r = document.getElementById("mapviewport").getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
@@ -36,5 +39,5 @@ async function run(gameHtml, shotName) {
 (async () => {
   const now = await run(GAME, "new"); console.log("new", JSON.stringify(now));
   if (process.env.GAMEFILE2) { const old = await run(fs.readFileSync(process.env.GAMEFILE2, "utf8"), "old"); console.log("old", JSON.stringify(old)); }
-  if (!process.env.NOASSERT) { assert.deepStrictEqual(now.errs, []); assert(now.info.canvases > 0 && now.info.canvases < 40 && now.info.lod === 0, "few chunk canvases at full detail"); console.log("g289 ok"); }
+  if (!process.env.NOASSERT) { assert.deepStrictEqual(now.errs, []); assert(now.info.cellDrawsWhileScrolling < 2000, "chunks are not redrawn on every scroll frame"); assert(now.info.canvases > 0 && now.info.canvases < 60 && now.info.lod === 0, "few chunk canvases at full detail"); console.log("g289 ok"); }
 })().catch((e) => { console.error(e); process.exit(1); });

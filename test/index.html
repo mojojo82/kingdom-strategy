@@ -11675,7 +11675,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1155"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1156"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16033,11 +16033,11 @@ function terrainClearAll() { terrainEls = {}; terrainChunksClear(); terrainRev++
    every corner cell of painted land was its own small rotated canvas on the page - hundreds of them, each composited separately (v908 had already
    fixed the zoomed-out case with one overview canvas). Now the cell canvases stay off the page and are copied into one canvas per 8x8-cell chunk,
    placed exactly where the cells were: same pixels, a handful of canvases instead of hundreds. */
-var TERR_CH = 8, TERR_CH_MG = 0.5, terrainChunks = {}, terrainChunkQ = {}, terrainChunkRaf = 0;
+var TERR_CH = 8, TERR_CH_MG = 0.5, terrainChunks = {}, terrainChunkQ = {}, terrainChunkRaf = 0, terrainChunkBuilt = {};
 function terrainChunkKey(i, j) { return Math.floor(i / TERR_CH) + "_" + Math.floor(j / TERR_CH); }
 function terrainChunkMark(i, j) { terrainChunkQ[terrainChunkKey(i, j)] = 1; if (!terrainChunkRaf) terrainChunkRaf = requestAnimationFrame(function () { terrainChunkRaf = 0; terrainChunksFlush(); }); }
 function terrainCellGone(k) { if (!terrainEls[k]) return; delete terrainEls[k]; var c = k.indexOf(","); terrainChunkMark(parseInt(k.slice(0, c), 10), parseInt(k.slice(c + 1), 10)); }
-function terrainChunksClear() { Object.keys(terrainChunks).forEach(function (q) { terrainChunks[q].el.remove(); }); terrainChunks = {}; terrainChunkQ = {}; }
+function terrainChunksClear() { Object.keys(terrainChunks).forEach(function (q) { terrainChunks[q].el.remove(); }); terrainChunks = {}; terrainChunkQ = {}; terrainChunkBuilt = {}; }
 function terrainChunkPlace(ch) {
   var s = tilePxZ(), p = s + gapPxZ(), size = p * (TERR_CH + 2 * TERR_CH_MG), u = ch.a - 1 + TERR_CH / 2, v = ch.b - 1 + TERR_CH / 2, cx, cy; /* cell (i,j) spans tile centres i-1..i, so chunk cells a..a+7 span a-1..a+7 */
   if (mapIso) { var c = isoCenterG(isoGeom(), u, v); cx = c.x; cy = c.y; } else { cx = padPxZ() + u * p + s / 2; cy = padPxZ() + v * p + s / 2; }
@@ -16109,18 +16109,25 @@ function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) {
     Object.keys(cand).forEach(function (k) { var c0 = k.indexOf(","), ci = +k.slice(0, c0), cj = +k.slice(c0 + 1);
       if (isoRect) { var cc = isoCenterG(isoG, ci - 0.5, cj - 0.5); if (cc.x < isoRect.L || cc.x > isoRect.R || cc.y < isoRect.T || cc.y > isoRect.B) return; }
       if (terrainSyncCell(ci, cj, false)) wanted[k] = true; });
-    Object.keys(terrainEls).forEach(function (k) { if (!wanted[k]) terrainCellGone(k); }); terrainChunksFlush();
+    Object.keys(terrainEls).forEach(function (k) { if (!wanted[k]) terrainCellGone(k); }); terrainChunkBuilt = {}; terrainChunksFlush(); /* v1156: partial cells - let the chunk path rebuild */
     return;
   }
   var TC = TERRAIN_CHUNK, hasLand = function (bx, by) { return !!(terrainLandChunks[bx + "_" + by] || terrainLandChunks[(bx - 1) + "_" + by] || terrainLandChunks[bx + "_" + (by - 1)] || terrainLandChunks[(bx - 1) + "_" + (by - 1)]); };
   var noLand = true; for (var lk in terrainLandChunks) { noLand = false; break; }
   if (noLand) { terrainEls = {}; terrainChunksClear(); return; } /* v866: nothing painted anywhere */
-  for (i = minX; i <= maxX + 1; i++) for (j = minY; j <= maxY + 1; j++) {
-    if (!hasLand(Math.floor(i / TC), Math.floor(j / TC))) { j = Math.min(maxY + 1, (Math.floor(j / TC) + 1) * TC - 1); continue; } /* v866: no painted land in or next to this chunk - skip the rest of it in this column */
-    if (isoRect) { var c = isoCenterG(isoG, i - 0.5, j - 0.5); if (c.x < isoRect.L || c.x > isoRect.R || c.y < isoRect.T || c.y > isoRect.B) continue; }
-    if (terrainSyncCell(i, j, false)) wanted[i + "," + j] = true;
+  /* v1156 (Harley: v1155 made his phone lag there): the chunk is the unit now. A chunk is built ONCE (all its land cells) when it comes into view and
+     dropped whole when it is well out of view - before, cells joined/left at the screen edge every scroll frame, so edge chunks were redrawn non-stop. */
+  var CH = TERR_CH, q0 = Math.floor((minX - 1) / CH), q1 = Math.floor((maxX + 2) / CH), r0 = Math.floor((minY - 1) / CH), r1 = Math.floor((maxY + 2) / CH), vis = {};
+  for (var qx = q0; qx <= q1; qx++) for (var qy = r0; qy <= r1; qy++) {
+    var a = qx * CH, b = qy * CH; if (!hasLand(Math.floor(a / TC), Math.floor(b / TC)) && !hasLand(Math.floor((a + CH) / TC), Math.floor((b + CH) / TC)) && !hasLand(Math.floor((a + CH) / TC), Math.floor(b / TC)) && !hasLand(Math.floor(a / TC), Math.floor((b + CH) / TC))) continue;
+    var q = qx + "_" + qy; vis[q] = 1; if (terrainChunkBuilt[q]) continue; terrainChunkBuilt[q] = 1;
+    for (i = a; i < a + CH; i++) for (j = b; j < b + CH; j++) terrainSyncCell(i, j, false);
   }
-  Object.keys(terrainEls).forEach(function (k) { if (!wanted[k]) terrainCellGone(k); }); terrainChunksFlush();
+  Object.keys(terrainChunkBuilt).forEach(function (q) { if (vis[q]) return; var pr = q.split("_"), qx2 = +pr[0], qy2 = +pr[1];
+    if (qx2 >= q0 - 1 && qx2 <= q1 + 1 && qy2 >= r0 - 1 && qy2 <= r1 + 1) return; /* one chunk of slack so a small scroll back doesn't rebuild it */
+    delete terrainChunkBuilt[q]; for (var ii = qx2 * CH; ii < qx2 * CH + CH; ii++) for (var jj = qy2 * CH; jj < qy2 * CH + CH; jj++) delete terrainEls[ii + "," + jj];
+    if (terrainChunks[q]) { terrainChunks[q].el.remove(); delete terrainChunks[q]; } delete terrainChunkQ[q]; });
+  terrainChunksFlush();
 }
 // ---- the painter ----
 var terrainPaint = { active: false, code: 1, brush: 0, pan: false, undo: [], stroke: null, last: null };

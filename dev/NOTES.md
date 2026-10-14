@@ -1868,3 +1868,8 @@
 - Harley's Dev Tools test on PC: only "no Painted land" brought the FPS back (others did nothing). Cause: at full detail (tile >= 16 px, LOD 0) every corner cell of painted land was its own small rotated canvas on the page - reproduced in a test world with a painted island: 972 canvases (v908 had already fixed the zoomed-out case with one overview canvas). PC browsers composite each one separately.
 - Now cell canvases are drawn off-page and copied (pixel-exact, no smoothing, keeping their 2-texel borders) into one canvas per 8x8-cell chunk with half a tile of margin, placed and rotated like the cells: 27 canvases for the same view, same picture (side-by-side identical, no seams). Painting, redraws, zoom changes and the overview mode unchanged.
 - Test dev/simfork/g289_terrainchunks.js (GAMEFILE2=old build compares). g281, g286 ok. g164 stale (missing files). Not checked on Harley's PC/phone.
+
+## v1156 — Painted land chunks built once (phone lag from v1155) (TEST)
+- Harley: after v1155 his phone lagged in the same area. Cause: v1155 still decided cell by cell what was on screen, so as you scrolled, cells joined/left the edge chunks every frame and those chunk canvases were redrawn non-stop (test scroll of 120 frames: 9,521 cell draws). Phones pay a lot to re-upload a changed canvas.
+- Now the chunk is the unit: built once with all its land cells when it comes into view, dropped whole only when more than a chunk out of view. Same scroll: 0 draws. Picture unchanged (diff vs v1155 ~1.5 mean, texture noise). Painting still redraws the chunk being painted.
+- g289 now counts chunk redraws while scrolling. g281, g286 ok. Not checked on a phone.
