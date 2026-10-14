@@ -1873,3 +1873,8 @@
 - Harley: after v1155 his phone lagged in the same area. Cause: v1155 still decided cell by cell what was on screen, so as you scrolled, cells joined/left the edge chunks every frame and those chunk canvases were redrawn non-stop (test scroll of 120 frames: 9,521 cell draws). Phones pay a lot to re-upload a changed canvas.
 - Now the chunk is the unit: built once with all its land cells when it comes into view, dropped whole only when more than a chunk out of view. Same scroll: 0 draws. Picture unchanged (diff vs v1155 ~1.5 mean, texture noise). Painting still redraws the chunk being painted.
 - g289 now counts chunk redraws while scrolling. g281, g286 ok. Not checked on a phone.
+
+## v1157 — Phones back on the pre-v1155 land drawing; PC keeps chunks (TEST)
+- Harley (phone first): v1156 fixed sitting over his land on the phone but zooming there hitched more than before today. Now TERR_USE_CHUNKS = (hover: hover) and (pointer: fine): mouse devices (PC) use the v1155/v1156 chunk canvases; touch devices use exactly the v1154 code (terrainRenderRangeCells / terrainRepositionCells copied from v1154, terrainSyncCell's old append path). g289 MOBILE=1: 990 canvases like v1154, picture identical.
+- Next (Harley OK'd): tile-set drawing - pre-render each corner combination (with a few variants) once, then cells just paste from the table; must beat the old way on phones (and with a lot of land) before phones switch to it. Parked draft of progressive chunk building: branch wip-terrain-progressive.
+- g281, g286, g289 (PC + MOBILE) ok. Not checked on a phone.

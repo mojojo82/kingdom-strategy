@@ -9,7 +9,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GA
 const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 async function run(gameHtml, shotName) {
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
-  const ctx = await b.newContext({ viewport: { width: 1366, height: 860 }, deviceScaleFactor: 1 });
+  const ctx = await b.newContext(process.env.MOBILE ? { viewport: { width: 430, height: 932 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { viewport: { width: 1366, height: 860 }, deviceScaleFactor: 1 });
   await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
   await ctx.exposeFunction("__fbcall", call);
   await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: gameHtml }));
@@ -29,7 +29,7 @@ async function run(gameHtml, shotName) {
   const scroll = await P.evaluate(async () => { let draws = 0; const ctxp = CanvasRenderingContext2D.prototype, od = ctxp.drawImage; ctxp.drawImage = function (img) { if (this.canvas.classList && this.canvas.classList.contains("terr-ch")) draws++; return od.apply(this, arguments); };
     const vp = document.getElementById("mapviewport"), x0 = vp.scrollLeft; for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + k * 6; await new Promise((r) => requestAnimationFrame(r)); } for (let k = 0; k < 60; k++) { vp.scrollLeft = x0 + (59 - k) * 6; await new Promise((r) => requestAnimationFrame(r)); }
     ctxp.drawImage = od; return draws; });
-  const info = await P.evaluate((sc) => ({ canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom, cellDrawsWhileScrolling: sc }), scroll);
+  const info = await P.evaluate((sc) => ({ chunked: typeof TERR_USE_CHUNKS !== "undefined" && TERR_USE_CHUNKS, canvases: document.querySelectorAll("#mapTerrainLayer canvas").length, lod: mapLod(), z: mapZoom, cellDrawsWhileScrolling: sc }), scroll);
   await P.evaluate(() => { document.querySelectorAll("#mapworld .tile, .map-decor, .map-forest, #mapSeaFoam, #fpsCounter, #mapCoords").forEach((e) => e.style.visibility = "hidden"); });
   await P.waitForTimeout(300);
   const vpBox = await P.evaluate(() => { const r = document.getElementById("mapviewport").getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
@@ -39,5 +39,5 @@ async function run(gameHtml, shotName) {
 (async () => {
   const now = await run(GAME, "new"); console.log("new", JSON.stringify(now));
   if (process.env.GAMEFILE2) { const old = await run(fs.readFileSync(process.env.GAMEFILE2, "utf8"), "old"); console.log("old", JSON.stringify(old)); }
-  if (!process.env.NOASSERT) { assert.deepStrictEqual(now.errs, []); assert(now.info.cellDrawsWhileScrolling < 2000, "chunks are not redrawn on every scroll frame"); assert(now.info.canvases > 0 && now.info.canvases < 60 && now.info.lod === 0, "few chunk canvases at full detail"); console.log("g289 ok"); }
+  if (!process.env.NOASSERT) { assert.deepStrictEqual(now.errs, []); if (process.env.MOBILE) assert(!now.info.chunked && now.info.canvases > 100, "phones: the pre-v1155 per-cell drawing"); else assert(now.info.chunked && now.info.cellDrawsWhileScrolling < 2000 && now.info.canvases < 60, "PC: chunks, not redrawn while scrolling"); assert(now.info.canvases > 0 && now.info.lod === 0, "few chunk canvases at full detail"); console.log("g289 ok"); }
 })().catch((e) => { console.error(e); process.exit(1); });
