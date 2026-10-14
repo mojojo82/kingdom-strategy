@@ -1942,3 +1942,6 @@
 - Harley: try his new ChatGPT ghost ship in game before animating it in Leonardo - a new fortress skin, plain smooth shrink, 145 pt tall (his Pixel Lab setting "smooth h=145 bg=none").
 - Cut from art/originals/ghost_ship4_magenta.psd (magenta key + pink despill), 617x435 webp (3x phone pixels), FORTRESS_SKINS id "serpent", cqScale 0.3922 -> 145 x 206 pt in Conquest; centred where every fortress sits, so the stern runs ~34 pt off the left edge. Same picture for the Governor screen (govWidth 0.9). No weapon-grid layout yet (barrels use the default spots); bots can roll it too.
 - Test g295 (Conquest + Arena screenshots, 145 pt check). Not checked on a phone.
+
+## v1169 — Barrel size default 0.26 (TEST)
+- Harley: barrel size 0.26 (was 0.33), from the Dev Tools slider. Devices that moved the slider keep their own value until "Default" is pressed. g293 ok.
