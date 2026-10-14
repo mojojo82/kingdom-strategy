@@ -1,4 +1,4 @@
-/* v1168/v1170: Bonewake fortress skin - layered (sails/flags/chain animated behind the heroes, hull in front), 130 pt, hovering 20 pt. Conquest + Arena screenshots. Run: node dev/simfork/g295_bonewake.js */
+/* v1168/v1170: Bonewake fortress skin - layered (sails/flags/chain animated behind the heroes, hull in front), 130 pt, hovering 12 pt (v1171). Conquest + Arena screenshots. Run: node dev/simfork/g295_bonewake.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -31,5 +31,5 @@ async function run() {
   await b.close(); return { info, errs };
 }
 (async () => { const r = await run(); console.log(JSON.stringify(r));
-  if (!process.env.NOASSERT) { assert.deepStrictEqual(r.errs, []); assert(r.info.id === "serpent" && r.info.loaded && Math.abs(r.info.hPt - 130) <= 2 && r.info.layered && r.info.sheet > 0 && r.info.frameMoves && r.info.lift === 20, "Bonewake: layered, animated, 130 pt, hovering"); console.log("g295 ok"); }
+  if (!process.env.NOASSERT) { assert.deepStrictEqual(r.errs, []); assert(r.info.id === "serpent" && r.info.loaded && Math.abs(r.info.hPt - 130) <= 2 && r.info.layered && r.info.sheet > 0 && r.info.frameMoves && r.info.lift === 12, "Bonewake: layered, animated, 130 pt, hovering"); console.log("g295 ok"); }
 })().catch((e) => { console.error(e); process.exit(1); });

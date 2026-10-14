@@ -1956,3 +1956,6 @@
 - Conquest: back part drawn before the riding heroes, hull (front) after them, so they stand on deck behind the rail. Arena: both parts at the fortress (heroes fight on the ground there). Orbit Shield lights the hull part.
 - `lift` (skin, pt): Bonewake hovers 20 pt higher - used everywhere the fortress's height is worked out (Conquest box, getFortressTopY, Arena boxes, laser zone, pixel hit, shields). `defLayout` (skin): built-in spots - heroes on deck, barrels on the hull side, cannon at the serpent's mouth, KO on the stern; the layout editor's saved layout wins.
 - Test g295 (layered, animated, 130 pt, lift 20, Conquest + Arena screenshots); g293 (wobble limit 1.0 - headless timing noise), g294, g292, g204 ok. Not checked on a phone.
+
+## v1171 — Bonewake hovers lower (TEST)
+- Harley: move it down a little closer to the ground. lift 20 -> 12 pt. g295 ok.
