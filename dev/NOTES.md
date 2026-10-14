@@ -1855,3 +1855,8 @@
 - Harley: on PC, moving the mouse over a big landmass (top-left of his view, near X:58 Y:26) is very slow; same spot on the phone is fine; started some time in the last ~2 weeks.
 - dev/simfork/g288_maphover.js sweeps a mouse over the world map on a 1366x860 desktop page and measures frame times (arg hoverOff neutralises the old .tile:hover rule). Result: 60 FPS both ways - not reproduced. No JS reacts to plain mouse movement on the map, and iso tiles have pointer-events none.
 - Clue: in the test world 58,26 is open sea - Harley's server has hand-painted terrain/decor (terrain tools) that the test world lacks, so the slowdown is probably that painted land being heavy to draw on PC, not hover itself. Asked Harley: still slow with the mouse off the map? with the mouse still? with the land half off screen?
+
+## v1153 — Dev Tools "Map timing" readout (TEST, diagnostic)
+- Harley: on PC the world map drops to ~18 FPS at one zoom level (LOD 0, full tile art) over his painted land, flickering 60 <-> 40 with the land half on screen; phone fine. Not reproduced headless (test world has no painted land; 60 FPS at zoom 0.35-1 with a mouse sweep).
+- Dev Tools checkbox "Map timing" (mapProfSet): the FPS readout adds JS ms per second per map part (tiles, terrain, decor, forest, fire, foam, march, xy, home, with calls/s), element count in #mapworld, canvases + megapixels, viewport size @ pixel ratio, zoom + LOD. Low FPS with small JS numbers = browser drawing cost, not our code. Off by default, costs nothing when off.
+- g288 prints the readout. g281, g286 ok.

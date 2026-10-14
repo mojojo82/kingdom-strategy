@@ -3058,6 +3058,11 @@
                 </div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
+                    <input type="checkbox" id="devMapProfToggle"> 🗺️ Map timing on the FPS readout (screenshot it when the map is slow)
+                  </label>
+                </div>
+                <div class="dev-tools-row">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
                     <input type="checkbox" id="devHcChakraToggle"> Hero card font: Chakra Petch (off = clean system font, the default; the rest of the game is unaffected)
                   </label>
                 </div>
@@ -11667,7 +11672,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1152"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1153"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17507,6 +17512,20 @@ function stopMarchAnim() {
 // Sampled/redrawn twice a second (not every frame) — once-a-frame text
 // updates would themselves add DOM-write overhead to the very number being
 // measured, and the display would be too jittery to read during a test.
+/* v1153 (Harley: PC slows to 18 FPS at one zoom level over his painted land, phone fine): Dev Tools "Map timing" adds to the FPS readout the
+   milliseconds per second each map part spends in JavaScript, plus how many things are on the map and the map's pixel size. If FPS is low but
+   these numbers are small, the cost is the browser DRAWING (too many sprites / too big an area), not our code. */
+var mapProf = { on: false, t: {}, n: {} };
+function mapProfWrap(name) { var f = window[name]; if (typeof f !== "function" || f.__prof) return; var w = function () { if (!mapProf.on) return f.apply(this, arguments); var a = performance.now(); try { return f.apply(this, arguments); } finally { mapProf.t[name] = (mapProf.t[name] || 0) + performance.now() - a; mapProf.n[name] = (mapProf.n[name] || 0) + 1; } }; w.__prof = true; window[name] = w; }
+function mapProfText(elapsed) {
+  var k = 1000 / elapsed, short = { renderVisibleTiles: "tiles", terrainRenderRange: "terrain", decorRender: "decor", forestRender: "forest", baseFireRender: "fire", seaFoamTick: "foam", updateMarchMarkers: "march", updateMapCoords: "xy", updateHomeBubble: "home" };
+  var parts = Object.keys(mapProf.t).map(function (n) { return [short[n] || n, mapProf.t[n] * k, mapProf.n[n] * k]; }).filter(function (x) { return x[1] >= 0.5; }).sort(function (a, b) { return b[1] - a[1]; });
+  var tot = parts.reduce(function (a, x) { return a + x[1]; }, 0); mapProf.t = {}; mapProf.n = {};
+  var w = document.getElementById("mapworld"), vp = document.getElementById("mapviewport"), cvs = w ? w.querySelectorAll("canvas") : [], cpx = 0; for (var i = 0; i < cvs.length; i++) cpx += cvs[i].width * cvs[i].height;
+  return " · JS " + Math.round(tot) + "ms/s" + (parts.length ? " (" + parts.slice(0, 4).map(function (x) { return x[0] + " " + Math.round(x[1]) + "×" + Math.round(x[2]); }).join(", ") + ")" : "") +
+    " · el " + (w ? w.getElementsByTagName("*").length : 0) + " · cv " + cvs.length + "/" + (cpx / 1e6).toFixed(1) + "MP · vp " + (vp ? vp.clientWidth + "x" + vp.clientHeight + "@" + (window.devicePixelRatio || 1) : "") + " · z " + (typeof mapZoom !== "undefined" ? mapZoom.toFixed(2) + " L" + mapLod() : "");
+}
+function mapProfSet(on) { mapProf.on = !!on; mapProf.t = {}; mapProf.n = {}; if (on) ["renderVisibleTiles", "terrainRenderRange", "decorRender", "forestRender", "baseFireRender", "seaFoamTick", "updateMarchMarkers", "updateMapCoords", "updateHomeBubble"].forEach(mapProfWrap); var el = document.getElementById("fpsCounter"); if (el) { el.style.whiteSpace = on ? "normal" : ""; el.style.maxWidth = on ? "92vw" : ""; } }
 var fpsCounterState = { frames: 0, lastSampleAt: (typeof performance !== "undefined" ? performance.now() : Date.now()) };
 function fpsCounterTick(now) {
   fpsCounterState.frames++;
@@ -17515,7 +17534,7 @@ function fpsCounterTick(now) {
     var fps = Math.round((fpsCounterState.frames * 1000) / elapsed);
     var el = document.getElementById("fpsCounter");
     if (el) {
-      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · " + KS_BUILD + " · " + (seaFoam.diag || "🌊 0") : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone) */
+      el.textContent = fps + " FPS" + (typeof seaFoam !== "undefined" && appScreen === "world" ? " · " + KS_BUILD + " · " + (seaFoam.diag || "🌊 0") : "") + (mapProf.on ? mapProfText(elapsed) : ""); /* v926d: version + foam count (diagnostic while we tune it on the iPhone). v1153: + map timing */
       el.style.color = fps >= 50 ? "#5fd67a" : fps >= 30 ? "#f0c95f" : "#ff5c72";
     }
     fpsCounterState.frames = 0;
@@ -25002,6 +25021,7 @@ document.getElementById("devAddValor").onclick = function () { game.state.idle.v
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
+(function () { var t = document.getElementById("devMapProfToggle"); t.onchange = function (e) { mapProfSet(e.target.checked); }; })(); /* v1153 */
 (function () { var t = document.getElementById("devHcChakraToggle"), on = false; try { on = localStorage.getItem("ks_hcChakra") === "1"; } catch (e) {} /* v1147 */
   function apply(v) { document.body.classList.toggle("hc-chakra", v); t.checked = v; if (heroDetailKey) setTimeout(hcFit, 50); }
   apply(on); t.onchange = function (e) { apply(e.target.checked); try { localStorage.setItem("ks_hcChakra", e.target.checked ? "1" : "0"); } catch (er) {} }; })();

@@ -20,8 +20,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.fill("#ksE", "g288@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Hover"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   await P.evaluate(() => setScreen("world")); await P.waitForTimeout(2500);
-  await P.evaluate((t) => centerMapOnTile(t), process.env.TILE || "58,26");
+  await P.evaluate(([t, z]) => { if (z) setMapZoom(+z); const vp = document.getElementById("mapviewport"), xy = tileXY(t), c = tileCenterPx({ x: xy[0], y: xy[1] }); vp.scrollLeft = Math.max(0, c.x - vp.clientWidth / 2); vp.scrollTop = Math.max(0, c.y - vp.clientHeight / 2); }, [process.env.TILE || "58,26", process.env.ZOOM || ""]);
   await P.waitForTimeout(3000);
+  await P.evaluate(() => mapProfSet(true)); await P.waitForTimeout(1200);
   if (process.argv[2] === "hoverOff") await P.addStyleTag({ content: ".tile:hover{transform:none!important;z-index:auto!important;border-color:transparent!important}" });
   const box = await P.evaluate(() => { const r = document.getElementById("mapviewport").getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
   const measure = (sweep) => P.evaluate(async (sweep) => { const d = []; let last = performance.now(), stop = false; const f = (t) => { d.push(t - last); last = t; if (!stop) requestAnimationFrame(f); }; requestAnimationFrame(f); await new Promise((r) => setTimeout(r, 4000)); stop = true; d.sort((a, c) => a - c); const avg = d.reduce((a, c) => a + c, 0) / d.length; return { frames: d.length, avgMs: +avg.toFixed(1), p90: +d[Math.floor(d.length * 0.9)].toFixed(1), worst: +d[d.length - 1].toFixed(1) }; }, sweep);
@@ -29,8 +30,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const stillR = await still;
   const moving = (async () => { for (let i = 0; i < 160; i++) { const t = i / 160; await P.mouse.move(box.x + box.w * (0.05 + 0.85 * ((i * 7) % 40) / 40), box.y + box.h * (0.05 + 0.85 * t)); await P.waitForTimeout(20); } })();
   const sweepR = await measure(); await moving;
-  const hoverCount = await P.evaluate(() => document.querySelectorAll(".tile").length);
-  console.log(JSON.stringify({ mode: process.argv[2] || "normal", tiles: hoverCount, still: stillR, mouseSweep: sweepR, errs: errs.slice(0, 3) }));
+  const hoverCount = await P.evaluate(() => ({ tiles: document.querySelectorAll("#mapworld .tile").length, all: document.querySelectorAll("#mapworld *").length, lod: mapLod(), px: +tilePxZ().toFixed(1), zoom: mapZoom, home: game.state.homeTileId }));
+  const readout = await P.evaluate(() => document.getElementById("fpsCounter").textContent);
+  console.log(readout); console.log(JSON.stringify({ mode: process.argv[2] || "normal", tiles: hoverCount, still: stillR, mouseSweep: sweepR, errs: errs.slice(0, 3) }));
   await P.screenshot({ path: path.join(__dirname, "out_g288.png") });
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
