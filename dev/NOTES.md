@@ -1846,3 +1846,7 @@
 - Harley's new 4:3 clip (1024x768, made from her reference widened to 4:3 so the AI kept her design) - fills the 5:4 card box with almost no trim. Close-up from ~3.5 s, held 5+ s: intro = frames 1-131, loop = frames 132-226 with the last 24 frames blended into the loop start (~4 s loop), keyframe at 5.458 s (loopStart). 0.9 MB.
 - Tip that worked: make the AI's reference picture the same shape as the output (4:3), else it redraws the character.
 - g287 updated; ok. Not checked on a phone.
+
+## v1152 — Hero list: a frame of each card video (TEST)
+- Harley: the small cards in the hero list should show one frame of each hero's video; Kessa still showed old uploaded art (the giant eye). HERO_STILL_BUILTIN = Gareth, Kessa, Iron Lily (frame 60 of each clip, 3:4 crop, 360x480 webp, 56 KB total). The hero list uses these first, over uploaded art. Elsewhere (skill buttons, profile) getHeroArt is unchanged.
+- g285, g286, g287 ok. Not checked on a phone.
