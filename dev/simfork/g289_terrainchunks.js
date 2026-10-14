@@ -43,5 +43,5 @@ async function run(gameHtml, shotName) {
 (async () => {
   const now = await run(GAME, "new"); console.log("new", JSON.stringify(now));
   if (process.env.GAMEFILE2) { const old = await run(fs.readFileSync(process.env.GAMEFILE2, "utf8"), "old"); console.log("old", JSON.stringify(old)); }
-  if (!process.env.NOASSERT) { assert.deepStrictEqual(now.errs, []); if (process.env.MOBILE) assert(!now.info.chunked && now.info.canvases > 100, "phones: the pre-v1155 per-cell drawing"); else assert(now.info.chunked && now.info.cellDrawsWhileScrolling < 2000 && now.info.canvases < 60, "PC: chunks, not redrawn while scrolling"); assert(now.info.canvases > 0 && now.info.lod === 0, "few chunk canvases at full detail"); console.log("g289 ok"); }
+  if (!process.env.NOASSERT) { assert.deepStrictEqual(now.errs, []); assert(now.info.chunked && now.info.cellDrawsWhileScrolling < 2000 && now.info.canvases < 60, "chunks (phones too since v1160), not redrawn while scrolling"); assert(now.info.canvases > 0 && now.info.lod === 0, "few chunk canvases at full detail"); console.log("g289 ok"); }
 })().catch((e) => { console.error(e); process.exit(1); });

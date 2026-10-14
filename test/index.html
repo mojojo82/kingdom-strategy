@@ -3065,6 +3065,11 @@
                   <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button>
                   <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
                 </div>
+                <div class="dev-tools-row">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
+                    <input type="checkbox" id="devTerrCellsToggle"> 🗺️ Old land drawing (v1157, one picture per land square) - this device, reloads the game
+                  </label>
+                </div>
                 <div class="dev-tools-row" id="devMapPerfRow" style="flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--muted);">
                   <span>🗺️ Map speed test - switch off one thing at a time and watch the FPS (this device, resets on reload):</span>
                 </div>
@@ -11679,7 +11684,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1160"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1161"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16071,7 +16076,7 @@ var TERR_CH = 8, TERR_CH_MG = 0.5, terrainChunks = {}, terrainChunkQ = {}, terra
 function terrainChunkKey(i, j) { return Math.floor(i / TERR_CH) + "_" + Math.floor(j / TERR_CH); }
 function terrainChunkMark(i, j) { terrainChunkQ[terrainChunkKey(i, j)] = 1; if (!terrainChunkRaf) terrainChunkRaf = requestAnimationFrame(function () { terrainChunkRaf = 0; terrainChunksFlush(); }); }
 function terrainCellGone(k) { if (!terrainEls[k]) return; delete terrainEls[k]; var c = k.indexOf(","); terrainChunkMark(parseInt(k.slice(0, c), 10), parseInt(k.slice(c + 1), 10)); }
-function terrainChunksClear() { Object.keys(terrainChunks).forEach(function (q) { terrainChunks[q].el.remove(); }); terrainChunks = {}; terrainChunkQ = {}; terrainChunkBuilt = {}; }
+function terrainChunksClear() { Object.keys(terrainChunks).forEach(function (q) { terrainChunks[q].el.remove(); }); terrainChunks = {}; terrainChunkQ = {}; terrainChunkBuilt = {}; if (typeof terrainBuildQ !== "undefined") { terrainBuildQ = []; terrainBuildCur = null; } }
 function terrainChunkPlace(ch) {
   var s = tilePxZ(), p = s + gapPxZ(), size = p * (TERR_CH + 2 * TERR_CH_MG), u = ch.a - 1 + TERR_CH / 2, v = ch.b - 1 + TERR_CH / 2, cx, cy; /* cell (i,j) spans tile centres i-1..i, so chunk cells a..a+7 span a-1..a+7 */
   if (mapIso) { var c = isoCenterG(isoGeom(), u, v); cx = c.x; cy = c.y; } else { cx = padPxZ() + u * p + s / 2; cy = padPxZ() + v * p + s / 2; }
@@ -16134,9 +16139,9 @@ function terrainRepositionChunks() { terrainOverviewPlace(); Object.keys(terrain
 function terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) {
   if (!terrainEnsure()) return;
   if (terrainOverviewWanted()) { terrainEls = {}; terrainChunksClear(); terrainOverviewRender(); return; } /* v908 */
-  terrainOverviewRemove();
+  /* v1160: the zoomed-out picture stays underneath until the chunks in view are built (removed by terrainBuildPump) */
   var wanted = {}, i, j;
-  if ((maxX - minX + 2) * (maxY - minY + 2) > 6000) { /* v862: a huge window (zoomed far out) - walk painted land only, not every cell */
+  if (false && (maxX - minX + 2) * (maxY - minY + 2) > 6000) { /* v1160: off - it built every cell in one go; the chunk loop below skips chunks off screen instead */ /* v862: a huge window (zoomed far out) - walk painted land only, not every cell */
     var n = terrainN, cand = {};
     Object.keys(terrainLandChunks).forEach(function (lk) { var lp = lk.split("_"), lcx = +lp[0] * TERRAIN_CHUNK, lcy = +lp[1] * TERRAIN_CHUNK; /* v865: only chunks holding land */
       for (var ly = lcy; ly < Math.min(n, lcy + TERRAIN_CHUNK); ly++) for (var lx = lcx; lx < Math.min(n, lcx + TERRAIN_CHUNK); lx++) { if (!terrainArr[ly * n + lx] || lx < minX - 1 || lx > maxX + 1 || ly < minY - 1 || ly > maxY + 1) continue; cand[lx + "," + ly] = 1; cand[(lx + 1) + "," + ly] = 1; cand[lx + "," + (ly + 1)] = 1; cand[(lx + 1) + "," + (ly + 1)] = 1; } });
@@ -16144,24 +16149,49 @@ function terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) {
       if (isoRect) { var cc = isoCenterG(isoG, ci - 0.5, cj - 0.5); if (cc.x < isoRect.L || cc.x > isoRect.R || cc.y < isoRect.T || cc.y > isoRect.B) return; }
       if (terrainSyncCell(ci, cj, false)) wanted[k] = true; });
     Object.keys(terrainEls).forEach(function (k) { if (!wanted[k]) terrainCellGone(k); }); terrainChunkBuilt = {}; terrainChunksFlush(); /* v1156: partial cells - let the chunk path rebuild */
-    return;
+    terrainOverviewRemove(); return;
   }
   var TC = TERRAIN_CHUNK, hasLand = function (bx, by) { return !!(terrainLandChunks[bx + "_" + by] || terrainLandChunks[(bx - 1) + "_" + by] || terrainLandChunks[bx + "_" + (by - 1)] || terrainLandChunks[(bx - 1) + "_" + (by - 1)]); };
   var noLand = true; for (var lk in terrainLandChunks) { noLand = false; break; }
-  if (noLand) { terrainEls = {}; terrainChunksClear(); return; } /* v866: nothing painted anywhere */
+  if (noLand) { terrainEls = {}; terrainChunksClear(); terrainOverviewRemove(); return; } /* v866: nothing painted anywhere */
   /* v1156 (Harley: v1155 made his phone lag there): the chunk is the unit now. A chunk is built ONCE (all its land cells) when it comes into view and
      dropped whole when it is well out of view - before, cells joined/left at the screen edge every scroll frame, so edge chunks were redrawn non-stop. */
-  var CH = TERR_CH, q0 = Math.floor((minX - 1) / CH), q1 = Math.floor((maxX + 2) / CH), r0 = Math.floor((minY - 1) / CH), r1 = Math.floor((maxY + 2) / CH), vis = {};
+  var toBuild = [], CH = TERR_CH, q0 = Math.floor((minX - 1) / CH), q1 = Math.floor((maxX + 2) / CH), r0 = Math.floor((minY - 1) / CH), r1 = Math.floor((maxY + 2) / CH), vis = {};
   for (var qx = q0; qx <= q1; qx++) for (var qy = r0; qy <= r1; qy++) {
     var a = qx * CH, b = qy * CH; if (!hasLand(Math.floor(a / TC), Math.floor(b / TC)) && !hasLand(Math.floor((a + CH) / TC), Math.floor((b + CH) / TC)) && !hasLand(Math.floor((a + CH) / TC), Math.floor(b / TC)) && !hasLand(Math.floor(a / TC), Math.floor((b + CH) / TC))) continue;
-    var q = qx + "_" + qy; vis[q] = 1; if (terrainChunkBuilt[q]) continue; terrainChunkBuilt[q] = 1;
-    for (i = a; i < a + CH; i++) for (j = b; j < b + CH; j++) terrainSyncCell(i, j, false);
+    if (isoRect) { var e1 = isoCenterG(isoG, a - 1, b - 1), e2 = isoCenterG(isoG, a + CH - 1, b - 1), e3 = isoCenterG(isoG, a - 1, b + CH - 1), e4 = isoCenterG(isoG, a + CH - 1, b + CH - 1); /* v1160: chunk off screen (tilted map) */
+      if (Math.max(e1.x, e2.x, e3.x, e4.x) < isoRect.L || Math.min(e1.x, e2.x, e3.x, e4.x) > isoRect.R || Math.max(e1.y, e2.y, e3.y, e4.y) < isoRect.T || Math.min(e1.y, e2.y, e3.y, e4.y) > isoRect.B) continue; }
+    var q = qx + "_" + qy; vis[q] = 1; if (terrainChunkBuilt[q] || terrainBuildQ.indexOf(q) >= 0) continue;
+    toBuild.push(q); /* v1160: built by terrainBuildPump a few per frame, nearest first - not all at once */
   }
   Object.keys(terrainChunkBuilt).forEach(function (q) { if (vis[q]) return; var pr = q.split("_"), qx2 = +pr[0], qy2 = +pr[1];
     if (qx2 >= q0 - 1 && qx2 <= q1 + 1 && qy2 >= r0 - 1 && qy2 <= r1 + 1) return; /* one chunk of slack so a small scroll back doesn't rebuild it */
     delete terrainChunkBuilt[q]; for (var ii = qx2 * CH; ii < qx2 * CH + CH; ii++) for (var jj = qy2 * CH; jj < qy2 * CH + CH; jj++) delete terrainEls[ii + "," + jj];
     if (terrainChunks[q]) { terrainChunks[q].el.remove(); delete terrainChunks[q]; } delete terrainChunkQ[q]; });
   terrainChunksFlush();
+  /* v1160: queue = still-wanted chunks not built yet + the new ones, nearest the middle of the screen first */
+  var mx = (q0 + q1) / 2, my = (r0 + r1) / 2, d2 = function (q) { var pr = q.split("_"); return (pr[0] - mx) * (pr[0] - mx) + (pr[1] - my) * (pr[1] - my); };
+  terrainBuildQ = terrainBuildQ.filter(function (q) { return vis[q] && !terrainChunkBuilt[q]; }).concat(toBuild).sort(function (u, w) { return d2(u) - d2(w); });
+  if (terrainBuildQ.length || terrainBuildCur) terrainBuildPump(); else terrainOverviewRemove();
+}
+/* v1160 (Harley: stress-test land on his phone - zoomed in sat at 11-47 FPS; headless: ~2,000 cell canvases on the page, 34 FPS, 60 with land
+   hidden). Phones now use the chunk canvases too (about 30 instead of 2,000). v1156 tried that and hitched when zooming because every chunk in view
+   was drawn in one go; now chunks are built ~5 ms' worth per frame, nearest the middle first, so a zoom spreads the work over a few frames. */
+var terrainBuildQ = [], terrainBuildRaf = 0, terrainBuildCur = null;
+function terrainBuildPump() { /* builds cell by cell (one Grass 2 chunk alone can take 100+ ms on a phone), ~5 ms per frame */
+  if (terrainBuildRaf) return;
+  terrainBuildRaf = requestAnimationFrame(function () {
+    terrainBuildRaf = 0; if (terrainOverviewWanted() || !TERR_USE_CHUNKS) { terrainBuildQ = []; terrainBuildCur = null; return; }
+    var t0 = performance.now();
+    while (performance.now() - t0 < 5) {
+      if (terrainBuildCur && !terrainChunkBuilt[terrainBuildCur.q]) terrainBuildCur = null; /* scrolled away meanwhile */
+      if (!terrainBuildCur) { var q = terrainBuildQ.shift(); if (!q) break; if (terrainChunkBuilt[q]) continue; terrainChunkBuilt[q] = 1; var pr = q.split("_"); terrainBuildCur = { q: q, a: +pr[0] * TERR_CH, b: +pr[1] * TERR_CH, k: 0 }; }
+      var c = terrainBuildCur; terrainSyncCell(c.a + Math.floor(c.k / TERR_CH), c.b + c.k % TERR_CH, false);
+      if (++c.k >= TERR_CH * TERR_CH) terrainBuildCur = null;
+    }
+    terrainChunksFlush();
+    if (terrainBuildQ.length || terrainBuildCur) terrainBuildPump(); else terrainOverviewRemove();
+  });
 }
 function terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG) {
   if (!terrainEnsure()) return;
@@ -16191,7 +16221,7 @@ function terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG) {
 function terrainRepositionCells() { terrainOverviewPlace(); Object.keys(terrainEls).forEach(function (k) { var c = k.indexOf(","); terrainCellPlace(terrainEls[k], parseInt(k.slice(0, c), 10), parseInt(k.slice(c + 1), 10)); }); }
 /* v1157 (Harley: phone first - "it was pretty good on phone before"): PCs (mouse) use the v1155/v1156 chunk canvases, which fixed the PC slowdown;
    phones/tablets (touch) go back to exactly the pre-v1155 drawing (one small canvas per cell), which phones handle well. */
-var TERR_USE_CHUNKS = (function () { try { return window.matchMedia("(hover: hover) and (pointer: fine)").matches; } catch (e) { return false; } })();
+var TERR_USE_CHUNKS = (function () { try { return localStorage.getItem("ks_terrCells") !== "1"; } catch (e) { return true; } })(); /* v1160: phones too; Dev Tools can switch this device back to the v1157 per-cell drawing */
 function terrainRenderRange(minX, maxX, minY, maxY, isoRect, isoG) { return TERR_USE_CHUNKS ? terrainRenderRangeChunks(minX, maxX, minY, maxY, isoRect, isoG) : terrainRenderRangeCells(minX, maxX, minY, maxY, isoRect, isoG); }
 function terrainReposition() { return TERR_USE_CHUNKS ? terrainRepositionChunks() : terrainRepositionCells(); }
 // ---- the painter ----
@@ -25131,6 +25161,7 @@ document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeS
   var t0 = performance.now(), fr = terrainStressGenerate(0.4);
   b.textContent = "🔄 Remove stress-test land (reloads)"; note.textContent = "Stress land ON: " + Math.round(fr * 100) + "% land, built in " + Math.round(performance.now() - t0) + " ms. Not saved - reload removes it.";
 }; })();
+(function () { var t = document.getElementById("devTerrCellsToggle"); if (!t) return; t.checked = !TERR_USE_CHUNKS; t.onchange = function () { try { if (t.checked) localStorage.setItem("ks_terrCells", "1"); else localStorage.removeItem("ks_terrCells"); } catch (e) {} location.reload(); }; })(); /* v1160 */
 (function () { var t = document.getElementById("devMapProfToggle"); t.onchange = function (e) { mapProfSet(e.target.checked); }; })(); /* v1153 */
 (function () { /* v1154: live switches to find what makes the PC map slow at full detail */
   var row = document.getElementById("devMapPerfRow"), st = document.createElement("style"); document.head.appendChild(st);
