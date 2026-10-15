@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (12 Oct 2026, TEST game v1187):** everything below is built and tested; TEST is deployed (v951-v1187 are TEST only). The live game link still serves the
+**State at handover (12 Oct 2026, TEST game v1188):** everything below is built and tested; TEST is deployed (v951-v1188 are TEST only). The live game link still serves the
 pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
@@ -123,7 +123,8 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
 ## Open items / to-dos
-- **RULE (Harley, 15 Oct): weapons and heroes work EXACTLY the same in Conquest and Arena. The only allowed difference is the target** (Conquest: enemies + bosses; Arena: the opponent's heroes + fortress). BUT some of today's differences are on purpose (Harley, 15 Oct) - **don't fix anything from the audit (dev/audit/weapons_conquest_vs_arena.md) until Harley marks which ones**. Item 1 (Duplicate) FIXED v1186; item 16 (missiles independent in Arena) FIXED v1187. Item 12 (Support Power works in Conquest only - Hex, Sera, Torvald) = needs consideration later, not now. The Duplicate-in-Conquest patch is parked untested on branch wip/dup-conquest.
+- **Keyword colours:** "Summon link" is always pink (#ff7ad9, class kw-summon, helper kwHtml() next to escapeHtml). Add new keywords to kwHtml so they colour everywhere.
+- **RULE (Harley, 15 Oct): weapons and heroes work EXACTLY the same in Conquest and Arena. The only allowed difference is the target** (Conquest: enemies + bosses; Arena: the opponent's heroes + fortress). BUT some of today's differences are on purpose (Harley, 15 Oct) - **don't fix anything from the audit (dev/audit/weapons_conquest_vs_arena.md) until Harley marks which ones**. Item 1 (Duplicate) FIXED v1186; item 2 (Railgun KO / droneOff / cloneDelay Arena-only) = KEEP AS IS, intended; item 16 (missiles independent in Arena) FIXED v1187. Item 12 (Support Power works in Conquest only - Hex, Sera, Torvald) = needs consideration later, not now. The Duplicate-in-Conquest patch is parked untested on branch wip/dup-conquest.
 - **OPEN - weapons are all free from day one (Harley, 15 Oct, NOT fixed yet on purpose):** today any new player can equip any 3 weapons, Legendaries included; the Weapon Draw only gives level-up fragments. Wanted later: **Epic and Legendary weapons need at least 2 of their own fragments to unlock** before they can be equipped (Elite / Super Rare stay free unless Harley says otherwise). Don't change it yet - Harley is testing weapons on the tomhector account. Ask him before fixing (what happens to weapons already equipped, and whether his test account keeps everything).
 - **Balance (9 Oct, v954-v968)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,
   swap test, Arena round-robin). Done: one ranged-on-hero rule for both modes; boss "tank rule"; deterministic combat; Death Strike (Gareth slot 2,

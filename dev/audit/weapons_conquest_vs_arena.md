@@ -25,7 +25,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 ## Salvo Loader - same.
 
 ## Railgun
-- Arena: also knocks out EVERY enemy hero on hit (31117), and its droneOff / cloneDelay levels work (31119-31120). Conquest: only % of max HP, never reads droneOff / cloneDelay (8838).
+- Arena: also knocks out EVERY enemy hero on hit (31117), and its droneOff / cloneDelay levels work (31119-31120). Conquest: only % of max HP, never reads droneOff / cloneDelay (8838). **KEEP AS IS (Harley, 16 Oct - intended).**
 - Conquest waits for an enemy before firing (8837); Arena fires on the countdown, lands after a short flight.
 
 ## EMP Gun

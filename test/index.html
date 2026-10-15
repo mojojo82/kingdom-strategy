@@ -1421,6 +1421,7 @@
   .wi-sec h4 { margin:0; padding:6px 10px; font-size:12px; font-weight:800; color:#f0c95f; background:#362f28; border-bottom:1px solid #4a3b24; letter-spacing:.02em; }
   .wi-desc { padding:9px 10px; font-size:12.5px; line-height:1.4; color:#e6dcc4; }
   .wi-desc b { color:#8fe08f; }
+  .kw-summon { color:#ff7ad9; font-weight:700; }
   .wi-ms { display:flex; gap:10px; padding:7px 10px; border-top:1px solid rgba(74,59,36,.6); font-size:12px; color:#f3e8cf; }
   .wi-ms:first-of-type { border-top:none; }
   .wi-ms .lv { flex:none; width:44px; font-weight:800; color:#f0c95f; }
@@ -11796,7 +11797,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1187"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1188"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12678,7 +12679,7 @@ function renderWeaponInfo() {
   var st = game.weaponLevelStats(w), dmg = game.weaponDmgFor(w), eq = game.state.equippedWeapons || [], pos = weaponEquipPos(w.id), on = pos !== -1, full = !on && eq.length >= WEAPON_EQUIP_MAX;
   var h = '<div class="wi-card"><div class="wi-top">Weapon Info<button class="wi-close" id="wiClose">✕</button></div><div class="wi-body">';
   h += '<div class="wi-hero"><div class="wi-ico">' + (w.img ? '<img src="' + w.img + '" alt="">' : w.icon) + '</div><div><div class="wi-name">' + w.name + (w.visualOnly ? '' : '<small>Lv.' + st.level + '/' + WEAPON_MAX_LEVEL + '</small>') + '</div><span class="wi-chip">' + weaponKindLabel(w) + '</span>' + weaponRarityChip(w) + '</div>' + (!w.visualOnly && st.cooldown > 0 ? '<span class="wi-cd">⏱ ' + st.cooldown + 's</span>' : '') + '</div>';
-  h += '<div class="wi-sec"><h4>Description</h4><div class="wi-desc">' + w.desc(dmg, st) + '</div></div>';
+  h += '<div class="wi-sec"><h4>Description</h4><div class="wi-desc">' + kwHtml(w.desc(dmg, st)) + '</div></div>';
   if (!w.visualOnly) {
     var rows = [];
     if (w.kind === "fx") { rows = (w.rows ? w.rows(st) : []).slice(); }
@@ -13068,7 +13069,7 @@ function renderWeapons() {
     var info = document.createElement("div"); info.className = "weapon-info";
     var wstats = game.weaponLevelStats(w);
     var name = document.createElement("div"); name.className = "weapon-name"; name.innerHTML = w.name + (w.visualOnly ? "" : " (Lv. " + wstats.level + ")") + (w.rarity ? " · " + w.rarity : "") + (w.visualOnly ? "" : " · " + ico("fragment") + (game.state.weaponFrags[w.id] || 0) + (game.weaponCanLevelUp(w.id) ? " ⬆" : "")) + (on ? " (Slot " + (pos + 1) + ")" : "");
-    var desc = document.createElement("div"); desc.className = "weapon-desc"; desc.textContent = w.desc(game.weaponDmgFor(w), wstats);
+    var desc = document.createElement("div"); desc.className = "weapon-desc"; desc.innerHTML = kwHtml(escapeHtml(w.desc(game.weaponDmgFor(w), wstats)));
     info.appendChild(name); info.appendChild(desc);
     var btn = document.createElement("button");
     btn.className = "weapon-equip-btn" + (on ? " on" : "");
@@ -29547,6 +29548,8 @@ function postWorldChat(text, loc) { /* returns a promise; shared feed when onlin
   }
   var msgs = getChatMessages(); msgs.push(m); saveChatMessages(msgs); worldChatNotify(); return Promise.resolve(true);
 }
+// Game keywords that get their own colour wherever they're shown (e.g. Summon link = pink).
+function kwHtml(s) { return String(s).replace(/Summon link/g, '<span class="kw-summon">Summon link</span>'); }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, function (c) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];

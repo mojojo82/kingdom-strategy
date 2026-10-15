@@ -2075,3 +2075,8 @@
 - Harley (audit item 16): missiles must be independent in Arena too. Before: the whole volley was one hit (damage x count) landing at once.
 - arenaQueueMissiles: each missile of Missile Barrage / Flak Burst / Scatter Rounds (and a Duplicate copy) is its own shot, launched 0.16 s after the previous (IDLE_WEAPON_MISSILE_STAGGER, same as Conquest), each with its share of the damage - total unchanged. Player and opponent side.
 - dev/simfork/g307_arena_missiles.js; g292 pass; g293 barrels is flaky (failed once on v1186 too, passes on rerun). Meta check: same pre-existing warning, same numbers. Not checked on a phone.
+
+## v1188 - "Summon link" in pink (TEST)
+- Harley: audit item 2 (Railgun KO / droneOff / cloneDelay only in Arena) stays as is - intended.
+- "Summon link" text now pink (#ff7ad9, bold) so it stands out; it may be referenced elsewhere later. kwHtml() wraps the keyword; used in the Weapon Info popup and the weapons list (list now escapes then colours).
+- dev/simfork/g308_summon_link_pink.js (plain before, pink after, both spots). Not checked on a phone.
