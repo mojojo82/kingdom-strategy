@@ -2044,3 +2044,9 @@
 - Uses the building's one training slot (no training while promoting), the troops leave the army while promoting and come back as the new tier. Speedups work on it.
 - Also: the training count you pick now survives the panel's once-a-second refresh in promote mode.
 - dev/simfork/g302_promote.js (+ g240, g266, g297, g298, g299 pass). Not checked on a phone.
+
+## v1183 - Hall of Heroes deleted (TEST)
+- Harley: delete the Hall of Heroes. It only unlocked recruiting (levels 2-10 did nothing but add Power).
+- Harley's picks: recruiting is open from the start (no building needed); no refund for levels already built (old saves' tavern level is just ignored, Power drops a little).
+- Removed from BUILDING_DEFS, recruitHero's check and the two "🔒 Requires Hall of Heroes" locks; balance scripts (boss_time, f2p_timeline) no longer list it.
+- dev/simfork/g303_no_hall.js. Not checked on a phone.

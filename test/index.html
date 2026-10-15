@@ -4959,7 +4959,7 @@ var BUILDING_DEFS = {
   stable:    { name: "Stable",         maxLevel: 30, baseCost: { wood: 160, food: 80 }, baseTime: 28, trains: "cavalry", requires: { townhall: 5 } },
   wall:      { name: "Wall",           maxLevel: 20, baseCost: { stone: 150 }, baseTime: 25, defense: 8, requires: { townhall: 2 } },
   academy:   { name: "Academy",        maxLevel: 30, baseCost: { wood: 180, gold: 20 }, baseTime: 30, research: 0.5, requires: { townhall: 4 } }, // v1133: RP per second per Academy level 3 -> 0.5 (Harley: RP piled up, never the limit - free-player sim had 14M spare by day 10)
-  tavern:    { name: "Hall of Heroes",  maxLevel: 10, baseCost: { wood: 200, stone: 150, gold: 50 }, baseTime: 40, requires: { townhall: 4 } },
+  /* v1183 (Harley): Hall of Heroes (tavern) deleted - it only gated recruiting; heroes can be recruited from the start now. Old saves' tavern level is ignored. */
   infirmary: { name: "Infirmary",      maxLevel: 30, baseCost: { wood: 160, stone: 80 }, baseTime: 30, woundedCap: 100, requires: { townhall: 3 },
     costMult: 1.6, timeMult: 1.45 }
 };
@@ -7201,7 +7201,6 @@ function createGame(opts) {
     var def = HERO_DEFS[key];
     if (!def) return { ok: false, reason: "unknown_hero" };
     if (def.vipOnly) return { ok: false, reason: "vip_only" }; /* v992: Hanzo comes from a VIP pack only */
-    if (state.buildings.tavern.level < 1) return { ok: false, reason: "needs_tavern" };
     var h = state.heroes[key];
     if (h.owned) return { ok: false, reason: "already_owned" };
     if (!canAfford(def.recruitCost)) return { ok: false, reason: "cannot_afford" };
@@ -10029,7 +10028,7 @@ function publishMyCitySkin() { /* write my skin onto my city doc (only when it d
 var BUILDING_ICON = {
   townhall: "🏛️", farm: "🌾", sawmill: "🪚", quarry: "⛰️", goldmine: "💰",
   warehouse: "🏬", barracks: "⚔️", archery: "🏹", stable: "🐎",
-  wall: "🧱", academy: "📚", tavern: "🍻", infirmary: "🏥"
+  wall: "🧱", academy: "📚", infirmary: "🏥"
 };
 var TROOP_ICON = { infantry: "🛡️", archer: "🏹", cavalry: "🐎" };
 // Higher tiers share their type's icon; troopTag() adds the tier where two tiers could be confused.
@@ -11784,7 +11783,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1182"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1183"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14825,7 +14824,7 @@ function renderHeroes() {
   var el = document.getElementById("heroesList");
   el.innerHTML = "";
   el.className = "hero-grid";
-  var tavernLevel = game.state.buildings.tavern.level;
+  var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
   var CLASS_ICON = { infantry: "🛡️", archer: "🏹", cavalry: "🐎", governor: "👑" };
   Object.keys(HERO_DEFS).forEach(function (key) {
     var def = HERO_DEFS[key], h = game.state.heroes[key];
@@ -27589,7 +27588,7 @@ function renderHeroDetail() {
   var tileRow = document.createElement("div"); tileRow.className = "hc-tiles";
   {
     if (!h.owned) {
-      var tavernLevel = game.state.buildings.tavern.level;
+      var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
       var rcost = Object.keys(def.recruitCost).map(function (r) { return RES_ICON[r] + fmt(def.recruitCost[r]); }).join(" ");
       var recruitBtn = document.createElement("button");
       recruitBtn.className = "hd-actionbtn";

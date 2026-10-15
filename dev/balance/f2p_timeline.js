@@ -53,7 +53,7 @@ const ROOT = path.join(__dirname, "../.."), DAYS = +process.argv[2] || 40;
         s.equippedWeapons = wl.slice(0, 3).map((w) => w.id);
         for (let n = 0; n < 30; n++) { const r = g.forgeOnce(); if (!r.ok) { if (r.reason === "inventory_full") { g.equipBest(); g.dismantleUpTo(1); continue; } break; } }
         g.equipBest(); g.dismantleUpTo(0);
-        const BLD = ["academy", "goldmine", "farm", "sawmill", "quarry", "warehouse", "tavern", "wall", "infirmary"];
+        const BLD = ["academy", "goldmine", "farm", "sawmill", "quarry", "warehouse", "wall", "infirmary"];
         for (let n = 0; n < 3; n++) { if (g.startUpgrade("townhall").ok) continue; const c = BLD.filter((k) => s.buildings[k] && !s.buildings[k].upgrading).sort((a, b) => s.buildings[a].level - s.buildings[b].level); let started = false; for (const k of c) { if (g.startUpgrade(k).ok) { started = true; break; } } if (!started) break; }
         if (!s.researchQueue) {
           const fk = Object.keys(FORTRESS1_TREE).map((k) => ({ k, lv: ((s.fortressTech || {})[k] || 0) + 1 })).filter((x) => x.lv <= FORTRESS1_TREE[x.k].maxLevel).sort((a, b) => fortressNodeCost(a.k, a.lv) - fortressNodeCost(b.k, b.lv));
