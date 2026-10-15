@@ -2064,3 +2064,9 @@
 - Spells: Lyra and Sera's basic attacks are spell orbs in their own colour (Lyra orange-gold, Sera green), Conquest and Arena, plus their plain skill shots (Sera's heal shot was an arrowhead). Lyra's Piercing Volley stays a fireball; Kessa keeps her blue orb + lightning. SPELL_COLS / drawSpellOrb.
 - Not renamed: the Conquest enemy horde "Archer" (its art is a bowman) and the Tower Defense "Archer" tower. Card text Harley edited in the admin page (cloud) overrides the default text.
 - dev/simfork/g305_casters.js; g299 updated for the new names. Not checked on a phone.
+
+## v1186 - Duplicate works in Conquest like Arena (TEST)
+- Harley: weapons work the same in both modes (only the target differs); Duplicate was a confirmed bug (audit item 1, dev/audit/weapons_conquest_vs_arena.md).
+- Conquest now copies a Laser / Pulse Beam / missile weapon (Barrage, Flak, Scatter) like Arena's simApplyDup: a second copy at Duplicate's % of the damage, first shot half a cooldown later (cooldown kept as "<id>_dup", fires and draws as that weapon). Duplicate on the Hex Shield adds its % to the pool again (idleShieldPct), like arenaPlayerShieldPct.
+- Unequipping a weapon (or Duplicate) now also clears its leftover fx timers (e.g. a stale "railgun_dup" countdown on the Railgun chip).
+- dev/simfork/g306_dup_conquest.js (laser copy at 50%, missiles at 50%, back to normal after unequip, Hex pool +50%, stale timer cleared); g304, g211, g294 pass. Meta check: same pre-existing warning (Arena-only check, numbers unchanged). Not checked on a phone.

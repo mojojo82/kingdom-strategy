@@ -8067,7 +8067,9 @@ function createGame(opts) {
   // shieldBreakCount are honest-event counters the renderer diffs to spawn ripples and the pop.
   function idleShieldPct() {
     var pct = 0;
-    (state.equippedWeapons || []).forEach(function (wid) { var wd = WEAPON_DEFS_BY_ID[wid]; if (wd && wd.kind === "shield" && !wd.visualOnly) pct = Math.max(pct, weaponLevelStats(wd).shieldPct || 0); });
+    var ids = state.equippedWeapons || [], dupEff = null;
+    ids.forEach(function (wid) { var wd = WEAPON_DEFS_BY_ID[wid]; if (!wd || wd.visualOnly) return; if (wd.kind === "shield") pct = Math.max(pct, weaponLevelStats(wd).shieldPct || 0); else if (wd.fx === "dup") dupEff = weaponLevelStats(wd).p.eff; });
+    if (dupEff != null && pct > 0 && simDupTarget(ids, state.duplicateTarget) === "hex_shield") pct += pct * dupEff / 100; /* v1186: Duplicate copying the Hex Shield adds its % again, like Arena (arenaPlayerShieldPct) */
     return pct;
   }
   function idleShieldSync() {

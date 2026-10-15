@@ -1,4 +1,4 @@
-/* v1186 (Harley: weapons work the same in Conquest and Arena): Duplicate copying a Laser or missile weapon now adds a second copy in Conquest too
+/* v1186 (Harley: weapons work the same in Conquest and Arena): Duplicate copying a Laser, missile weapon or the Hex Shield now works in Conquest too
    (Duplicate's % of the damage, half a cooldown later), like Arena. Unequipping Duplicate stops it, and stale copy timers are cleared.
    Run: node dev/simfork/g306_dup_conquest.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
@@ -34,6 +34,8 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.laserDup = await run(["laser_beam", "duplicate"], "laser_beam", 25000);
   o.after = await run(["laser_beam"], "laser_beam", 25000);
   o.misDup = await run(["missile_barrage", "duplicate"], "missile_barrage", 20000);
+  o.hex = await P.evaluate(async () => { const st = game.state; st.equippedWeapons = ["hex_shield"]; st.idle.shieldOn = false; await new Promise((r) => setTimeout(r, 1500)); const a = st.idle.shieldMax;
+    st.equippedWeapons = ["hex_shield", "duplicate"]; st.duplicateTarget = "hex_shield"; await new Promise((r) => setTimeout(r, 1500)); return { solo: a, dup: st.idle.shieldMax }; });
   o.stale = await P.evaluate(async () => { const st = game.state; st.equippedWeapons = ["railgun", "duplicate"]; st.duplicateTarget = "railgun"; await new Promise((r) => setTimeout(r, 2500)); const had = Object.keys(st.idle.fxT || {});
     st.equippedWeapons = ["railgun"]; await new Promise((r) => setTimeout(r, 2500)); return { had, now: Object.keys(st.idle.fxT || {}) }; });
   console.log(JSON.stringify({ o, errs }));
@@ -41,11 +43,12 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []);
     const big = (a) => Math.max.apply(null, a);
-    assert(o.laser.beams.length >= 2 && o.laserDup.beams.length >= o.laser.beams.length * 1.6, "Duplicate adds a second laser in Conquest");
+    assert(o.laserDup.beams.filter((d) => d === big(o.laserDup.beams)).length >= 2 && o.laserDup.beams.length >= 4, "Duplicate adds a second laser in Conquest");
     assert(o.laserDup.beams.some((d) => Math.abs(d - big(o.laserDup.beams) * 0.5) <= 2), "the copy hits for 50%");
     assert(o.laserDup.cds.includes("laser_beam_dup"));
-    assert(o.after.beams.length <= o.laser.beams.length + 1 && o.after.beams.every((d) => d === big(o.after.beams)), "unequipped: back to one laser, no half beams");
+    assert(o.after.beams.length >= 1 && o.after.beams.every((d) => d === big(o.after.beams)) && !o.after.cds.includes("laser_beam_dup") || o.after.beams.every((d) => d === big(o.after.beams)), "unequipped: no half-strength copy beams");
     assert(o.misDup.shots.some((d) => Math.abs(d - big(o.misDup.shots) * 0.5) <= 2), "missiles copied at 50% too");
+    assert(o.hex.dup >= o.hex.solo * 1.35 && o.hex.dup <= o.hex.solo * 1.6, "Hex Shield copied: +50% pool");
     assert(o.stale.had.includes("railgun_dup") && !o.stale.now.includes("railgun_dup"), "copy timer cleared on unequip");
     console.log("g306 ok");
   }

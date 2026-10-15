@@ -5,7 +5,7 @@ Conquest = enemies + bosses, Arena = the opponent's heroes + fortress. Anything 
 
 Found by reading the code (line numbers = test/index.html at v1185). Nothing fixed yet.
 
-**Harley (15 Oct): some of these differences are intentional.** He is going through this list and will say which get fixed. Confirmed bug: Duplicate. Don't touch the rest until he marks them.
+**Harley (15 Oct): some of these differences are intentional.** He is going through this list and will say which get fixed. Confirmed bug: Duplicate - FIXED v1186 (Laser, missiles and Hex Shield copied in Conquest too). Don't touch the rest until he marks them.
 
 ## Every weapon
 - Cannon Doctrine card (+70% on Fortress I) boosts weapons in Arena (31312) but not in Conquest (only cannon 8686 + heroes 8895).
