@@ -3,8 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (12 Oct 2026, TEST game v1198):** everything below is built and tested; TEST is deployed (v951-v1198 are TEST only). The live game link still serves the
-pre-Firebase v901 and is waiting for Harley's go-ahead. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
+**State at handover (12 Oct 2026, TEST game v1198):** everything below is built and tested; TEST is deployed. **LIVE updated to v1198 on 16 Oct 2026 (Harley: no players yet, it doubles as a backup).** Later versions are TEST only until Harley says. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
 
@@ -193,7 +192,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 ## Repo layout
 
 ```
-index.html            live game (currently v901, pre-Firebase)
+index.html            live game (v1198 since 16 Oct 2026)
 test/index.html       test game (latest)          seed-world.json (+ test/)  painted map imported once per env
 admin/index.html      admin website
 functions/            Cloud Functions: index.js, core.js (pure, unit-tested), items.json, packs.json, admins.json, test/

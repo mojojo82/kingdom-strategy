@@ -2132,3 +2132,7 @@
 ## v1198 - EMP Gun Lv50 Aftershock works in Conquest too (TEST)
 - Harley (audit item 5): the Aftershock (a second 1 s stun 3 s after each pulse) only existed in Arena. Conquest's EMP now queues it (fxT.emp_gun.asT / asSec) and, when it lands, pushes every arrived enemy's next attack back by 1 s more (stacks, item 6).
 - dev/simfork/g318_emp_aftershock.js (Lv50 fires aftershocks and pushes attacks back, Lv30 none; old build none). g306, g316 pass. Arena untouched. Not checked on a phone.
+
+## LIVE = v1198 (16 Oct 2026)
+- Harley: update LIVE (no players on it yet; it's an extra backup of the work). Root index.html = test/index.html v1198, root version.json written by stamp-version. Smoke test at the live path (fake Firebase): sign-up, Weapon Info, weapons list, no page errors. Not checked on a phone.
+- Note from the handover: the live world imports seed-world.json the first time an admin opens it. Live data sits at the Firestore root (TEST stays under envs/test).
