@@ -2102,3 +2102,8 @@
 - Harley (audit item 10): Conquest's drone used the average ranged hero's raw power (no ATK bonus, no hero damage multiplier); Arena uses the average ranged hero's real damage per second incl. the ATK bonus (arenaSideStats attackers). Conquest now uses the same: power x atkPerPower x damage mult x ATK bonus x hero atkMult x hit mult / attack interval (basicAttackSec 1 s).
 - Effect: grows with the ATK bonus now; with 0 bonus it is a bit lower when Sera (atkMult 0.4) is in the roster, since she pulls the average down - same as Arena. Cannon Doctrine (v1189) still applies on top.
 - dev/simfork/g312_droid_atk.js: drone damage with +50% ATK vs 0 = x2.06 (old build x1.01). Arena untouched (meta check not needed). Not checked on a phone.
+
+## v1193 - Orbit Shield / Deflector Dome protect heroes from ranged hits in Arena too (TEST)
+- Harley (audit item 14): Conquest already cut ranged/boss shots on heroes with Orbit + Dome; Arena only cut damage to the fortress. arenaMakeSim rangedHit now applies the target side's Orbit % and any active Dome to a ranged hit on a hero (only infantry get targeted there).
+- Before fixing, sim: only Lv20 moved (Hex+Dome+Railgun 86->90, Clone+Railgun+Hex 100->95), fight length unchanged. Meta check now shows exactly that.
+- dev/simfork/g313_orbit_heroes.js: infantry hit by a ranged-only foe take 0.90x with Orbit Lv50 (old build 1.00x). g206, g207, g307, g311 pass. Not checked on a phone.

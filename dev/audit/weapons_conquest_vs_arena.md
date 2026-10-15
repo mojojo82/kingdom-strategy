@@ -41,7 +41,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - With Duplicate: Conquest heals with both copies at once; Arena's copy overwrites the first (31167). Fires at exactly 85% HP only in Arena. **Stacking FIXED v1191 (each repair keeps its own heal in Arena too).**
 
 ## Deflector Dome
-- Conquest also cuts ranged/boss shots aimed at heroes (8585); Arena only protects heroes from Shuriken Storm (ranged hits on heroes go unreduced, 30918).
+- Conquest also cuts ranged/boss shots aimed at heroes (8585); Arena only protects heroes from Shuriken Storm (ranged hits on heroes go unreduced, 30918). **Hero part FIXED v1193 (Arena: Orbit + Dome cut ranged hits on heroes too).**
 
 ## Clone Task
 - Template hero can differ (first infantry in roster order vs side list). No template: Conquest retries every tick, Arena waits a cooldown.
@@ -53,7 +53,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Orbit's Hex Link recharge only in Arena (31178).
 
 ## Orbit Shield
-- Lv 10+ Hex Link: Arena only (31083). Conquest reduces ranged hits on heroes (8585); Arena doesn't (30927, 31317).
+- Lv 10+ Hex Link: Arena only (31083). Conquest reduces ranged hits on heroes (8585); Arena doesn't (30927, 31317). **Hero part FIXED v1193 (Arena: Orbit + Dome cut ranged hits on heroes too).**
 
 ## Projection Wall
 - Not implemented in Conquest at all (no branch in idleFxWeaponTick, "inert" 8755). Arena: blocks Shuriken Storm on ranged heroes (30904).

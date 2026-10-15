@@ -11797,7 +11797,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1192"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1193"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30939,7 +30939,8 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     rAcc[tag + id] -= 1;
     map[tag + id] = best.id;
     if (dodgeRoll(best, best.dodge)) return false; /* v992: Shadow Step */
-    best.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
+    var SX = oh === aHH ? FXS.A : FXS.P, fR = 1 - (SX.orbit || 0); SX.inst.forEach(function (i) { if (i.k === 'dome' && i.up > 0) fR *= 1 - (i.red || 0); }); /* v1193 (audit item 14): Orbit + Dome also cut ranged hits on heroes, like Conquest */
+    best.hp -= dmg * fR * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
     if (best.hp <= 1e-9) { koMark(best); best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
     heroHitTaken(best);
     return false;
