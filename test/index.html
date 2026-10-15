@@ -4955,8 +4955,8 @@ var BUILDING_DEFS = {
     costMult: 1.68, timeMult: 1.5, extraCosts: [{ from: 5, res: "stone", amount: 20, mult: 1.68 }] },
   warehouse: { name: "Warehouse",      maxLevel: 30, baseCost: { wood: 100, stone: 50 }, baseTime: 16, storage: 500, requires: { townhall: 1 } },
   barracks:  { name: "Barracks",       maxLevel: 30, baseCost: { wood: 120, stone: 40 }, baseTime: 20, trains: "infantry", requires: { townhall: 2 } },
-  archery:   { name: "Archery Range",  maxLevel: 30, baseCost: { wood: 140, stone: 60 }, baseTime: 24, trains: "archer", requires: { townhall: 3 } },
-  stable:    { name: "Stable",         maxLevel: 30, baseCost: { wood: 160, food: 80 }, baseTime: 28, trains: "cavalry", requires: { townhall: 5 } },
+  archery:   { name: "Mage Tower",  maxLevel: 30, baseCost: { wood: 140, stone: 60 }, baseTime: 24, trains: "archer", requires: { townhall: 3 } },
+  stable:    { name: "Archery Range",         maxLevel: 30, baseCost: { wood: 160, food: 80 }, baseTime: 28, trains: "cavalry", requires: { townhall: 5 } },
   wall:      { name: "Wall",           maxLevel: 20, baseCost: { stone: 150 }, baseTime: 25, defense: 8, requires: { townhall: 2 } },
   academy:   { name: "Academy",        maxLevel: 30, baseCost: { wood: 180, gold: 20 }, baseTime: 30, research: 0.5, requires: { townhall: 4 } }, // v1133: RP per second per Academy level 3 -> 0.5 (Harley: RP piled up, never the limit - free-player sim had 14M spare by day 10)
   /* v1183 (Harley): Hall of Heroes (tavern) deleted - it only gated recruiting; heroes can be recruited from the start now. Old saves' tavern level is ignored. */
@@ -4974,8 +4974,8 @@ var WORLD_PVP_PAPER_LOSSES = true;   // testing: PvP reports losses on both side
 
 var TROOP_DEFS = {
   infantry: { name: "Infantry", atk: 10, def: 18, hp: 60, power: 1.0, speed: 6,  cost: { food: 50, wood: 20 },            trainTime: 8,  countersType: "cavalry" },
-  archer:   { name: "Archer",   atk: 16, def: 8,  hp: 40, power: 1.0, speed: 7,  cost: { food: 40, wood: 45 },            trainTime: 10, countersType: "infantry" },
-  cavalry:  { name: "Cavalry",  atk: 20, def: 10, hp: 50, power: 1.2, speed: 12, cost: { food: 65, wood: 30, gold: 10 },  trainTime: 14, countersType: "archer" }
+  archer:   { name: "Caster",   atk: 16, def: 8,  hp: 40, power: 1.0, speed: 7,  cost: { food: 40, wood: 45 },            trainTime: 10, countersType: "infantry" },
+  cavalry:  { name: "Ranged",  atk: 20, def: 10, hp: 50, power: 1.2, speed: 12, cost: { food: 65, wood: 30, gold: 10 },  trainTime: 14, countersType: "archer" }
 };
 
 // ---- Troop tiers (T1-T10) ----
@@ -5068,8 +5068,8 @@ var TECH_DEFS_RAW = {
 
   // ---- BATTLE ----
   ironDiscipline:      { name: "Iron Discipline",      icon: "🛡️", category: "battle", maxLevel: 5, baseCost: 100, costMult: 1.6,  effectType: "troopAtkMult",     effectTarget: "infantry", perLevel: 0.03, unit: "pct", statLabel: "Infantry Attack", reqBuilding: "barracks", reqBuildingLevel: 1 },
-  compositeBows:       { name: "Composite Bows",       icon: "🏹", category: "battle", maxLevel: 5, baseCost: 100, costMult: 1.6,  effectType: "troopAtkMult",     effectTarget: "archer",   perLevel: 0.03, unit: "pct", statLabel: "Archer Attack", reqBuilding: "archery", reqBuildingLevel: 1 },
-  stirrupTactics:      { name: "Stirrup Tactics",      icon: "🐎", category: "battle", maxLevel: 5, baseCost: 120, costMult: 1.6,  effectType: "troopAtkMult",     effectTarget: "cavalry",  perLevel: 0.03, unit: "pct", statLabel: "Cavalry Attack", reqBuilding: "stable", reqBuildingLevel: 1 },
+  compositeBows:       { name: "Arcane Focus",       icon: "🔮", category: "battle", maxLevel: 5, baseCost: 100, costMult: 1.6,  effectType: "troopAtkMult",     effectTarget: "archer",   perLevel: 0.03, unit: "pct", statLabel: "Caster Attack", reqBuilding: "archery", reqBuildingLevel: 1 },
+  stirrupTactics:      { name: "Composite Bows",      icon: "🏹", category: "battle", maxLevel: 5, baseCost: 120, costMult: 1.6,  effectType: "troopAtkMult",     effectTarget: "cavalry",  perLevel: 0.03, unit: "pct", statLabel: "Ranged Attack", reqBuilding: "stable", reqBuildingLevel: 1 },
   eliteVanguard:       { name: "Elite Vanguard",       icon: "⭐", category: "battle", maxLevel: 5, baseCost: 180, costMult: 1.7,  effectType: "troopAtkMult",     effectTarget: "all",      perLevel: 0.016, unit: "pct", statLabel: "All Troop Attack", reqTech: "ironDiscipline", reqTechLevel: 3 },
   fieldHospital:       { name: "Field Hospital",       icon: "🏥", category: "battle", maxLevel: 5, baseCost: 110, costMult: 1.6,  effectType: "healSpeedMult",    effectTarget: null,       perLevel: 0.06, unit: "pct", statLabel: "Infirmary Healing Speed", reqBuilding: "infirmary", reqBuildingLevel: 1 }
 };
@@ -5475,7 +5475,7 @@ var HERO_DEFS = {
       { name: "Eagle Eye", icon: "👁️", kind: "passive", desc: "More damage in every battle.", effectType: "conquestDamageMult", perLevel: 0.13 }
     ],
     expeditionSkills: [
-      { name: "Farsight Aim", icon: "🎯", kind: "passive", desc: "Boosts Archer ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.04 },
+      { name: "Farsight Aim", icon: "🎯", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.04 },
       { name: "Nimble Retreat", icon: "🍃", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Swift Advance", icon: "💨", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
     ] },
@@ -5488,7 +5488,7 @@ var HERO_DEFS = {
       // Slots 2 and 3 intentionally blank for now (unique per-hero skills to come).
     ],
     expeditionSkills: [
-      { name: "Windrider's Charge", icon: "🐎", kind: "passive", desc: "Boosts Cavalry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.05 },
+      { name: "Windrider's Charge", icon: "🐎", kind: "passive", desc: "Boosts Ranged ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.05 },
       { name: "Evasive Maneuvers", icon: "🌪️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Relentless Pursuit", icon: "🏹➡️", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.03 }
     ] },
@@ -5501,10 +5501,10 @@ var HERO_DEFS = {
       // mechanically force her to close. See Shield Slam's comment (2026-09-28).
       { name: "Arc Burst", icon: "⚡💥", kind: "active", cooldown: 8, desc: "Every 8s, chain lightning strikes an enemy that has closed in.", pctByLevel: [0.56, 0.64, 0.72, 0.80, 0.88], requiresClose: true, visualStyle: "lightning" },
       { name: "Resonance", icon: "🔔", kind: "passive", effectType: "resonance", base: 0.25, perLevel: 0.05, desc: "Arc Burst gains 25% of your Skill Damage bonus (up to 45%)." }
-      ,{ name: "Storm Mark", icon: "⚡🎯", kind: "passive", effectType: "stormMark", perLevel: 0.02, durSec: 4, desc: "Arc Burst marks enemies for 4s: +2% damage taken from ranged heroes per level." }
+      ,{ name: "Storm Mark", icon: "⚡🎯", kind: "passive", effectType: "stormMark", perLevel: 0.02, durSec: 4, desc: "Arc Burst marks enemies for 4s: +2% damage taken from Caster and Ranged heroes per level." }
     ],
     expeditionSkills: [
-      { name: "Static Aim", icon: "🎯⚡", kind: "passive", desc: "Boosts Archer ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.045 },
+      { name: "Static Aim", icon: "🎯⚡", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.045 },
       { name: "Storm Ward", icon: "🛡️🌩️", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Charged Advance", icon: "💨⚡", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.025 }
     ] },
@@ -5519,7 +5519,7 @@ var HERO_DEFS = {
     expeditionSkills: [
       { name: "Field Medic", icon: "🩹", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Gentle Pace", icon: "🕊️", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 },
-      { name: "Hospitaller", icon: "⚕️", kind: "passive", desc: "Boosts Archer ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.02 }
+      { name: "Hospitaller", icon: "⚕️", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.02 }
     ] },
   torvald: { name: "Torvald", title: "The Warden", class: "infantry", icon: "🏰", rarity: "Rare", /* v960: Epic -> Rare (Harley: not worthy of Epic for now - a starter hero / backup tank) */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 220, stone: 80 }, levelBaseCost: { gold: 60, food: 60, stone: 40 }, levelCostMult: 1.35,
@@ -6304,7 +6304,7 @@ var CARD_EFFECT_FIELD_INFO = {
   infHp: { pct: { type: "number", min: 0, step: 0.01, label: "Infantry HP bonus", comment: "0.15 = infantry heroes get +15% max HP." } },
   allHp: { pct: { type: "number", min: 0, step: 0.01, label: "HP bonus", comment: "0.05 = all your heroes and summons get +5% max HP." } },
   gerbil: { every: { type: "number", min: 0.5, step: 0.5, label: "Every (s)", comment: "A new Death Gerbil every this many seconds (no cap)." }, pct: { type: "number", min: 0, step: 0.05, label: "Stats share", comment: "0.5 = each gerbil has 50% of your average hero's HP and hit." } },
-  cavAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Cavalry ATK bonus", comment: "0.15 = +15% base ATK for cavalry heroes (basic attacks and skills)." } },
+  cavAtk: { pct: { type: "number", min: 0, step: 0.01, label: "Ranged ATK bonus", comment: "0.15 = +15% base ATK for Ranged heroes (basic attacks and skills)." } },
   kessaArcLow: { pct: { type: "number", min: 0, step: 0.05, label: "Arc Burst bonus", comment: "0.30 = +30% Arc Burst damage." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.30 = while your fortress is under 30% health." } },
   kessaAtkLow: { pct: { type: "number", min: 0, step: 0.05, label: "Kessa ATK bonus", comment: "0.20 = +20% base ATK." }, below: { type: "number", min: 0, step: 0.05, label: "Health below", comment: "0.50 = while your fortress is under 50% health. 1.01 = always on." } },
   lastStand: { below: { type: "number", min: 0, step: 0.01, label: "Health below", comment: "Triggers once per fight when your fortress drops under this (0.10 = 10%)." }, sec: { type: "number", min: 0, step: 0.5, label: "Invincible (s)", comment: "Seconds the fortress takes no damage." } },
@@ -10029,10 +10029,12 @@ function publishMyCitySkin() { /* write my skin onto my city doc (only when it d
 }
 var BUILDING_ICON = {
   townhall: "🏛️", farm: "🌾", sawmill: "🪚", quarry: "⛰️", goldmine: "💰",
-  warehouse: "🏬", barracks: "⚔️", archery: "🏹", stable: "🐎",
+  warehouse: "🏬", barracks: "⚔️", archery: "🔮", stable: "🏹",
   wall: "🧱", academy: "📚", infirmary: "🏥"
 };
-var TROOP_ICON = { infantry: "🛡️", archer: "🏹", cavalry: "🐎" };
+/* v1185 (Harley): class rename (display only - the keys stay "archer"/"cavalry" for saves, server and bots): Archer -> Caster, Cavalry -> Ranged.
+   Buildings: Archery Range -> Mage Tower (trains Casters), Stable -> Archery Range (trains Ranged). */
+var TROOP_ICON = { infantry: "🛡️", archer: "🔮", cavalry: "🏹" };
 // Higher tiers share their type's icon; troopTag() adds the tier where two tiers could be confused.
 Object.keys(TROOP_DEFS).forEach(function (k) { if (!TROOP_ICON[k]) TROOP_ICON[k] = TROOP_ICON[troopBase(k)]; });
 function troopTag(k) { return TROOP_ICON[k] + (troopTier(k) > 1 ? "T" + troopTier(k) : ""); }
@@ -11785,7 +11787,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1184"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1185"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13329,7 +13331,7 @@ var CARD_CATALOG_DOC = "assetitems/cardcatalog";
 var CARD_CATALOG_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Drop Signal", narrative: "" };
 // v978: card text written in the code (slot index -> text). Shown to every player in any slot the shared catalog leaves empty; an admin's
 // in-game edit (saved to the catalog) takes priority. Order per slot: shared catalog > the admin's own save text > these defaults.
-var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 11: { name: "Shield Brothers", type: "", effect: "All of your infantry heroes gain +15% max health", narrative: "" }, 12: { name: "Thundering Hooves", type: "", effect: "All of your cavalry heroes gain +15% to their base atk", narrative: "" }, 13: { name: "Death Gerbils", type: "Summon", effect: "Every 5 seconds summon a Death Gerbil", narrative: "" }, 14: { name: "Hardy Stock", type: "", effect: "All your heroes, including summons, gain +5% health", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL, 16: { name: "Cannon Doctrine", type: "Fortress I", effect: "While your fortress is Fortress I (Heavy Cannon), everything on your side - heroes, troops, weapons and the cannon - deals 70% more damage. Does nothing on Fortress III.", narrative: "" } /* v1072 */ }; /* v981: all three effect cards on cards 28-30 */
+var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 11: { name: "Shield Brothers", type: "", effect: "All of your infantry heroes gain +15% max health", narrative: "" }, 12: { name: "Thundering Hooves", type: "", effect: "All of your Ranged heroes gain +15% to their base atk", narrative: "" }, 13: { name: "Death Gerbils", type: "Summon", effect: "Every 5 seconds summon a Death Gerbil", narrative: "" }, 14: { name: "Hardy Stock", type: "", effect: "All your heroes, including summons, gain +5% health", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL, 16: { name: "Cannon Doctrine", type: "Fortress I", effect: "While your fortress is Fortress I (Heavy Cannon), everything on your side - heroes, troops, weapons and the cannon - deals 70% more damage. Does nothing on Fortress III.", narrative: "" } /* v1072 */ }; /* v981: all three effect cards on cards 28-30 */
 // v980 (Harley): a card with an effect shows that effect's name in its description box (Regen -> "Regen"), so it's clear at a glance which
 // card it is. Fills an empty description or placeholder text (v979's "Test", the old long Drop Signal line); real text is left alone.
 var CARD_EFFECT_LABEL = { "critical mass": "Critical Mass", "regen": "Regen", "drop signal": "Drop Signal" };
@@ -14827,7 +14829,7 @@ function renderHeroes() {
   el.innerHTML = "";
   el.className = "hero-grid";
   var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
-  var CLASS_ICON = { infantry: "🛡️", archer: "🏹", cavalry: "🐎", governor: "👑" };
+  var CLASS_ICON = { infantry: "🛡️", archer: "🔮", cavalry: "🏹", governor: "👑" };
   Object.keys(HERO_DEFS).forEach(function (key) {
     var def = HERO_DEFS[key], h = game.state.heroes[key];
     var isCombat = def.class !== "governor";
@@ -20237,14 +20239,26 @@ function drawKessaRings(ctx) {
   }
 }
 var KESSA_RELEASE_SEC = 6 / 16; /* v1120: the 3D Kessa's arm is fully out on attack frame 6 */ // // orb leaves her hand on attack frame 4 of 16fps (the energy ring frame)
-function spawnProjectile(w, h, fromX, fromY, toX, toY, arc, targetId, dmg, isCannon, style) {
+/* v1185 (Harley): Caster heroes' basic attacks (and their plain skill shots) are spell orbs in their own colour - Kessa keeps her blue orb.
+   [core, middle, edge] as "r,g,b". */
+var SPELL_COLS = { lyra: ["255,244,200", "255,176,48", "232,110,12"], sera: ["236,255,236", "126,232,150", "56,186,108"] };
+function drawSpellOrb(ctx, x, y, cols, r, seed) {
+  var op = 1 + 0.12 * Math.sin(performance.now() / 60 + (seed || 0)), R = (r || 7) * op;
+  ctx.save(); ctx.translate(x, y);
+  var g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+  g.addColorStop(0, "rgba(" + cols[0] + ",0.95)"); g.addColorStop(0.3, "rgba(" + cols[1] + ",0.8)"); g.addColorStop(0.65, "rgba(" + cols[2] + ",0.4)"); g.addColorStop(1, "rgba(" + cols[2] + ",0)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgb(" + cols[0] + ")"; ctx.beginPath(); ctx.arc(0, 0, R * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+function spawnProjectile(w, h, fromX, fromY, toX, toY, arc, targetId, dmg, isCannon, style, spellCol) {
   if (isCannon) fortLifeKick(); // v567
   // toX/toY are captured once, here, at spawn time — the shot always flies
   // to exactly where its target was standing when it was fired, never to
   // wherever the "current front enemy" happens to be by the time it lands
   // (that live-recomputed-target drift was itself a smaller case of the
   // same fakery problem: a shot silently retargeting mid-flight).
-  idleAnim.projectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: toY, t: 0, targetId: targetId, dmg: dmg || 0, resolved: false, isCannon: !!isCannon, style: style || null, delay: style === "orb" ? KESSA_RELEASE_SEC : style === "spear" ? heroReleaseSec("roran") : 0 });
+  idleAnim.projectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: toY, t: 0, targetId: targetId, dmg: dmg || 0, resolved: false, isCannon: !!isCannon, style: style || null, spellCol: spellCol || null, delay: style === "orb" ? KESSA_RELEASE_SEC : style === "spear" ? heroReleaseSec("roran") : 0 });
 }
 function spawnEnemyProjectile(fromX, fromY, w, h, arc, dmg, isBossOrb, heroKey) {
   // arc: true for lancer-type enemies — gives them the same lobbed/thrown
@@ -22135,7 +22149,7 @@ function stepIdleAnim(dtSec, w, h) {
         var sp = idleSquadSlotPos(w, h, i, key);
         var isVolley = !!(skillDef && skillDef.name === "Piercing Volley");
         var volleyToY = (isVolley && frontVis.type === "boss") ? (groundYFor(h) + 15 - 29 * bossSpriteScale) : (groundYFor(h) - 16); // v465: a boss's fireball lands mid-body so the orb burst has a body to hit
-        spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : null, landed, frontVis.type === "boss"); // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
+        spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : SPELL_COLS[key] ? "spell" : null, landed, frontVis.type === "boss"); if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
         sfxSkillShot();
       }
       // the skill just fired and its cooldown reset — snap the smooth timer
@@ -22299,7 +22313,7 @@ function stepIdleAnim(dtSec, w, h) {
         var sqm = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); sqm[aid] = (sqm[aid] || 0) + 1; // a shot really left — her animation keys off this
         var ox = p.x, oy = p.y;
           if (aid === "kessa") { var kv = idleAnim.heroVis[aid] || p, hh = kessaHandPos(kv.x + (fortLife.active ? fortLife.dx : 0), kv.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); ox = hh.x; oy = hh.y; }
-          spawnProjectile(w, h, ox, oy, bsVis.x, aid === "kessa" ? groundYFor(h) - 18 : oy, false, targetEnemyId, dmg, false, aid === "kessa" ? "orb" : null); // Kessa's orb angles from her hand down/up to the enemy's body height
+          spawnProjectile(w, h, ox, oy, bsVis.x, aid === "kessa" ? groundYFor(h) - 18 : oy, false, targetEnemyId, dmg, false, aid === "kessa" ? "orb" : SPELL_COLS[aid] ? "spell" : null, SPELL_COLS[aid]); /* v1185: Casters cast spells */ // Kessa's orb angles from her hand down/up to the enemy's body height
         })(); // archer — flat, straight shot (Kessa: small blue energy orb, basic attack only)
         sfxShoot();
     }
@@ -24513,6 +24527,7 @@ function drawIdleAnim(ctx, w, h) {
       var s2 = getCannonBulletSprite();
       ctx.drawImage(s2.canvas, -s2.ox, -s2.oy);
       ctx.restore();
+    } else if (p.style === "spell" && p.spellCol) { drawSpellOrb(ctx, p.x, p.y, p.spellCol, 7, p.startX); /* v1185 */
     } else if (p.style === "orb") {
       var op = 1 + 0.12 * Math.sin(performance.now() / 60 + p.startX);
       ctx.save(); ctx.translate(p.x, p.y);
@@ -24543,6 +24558,7 @@ function drawIdleAnim(ctx, w, h) {
   idleAnim.skillShots.forEach(function (s) {
     var angle = Math.atan2(s.toY - s.startY, s.toX - s.startX);
     if (s.style === "fireball" && skillShotFireballReady) { drawFireballShot(ctx, s, angle, sScale); return; }
+    if (s.style === "spell" && s.spellCol) { s.trail.forEach(function (pt, ti) { ctx.save(); ctx.globalAlpha = (ti + 1) / (s.trail.length + 1) * 0.5; drawSpellOrb(ctx, pt.x, pt.y, s.spellCol, 7 * sScale, ti); ctx.restore(); }); drawSpellOrb(ctx, s.x, s.y, s.spellCol, 12 * sScale, s.startX); return; } /* v1185 */
     s.trail.forEach(function (pt, ti) {
       var fade = (ti + 1) / (s.trail.length + 1);
       ctx.save();
@@ -25159,7 +25175,7 @@ function renderIdleDebug() {
   var html = "";
   html += '<span class="sect">Kingdom</span>Town Hall Lv<b>' + th + '</b> · Equipped: <b>' + rosterTxt + '</b>' + (esperDef ? ' · Esper: <b>' + esperDef.icon + ' ' + esperDef.name + '</b>' : '');
   html += '<span class="sect">Fortress Cannon</span>Base ATK (<b>' + fmt(game.idleBaseAtk()) + '</b>) × 100% = <b>' + fmt(game.idleFortressCannonBulletDmg()) + ' dmg/bullet</b> — the always-on failsafe, independent of roster';
-  html += '<span class="sect">Ranged Power</span>Archer/Cavalry heroes only (Σlvl×4) = <b>' + rangedHeroSum + '</b> → <b>' + rangedPower + ' dps</b> — hits anything that has arrived, any range';
+  html += '<span class="sect">Ranged Power</span>Caster/Ranged heroes only (Σlvl×4) = <b>' + rangedHeroSum + '</b> → <b>' + rangedPower + ' dps</b> — hits anything that has arrived, any range';
   html += '<span class="sect">Melee Power</span>Infantry heroes only (Σlvl×4) = <b>' + meleeHeroSum + '</b> → <b>' + meleePower + ' dps</b> — only hits a point-blank (engaged) target';
   html += '<span class="sect">Fortress HP</span>(' + BASE_HP_FLAT + ' + 5×TH' + (esperHpBonus ? ' + ' + esperHpBonus + ' Esper' : '') + ') × tree/type HP bonus = <b>' + fmt(Math.round(maxHp)) + ' HP</b> — hero HP is no longer part of this pool; reaching 0 defeats the player';
   html += '<span class="sect">Hero HP</span>' + (roster.length ? roster.map(function (k) { var en = game.state.idle.heroHp && game.state.idle.heroHp[k], mx = game.idleHeroMaxHp(k), isI = HERO_DEFS[k].class === "infantry"; return HERO_DEFS[k].name + ': <b>' + (en && en.ko ? 'KO — revives in ' + Math.max(0, Math.ceil(en.reviveT)) + 's' : fmt(Math.round(en ? en.hp : mx)) + ' / ' + fmt(mx)) + '</b>' + (isI ? '' : ' (rider — not targeted yet)'); }).join(' · ') : '—') + ' — (' + game.heroKoCfg.baseHp + ' + Σlvl×' + game.heroKoCfg.hpPerPower + ') × tree/type HP bonus';
@@ -27450,7 +27466,7 @@ function resetEsperGraphic(key) {
 }
 
 var HERO_ORDER = Object.keys(HERO_DEFS);
-var HERO_ROLE_ICON = { infantry: "🛡️", archer: "🏹", cavalry: "🐎", governor: "👑" };
+var HERO_ROLE_ICON = { infantry: "🛡️", archer: "🔮", cavalry: "🏹", governor: "👑" };
 var HERO_FLAVOR = {
   gareth: "A frontline knight who has never once broken formation. Gareth leads with his shield first and his sword second, and his infantry follow both without hesitation.",
   lyra: "Raised on the northern watchtowers, Lyra can read wind and distance better than any scout in the realm. Her archers say she calls the shot before she even draws.",
@@ -30126,7 +30142,7 @@ var SFX_EFFECTS = [
   { key: "bossMelee", label: "Boss Melee Strike" },
   { key: "kill", label: "Enemy Kill" },
   { key: "shoot", label: "Ranged Auto-Attack" },
-  { key: "shootArc", label: "Arcing Auto-Attack (Cavalry)" },
+  { key: "shootArc", label: "Arcing Auto-Attack (Ranged)" },
   { key: "fortressCannon", label: "Fortress Cannon Bullet" },
   { key: "bossArrive", label: "Boss Arrives" },
   { key: "defeat", label: "Player Defeated" },
@@ -32019,6 +32035,7 @@ function drawArenaFrame(ctx, w, h) {
       ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(4, 0); ctx.stroke();
       ctx.fillStyle = "#fff3c4";
       ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(3, -2.2); ctx.lineTo(3, 2.2); ctx.closePath(); ctx.fill();
+    } else if (p.style === "spell" && p.spellCol) { ctx.restore(); drawSpellOrb(ctx, p.x, p.y, p.spellCol, p.big ? 12 : 7, p.startX); return; /* v1185 */
     } else if (p.style === "orb") {
       var aop = 1 + 0.12 * Math.sin(performance.now() / 60 + p.startX);
       ctx.translate(p.x, p.y);
@@ -32798,8 +32815,9 @@ function renderArenaBattleScreen() {
         var idx = arenaAnim.playerRoster.indexOf(id), slot = arenaSlotPos(w, h, idx, true);
         var kh = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null;
         var htP = state.hitTargets && state.hitTargets["p_" + id], hpP = htP && htP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + htP] : null; // a hit on an enemy infantry hero flies at him, not the fortress
-        spawnArenaProjectile(kh ? kh.x : slot.x, kh ? kh.y : slot.y, hpP ? hpP.x : aiCenter.x, hpP ? hpP.y : (kh ? aiCenter.y : slot.y), false, "#8ff0ff", def.class === "cavalry", id === "kessa" ? "orb" : null);
+        spawnArenaProjectile(kh ? kh.x : slot.x, kh ? kh.y : slot.y, hpP ? hpP.x : aiCenter.x, hpP ? hpP.y : (kh ? aiCenter.y : slot.y), false, "#8ff0ff", def.class === "cavalry", id === "kessa" ? "orb" : SPELL_COLS[id] ? "spell" : null);
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "p_" + id; }
+        if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
         if (def.class === "cavalry") playerFiredArc = true; else playerFiredFlat = true;
       });
       state.aiHitAttackers.forEach(function (id) {
@@ -32809,8 +32827,9 @@ function renderArenaBattleScreen() {
         var idx = arenaAnim.aiRoster.indexOf(id), slot = arenaSlotPos(w, h, idx, false);
         var kh2 = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null;
         var htA = state.hitTargets && state.hitTargets["a_" + id], hpA = htA && htA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + htA] : null;
-        spawnArenaProjectile(kh2 ? kh2.x : slot.x, kh2 ? kh2.y : slot.y, hpA ? hpA.x : playerCenter.x, hpA ? hpA.y : (kh2 ? playerCenter.y : slot.y), false, "#ff8a8a", def.class === "cavalry", id === "kessa" ? "orb" : null);
+        spawnArenaProjectile(kh2 ? kh2.x : slot.x, kh2 ? kh2.y : slot.y, hpA ? hpA.x : playerCenter.x, hpA ? hpA.y : (kh2 ? playerCenter.y : slot.y), false, "#ff8a8a", def.class === "cavalry", id === "kessa" ? "orb" : SPELL_COLS[id] ? "spell" : null);
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "a_" + id; }
+        if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
         if (def.class === "cavalry") aiFiredArc = true; else aiFiredFlat = true;
       });
       // Fortress cannon streams: this tick's bullets are staggered across the tick at the real bullet interval, muzzle -> enemy fortress.
@@ -32889,7 +32908,7 @@ function renderArenaBattleScreen() {
         } else {
           var pvHit = (a && a.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, false, arenaHullContactPoint(w, h, false, slot.x, slot.y, aiCenter.y)) : null; // v466: lands deep in the enemy hull, like the laser's aim zone (v465 used the surface contact point)
           var tgtP = state.skillTargets && state.skillTargets["p_" + key], tpP = tgtP && tgtP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + tgtP] : null; // melee skill aims at the hero it actually hits, else the fortress
-          spawnArenaProjectile(slot.x, slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", false, a && a.name === "Piercing Volley" ? "fireball" : null, landed); // same fireball art as Conquest for Piercing Volley only
+          spawnArenaProjectile(slot.x, slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", false, a && a.name === "Piercing Volley" ? "fireball" : SPELL_COLS[key] ? "spell" : null, landed); if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });
@@ -32913,7 +32932,7 @@ function renderArenaBattleScreen() {
         } else {
           var aiPvHit = (aiA && aiA.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, true, arenaHullContactPoint(w, h, true, slot.x, slot.y, playerCenter.y)) : null;
           var tgtA = state.skillTargets && state.skillTargets["a_" + key], tpA = tgtA && tgtA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + tgtA] : null;
-          spawnArenaProjectile(slot.x, slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", false, aiA && aiA.name === "Piercing Volley" ? "fireball" : null, aiLanded);
+          spawnArenaProjectile(slot.x, slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", false, aiA && aiA.name === "Piercing Volley" ? "fireball" : SPELL_COLS[key] ? "spell" : null, aiLanded); if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });

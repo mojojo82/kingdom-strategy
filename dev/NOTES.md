@@ -2056,3 +2056,11 @@
 - Harley bug (tomhector, Conquest): the Clone Task clone stayed on the field after unequipping Clone Task. Reproduced headless: clone up, unequip, clone still there.
 - idleFxWeaponTick now drops any weapon clone (state.idle.clones, incl. the Duplicate copy "clone_task_dup") whose weapon isn't equipped any more. Gerbils (not from a weapon) are untouched. Arena isn't affected (loadouts are fixed for the match).
 - dev/simfork/g304_clone_unequip.js; g211 conquest clone + g216 gerbils pass. Meta check: same pre-existing warning as v1183 (identical numbers).
+
+## v1185 - Archer -> Caster, Cavalry -> Ranged; Casters cast spells (TEST)
+- Harley: simplify the classes - all archers (heroes + troops) become Casters, cavalry becomes Ranged; Caster heroes' attacks become spells.
+- Display only: the internal keys stay "archer"/"cavalry"/"archery"/"stable" (saves, server, bots, formations, counters all unchanged). Counters read: Infantry beats Ranged, Caster beats Infantry, Ranged beats Caster.
+- Harley's picks: buildings Archery Range -> Mage Tower (trains Casters), Stable -> Archery Range (trains Ranged); icons 🔮 Caster, 🏹 Ranged (troops, hero class badges, buildings); research Composite Bows (archer) -> Arcane Focus 🔮 "Caster Attack", Stirrup Tactics (cavalry) -> Composite Bows 🏹 "Ranged Attack"; hero lead skills say Caster / Ranged ATK; Thundering Hooves card text "Ranged heroes" (card name unchanged - Harley's to rename); Storm Mark text "Caster and Ranged heroes".
+- Spells: Lyra and Sera's basic attacks are spell orbs in their own colour (Lyra orange-gold, Sera green), Conquest and Arena, plus their plain skill shots (Sera's heal shot was an arrowhead). Lyra's Piercing Volley stays a fireball; Kessa keeps her blue orb + lightning. SPELL_COLS / drawSpellOrb.
+- Not renamed: the Conquest enemy horde "Archer" (its art is a bowman) and the Tower Defense "Archer" tower. Card text Harley edited in the admin page (cloud) overrides the default text.
+- dev/simfork/g305_casters.js; g299 updated for the new names. Not checked on a phone.

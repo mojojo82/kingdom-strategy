@@ -55,7 +55,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert.strictEqual(o.nPlus, "301");
     assert.deepStrictEqual(o.queue, ["infantry_t2x300"], "Train starts 300x T2");
     assert(o.busy[0] === "Training…" && o.busy[1] && o.busy[2] && o.busy[3] > 0, "busy: button off, progress + speedups shown");
-    assert(/Build the Archery Range/.test(o.archer[0]) && /Archer/.test(o.archerOn[0]), "archer tab, locked building message");
+    assert(/Build the Mage Tower/.test(o.archer[0]) && /Caster/.test(o.archerOn[0]), "Caster tab (v1185 rename), locked building message");
     console.log("g299 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });
