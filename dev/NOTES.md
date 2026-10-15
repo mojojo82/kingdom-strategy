@@ -1984,3 +1984,9 @@
 - Still to make: hand blast (start frame only, no effects - the blast is drawn in code). Old magenta hand-blast clip not usable (pink cape vs magenta, turns side-on).
 - Dark knight clips are made facing/aiming right (his open claw side); mirror ALL of them in game so he faces the fortress on the left.
 - Hand blast locked in: art/originals/dark_knight_handblast_hailuo.mp4 (16:9 start frame gave him room to reach right - the 1:1 frames made him dodge left). Harley will add more attacks as extras.
+
+## v1174 - Dark Knight look test (TEST)
+- Harley: changed his mind on the 3D version of the boss - first a test to see if he even likes the video-made knight. Only the idle, at the boss spot, no stats, no attacks; he decides after whether to carry on or drop it.
+- Dev Tools > Chapter Boss > "Dark Knight preview" (checkbox, this device, off by default) + Size slider (60-180 pt, default 110). Drawn in Conquest at the boss spot (idleBossX, boss ground line) every frame, behind the enemies. Not an enemy: nothing is added to the fight, real bosses still come as normal (they'd stand on top of him).
+- Sheet: dev/knight/idle_sheet.py from art/originals/dark_knight_idle_hailuo.mp4 - loop 1.0-5.8 s at 12 fps (58 frames, last 4 eased into the first), soft green key + despill, biggest blob only, pink gem/eye glow pulled back to the still's gem colour, mirrored to face the fortress, 219x241 tiles (73% of 3x like Bonewake), webp 1.3 MB.
+- dev/simfork/g296_knight.js: off by default, animates, 110 pt centred on the boss spot, feet on the ground line, slider works, remembered on this device, no page errors. Not checked on a phone.
