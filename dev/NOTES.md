@@ -2036,3 +2036,11 @@
 - Base seconds per troop, same for Infantry / Archer / Cavalry: T1 12, T2 17, T3 24, T4 32, T5 44, T6-T8 60, T9-T10 120 (was 8/10/14 s at T1 by type, +19% per tier: T10 38/48/67 s). TROOP_TIER_TRAIN_SEC.
 - Not changed: the building-level speed bonus (+5% per level here vs Kingshot's 0.3-8%), research/other training bonuses, batch sizes, costs. Infirmary healing keeps its old times (healTime = the old train time).
 - Lord Rush: no published per-tier table found. Other sites disagreed (one "estimates" page, one saying T10 = 600 s) - the kingshotlab table is the one that matches Harley's screenshot.
+
+## v1182 - Troop promotion (TEST)
+- Harley: promote a picked tier to the highest one you have; button always visible, greyed until it's available.
+- Kingshot rules (Lord Rush calculator: "Promote charges only the gap"; Kingshot level table: promotions at Barracks Lv 13): per troop you pay the cost difference between the two tiers and wait the base-time difference (T1->T6 48 s each, T6->T8 0 s = instant, same as Kingshot), sped up by the building level + training bonuses like training. PROMOTE_UNLOCK_LEVEL = 13.
+- Training panel: "⬆ Promote" button left of Train. Greyed until it works; tapping it greyed says why (unlocks at Lv 13 / already the highest tier / you own none / batch running). Tapped when ready: promote mode - title "Infantry T2 → Infantry T6", slider up to what you own (and the batch size), cost box shows the difference, buttons "✕ Cancel" + "Promote ⏱ time".
+- Uses the building's one training slot (no training while promoting), the troops leave the army while promoting and come back as the new tier. Speedups work on it.
+- Also: the training count you pick now survives the panel's once-a-second refresh in promote mode.
+- dev/simfork/g302_promote.js (+ g240, g266, g297, g298, g299 pass). Not checked on a phone.

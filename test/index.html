@@ -491,7 +491,10 @@
 #troopsModeContent .tr-wrap button.tr-step.tr-step { margin:0; flex:0 0 auto; width:34px; height:34px; padding:0; font-size:20px; line-height:1; }
 .tr-meta { font-size:11px; color:#a3906a; text-align:right; }
 .tr-busy { font-size:12px; color:#f3e6c4; background:#241b12; border:1px solid #4a3b24; border-radius:8px; padding:7px 9px; }
-#troopsModeContent .tr-wrap button.tr-train.tr-train { margin:0; width:100%; font-size:16px; padding:9px; display:flex; flex-direction:column; align-items:center; line-height:1.2; }
+.tr-act { display:flex; gap:8px; align-items:stretch; }
+#troopsModeContent .tr-wrap button.tr-promo.tr-promo { margin:0; flex:0 0 34%; font-size:14px; padding:9px 4px; }
+#troopsModeContent .tr-wrap button.tr-promo.tr-promo.off { opacity:.45; filter:grayscale(.7); }
+#troopsModeContent .tr-wrap button.tr-train.tr-train { margin:0; width:100%; flex:1 1 auto; font-size:16px; padding:9px; display:flex; flex-direction:column; align-items:center; line-height:1.2; }
 .tr-train span { font-size:13px; font-weight:700; }
 .tr-lock { color:var(--warn); font-size:13px; text-align:center; padding:8px; }
   .troop-row:last-child { border-bottom:none; }
@@ -4997,6 +5000,7 @@ var TROOP_TIER_TIME_MULT = 1.19; /* v1181: no longer used for training (Kingshot
 /* v1181 (Harley): Kingshot's base training time per troop by tier, the same for all three types (kingshotlab.com database, from kingshotcalculator.net;
    matches Harley's screenshot: 300 Tier VI archers = 5:00:00 before bonuses). Building level / research bonuses still apply on top as before. */
 var TROOP_TIER_TRAIN_SEC = [0, 12, 17, 24, 32, 44, 60, 60, 60, 120, 120];
+var PROMOTE_UNLOCK_LEVEL = 13; /* v1182: Kingshot - troop promotion unlocks with Barracks/Range/Stable Lv 13 */
 function troopKey(type, tier) { return tier <= 1 ? type : type + "_t" + tier; }
 function troopBase(key) { var d = TROOP_DEFS[key]; return d ? d.baseType : key; }
 function troopTier(key) { var d = TROOP_DEFS[key]; return d ? d.tier : 1; }
@@ -6854,6 +6858,36 @@ function createGame(opts) {
     b.queue.push({ troopType: tkey, count: count, finishAt: finishAt, startedAt: startAt, duration: totalTime });
     log("Training " + count + " " + TROOP_DEFS[tkey].name + " (" + Math.round(totalTime) + "s)");
     return { ok: true, finishAt: finishAt };
+  }
+  /* v1182 (Harley): troop promotion, like Kingshot. Unlocks at building Lv PROMOTE_UNLOCK_LEVEL. Promotes owned troops of one tier straight to the
+     highest tier the building can train; per troop it costs the difference in resources and takes the difference in base time (sped up by the
+     building level + training bonuses like training). Uses the building's one training slot and batch size; the troops leave the army while promoting. */
+  function promoteInfo(buildingKey, fromTier, count) {
+    var b = state.buildings[buildingKey], def = BUILDING_DEFS[buildingKey];
+    if (!b || !def || !def.trains) return { ok: false, reason: "not_a_training_building" };
+    var type = def.trains, toTier = maxTrainableTier(buildingKey); fromTier = Math.max(1, Math.floor(fromTier) || 1);
+    var fromKey = troopKey(type, fromTier), toKey = troopKey(type, toTier), owned = state.troops[fromKey] || 0;
+    var out = { type: type, fromTier: fromTier, toTier: toTier, fromKey: fromKey, toKey: toKey, owned: owned, max: Math.min(owned, trainCap(buildingKey)), unlockLevel: PROMOTE_UNLOCK_LEVEL };
+    if (b.level < PROMOTE_UNLOCK_LEVEL) { out.ok = false; out.reason = "locked"; return out; }
+    if (fromTier >= toTier) { out.ok = false; out.reason = "top_tier"; return out; }
+    if (owned < 1) { out.ok = false; out.reason = "none_owned"; return out; }
+    if (b.queue && b.queue.length) { out.ok = false; out.reason = "already_training"; return out; }
+    count = Math.max(1, Math.min(out.max, Math.floor(count) || out.max));
+    var cf = TROOP_DEFS[fromKey].cost, ct = TROOP_DEFS[toKey].cost, cost = {};
+    for (var r in ct) { var d = Math.max(0, (ct[r] || 0) - (cf[r] || 0)) * count; if (d > 0) cost[r] = d; }
+    out.count = count; out.cost = cost;
+    out.secs = Math.max(0, TROOP_DEFS[toKey].trainTime - TROOP_DEFS[fromKey].trainTime) * count / (1 + b.level * 0.05) / trainSpeedMult();
+    out.ok = true; return out;
+  }
+  function promoteTroops(buildingKey, fromTier, count) {
+    var pi = promoteInfo(buildingKey, fromTier, count); if (!pi.ok) return pi;
+    if (!canAfford(pi.cost)) return { ok: false, reason: "cannot_afford" };
+    spend(pi.cost);
+    state.troops[pi.fromKey] -= pi.count; if (state.troops[pi.fromKey] <= 0) delete state.troops[pi.fromKey];
+    var t0 = now(), b = state.buildings[buildingKey];
+    b.queue.push({ troopType: pi.toKey, count: pi.count, finishAt: t0 + pi.secs * 1000, startedAt: t0, duration: pi.secs, promoteFrom: pi.fromKey });
+    log("Promoting " + pi.count + " " + TROOP_DEFS[pi.fromKey].name + " to " + TROOP_DEFS[pi.toKey].name + " (" + Math.round(pi.secs) + "s)");
+    tick(); return { ok: true, finishAt: t0 + pi.secs * 1000 };
   }
   // ---- Formations: saved troop-count presets (see the state.formations
   // comment above). Neither of these touches state.troops — they only write
@@ -9372,7 +9406,7 @@ function createGame(opts) {
       if (bb.queue.length && t >= bb.queue[0].finishAt) {
         var job = bb.queue.shift();
         state.troops[job.troopType] = (state.troops[job.troopType] || 0) + job.count;
-        log(job.count + " " + TROOP_DEFS[job.troopType].name + " finished training.");
+        log(job.count + " " + TROOP_DEFS[job.troopType].name + (job.promoteFrom ? " promoted." : " finished training."));
       }
     }
     if (state.researchQueue && t >= state.researchQueue.finishAt) {
@@ -9775,7 +9809,7 @@ function createGame(opts) {
     healSpeedMult: healSpeedMult, techTimeFor: techTimeFor, researchFinishNow: researchFinishNow, techCostFor: techCostFor, techExtraFor: techExtraFor, techExtraAffordable: techExtraAffordable, meetsTechRequirements: meetsTechRequirements, buildSpeedMult: buildSpeedMult,
     marchSpeedMult: marchSpeedMult, trainSpeedMult: trainSpeedMult, rpProductionMult: rpProductionMult,
     gatherBonusMult: gatherBonusMult, lossReductionAmt: lossReductionAmt, resourceMult: resourceMult,
-    troopAtkMult: troopAtkMult, maxTrainableTier: maxTrainableTier, trainCap: trainCap, maxTrainNow: maxTrainNow, governorBonus: governorBonus,
+    troopAtkMult: troopAtkMult, maxTrainableTier: maxTrainableTier, trainCap: trainCap, maxTrainNow: maxTrainNow, promoteInfo: promoteInfo, promoteTroops: promoteTroops, governorBonus: governorBonus,
     accountUsdValue: accountUsdValue,
     heroLevelCost: heroLevelCost, recruitHero: recruitHero, levelUpHero: levelUpHero, starUpHero: starUpHero, grantFragments: grantFragments, grantRandomFragments: grantRandomFragments, heroCanAffordLevel: heroCanAffordLevel, heroCanAffordStar: heroCanAffordStar, setGovernor: setGovernor,
     clearGovernor: clearGovernor, attemptConquest: attemptConquest, idlePower: idlePower,
@@ -11750,7 +11784,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1181"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1182"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14662,7 +14696,7 @@ function renderTroops() {
 }
 /* v1177 (Harley): training laid out like Kingshot - type switch, a stage for the troop figure (placeholder until there's art), all 10 tiers on one row
    with how many you own, have/need cost box, - slider + count, and one big Train button with the time. Same place as before (City > Troops). */
-var troopTrainType = "infantry";
+var troopTrainType = "infantry", troopPromoteMode = {}; /* v1182: promote mode per troop type */
 var TR_ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 function trBusy(d) { troopsUiBusy = Math.max(0, troopsUiBusy + d); }
 function renderTrainPanel(el) {
@@ -14675,24 +14709,27 @@ function renderTrainPanel(el) {
   var h = '<div class="tr-wrap"><div class="tr-types">';
   TROOP_TYPES.forEach(function (ty) { var sum = 0; Object.keys(TROOP_DEFS).forEach(function (k) { if (troopBase(k) === ty) sum += st.troops[k] || 0; });
     h += '<button type="button" class="tr-type' + (ty === type ? " on" : "") + '" data-trt="' + ty + '">' + TROOP_ICON[ty] + " " + TROOP_DEFS[ty].name + '<small>' + fmtCompact(sum) + '</small></button>'; });
-  h += '</div><div class="tr-stage"><div class="tr-title">' + def.name + '</div><div class="tr-fig">' + TROOP_ICON[type] + '</div>' +
+  var pi = built ? game.promoteInfo(bk, tier, 0) : { ok: false, reason: "locked", unlockLevel: PROMOTE_UNLOCK_LEVEL }, promo = !!(troopPromoteMode[type] && pi.ok);
+  if (troopPromoteMode[type] && !pi.ok) troopPromoteMode[type] = false;
+  h += '</div><div class="tr-stage"><div class="tr-title">' + (promo ? "⬆ " + def.name + " → " + TROOP_DEFS[pi.toKey].name : def.name) + '</div><div class="tr-fig">' + TROOP_ICON[type] + '</div>' +
     '<div class="tr-stats">Atk ' + (Math.round(def.atk * 10) / 10) + ' · HP ' + Math.round(def.hp) + ' · Def ' + (Math.round(def.def * 10) / 10) + ' · Power ' + def.power + ' · Speed ' + def.speed + ' · counters ' + counterLabel + '</div></div><div class="tr-tiers">';
   for (var t = 1; t <= TROOP_MAX_TIER; t++) { var lock = t > maxTier;
     h += '<button type="button" class="tr-tier' + (t === tier ? " on" : "") + (lock ? " lock" : "") + '" data-trtier="' + t + '"><b>' + TR_ROMAN[t] + '</b>' + (lock ? '<i>🔒</i>' : '') + '<small>' + fmtCompact(st.troops[troopKey(type, t)] || 0) + '</small></button>'; }
   h += '</div>';
   if (!built) h += '<div class="tr-lock">🔒 Build the ' + BUILDING_DEFS[bk].name + ' to train ' + TROOP_DEFS[type].name + '.</div>';
   else {
-    var cap = game.trainCap(bk), canNow = game.maxTrainNow(bk, tier), hiN = Math.max(1, canNow || cap);
+    var cap = promo ? pi.max : game.trainCap(bk), canNow = promo ? pi.max : game.maxTrainNow(bk, tier), hiN = Math.max(1, canNow || cap);
     var n0 = troopTrainCount[type] ? Math.min(cap, troopTrainCount[type]) : hiN;
     h += '<div class="tr-cost" id="trCost"></div>' +
       '<div class="tr-qty"><button type="button" class="tr-step" data-trstep="-1">−</button><input type="range" id="trSlider" min="1" max="' + cap + '" value="' + n0 + '">' +
       '<button type="button" class="tr-step" data-trstep="1">+</button><input type="number" id="trN" min="1" max="' + cap + '" value="' + n0 + '"></div>' +
-      '<div class="tr-meta">max ' + fmt(cap) + ' per batch' + (canNow < cap ? ' · <span class="cost-short">resources for ' + fmt(canNow) + '</span>' : '') + '</div>';
+      '<div class="tr-meta">' + (promo ? "you own " + fmt(pi.owned) + " · max " + fmt(cap) + " per batch · pay only the difference" : 'max ' + fmt(cap) + ' per batch' + (canNow < cap ? ' · <span class="cost-short">resources for ' + fmt(canNow) + '</span>' : '')) + '</div>';
     if (busy) { var q = b.queue[0], left = (q.finishAt - vnow()) / 1000, pct = q.duration ? Math.max(0, Math.min(100, 100 - left / q.duration * 100)) : 0;
       h += '<div class="tr-busy">⚙️ Training ' + b.queue.map(function (x) { return fmt(x.count) + "× " + TROOP_DEFS[x.troopType].name; }).join(", ") + ' · ' + fmtTime(Math.max(0, (b.queue[b.queue.length - 1].finishAt - vnow()) / 1000)) + ' left' +
         '<div class="progress"><div style="width:' + pct + '%"></div></div>' + speedupBtnsHtml("train", bk) + '</div>';
-      h += '<button type="button" class="tr-train" id="trTrain" disabled>Training…</button>'; }
-    else h += '<button type="button" class="tr-train" id="trTrain">Train<span id="trTime"></span></button>';
+      h += '<div class="tr-act"><button type="button" class="tr-promo off" id="trPromo">⬆ Promote</button><button type="button" class="tr-train" id="trTrain" disabled>Training…</button></div>'; }
+    else h += '<div class="tr-act">' + (promo ? '<button type="button" class="tr-promo" id="trPromoX">✕ Cancel</button>' : '<button type="button" class="tr-promo' + (pi.ok ? '' : ' off') + '" id="trPromo">⬆ Promote</button>') +
+      '<button type="button" class="tr-train" id="trTrain">' + (promo ? "Promote" : "Train") + '<span id="trTime"></span></button></div>';
   }
   el.innerHTML = h + '</div>';
   el.querySelectorAll("[data-trt]").forEach(function (x) { x.onclick = function () { troopTrainType = x.getAttribute("data-trt"); renderTroops(); }; });
@@ -14701,11 +14738,20 @@ function renderTrainPanel(el) {
     troopTrainTier[type] = tt; troopTrainCount[type] = 0; renderTroops(); }; });
   if (!built) return;
   var sl = document.getElementById("trSlider"), inp = document.getElementById("trN"), cap2 = +sl.max;
+  var pb = document.getElementById("trPromo"), px = document.getElementById("trPromoX");
+  if (pb) pb.onclick = function () { var p2 = game.promoteInfo(bk, tier, 0);
+    if (p2.ok && !busy) { troopPromoteMode[type] = true; troopTrainCount[type] = 0; renderTroops(); return; }
+    var why = busy || p2.reason === "already_training" ? "Wait for this batch to finish (or speed it up)" : p2.reason === "locked" ? "⬆ Promotion unlocks at " + BUILDING_DEFS[bk].name + " Lv " + PROMOTE_UNLOCK_LEVEL
+      : p2.reason === "top_tier" ? "Tier " + TR_ROMAN[tier] + " is already the highest you can train - pick a lower tier you own" : "You have no Tier " + TR_ROMAN[tier] + " " + TROOP_DEFS[type].name + " to promote";
+    miniToast(why); };
+  if (px) px.onclick = function () { troopPromoteMode[type] = false; troopTrainCount[type] = 0; renderTroops(); };
   function show(n) {
     n = Math.max(1, Math.min(cap2, parseInt(n, 10) || 1)); sl.value = n; if (document.activeElement !== inp) inp.value = n; troopTrainCount[type] = n;
-    document.getElementById("trCost").innerHTML = Object.keys(def.cost).map(function (r) { var need = def.cost[r] * n, have = st.resources[r] || 0;
-      return '<span class="' + (have < need ? "short" : "") + '">' + RES_ICON[r] + fmtCompact(have) + " / " + fmt(need) + '</span>'; }).join("");
-    var tm = document.getElementById("trTime"); if (tm) tm.textContent = "⏱ " + fmtTime((def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult());
+    var pq = promo ? game.promoteInfo(bk, tier, n) : null, costN = {};
+    if (pq) costN = pq.cost; else Object.keys(def.cost).forEach(function (r) { costN[r] = def.cost[r] * n; });
+    document.getElementById("trCost").innerHTML = Object.keys(costN).map(function (r) { var need = costN[r], have = st.resources[r] || 0;
+      return '<span class="' + (have < need ? "short" : "") + '">' + RES_ICON[r] + fmtCompact(have) + " / " + fmt(need) + '</span>'; }).join("") || '<span>Free</span>';
+    var tm = document.getElementById("trTime"); if (tm) tm.textContent = "⏱ " + fmtTime(pq ? pq.secs : (def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult());
     return n;
   }
   show(sl.value);
@@ -14718,8 +14764,8 @@ function renderTrainPanel(el) {
   inp.onblur = function () { trBusy(-1); inp.value = show(inp.value); };
   el.querySelectorAll("[data-trstep]").forEach(function (x) { x.onclick = function () { show((parseInt(sl.value, 10) || 1) + +x.getAttribute("data-trstep")); }; });
   var tb = document.getElementById("trTrain");
-  if (tb && !busy) tb.onclick = function () { var n = Math.max(1, Math.min(cap2, parseInt(sl.value, 10) || 1)), res = game.queueTraining(bk, n, tier);
-    if (res && res.ok) troopTrainCount[type] = 0; else if (res && res.reason === "cannot_afford") miniToast("Not enough resources for " + fmt(n) + " " + def.name);
+  if (tb && !busy) tb.onclick = function () { var n = Math.max(1, Math.min(cap2, parseInt(sl.value, 10) || 1)), res = promo ? game.promoteTroops(bk, tier, n) : game.queueTraining(bk, n, tier);
+    if (res && res.ok) { troopTrainCount[type] = 0; troopPromoteMode[type] = false; } else if (res && res.reason === "cannot_afford") miniToast("Not enough resources for " + fmt(n) + " " + def.name);
     persist(); render(); };
 }
 
