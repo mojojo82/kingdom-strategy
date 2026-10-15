@@ -2013,3 +2013,9 @@
   -> have / need cost box (red when short) -> − slider + count -> one big Train button with the time. While the building trains: progress, time left and the speedup buttons; Train shows "Training…".
 - Brown/bronze panel look kept (bronze = selected, like the other buttons there). No gem "Finish" button (Harley: leave it out for now). Formations and Infirmary above it are unchanged.
 - dev/simfork/g299_train_ui.js; g240 train cap now uses the new box (#trN, .tr-step); g266, g298 still pass. Not checked on a phone.
+
+## v1178 - Earn rates in the red bag (TEST)
+- Harley: the Research Point / Food / Wood / Stone / Gold Production rows at the top of City > Buildings go into the red bag (Resources popup) instead.
+- Resources popup: each resource shows its earn rate under the name (green "+47.7 /s"); new Research Points row (owned + RP/s, potion icon). Updates live while open.
+- Buildings tab: the 5 production rows are gone (the build queue line is now the first thing).
+- dev/simfork/g300_bag_rates.js. Not checked on a phone.
