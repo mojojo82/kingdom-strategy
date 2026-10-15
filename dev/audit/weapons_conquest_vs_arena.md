@@ -56,8 +56,8 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Lv 10+ Hex Link: Arena only (31083) - **FIXED v1194 (Conquest too)**. Conquest reduces ranged hits on heroes (8585); Arena doesn't (30927, 31317). **Hero part FIXED v1193 (Arena: Orbit + Dome cut ranged hits on heroes too).**
 
 ## Projection Wall
-- Not implemented in Conquest at all (no branch in idleFxWeaponTick, "inert" 8755). Arena: blocks Shuriken Storm on ranged heroes (30904).
-- Lv 50 Mirror not implemented in either mode. **FIXED v1195 in Arena (reflects 50% of what the Wall blocks). Conquest: nothing hits ranged heroes, so nothing to block/mirror - item 8 waiting on Harley.**
+- Not implemented in Conquest at all (no branch in idleFxWeaponTick, "inert" 8755). Arena: blocks Shuriken Storm on ranged heroes (30904). **FIXED v1196: Conquest runs the Wall too (blocks enemy projectiles landing on ranged heroes while up, Mirror at Lv50) - ready for the enemies Harley is adding that can hit ranged heroes.**
+- Lv 50 Mirror not implemented in either mode. **FIXED v1195 in Arena (reflects 50% of what the Wall blocks). Conquest: built in v1196 with item 8.**
 
 ## Status Wave
 - Inert in Conquest (nothing stuns you there); Arena blocks stuns + Reflect (31091). Mostly a target difference.

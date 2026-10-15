@@ -8367,6 +8367,7 @@ function createGame(opts) {
       idleEnemyPendingHits.forEach(function (eh) { eh.t -= deltaSec; if (eh.t > 0) keepEh.push(eh); else landed.push(eh); });
       idleEnemyPendingHits = keepEh;
       for (var li = 0; li < landed.length; li++) {
+        if (idleWallBlocks(landed[li])) continue; /* v1196: Projection Wall */
         idleApplyEnemyHit(landed[li].type, landed[li].dmg, landed[li].key);
         if (state.idle.playerHp <= 0) { idleResetLevel(); break; }
       }
@@ -8593,7 +8594,7 @@ function createGame(opts) {
         e.heroHitKey = tgtHeroKey;
         if (bossOnHero && HERO_KO_CFG.bossHeroMode !== "redirect") { var bhK = idleMeleeTargetHero(); if (bhK && bhK !== tgtHeroKey) idleEnemyPendingHits.push({ t: IDLE_ENEMY_SHOT_FLIGHT_SEC[e.type] || IDLE_ENEMY_SHOT_FLIGHT_DEFAULT_SEC, type: e.type, dmg: hitDmg * idleFxProjMult(), key: bhK }); } /* v954: copy mode - every Nth boss shot also hits the front hero (queued first, so he takes it even if the same shot finishes the fortress) */
         if (base.melee) idleApplyEnemyHit(e.type, hitDmg, tgtHeroKey); // melee: lands instantly
-        else idleEnemyPendingHits.push({ t: IDLE_ENEMY_SHOT_FLIGHT_SEC[e.type] || IDLE_ENEMY_SHOT_FLIGHT_DEFAULT_SEC, type: e.type, dmg: hitDmg * idleFxProjMult(), key: tgtHeroKey }); // ranged: lands when the shot arrives
+        else idleEnemyPendingHits.push({ t: IDLE_ENEMY_SHOT_FLIGHT_SEC[e.type] || IDLE_ENEMY_SHOT_FLIGHT_DEFAULT_SEC, type: e.type, dmg: hitDmg * idleFxProjMult(), key: tgtHeroKey, src: e.id }); // ranged: lands when the shot arrives
         state.idle.hitCount = (state.idle.hitCount || 0) + 1; // kept for anything else still reading the aggregate count
         e.hitCount = (e.hitCount || 0) + 1;
         e.atkCooldown += IDLE_ENEMY_ATTACK_INTERVAL;
@@ -8761,7 +8762,7 @@ function createGame(opts) {
   // ---- v777: FX weapons in Border Skirmish ----
   // Works here: Orbit Shield + Deflector Dome (cut enemy ranged/boss shot damage), IO Repair (heals the fortress), Railgun (after its countdown, hits EVERY enemy for a
   // % of its max HP), Droid Call (a drone fires constantly at the nearest enemy), EMP Gun (freezes every arrived enemy's attacks for the stun time), Duplicate (copies any of those).
-  // Clone Task: a living clone fights here too (v974, see idleCloneTemplate). Inert here (no stuns / no enemy fortress): Status Wave, Projection Wall.
+  // Clone Task: a living clone fights here too (v974, see idleCloneTemplate). Inert here (no stuns / no enemy fortress): Status Wave. Projection Wall: v1196, see idleWallBlocks.
   function idleFxList() {
     var ids = state.equippedWeapons || [], out = [], dupEff = null;
     ids.forEach(function (wid) {
@@ -8777,6 +8778,20 @@ function createGame(opts) {
       if (base) out.push({ key: base.key + "_dup", wd: base.wd, fx: base.fx, st: base.st, mag: dupEff / 100, lag: true });
     }
     return out;
+  }
+  /* v1196 (Harley, audit item 8): Projection Wall in Conquest works like Arena - while it's up, an enemy projectile that lands on one of your
+     ranged heroes (Caster / Ranged) is blocked; Mirror Wall (Lv50) sends its % of the blocked damage back at the enemy that fired it (or the
+     front enemy if that one is gone). No Conquest enemy shoots ranged heroes yet - this is ready for the ones Harley is adding. */
+  function idleWallBlocks(hit) {
+    var key = hit && hit.key, d = key && HERO_DEFS[key]; if (!d || d.class === "infantry") return false;
+    var I = state.idle, up = false, mir = 0;
+    idleFxList().forEach(function (o) { if (o.fx !== "wall") return; var T = I.fxT && I.fxT[o.key]; if (T && T.up > 0) { up = true; mir = Math.max(mir, (o.st.p.mirror || 0) / 100 * o.mag); } });
+    if (!up) return false;
+    I.wallBlocked = (I.wallBlocked || 0) + hit.dmg;
+    if (mir > 0) { var en = I.enemies, ix = -1, j; for (j = 0; j < en.length; j++) if (en[j].id === hit.src && en[j].hp > 0) { ix = j; break; }
+      if (ix < 0) for (j = 0; j < en.length; j++) if (en[j].arrived && en[j].hp > 0) { ix = j; break; }
+      if (ix >= 0) { var rf = hit.dmg * mir; en[ix].hp -= rf; I.wallMirrored = (I.wallMirrored || 0) + rf; if (en[ix].hp <= 0) idleRemoveDeadEnemyAt(ix); } }
+    return true;
   }
   function idleFxProjMult() {
     var f = 1, I = state.idle;
@@ -8836,6 +8851,9 @@ function createGame(opts) {
       if (o.fx === "dome") {
         T.up = Math.max(0, T.up - dt); T.t -= dt;
         if (T.t <= 0) { T.up = P.dur || 0; T.t += cd; }
+      } else if (o.fx === "wall") { /* v1196 (audit item 8): Projection Wall runs in Conquest too - up for dur s every cooldown, like Arena (see idleWallBlocks) */
+        T.up = Math.max(0, T.up - dt); T.t -= dt;
+        if (T.t <= 0) { T.up = (P.dur || 0) * o.mag; T.t += cd; }
       } else if (o.fx === "orbit") { /* v1194 (audit item 13): Hex Link - Orbit Lv10+ recharges a still-standing Hex Shield by link% of its max per second, like Arena */
         var lk = (P.link || 0) / 100 * o.mag; if (lk > 0 && I.shieldMax > 0 && I.shield > 0) I.shield = Math.min(I.shieldMax, I.shield + I.shieldMax * lk * dt);
       } else if (o.fx === "io") {
@@ -9842,7 +9860,7 @@ function createGame(opts) {
     resetConquestProgress: resetConquestProgress,
     heroSkillLevel: heroSkillLevel, heroSkillCost: heroSkillCost,
     levelUpHeroSkill: levelUpHeroSkill, devLevelUpHeroSkill: devLevelUpHeroSkill,
-    setFortressCannonEnabled: setFortressCannonEnabled, idleFortressCannonBulletDmg: idleFortressCannonBulletDmg, idleFortressCannonBulletDmgBase: idleFortressCannonBulletDmgBase, weaponDmgFor: weaponDmgFor,
+    setFortressCannonEnabled: setFortressCannonEnabled, idleFortressCannonBulletDmg: idleFortressCannonBulletDmg, idleFortressCannonBulletDmgBase: idleFortressCannonBulletDmgBase, weaponDmgFor: weaponDmgFor, idleWallBlocks: idleWallBlocks, /* v1196: exposed for tests */
     grantResources: addResources, gauntletClear: gauntletClear, trainSync: trainSync, trainInfo: trainInfo, trainUpgrade: trainUpgrade, trainClaimMilestone: trainClaimMilestone, openConquest: openConquest, weaponLevel: weaponLevel, idleShieldPct: idleShieldPct, weaponLevelStats: weaponLevelStats, weaponStatsAtLevel: weaponStatsAtLevel, reconSync: reconSync, reconStart: reconStart, reconClaim: reconClaim, reconRemainingMs: reconRemainingMs, reconIsReady: reconIsReady, reconNextRefreshMs: reconNextRefreshMs, reconRunningCount: reconRunningCount, reconDevFinishAll: reconDevFinishAll, reconDevNewWindow: reconDevNewWindow, reconSlots: reconSlots, marchSlots: marchSlots, reconLevel: reconLevel, reconXpInfo: reconXpInfo, reconMissionCount: reconMissionCount, reconSlotsFor: reconSlotsFor, RECON_MAX_LEVEL: RECON_MAX_LEVEL, reconDevAddXp: function (n) { state.recon.xp = (state.recon.xp || 0) + n; }, levelUpWeaponFree: levelUpWeaponFree, levelUpWeapon: levelUpWeapon, weaponCanLevelUp: weaponCanLevelUp, weaponLevelUpCost: weaponLevelUpCost, weaponDraw: weaponDraw, weaponDrawLevel: weaponDrawLevel, weaponDrawProgress: weaponDrawProgress, weaponDrawOdds: weaponDrawOdds, weaponDrawPool: weaponDrawPool, addWeaponTickets: addWeaponTickets, WEAPON_DRAW_MAX_LEVEL: WEAPON_DRAW_MAX_LEVEL, resetWeaponLevel: resetWeaponLevel,
     weaponCooldownFor: weaponCooldownFor, setWeaponStatOverride: setWeaponStatOverride, clearWeaponStatOverrides: clearWeaponStatOverrides,
     // Exposed so the top-level (0-indent) animation code can honestly replay
@@ -11799,7 +11817,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1195"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1196"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

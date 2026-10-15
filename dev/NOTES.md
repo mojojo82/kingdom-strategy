@@ -2116,3 +2116,8 @@
 - Harley (audit item 9): Mirror Wall was in the text but never built. arenaMakeSim: aoeHit returns the damage the Wall blocked on ranged heroes; Mirror (P.mirror 50 at Lv50, S.wallMirror) sends that % at the caster's fortress.
 - Small effect (the Wall only blocks AoE skills like Shuriken Storm on ranged heroes, while up). dev/simfork/g315_mirror_wall.js: Hanzo storm vs Wall Lv50 adds reflected damage, Lv30 none (old build: none). g206, g207, g217, g311, g313 pass; meta check unchanged. Not checked on a phone.
 - Item 8 (Wall in Conquest): not changed - Conquest enemies only ever hit infantry or the fortress, so the Wall has nothing to block there. Asked Harley what it should do.
+
+## v1196 - Projection Wall works in Conquest too (TEST)
+- Harley (audit item 8): "make it work the same, enemies will be added to Conquest that can hurt the heroes". idleFxWeaponTick runs the Wall (up dur s every cooldown); idleWallBlocks() drops an enemy projectile that lands on a ranged hero (Caster / Ranged) while it's up, and Mirror Wall (Lv50) sends 50% of it back at the enemy that fired it (front enemy if that one is gone). Enemy shots now carry src (the shooter's id).
+- No Conquest enemy shoots ranged heroes yet, so nothing changes in play today. idleWallBlocks is exposed on game for tests.
+- dev/simfork/g316_wall_conquest.js (Wall goes up; blocks a shot on Lyra, not on Gareth; Lv50 reflects 50, Lv30 0; nothing once down). g304, g306, g309, g314 pass. Not checked on a phone.
