@@ -89,6 +89,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
    Sanity check: `dev/tests/e.js` must print `object function`.
 
 ## Harley's standing preferences (follow these)
+- **Weapon fix list (15 Oct):** while working through dev/audit/weapons_conquest_vs_arena.md, after EVERY completed request write the numbered list back to Harley showing what's left (done ones ticked), so he can track progress.
 
 - Keep reports concise. Explain things in plain terms; he's not a programmer.
 - **Reproduce a bug before fixing it**; measure before and after. Testing is headless Chromium only, so never claim it was tested on his phone.
