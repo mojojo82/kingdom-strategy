@@ -31,7 +31,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 ## EMP Gun
 - Lv 50 Aftershock (second stun) only exists in Arena (31105); Conquest ignores it (8870). **FIXED v1198 (Conquest too).**
 - Conquest stuns stack (adds time, 8870); Arena doesn't stack (31092). **KEEP AS IS (Harley, 16 Oct - EMP is mainly an Arena weapon; only matters with Duplicate copying EMP).**
-- Arena: EMP also resets enemy weapon reloads, cancels beams, Wall and repair (31107-31110).
+- Arena: EMP also resets enemy weapon reloads, cancels beams, Wall and repair (31107-31110). **KEEP AS IS (Harley, 16 Oct): part of the Arena build balance (meta / counter / droid link); Conquest enemies have nothing to reset. Wire it up if bots with weapons ever enter Conquest.**
 
 ## Droid Call
 - Damage base differs: Conquest uses ranged power without ATK bonus / attack speed (8847); Arena uses real ranged hero damage per second incl. ATK bonus (31079). **FIXED v1192: Conquest uses Arena's base.**
