@@ -2025,3 +2025,8 @@
 - Same panel underneath (mapMode "troops"); body data-sub picks what shows: Troops = Infirmary + Train Troops, Formations = the formations only. Desktop (no City sub) still shows everything together.
 - Also fixed a CSS line v1178 split (the bag's name/rate rule) while adding the new rule.
 - dev/simfork/g301_formations_tab.js (+ g299, g300 pass). Not checked on a phone.
+
+## v1180 - Infirmary gets its own City tab (TEST)
+- Harley: Infirmary out of Troops into its own tab. City tabs: Buildings / Troops / Formations / 🏥 Infirmary / Research. Troops = training only.
+- 5 tabs: on one line when the screen is wider than 410 px; on narrower phones (most iPhones, 375-390) the icon sits above the label so nothing is cut off.
+- g301 now checks all three tabs + that the 5 tab labels aren't cut (430 wide; also checked 375 wide by hand). g221 dev tools tabs still pass. Not checked on a phone.

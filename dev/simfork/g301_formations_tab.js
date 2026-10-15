@@ -1,5 +1,5 @@
-/* v1179 (Harley): Formations get their own City tab. City tabs = Buildings / Troops / Formations / Research; Troops shows the Infirmary + training only,
-   Formations shows only the formations. Screenshots out_g301_*.png.  Run: node dev/simfork/g301_formations_tab.js */
+/* v1179/v1180 (Harley): Formations and Infirmary get their own City tabs. City tabs = Buildings / Troops / Formations / Infirmary / Research;
+   each shows only its own part (Troops = training). Screenshots out_g301_*.png.  Run: node dev/simfork/g301_formations_tab.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -29,13 +29,18 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.active = await P.evaluate(() => document.querySelector("#screenBar .techtab.active").textContent);
   o.forms = { form: await vis("formationsList"), train: await vis("troopsList"), inf: await vis("infirmaryPanel"), n: await P.evaluate(() => document.querySelectorAll("#formationsList > *").length) };
   await P.screenshot({ path: path.join(__dirname, "out_g301_formations.png") });
+  await P.evaluate(() => [...document.querySelectorAll("#screenBar .techtab")].find((t) => /Infirmary/.test(t.textContent)).click()); await P.waitForTimeout(1000);
+  o.infs = { form: await vis("formationsList"), train: await vis("troopsList"), inf: await vis("infirmaryPanel") };
+  o.tabFit = await P.evaluate(() => [...document.querySelectorAll("#screenBar .techtab")].every((t) => t.scrollWidth <= t.clientWidth + 1 && t.offsetHeight < 50));
+  await P.screenshot({ path: path.join(__dirname, "out_g301_infirmary.png") });
   await P.evaluate(() => setScreen("city", "buildings")); await P.waitForTimeout(600); o.bld = await vis("buildingsModeContent");
   console.log(JSON.stringify({ o, errs }));
   await b.close();
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []);
-    assert.deepStrictEqual(o.tabs.map((t) => t.replace(/^\S+\s/, "")), ["Buildings", "Troops", "Formations", "Research"]);
-    assert(!o.troops.form && o.troops.train && o.troops.inf, "Troops tab: no formations");
+    assert.deepStrictEqual(o.tabs.map((t) => t.replace(/^[^A-Za-z]+/, "")), ["Buildings", "Troops", "Formations", "Infirmary", "Research"]);
+    assert(!o.troops.form && o.troops.train && !o.troops.inf, "Troops tab: training only");
+    assert(o.infs.inf && !o.infs.form && !o.infs.train, "Infirmary tab: infirmary only"); assert(o.tabFit, "5 tabs fit, text not cut");
     assert(/Formations/.test(o.active) && o.forms.form && o.forms.n > 0 && !o.forms.train && !o.forms.inf, "Formations tab: only formations");
     assert(o.bld, "Buildings still opens");
     console.log("g301 ok");

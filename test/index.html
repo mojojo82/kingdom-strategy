@@ -365,7 +365,8 @@
   #resOverlay .res-row:last-child { border-bottom:none; }
   #resOverlay .res-row .icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25), 0 1px 3px rgba(0,0,0,.4); }
   #resOverlay .res-row .nm { flex:1; } #resOverlay .res-row .res-rate { display:block; font-size:11.5px; font-weight:700; color:var(--good); } /* v1178 */
-  body[data-screen="city"][data-sub="troops"] #troopsModeContent .frm-only, body[data-screen="city"][data-sub="formations"] #troopsModeContent .trp-only { display:none !important; } /* v1179 */
+  body[data-screen="city"][data-sub="troops"] #troopsModeContent :is(.frm-only, .inf-only), body[data-screen="city"][data-sub="formations"] #troopsModeContent :is(.trp-only, .inf-only), body[data-screen="city"][data-sub="infirmary"] #troopsModeContent :is(.trp-only, .frm-only) { display:none !important; } /* v1179/v1180 */
+  body[data-screen="city"][data-sub="infirmary"] #troopsModeContent h2.inf-only { margin-top:0 !important; }
   #resOverlay .res-row .amt { font-variant-numeric:tabular-nums; }
   .res { display:flex; align-items:center; gap:8px; font-variant-numeric: tabular-nums; background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:6px 12px 6px 6px; font-weight:600; font-size:14px; }
   .ri { height:1.2em; width:1.2em; object-fit:contain; vertical-align:-0.22em; display:inline-block; pointer-events:none; }
@@ -1967,7 +1968,8 @@
     #screenBar.on { display:flex; }
     #screenBar .sb-back { padding:5px 12px; }
     #screenBar .sb-title { font-family:var(--bodyfont); font-weight:700; color:#f0d98c; font-size:15px; }
-    #screenBar .techtab { flex:1; } #screenBar .techtab:first-child:nth-last-child(4), #screenBar .techtab:first-child:nth-last-child(4) ~ .techtab { white-space:nowrap; font-size:12px; padding-left:2px; padding-right:2px; letter-spacing:-.2px; } /* v1179: 4 City tabs stay on one line */
+    #screenBar .techtab { flex:1; } #screenBar .techtab:first-child:nth-last-child(n+4), #screenBar .techtab:first-child:nth-last-child(n+4) ~ .techtab { white-space:nowrap; font-size:11.5px; padding-left:3px; padding-right:3px; letter-spacing:-.3px; min-width:0; flex:1 1 auto; overflow:hidden; text-overflow:clip; } /* v1179/v1180: 4-5 City tabs on one line */
+#screenBar .techtab .ct-ic { font-style:normal; margin-right:3px; } @media (max-width:410px) { #screenBar .techtab:first-child:nth-last-child(n+5), #screenBar .techtab:first-child:nth-last-child(n+5) ~ .techtab { flex:1 1 0; font-size:11px; line-height:1.15; padding-top:5px; } #screenBar .techtab:first-child:nth-last-child(n+5) .ct-ic, #screenBar .techtab:first-child:nth-last-child(n+5) ~ .techtab .ct-ic { display:block; margin:0 0 1px; font-size:14px; } }
     #layout { display:block; flex:1 1 auto; min-height:0; height:auto; overflow-y:auto; overflow-x:hidden; padding:8px; -webkit-overflow-scrolling:touch; }
     #layout .col { display:contents; }
     #layout .panel { display:none; margin:0; border:none; border-radius:0; box-shadow:none; background:transparent; padding:8px 10px; }
@@ -3750,8 +3752,8 @@
         <h2 class="frm-only" style="margin:0 0 10px;">⚔️ Formations</h2>
         <div class="dev-tools-hint frm-only" style="margin-bottom:10px;">Saved troop-count presets. Dial in counts per slot and Save, then Select whichever one you want active — this never moves or reserves troops out of your totals below.</div>
         <div id="formationsList" class="frm-only"></div>
-        <h2 class="trp-only" style="margin:18px 0 10px;">🏥 Infirmary</h2>
-        <div id="infirmaryPanel" class="trp-only"></div>
+        <h2 class="inf-only" style="margin:18px 0 10px;">🏥 Infirmary</h2>
+        <div id="infirmaryPanel" class="inf-only"></div>
         <h2 class="trp-only" style="margin:18px 0 10px;">🏋️ Train Troops</h2>
         <div id="troopsList" class="trp-only"></div>
       </div>
@@ -11744,7 +11746,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1179"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1180"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -27803,7 +27805,7 @@ function switchMode(key) {
 }
 var appScreen = "world", appSub = "";
 var chatTab = "world", chatReturn = null, chatSelKey = null, chatTranslations = {};
-var CITY_SUBS = [{ k: "buildings", l: "🏗️ Buildings" }, { k: "troops", l: "🛡️ Troops" }, { k: "formations", l: "⚔️ Formations" }, { k: "research", l: "📚 Research" }]; /* v1179: Formations got its own tab (same panel as Troops, shows only the formations) */
+var CITY_SUBS = [{ k: "buildings", l: "🏗️ Buildings" }, { k: "troops", l: "🛡️ Troops" }, { k: "formations", l: "⚔️ Formations" }, { k: "infirmary", l: "🏥 Infirmary" }, { k: "research", l: "📚 Research" }]; /* v1179: Formations got its own tab, v1180: Infirmary too (same panel as Troops, each shows only its part) */
 // ===== v895: Alliances =====
 // Shared docs (all under serverPrefix()):
 //   alliances/<aid>                 { name, tag, leader, joinMode: "open"|"approval"|"closed", minPower, minTH, memberCount, createdAt }
@@ -28063,7 +28065,7 @@ function setScreen(screen, sub) {
   var want = null;
   if (screen === "world") want = "world";
   else if (screen === "conquest") want = "conquest";
-  else if (screen === "city") want = sub === "formations" ? "troops" : sub;
+  else if (screen === "city") want = (sub === "formations" || sub === "infirmary") ? "troops" : sub;
   else if (screen === "more" && ["arena", "espers", "cards", "weapons", "recon", "td", "gauntlet", "reports", "fortress", "bosssim", "pvpsim"].indexOf(sub) !== -1) want = sub;
   else if (["conquest", "arena", "world"].indexOf(mapMode) !== -1) want = "buildings"; // park on a light view so no canvas loops run offscreen
   if (want && want !== mapMode) switchMode(want);
@@ -28151,7 +28153,8 @@ function renderScreenBar() {
   if (appScreen === "city") {
     bar.classList.add("on");
     CITY_SUBS.forEach(function (c) {
-      var t = document.createElement("div"); t.className = "techtab" + (appSub === c.k ? " active" : ""); t.textContent = c.l;
+      var t = document.createElement("div"); t.className = "techtab" + (appSub === c.k ? " active" : ""); var sp = c.l.indexOf(" ");
+      t.innerHTML = '<i class="ct-ic">' + c.l.slice(0, sp) + '</i><span>' + c.l.slice(sp + 1) + '</span>'; /* v1180: icon apart so narrow phones can stack it over the label */
       t.onclick = function () { setScreen("city", c.k); }; bar.appendChild(t);
     });
   } else if (appScreen === "conquest") {
