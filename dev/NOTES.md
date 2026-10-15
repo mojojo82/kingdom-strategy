@@ -1991,3 +1991,4 @@
 - Sheet: dev/knight/idle_sheet.py from art/originals/dark_knight_idle_hailuo.mp4 - loop 1.0-5.8 s at 12 fps (58 frames, last 4 eased into the first), soft green key + despill, biggest blob only, pink gem/eye glow pulled back to the still's gem colour, mirrored to face the fortress, 219x241 tiles (73% of 3x like Bonewake), webp 1.3 MB.
 - dev/simfork/g296_knight.js: off by default, animates, 110 pt centred on the boss spot, feet on the ground line, slider works, remembered on this device, no page errors. Not checked on a phone.
 - Harley (15 Oct, after seeing v1174 on his phone): "I like it" - the Dark Knight goes ahead; he keeps making animations for him (video route, not the 3D version).
+- Dark knight extras: point/cast gesture saved (dark_knight_point_hailuo.mp4). Jump attacks: made in place from dark_knight_jump_start_16x9_green.png, the game carries him toward the heroes mid-air.
