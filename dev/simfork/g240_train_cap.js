@@ -1,4 +1,4 @@
-/* v1027/v1028: troop training cap per batch (Kingshot curve x7.5 + Camp Expansion research) and the Train box starts at the most you can train now. Run: node dev/simfork/g240_train_cap.js */
+/* (v1177: selectors follow the new training panel) v1027/v1028: troop training cap per batch (Kingshot curve x7.5 + Camp Expansion research) and the Train box starts at the most you can train now. Run: node dev/simfork/g240_train_cap.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -24,11 +24,11 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.cap = await P.evaluate(() => game.trainCap("barracks"));
   o.top = await P.evaluate(() => { const st = game.state, l = st.buildings.barracks.level; st.buildings.barracks.level = 30; const lv30 = game.trainCap("barracks"); st.tech.campExpansion = 10; const full = game.trainCap("barracks"); st.tech.campExpansion = 0; st.buildings.barracks.level = l; return { lv30, full }; });
   o.top = await P.evaluate(() => { const st = game.state, l = st.buildings.barracks.level; st.buildings.barracks.level = 30; const lv30 = game.trainCap("barracks"); st.tech.campExpansion = 10; const full = game.trainCap("barracks"); st.tech.campExpansion = 0; st.buildings.barracks.level = l; return { lv30, full }; });
-  o.box = await P.evaluate(() => document.querySelector("#troopsList .train-n").value);
+  o.box = await P.evaluate(() => document.querySelector("#troopsList #trN").value);
   await P.evaluate(() => document.getElementById("troopsList").scrollIntoView()); await P.waitForTimeout(200); await P.screenshot({ path: (process.env.OUT || "/tmp/") + "train_cap.png" });
   o.over = await P.evaluate(() => { const r = game.queueTraining("barracks", 9999, 1); return { ok: r.ok, n: game.state.buildings.barracks.queue[0].count }; });
-  o.poor = await P.evaluate(() => { const st = game.state; const u = TROOP_DEFS[troopKey("infantry", 1)].cost; ["food","wood","stone","gold"].forEach((r) => st.resources[r] = u[r] ? u[r] * 7 + 1 : 1e6); troopTrainCount.infantry = 0; renderTroops(); return { box: document.querySelector("#troopsList .train-n").value, txt: document.querySelector("#troopsList").innerText.match(/resources for \d+/) + "" }; });
-  o.minus = await P.evaluate(() => { const bs = [...document.querySelectorAll("#troopsList .train-step")]; bs[0].click(); return document.querySelector("#troopsList .train-n").value; });
+  o.poor = await P.evaluate(() => { const st = game.state; const u = TROOP_DEFS[troopKey("infantry", 1)].cost; ["food","wood","stone","gold"].forEach((r) => st.resources[r] = u[r] ? u[r] * 7 + 1 : 1e6); troopTrainCount.infantry = 0; renderTroops(); return { box: document.querySelector("#troopsList #trN").value, txt: document.querySelector("#troopsList").innerText.match(/resources for \d+/) + "" }; });
+  o.minus = await P.evaluate(() => { const bs = [...document.querySelectorAll("#troopsList .tr-step")]; bs[0].click(); return document.querySelector("#troopsList #trN").value; });
   console.log(JSON.stringify(o), errs);
   assert.strictEqual(o.cap, 420, "Lv10 barracks cap 420 (56 x 7.5)");
   assert.deepStrictEqual(o.top, { lv30: 1568, full: 2068 }, "Lv30 1,568; with Camp Expansion 10 = 2,068");

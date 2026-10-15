@@ -464,6 +464,34 @@
   .progress > div { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition:width .3s linear; }
 
   .troop-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--panel3); }
+.tr-wrap { display:flex; flex-direction:column; gap:8px; } /* v1177: Kingshot-style training, in the brown/bronze panel look */
+.tr-types { display:flex; gap:6px; }
+#troopsModeContent .tr-wrap button.tr-type.tr-type { flex:1 1 0; min-width:0; margin:0; padding:6px 4px; font-size:12.5px; display:flex; flex-direction:column; align-items:center; gap:1px; background:#241b12; color:#d8c08a; border:1.5px solid #4a3b24; box-shadow:none; }
+#troopsModeContent .tr-wrap button.tr-type.tr-type small { color:#a3906a; font-size:11px; font-weight:700; }
+#troopsModeContent .tr-wrap button.tr-type.tr-type.on { background:#b3985f; color:#362f28; border-color:#6f5c38; box-shadow:inset 0 0 0 2px #b3985f, inset 0 0 0 3px #ddc98f, 0 2px 0 #6f5c38; }
+#troopsModeContent .tr-wrap button.tr-type.tr-type.on small { color:#4a3b24; }
+.tr-stage { position:relative; height:170px; border-radius:10px; border:1.5px dashed #4a3b24; background:radial-gradient(ellipse at 50% 45%, #4a3b24 0%, #2a2117 58%, #14100b 100%); display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:8px 8px 7px; overflow:hidden; }
+.tr-title { font-weight:800; font-size:16px; color:#f0c95f; text-shadow:0 1px 2px #000; }
+.tr-fig { font-size:72px; line-height:1; filter:drop-shadow(0 6px 6px rgba(0,0,0,.55)); }
+.tr-stats { font-size:11px; color:#a3906a; text-align:center; }
+.tr-tiers { display:flex; gap:3px; }
+#troopsModeContent .tr-wrap button.tr-tier.tr-tier { flex:1 1 0; min-width:0; margin:0; padding:5px 0 3px; border-radius:7px; display:flex; flex-direction:column; align-items:center; position:relative; background:#241b12; color:#d8c08a; border:1.5px solid #4a3b24; box-shadow:none; }
+.tr-tier b { font-size:12px; letter-spacing:-.3px; } #troopsModeContent .tr-wrap button.tr-tier.tr-tier small { font-size:10px; color:#a3906a; font-weight:700; }
+.tr-tier i { position:absolute; top:-4px; right:-3px; font-size:10px; font-style:normal; }
+#troopsModeContent .tr-wrap button.tr-tier.tr-tier.on { background:#b3985f; color:#362f28; border-color:#6f5c38; box-shadow:inset 0 0 0 2px #b3985f, inset 0 0 0 3px #ddc98f, 0 2px 0 #6f5c38; }
+#troopsModeContent .tr-wrap button.tr-tier.tr-tier.on small { color:#4a3b24; }
+#troopsModeContent .tr-wrap button.tr-tier.tr-tier.lock { opacity:.45; }
+.tr-cost { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; background:#241b12; border:1px solid #4a3b24; border-radius:8px; padding:8px 10px; font-size:13px; font-weight:700; color:#f3e6c4; }
+.tr-cost span { display:flex; align-items:center; gap:4px; white-space:nowrap; } .tr-cost .short { color:var(--bad); }
+.tr-qty { display:flex; align-items:center; gap:6px; }
+.tr-qty input[type=range] { flex:1 1 auto; min-width:0; }
+.tr-qty input[type=number] { width:70px; flex:0 0 auto; text-align:center; background:#0d131d; border:1.5px solid var(--border); color:var(--text); border-radius:6px; padding:6px 4px; font-size:14px; font-weight:700; }
+#troopsModeContent .tr-wrap button.tr-step.tr-step { margin:0; flex:0 0 auto; width:34px; height:34px; padding:0; font-size:20px; line-height:1; }
+.tr-meta { font-size:11px; color:#a3906a; text-align:right; }
+.tr-busy { font-size:12px; color:#f3e6c4; background:#241b12; border:1px solid #4a3b24; border-radius:8px; padding:7px 9px; }
+#troopsModeContent .tr-wrap button.tr-train.tr-train { margin:0; width:100%; font-size:16px; padding:9px; display:flex; flex-direction:column; align-items:center; line-height:1.2; }
+.tr-train span { font-size:13px; font-weight:700; }
+.tr-lock { color:var(--warn); font-size:13px; text-align:center; padding:8px; }
   .troop-row:last-child { border-bottom:none; }
   .troop-row .icon-badge { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; border:1px solid var(--border); }
   .icon-badge.infantry { background:#2a3a5c; }
@@ -11715,7 +11743,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1176"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1177"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14622,126 +14650,69 @@ function renderTroops() {
       return TROOP_ICON[ty] + fmt(sum);
     }).join(" ");
   }
-  TROOP_TYPES.forEach(function (type) {
-    var trainingBuildingKey = Object.keys(BUILDING_DEFS).find(function (k) { return BUILDING_DEFS[k].trains === type; });
-    var b = game.state.buildings[trainingBuildingKey];
-    var maxTier = game.maxTrainableTier(trainingBuildingKey);
-    var tier = Math.max(1, Math.min(troopTrainTier[type] || 1, Math.max(1, maxTier)));
-    troopTrainTier[type] = tier;
-    var tkey = troopKey(type, tier);
-    var def = TROOP_DEFS[tkey];
-    var row = document.createElement("div");
-    row.className = "troop-row";
-    row.style.flexWrap = "wrap"; // tier picker + count + Train sit on their own line under the info so the text keeps its width on a phone
-    var iconBadge = document.createElement("div");
-    iconBadge.className = "icon-badge " + type;
-    iconBadge.textContent = TROOP_ICON[type];
-    row.appendChild(iconBadge);
-    var costTxt = Object.keys(def.cost).map(function (r) { return RES_ICON[r] + def.cost[r]; }).join(" ");
-    var counterLabel = TROOP_DEFS[def.countersType] ? TROOP_DEFS[def.countersType].name : "Walls";
-    var infoDiv = document.createElement("div");
-    infoDiv.style.flex = "1";
-    var infoHtmlT = '<div class="name">' + def.name + ' <span class="count">x' + fmt(game.state.troops[tkey] || 0) + '</span></div><div class="sub" style="color:var(--muted);font-size:11.5px;">' + costTxt + ' each, ' + def.trainTime + 's, counters ' + counterLabel + '</div>' +
-      '<div class="sub" style="color:var(--muted);font-size:11.5px;">Atk ' + (Math.round(def.atk * 10) / 10) + ' · HP ' + Math.round(def.hp) + ' · Def ' + def.def + ' · Power ' + def.power + ' · Speed ' + def.speed + '</div>';
-    var ownedTiers = [];
-    for (var ti = 1; ti <= TROOP_MAX_TIER; ti++) { var oc = game.state.troops[troopKey(type, ti)] || 0; if (oc > 0) ownedTiers.push("T" + ti + " x" + fmt(oc)); }
-    if (ownedTiers.length) infoHtmlT += '<div class="sub" style="color:var(--gold);font-size:11.5px;">Owned: ' + ownedTiers.join(" · ") + '</div>';
-    // Same queue status + progress bar treatment as the Buildings panel's
-    // training row, mirrored here so the timer is visible from wherever
-    // training is actually started, not just from the Buildings tab.
-    if (b.level > 0 && b.queue.length) {
-      infoHtmlT += '<div class="queueitem">⚙️ Training: ' + b.queue.map(function (q) { return q.count + "x " + TROOP_DEFS[q.troopType].name; }).join(", ") + '</div>';
-      var activeJobT = b.queue[0];
-      if (activeJobT.duration) {
-        var remainT2 = (activeJobT.finishAt - vnow()) / 1000;
-        var pctT2 = Math.max(0, Math.min(100, 100 - (remainT2 / activeJobT.duration) * 100));
-        infoHtmlT += '<div class="progress"><div style="width:' + pctT2 + '%"></div></div>';
-      }
-    }
-    infoDiv.innerHTML = infoHtmlT;
-    row.appendChild(infoDiv);
-    if (b.level > 0) {
-      var wrap = document.createElement("div");
-      wrap.style.display = "flex"; wrap.style.gap = "5px"; wrap.style.alignItems = "center"; wrap.style.flex = "1 1 100%";
-      var sel = document.createElement("select");
-      sel.style.cssText = "flex:1 1 auto;min-width:0;background:#0d131d;border:1.5px solid var(--border);color:var(--text);border-radius:6px;padding:6px;font-size:12.5px;";
-      for (var tn = 1; tn <= TROOP_MAX_TIER; tn++) {
-        var opt = document.createElement("option");
-        opt.value = String(tn);
-        opt.textContent = "T" + tn + (tn > maxTier ? " 🔒 Lv" + tn : "");
-        opt.disabled = tn > maxTier;
-        if (tn === tier) opt.selected = true;
-        sel.appendChild(opt);
-      }
-      sel.onfocus = function () { troopsUiBusy++; };
-      sel.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); };
-      sel.onchange = function () { troopTrainTier[type] = parseInt(sel.value, 10) || 1; renderTroops(); };
-      // v1027: per-batch cap + the box starts at the most you can train now
-      // (cap, or fewer if resources run out), with -/slider/+ like Kingshot.
-      var cap = game.trainCap(trainingBuildingKey), canNow = game.maxTrainNow(trainingBuildingKey, tier);
-      var hiN = Math.max(1, canNow || cap);
-      var startN = troopTrainCount[type] ? Math.min(hiN, troopTrainCount[type]) : hiN;
-      var input = document.createElement("input");
-      input.type = "number"; input.min = "1"; input.max = String(cap); input.value = String(startN);
-      input.className = "train-n";
-      input.style.cssText = "width:62px;flex:0 0 auto;";
-      input.onfocus = function () { troopsUiBusy++; };
-      input.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); setN(input.value); };
-      var slider = document.createElement("input");
-      slider.type = "range"; slider.min = "1"; slider.max = String(hiN); slider.value = String(startN);
-      slider.className = "train-slider";
-      slider.style.cssText = "flex:1 1 auto;min-width:60px;";
-      slider.onfocus = function () { troopsUiBusy++; };
-      slider.onblur = function () { troopsUiBusy = Math.max(0, troopsUiBusy - 1); };
-      function stepBtn(txt, d) {
-        var sb = document.createElement("button");
-        sb.textContent = txt; sb.className = "train-step";
-        sb.style.cssText = "padding:4px 9px;min-width:30px;flex:0 0 auto;";
-        sb.onclick = function () { setN((parseInt(input.value, 10) || 1) + d); };
-        return sb;
-      }
-      var durSpan = document.createElement("div");
-      durSpan.className = "sub"; durSpan.style.cssText = "color:var(--muted);font-size:11px;flex:1 1 100%;";
-      function setN(v) {
-        var n = Math.max(1, Math.min(cap, parseInt(v, 10) || 1));
-        input.value = String(n); slider.value = String(Math.min(n, hiN));
-        troopTrainCount[type] = n;
-        updateDur();
-      }
-      function updateDur() {
-        var n = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1));
-        var t = (def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult();
-        durSpan.innerHTML = "⏱ " + fmt(n) + "x " + def.name + " = " + fmtTime(t) +
-          ' · <span style="color:var(--gold)">max ' + fmt(cap) + ' per batch</span>' +
-          (canNow < cap ? ' · <span class="cost-short">resources for ' + fmt(canNow) + '</span>' : '');
-      }
-      input.oninput = function () { if (input.value !== "") { troopTrainCount[type] = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1)); slider.value = String(Math.min(troopTrainCount[type], hiN)); } updateDur(); };
-      slider.oninput = function () { setN(slider.value); };
-      updateDur();
-      var btn = document.createElement("button");
-      btn.textContent = "Train";
-      if (b.queue && b.queue.length) { btn.textContent = "Training…"; btn.disabled = true; btn.title = "One batch at a time - wait for this one to finish (or speed it up)"; } /* v1176 */
-      btn.onclick = function () {
-        var n = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1));
-        var res = game.queueTraining(trainingBuildingKey, n, tier);
-        if (res && res.ok) troopTrainCount[type] = 0; // next time the box refills with the new max
-        persist(); render();
-      };
-      wrap.appendChild(sel);
-      row.appendChild(wrap);
-      var wrap2 = document.createElement("div");
-      wrap2.style.cssText = "display:flex;gap:5px;align-items:center;flex:1 1 100%;margin-top:5px;";
-      wrap2.appendChild(stepBtn("−", -1)); wrap2.appendChild(slider); wrap2.appendChild(stepBtn("+", 1));
-      wrap2.appendChild(input); wrap2.appendChild(btn);
-      row.appendChild(wrap2);
-      row.appendChild(durSpan);
-    } else {
-      var lockDiv = document.createElement("div");
-      lockDiv.className = "sub"; lockDiv.style.color = "var(--warn)"; lockDiv.textContent = "🔒 Needs " + BUILDING_DEFS[trainingBuildingKey].name;
-      row.appendChild(lockDiv);
-    }
-    el.appendChild(row);
-  });
+  renderTrainPanel(el); /* v1177 */
+}
+/* v1177 (Harley): training laid out like Kingshot - type switch, a stage for the troop figure (placeholder until there's art), all 10 tiers on one row
+   with how many you own, have/need cost box, - slider + count, and one big Train button with the time. Same place as before (City > Troops). */
+var troopTrainType = "infantry";
+var TR_ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+function trBusy(d) { troopsUiBusy = Math.max(0, troopsUiBusy + d); }
+function renderTrainPanel(el) {
+  var st = game.state, type = TROOP_TYPES.indexOf(troopTrainType) >= 0 ? troopTrainType : TROOP_TYPES[0];
+  var bk = Object.keys(BUILDING_DEFS).find(function (k) { return BUILDING_DEFS[k].trains === type; }), b = st.buildings[bk];
+  var maxTier = game.maxTrainableTier(bk), tier = Math.max(1, Math.min(troopTrainTier[type] || 1, Math.max(1, maxTier)));
+  troopTrainTier[type] = tier;
+  var tkey = troopKey(type, tier), def = TROOP_DEFS[tkey], built = b && b.level > 0, busy = built && b.queue && b.queue.length;
+  var counterLabel = TROOP_DEFS[def.countersType] ? TROOP_DEFS[def.countersType].name : "Walls";
+  var h = '<div class="tr-wrap"><div class="tr-types">';
+  TROOP_TYPES.forEach(function (ty) { var sum = 0; Object.keys(TROOP_DEFS).forEach(function (k) { if (troopBase(k) === ty) sum += st.troops[k] || 0; });
+    h += '<button type="button" class="tr-type' + (ty === type ? " on" : "") + '" data-trt="' + ty + '">' + TROOP_ICON[ty] + " " + TROOP_DEFS[ty].name + '<small>' + fmtCompact(sum) + '</small></button>'; });
+  h += '</div><div class="tr-stage"><div class="tr-title">' + def.name + '</div><div class="tr-fig">' + TROOP_ICON[type] + '</div>' +
+    '<div class="tr-stats">Atk ' + (Math.round(def.atk * 10) / 10) + ' · HP ' + Math.round(def.hp) + ' · Def ' + (Math.round(def.def * 10) / 10) + ' · Power ' + def.power + ' · Speed ' + def.speed + ' · counters ' + counterLabel + '</div></div><div class="tr-tiers">';
+  for (var t = 1; t <= TROOP_MAX_TIER; t++) { var lock = t > maxTier;
+    h += '<button type="button" class="tr-tier' + (t === tier ? " on" : "") + (lock ? " lock" : "") + '" data-trtier="' + t + '"><b>' + TR_ROMAN[t] + '</b>' + (lock ? '<i>🔒</i>' : '') + '<small>' + fmtCompact(st.troops[troopKey(type, t)] || 0) + '</small></button>'; }
+  h += '</div>';
+  if (!built) h += '<div class="tr-lock">🔒 Build the ' + BUILDING_DEFS[bk].name + ' to train ' + TROOP_DEFS[type].name + '.</div>';
+  else {
+    var cap = game.trainCap(bk), canNow = game.maxTrainNow(bk, tier), hiN = Math.max(1, canNow || cap);
+    var n0 = troopTrainCount[type] ? Math.min(cap, troopTrainCount[type]) : hiN;
+    h += '<div class="tr-cost" id="trCost"></div>' +
+      '<div class="tr-qty"><button type="button" class="tr-step" data-trstep="-1">−</button><input type="range" id="trSlider" min="1" max="' + cap + '" value="' + n0 + '">' +
+      '<button type="button" class="tr-step" data-trstep="1">+</button><input type="number" id="trN" min="1" max="' + cap + '" value="' + n0 + '"></div>' +
+      '<div class="tr-meta">max ' + fmt(cap) + ' per batch' + (canNow < cap ? ' · <span class="cost-short">resources for ' + fmt(canNow) + '</span>' : '') + '</div>';
+    if (busy) { var q = b.queue[0], left = (q.finishAt - vnow()) / 1000, pct = q.duration ? Math.max(0, Math.min(100, 100 - left / q.duration * 100)) : 0;
+      h += '<div class="tr-busy">⚙️ Training ' + b.queue.map(function (x) { return fmt(x.count) + "× " + TROOP_DEFS[x.troopType].name; }).join(", ") + ' · ' + fmtTime(Math.max(0, (b.queue[b.queue.length - 1].finishAt - vnow()) / 1000)) + ' left' +
+        '<div class="progress"><div style="width:' + pct + '%"></div></div>' + speedupBtnsHtml("train", bk) + '</div>';
+      h += '<button type="button" class="tr-train" id="trTrain" disabled>Training…</button>'; }
+    else h += '<button type="button" class="tr-train" id="trTrain">Train<span id="trTime"></span></button>';
+  }
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll("[data-trt]").forEach(function (x) { x.onclick = function () { troopTrainType = x.getAttribute("data-trt"); renderTroops(); }; });
+  el.querySelectorAll("[data-trtier]").forEach(function (x) { x.onclick = function () { var tt = +x.getAttribute("data-trtier");
+    if (tt > maxTier) { miniToast("🔒 Tier " + TR_ROMAN[tt] + " unlocks at " + BUILDING_DEFS[bk].name + " Lv " + TROOP_TIER_UNLOCK_LEVEL[tt]); return; }
+    troopTrainTier[type] = tt; troopTrainCount[type] = 0; renderTroops(); }; });
+  if (!built) return;
+  var sl = document.getElementById("trSlider"), inp = document.getElementById("trN"), cap2 = +sl.max;
+  function show(n) {
+    n = Math.max(1, Math.min(cap2, parseInt(n, 10) || 1)); sl.value = n; if (document.activeElement !== inp) inp.value = n; troopTrainCount[type] = n;
+    document.getElementById("trCost").innerHTML = Object.keys(def.cost).map(function (r) { var need = def.cost[r] * n, have = st.resources[r] || 0;
+      return '<span class="' + (have < need ? "short" : "") + '">' + RES_ICON[r] + fmtCompact(have) + " / " + fmt(need) + '</span>'; }).join("");
+    var tm = document.getElementById("trTime"); if (tm) tm.textContent = "⏱ " + fmtTime((def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult());
+    return n;
+  }
+  show(sl.value);
+  sl.oninput = function () { show(sl.value); };
+  var held = false; /* no re-render while the slider is held or the box is being typed in */
+  sl.addEventListener("pointerdown", function () { if (!held) { held = true; trBusy(1); } });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(function (e) { sl.addEventListener(e, function () { if (held) { held = false; trBusy(-1); } }); });
+  inp.addEventListener("focus", function () { trBusy(1); });
+  inp.oninput = function () { if (inp.value !== "") show(inp.value); };
+  inp.onblur = function () { trBusy(-1); inp.value = show(inp.value); };
+  el.querySelectorAll("[data-trstep]").forEach(function (x) { x.onclick = function () { show((parseInt(sl.value, 10) || 1) + +x.getAttribute("data-trstep")); }; });
+  var tb = document.getElementById("trTrain");
+  if (tb && !busy) tb.onclick = function () { var n = Math.max(1, Math.min(cap2, parseInt(sl.value, 10) || 1)), res = game.queueTraining(bk, n, tier);
+    if (res && res.ok) troopTrainCount[type] = 0; else if (res && res.reason === "cannot_afford") miniToast("Not enough resources for " + fmt(n) + " " + def.name);
+    persist(); render(); };
 }
 
 var FRAGMENT_ICON = ico("fragment");

@@ -2005,3 +2005,11 @@
 - Harley bug: you could train 2+ batches of the same troop at once (e.g. 2 lanes of infantry). Reproduced headless: a second Train on the Barracks was accepted (2 queue entries, charged twice).
 - queueTraining now refuses while that building already has a batch ("already_training", nothing charged). The Train button shows "Training…" and is greyed out until the batch finishes or is sped up. Old saves that already have 2 queued keep them; they finish in order.
 - dev/simfork/g298_one_batch.js (+ g266 training, g240 train cap still pass). Not checked on a phone.
+
+## v1177 - Training panel laid out like Kingshot (TEST)
+- Harley (Kingshot "Heroic Archer" screenshot): the old Train Troops list was hard to use. Same place (City > Troops > Train Troops), new layout:
+  type switch (Infantry / Archer / Cavalry, with how many you own) -> a stage for the troop figure (placeholder: the troop icon, until there's art) with name + stats
+  -> all 10 tiers on one row (I-X, owned count under each; locked ones dimmed with a lock, tapping says which building level unlocks it)
+  -> have / need cost box (red when short) -> − slider + count -> one big Train button with the time. While the building trains: progress, time left and the speedup buttons; Train shows "Training…".
+- Brown/bronze panel look kept (bronze = selected, like the other buttons there). No gem "Finish" button (Harley: leave it out for now). Formations and Infirmary above it are unchanged.
+- dev/simfork/g299_train_ui.js; g240 train cap now uses the new box (#trN, .tr-step); g266, g298 still pass. Not checked on a phone.
