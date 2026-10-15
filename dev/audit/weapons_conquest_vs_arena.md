@@ -45,7 +45,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 
 ## Clone Task
 - Template hero can differ (first infantry in roster order vs side list). No template: Conquest retries every tick, Arena waits a cooldown.
-- Drop Signal "rush" and Railgun cloneDelay only in Arena.
+- Drop Signal "rush" and Railgun cloneDelay only in Arena. **KEEP AS IS (Harley, 16 Oct): no opponent with weapons/summons in Conquest. If a bot/opponent is ever added to Conquest, wire these up there.**
 
 ## Hex Shield
 - NEEDS CONSIDERATION LATER (Harley, 16 Oct - not now): equipment "Support Power" boosts the Hex Shield pool (8076), Sera's heal (8153) and Torvald's guard (8161) in Conquest only; Arena ignores it everywhere (30786, stepSupports).
