@@ -35,7 +35,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 
 ## Droid Call
 - Damage base differs: Conquest uses ranged power without ATK bonus / attack speed (8847); Arena uses real ranged hero damage per second incl. ATK bonus (31079). **FIXED v1192: Conquest uses Arena's base.**
-- "Pierce" means skip defence in Conquest, skip Dome/Orbit in Arena.
+- "Pierce" means skip defence in Conquest, skip Dome/Orbit in Arena. **FIXED v1197: both modes = skip defence AND Dome/Orbit (Conquest enemies can carry e.projRed for future bots).**
 
 ## IO Repair
 - With Duplicate: Conquest heals with both copies at once; Arena's copy overwrites the first (31167). Fires at exactly 85% HP only in Arena. **Stacking FIXED v1191 (each repair keeps its own heal in Arena too).**

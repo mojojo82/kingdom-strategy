@@ -6100,12 +6100,12 @@ WEAPON_DEFS.push({
 });
 WEAPON_DEFS.push({
   id: "droid_call", name: "Droid Call", icon: "🛸", kind: "fx", fx: "drone", rarity: "Super Rare", cooldown: 0, count: 0, dmgPct: 0, p: { pct: 25, pierce: 0 },
-  desc: function (d, st) { return "A small attack drone hovers over your fortress and fires constantly at " + st.p.pct + "% of an average ranged hero's damage. It can't be shot down and ignores stuns." + (st.p.pierce ? " Piercing rounds: its damage ignores projectile reduction (Dome, Orbit)." : ""); },
+  desc: function (d, st) { return "A small attack drone hovers over your fortress and fires constantly at " + st.p.pct + "% of an average ranged hero's damage. It can't be shot down and ignores stuns." + (st.p.pierce ? " Piercing rounds: its damage ignores enemy defence and projectile reduction (Dome, Orbit)." : ""); },
   rows: function (st) { return [["Drone damage", st.p.pct + "% of a ranged hero"], ["Piercing", st.p.pierce ? "yes" : "locked (Lv.50)"]]; },
   levelMods: [
     { atLevel: 10, p: { pct: 35 } },
     { atLevel: 30, p: { pct: 50 } },
-    { atLevel: 50, p: { pierce: 1 }, note: "<b>Piercing rounds</b>: drone damage ignores projectile reduction from Dome and Orbit" }
+    { atLevel: 50, p: { pierce: 1 }, note: "<b>Piercing rounds</b>: drone damage ignores enemy defence and projectile reduction from Dome and Orbit" }
   ]
 });
 WEAPON_DEFS.push({
@@ -8793,6 +8793,9 @@ function createGame(opts) {
       if (ix >= 0) { var rf = hit.dmg * mir; en[ix].hp -= rf; I.wallMirrored = (I.wallMirrored || 0) + rf; if (en[ix].hp <= 0) idleRemoveDeadEnemyAt(ix); } }
     return true;
   }
+  /* v1197 (Harley): projectile reduction an ENEMY carries (a future Conquest bot with Dome / Orbit sets e.projRed, 0-0.95). Nothing sets it yet.
+     Piercing Droid rounds skip it. When those bots arrive, apply it to every projectile weapon / hero shot that hits them, not just the drone. */
+  function idleEnemyProjRed(e) { return Math.max(0, Math.min(0.95, (e && e.projRed) || 0)); }
   function idleFxProjMult() {
     var f = 1, I = state.idle;
     idleFxList().forEach(function (o) {
@@ -8875,7 +8878,7 @@ function createGame(opts) {
         if (!nr) return; /* v1192 (audit item 10): same base as Arena's drone - the average ranged hero's real damage per second, incl. the ATK bonus and attack speed */
         var dps = rdps / nr * (P.pct || 0) / 100 * o.mag * cardT1ArmyMul(state), /* v1189: Cannon Doctrine */ bi = -1, bd = Infinity;
         for (var di = 0; di < enemies.length; di++) { if (!enemies[di].arrived || enemies[di].hp <= 0) continue; var dd = idleEnemyDistFrac(enemies[di]); if (dd < bd) { bd = dd; bi = di; } }
-        if (bi >= 0) { var tgt = enemies[bi], dd2 = dps * dt * (P.pierce ? 1 : idleEnemyDefTake(tgt, dps)); tgt.hp -= dd2;
+        if (bi >= 0) { var tgt = enemies[bi], dd2 = dps * dt * (P.pierce ? 1 : idleEnemyDefTake(tgt, dps) * (1 - idleEnemyProjRed(tgt))); tgt.hp -= dd2; /* v1197: Piercing = ignores defence AND Dome/Orbit, both modes */
           /* v918: the drone's steady fire is drawn as a bolt every 0.35 s carrying what it dealt since the last one (it used to deal damage with nothing on screen) */
           if (T.accId != null && T.accId !== tgt.id && T.acc > 0) { idleFxShot({ kind: "drone", id: T.accId, dmg: T.acc }); T.acc = 0; T.shotT = 0.35; }
           T.accId = tgt.id; T.acc = (T.acc || 0) + dd2; T.shotT = (T.shotT == null ? 0.35 : T.shotT) - dt;
@@ -11817,7 +11820,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1196"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1197"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30810,8 +30813,8 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var nHeroP = playerStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length, nHeroA = aiStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length;
   var pStats0 = playerStats; playerStats = cardStatic(playerStats, cmP, aiStats, nHeroP); aiStats = cardStatic(aiStats, cmA, pStats0, nHeroA);
   var cardInvP = 0, cardInvA = 0, cardLsP = false, cardLsA = false, cardPfP = false, cardPfA = false;
-  playerStats = Object.assign({}, playerStats, { dmgTakenMult: (playerStats.dmgTakenMult || 1) * defReduce(aRefA, playerStats.fortDef || 0) });
-  aiStats = Object.assign({}, aiStats, { dmgTakenMult: (aiStats.dmgTakenMult || 1) * defReduce(pRefA, aiStats.fortDef || 0) });
+  playerStats = Object.assign({}, playerStats, { fortDefMult: defReduce(aRefA, playerStats.fortDef || 0), dmgTakenMult: (playerStats.dmgTakenMult || 1) * defReduce(aRefA, playerStats.fortDef || 0) });
+  aiStats = Object.assign({}, aiStats, { fortDefMult: defReduce(pRefA, aiStats.fortDef || 0), dmgTakenMult: (aiStats.dmgTakenMult || 1) * defReduce(pRefA, aiStats.fortDef || 0) }); /* v1197: fortDefMult kept apart so piercing drones can skip the fortress DEF */
   var playerHp = playerStats.maxHp, aiHp = aiStats.maxHp;
   // v469: Hex Shield — an extra absorb pool worth opts.shieldPct % of the side's max HP (pool base = max HP, before the shield). Damage that reaches a side
   // (already after armor / dmgTakenMult) drains the pool first; only the overflow costs HP. Regen never refills it; once at 0 it stays down.
@@ -31216,6 +31219,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       S.inst.forEach(function (ins) {
         if (ins.k === 'drone' && !(S.droneOff > 0)) {
           var dm = S.rangedDps * (ins.p.pct || 0) / 100 * ins.mag * dtS;
+          if (ins.p.pierce) { var odm = (c.ost.fortDefMult > 0) ? c.ost.fortDefMult : 1; dm /= odm; } /* v1197 (audit item 11): Piercing rounds also ignore the enemy's defence, like Conquest (Dome/Orbit skip below as before) */
           if (sd === 'P') { playerDmg += dm; if (!ins.p.pierce) projP += dm; } else { aiDmg += dm; if (!ins.p.pierce) projA += dm; }
         }
       });

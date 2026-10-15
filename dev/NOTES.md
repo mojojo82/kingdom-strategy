@@ -2121,3 +2121,10 @@
 - Harley (audit item 8): "make it work the same, enemies will be added to Conquest that can hurt the heroes". idleFxWeaponTick runs the Wall (up dur s every cooldown); idleWallBlocks() drops an enemy projectile that lands on a ranged hero (Caster / Ranged) while it's up, and Mirror Wall (Lv50) sends 50% of it back at the enemy that fired it (front enemy if that one is gone). Enemy shots now carry src (the shooter's id).
 - No Conquest enemy shoots ranged heroes yet, so nothing changes in play today. idleWallBlocks is exposed on game for tests.
 - dev/simfork/g316_wall_conquest.js (Wall goes up; blocks a shot on Lyra, not on Gareth; Lv50 reflects 50, Lv30 0; nothing once down). g304, g306, g309, g314 pass. Not checked on a phone.
+
+## v1197 - Droid Call Piercing rounds: ignore defence AND Dome/Orbit, both modes (TEST)
+- Harley (audit item 11): keep Conquest's "ignores enemy defence" and add "ignores Dome / Orbit", in both modes (a bot with those weapons may appear in Conquest later).
+- Arena: arenaMakeSim keeps each side's fortress DEF factor (fortDefMult); a piercing drone's damage is divided by it, so it lands as if the fortress had no DEF (it already skipped Dome/Orbit).
+- Conquest: new idleEnemyProjRed(e) = an enemy's own projectile shield (e.projRed, 0-0.95; nothing sets it yet). A non-piercing drone is cut by it, a piercing one isn't (and still skips defence). When Conquest bots with Dome/Orbit are added, apply idleEnemyProjRed to every projectile that hits them.
+- Text: "Piercing rounds: its damage ignores enemy defence and projectile reduction (Dome, Orbit)."
+- dev/simfork/g317_droid_pierce.js (Arena: piercing > plain vs a foe with DEF, old build equal; Conquest: Lv30 drone halved by projRed 0.5, Lv50 not). Meta check unchanged; g206, g207, g309, g312, g313 pass. Not checked on a phone.
