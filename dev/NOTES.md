@@ -1992,3 +1992,4 @@
 - dev/simfork/g296_knight.js: off by default, animates, 110 pt centred on the boss spot, feet on the ground line, slider works, remembered on this device, no page errors. Not checked on a phone.
 - Harley (15 Oct, after seeing v1174 on his phone): "I like it" - the Dark Knight goes ahead; he keeps making animations for him (video route, not the 3D version).
 - Dark knight extras: point/cast gesture saved (dark_knight_point_hailuo.mp4). Jump attacks: made in place from dark_knight_jump_start_16x9_green.png, the game carries him toward the heroes mid-air.
+- Tip for later (Harley's idea): ChatGPT-made key poses look better than poses the video AI invents (stronger silhouette). Option per move: ChatGPT key pose -> Leonardo Standard clip standing -> key pose, and the game plays it backwards for the return. Not doing it now.
