@@ -48,7 +48,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Drop Signal "rush" and Railgun cloneDelay only in Arena.
 
 ## Hex Shield
-- Conquest adds the Equipment "support" bonus to the pool (8076); Arena doesn't (30786).
+- NEEDS CONSIDERATION LATER (Harley, 16 Oct - not now): equipment "Support Power" boosts the Hex Shield pool (8076), Sera's heal (8153) and Torvald's guard (8161) in Conquest only; Arena ignores it everywhere (30786, stepSupports).
 - Duplicate copying Hex adds to the pool in Arena only (31443).
 - Orbit's Hex Link recharge only in Arena (31178).
 
