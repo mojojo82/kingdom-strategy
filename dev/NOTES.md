@@ -1983,3 +1983,4 @@
 - Harley prefers start-frame-only clips (end frames make the motion stiff); Claude joins clips by loop points / blending / reversing.
 - Still to make: hand blast (start frame only, no effects - the blast is drawn in code). Old magenta hand-blast clip not usable (pink cape vs magenta, turns side-on).
 - Dark knight clips are made facing/aiming right (his open claw side); mirror ALL of them in game so he faces the fortress on the left.
+- Hand blast locked in: art/originals/dark_knight_handblast_hailuo.mp4 (16:9 start frame gave him room to reach right - the 1:1 frames made him dodge left). Harley will add more attacks as extras.

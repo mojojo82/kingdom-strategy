@@ -78,3 +78,5 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | originals/dark_knight_idle_hailuo.mp4 | Dark knight idle (Hailuo, start frame only). Harley's pick (15 Oct). Loop 1.0-5.8 s; gems/eyes light up pink - Claude dims the glow in code | original | not in game yet |
 | originals/dark_knight_stomp_hailuo.mp4 | Dark knight stomp (Hailuo, start frame only): standing -> stomp -> wide crouch. Dust to remove; useful action ~0.8-4.9 s | original | not in game yet |
 | originals/dark_knight_standup_hailuo.mp4 | Dark knight stand-up (Hailuo Standard, start = stomp's last frame, end = stomp's first frame): crouch -> standing; plays after the stomp, can run 1.5-2x | original | not in game yet |
+| originals/dark_knight_start_16x9_green.png | Dark knight standing still padded to 16:9 with room on his right (for attacks that reach out) | edit | Hailuo start frame |
+| originals/dark_knight_handblast_hailuo.mp4 | Dark knight hand blast (Hailuo Turbo, 16:9 start frame): lunges, flat palm pushes out right + slightly down, returns to start pose. Hold ~1-4.5 s to trim; faint wisp near hand to key out; gems glow (dim in code) | original | not in game yet |
