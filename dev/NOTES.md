@@ -2051,3 +2051,8 @@
 - Removed from BUILDING_DEFS, recruitHero's check and the two "🔒 Requires Hall of Heroes" locks; balance scripts (boss_time, f2p_timeline) no longer list it.
 - dev/simfork/g303_no_hall.js. Not checked on a phone.
 - Open topic logged in HANDOVER "Open items": Epic + Legendary weapons should need 2+ of their own fragments to unlock (today every weapon is free to equip). Not fixed yet - Harley is testing weapons on the tomhector account.
+
+## v1184 - Clone leaves when Clone Task is unequipped (TEST)
+- Harley bug (tomhector, Conquest): the Clone Task clone stayed on the field after unequipping Clone Task. Reproduced headless: clone up, unequip, clone still there.
+- idleFxWeaponTick now drops any weapon clone (state.idle.clones, incl. the Duplicate copy "clone_task_dup") whose weapon isn't equipped any more. Gerbils (not from a weapon) are untouched. Arena isn't affected (loadouts are fixed for the match).
+- dev/simfork/g304_clone_unequip.js; g211 conquest clone + g216 gerbils pass. Meta check: same pre-existing warning as v1183 (identical numbers).
