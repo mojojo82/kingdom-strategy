@@ -8206,13 +8206,19 @@ function createGame(opts) {
     // skillFireCounts/attackHitCounts, marking the LAUNCH (stepIdleAnim's
     // visual layer diffs it to spawn the missile's flight) — separate from
     // weaponHitLog/weaponMissLog below, which mark the real, later, IMPACT.
-    state.equippedWeapons.forEach(function (wid) {
-      var wdef = WEAPON_DEFS_BY_ID[wid];
+    /* v1186 (Harley: weapons must work the same in Conquest and Arena): Duplicate also copies a Laser or missile weapon here, like Arena's simApplyDup -
+       a second copy at Duplicate's % of the damage, starting half a cooldown in. Its cooldown is kept under "<id>_dup"; it fires (and is drawn) as that weapon. */
+    var wRuns = state.equippedWeapons.map(function (wid) { return { wid: wid, key: wid, mag: 1, start: 1 }; });
+    (function () { var dupW = null; state.equippedWeapons.forEach(function (wid) { var d0 = WEAPON_DEFS_BY_ID[wid]; if (d0 && d0.fx === "dup" && !d0.visualOnly) dupW = d0; }); if (!dupW) return;
+      var tgt = simDupTarget(state.equippedWeapons, state.duplicateTarget), td = WEAPON_DEFS_BY_ID[tgt];
+      if (td && !td.visualOnly && (td.kind === "beam" || td.kind === "missile" || (td.kind !== "fx" && td.kind !== "shield"))) wRuns.push({ wid: tgt, key: tgt + "_dup", mag: (weaponLevelStats(dupW).p.eff || 0) / 100, start: 0.5 }); })();
+    wRuns.forEach(function (run) {
+      var wid = run.wid, wkey = run.key, wdef = WEAPON_DEFS_BY_ID[wid];
       if (!wdef || (wdef.visualOnly || wdef.kind === "shield" || wdef.kind === "fx")) return; // v468/v777: visual-only weapons and FX weapons (handled by idleFxWeaponStep) never fire as missiles
-      if (state.idle.weaponCooldowns[wid] == null) state.idle.weaponCooldowns[wid] = weaponCooldownFor(wdef);
-      state.idle.weaponCooldowns[wid] -= dt;
-      if (state.idle.weaponCooldowns[wid] > 0) return;
-      state.idle.weaponCooldowns[wid] += weaponCooldownFor(wdef);
+      if (state.idle.weaponCooldowns[wkey] == null) state.idle.weaponCooldowns[wkey] = weaponCooldownFor(wdef) * run.start;
+      state.idle.weaponCooldowns[wkey] -= dt;
+      if (state.idle.weaponCooldowns[wkey] > 0) return;
+      state.idle.weaponCooldowns[wkey] += weaponCooldownFor(wdef);
       if (!frontTargetable) return; // cooldown still consumed above — same "don't hoard while nothing's targetable" rule as hero actives
       var wstats = weaponLevelStats(wdef); // level-resolved count/dmgPct — see its own comment
       if (wdef.kind === "beam") {
@@ -8220,7 +8226,7 @@ function createGame(opts) {
         // processIdleCombat (see the laserBeams block there).
         state.idle.weaponShotSeq = (state.idle.weaponShotSeq || 0) + 1;
         if (!state.idle.laserBeams) state.idle.laserBeams = [];
-        var beamTotal = weaponDmgFor(wdef);
+        var beamTotal = weaponDmgFor(wdef) * run.mag;
         state.idle.laserBeams.push({ id: state.idle.weaponShotSeq, wid: wid, elapsed: 0, dur: wstats.beamSec, dps: beamTotal / wstats.beamSec, targetId: null });
         state.idle.weaponFireCounts[wid] = (state.idle.weaponFireCounts[wid] || 0) + 1;
         return;
@@ -8244,7 +8250,7 @@ function createGame(opts) {
       // launches i*IDLE_WEAPON_MISSILE_STAGGER after the first (shot.delay,
       // consumed in processIdleCombat), matching the visual stagger.
       var thisShotIds = [];
-      var perMissileDmg = weaponDmgFor(wdef);
+      var perMissileDmg = weaponDmgFor(wdef) * run.mag;
       for (var mi = 0; mi < wstats.count; mi++) {
         state.idle.weaponShotSeq = (state.idle.weaponShotSeq || 0) + 1;
         thisShotIds.push(state.idle.weaponShotSeq);
@@ -8813,6 +8819,7 @@ function createGame(opts) {
   }
   function idleFxWeaponTick(dt) {
     var I = state.idle, list = idleFxList();
+    if (I.fxT) { var liveFx = {}; list.forEach(function (o) { liveFx[o.key] = 1; }); Object.keys(I.fxT).forEach(function (k) { if (!liveFx[k]) delete I.fxT[k]; }); } /* v1186: an unequipped weapon's (or Duplicate copy's) timer goes too - e.g. a stale "railgun_dup" countdown on the Railgun chip */
     if (I.clones) { var liveClone = {}; list.forEach(function (o) { if (o.fx === "clone") liveClone[o.key] = 1; }); /* v1184 (Harley bug): unequipping Clone Task removes its clone (gerbils are not weapon clones) */
       Object.keys(I.clones).forEach(function (k) { var c = I.clones[k]; if (c && !c.gerbil && !liveClone[k]) delete I.clones[k]; }); }
     if (!list.length) return;
@@ -11787,7 +11794,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1185"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1186"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
