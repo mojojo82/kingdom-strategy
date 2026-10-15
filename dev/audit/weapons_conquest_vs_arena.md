@@ -34,7 +34,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Arena: EMP also resets enemy weapon reloads, cancels beams, Wall and repair (31107-31110).
 
 ## Droid Call
-- Damage base differs: Conquest uses ranged power without ATK bonus / attack speed (8847); Arena uses real ranged hero damage per second incl. ATK bonus (31079).
+- Damage base differs: Conquest uses ranged power without ATK bonus / attack speed (8847); Arena uses real ranged hero damage per second incl. ATK bonus (31079). **FIXED v1192: Conquest uses Arena's base.**
 - "Pierce" means skip defence in Conquest, skip Dome/Orbit in Arena.
 
 ## IO Repair

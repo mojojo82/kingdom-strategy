@@ -8851,9 +8851,9 @@ function createGame(opts) {
           if (equippedSummonCall(state)) list.forEach(function (q) { if (q.fx === "clone" && I.fxT[q.key]) I.fxT[q.key].t = 0; }); /* v974: Drop Signal - a fallen clone comes straight back */
         }
       } else if (o.fx === "drone") {
-        var nr = 0; state.conquestRoster.forEach(function (key) { var d = HERO_DEFS[key], h = state.heroes[key]; if (h && h.owned && d && d.class !== "infantry") nr++; });
-        if (!nr) return;
-        var dps = idleRangedPower() / nr * (P.pct || 0) / 100 * o.mag * cardT1ArmyMul(state), /* v1189: Cannon Doctrine */ bi = -1, bd = Infinity;
+        var nr = 0, rdps = 0; state.conquestRoster.forEach(function (key) { var d = HERO_DEFS[key], h = state.heroes[key]; if (h && h.owned && d && d.class !== "infantry") { nr++; rdps += heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (d.atkMult || 1) * heroHitDmgMult(key) / (heroAttackSec(key) || 1); } });
+        if (!nr) return; /* v1192 (audit item 10): same base as Arena's drone - the average ranged hero's real damage per second, incl. the ATK bonus and attack speed */
+        var dps = rdps / nr * (P.pct || 0) / 100 * o.mag * cardT1ArmyMul(state), /* v1189: Cannon Doctrine */ bi = -1, bd = Infinity;
         for (var di = 0; di < enemies.length; di++) { if (!enemies[di].arrived || enemies[di].hp <= 0) continue; var dd = idleEnemyDistFrac(enemies[di]); if (dd < bd) { bd = dd; bi = di; } }
         if (bi >= 0) { var tgt = enemies[bi], dd2 = dps * dt * (P.pierce ? 1 : idleEnemyDefTake(tgt, dps)); tgt.hp -= dd2;
           /* v918: the drone's steady fire is drawn as a bolt every 0.35 s carrying what it dealt since the last one (it used to deal damage with nothing on screen) */
@@ -11797,7 +11797,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1191"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1192"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

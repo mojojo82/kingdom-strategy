@@ -2097,3 +2097,8 @@
 - arenaMakeSim: each IO instance keeps its own repLeft/repRate and every running repair heals each tick; EMP still cancels them all.
 - Before fixing, sim (meta builds + IO+Dup(IO)+Hex/Orbit/Salvo): best combo IO+Dup+Hex went 45->65 / 55->68 / 77->77 (Lv20/40/80), never near the top 2 (90-100). Harley asked about a rarity bump: not needed.
 - dev/simfork/g311_io_dup_stack.js: IO+Dup(IO)+Orbit heals 1.73x IO+Orbit (old build 0.85x). g206, g207, g310 pass. Meta check: same pre-existing warning, same numbers. Not checked on a phone.
+
+## v1192 - Droid Call uses the same damage base in Conquest as in Arena (TEST)
+- Harley (audit item 10): Conquest's drone used the average ranged hero's raw power (no ATK bonus, no hero damage multiplier); Arena uses the average ranged hero's real damage per second incl. the ATK bonus (arenaSideStats attackers). Conquest now uses the same: power x atkPerPower x damage mult x ATK bonus x hero atkMult x hit mult / attack interval (basicAttackSec 1 s).
+- Effect: grows with the ATK bonus now; with 0 bonus it is a bit lower when Sera (atkMult 0.4) is in the roster, since she pulls the average down - same as Arena. Cannon Doctrine (v1189) still applies on top.
+- dev/simfork/g312_droid_atk.js: drone damage with +50% ATK vs 0 = x2.06 (old build x1.01). Arena untouched (meta check not needed). Not checked on a phone.
