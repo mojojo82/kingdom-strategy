@@ -50,10 +50,10 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 ## Hex Shield
 - NEEDS CONSIDERATION LATER (Harley, 16 Oct - not now): equipment "Support Power" boosts the Hex Shield pool (8076), Sera's heal (8153) and Torvald's guard (8161) in Conquest only; Arena ignores it everywhere (30786, stepSupports).
 - Duplicate copying Hex adds to the pool in Arena only (31443).
-- Orbit's Hex Link recharge only in Arena (31178).
+- Orbit's Hex Link recharge only in Arena (31178). **FIXED v1194 (Conquest too).**
 
 ## Orbit Shield
-- Lv 10+ Hex Link: Arena only (31083). Conquest reduces ranged hits on heroes (8585); Arena doesn't (30927, 31317). **Hero part FIXED v1193 (Arena: Orbit + Dome cut ranged hits on heroes too).**
+- Lv 10+ Hex Link: Arena only (31083) - **FIXED v1194 (Conquest too)**. Conquest reduces ranged hits on heroes (8585); Arena doesn't (30927, 31317). **Hero part FIXED v1193 (Arena: Orbit + Dome cut ranged hits on heroes too).**
 
 ## Projection Wall
 - Not implemented in Conquest at all (no branch in idleFxWeaponTick, "inert" 8755). Arena: blocks Shuriken Storm on ranged heroes (30904).

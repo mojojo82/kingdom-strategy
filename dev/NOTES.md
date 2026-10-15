@@ -2107,3 +2107,7 @@
 - Harley (audit item 14): Conquest already cut ranged/boss shots on heroes with Orbit + Dome; Arena only cut damage to the fortress. arenaMakeSim rangedHit now applies the target side's Orbit % and any active Dome to a ranged hit on a hero (only infantry get targeted there).
 - Before fixing, sim: only Lv20 moved (Hex+Dome+Railgun 86->90, Clone+Railgun+Hex 100->95), fight length unchanged. Meta check now shows exactly that.
 - dev/simfork/g313_orbit_heroes.js: infantry hit by a ranged-only foe take 0.90x with Orbit Lv50 (old build 1.00x). g206, g207, g307, g311 pass. Not checked on a phone.
+
+## v1194 - Orbit Shield's Hex Link works in Conquest too (TEST)
+- Harley (audit item 13): Orbit Lv10+ "Hex Link" (recharge a still-standing Hex Shield by 0.25 / 0.5 / 1% of its max per second at Lv10 / 30 / 50) only existed in Arena. idleFxWeaponTick now does the same for state.idle.shield.
+- dev/simfork/g314_hex_link_conquest.js: Orbit Lv50 + Hex refills 1.00% of max per second, Lv1 none (old build: none). g306, g309, g312 pass. Arena untouched. Not checked on a phone.
