@@ -11797,7 +11797,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1189"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1190"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14564,7 +14564,7 @@ function bossSimFight(pc, boss, seed) {
   var B = { maxHp: Infinity, actives: [], attackers: [], dmgTakenMult: 1 - armor, cannonMult: 1, critRate: 0, critMult: 1 };
   var tr = { src: {}, aiSrc: {}, perTick: [] }; // v467: aiSrc was missing, so every Boss Sim run threw inside arenaMakeSim's trAddAi (the boss's own damage log)
   var ticks = Math.max(1, Math.floor(boss.secs * 1000 / ARENA_TICK_MS));
-  var sim = arenaMakeSim(P, B, { rng: worldPvpSeededRng("boss|" + seed), critSeed: "boss|" + seed, playerCannon: pc.cannon !== false, aiCannon: false, maxTicks: ticks, trace: tr, critRamp: boss.rampPct > 0 && boss.rampEvery > 0 ? { everySec: boss.rampEvery, pct: boss.rampPct, compound: boss.rampCompound } : null, dmgRamp: boss.dmgRamp, regen: boss.regen, weapons: simWeaponsFromCfg(pc.weapons), shieldPct: simShieldPctFromCfg(pc.weapons) });
+  var sim = arenaMakeSim(P, B, { rng: worldPvpSeededRng("boss|" + seed), critSeed: "boss|" + seed, playerCannon: pc.cannon !== false, aiCannon: false, maxTicks: ticks, trace: tr, critRamp: boss.rampPct > 0 && boss.rampEvery > 0 ? { everySec: boss.rampEvery, pct: boss.rampPct, compound: boss.rampCompound } : null, dmgRamp: boss.dmgRamp, regen: boss.regen, weapons: simWeaponsFromCfg(pc.weapons, P.bnA), shieldPct: simShieldPctFromCfg(pc.weapons) });
   var winner = sim.runToEnd();
   var dealt = tr.perTick.reduce(function (a, b) { return a + b; }, 0); // the boss has unlimited HP, so damage is summed from the log
   return { dealt: dealt, ticksUsed: sim.tick, ticks: ticks, tr: tr, armor: armor };
@@ -18974,9 +18974,9 @@ function worldPvpBattle(march, def, ownerId, opts) {
   var atkSummonCall = opts.summonCall !== undefined ? opts.summonCall : equippedSummonCall(asim.state); /* v973: Drop Signal */
   var atkCardMods = opts.cardMods !== undefined ? opts.cardMods : cardModsFrom(asim.state); /* v985: cards */
   /* v962: world PvP = Arena with troops, so both sides bring their weapons too (were left out unless the PvP Simulator passed them) */
-  var kitOf = function (st) { var m = {}; (st.equippedWeapons || []).forEach(function (id) { if (st.weaponLevels && st.weaponLevels[id] > 0) m[id] = st.weaponLevels[id]; }); return botWeaponsToSim(m); };
-  var atkKit = opts.atkWeapons !== undefined ? null : (asim === game ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : kitOf(asim.state));
-  var defKit = opts.defWeapons !== undefined ? null : kitOf(dsim.state);
+  var kitOf = function (st, am) { var m = {}; (st.equippedWeapons || []).forEach(function (id) { if (st.weaponLevels && st.weaponLevels[id] > 0) m[id] = st.weaponLevels[id]; }); return botWeaponsToSim(m, am); /* v1190: + that side's ATK bonus */ };
+  var atkKit = opts.atkWeapons !== undefined ? null : (asim === game ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : kitOf(asim.state, atkStats.bnA));
+  var defKit = opts.defWeapons !== undefined ? null : kitOf(dsim.state, defStats.bnA);
   var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, summonCall: atkSummonCall, aiSummonCall: opts.defSummonCall || null, cardMods: atkCardMods, aiCardMods: opts.defCardMods || null, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
   var winner = sim.runToEnd();
   var atkFrac = atkMax > 0 ? 1 - sim.playerHp / atkMax : 0, defFrac = defMax > 0 ? 1 - sim.aiHp / defMax : 0;
@@ -30382,7 +30382,7 @@ function botWeapons(lvl, fortType) {
   var out = {}; pick.slice(0, WEAPON_EQUIP_MAX).forEach(function (id) { if (WEAPON_DEFS_BY_ID[id]) out[id] = Math.max(1, Math.min(WEAPON_MAX_LEVEL, Math.round(lvl * (0.8 + Math.random() * 0.4)))); });
   return out;
 }
-function botWeaponsToSim(map) { return { specs: simWeaponsFromCfg(map || null), shieldPct: simShieldPctFromCfg(map || null), salvo: salvoSpec(Object.keys(map || {}), function (wd) { return game.weaponStatsAtLevel(wd, map[wd.id]); }) }; }
+function botWeaponsToSim(map, atkMult) { return { specs: simWeaponsFromCfg(map || null, atkMult), /* v1190: atkMult = that side's own ATK bonus (1 + atk%/100), like a player's weaponDmgFor */ shieldPct: simShieldPctFromCfg(map || null), salvo: salvoSpec(Object.keys(map || {}), function (wd) { return game.weaponStatsAtLevel(wd, map[wd.id]); }) }; }
 function botCore(p) {
   var tier = p.mult;
   var count = 1 + Math.floor(Math.random() * ARENA_COMBAT_HERO_KEYS.length);
@@ -31427,8 +31427,8 @@ function arenaPlayerWeaponsForSim() {
 // v467: turns a simulator form's weapon loadout ({ weaponId: level }, up to WEAPON_EQUIP_MAX ids, in WEAPON_DEFS order)
 // into the same flat shape arenaPlayerWeaponsForSim() gives the live Arena, so the Boss Sim and PvP Sim
 // (attacker AND defender) fire weapons through exactly the same arenaMakeSim code. Nothing here touches the save.
-function simWeaponsFromCfg(map) {
-  if (!map) return [];
+function simWeaponsFromCfg(map, atkMult) { /* v1190 (Harley, audit item 20): weapons get their side's ATK bonus, same as a player's */
+  if (!map) return []; var am = atkMult > 0 ? atkMult : 1;
   var specs = [], ids = [], dupEff = null;
   WEAPON_DEFS.forEach(function (wdef) {
     if (ids.length >= WEAPON_EQUIP_MAX || !map[wdef.id] || wdef.visualOnly || wdef.kind === "shield") return;
@@ -31436,7 +31436,7 @@ function simWeaponsFromCfg(map) {
     var st = game.weaponStatsAtLevel(wdef, map[wdef.id]);
     if (wdef.fx === "dup") { dupEff = st.p.eff; return; }
     if (wdef.fx === "salvo") return; /* v957: passive */
-    specs.push(simSpecOf(wdef, st, wdef.kind === "fx" ? 0 : st.dmg));
+    specs.push(simSpecOf(wdef, st, wdef.kind === "fx" ? 0 : st.dmg * am));
   });
   return simApplyDup(specs, ids, dupEff, null);
 }
@@ -31465,7 +31465,7 @@ function runArenaBattle(onTick, onDone) {
   var p = arenaPlayerRosterAndHeroes();
   var playerStats = arenaSideStats(p.roster, p.heroes, game.state.buildings.townhall.level, arenaBaseHpPlayer, true);
   if (!arenaOpponent.weapons) { var avgL0 = 0, n0 = 0; Object.keys(arenaOpponent.heroes || {}).forEach(function (k) { avgL0 += arenaOpponent.heroes[k].level || 1; n0++; }); arenaOpponent.weapons = botWeapons(Math.max(1, (n0 ? avgL0 / n0 : 1) * 0.6), fortressTypeOf(arenaOpponent.fortressTech || {})); } /* v962: older saved ladders */
-  var aiKit = botWeaponsToSim(arenaOpponent.weapons);
+  var aiKit = botWeaponsToSim(arenaOpponent.weapons, 1 + (((arenaOpponent.bonus || ZERO_BONUS).atk) || 0) / 100); /* v1190: the bot's own ATK bonus */
   var aiStats = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
   // critSeed: without this, fortressCritRoll(opts.critSeed || "arena", side, burstNo) always fell back to the
   // literal string "arena" — the SAME seed every single real Arena battle. fortressCritRoll is a pure function

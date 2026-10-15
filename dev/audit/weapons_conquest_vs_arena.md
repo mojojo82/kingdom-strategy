@@ -12,7 +12,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Arena weapons only ever hit the fortress (toAi 31311-31324), never heroes - only hero attacks hit heroes.
 - Conquest weapon cooldowns carry over between level attempts (never reset); Arena starts every battle at a full cooldown (30827).
 - Conquest holds fire (but spends the cooldown) when no enemy has arrived (8214); Arena always fires.
-- Bots/sim weapons use dmg without the ATK bonus (simWeaponsFromCfg 31412) and pick Duplicate's target by list order.
+- Bots/sim weapons use dmg without the ATK bonus (simWeaponsFromCfg 31412) and pick Duplicate's target by list order. **ATK half FIXED v1190 (bot / other-player / sim-form weapons get that side's own ATK bonus). Duplicate-target half still open.**
 
 ## Missile Barrage, Flak Burst, Scatter Rounds
 - FIXED v1187 (Harley: independent in Arena too): Arena now launches one shot per missile, 0.16 s apart, each landing on its own (arenaQueueMissiles). Conquest unchanged.

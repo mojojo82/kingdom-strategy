@@ -2085,3 +2085,9 @@
 - Harley (audit item 4): make it work like Arena (there it boosts everything your side deals on Fortress I). Conquest already boosted heroes, clones and the cannon; now also Laser/beam, missiles, the Railgun hit, Droid Call shots and the Clone Task self-destruct (cardT1ArmyMul at each).
 - Before the fix, sim dev/balance/cannon_doctrine.js (maxed F1 player, no Hanzo, 48 game h): no card 20-5 (ch20 at 29.4 h), card 22-3 (ch20 at 7.8 h), card + weapons 21-17 (ch20 at 7.0 h) - weapons barely matter, kept in case something later works with it.
 - dev/simfork/g309_doctrine_weapons.js: missiles and Railgun x1.70 with the card on Fortress I, x1.00 on Fortress III (old build: x1.00). Meta check: same pre-existing warning, same numbers (Arena untouched). Not checked on a phone.
+
+## v1190 - Bot / other-side weapons get their ATK bonus (TEST)
+- Harley (audit item 20): every side's weapons now use that side's own ATK bonus, like the player's (weaponDmgFor). Before, only the live player's weapons had it; Arena bots, World map bots, other players' cities, Gauntlet floors and the Dev Tools PvP / Boss sims used plain base damage. Their heroes already had ATK/HP/DEF.
+- simWeaponsFromCfg(map, atkMult) / botWeaponsToSim(map, atkMult): Arena = 1 + opponent.bonus.atk/100; worldPvpBattle kitOf uses atkStats.bnA / defStats.bnA; Boss Sim uses P.bnA. Bot generation and the Sword of Power are untouched.
+- dev/simfork/g310_bot_weapon_atk.js (old build: bot +25% ATK, weapons unscaled; new: scaled by the bot's own bonus). g307, g206, g207 pass. Meta check: same pre-existing warning, same numbers. Not checked on a phone.
+- Still open from item 20: a bot's Duplicate copies the first weapon in list order.
