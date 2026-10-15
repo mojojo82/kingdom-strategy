@@ -19,7 +19,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Duplicate copies them in Arena (50%, half cooldown later) - not in Conquest (8757).
 
 ## Laser Beam, Pulse Beam
-- Conquest: beam time with no target in front is lost (8513). Arena: always full damage.
+- Conquest: beam time with no target in front is lost (8513). Arena: always full damage. **KEEP AS IS (Harley, 16 Oct).**
 - Duplicate copies them in Arena - not in Conquest.
 
 ## Salvo Loader - same.
