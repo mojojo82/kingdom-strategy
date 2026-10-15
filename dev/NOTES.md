@@ -2000,3 +2000,8 @@
 - useSpeedup works out the time left before using it (build: the upgrade; train: the end of that building's queue; research: the research) and refunds the spare as 5 min + 1 min speedups of the same type. A 5 min speedup refunds in 1 min speedups; under a minute is lost. E.g. 1h on 5 min left -> 11x 5 min back (10x 5 min + 4x 1 min if 5 min 2 s left).
 - Timer speedup buttons show every speedup you own that fits (🔨/⏩ −1h, −5m, −1m); a small message says what came back. Backpack: tiles have a time label and Kingshot colours (1 min grey, 5 min green, 1h blue); the resource overview lists 5/1 min ones when you have some.
 - dev/simfork/g297_speedup_refund.js (+ g238 backpack, g266 training still pass). Not checked on a phone.
+
+## v1176 - One training batch per building (TEST)
+- Harley bug: you could train 2+ batches of the same troop at once (e.g. 2 lanes of infantry). Reproduced headless: a second Train on the Barracks was accepted (2 queue entries, charged twice).
+- queueTraining now refuses while that building already has a batch ("already_training", nothing charged). The Train button shows "Training…" and is greyed out until the batch finishes or is sped up. Old saves that already have 2 queued keep them; they finish in order.
+- dev/simfork/g298_one_batch.js (+ g266 training, g240 train cap still pass). Not checked on a phone.

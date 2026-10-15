@@ -6806,6 +6806,7 @@ function createGame(opts) {
     if (b.level < 1) return { ok: false, reason: "building_not_built" };
     tier = Math.max(1, Math.min(TROOP_MAX_TIER, Math.floor(tier) || 1));
     if (tier > maxTrainableTier(buildingKey)) return { ok: false, reason: "tier_locked" };
+    if (b.queue && b.queue.length) return { ok: false, reason: "already_training" }; /* v1176 (Harley): one batch per training building at a time */
     var tkey = troopKey(def.trains, tier);
     count = Math.max(1, Math.min(trainCap(buildingKey), Math.floor(count) || 1));
     var cost = troopCost(tkey, count);
@@ -11714,7 +11715,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1175"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1176"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14719,6 +14720,7 @@ function renderTroops() {
       updateDur();
       var btn = document.createElement("button");
       btn.textContent = "Train";
+      if (b.queue && b.queue.length) { btn.textContent = "Training…"; btn.disabled = true; btn.title = "One batch at a time - wait for this one to finish (or speed it up)"; } /* v1176 */
       btn.onclick = function () {
         var n = Math.max(1, Math.min(cap, parseInt(input.value, 10) || 1));
         var res = game.queueTraining(trainingBuildingKey, n, tier);
