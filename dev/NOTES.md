@@ -1976,3 +1976,9 @@
 - Harley: wants to see the dark knight boss idle clip in the Pixel Lab at game size.
 - dev/pixel/pixel-lab.tpl.html: the file picker takes MP4/WEBM clips too. It reads up to 60 frames (about 12 a second, up to 640 px), removes the background on every frame, crops them all to one shared box (so the height = the box the art fills across the whole clip), and loops it in the scene. Pixel mode uses one palette for every frame so colours don't flicker. Pause/Play button appears for clips. Pictures work as before.
 - Tested in headless Chromium with a made-up magenta WEBM (48 frames, smooth + pixel, pause). Not tested on Harley's phone. Republished the "Pixel Lab" artifact.
+
+### Art (no game change): dark knight boss clips locked in
+- Harley: boss gets 3 animations - idle, stomp, hand blast. All start from the green standing still (art/originals/dark_knight_still_green.png).
+- Locked in: idle = dark_knight_idle_hailuo.mp4 (loop 1.0-5.8 s, Claude dims the pink gem/eye glow in code - Hailuo adds it every time), stomp = dark_knight_stomp_hailuo.mp4 + stand-up = dark_knight_standup_hailuo.mp4 (joins back to standing). Trim/speed the stomp + stand-up to ~5-6 s total when it goes in.
+- Harley prefers start-frame-only clips (end frames make the motion stiff); Claude joins clips by loop points / blending / reversing.
+- Still to make: hand blast (start frame only, no effects - the blast is drawn in code). Old magenta hand-blast clip not usable (pink cape vs magenta, turns side-on).
