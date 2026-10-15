@@ -2111,3 +2111,8 @@
 ## v1194 - Orbit Shield's Hex Link works in Conquest too (TEST)
 - Harley (audit item 13): Orbit Lv10+ "Hex Link" (recharge a still-standing Hex Shield by 0.25 / 0.5 / 1% of its max per second at Lv10 / 30 / 50) only existed in Arena. idleFxWeaponTick now does the same for state.idle.shield.
 - dev/simfork/g314_hex_link_conquest.js: Orbit Lv50 + Hex refills 1.00% of max per second, Lv1 none (old build: none). g306, g309, g312 pass. Arena untouched. Not checked on a phone.
+
+## v1195 - Projection Wall Lv50 Mirror built (Arena) (TEST)
+- Harley (audit item 9): Mirror Wall was in the text but never built. arenaMakeSim: aoeHit returns the damage the Wall blocked on ranged heroes; Mirror (P.mirror 50 at Lv50, S.wallMirror) sends that % at the caster's fortress.
+- Small effect (the Wall only blocks AoE skills like Shuriken Storm on ranged heroes, while up). dev/simfork/g315_mirror_wall.js: Hanzo storm vs Wall Lv50 adds reflected damage, Lv30 none (old build: none). g206, g207, g217, g311, g313 pass; meta check unchanged. Not checked on a phone.
+- Item 8 (Wall in Conquest): not changed - Conquest enemies only ever hit infantry or the fortress, so the Wall has nothing to block there. Asked Harley what it should do.

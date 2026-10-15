@@ -57,7 +57,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 
 ## Projection Wall
 - Not implemented in Conquest at all (no branch in idleFxWeaponTick, "inert" 8755). Arena: blocks Shuriken Storm on ranged heroes (30904).
-- Lv 50 Mirror not implemented in either mode.
+- Lv 50 Mirror not implemented in either mode. **FIXED v1195 in Arena (reflects 50% of what the Wall blocks). Conquest: nothing hits ranged heroes, so nothing to block/mirror - item 8 waiting on Harley.**
 
 ## Status Wave
 - Inert in Conquest (nothing stuns you there); Arena blocks stuns + Reflect (31091). Mostly a target difference.

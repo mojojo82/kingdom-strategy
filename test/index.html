@@ -11799,7 +11799,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1194"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1195"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30915,9 +30915,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function canMelee(hh, id) { if (!posMode) return engaged; var e = hh && hh.by[id]; return !!(e && e.reach); }
   // One melee hit (basic or skill). Returns true if it hits the fortress pool (caller adds it to that side's damage); false if a hero absorbed it.
   // v992: Shuriken Storm - one hit on every standing enemy hero and summon (dodge applies); the caller adds the same hit to the enemy fortress.
-  function aoeHit(oh, oppStats, dmg, wallUp) { if (!oh) return; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (wallUp && !o.infantry) return; /* v993: Projection Wall shields ranged heroes */ if (dodgeRoll(o, o.dodge)) return;
+  function aoeHit(oh, oppStats, dmg, wallUp) { var blocked = 0; if (!oh) return 0; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (wallUp && !o.infantry) { blocked += dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } /* v993: Projection Wall shields ranged heroes; v1195: what it blocks is counted for Mirror Wall */ if (dodgeRoll(o, o.dodge)) return;
     o.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
-    if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); }
+    if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); return blocked; }
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
     var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh); }) : null;
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
@@ -31010,8 +31010,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (stormQ.length) { var stormKeep = []; stormQ.forEach(function (q) { if (q.at > tick) { stormKeep.push(q); return; }
       var mine = q.sd === 'P' ? pHH : aHH; if (isKo(mine, q.key)) return;
       var dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0;
-      if (q.sd === 'P') { aoeHit(aHH, aiStats, q.v * (1 - red), wallUp); playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); }
-      else { aoeHit(pHH, playerStats, q.v * (1 - red), wallUp); aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } }); stormQ = stormKeep; }
+      var blk = q.sd === 'P' ? aoeHit(aHH, aiStats, q.v * (1 - red), wallUp) : aoeHit(pHH, playerStats, q.v * (1 - red), wallUp), mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0; /* v1195 (audit item 9): Mirror Wall (Lv50) reflects that % of what the Wall blocked at the caster's fortress */
+      if (q.sd === 'P') { aiDmg += mirr; playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); }
+      else { playerDmg += mirr; aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } }); stormQ = stormKeep; }
     playerStats.actives.forEach(function (a) {
       if (isKo(pHH, a.key)) { playerCd[a.key] = a.cooldown; return; } // KO'd: skill timer sits at full until he revives
       playerCd[a.key] -= cdStep;
@@ -31166,7 +31167,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           if (ins.t > 1e-9) return;
           var cd = ins.cd, P = ins.p, m = ins.mag;
           if (kind === 'sw') { S.sw = Math.max(S.sw, (P.dur || 0) * m); ins.t += cd; S.casts.sw = (S.casts.sw || 0) + 1; return; }
-          if (kind === 'wall') { S.wall = Math.max(S.wall, (P.dur || 0) * m); ins.t += cd; S.casts.wall = (S.casts.wall || 0) + 1; return; }
+          if (kind === 'wall') { S.wall = Math.max(S.wall, (P.dur || 0) * m); S.wallMirror = Math.max(S.wallMirror || 0, (P.mirror || 0) / 100 * m); ins.t += cd; S.casts.wall = (S.casts.wall || 0) + 1; return; }
           if (kind === 'dome') { ins.up = (P.dur || 0); ins.red = Math.min(0.95, (P.red || 0) / 100 * m); ins.t += cd; S.casts.dome = (S.casts.dome || 0) + 1; return; }
           if (kind === 'clone') {
             if (ins.droid && !ins.droid.ko) { ins.t = 0; ins.rush = false; return; }
