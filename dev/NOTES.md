@@ -1982,3 +1982,4 @@
 - Locked in: idle = dark_knight_idle_hailuo.mp4 (loop 1.0-5.8 s, Claude dims the pink gem/eye glow in code - Hailuo adds it every time), stomp = dark_knight_stomp_hailuo.mp4 + stand-up = dark_knight_standup_hailuo.mp4 (joins back to standing). Trim/speed the stomp + stand-up to ~5-6 s total when it goes in.
 - Harley prefers start-frame-only clips (end frames make the motion stiff); Claude joins clips by loop points / blending / reversing.
 - Still to make: hand blast (start frame only, no effects - the blast is drawn in code). Old magenta hand-blast clip not usable (pink cape vs magenta, turns side-on).
+- Dark knight clips are made facing/aiming right (his open claw side); mirror ALL of them in game so he faces the fortress on the left.
