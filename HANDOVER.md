@@ -122,6 +122,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Both sides act at the same moment.** EMP vs EMP stuns both; a hero knocked out this instant still gets this instant's swing; identical teams always draw (test g208). No attacker-goes-first wins.
 
 ## Open items / to-dos
+- **OPEN - weapons are all free from day one (Harley, 15 Oct, NOT fixed yet on purpose):** today any new player can equip any 3 weapons, Legendaries included; the Weapon Draw only gives level-up fragments. Wanted later: **Epic and Legendary weapons need at least 2 of their own fragments to unlock** before they can be equipped (Elite / Super Rare stay free unless Harley says otherwise). Don't change it yet - Harley is testing weapons on the tomhector account. Ask him before fixing (what happens to weapons already equipped, and whether his test account keeps everything).
 - **Balance (9 Oct, v954-v968)** - details in dev/NOTES.md. Test kit: `node dev/balance/run.js --vs v959` (Conquest walls + Gareth's first KO,
   swap test, Arena round-robin). Done: one ranged-on-hero rule for both modes; boss "tank rule"; deterministic combat; Death Strike (Gareth slot 2,
   fires with Shield Slam); Arena fortress HP = +100 per hero power (fights ~30-40 s, were <1 s); Fortress III braced hull (super bursts x0.6);

@@ -2050,3 +2050,4 @@
 - Harley's picks: recruiting is open from the start (no building needed); no refund for levels already built (old saves' tavern level is just ignored, Power drops a little).
 - Removed from BUILDING_DEFS, recruitHero's check and the two "🔒 Requires Hall of Heroes" locks; balance scripts (boss_time, f2p_timeline) no longer list it.
 - dev/simfork/g303_no_hall.js. Not checked on a phone.
+- Open topic logged in HANDOVER "Open items": Epic + Legendary weapons should need 2+ of their own fragments to unlock (today every weapon is free to equip). Not fixed yet - Harley is testing weapons on the tomhector account.
