@@ -2019,3 +2019,9 @@
 - Resources popup: each resource shows its earn rate under the name (green "+47.7 /s"); new Research Points row (owned + RP/s, potion icon). Updates live while open.
 - Buildings tab: the 5 production rows are gone (the build queue line is now the first thing).
 - dev/simfork/g300_bag_rates.js. Not checked on a phone.
+
+## v1179 - Formations get their own City tab (TEST)
+- Harley: Formations out of the Troops tab into their own tab. City tabs: Buildings / Troops / ⚔️ Formations / Research (all 4 on one line on a phone).
+- Same panel underneath (mapMode "troops"); body data-sub picks what shows: Troops = Infirmary + Train Troops, Formations = the formations only. Desktop (no City sub) still shows everything together.
+- Also fixed a CSS line v1178 split (the bag's name/rate rule) while adding the new rule.
+- dev/simfork/g301_formations_tab.js (+ g299, g300 pass). Not checked on a phone.
