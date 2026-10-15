@@ -2128,3 +2128,7 @@
 - Conquest: new idleEnemyProjRed(e) = an enemy's own projectile shield (e.projRed, 0-0.95; nothing sets it yet). A non-piercing drone is cut by it, a piercing one isn't (and still skips defence). When Conquest bots with Dome/Orbit are added, apply idleEnemyProjRed to every projectile that hits them.
 - Text: "Piercing rounds: its damage ignores enemy defence and projectile reduction (Dome, Orbit)."
 - dev/simfork/g317_droid_pierce.js (Arena: piercing > plain vs a foe with DEF, old build equal; Conquest: Lv30 drone halved by projRed 0.5, Lv50 not). Meta check unchanged; g206, g207, g309, g312, g313 pass. Not checked on a phone.
+
+## v1198 - EMP Gun Lv50 Aftershock works in Conquest too (TEST)
+- Harley (audit item 5): the Aftershock (a second 1 s stun 3 s after each pulse) only existed in Arena. Conquest's EMP now queues it (fxT.emp_gun.asT / asSec) and, when it lands, pushes every arrived enemy's next attack back by 1 s more (stacks, item 6).
+- dev/simfork/g318_emp_aftershock.js (Lv50 fires aftershocks and pushes attacks back, Lv30 none; old build none). g306, g316 pass. Arena untouched. Not checked on a phone.
