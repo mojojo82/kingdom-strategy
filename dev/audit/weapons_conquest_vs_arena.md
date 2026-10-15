@@ -38,7 +38,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - "Pierce" means skip defence in Conquest, skip Dome/Orbit in Arena.
 
 ## IO Repair
-- With Duplicate: Conquest heals with both copies at once; Arena's copy overwrites the first (31167). Fires at exactly 85% HP only in Arena.
+- With Duplicate: Conquest heals with both copies at once; Arena's copy overwrites the first (31167). Fires at exactly 85% HP only in Arena. **Stacking FIXED v1191 (each repair keeps its own heal in Arena too).**
 
 ## Deflector Dome
 - Conquest also cuts ranged/boss shots aimed at heroes (8585); Arena only protects heroes from Shuriken Storm (ranged hits on heroes go unreduced, 30918).

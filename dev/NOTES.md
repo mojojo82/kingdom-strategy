@@ -2091,3 +2091,9 @@
 - simWeaponsFromCfg(map, atkMult) / botWeaponsToSim(map, atkMult): Arena = 1 + opponent.bonus.atk/100; worldPvpBattle kitOf uses atkStats.bnA / defStats.bnA; Boss Sim uses P.bnA. Bot generation and the Sword of Power are untouched.
 - dev/simfork/g310_bot_weapon_atk.js (old build: bot +25% ATK, weapons unscaled; new: scaled by the bot's own bonus). g307, g206, g207 pass. Meta check: same pre-existing warning, same numbers. Not checked on a phone.
 - Still open from item 20: a bot's Duplicate copies the first weapon in list order.
+
+## v1191 - IO Repair + Duplicate heals stack in Arena (TEST)
+- Harley (audit item 15): by Duplicate's own text the copy is a second heal on its own timer, so both should stack (Conquest already did). Arena kept ONE repair per side (S.repLeft), so the copy's heal overwrote what the original had left - adding Duplicate made IO heal LESS (0.85x).
+- arenaMakeSim: each IO instance keeps its own repLeft/repRate and every running repair heals each tick; EMP still cancels them all.
+- Before fixing, sim (meta builds + IO+Dup(IO)+Hex/Orbit/Salvo): best combo IO+Dup+Hex went 45->65 / 55->68 / 77->77 (Lv20/40/80), never near the top 2 (90-100). Harley asked about a rarity bump: not needed.
+- dev/simfork/g311_io_dup_stack.js: IO+Dup(IO)+Orbit heals 1.73x IO+Orbit (old build 0.85x). g206, g207, g310 pass. Meta check: same pre-existing warning, same numbers. Not checked on a phone.

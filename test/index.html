@@ -11797,7 +11797,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1190"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1191"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -31117,7 +31117,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (q.p.aftershock > 0) O.pend.push({ at: fxNowS + (q.p.aftershockDelay || 3), tgt: tgt, sec: q.p.aftershock * q.m }); return O.blocked > b0 ? null : q; });
       hit.forEach(function (q) { if (!q) return; var O = fxCtx(q.sd).O; // landed (not soaked by Status Wave): cancel the target's running beams + buffs and reset every weapon reload
         O.inst.forEach(function (x) { if (x.k === 'drone' || x.k === 'orbit' || x.k === 'sw') return; if (x.k === 'rail' && fxDroidUp(O)) return; if (x.k === 'clone' && x.rush) return; /* v973: nor reset by an EMP */ /* v970: droid link - an EMP can't reset a linked Railgun */ x.t = x.k === 'rail' ? ((O.casts.rail || 0) ? x.cd : (x.p.countdown || 10)) : x.cd; x.up = 0; });
-        O.wall = 0; O.repLeft = 0;
+        O.wall = 0; O.inst.forEach(function (ri) { ri.repLeft = 0; }); /* v1191: EMP cancels every running repair */
         if (q.sd === 'P') { aiActiveBeams = []; (opts.aiWeapons || []).forEach(function (wp) { aiWeaponCd[wp.id] = wcd(wp); }); }
         else { activeBeams = []; (opts.weapons || []).forEach(function (wp) { weaponCd[wp.id] = wcd(wp); }); }
       });
@@ -31175,7 +31175,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           }
           if (kind === 'io') {
             if (fxHp(sd) > c.st.maxHp * 0.85) { ins.t = 0; return; }
-            S.repLeft = c.st.maxHp * (P.heal || 0) / 100 * m; S.repRate = S.repLeft / (P.dur || 4); ins.t += cd; S.casts.io = (S.casts.io || 0) + 1; return;
+            ins.repLeft = c.st.maxHp * (P.heal || 0) / 100 * m; ins.repRate = ins.repLeft / (P.dur || 4); ins.t += cd; /* v1191 (audit item 15): each IO Repair (and a Duplicate copy) keeps its own heal, so they stack like Conquest */ S.casts.io = (S.casts.io || 0) + 1; return;
           }
           if (kind === 'rail') { var sc = sd === 'P' ? opts.summonCall : opts.aiSummonCall; if (sc) { S.inst.forEach(function (y) { if (y.k === 'clone') { y.t = 0; y.rush = true; } }); if (sc.drones) S.droneOff = 0; } /* v973: Drop Signal card */ ins.t += cd; S.casts.rail = (S.casts.rail || 0) + 1; railQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: sd, p: P, m: m }); return; } // v968: lands in fxRailLand
         });
@@ -31183,10 +31183,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     });
     ['P', 'A'].forEach(function (sd) {
       var c = fxCtx(sd), S = c.S;
-      if (S.repLeft > 0 && fxHp(sd) > 0) {
-        var amt = Math.min(S.repLeft, S.repRate * dtS), hp0 = fxHp(sd), hp1 = Math.min(c.st.maxHp, hp0 + amt);
-        fxSetHp(sd, hp1); S.heal += hp1 - hp0; S.repLeft -= amt;
-      }
+      S.inst.forEach(function (ri) { if (!(ri.repLeft > 0) || !(fxHp(sd) > 0)) return; /* v1191: every running repair heals */
+        var amt = Math.min(ri.repLeft, ri.repRate * dtS), hp0 = fxHp(sd), hp1 = Math.min(c.st.maxHp, hp0 + amt);
+        fxSetHp(sd, hp1); S.heal += hp1 - hp0; ri.repLeft -= amt;
+      });
       if (S.orbitLink > 0) { // Hex Link: Orbit recharges a still-standing Hex Shield
         if (sd === 'P' && playerShieldMax > 0 && playerShield > 0) playerShield = Math.min(playerShieldMax, playerShield + playerShieldMax * S.orbitLink * dtS);
         if (sd === 'A' && aiShieldMax > 0 && aiShield > 0) aiShield = Math.min(aiShieldMax, aiShield + aiShieldMax * S.orbitLink * dtS);
