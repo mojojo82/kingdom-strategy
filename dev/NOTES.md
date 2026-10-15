@@ -2070,3 +2070,8 @@
 - Conquest now copies a Laser / Pulse Beam / missile weapon (Barrage, Flak, Scatter) like Arena's simApplyDup: a second copy at Duplicate's % of the damage, first shot half a cooldown later (cooldown kept as "<id>_dup", fires and draws as that weapon). Duplicate on the Hex Shield adds its % to the pool again (idleShieldPct), like arenaPlayerShieldPct.
 - Unequipping a weapon (or Duplicate) now also clears its leftover fx timers (e.g. a stale "railgun_dup" countdown on the Railgun chip).
 - dev/simfork/g306_dup_conquest.js (laser copy at 50%, missiles at 50%, back to normal after unequip, Hex pool +50%, stale timer cleared); g304, g211, g294 pass. Meta check: same pre-existing warning (Arena-only check, numbers unchanged). Not checked on a phone.
+
+## v1187 - Arena missiles are independent (TEST)
+- Harley (audit item 16): missiles must be independent in Arena too. Before: the whole volley was one hit (damage x count) landing at once.
+- arenaQueueMissiles: each missile of Missile Barrage / Flak Burst / Scatter Rounds (and a Duplicate copy) is its own shot, launched 0.16 s after the previous (IDLE_WEAPON_MISSILE_STAGGER, same as Conquest), each with its share of the damage - total unchanged. Player and opponent side.
+- dev/simfork/g307_arena_missiles.js; g292 pass; g293 barrels is flaky (failed once on v1186 too, passes on rerun). Meta check: same pre-existing warning, same numbers. Not checked on a phone.

@@ -15,7 +15,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 - Bots/sim weapons use dmg without the ATK bonus (simWeaponsFromCfg 31412) and pick Duplicate's target by list order.
 
 ## Missile Barrage, Flak Burst, Scatter Rounds
-- Conquest: one shot per missile, 0.16 s apart, each can miss / carry to the next enemy (8249, 8476). Arena: the whole volley lands as one hit (31381, 31206).
+- FIXED v1187 (Harley: independent in Arena too): Arena now launches one shot per missile, 0.16 s apart, each landing on its own (arenaQueueMissiles). Conquest unchanged.
 - Duplicate copies them in Arena (50%, half cooldown later) - not in Conquest (8757).
 
 ## Laser Beam, Pulse Beam

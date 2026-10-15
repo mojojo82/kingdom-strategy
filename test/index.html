@@ -11796,7 +11796,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1186"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1187"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -31213,7 +31213,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         playerBeamFires.push({ id: wp.id, beamSec: wp.beamSec });
         return;
       }
-      shotQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: 'P', id: wp.id, dmg: wp.dmgPerShot }); /* v968: lands below when it arrives */
+      arenaQueueMissiles(shotQ, tick, 'P', wp); /* v968: lands below when it arrives; v1187: each missile its own shot */
       playerWeaponFires.push({ id: wp.id, count: wp.count });
     });
     // v461: active Laser Beams deal this tick's share of their damage.
@@ -31231,7 +31231,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       aiWeaponCd[wp.id] += wcd(wp);
       if (wp.kind === "beam") { aiActiveBeams.push({ id: wp.id, left: wp.beamSec, dps: wp.totalDmg / wp.beamSec }); aiBeamFires.push({ id: wp.id, beamSec: wp.beamSec }); return; } /* v1164: drawn as a beam, not a missile volley */
       aiWeaponFires.push({ id: wp.id, count: wp.count || 1 }); /* v962: so the Arena can draw the opponent's shots too */
-      shotQ.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS, sd: 'A', id: wp.id, dmg: wp.dmgPerShot });
+      arenaQueueMissiles(shotQ, tick, 'A', wp); /* v1187 */
     });
     // v968: weapon shots that land this tick (fired ARENA_WEAPON_FLIGHT_TICKS ago)
     shotQ = shotQ.filter(function (q) { if (q.at > tick) return true;
@@ -31381,6 +31381,12 @@ function arenaMakeSim(playerStats, aiStats, opts) {
 // already do elsewhere in this file. No opposing-bot equivalent: arenaOpponent
 // has no weapon loadout of its own, same "opts.regen is player-only" scoping
 // as this function's neighbors.
+/* v1187 (Harley, audit item 16): missiles are independent in Arena too, like Conquest - each missile of a volley is its own shot, launched
+   IDLE_WEAPON_MISSILE_STAGGER s after the previous, landing on its own (so a volley can be cut short when the fight ends mid-volley). */
+function arenaQueueMissiles(q, tick, sd, wp) {
+  var n = Math.max(1, wp.count || 1), per = wp.dmgPerShot / n, stg = IDLE_WEAPON_MISSILE_STAGGER * 1000 / ARENA_TICK_MS;
+  for (var i = 0; i < n; i++) q.push({ at: tick + ARENA_WEAPON_FLIGHT_TICKS + i * stg, sd: sd, id: wp.id, dmg: per });
+}
 // v777: one sim weapon spec from a weapon def + its resolved stats (dmg = per-missile / total-beam damage, unused for fx weapons).
 function simSpecOf(wdef, st, dmg) {
   var tickSec = ARENA_TICK_MS / 1000, cd = Math.max(1, Math.round(st.cooldown / tickSec));
