@@ -4993,7 +4993,10 @@ var TROOP_MAX_TIER = 10;
 var TROOP_TIER_UNLOCK_LEVEL = { 1: 1, 2: 4, 3: 7, 4: 11, 5: 13, 6: 16, 7: 19, 8: 22, 9: 26, 10: 30 };
 var TROOP_TIER_STAT_MULT = 1.19;
 var TROOP_TIER_COST_MULT = 1.19;
-var TROOP_TIER_TIME_MULT = 1.19;
+var TROOP_TIER_TIME_MULT = 1.19; /* v1181: no longer used for training (Kingshot table below); still sets the Infirmary healing time, which is unchanged */
+/* v1181 (Harley): Kingshot's base training time per troop by tier, the same for all three types (kingshotlab.com database, from kingshotcalculator.net;
+   matches Harley's screenshot: 300 Tier VI archers = 5:00:00 before bonuses). Building level / research bonuses still apply on top as before. */
+var TROOP_TIER_TRAIN_SEC = [0, 12, 17, 24, 32, 44, 60, 60, 60, 120, 120];
 function troopKey(type, tier) { return tier <= 1 ? type : type + "_t" + tier; }
 function troopBase(key) { var d = TROOP_DEFS[key]; return d ? d.baseType : key; }
 function troopTier(key) { var d = TROOP_DEFS[key]; return d ? d.tier : 1; }
@@ -5009,7 +5012,7 @@ function troopDominantType(army) {
 }
 TROOP_TYPES.forEach(function (type) {
   var base = TROOP_DEFS[type];
-  base.baseType = type; base.tier = 1;
+  base.baseType = type; base.tier = 1; base.healTime = base.trainTime; /* v1181: tier 2+ train/heal times below still come from the old T1 time; then T1 trains on the Kingshot table too */
   for (var n = 2; n <= TROOP_MAX_TIER; n++) {
     var sm = Math.pow(TROOP_TIER_STAT_MULT, n - 1), cm = Math.pow(TROOP_TIER_COST_MULT, n - 1), tm = Math.pow(TROOP_TIER_TIME_MULT, n - 1);
     var cost = {};
@@ -5017,9 +5020,10 @@ TROOP_TYPES.forEach(function (type) {
     TROOP_DEFS[troopKey(type, n)] = {
       name: base.name + " T" + n, baseType: type, tier: n,
       atk: base.atk * sm, def: base.def, hp: base.hp * sm, power: base.power, speed: base.speed,
-      cost: cost, trainTime: Math.round(base.trainTime * tm), countersType: base.countersType
+      cost: cost, trainTime: TROOP_TIER_TRAIN_SEC[n], healTime: Math.round(base.trainTime * tm), countersType: base.countersType
     };
   }
+  base.trainTime = TROOP_TIER_TRAIN_SEC[1];
 });
 
 // Tech tree organized into three tabs (Growth / Economy / Battle), each tech
@@ -7014,7 +7018,7 @@ function createGame(opts) {
     if (!canAfford(cost)) return { ok: false, reason: "cannot_afford" };
     spend(cost);
     state.wounded[type] -= count;
-    var dur = (TROOP_DEFS[type].trainTime * INFIRMARY_HEAL_TIME_MULT * count) / (1 + b.level * 0.05) / trainSpeedMult() / healSpeedMult();
+    var dur = ((TROOP_DEFS[type].healTime || TROOP_DEFS[type].trainTime) * INFIRMARY_HEAL_TIME_MULT * count) / (1 + b.level * 0.05) / trainSpeedMult() / healSpeedMult();
     var startAt = state.healQueue.length ? state.healQueue[state.healQueue.length - 1].finishAt : now();
     state.healQueue.push({ troopType: type, count: count, startedAt: startAt, finishAt: startAt + dur * 1000, duration: dur });
     log("Healing " + count + " " + TROOP_DEFS[type].name + " (" + Math.round(dur) + "s)");
@@ -11746,7 +11750,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1180"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1181"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

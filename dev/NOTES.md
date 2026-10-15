@@ -2030,3 +2030,9 @@
 - Harley: Infirmary out of Troops into its own tab. City tabs: Buildings / Troops / Formations / 🏥 Infirmary / Research. Troops = training only.
 - 5 tabs: on one line when the screen is wider than 410 px; on narrower phones (most iPhones, 375-390) the icon sits above the label so nothing is cut off.
 - g301 now checks all three tabs + that the 5 tab labels aren't cut (430 wide; also checked 375 wide by hand). g221 dev tools tabs still pass. Not checked on a phone.
+
+## v1181 - Kingshot base training times (TEST)
+- Harley: compared our troop training times with Kingshot (kingshotlab.com database, from kingshotcalculator.net; his screenshot of 300 Tier VI archers = 5:00:00 matches) and asked to adjust our base times only.
+- Base seconds per troop, same for Infantry / Archer / Cavalry: T1 12, T2 17, T3 24, T4 32, T5 44, T6-T8 60, T9-T10 120 (was 8/10/14 s at T1 by type, +19% per tier: T10 38/48/67 s). TROOP_TIER_TRAIN_SEC.
+- Not changed: the building-level speed bonus (+5% per level here vs Kingshot's 0.3-8%), research/other training bonuses, batch sizes, costs. Infirmary healing keeps its old times (healTime = the old train time).
+- Lord Rush: no published per-tier table found. Other sites disagreed (one "estimates" page, one saying T10 = 600 s) - the kingshotlab table is the one that matches Harley's screenshot.
