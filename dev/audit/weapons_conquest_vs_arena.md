@@ -8,7 +8,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 **Harley (15 Oct): some of these differences are intentional.** He is going through this list and will say which get fixed. Confirmed bug: Duplicate - FIXED v1186 (Laser, missiles and Hex Shield copied in Conquest too). Don't touch the rest until he marks them.
 
 ## Every weapon
-- Cannon Doctrine card (+70% on Fortress I) boosts weapons in Arena (31312) but not in Conquest (only cannon 8686 + heroes 8895).
+- Cannon Doctrine card (+70% on Fortress I) boosts weapons in Arena (31312) but not in Conquest (only cannon 8686 + heroes 8895). **FIXED v1189: Conquest weapons get it too (Laser/beam, missiles, Railgun hit, Droid, clone blast).**
 - Arena weapons only ever hit the fortress (toAi 31311-31324), never heroes - only hero attacks hit heroes.
 - Conquest weapon cooldowns carry over between level attempts (never reset); Arena starts every battle at a full cooldown (30827).
 - Conquest holds fire (but spends the cooldown) when no enemy has arrived (8214); Arena always fires.

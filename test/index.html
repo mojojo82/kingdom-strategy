@@ -7637,7 +7637,7 @@ function createGame(opts) {
   function idleCloneFall(k) {
     var cl = state.idle.clones && state.idle.clones[k]; if (!cl) return;
     cl.hp = 0; state.idle.cloneFalls = (state.idle.cloneFalls || 0) + 1;
-    if (cl.boom > 0) { var en = state.idle.enemies[0]; if (en && en.arrived && en.hp > 0) { en.hp -= en.maxHp * cl.boom / 100; if (en.hp <= 0) idleRemoveDeadEnemyAt(0); } }
+    if (cl.boom > 0) { var en = state.idle.enemies[0]; if (en && en.arrived && en.hp > 0) { en.hp -= en.maxHp * cl.boom / 100 * cardT1ArmyMul(state); /* v1189: Cannon Doctrine */ if (en.hp <= 0) idleRemoveDeadEnemyAt(0); } }
   }
   // Even, RNG-free spread: hit number n of an enemy goes to the hero when floor((n+1)*p) > floor(n*p) — e.g. 50% = every other hit, 100% = all of them.
   function idleRangedHitGoesToHero(e) { var pc = HERO_KO_CFG.rangedPct / 100, n = e.hitCount || 0; return pc > 0 && Math.floor((n + 1) * pc + 1e-9) > Math.floor(n * pc + 1e-9); }
@@ -8229,7 +8229,7 @@ function createGame(opts) {
         // processIdleCombat (see the laserBeams block there).
         state.idle.weaponShotSeq = (state.idle.weaponShotSeq || 0) + 1;
         if (!state.idle.laserBeams) state.idle.laserBeams = [];
-        var beamTotal = weaponDmgFor(wdef) * run.mag;
+        var beamTotal = weaponDmgFor(wdef) * run.mag * cardT1ArmyMul(state); /* v1189: Cannon Doctrine boosts weapons too, as in Arena */
         state.idle.laserBeams.push({ id: state.idle.weaponShotSeq, wid: wid, elapsed: 0, dur: wstats.beamSec, dps: beamTotal / wstats.beamSec, targetId: null });
         state.idle.weaponFireCounts[wid] = (state.idle.weaponFireCounts[wid] || 0) + 1;
         return;
@@ -8253,7 +8253,7 @@ function createGame(opts) {
       // launches i*IDLE_WEAPON_MISSILE_STAGGER after the first (shot.delay,
       // consumed in processIdleCombat), matching the visual stagger.
       var thisShotIds = [];
-      var perMissileDmg = weaponDmgFor(wdef) * run.mag;
+      var perMissileDmg = weaponDmgFor(wdef) * run.mag * cardT1ArmyMul(state); /* v1189: Cannon Doctrine, as in Arena */
       for (var mi = 0; mi < wstats.count; mi++) {
         state.idle.weaponShotSeq = (state.idle.weaponShotSeq || 0) + 1;
         thisShotIds.push(state.idle.weaponShotSeq);
@@ -8845,7 +8845,7 @@ function createGame(opts) {
         if (T.t <= 0) {
           if (!anyArrived) { T.t = 0; return; }
           var railHits = []; /* v918: logged so the rail shot is drawn (it used to hit with nothing on screen) */
-          for (var ri = enemies.length - 1; ri >= 0; ri--) { var en = enemies[ri]; if (!en.arrived || en.hp <= 0) continue; var rd = en.maxHp * (P.fortPct || 0) / 100 * o.mag; en.hp -= rd; railHits.push({ id: en.id, dmg: rd }); if (en.hp <= 0) idleRemoveDeadEnemyAt(ri); }
+          for (var ri = enemies.length - 1; ri >= 0; ri--) { var en = enemies[ri]; if (!en.arrived || en.hp <= 0) continue; var rd = en.maxHp * (P.fortPct || 0) / 100 * o.mag * cardT1ArmyMul(state); /* v1189: Cannon Doctrine */ en.hp -= rd; railHits.push({ id: en.id, dmg: rd }); if (en.hp <= 0) idleRemoveDeadEnemyAt(ri); }
           idleFxShot({ kind: "rail", hits: railHits });
           T.t += cd; T.tot = cd;
           if (equippedSummonCall(state)) list.forEach(function (q) { if (q.fx === "clone" && I.fxT[q.key]) I.fxT[q.key].t = 0; }); /* v974: Drop Signal - a fallen clone comes straight back */
@@ -8853,7 +8853,7 @@ function createGame(opts) {
       } else if (o.fx === "drone") {
         var nr = 0; state.conquestRoster.forEach(function (key) { var d = HERO_DEFS[key], h = state.heroes[key]; if (h && h.owned && d && d.class !== "infantry") nr++; });
         if (!nr) return;
-        var dps = idleRangedPower() / nr * (P.pct || 0) / 100 * o.mag, bi = -1, bd = Infinity;
+        var dps = idleRangedPower() / nr * (P.pct || 0) / 100 * o.mag * cardT1ArmyMul(state), /* v1189: Cannon Doctrine */ bi = -1, bd = Infinity;
         for (var di = 0; di < enemies.length; di++) { if (!enemies[di].arrived || enemies[di].hp <= 0) continue; var dd = idleEnemyDistFrac(enemies[di]); if (dd < bd) { bd = dd; bi = di; } }
         if (bi >= 0) { var tgt = enemies[bi], dd2 = dps * dt * (P.pierce ? 1 : idleEnemyDefTake(tgt, dps)); tgt.hp -= dd2;
           /* v918: the drone's steady fire is drawn as a bolt every 0.35 s carrying what it dealt since the last one (it used to deal damage with nothing on screen) */
@@ -11797,7 +11797,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1188"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1189"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

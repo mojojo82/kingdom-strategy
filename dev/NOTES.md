@@ -2080,3 +2080,8 @@
 - Harley: audit item 2 (Railgun KO / droneOff / cloneDelay only in Arena) stays as is - intended.
 - "Summon link" text now pink (#ff7ad9, bold) so it stands out; it may be referenced elsewhere later. kwHtml() wraps the keyword; used in the Weapon Info popup and the weapons list (list now escapes then colours).
 - dev/simfork/g308_summon_link_pink.js (plain before, pink after, both spots). Not checked on a phone.
+
+## v1189 - Cannon Doctrine boosts weapons in Conquest too (TEST)
+- Harley (audit item 4): make it work like Arena (there it boosts everything your side deals on Fortress I). Conquest already boosted heroes, clones and the cannon; now also Laser/beam, missiles, the Railgun hit, Droid Call shots and the Clone Task self-destruct (cardT1ArmyMul at each).
+- Before the fix, sim dev/balance/cannon_doctrine.js (maxed F1 player, no Hanzo, 48 game h): no card 20-5 (ch20 at 29.4 h), card 22-3 (ch20 at 7.8 h), card + weapons 21-17 (ch20 at 7.0 h) - weapons barely matter, kept in case something later works with it.
+- dev/simfork/g309_doctrine_weapons.js: missiles and Railgun x1.70 with the card on Fortress I, x1.00 on Fortress III (old build: x1.00). Meta check: same pre-existing warning, same numbers (Arena untouched). Not checked on a phone.

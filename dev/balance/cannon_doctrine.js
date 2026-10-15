@@ -2,6 +2,7 @@
    (a) without the card, (b) with Cannon Doctrine as it is now (heroes + cannon get +70%, weapons don't), (c) with the card also boosting weapons
    (what fixing item 4 would do - injected into this sim's copy only, the game is untouched).
    Maxed = 5 heroes Lv80, full stars, skills 5; all research + Fortress I tree maxed; all weapons Lv50, Missiles + Laser + Railgun; cannon on. No gear.
+   v1189: the fix is in the game now (weapons get the card in Conquest), so run (c) was dropped - (b) is the fixed game.
    node dev/balance/cannon_doctrine.js [hours=24]  (game hours of Conquest per run; stops early when no new level for 3 h) */
 const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "../.."), HOURS = +process.argv[2] || 24;
@@ -9,9 +10,6 @@ const ROOT = path.join(__dirname, "../.."), HOURS = +process.argv[2] || 24;
   const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
   const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
   let GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
-  const A = "function weaponDmgFor(wdef) { return Math.round(BASE_ATK * heroBonusMult(\"atk\") * weaponLevelStats(wdef).dmgPct / 100); }";
-  if (GAME.split(A).length !== 2) throw new Error("weaponDmgFor hook not found");
-  GAME = GAME.replace(A, A.replace("/ 100); }", "/ 100 * (window.__CD_WEAP ? cardT1ArmyMul(state) : 1)); }"));
   const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
   const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
@@ -26,7 +24,7 @@ const ROOT = path.join(__dirname, "../.."), HOURS = +process.argv[2] || 24;
   await P.fill("#ksE", "cd" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 20000 }); await P.fill("#ksN", "CD"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => setScreen("city"));
-  const runs = [["no card", false, false], ["Cannon Doctrine (now)", true, false], ["Cannon Doctrine + weapons boosted (the fix)", true, true]], out = [];
+  const runs = [["no card", false, false], ["Cannon Doctrine (now)", true, false]], out = [];
   for (const [name, card, weap] of runs) {
     const r = await P.evaluate(([card, weap, HOURS]) => {
       window.__CD_WEAP = weap; let t = Date.UTC(2026, 0, 5); const t0 = t;
