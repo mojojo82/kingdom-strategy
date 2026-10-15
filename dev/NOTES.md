@@ -1993,3 +1993,10 @@
 - Harley (15 Oct, after seeing v1174 on his phone): "I like it" - the Dark Knight goes ahead; he keeps making animations for him (video route, not the 3D version).
 - Dark knight extras: point/cast gesture saved (dark_knight_point_hailuo.mp4). Jump attacks: made in place from dark_knight_jump_start_16x9_green.png, the game carries him toward the heroes mid-air.
 - Tip for later (Harley's idea): ChatGPT-made key poses look better than poses the video AI invents (stronger silhouette). Option per move: ChatGPT key pose -> Leonardo Standard clip standing -> key pose, and the game plays it backwards for the return. Not doing it now.
+
+## v1175 - Speedup refunds + 5 min / 1 min speedups (TEST)
+- Harley (Kingshot screenshot): using a speedup on less time than it's worth must give the unused part back as 1 min and 5 min speedups.
+- New speedups: construction_5m / construction_1m / general_5m / general_1m (same rules as the 1h ones: construction = building upgrades only, general = anything). Saved like the old ones (state.speedups, server save path already allows any key).
+- useSpeedup works out the time left before using it (build: the upgrade; train: the end of that building's queue; research: the research) and refunds the spare as 5 min + 1 min speedups of the same type. A 5 min speedup refunds in 1 min speedups; under a minute is lost. E.g. 1h on 5 min left -> 11x 5 min back (10x 5 min + 4x 1 min if 5 min 2 s left).
+- Timer speedup buttons show every speedup you own that fits (🔨/⏩ −1h, −5m, −1m); a small message says what came back. Backpack: tiles have a time label and Kingshot colours (1 min grey, 5 min green, 1h blue); the resource overview lists 5/1 min ones when you have some.
+- dev/simfork/g297_speedup_refund.js (+ g238 backpack, g266 training still pass). Not checked on a phone.

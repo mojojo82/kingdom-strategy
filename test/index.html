@@ -6735,8 +6735,10 @@ function createGame(opts) {
     return { ok: true, finishAt: b.upgrading.finishAt };
   }
   /* v946: speedup items. kind = "construction_1h" (building upgrades only) or "general_1h" (anything). what = "build" | "train" | "research". Each takes 1 hour off. */
-  var SPEEDUP_SEC = { construction_1h: 3600, general_1h: 3600 };
-  function speedupTargets(kind, what) { return kind === "general_1h" || (kind === "construction_1h" && what === "build"); }
+  /* v1175 (Harley): + 5 min and 1 min speedups. Using a speedup on less time than it's worth refunds the unused part as 5 min + 1 min speedups of the same type (under a minute is lost). */
+  var SPEEDUP_SEC = { construction_1h: 3600, construction_5m: 300, construction_1m: 60, general_1h: 3600, general_5m: 300, general_1m: 60 };
+  function speedupFamily(kind) { return String(kind).split("_")[0]; }
+  function speedupTargets(kind, what) { var f = speedupFamily(kind); return !!SPEEDUP_SEC[kind] && (f === "general" || (f === "construction" && what === "build")); }
   /* v1024: open / use backpack items. n = how many; choice = a resource for Custom chests. Returns { ok, got: { res: amount } } */
   function itemRoll() { var tot = 0, r, x; for (r in SUPPLY_ODDS) tot += SUPPLY_ODDS[r]; x = Math.random() * tot; for (r in SUPPLY_ODDS) { if (x < SUPPLY_ODDS[r]) return r; x -= SUPPLY_ODDS[r]; } return "food"; }
   function useItem(id, n, choice) {
@@ -6754,14 +6756,20 @@ function createGame(opts) {
   function useSpeedup(kind, what, key) {
     if (!SPEEDUP_SEC[kind] || !speedupTargets(kind, what)) return { ok: false, reason: "wrong_kind" };
     if (!((state.speedups || {})[kind] > 0)) return { ok: false, reason: "none_left" };
-    var ms = SPEEDUP_SEC[kind] * 1000;
-    if (what === "build") { var b = state.buildings[key]; if (!b || !b.upgrading) return { ok: false, reason: "nothing_running" }; b.upgrading.finishAt -= ms; }
-    else if (what === "train") { var tb = state.buildings[key]; if (!tb || !tb.queue || !tb.queue.length) return { ok: false, reason: "nothing_running" }; tb.queue.forEach(function (q, i) { q.finishAt -= ms; if (i) q.startedAt -= ms; }); }
-    else if (what === "research") { if (!state.researchQueue) return { ok: false, reason: "nothing_running" }; state.researchQueue.finishAt -= ms; }
+    var ms = SPEEDUP_SEC[kind] * 1000, left;
+    if (what === "build") { var b = state.buildings[key]; if (!b || !b.upgrading) return { ok: false, reason: "nothing_running" }; left = b.upgrading.finishAt - now(); b.upgrading.finishAt -= ms; }
+    else if (what === "train") { var tb = state.buildings[key]; if (!tb || !tb.queue || !tb.queue.length) return { ok: false, reason: "nothing_running" }; left = tb.queue[tb.queue.length - 1].finishAt - now(); tb.queue.forEach(function (q, i) { q.finishAt -= ms; if (i) q.startedAt -= ms; }); }
+    else if (what === "research") { if (!state.researchQueue) return { ok: false, reason: "nothing_running" }; left = state.researchQueue.finishAt - now(); state.researchQueue.finishAt -= ms; }
     else return { ok: false, reason: "bad_target" };
-    state.speedups[kind]--; log("⏩ Used a 1h speedup (" + (kind === "general_1h" ? "general" : "construction") + ").");
-    tick(); return { ok: true };
+    state.speedups[kind]--;
+    var fam = speedupFamily(kind), spare = Math.max(0, Math.floor((ms - Math.max(0, left)) / 1000)), refund = {};
+    var n5 = SPEEDUP_SEC[kind] > 300 ? Math.floor(spare / 300) : 0, n1 = SPEEDUP_SEC[kind] > 60 ? Math.floor((spare - n5 * 300) / 60) : 0;
+    if (n5) refund[fam + "_5m"] = n5; if (n1) refund[fam + "_1m"] = n1;
+    Object.keys(refund).forEach(function (k) { state.speedups[k] = (state.speedups[k] || 0) + refund[k]; });
+    log("⏩ Used a " + speedupLabel(kind) + " speedup (" + fam + ")." + (Object.keys(refund).length ? " Unused time back: " + Object.keys(refund).map(function (k) { return refund[k] + "× " + speedupLabel(k); }).join(" + ") + "." : ""));
+    tick(); return { ok: true, refund: refund };
   }
+  function speedupLabel(kind) { var t = SPEEDUP_SEC[kind] || 0; return t >= 3600 ? (t / 3600) + "h" : (t / 60) + " min"; }
   function instantFinish(key) {
     var b = state.buildings[key];
     if (b && b.upgrading) b.upgrading.finishAt = now();
@@ -9724,7 +9732,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { state: state, tick: tick, useSpeedup: useSpeedup, speedupTargets: speedupTargets, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { state: state, tick: tick, useSpeedup: useSpeedup, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -11706,7 +11714,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1174"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1175"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12318,16 +12326,20 @@ function renderResources() {
 }
 // Phones show a single resources button in the top bar; tapping it opens this small popup with every resource.
 /* v946: little "-1h" buttons for speedup items on a running timer */
+var SU_KINDS = [["construction_1h", "🔨"], ["construction_5m", "🔨"], ["construction_1m", "🔨"], ["general_1h", "⏩"], ["general_5m", "⏩"], ["general_1m", "⏩"]]; /* v1175 */
+function suShort(kind) { var t = game.SPEEDUP_SEC[kind] || 0; return t >= 3600 ? (t / 3600) + "h" : (t / 60) + "m"; }
 function speedupBtnsHtml(what, key) {
   var su = game.state.speedups || {}, out = "";
-  [["construction_1h", "🔨"], ["general_1h", "⏩"]].forEach(function (k) { if (su[k[0]] > 0 && game.speedupTargets(k[0], what)) out += '<button type="button" class="su-btn" data-su="' + k[0] + '" data-suw="' + what + '" data-suk="' + (key || "") + '" title="Use a 1h ' + (k[0] === "general_1h" ? "speedup" : "construction speedup") + '">' + k[1] + " −1h ×" + su[k[0]] + "</button>"; });
+  SU_KINDS.forEach(function (k) { if (su[k[0]] > 0 && game.speedupTargets(k[0], what)) out += '<button type="button" class="su-btn" data-su="' + k[0] + '" data-suw="' + what + '" data-suk="' + (key || "") + '" title="Use a ' + game.speedupLabel(k[0]) + (k[0].indexOf("general") === 0 ? " speedup" : " construction speedup") + '">' + k[1] + " −" + suShort(k[0]) + " ×" + su[k[0]] + "</button>"; });
   return out ? '<div class="su-row">' + out + "</div>" : "";
 }
 document.addEventListener("click", function (e) {
   var b = e.target && e.target.closest ? e.target.closest("[data-su]") : null; if (!b) return;
   e.preventDefault(); e.stopPropagation();
   var r = game.useSpeedup(b.getAttribute("data-su"), b.getAttribute("data-suw"), b.getAttribute("data-suk") || null);
-  if (r.ok) { persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (er) {} } render();
+  if (r.ok) { persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (er) {}
+    var rk = Object.keys(r.refund || {}); if (rk.length) miniToast("⏩ Unused time back: " + rk.map(function (k) { return r.refund[k] + "× " + game.speedupLabel(k); }).join(" + ")); } /* v1175 */
+  render();
   try { bagRender(); } catch (er) {} /* v1024: the Backpack shows the new count straight away */
 }, true);
 function renderResOverlay() {
@@ -12340,6 +12352,7 @@ function renderResOverlay() {
   rows.push({ icon: ico("gems"), bg: "linear-gradient(145deg,#6fe0ff,#1b7fc4)", name: "Gems", val: game.state.gems || 0 });
   rows.push({ icon: "🔨", bg: "linear-gradient(145deg,#f0c95f,#8a6a1f)", name: "1h Construction speedup", val: (game.state.speedups || {}).construction_1h || 0 }); /* v946 */
   rows.push({ icon: "⏩", bg: "linear-gradient(145deg,#7cd0ff,#2b6aa3)", name: "1h Speedup", val: (game.state.speedups || {}).general_1h || 0 });
+  ["construction_5m", "construction_1m", "general_5m", "general_1m"].forEach(function (k) { var v = (game.state.speedups || {})[k] || 0; if (v > 0) rows.push({ icon: k.indexOf("general") === 0 ? "⏩" : "🔨", bg: k.indexOf("general") === 0 ? "linear-gradient(145deg,#9fe08a,#3f7f2b)" : "linear-gradient(145deg,#9fe08a,#3f7f2b)", name: game.speedupLabel(k) + (k.indexOf("general") === 0 ? " Speedup" : " Construction speedup"), val: v }); }); /* v1175 */
   document.getElementById("resOverlayList").innerHTML = rows.map(function (r) {
     return '<div class="res-row"><span class="icon" style="background:' + r.bg + ';">' + r.icon + '</span><span class="nm">' + r.name + '</span><span class="amt" title="' + Math.floor(r.val).toLocaleString() + '">' + fmt(r.val) + '</span></div>';
   }).join("");
@@ -28292,12 +28305,16 @@ function bagSpeedUse(kind) { /* the timers this speedup can shorten, each with i
   Object.keys(st.buildings).forEach(function (k) { var b = st.buildings[k]; if (b.upgrading && game.speedupTargets(kind, "build")) out += bagTarget("🔨 " + BUILDING_DEFS[k].name + " → Lv " + b.upgrading.toLevel, b.upgrading.finishAt, kind, "build", k);
     if (b.queue && b.queue.length && game.speedupTargets(kind, "train")) out += bagTarget("⚔️ Training at " + BUILDING_DEFS[k].name, b.queue[b.queue.length - 1].finishAt, kind, "train", k); });
   if (st.researchQueue && game.speedupTargets(kind, "research")) out += bagTarget("🔬 " + (researchQueueDef(st.researchQueue) || { name: "Research" }).name + " Lv " + st.researchQueue.toLevel, st.researchQueue.finishAt, kind, "research", "");
-  return out || '<div style="opacity:.8;margin-top:6px">Nothing ' + (kind === "construction_1h" ? "is being built" : "is running") + ' right now.</div>';
+  return out || '<div style="opacity:.8;margin-top:6px">Nothing ' + (kind.indexOf("construction") === 0 ? "is being built" : "is running") + ' right now.</div>';
 }
-function bagTarget(label, finishAt, kind, what, key) { return '<div class="bg-tg"><span>' + label + '<br><small style="opacity:.75" data-bfin="' + finishAt + '">' + fmtTime(Math.max(0, (finishAt - vnow()) / 1000)) + ' left</small></span><button type="button" class="su-btn" data-su="' + kind + '" data-suw="' + what + '" data-suk="' + key + '">−1h</button></div>'; }
+function bagTarget(label, finishAt, kind, what, key) { return '<div class="bg-tg"><span>' + label + '<br><small style="opacity:.75" data-bfin="' + finishAt + '">' + fmtTime(Math.max(0, (finishAt - vnow()) / 1000)) + ' left</small></span><button type="button" class="su-btn" data-su="' + kind + '" data-suw="' + what + '" data-suk="' + key + '">−' + suShort(kind) + '</button></div>'; }
 var BAG_ITEMS = [
-  { id: "su_con", cat: "speed", icon: '<span style="font-size:24px">🔨</span>', name: "1h Construction speedup", count: function () { return (game.state.speedups || {}).construction_1h || 0; }, desc: "Takes 1 hour off a building upgrade.", use: function () { return bagSpeedUse("construction_1h"); } },
-  { id: "su_gen", cat: "speed", icon: '<span style="font-size:24px">⏩</span>', name: "1h Speedup", count: function () { return (game.state.speedups || {}).general_1h || 0; }, desc: "Takes 1 hour off anything: building, training or research.", use: function () { return bagSpeedUse("general_1h"); } },
+  { id: "su_con", cat: "speed", top: "1h", rar: 2, icon: '<span style="font-size:24px">🔨</span>', name: "1h Construction speedup", count: function () { return (game.state.speedups || {}).construction_1h || 0; }, desc: "Takes 1 hour off a building upgrade.", use: function () { return bagSpeedUse("construction_1h"); } },
+  { id: "su_con5", cat: "speed", top: "5 min", rar: 1, icon: '<span style="font-size:24px">🔨</span>', name: "5 min Construction speedup", count: function () { return (game.state.speedups || {}).construction_5m || 0; }, desc: "Takes 5 minutes off a building upgrade.", use: function () { return bagSpeedUse("construction_5m"); } }, /* v1175 */
+  { id: "su_con1", cat: "speed", top: "1 min", rar: 0, icon: '<span style="font-size:24px">🔨</span>', name: "1 min Construction speedup", count: function () { return (game.state.speedups || {}).construction_1m || 0; }, desc: "Takes 1 minute off a building upgrade.", use: function () { return bagSpeedUse("construction_1m"); } },
+  { id: "su_gen5", cat: "speed", top: "5 min", rar: 1, icon: '<span style="font-size:24px">⏩</span>', name: "5 min Speedup", count: function () { return (game.state.speedups || {}).general_5m || 0; }, desc: "Takes 5 minutes off anything: building, training or research.", use: function () { return bagSpeedUse("general_5m"); } },
+  { id: "su_gen1", cat: "speed", top: "1 min", rar: 0, icon: '<span style="font-size:24px">⏩</span>', name: "1 min Speedup", count: function () { return (game.state.speedups || {}).general_1m || 0; }, desc: "Takes 1 minute off anything: building, training or research.", use: function () { return bagSpeedUse("general_1m"); } },
+  { id: "su_gen", cat: "speed", top: "1h", rar: 2, icon: '<span style="font-size:24px">⏩</span>', name: "1h Speedup", count: function () { return (game.state.speedups || {}).general_1h || 0; }, desc: "Takes 1 hour off anything: building, training or research.", use: function () { return bagSpeedUse("general_1h"); } },
   { id: "tickets", cat: "items", icon: function () { return ico("ticket"); }, name: "Weapon draw ticket", count: function () { return game.state.weaponTickets || 0; }, desc: "One draw in the Weapon Draw.", go: function () { setScreen("more", "weapons"); } },
   { id: "books", cat: "items", icon: function () { return ico("books"); }, name: "Conquest Books", count: function () { return (game.state.idle && game.state.idle.conquestBooks) || 0; }, desc: "Levels up your heroes' skills.", go: function () { setScreen("heroes"); } }
 ];
