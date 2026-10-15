@@ -30,7 +30,7 @@ Found by reading the code (line numbers = test/index.html at v1185). Nothing fix
 
 ## EMP Gun
 - Lv 50 Aftershock (second stun) only exists in Arena (31105); Conquest ignores it (8870).
-- Conquest stuns stack (adds time, 8870); Arena doesn't stack (31092).
+- Conquest stuns stack (adds time, 8870); Arena doesn't stack (31092). **KEEP AS IS (Harley, 16 Oct - EMP is mainly an Arena weapon; only matters with Duplicate copying EMP).**
 - Arena: EMP also resets enemy weapon reloads, cancels beams, Wall and repair (31107-31110).
 
 ## Droid Call
