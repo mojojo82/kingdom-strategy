@@ -11920,7 +11920,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1213"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1214"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18207,6 +18207,7 @@ function nearBasesSave() {
 function startCitySync() {
   if (citySyncStarted || !cloudDb) return;
   citySyncStarted = true;
+  try { ksCheckMyCity(); } catch (e) {} /* v1214 */
   try { startSkinAlignSync(); } catch (e) {}
   try { startMapIsoSync(); } catch (e) {}
   if (patchMode()) { startPatchSync(); return; } /* v1081: bases by map patch */
@@ -18688,6 +18689,30 @@ var tpPending = null; /* v1206: { from, to } while the server is moving my city 
    the city still moves on screen at once. If a move is refused, the queued ones are dropped and the city goes back to the last spot the server
    agreed to (tpConfirmed). */
 var tpQueue = Promise.resolve(), tpCount = 0, tpGen = 0, tpConfirmed = null;
+/* v1214 (Harley, still "That isn't your city." on v1213): the game's idea of where my city is can be out of step with the server's (v1212's
+   revert could leave it like that: two quick teleports, the first refused). Then EVERY teleport is refused. Fix: ask the server where my city
+   really is (cities owned by me) - on load, and when a teleport is refused with not_your_city (then the teleport is tried again from there). */
+function ksMyServerCities() {
+  if (!cloudDb || !PLAYER_ID) return Promise.resolve([]);
+  return cloudDb.collection(serverPrefix() + "cities").where("owner", "==", PLAYER_ID).get().then(function (q) {
+    var out = []; q.docs.forEach(function (d) { if (d.exists && d.data() && d.data().owner === PLAYER_ID) out.push(docIdToTileId(d.id)); }); return out;
+  }, function () { return []; });
+}
+function ksAdoptHome(tileId) { /* put my city where the server has it */
+  var cur = game.state.homeTileId; if (!tileId || tileId === cur) return false;
+  if (cur && occupiedTileIds[cur] === PLAYER_ID) delete occupiedTileIds[cur];
+  if (cur) { if (citySkinByTile[cur] && !citySkinByTile[tileId]) citySkinByTile[tileId] = citySkinByTile[cur]; delete citySkinByTile[cur]; delete cityHp[cur]; }
+  occupiedTileIds[tileId] = PLAYER_ID; game.setHomeTile(tileId); persist();
+  try { render(); } catch (e) {}
+  return true;
+}
+function ksCheckMyCity() { /* -> Promise<true if my city was moved to the server's spot> */
+  if (!ksFb() || !game.state.homeTileId || tpCount > 0) return Promise.resolve(false);
+  return ksMyServerCities().then(function (list) {
+    if (!list.length || list.indexOf(game.state.homeTileId) >= 0 || tpCount > 0) return false;
+    return ksAdoptHome(list[0]);
+  });
+}
 function teleportTo(tileId) {
   if ((game.state.marches || []).length) return Promise.resolve({ ok: false, reason: "marches_out" }); /* v860: no moving the city while a march is still out (it would come home to the new spot) */
   var oldTileId = game.state.homeTileId;
@@ -18707,7 +18732,11 @@ function teleportTo(tileId) {
     var gen = tpGen; tpCount++;
     tpQueue = tpQueue.then(function () {
       if (gen !== tpGen) return; /* an earlier move was refused - this one is dropped */
-      return KS_BACKEND.call("relocateCity", { from: oldTileId, to: tileId }).then(function () { tpConfirmed = tileId; }, function (e) {
+      var send = function (from) { return KS_BACKEND.call("relocateCity", { from: from, to: tileId }); };
+      return send(oldTileId).catch(function (e) { /* v1214: the server has my city somewhere else - move from there instead */
+        if (!e || e.message !== "not_your_city") throw e;
+        return ksMyServerCities().then(function (list) { var real = list.filter(function (t) { return t !== tileId; })[0]; if (!real) throw e; tpConfirmed = real; return send(real); });
+      }).then(function () { tpConfirmed = tileId; }, function (e) {
         tpGen++;
         var back = tpConfirmed || oldTileId, cur = game.state.homeTileId;
         if (cur !== back) moveLocal(cur, back);
