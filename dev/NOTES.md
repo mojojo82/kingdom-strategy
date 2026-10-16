@@ -2150,3 +2150,8 @@
 ## v1201 - Worn equipment adds power (TEST)
 - Harley: High Seas Hero's 10 equipped top-tier pieces (~Lv150, luck-based levels) = 11.8M. Ours has no levels but rolled stats, so powerFromEquipment() = sum over worn slots of 36,000 x (atk + hp + def + bonus lines %). Average Legendary (8 + 8 + 4.8 + 6 + 6 = 32.8%) = 1,180,800; perfect rolls ~1.42M; average Common ~94K.
 - dev/simfork/g321_equipment_power.js (bag 0, one Legendary 1,180,800, full set 11,808,000). g195, g319, g320 pass. Not checked on a phone.
+
+## v1202 - Power Details popup (TEST)
+- Harley: like High Seas Hero, tapping your power shows what goes into it. powerBreakdown() in the engine (buildings, research, fortress + type, heroes, troops, weapons, equipment, sword); governorPower() now sums it (same numbers as before).
+- openPowerDetails(): bronze Weapon Info card (wi-card), groups City / Army / Arsenal with totals and % of power; note that wounded troops come back once healed and cards / Espers add nothing. Opens from the top-bar power and the Governor Profile power line.
+- dev/simfork/g322_power_details.js (parts sum to total; both taps open it; 8 lines). Screenshot checked at 430 px. Not checked on a phone.

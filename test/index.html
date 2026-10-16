@@ -1409,6 +1409,16 @@
   .wi-top { display:flex; align-items:center; justify-content:center; position:relative; padding:12px 44px; background:linear-gradient(180deg,#4a3b24,#2f2616); border-bottom:2px solid #b3985f; border-radius:12px 12px 0 0; font-size:18px; font-weight:800; color:#f0c95f; text-shadow:0 1px 0 #17130f; }
   .wi-close { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:36px; height:34px; padding:0; border-radius:8px; border:1.5px solid #b3985f; background:#2c4a5e; color:#f2ece0; font-size:16px; cursor:pointer; box-shadow:inset 0 0 0 2px #2c4a5e, inset 0 0 0 3px #5f86a0; } /* same as the Hero Detail close button */
   .wi-close:hover { background:#34566d; }
+  /* v1202: Power Details popup (tap your power) - same bronze card as Weapon Info */
+  #powerBadge, #govProfileOverlay .gp-stat.power { cursor:pointer; }
+  .pd-total { display:flex; align-items:center; justify-content:center; gap:6px; padding:12px 10px 4px; font-size:22px; font-weight:800; color:#f0c95f; text-shadow:0 0 6px #f0c95f55; }
+  .pd-grp { margin:10px 10px 0; border:1.5px solid #6b5a3a; border-radius:10px; overflow:hidden; background:#1a140e; }
+  .pd-head { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:linear-gradient(180deg,#4a3b24,#2f2616); color:#f2ece0; font-weight:800; font-size:15px; }
+  .pd-head b { color:#f0c95f; }
+  .pd-row { display:flex; justify-content:space-between; gap:10px; padding:7px 12px; border-top:1px dashed #3d3324; color:#e6dcc4; font-size:13.5px; }
+  .pd-row span:last-child { font-weight:700; color:#f2ece0; white-space:nowrap; }
+  .pd-row .pd-pct { color:#9a8c70; font-weight:600; margin-left:6px; font-size:12px; }
+  .pd-note { padding:10px 14px 14px; color:#9a8c70; font-size:11.5px; line-height:1.35; }
   .wi-body { padding:12px; display:flex; flex-direction:column; gap:10px; }
   .wi-hero { display:flex; gap:12px; align-items:center; padding:10px; border-radius:10px; background:radial-gradient(circle at 25% 40%,#4b3d28 0%,#241b12 75%); border:1px solid #6b5730; position:relative; }
   .wi-ico { flex:none; width:76px; height:76px; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:38px; background:#17110b; border:2px solid #b3985f; box-shadow:inset 0 0 0 2px #241b12; }
@@ -2742,7 +2752,7 @@
       <div id="avatarEditBadge">✎</div>
     </div>
     <h1>⚔️ Kingdom Strategy Prototype</h1>
-    <div id="powerBadge" title="Overlord Power: a combined snapshot of everything you've built, researched, trained, and leveled up. Cosmetic only — doesn't affect gameplay.">
+    <div id="powerBadge" role="button" tabindex="0" title="Power: tap to see where it comes from">
       <span class="power-label">Power</span>
       <span class="power-value"><i class="pw-ico" aria-hidden="true"></i> <span id="powerValue">0</span></span>
     </div>
@@ -9818,9 +9828,15 @@ function createGame(opts) {
     sl.forEach(function (pc) { if (!pc) return; var sum = (pc.atk || 0) + (pc.hp || 0) + (pc.def || 0); (pc.sec || []).forEach(function (l) { sum += l.v || 0; }); total += Math.round(sum * EQUIP_POWER_PER_PCT); });
     return total;
   }
-  function governorPower() {
-    var raw = powerFromBuildingsOld() + powerFromTech() + powerFromFortressTech() + powerFromHeroes();
-    return Math.round(raw * POWER_SCALE + powerFromBuildingsReal() + powerFromTroops() + powerFromWeapons() + powerFromSword() + powerFromEquipment()); /* v1201: worn equipment; v946: troops are already in real power units; v1199: weapons too; v1200: Sword of Power */
+  /* v1202 (Harley): where power comes from, for the Power Details popup. governorPower() is the sum of these (same maths as before). */
+  function powerBreakdown() {
+    return { buildings: powerFromBuildingsOld() * POWER_SCALE + powerFromBuildingsReal(), research: powerFromTech() * POWER_SCALE,
+      fortress: powerFromFortressTech() * POWER_SCALE, fortType: fortressTypeOf(state.fortressTech || {}), heroes: powerFromHeroes() * POWER_SCALE,
+      troops: powerFromTroops(), weapons: powerFromWeapons(), equipment: powerFromEquipment(), sword: powerFromSword() };
+  }
+  function governorPower() { /* v946: troops in real units; v1199 weapons; v1200 Sword of Power; v1201 worn equipment */
+    var b = powerBreakdown();
+    return Math.round(b.buildings + b.research + b.fortress + b.heroes + b.troops + b.weapons + b.equipment + b.sword);
   }
   // DEV-ONLY: what this account is "worth" in USD, using USD_VALUES. `held` = stockpiles
   // on hand; the rest is what has been invested (cost of everything built/trained/levelled).
@@ -9908,7 +9924,7 @@ function createGame(opts) {
     getIdleEase: function () { return IDLE_EASE; }, setIdleEase: function (o) { Object.keys(o || {}).forEach(function (k) { if (k in IDLE_EASE) IDLE_EASE[k] = o[k]; }); },
     saveFormation: saveFormation, setActiveFormation: setActiveFormation,
     toggleFormationHero: toggleFormationHero, clearFormationHeroes: clearFormationHeroes,
-    governorPower: governorPower, powerFromWeapons: powerFromWeapons, powerFromSword: powerFromSword, powerFromEquipment: powerFromEquipment, infirmaryCapacity: infirmaryCapacity, woundedTotal: woundedTotal, healingTotal: healingTotal, healWounded: healWounded, healCost: healCost, heroLeadMult: heroLeadMult, heroLeadLossReduction: heroLeadLossReduction };
+    governorPower: governorPower, powerBreakdown: powerBreakdown, powerFromWeapons: powerFromWeapons, powerFromSword: powerFromSword, powerFromEquipment: powerFromEquipment, infirmaryCapacity: infirmaryCapacity, woundedTotal: woundedTotal, healingTotal: healingTotal, healWounded: healWounded, healCost: healCost, heroLeadMult: heroLeadMult, heroLeadLossReduction: heroLeadLossReduction };
 }
 
 // ===================== UI LAYER =====================
@@ -11844,7 +11860,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1201"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1202"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12710,6 +12726,22 @@ function weaponMilestoneText(w) {
     out.push({ atLevel: m.atLevel, html: parts.join("<br>") });
   });
   return out;
+}
+/* v1202 (Harley): tap your power (top bar or Governor Profile) -> what goes into it, grouped like High Seas Hero's Power Details. */
+function openPowerDetails() {
+  var ov = document.getElementById("powerDetailsOverlay");
+  if (!ov) { ov = document.createElement("div"); ov.className = "hd-overlay"; ov.id = "powerDetailsOverlay"; ov.onclick = function (e) { if (e.target === ov) ov.style.display = "none"; }; document.body.appendChild(ov); }
+  var b = game.powerBreakdown(), tot = game.governorPower() || 1;
+  var row = function (label, v) { return '<div class="pd-row"><span>' + label + '</span><span>' + fmt(Math.round(v)) + '<span class="pd-pct">' + Math.round(100 * v / tot) + '%</span></span></div>'; };
+  var grp = function (name, rows) { var sum = rows.reduce(function (a, r) { return a + r[1]; }, 0); return '<div class="pd-grp"><div class="pd-head"><span>' + name + '</span><b>' + fmt(Math.round(sum)) + '</b></div>' + rows.map(function (r) { return row(r[0], r[1]); }).join("") + '</div>'; };
+  var h = '<div class="wi-card"><div class="wi-top">Power Details<button class="wi-close" id="pdClose" aria-label="Close">✕</button></div>';
+  h += '<div class="pd-total">' + POWER_ICON_HTML + ' ' + fmt(tot) + '</div>';
+  h += grp("🏰 City", [["Buildings", b.buildings], ["Research", b.research], ["Fortress research (Type " + (b.fortType === 3 ? "III" : "I") + ")", b.fortress]]);
+  h += grp("⚔️ Army", [["Heroes", b.heroes], ["Troops", b.troops]]);
+  h += grp("🛡️ Arsenal", [["Weapons (owned)", b.weapons], ["Equipment (worn)", b.equipment], ["Sword of Power", b.sword]]);
+  h += '<div class="pd-note">Wounded troops in the Infirmary count again once healed. Cards and Espers don\'t add power.</div></div>';
+  ov.innerHTML = h; ov.style.display = "flex";
+  document.getElementById("pdClose").onclick = function () { ov.style.display = "none"; };
 }
 function openWeaponInfo(id) {
   var ov = document.getElementById("weaponInfoOverlay");
@@ -27116,6 +27148,9 @@ function renderLog() {
   });
 }
 
+/* v1202: tapping your power (top bar or Governor Profile) opens Power Details */
+document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("#powerBadge, #govProfileOverlay .gp-stat.power"); if (t && typeof game !== "undefined" && game) openPowerDetails(); });
+document.addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && e.target && e.target.id === "powerBadge") { e.preventDefault(); openPowerDetails(); } });
 function renderPower() {
   document.getElementById("powerValue").textContent = fmt(game.governorPower());
 }
