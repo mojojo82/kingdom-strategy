@@ -494,6 +494,8 @@
 .tr-busy { font-size:12px; color:#f3e6c4; background:#241b12; border:1px solid #4a3b24; border-radius:8px; padding:7px 9px; }
 .tr-act { display:flex; gap:8px; align-items:stretch; }
 #troopsModeContent .tr-wrap button.tr-promo.tr-promo { margin:0; flex:0 0 34%; font-size:14px; padding:9px 4px; }
+#troopsModeContent .tr-wrap button.tr-promo.tr-promo { display:flex; flex-direction:column; align-items:center; line-height:1.2; } /* v1220 */
+#troopsModeContent .tr-wrap button.tr-promo #trPromoInfo { font-size:11.5px; font-weight:700; }
 #troopsModeContent .tr-wrap button.tr-promo.tr-promo.off { opacity:.45; filter:grayscale(.7); }
 #troopsModeContent .tr-wrap button.tr-train.tr-train { margin:0; width:100%; flex:1 1 auto; font-size:16px; padding:9px; display:flex; flex-direction:column; align-items:center; line-height:1.2; }
 .tr-train span { font-size:13px; font-weight:700; }
@@ -12040,7 +12042,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1219"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1220"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14993,8 +14995,7 @@ function renderTrainPanel(el) {
   TROOP_TYPES.forEach(function (ty) { var sum = 0; Object.keys(TROOP_DEFS).forEach(function (k) { if (troopBase(k) === ty) sum += st.troops[k] || 0; });
     var tbk = Object.keys(BUILDING_DEFS).find(function (k) { return BUILDING_DEFS[k].trains === ty; }), tbb = st.buildings[tbk], tq = tbb && tbb.queue && tbb.queue.length ? tbb.queue[tbb.queue.length - 1] : null; /* v1218: each type's own timer, so a batch running on another tab is visible */
     h += '<button type="button" class="tr-type' + (ty === type ? " on" : "") + '" data-trt="' + ty + '">' + TROOP_ICON[ty] + " " + TROOP_DEFS[ty].name + '<small>' + fmtCompact(sum) + '</small>' + (tq ? '<small class="tr-tq">' + (tbb.queue[0].promoteFrom ? "⬆ " : "⚙️ ") + trCd(tq.finishAt, "t") + '</small>' : '') + '</button>'; });
-  var pi = built ? game.promoteInfo(bk, tier, 0) : { ok: false, reason: "locked", unlockLevel: PROMOTE_UNLOCK_LEVEL }, promo = !!(troopPromoteMode[type] && pi.ok);
-  if (troopPromoteMode[type] && !pi.ok) troopPromoteMode[type] = false;
+  var pi = built ? game.promoteInfo(bk, tier, 0) : { ok: false, reason: "locked", unlockLevel: PROMOTE_UNLOCK_LEVEL }, promo = false; /* v1220 (Harley): promote is ONE tap - no promote mode any more */
   h += '</div><div class="tr-stage"><div class="tr-title">' + (promo ? "⬆ " + def.name + " → " + TROOP_DEFS[pi.toKey].name : def.name) + '</div><div class="tr-fig">' + TROOP_ICON[type] + '</div>' +
     '<div class="tr-stats">Atk ' + (Math.round(def.atk * 10) / 10) + ' · HP ' + Math.round(def.hp) + ' · Def ' + (Math.round(def.def * 10) / 10) + ' · Power ' + def.power + ' · Speed ' + def.speed + ' · counters ' + counterLabel + '</div></div><div class="tr-tiers">';
   for (var t = 1; t <= TROOP_MAX_TIER; t++) { var lock = t > maxTier;
@@ -15013,9 +15014,9 @@ function renderTrainPanel(el) {
         '<div class="progress"><div class="tr-pg" data-end="' + q.finishAt + '" data-d="' + (q.duration || 0) + '" style="width:' + pct + '%"></div></div>' + speedupBtnsHtml("train", bk) + '</div>';
       var endAll = b.queue[b.queue.length - 1].finishAt; /* v1219 (Harley): the time left right on the buttons, ticking every second */
       h += '<div class="tr-act"><button type="button" class="tr-promo off" id="trPromo">' + (q.promoteFrom ? "⬆ " + trCd(endAll, "c") : "⬆ Promote") + '</button><button type="button" class="tr-train" id="trTrain" disabled>' + (q.promoteFrom ? "Promoting" : "Training") + '<span>⏱ ' + trCd(endAll, "c") + ' left</span></button></div>'; }
-    else h += '<div class="tr-act">' + (promo ? '<button type="button" class="tr-promo" id="trPromoX">✕ Cancel</button>' : '<button type="button" class="tr-promo' + (pi.ok ? '' : ' off') + '" id="trPromo">⬆ Promote</button>') +
-      '<button type="button" class="tr-train" id="trTrain">' + (promo ? "Start Promotion" : "Train") + '<span id="trTime"></span></button></div>' +
-      (promo ? '<div class="tr-meta" style="text-align:center">Tap <b>Start Promotion</b> to begin - nothing is spent until you do.</div>' : ''); /* v1219 */
+    else h += '<div class="tr-act"><button type="button" class="tr-promo' + (pi.ok ? '' : ' off') + '" id="trPromo">⬆ Promote<span id="trPromoInfo"></span></button>' +
+      '<button type="button" class="tr-train" id="trTrain">Train<span id="trTime"></span></button></div>' +
+      (pi.ok ? '<div class="tr-meta" id="trPromoMeta" style="text-align:center"></div>' : ''); /* v1220: Promote = one tap: promotes the slider's count (up to what you own) to T' + pi.toTier */
   }
   h += '</div>';
   var sig = h.replace(/(<span class="tr-cd"[^>]*>)[^<]*(<\/span>)/g, "$1$2").replace(/ style="width:[^"]*"/g, "");
@@ -15027,13 +15028,17 @@ function renderTrainPanel(el) {
     troopTrainTier[type] = tt; troopTrainCount[type] = 0; renderTroops(); }; });
   if (!built) return;
   var sl = document.getElementById("trSlider"), inp = document.getElementById("trN"), cap2 = +sl.max;
-  var pb = document.getElementById("trPromo"), px = document.getElementById("trPromoX");
-  if (pb) pb.onclick = function () { var p2 = game.promoteInfo(bk, tier, 0);
-    if (p2.ok && !busy) { troopPromoteMode[type] = true; troopTrainCount[type] = 0; renderTroops(); return; }
+  var pb = document.getElementById("trPromo");
+  if (pb) pb.onclick = function () { var n = Math.max(1, parseInt(sl.value, 10) || 1), p2 = game.promoteInfo(bk, tier, n);
+    if (p2.ok && !busy) { /* v1220: one tap starts it */
+      var res = game.promoteTroops(bk, tier, p2.count);
+      if (res && res.ok) { troopTrainCount[type] = 0; miniToast("⬆ Promoting " + fmt(p2.count) + " " + def.name + " → " + TROOP_DEFS[p2.toKey].name + " · " + fmtTime(p2.secs)); }
+      else if (res && res.reason === "cannot_afford") miniToast("Not enough resources to promote " + fmt(p2.count) + " " + def.name);
+      try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {} troopsUiBusy = 0;
+      persist(); render(); renderTroops(); return; }
     var why = busy || p2.reason === "already_training" ? "Wait for this batch to finish (or speed it up)" : p2.reason === "locked" ? "⬆ Promotion unlocks at " + BUILDING_DEFS[bk].name + " Lv " + PROMOTE_UNLOCK_LEVEL
       : p2.reason === "top_tier" ? "Tier " + TR_ROMAN[tier] + " is already the highest you can train - pick a lower tier you own" : "You have no Tier " + TR_ROMAN[tier] + " " + TROOP_DEFS[type].name + " to promote";
     miniToast(why); };
-  if (px) px.onclick = function () { troopPromoteMode[type] = false; troopTrainCount[type] = 0; renderTroops(); };
   function show(n) {
     n = Math.max(1, Math.min(cap2, parseInt(n, 10) || 1)); sl.value = n; if (document.activeElement !== inp) inp.value = n; troopTrainCount[type] = n;
     var pq = promo ? game.promoteInfo(bk, tier, n) : null, costN = {};
@@ -15041,6 +15046,9 @@ function renderTrainPanel(el) {
     document.getElementById("trCost").innerHTML = Object.keys(costN).map(function (r) { var need = costN[r], have = st.resources[r] || 0;
       return '<span class="' + (have < need ? "short" : "") + '">' + RES_ICON[r] + fmtCompact(have) + " / " + fmt(need) + '</span>'; }).join("") || '<span>Free</span>';
     var tm = document.getElementById("trTime"); if (tm) tm.textContent = (pq ? "takes " : "⏱ ") + fmtTime(pq ? pq.secs : (def.trainTime * n / (1 + b.level * 0.05)) / game.trainSpeedMult());
+    var pInf = document.getElementById("trPromoInfo"), pMeta = document.getElementById("trPromoMeta");
+    if (pInf && pi.ok) { var pp = game.promoteInfo(bk, tier, n); if (pp.ok) { pInf.textContent = fmt(pp.count) + " → T" + pp.toTier + " · " + fmtTime(pp.secs);
+      if (pMeta) pMeta.innerHTML = "⬆ Promote " + fmt(pp.count) + " of your " + fmt(pp.owned) + " to Tier " + TR_ROMAN[pp.toTier] + ": " + (Object.keys(pp.cost).map(function (r) { var have = st.resources[r] || 0; return '<span class="' + (have < pp.cost[r] ? "cost-short" : "") + '">' + RES_ICON[r] + fmt(pp.cost[r]) + '</span>'; }).join(" ") || "free") + " (only the difference)"; } }
     return n;
   }
   show(sl.value);

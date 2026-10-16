@@ -2248,3 +2248,8 @@
 - While a batch runs both buttons count down: "⬆ 01:59:58" / "Promoting ⏱ 01:59:58 left", and the type buttons tick too.
 - Promote mode: the start button is now "Start Promotion · takes 2h 0m" with "Tap Start Promotion to begin - nothing is spent until you do." (the first Promote tap only opens this).
 - Tests: g334 (taps spanning a refresh open promote mode and start it; countdown ticks), g333 still passes.
+
+## v1220 (17 Oct 2026) - Promote is one tap
+- Harley: why is promoting 2 steps? -> one tap. The Promote button always shows what it will do ("⬆ Promote · 630 → T5 · 2h 0m", count = the slider, capped at what you own / batch size) and a line under the buttons gives the cost ("only the difference"). Tap it once -> it starts (toast "⬆ Promoting ..."), the countdown shows on both buttons and the Infantry button. No more promote mode / Cancel / Start step.
+- (v1219, pushed just before: the panel no longer rebuilds every second - taps were being lost; countdowns tick in place.)
+- Tests: g334 (one tap - even spanning a refresh - starts it; button text; countdown ticks), g333.

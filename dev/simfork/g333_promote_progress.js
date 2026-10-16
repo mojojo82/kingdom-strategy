@@ -22,11 +22,11 @@ const call = call0;
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Promo"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   const SH = process.env.SHOTS;
   /* Barracks 15 (T5), 780 Infantry T3, lots of food/wood. Open City > Troops, Infantry, tier III, Promote mode. */
-  await P.evaluate(() => { const st = game.state; st.buildings.barracks.level = 15; st.troops.infantry_t3 = 780; st.resources.food = 9e6; st.resources.wood = 9e6; try { setScreen("city", "troops"); } catch (e) {} troopTrainType = "infantry"; troopTrainTier.infantry = 3; troopPromoteMode.infantry = true; render(); renderTroops(); });
+  await P.evaluate(() => { const st = game.state; st.buildings.barracks.level = 15; st.troops.infantry_t3 = 780; st.resources.food = 9e6; st.resources.wood = 9e6; try { setScreen("city", "troops"); } catch (e) {} troopTrainType = "infantry"; troopTrainTier.infantry = 3; render(); renderTroops(); });
   await P.waitForTimeout(800);
   /* the phone case: the count box still has focus when Promote is tapped (iOS buttons don't take focus, so the box never blurs) */
   await P.evaluate(() => { trBusy(1); });
-  await P.click("#trTrain"); await P.waitForTimeout(2500);
+  await P.click("#trPromo"); await P.waitForTimeout(2500);
   const r = await P.evaluate(() => { const q = game.state.buildings.barracks.queue; const busy = document.querySelector(".tr-busy"); return { queued: q.length && { n: q[0].count, to: q[0].troopType, from: q[0].promoteFrom }, busyShown: busy ? busy.textContent.replace(/\s+/g, " ").slice(0, 120) : null, trainBtn: (document.getElementById("trTrain") || {}).textContent, promoBtn: (document.getElementById("trPromo") || {}).textContent }; });
   if (SH) await P.screenshot({ path: SH + "/promo.png" });
   /* v1218: the Infantry tab shows the timer even while looking at Caster */

@@ -25,17 +25,17 @@ const call = call0;
   await P.waitForTimeout(1200);
   /* a phone tap that spans the screen's 1 s refresh: finger down, ~1.2 s, finger up (same as a tap landing just as it redraws) */
   const tap = async (sel) => { await P.waitForSelector(sel, { state: "visible", timeout: 5000 }); const bx = await P.locator(sel).boundingBox(); await P.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2); await P.mouse.down(); await P.waitForTimeout(1300); await P.mouse.up(); await P.waitForTimeout(300); };
-  await tap("#trPromo");
-  const mode = await P.evaluate(() => ({ promoMode: !!troopPromoteMode.infantry, btn: (document.getElementById("trTrain") || {}).textContent }));
-  await tap("#trTrain");
+  if (process.env.SHOTS) await P.screenshot({ path: process.env.SHOTS + "/before.png" });
+  const mode = await P.evaluate(() => ({ promoBtn: (document.getElementById("trPromo") || {}).textContent, meta: (document.getElementById("trPromoMeta") || {}).textContent }));
+  await tap("#trPromo"); /* v1220: one tap starts it */
   const r = await P.evaluate(() => ({ queue: game.state.buildings.barracks.queue.length, t3: game.state.troops.infantry_t3, promoBtn: (document.getElementById("trPromo") || {}).textContent, trainBtn: (document.getElementById("trTrain") || {}).textContent }));
   await P.waitForTimeout(2200);
   const later = await P.evaluate(() => (document.getElementById("trTrain") || {}).textContent);
   console.log(JSON.stringify({ mode, r, later, errs }));
   await b.close();
   assert.deepStrictEqual(errs, []);
-  assert(mode.promoMode, "the first tap opens promote mode");
-  assert(r.queue === 1 && r.t3 < 780, "the Start tap starts the promotion");
+  assert(/Promote.*→ T5/.test(mode.promoBtn), "the Promote button says what it will do");
+  assert(r.queue === 1 && r.t3 < 780, "ONE tap starts the promotion (even a tap spanning a refresh)");
   assert(/left/.test(r.trainBtn) && r.trainBtn !== later, "a countdown that ticks");
   console.log("g334 ok");
 })().catch((e) => { console.error(e); process.exit(1); });
