@@ -12183,7 +12183,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1237"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1238"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18371,6 +18371,7 @@ function marchVisualHeading(gx, gz, M) {
   marchVisCache[key] = best; return [Math.cos(best), Math.sin(best)];
 }
 // ships: [{id, ox, oy (viewport px of the ground point), tx, ty (tile coords), gx, gz (ground heading in tile coords)}]; u = pixels per tile step
+var MARCH_GL_PX = 600000; /* v1238: most device pixels the 3D ship layer may use (~775 x 775) */
 function marchGLDraw(ships, u) {
   var G = marchGL; if (!G.ok) return;
   var vp = document.getElementById("mapviewport"); if (!vp) return;
@@ -18389,6 +18390,9 @@ function marchGLDraw(ships, u) {
   bx0 = Math.max(bx0, vx0); by0 = Math.max(by0, vy0); bx1 = Math.min(bx1, vx1); by1 = Math.min(by1, vy1);
   if (!(bx1 > bx0 && by1 > by0)) { if (G.hadShips) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); G.hadShips = false; cv.style.display = "none"; } return; }
   var Q = 64, qx0 = Math.floor(bx0 / Q) * Q, qy0 = Math.floor(by0 / Q) * Q, nW = Math.ceil(bx1 / Q) * Q - qx0, nH = Math.ceil(by1 / Q) * Q - qy0;
+  /* v1238: pixel budget - zoomed in or ships spread out made the box big and fps dropped again. Above MARCH_GL_PX device pixels the layer draws
+     at lower sharpness (steps of 0.25, never under 0.75); small boxes keep full sharpness. */
+  var dprFit = Math.sqrt(MARCH_GL_PX / Math.max(1, nW * nH)); if (dprFit < dpr) dpr = Math.max(0.75, Math.floor(dprFit * 4) / 4);
   var W = G.w, H = G.h, keep = W >= nW && H >= nH && W * H <= 2 * nW * nH && dpr === G.dpr;
   if (!keep) { W = nW; H = nH; }
   G.ox = qx0; G.oy = qy0;

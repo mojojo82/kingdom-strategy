@@ -2338,3 +2338,8 @@
 - Harley's video: tapped Update on v1235 (v1236 out), page came back as v1235 and the banner returned straight away, again and again.
 - Cause: Update reloaded "?u=<new version>" - the same address every tap. If the first tap got an old copy (CDN not caught up yet), that copy was cached under that address, so every later tap loaded it again. Fix: ksFreshReload adds the time too ("?u=v1237-<time>"), so every tap is a fresh download.
 - Phones still on v1236 or older have the old button: close and reopen the game (or wait ~10 min) to get past it once.
+
+## v1238 — 3D ship layer pixel budget
+- Harley: v1236 fix works but fps still drops sometimes (7–24), more when zoomed in close to the ships. Cause: the canvas box grows with zoom / spread-out ships, so pixels to draw and blend grow too.
+- MARCH_GL_PX = 600,000 device pixels: above that the layer draws at lower sharpness (0.25 steps, min 0.75). Small boxes keep full sharpness.
+- Measured (p03_march_fps.js MID=1 ZOOM=2 DPR=3): canvas 1152×1280 -> 720×800 px, 168 -> 112 ms/frame headless (budget 420K: 100 ms but visibly jaggy). p03 now takes ZOOM= and logs canvas size.

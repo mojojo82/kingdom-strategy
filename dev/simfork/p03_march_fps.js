@@ -31,7 +31,9 @@ const call = call0;
     try { startMarchAnim(); } catch (e) {} return { n: out.length, tk };
   }, !!process.env.MID);
   await P.waitForTimeout(1500);
-  if (process.env.SHOT) { await P.evaluate(() => { const m = game.state.marches[0]; if (m) centerMapOnMarch(m.id); }); await P.waitForTimeout(800); await P.screenshot({ path: process.env.SHOT }); }
+  if (process.env.ZOOM) { await P.evaluate((z) => { setMapZoom(z); const m = game.state.marches[0]; if (m) centerMapOnMarch(m.id); }, +process.env.ZOOM); await P.waitForTimeout(1200); }
+  console.log("canvas", JSON.stringify(await P.evaluate(() => { const c = document.getElementById("marchGL"); return c ? { css: c.style.width + "x" + c.style.height, px: c.width + "x" + c.height } : null; })));
+  if (process.env.SHOT) { if (!process.env.ZOOM) { await P.evaluate(() => { const m = game.state.marches[0]; if (m) centerMapOnMarch(m.id); }); await P.waitForTimeout(800); } await P.screenshot({ path: process.env.SHOT }); }
   const cdp = await P.context().newCDPSession(P); await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await P.evaluate(() => {
     window.__T = { um: 0, gl: 0, wb: 0, rm: 0 };
