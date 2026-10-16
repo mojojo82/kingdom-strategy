@@ -2232,3 +2232,9 @@
   - v1216: monsters 1.0-1.5 ms, redraw / frame avg back near v1214 (runs vary with where the account lands).
 - Fixes: each map cell's monster is remembered for 5 s (the base / tile checks were redone for every cell on every scroll frame; cleared at once on a kill, level-up or alliance change); monster DOM is only touched when its level / lock / zoom changes; dropped the drop-shadow filter on monster pictures (the ground shadow stays).
 - g331 / g332 still pass.
+
+## v1217 (17 Oct 2026) - promoting troops: time not showing
+- Harley: troops were promoting but City > Troops still showed the Promote form (no time). Cause: the panel skips its 1 s refresh while you're dragging the slider / typing in the count box (troopsUiBusy). On a phone the count box can keep focus when Promote is tapped (iOS buttons don't take focus), so "busy" never cleared and the panel froze on the old form.
+- Fix: Train / Promote press blurs the box, clears busy and redraws at once; a busy older than 15 s no longer blocks the refresh. The progress line now says "⬆ Promoting 630× Infantry T3 → Infantry T5 · 1h 59m left" (was "Training"), button "Promoting…".
+- Pressing Promote again while one is running: nothing happens to the queue or troops (one batch per building) - now also says "Wait for this batch to finish (or speed it up)".
+- Test g333: stuck-busy case -> v1216 panel stays on the Promote form; v1217 shows the promotion + time; a second press changes nothing.

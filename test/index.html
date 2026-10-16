@@ -12039,7 +12039,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1216"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1217"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14969,7 +14969,12 @@ function renderTroops() {
    with how many you own, have/need cost box, - slider + count, and one big Train button with the time. Same place as before (City > Troops). */
 var troopTrainType = "infantry", troopPromoteMode = {}; /* v1182: promote mode per troop type */
 var TR_ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-function trBusy(d) { troopsUiBusy = Math.max(0, troopsUiBusy + d); }
+function trBusy(d) { troopsUiBusy = Math.max(0, troopsUiBusy + d); if (d > 0) troopsUiBusyT = Date.now(); }
+var troopsUiBusyT = 0;
+/* v1217 (Harley: troops were promoting but the panel still showed the Promote form, no time): on a phone the count box can keep focus after
+   Promote / Train is tapped (iOS buttons don't take focus), so "busy" never cleared and the panel stopped refreshing. Now: a press clears it and
+   redraws at once, and a "busy" left over for more than 15 s no longer blocks the refresh. */
+function troopsUiHeld() { if (troopsUiBusy && Date.now() - troopsUiBusyT > 15000) troopsUiBusy = 0; return troopsUiBusy > 0; }
 function renderTrainPanel(el) {
   var st = game.state, type = TROOP_TYPES.indexOf(troopTrainType) >= 0 ? troopTrainType : TROOP_TYPES[0];
   var bk = Object.keys(BUILDING_DEFS).find(function (k) { return BUILDING_DEFS[k].trains === type; }), b = st.buildings[bk];
@@ -14996,9 +15001,9 @@ function renderTrainPanel(el) {
       '<button type="button" class="tr-step" data-trstep="1">+</button><input type="number" id="trN" min="1" max="' + cap + '" value="' + n0 + '"></div>' +
       '<div class="tr-meta">' + (promo ? "you own " + fmt(pi.owned) + " · max " + fmt(cap) + " per batch · pay only the difference" : 'max ' + fmt(cap) + ' per batch' + (canNow < cap ? ' · <span class="cost-short">resources for ' + fmt(canNow) + '</span>' : '')) + '</div>';
     if (busy) { var q = b.queue[0], left = (q.finishAt - vnow()) / 1000, pct = q.duration ? Math.max(0, Math.min(100, 100 - left / q.duration * 100)) : 0;
-      h += '<div class="tr-busy">⚙️ Training ' + b.queue.map(function (x) { return fmt(x.count) + "× " + TROOP_DEFS[x.troopType].name; }).join(", ") + ' · ' + fmtTime(Math.max(0, (b.queue[b.queue.length - 1].finishAt - vnow()) / 1000)) + ' left' +
+      h += '<div class="tr-busy">' + (q.promoteFrom ? "⬆ Promoting " : "⚙️ Training ") + b.queue.map(function (x) { return fmt(x.count) + "× " + (x.promoteFrom && TROOP_DEFS[x.promoteFrom] ? TROOP_DEFS[x.promoteFrom].name + " → " : "") + TROOP_DEFS[x.troopType].name; }).join(", ") + ' · ' + fmtTime(Math.max(0, (b.queue[b.queue.length - 1].finishAt - vnow()) / 1000)) + ' left' +
         '<div class="progress"><div style="width:' + pct + '%"></div></div>' + speedupBtnsHtml("train", bk) + '</div>';
-      h += '<div class="tr-act"><button type="button" class="tr-promo off" id="trPromo">⬆ Promote</button><button type="button" class="tr-train" id="trTrain" disabled>Training…</button></div>'; }
+      h += '<div class="tr-act"><button type="button" class="tr-promo off" id="trPromo">⬆ Promote</button><button type="button" class="tr-train" id="trTrain" disabled>' + (q.promoteFrom ? "Promoting…" : "Training…") + '</button></div>'; }
     else h += '<div class="tr-act">' + (promo ? '<button type="button" class="tr-promo" id="trPromoX">✕ Cancel</button>' : '<button type="button" class="tr-promo' + (pi.ok ? '' : ' off') + '" id="trPromo">⬆ Promote</button>') +
       '<button type="button" class="tr-train" id="trTrain">' + (promo ? "Promote" : "Train") + '<span id="trTime"></span></button></div>';
   }
@@ -15037,7 +15042,9 @@ function renderTrainPanel(el) {
   var tb = document.getElementById("trTrain");
   if (tb && !busy) tb.onclick = function () { var n = Math.max(1, Math.min(cap2, parseInt(sl.value, 10) || 1)), res = promo ? game.promoteTroops(bk, tier, n) : game.queueTraining(bk, n, tier);
     if (res && res.ok) { troopTrainCount[type] = 0; troopPromoteMode[type] = false; } else if (res && res.reason === "cannot_afford") miniToast("Not enough resources for " + fmt(n) + " " + def.name);
-    persist(); render(); };
+    else if (res && res.reason === "already_training") miniToast("Wait for this batch to finish (or speed it up)");
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {} troopsUiBusy = 0; /* v1217 */
+    persist(); render(); renderTroops(); };
 }
 
 var FRAGMENT_ICON = ico("fragment");
@@ -27649,7 +27656,7 @@ function render() {
   if (mapMode === "espers") renderEspers();
   if (mapMode === "conquest") renderConquest();
   if (mapMode === "gauntlet") renderGauntlet();
-  if (mapMode === "troops" && !troopsUiBusy) { renderTroops(); renderFormations(); }
+  if (mapMode === "troops" && !troopsUiHeld()) { renderTroops(); renderFormations(); }
   if (mapMode === "reports") renderReports();
   // Cards intentionally NOT re-rendered here on every 1s tick (unlike the
   // other tabs above) — it has no live/ticking values, and rebuilding its
