@@ -2273,3 +2273,6 @@
 
 ## v1225 (17 Oct 2026) - Search is an icon on the left of the map
 - Harley: give Search an icon and move it to the left side of the map (middle). The "🔍 Search" text button by Bookmarks is gone; #mapSearchBtn is a 🔍 icon in the same dashed square as the right-hand icons (backpack / mail / recon), on phones fixed at the left edge (bottom = 224 px above the recon icon's spot). Same Search panel. g331 still passes.
+
+## v1226 (17 Oct 2026) - hero KO keeps the old teleport sound
+- Harley: a hero dying (and coming back) in Conquest played the teleport sound, so since v1209 it played the new "shinggg". It should stay the old teleport sound. New sfxHeroWarp() with the old clip built in (HERO_WARP_SFX_DATA_URL = sfx/originals/teleport_old_default.mp3) and its own Dev Tools > Sound Effects slot "Hero KO / Return (Conquest)". sfxTeleport (world map) unchanged. Checked headless: hero KO plays the 0.6 s old clip, teleport the 1.5 s new one.

@@ -11360,6 +11360,27 @@ function sfxLaserBeamPreview() { // Dev Tools "Play": 1.5s of the loop
   var iv = setInterval(function () { if (performance.now() > until) { clearInterval(iv); return; } touchLaserLoop("preview"); }, 30);
 }
 
+/* v1226 (Harley): a hero being knocked out / coming back in Conquest keeps the OLD teleport sound (sfx/originals/teleport_old_default.mp3);
+   only the world-map teleport got the new "shinggg" in v1209. Own Dev Tools slot: "Hero KO / Return (Conquest)". */
+var HERO_WARP_SFX_DATA_URL = "data:audio/mpeg;base64,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";
+var heroWarpBuffer = null, heroWarpBufferP = null;
+function ensureHeroWarpBuffer() {
+  if (heroWarpBuffer || heroWarpBufferP) return heroWarpBufferP;
+  var ctx = getSfxCtx(); if (!ctx) return null;
+  var bin = atob(HERO_WARP_SFX_DATA_URL.slice(HERO_WARP_SFX_DATA_URL.indexOf(",") + 1)), bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  heroWarpBufferP = new Promise(function (resolve) { ctx.decodeAudioData(bytes.buffer, function (buf) { heroWarpBuffer = buf; resolve(buf); }, function () { resolve(null); }); });
+  return heroWarpBufferP;
+}
+try { ensureHeroWarpBuffer(); } catch (e) {}
+function sfxHeroWarp() {
+  if (playSfxOverrideIfSet("heroWarp")) return;
+  if (!soundFxEnabled) return;
+  var ctx = getSfxCtx(); if (!ctx) return;
+  sfxEnsureRunning(ctx);
+  if (heroWarpBuffer) { var src = ctx.createBufferSource(); src.buffer = heroWarpBuffer; src.connect(ctx.destination); src.start(0); }
+  else { ensureHeroWarpBuffer(); playCachedAudioSrc("hero_warp_default", HERO_WARP_SFX_DATA_URL, "hero KO / return (built-in)"); }
+}
 function sfxTeleport() {
   if (playSfxOverrideIfSet("teleport")) return;
   if (!soundFxEnabled) return;
@@ -12047,7 +12068,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1225"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1226"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22319,7 +22340,7 @@ function stepIdleAnim(dtSec, w, h) {
       spawnHeroWarp(vis.x, gy, 0.6);
       vis.x = slot.x; vis.hop = null; vis.chasing = false; vis.driftStep = 0; hpPrevMap[key] = vis.x;
       spawnHeroWarp(vis.x, gy, 1);
-      try { sfxTeleport(); } catch (eSfx) {}
+      try { sfxHeroWarp(); } catch (eSfx) {} /* v1226: the old teleport sound */
       delete heroChargeMem["c_" + key]; idleAnim.skillFlash[key] = 0;
       if (idleAnim.chargeFlashPrev) idleAnim.chargeFlashPrev[key] = false;
     } else if (!koNow && vis.ko) {
@@ -22328,7 +22349,7 @@ function stepIdleAnim(dtSec, w, h) {
       spawnHeroWarp(vis.x, gy2, 0.6);
       vis.x = isMeleeHero ? getFortressNoseX(w) : slot.x; hpPrevMap[key] = vis.x;
       spawnHeroWarp(vis.x, gy2, 1);
-      try { sfxTeleport(); } catch (eSfx2) {}
+      try { sfxHeroWarp(); } catch (eSfx2) {}
     }
     if (vis.ko) { vis.x = slot.x; return; }
     var pendNow = game.state.idle.pending; if (pendNow && pendNow.type === "defeat") { vis.chasing = false; vis.driftStep = 0; vis.hop = null; return; } // v784: defeat screen up — heroes stand still where they are (no running through the level) until the level resets
@@ -30865,6 +30886,7 @@ var SFX_EFFECTS = [
   { key: "lightning", label: "Kessa's Arc Burst (Landed)" },
   { key: "lightningFizzle", label: "Kessa's Arc Burst (Fizzled)" },
   { key: "teleport", label: "Teleport (World Map)" },
+  { key: "heroWarp", label: "Hero KO / Return (Conquest)" },
   { key: "weaponMissile", label: "Weapon: Missile Barrage Launch" },
   { key: "heroCharge", label: "Gareth Charge (Whoosh)" },
   { key: "laserBeam", label: "Weapon: Laser Beam (looped while firing)" }
@@ -30875,7 +30897,7 @@ var SFX_TRIGGER_MAP = {
   fortressCannon: function () { sfxFortressCannon(); },
   defeat: function () { sfxDefeat(); }, levelClear: function () { sfxLevelClear(); }, thunder: function () { sfxThunder(); },
   skillShot: function () { sfxSkillShot(); }, lightning: function () { sfxLightning(); }, lightningFizzle: function () { sfxLightningFizzle(); },
-  teleport: function () { sfxTeleport(); }, weaponMissile: function () { sfxWeaponMissile(); }, heroCharge: function () { sfxCharge(); },
+  teleport: function () { sfxTeleport(); }, heroWarp: function () { sfxHeroWarp(); }, weaponMissile: function () { sfxWeaponMissile(); }, heroCharge: function () { sfxCharge(); },
   laserBeam: function () { sfxLaserBeamPreview(); }
 };
 function renderSfxRows() {
