@@ -2266,3 +2266,7 @@
 - Fix: marchVisualHeading() turns the ship on the water until its outline on screen lines up with the route on screen (per model width/length, from the model at load); the hull's small sideways offset (Galleon 0.043) is moved onto the keel line. Now under 1 deg for every direction tested (both models).
 - Still true and expected: the masts/sails stand straight up on screen, so the ship's body sits a little above its route line on diagonals (the hull at the water is on the line).
 - Tools: dev/simfork/p02_ship_aim.js renders ships on set routes (CASES, ZOOM, SHOTS).
+
+## v1224 (17 Oct 2026) - ship heading, take 2
+- Harley's next screenshot (returning, route ~10 deg off vertical) still looked off: v1223 only lined up the hull outline at the waterline, but the eye reads the whole hull and deck, which stand up on screen. Now marchVisualHeading lines up the on-screen outline of the hull + deck (bottom half of the model, ~400-point sample incl. height) with the route on screen; cached per model and 0.5 deg of route. Hull+deck vs route, worst of 24 directions: Ghost Galleon 5.6 -> 0.3 deg, Voidspire 2.0 -> 0.4.
+- Masts / sails are deliberately not used: lining up the whole ship (sails included) would need the hull twisted ~10 deg the other way. With sails the whole outline can be up to ~13 deg off on some diagonals - that's the sails standing straight up.

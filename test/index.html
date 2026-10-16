@@ -12043,7 +12043,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1223"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1224"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18097,6 +18097,8 @@ function marchGLInit() {
         for (i = 0; i < nv; i++) if (P[i * 3 + 1] <= cut) { xx += (P[i * 3] - cx) * (P[i * 3] - cx); zz += (P[i * 3 + 2] - cz) * (P[i * 3 + 2] - cz); }
         M._ratio = Math.sqrt(zz / Math.max(1e-9, xx)); M._cz = cz;
         for (i = 0; i < nv; i++) P[i * 3 + 2] -= cz;
+        var hcut = y0 + (y1 - y0) * 0.5, hn = 0; for (i = 0; i < nv; i++) if (P[i * 3 + 1] <= hcut) hn++; /* the hull and deck - not the masts / sails, which stand straight up whichever way the ship faces */
+        var st = Math.max(1, Math.floor(hn / 400)), sp = [], hk = 0; for (i = 0; i < nv; i++) if (P[i * 3 + 1] <= hcut && (hk++ % st) === 0) sp.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]); M._pts = new Float32Array(sp); M._key = String(M.h[0]) + M.h[1]; /* v1224: whole-ship sample for marchVisualHeading */
       })();
       if (M.fc) { /* v1053: flat model — give every face its own 3 corners so its normal + colour don't blend into the neighbours (hard edges, no blur) */
         var fcb = new Uint8Array(b64(M.fc)), nf = idx.length / 3, FP = new Float32Array(nf * 9), FN = new Float32Array(nf * 9), FC = new Float32Array(nf * 9), FI = new Uint16Array(nf * 3);
@@ -18132,22 +18134,30 @@ function marchGLInit() {
   } catch (e) { console.error("March 3D init failed:", e && e.message); marchGL.ok = false; }
   return marchGL.ok;
 }
-/* v1223 (Harley: "the ship doesn't point directly at its target"): on the slanted (isometric) map a hull whose keel follows the route still
-   LOOKS turned toward the horizontal - squashing the picture vertically turns the outline of a wide hull. Measured: Ghost Galleon's
-   waterline outline sat ~10 deg flatter than its route. So the ship is turned (on the water) until its outline on screen lines up with the
-   route on screen. ratio = hull width / length near the water (from the model). Returns the bow's ground direction [x, z]. */
-function marchVisualHeading(gx, gz, ratio) {
-  var L = Math.hypot(gx, gz); if (!L) return [gx, gz];
+/* v1223/v1224 (Harley: "the ship doesn't point directly at its target"): on the slanted (isometric) map a ship whose keel follows the route
+   still LOOKS turned - the picture is squashed top-to-bottom and everything tall (deck, masts, sails) stands straight up on screen. v1223 lined up
+   only the waterline outline; Harley's next screenshot (route ~10 deg off vertical) still looked ~7 deg off, which matches the WHOLE ship's
+   outline. So: the ship is turned (on the water) until the long axis of its whole on-screen hull + deck (bottom half of the model, a ~400-point
+   sample, height included) lines up with the route on screen. Masts / sails are left out: they stand straight up whichever way the ship faces,
+   and lining them up too twisted the hull. Hull+deck vs route, worst of 24 directions: Galleon 5.6 -> 0.3 deg, Voidspire 2.0 -> 0.4.
+   Returns the bow's ground direction [x, z]. */
+var marchVisCache = {};
+function marchVisualHeading(gx, gz, M) {
+  var L = Math.hypot(gx, gz); if (!L || !M || !M._pts) return [gx, gz];
   gx /= L; gz /= L;
-  var K = 0.70711, Q = 0.57358, tx = (gx - gz) * K, ty = (gx + gz) * K * Q, ta = Math.atan2(ty, tx), r2 = ratio * ratio;
-  function axisAngle(phi) { /* screen angle of the outline's long axis for a hull pointing along phi on the water */
-    var c = Math.cos(phi), s = Math.sin(phi), a = c * c + r2 * s * s, b = (1 - r2) * c * s, d = s * s + r2 * c * c; /* ground covariance */
-    var m00 = K * K * (a - 2 * b + d), m01 = K * K * Q * (a - d), m11 = K * K * Q * Q * (a + 2 * b + d); /* screen covariance */
-    return 0.5 * Math.atan2(2 * m01, m00 - m11);
+  var base = Math.atan2(gz, gx), key = (M._key || "m") + ":" + Math.round(base * 360 / Math.PI);
+  if (marchVisCache[key] !== undefined) { var cb = marchVisCache[key]; return [Math.cos(cb), Math.sin(cb)]; }
+  var K = 0.70711, Q = 0.57358, CY = 0.81915, ta = Math.atan2((gx + gz) * K * Q, (gx - gz) * K), pts = M._pts, n = pts.length / 3;
+  function axisErr(phi) { /* hull bow along phi on the water (bow = model -x): on-screen long axis vs the route */
+    var c = -Math.cos(phi), s = Math.sin(phi), mx = 0, my = 0, A = 0, B = 0, D = 0, X = new Float32Array(n), Y = new Float32Array(n), i; /* model -> ground: x' = x*c' + z*s' with cur = atan2(sin, -cos) */
+    var cc = Math.cos(Math.atan2(s, c)), ss = Math.sin(Math.atan2(s, c));
+    for (i = 0; i < n; i++) { var px = pts[i * 3], py = pts[i * 3 + 1], pz = pts[i * 3 + 2], wx = px * cc + pz * ss, wz = -px * ss + pz * cc; X[i] = (wx - wz) * K; Y[i] = (wx + wz) * K * Q - py * CY; mx += X[i]; my += Y[i]; }
+    mx /= n; my /= n; for (i = 0; i < n; i++) { var dx = X[i] - mx, dy = Y[i] - my; A += dx * dx; B += dx * dy; D += dy * dy; }
+    var ax = 0.5 * Math.atan2(2 * B, A - D); return Math.abs(Math.atan2(Math.sin(2 * (ax - ta)), Math.cos(2 * (ax - ta))));
   }
-  var base = Math.atan2(gz, gx), best = base, bestE = Infinity;
-  for (var k = -60; k <= 60; k++) { var phi = base + k * Math.PI / 360, e = Math.abs(Math.atan2(Math.sin(2 * (axisAngle(phi) - ta)), Math.cos(2 * (axisAngle(phi) - ta)))); if (e < bestE) { bestE = e; best = phi; } }
-  return [Math.cos(best), Math.sin(best)];
+  var best = base, bestE = Infinity;
+  for (var k = -40; k <= 40; k++) { var phi = base + k * Math.PI / 360, e = axisErr(phi); if (e < bestE) { bestE = e; best = phi; } }
+  marchVisCache[key] = best; return [Math.cos(best), Math.sin(best)];
 }
 // ships: [{id, ox, oy (viewport px of the ground point), tx, ty (tile coords), gx, gz (ground heading in tile coords)}]; u = pixels per tile step
 function marchGLDraw(ships, u) {
@@ -18168,7 +18178,7 @@ function marchGLDraw(ships, u) {
   var zRef = 0; ships.forEach(function (sh) { zRef += sh.tx + sh.ty; }); zRef /= ships.length;
   ships.forEach(function (sh) {
     // heading: bow is -x in the model, so rotate it onto the travel direction; ease toward the target angle so turns at the end of a leg aren't instant
-    var mk0 = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], mo0 = G.models[mk0.model || "void"] || G.models.void, vh = marchVisualHeading(sh.gx, sh.gz, mo0.M._ratio || 0.35); /* v1223 */
+    var mk0 = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], mo0 = G.models[mk0.model || "void"] || G.models.void, vh = marchVisualHeading(sh.gx, sh.gz, mo0.M); /* v1223 */
     var want = Math.atan2(vh[1], -vh[0]), cur = G.ang[sh.id];
     if (cur === undefined) cur = want; else { var df = Math.atan2(Math.sin(want - cur), Math.cos(want - cur)); cur += df * Math.min(1, dt * 7); }
     G.ang[sh.id] = cur;
