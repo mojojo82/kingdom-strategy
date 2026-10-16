@@ -61,7 +61,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.strictEqual(r.noMoney.ok, false);
   assert.deepStrictEqual(r.lv, [20, 20, 20]);
   assert.deepStrictEqual(r.bonus1.slice(0, 3).map((x, i) => x - r.bonus0[i]), [200, 200, 200], "+10% a level"); assert.strictEqual(r.bonus1[3], 0, "skill untouched");
-  assert.ok(r.claim.ok && r.claim.bonus === 50 && !r.claimAgain.ok); assert.deepStrictEqual(r.chest, [2, 5, 2]);
+  assert.ok(r.claim.ok && r.claim.bonus === 50 && !r.claimAgain.ok); assert.deepStrictEqual(r.chest, [20, 5, 2]); /* v1227: tickets x10 */
   assert.strictEqual(r.bonus2 - r.bonus0[0], 250);
   assert.ok(r.botSees > 150, "bots copy the player's total");
   assert.strictEqual(r.saved.ms, 1); assert.strictEqual(JSON.parse(r.reloaded).atk, 20, "save / load keeps it");

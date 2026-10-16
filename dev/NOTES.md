@@ -2276,3 +2276,10 @@
 
 ## v1226 (17 Oct 2026) - hero KO keeps the old teleport sound
 - Harley: a hero dying (and coming back) in Conquest played the teleport sound, so since v1209 it played the new "shinggg". It should stay the old teleport sound. New sfxHeroWarp() with the old clip built in (HERO_WARP_SFX_DATA_URL = sfx/originals/teleport_old_default.mp3) and its own Dev Tools > Sound Effects slot "Hero KO / Return (Conquest)". sfxTeleport (world map) unchanged. Checked headless: hero KO plays the 0.6 s old clip, teleport the 1.5 s new one.
+
+## v1227 (17 Oct 2026) - weapon tickets x10 (~1 ticket = 1 fragment), same balance
+- Harley: the ticket number should match the fragments given (1:1) without changing the reward balance. Before: 1 ticket = 5 pulls = ~13.5 fragments (pool Lv 1) ... ~9.2 (pool Lv 15), ~10.5 at Lv 10-11.
+- Now every ticket NUMBER is x10 (WEAPON_TICKET_SCALE): idle chest drop 1 -> 10 (and the no-hero shard fallback), Recon 1/1/1/2/3 -> 10/10/10/20/30, Gauntlet 1 (+2 milestone) -> 10 (+20), Training Grounds milestone 2n -> 20n, Dev Tools +100/+1000. A draw costs 10 tickets and is exactly the old 1-ticket draw, so fragments per day are unchanged. Draw buttons: x10 / x100 / Use all (in 10s). Pool progress shown in tickets (x10; stored draws unchanged).
+- Old saves convert once on load (ticketsX10 flag): held tickets, tickets waiting in the Idle Chest and unclaimed Recon rewards x10.
+- Server-side items (shop packs, events, mail "weapon_tickets") keep their numbers in OLD tickets; the game multiplies them by 10 when shown and when granted (ksItemQty / ksMailApply), so their value is unchanged. The admin panel still shows the old numbers.
+- Tests: g335 (conversion once, draw = 10 tickets, 10 tickets ~12-14 fragments at pool Lv 1, mail x10); g266 updated (milestone 20 tickets); g225, g238 pass.

@@ -5175,6 +5175,11 @@ function monsterRewards(type, L) { /* { res: guaranteed resources, valor, extra:
   d.res.forEach(function (r) { res[r] = monsterResAmount(r, L); }); ex[d.extra] = monsterResAmount(d.extra, L);
   return { res: res, valor: monsterValor(L), extra: ex, extraChance: MONSTER_EXTRA_CHANCE, fragChance: MONSTER_FRAG_CHANCE };
 }
+/* v1227 (Harley: "weapon ticket number should = fragments given ... scale up the ticket number so it's 1-1, don't change the reward balancing"):
+   ticket NUMBERS are x10 everywhere (sources, saves, mail/shop items); a draw still works exactly as before, it just costs 10 tickets
+   (= the old 1 ticket: 5 pulls, ~9-13.5 fragments depending on pool level), so fragments earned per day are unchanged and ~1 ticket = 1 fragment. */
+var WEAPON_TICKET_SCALE = 10;
+function ksItemQty(k, q) { return k === "weapon_tickets" ? (+q || 0) * WEAPON_TICKET_SCALE : +q || 0; } /* server item counts are in old tickets */
 var PRODUCTION_SCALE = 0.6;
 // Research is split into finer steps: every tech has TECH_LEVELS levels (was 5) of half the size, so the totals are unchanged but each step is smaller and cheaper.
 // RP costs are scaled by TECH_COST_SCALE; from level TECH_EXTRA_FROM on, a level also needs a second resource (see techExtraFor).
@@ -6583,7 +6588,7 @@ function tgCost(lv) { var b = Math.floor(lv / 10), sx = lv % 10, base = 10 * Mat
 function tgMsGap(i) { return i < 2 ? 20 : 10 * (i + 1); }
 function tgMsLevel(i) { var l = 0; for (var j = 0; j <= i; j++) l += tgMsGap(j); return l; } /* 20, 40, 70, 110, 160, 220, 290 ... */
 function tgMsBonus(i) { return 50 * (i + 1); }                                                  /* +50, +100, +150 ... % to all three */
-function tgMsReward(i) { var n = i + 1; return { tickets: 2 * n, books: 5 * n, general_1h: 2 * n }; } /* the chest (no gems: gems are server-paid on the live backend) */
+function tgMsReward(i) { var n = i + 1; return { tickets: 20 * n, books: 5 * n, general_1h: 2 * n }; } /* v1227: x10 tickets */ /* the chest (no gems: gems are server-paid on the live backend) */
 function tgChapterEssence(ch) { return 10 + 2 * ch; }
 function tgGauntletEssence(floor) { return Math.round(20 + floor / 2); }
 function tgBonusOf(st) {
@@ -6743,7 +6748,7 @@ function createGame(opts) {
     td: { day: "", runs: 0, best: 0 }, // v797: Fortress Defense daily run counter
     recon: { window: -1, missions: [], nextId: 1, devShift: 0, done: 0, xp: 0 }, // v787: Intel & Recon missions (refresh every 8h of server/UTC time)
     items: {}, /* v1024 backpack items: id -> count (ITEM_DEFS) */
-    weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, lastDraw: null, // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
+    weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, lastDraw: null, ticketsX10: true, /* v1227: new saves are already in x10 tickets */ // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
     weaponLevels: {}, // { weaponId: level } — missing/absent means level 1. See WEAPON_DEFS' levelMods comment.
     weaponStatOverrides: {}, // { weaponId: { cooldown?, count?, dmgPct? } } — Dev Tools "Edit Stats" per-weapon raw overrides, layered on TOP of the level-resolved stats below (see weaponLevelStats/weaponCooldownFor); a field left out of a weapon's override object falls through to its normal level-resolved value.
     // Dev-only balance overrides for card effects (see CARD_EFFECTS_BY_NAME
@@ -7999,7 +8004,7 @@ function createGame(opts) {
      Regular drops: draw tickets, speedups, Research Points. Rare: hero shards (heroes you own, not VIP), Conquest Books. Never gems, weapon fragments or cards. */
   var IDLE_DROP_MIN = 20;
   var IDLE_DROPS = [
-    { id: "tickets", w: 30, n: 1, label: "Draw ticket" },
+    { id: "tickets", w: 30, n: 10, label: "Draw tickets" }, /* v1227: x10 tickets (same fragments) */
     { id: "su_con",  w: 18, n: 1, label: "1h Construction speedup" },
     { id: "su_gen",  w: 8,  n: 1, label: "1h Speedup" },
     { id: "rpHours", w: 26, n: 1, label: "Research Points (1h)" },
@@ -8064,7 +8069,7 @@ function createGame(opts) {
       else if (id === "books") { state.idle.conquestBooks = (state.idle.conquestBooks || 0) + n; got.push({ id: id, n: n }); }
       else if (id === "shards") { /* split over heroes you own (not VIP / governor), 3 at a time; none owned -> a draw ticket per 3 */
         var pool = Object.keys(state.heroes).filter(function (k) { var d = HERO_DEFS[k], h = state.heroes[k]; return d && h && h.owned && !d.vipOnly && d.class !== "governor"; }), per = {};
-        for (var q = 0; q < n; q += 3) { var c = Math.min(3, n - q); if (!pool.length) { state.weaponTickets = (state.weaponTickets || 0) + 1; got.push({ id: "tickets", n: 1 }); continue; } var hk = pool[Math.floor(rng() * pool.length)]; per[hk] = (per[hk] || 0) + c; }
+        for (var q = 0; q < n; q += 3) { var c = Math.min(3, n - q); if (!pool.length) { state.weaponTickets = (state.weaponTickets || 0) + WEAPON_TICKET_SCALE; got.push({ id: "tickets", n: WEAPON_TICKET_SCALE }); continue; } var hk = pool[Math.floor(rng() * pool.length)]; per[hk] = (per[hk] || 0) + c; }
         Object.keys(per).forEach(function (hk) { state.heroes[hk].fragments = (state.heroes[hk].fragments || 0) + per[hk]; got.push({ id: "shards", n: per[hk], hero: hk }); });
       }
       delete it[id]; });
@@ -9302,7 +9307,7 @@ function createGame(opts) {
   var RECON_RARITY_XP = [10, 18, 30, 50, 90];       // Recon XP for collecting one (a lost bot patrol gives half)
   var RECON_RARITY_WIN = [0.93, 0.9, 0.86, 0.82, 0.78]; // bot patrol win chance
   var RECON_BOOKS = { scout: [[0, 0], [1, 2], [3, 4], [5, 7], [8, 12]], bots: [[0, 0], [1, 2], [2, 3], [4, 6], [8, 10]] };
-  var RECON_TICKETS = [1, 1, 1, 2, 3]; // bot patrols only
+  var RECON_TICKETS = [10, 10, 10, 20, 30]; // bot patrols only (v1227: x10 tickets)
   // chance weight of each rarity at Recon level 1..10
   var RECON_WEIGHTS = [
     [80, 66, 54, 44, 34, 26, 18, 12, 8, 5],   // Standard
@@ -9450,11 +9455,11 @@ function createGame(opts) {
     return { ok: true, level: lv + 1, cost: c };
   }
   function weaponDraw(tickets) {
-    tickets = Math.floor(tickets) || 0;
-    if (tickets < 1 || (state.weaponTickets || 0) < tickets) return { ok: false };
+    var nd = Math.floor((Math.floor(tickets) || 0) / WEAPON_TICKET_SCALE); tickets = nd * WEAPON_TICKET_SCALE; /* v1227: a draw = 10 tickets (the old 1 ticket) */
+    if (nd < 1 || (state.weaponTickets || 0) < tickets) return { ok: false };
     state.weaponTickets -= tickets;
     var lvBefore = weaponDrawLevel(), got = {}, order = [];
-    for (var t = 0; t < tickets; t++) {
+    for (var t = 0; t < nd; t++) {
       var lv = weaponDrawLevel(); // the pool levels up between tickets of a multi-draw
       var odds = weaponDrawOdds(lv), tot = odds.reduce(function (a, r) { return a + r.weight; }, 0);
       for (var r = 0; r < WEAPON_DRAW_ROLLS_PER_TICKET; r++) {
@@ -9822,6 +9827,13 @@ function createGame(opts) {
     if (saved.weaponFrags && typeof saved.weaponFrags === "object") Object.keys(saved.weaponFrags).forEach(function (wid) { var n = saved.weaponFrags[wid]; if (WEAPON_DEFS_BY_ID[wid] && typeof n === "number" && isFinite(n) && n > 0) state.weaponFrags[wid] = Math.floor(n); });
     if (saved.items && typeof saved.items === "object") { state.items = {}; Object.keys(saved.items).forEach(function (k) { var v = Math.floor(+saved.items[k]); if (ITEM_DEFS[k] && isFinite(v) && v > 0) state.items[k] = v; }); } /* v1024 */
     if (typeof saved.weaponTickets === "number" && isFinite(saved.weaponTickets)) state.weaponTickets = Math.max(0, Math.floor(saved.weaponTickets));
+    if (!saved.ticketsX10) { /* v1227: an older save - its tickets were worth 10 of the new ones */
+      state.weaponTickets = (state.weaponTickets || 0) * WEAPON_TICKET_SCALE;
+      try { var sb = state.bucket; if (sb && sb.items && sb.items.tickets) sb.items.tickets *= WEAPON_TICKET_SCALE; } catch (e) {} /* bucket + recon were loaded above */
+      try { (state.recon && state.recon.missions || []).forEach(function (m) { if (m && m.reward && m.reward.tickets) m.reward.tickets *= WEAPON_TICKET_SCALE; }); } catch (e) {}
+      try { if (saved.lastDraw && saved.lastDraw.tickets) saved.lastDraw.tickets *= WEAPON_TICKET_SCALE; } catch (e) {}
+    }
+    state.ticketsX10 = true;
     if (typeof saved.weaponDraws === "number" && isFinite(saved.weaponDraws)) state.weaponDraws = Math.max(0, Math.floor(saved.weaponDraws));
     if (saved.weaponLevels && typeof saved.weaponLevels === "object") {
       Object.keys(saved.weaponLevels).forEach(function (wid) {
@@ -12068,7 +12080,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1226"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1227"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13323,9 +13335,10 @@ function renderWeaponDrawPanel() {
   var h = '<div style="background:linear-gradient(145deg,#2a2150,#17122e);border:1px solid #6b57b8;border-radius:12px;padding:10px 12px;margin-bottom:12px;">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:15px;">' + ico("ticket") + ' Weapon Draw — Pool Lv. ' + pr.level + '/' + g.WEAPON_DRAW_MAX_LEVEL + '</b><span>Tickets: <b>' + tk + '</b></span></div>';
   h += '<div style="height:8px;background:#0006;border-radius:5px;margin:7px 0 3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:#a78bfa;"></div></div>';
-  h += '<div class="dev-tools-hint" style="margin-bottom:6px;">' + (maxed ? 'Pool at max level (' + pr.draws + ' draws)' : (pr.draws - pr.from) + ' / ' + (pr.to - pr.from) + ' draws to Pool Lv. ' + (pr.level + 1) + (pr.level === 5 ? ' — unlocks Epic weapons' : pr.level === 12 ? ' — unlocks Legendary weapons (very rare)' : '')) + '</div>';
+  h += '<div class="dev-tools-hint" style="margin-bottom:6px;">' + (maxed ? 'Pool at max level (' + fmt(pr.draws * WEAPON_TICKET_SCALE) + ' tickets drawn)' : fmt((pr.draws - pr.from) * WEAPON_TICKET_SCALE) + ' / ' + fmt((pr.to - pr.from) * WEAPON_TICKET_SCALE) + ' tickets to Pool Lv. ' + (pr.level + 1) + (pr.level === 5 ? ' — unlocks Epic weapons' : pr.level === 12 ? ' — unlocks Legendary weapons (very rare)' : '')) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' + odds.map(function (r) { return '<span class="wi-chip" style="background:' + (WEAPON_RARITY_COLOR[r.rarity] || "#888") + ';color:#fff;">' + r.rarity + ' ' + (r.pct < 1 ? r.pct.toFixed(2) : r.pct.toFixed(r.pct < 10 ? 1 : 0)) + '%</span>'; }).join("") + '</div>';
-  h += '<div style="display:flex;gap:8px;"><button id="wdraw1" class="dev-btn"' + (tk < 1 ? ' disabled' : '') + '>Draw ×1</button><button id="wdraw10" class="dev-btn"' + (tk < 10 ? ' disabled' : '') + '>Draw ×10</button><button id="wdrawAll" class="dev-btn"' + (tk < 2 ? ' disabled' : '') + '>Use all (' + tk + ')</button></div>';
+  var tkUse = Math.floor(tk / WEAPON_TICKET_SCALE) * WEAPON_TICKET_SCALE; /* v1227: draws go in 10s */
+  h += '<div style="display:flex;gap:8px;"><button id="wdraw1" class="dev-btn"' + (tk < 10 ? ' disabled' : '') + '>Draw ×10</button><button id="wdraw10" class="dev-btn"' + (tk < 100 ? ' disabled' : '') + '>Draw ×100</button><button id="wdrawAll" class="dev-btn"' + (tk < 20 ? ' disabled' : '') + '>Use all (' + tkUse + ')</button></div>';
   var ld = g.state.lastDraw;
   if (ld && ld.got) {
     h += '<div style="margin-top:8px;font-size:13px;"><b>Last draw (' + ld.tickets + ' ticket' + (ld.tickets > 1 ? 's' : '') + '):</b> ' + ld.got.map(function (x) { var d = WEAPON_DEFS_BY_ID[x.id]; return '<span style="white-space:nowrap;margin-right:8px;">' + (d ? d.icon + ' ' + d.name : x.id) + ' <b>+' + x.n + '</b></span>'; }).join("") + (ld.levelAfter > ld.levelBefore ? '<div style="color:#f0c95f;">⬆ Pool reached Lv. ' + ld.levelAfter + '!</div>' : '') + '</div>';
@@ -13333,7 +13346,7 @@ function renderWeaponDrawPanel() {
   h += '</div>';
   el.innerHTML = h;
   function go(n) { return function () { var r = game.weaponDraw(n); if (r.ok) { persist(); renderWeapons(); if (weaponInfoOpenId) renderWeaponInfo(); } }; }
-  document.getElementById("wdraw1").onclick = go(1); document.getElementById("wdraw10").onclick = go(10);
+  document.getElementById("wdraw1").onclick = go(10); document.getElementById("wdraw10").onclick = go(100);
   document.getElementById("wdrawAll").onclick = function () { go(game.state.weaponTickets || 0)(); };
 }
 function renderWeapons() {
@@ -13400,7 +13413,7 @@ function renderDevWeaponsList() {
   (function () { // v786: draw tickets (no earn source decided yet)
     var tr = document.createElement("div"); tr.className = "dev-tools-row"; tr.style.cssText = "gap:6px;flex-wrap:wrap;align-items:center;";
     var tl = document.createElement("span"); tl.className = "dev-tools-hint"; tl.innerHTML = ico("ticket") + " Weapon draw tickets: " + (game.state.weaponTickets || 0) + " · pool draws " + (game.state.weaponDraws || 0) + " (Lv. " + game.weaponDrawLevel() + ")"; tr.appendChild(tl);
-    [10, 100].forEach(function (n) { var b = document.createElement("button"); b.className = "dev-btn"; b.textContent = "+" + n + " tickets"; b.onclick = function () { game.addWeaponTickets(n); persist(); renderDevWeaponsList(); renderWeapons(); }; tr.appendChild(b); });
+    [100, 1000].forEach(function (n) { var b = document.createElement("button"); b.className = "dev-btn"; b.textContent = "+" + n + " tickets"; b.onclick = function () { game.addWeaponTickets(n); persist(); renderDevWeaponsList(); renderWeapons(); }; tr.appendChild(b); });
     var rb = document.createElement("button"); rb.className = "dev-btn"; rb.textContent = "↺ Reset draws/frags"; rb.onclick = function () { game.state.weaponDraws = 0; game.state.weaponFrags = {}; game.state.lastDraw = null; persist(); renderDevWeaponsList(); renderWeapons(); }; tr.appendChild(rb);
     el.appendChild(tr);
   })();
@@ -17142,7 +17155,7 @@ function ksMailWhen(t) { /* list: time today, 'Yesterday', else day + month */
 function ksMailItems(m) { /* [{label, icon, name, qty}]; the label from the server is 'icon name' */
   return Object.keys(m.items || {}).map(function (k) {
     var lab = (m.labels && m.labels[k]) || k.replace(/_/g, " "), p = /^(\S+)\s+(.+)$/.exec(lab), ic = !!(p && /[^\x00-\x7F]/.test(p[1]));
-    return { label: lab, icon: ic ? p[1] : "", name: ic ? p[2] : lab, qty: +m.items[k] || 0 };
+    return { label: lab, icon: ic ? p[1] : "", name: ic ? p[2] : lab, qty: ksItemQty(k, m.items[k]) };
   });
 }
 function ksStartMail() {
@@ -17161,7 +17174,7 @@ function ksAddAtPath(path, qty) {
 }
 function ksMailApply(id, items) {
   var st = game.state; st.mailApplied = st.mailApplied || {}; if (st.mailApplied[id]) return false;
-  (items || []).forEach(function (x) { if (x.kind === "save" && x.path) ksAddAtPath(x.path, x.qty); });
+  (items || []).forEach(function (x) { if (x.kind === "save" && x.path) ksAddAtPath(x.path, x.path === "weaponTickets" ? (+x.qty || 0) * WEAPON_TICKET_SCALE : x.qty); }); /* v1227: server ticket counts are old tickets */
   (items || []).forEach(function (x) { var hm = /^heroes\.([a-z0-9_]+)\.unlock$/.exec(x.path || ""), h = hm && st.heroes && st.heroes[hm[1]]; if (!hm) return; if (h) { delete h.unlock; /* v947: a free hero. Already have them? Their shards instead */
     if (!h.owned) { h.owned = true; h.level = Math.max(1, h.level | 0); if (HERO_DEFS[hm[1]] && HERO_DEFS[hm[1]].class !== "governor") h.skillLevels = h.skillLevels || { conquest: [1, 1, 1], expedition: [1, 1, 1] }; game.log("🦸 New hero: " + (HERO_DEFS[hm[1]] || {}).name + "!"); }
     else { h.fragments = (h.fragments | 0) + 30 * (x.qty | 0); game.log("🦸 Already had " + (HERO_DEFS[hm[1]] || {}).name + " - got " + 30 * (x.qty | 0) + " shards instead."); } } });
@@ -17220,12 +17233,12 @@ function ksEvCardHtml(ev, prog, claimed, end, now, esc) {
   claimed = claimed || []; var ms = ev.milestones || [], last = ms.length - 1, top = last >= 0 ? ms[last].target : 1, ban = typeof ev.banner === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(ev.banner);
   if (end && end - now > 3650 * 86400e3) end = 0; /* v947: no time limit - no countdown */
   var head = '<div class="etitle">' + esc(ev.name) + '</div>' + (end ? '<div class="etime">⏱ ' + esc(ksEvLeft(end - now)) + "</div>" : "") + (ev.tag ? '<div class="etag">' + esc(ev.tag) + "</div>" : "") + (ev.desc ? '<div class="edesc">' + esc(ev.desc) + "</div>" : "");
-  function items(m) { var lab = m.labels || {}; return Object.keys(m.items || {}).map(function (k) { return '<span class="eit">' + esc((lab[k] || k) + " × " + ksEvNum(m.items[k])) + "</span>"; }).join(""); }
+  function items(m) { var lab = m.labels || {}; return Object.keys(m.items || {}).map(function (k) { return '<span class="eit">' + esc((lab[k] || k) + " × " + ksEvNum(ksItemQty(k, m.items[k]))) + "</span>"; }).join(""); }
   function btn(i, grand) { var m = ms[i]; if (claimed.indexOf(i) >= 0) return '<span class="edone">✓</span>'; if (prog >= m.target) return '<button type="button" class="ebtn" data-evc="' + esc(ev.id) + '" data-evi="' + i + '">Claim</button>'; return grand ? '<button type="button" class="ebtn go" data-evgo="' + esc(ev.goal) + '">Go</button>' : '<span class="elock">🔒 ' + esc(ksEvNum(m.target)) + "</span>"; }
   if (ev.goal === "signin") { /* v947: daily sign-in - a grid of days, the last one big on the right (like Kingshot's 7-day sign-in) */
     var rowsN = Math.max(1, Math.ceil(last / 3)), nextAt = (Math.floor(now / 86400e3) + 1) * 86400e3, done = claimed.length >= ms.length, today = !done && prog > claimed.length;
     var tile = function (m, i) { var got = claimed.indexOf(i) >= 0, cur = !got && today && i === claimed.length, lab = m.labels || {};
-      var its = Object.keys(m.items || {}).map(function (k) { var l = String(lab[k] || k), sp = l.indexOf(" "), ic = sp > 0 && sp <= 4 ? l.slice(0, sp) : "🎁"; return '<span class="sx" title="' + esc(l) + '"><i>' + esc(ic) + "</i>×" + esc(ksEvNum(m.items[k])) + "</span>"; }).join("");
+      var its = Object.keys(m.items || {}).map(function (k) { var l = String(lab[k] || k), sp = l.indexOf(" "), ic = sp > 0 && sp <= 4 ? l.slice(0, sp) : "🎁"; return '<span class="sx" title="' + esc(l) + '"><i>' + esc(ic) + "</i>×" + esc(ksEvNum(ksItemQty(k, m.items[k]))) + "</span>"; }).join("");
       return (cur ? '<button type="button"' : "<div") + ' class="esd' + (i === last ? " grand" : "") + (got ? " got" : "") + (cur ? " now" : "") + '"' + (cur ? ' data-evc="' + esc(ev.id) + '" data-evi="' + i + '"' : "")
         + (i === last && last > 0 ? ' style="grid-column:4;grid-row:1 / span ' + rowsN + '"' : "") + '><div class="si">' + its + '</div><div class="sd">' + (cur ? "Claim" : "Day " + (i + 1)) + "</div>" + (got ? '<span class="sok">✓</span>' : "") + (cur ? "</button>" : "</div>"); };
     return '<div class="ecard">' + (ban ? '<div class="eban" style="background-image:url(' + ev.banner + ')">' + head + "</div>" : '<div class="enoban">' + head + "</div>")
@@ -17262,7 +17275,7 @@ function ksShopCardHtml(p, e, priceText, now, esc) { /* p = pack, e = its place 
   var head = ban ? '<div class="sban" style="background-image:url(' + p.banner + ')"><div class="sbt"><div class="snm">' + esc(p.name) + "</div>" + (p.desc ? '<div class="sds">' + esc(p.desc) + "</div>" : "") + "</div>" + (e.end ? '<div class="stime">⏳ ' + esc(ksShopLeft(e.end - now)) + "</div>" : "") + "</div>"
     : '<div class="shead"><span class="sic">' + esc(p.icon || "📦") + '</span><div><div class="snm">' + esc(p.name) + "</div>" + (p.desc ? '<div class="sds">' + esc(p.desc) + "</div>" : "") + "</div></div>";
   return '<div class="scard' + (ban ? " hb" : "") + '">' + (e.badge ? '<span class="sbadge">' + esc(e.badge) + "</span>" : "") + head
-    + '<div class="sitems">' + Object.keys(p.items || {}).map(function (k) { return '<span class="sit">' + esc((lab[k] || k) + " × " + (+p.items[k]).toLocaleString()) + "</span>"; }).join("") + "</div>"
+    + '<div class="sitems">' + Object.keys(p.items || {}).map(function (k) { return '<span class="sit">' + esc((lab[k] || k) + " × " + ksItemQty(k, p.items[k]).toLocaleString()) + "</span>"; }).join("") + "</div>"
     + (meta.length ? '<div class="smeta">' + esc(meta.join("  ·  ")) + "</div>" : "")
     + '<button type="button" class="sbuy" data-sbuy="' + esc(p.name) + '">' + esc(priceText) + "</button></div>";
 }
@@ -20187,9 +20200,9 @@ function gauntletReward(f) {
   var rw = { wood: 400 * f, food: 400 * f, stone: 160 * f, gold: 60 * f }, extra = f % 5, milestone = f % 10 === 0;
   if (extra === 1) rw.rp = 60 * f;
   else if (extra === 2) rw.books = 1 + Math.floor(f / 25);
-  else if (extra === 3) rw.tickets = 1;
+  else if (extra === 3) rw.tickets = 10; /* v1227: x10 tickets */
   else if (extra === 4) { rw.wood *= 2; rw.food *= 2; rw.stone *= 2; rw.gold *= 2; }
-  if (milestone) { rw.wood *= 3; rw.food *= 3; rw.stone *= 3; rw.gold *= 3; rw.tickets = (rw.tickets || 0) + 2; rw.books = (rw.books || 0) + 2; rw.essence = tgGauntletEssence(f); } /* v1093: essence is paid by game.trainSync (shown here) */
+  if (milestone) { rw.wood *= 3; rw.food *= 3; rw.stone *= 3; rw.gold *= 3; rw.tickets = (rw.tickets || 0) + 20; rw.books = (rw.books || 0) + 2; rw.essence = tgGauntletEssence(f); } /* v1093: essence is paid by game.trainSync (shown here) */
   return rw;
 }
 function gauntletRewardText(rw) {
