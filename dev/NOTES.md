@@ -2320,3 +2320,7 @@
 - WEAPON_POWER_MAX now Elite 105.5K, Super Rare 179.8K, Epic 293.7K, Legendary 700K (Lv1 still 70%). All weapons maxed ~4.2M (was 5.7M); the 5 Elite + 2 SR a new account gets from 15 tickets: 882K -> 621K.
 - Still open: a weapon counts as owned from its first fragment (no unlock step yet).
 - g319 updated; g195, g322 pass.
+
+## v1234 — monster energy is now called Stamina
+- Harley: "Call it Stamina. Most players are familiar with that." UI text only: search panel "⚡ Stamina N/100", monster card row, "Not enough stamina", refund notes. Same numbers (100 max, 10 per attack, +1 / 6 min); code names unchanged (state.monsters.energy).
+- g331 passes.

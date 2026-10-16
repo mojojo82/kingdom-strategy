@@ -7343,7 +7343,7 @@ function createGame(opts) {
     var base = { id: state.nextBattleReportId++, marchId: march.id, time: now(), tileId: march.tileId, tileType: "monster", tileLevel: L, monsterType: mo.type, resourceType: null, homeTileId: state.homeTileId, heroKeys: heroKeys };
     if ((authoritative && authoritative.monsterGone) || state.monsters.kills[mo.id]) {
       state.monsters.energy = Math.min(MONSTER_ENERGY_MAX, state.monsters.energy + MONSTER_ENERGY_COST);
-      state.battleReports.unshift(Object.assign(base, { win: false, atkPower: 0, defPower: 0, attackerArmy: Object.assign({}, march.army), defenderArmy: {}, attackerLosses: {}, defenderLosses: {}, loot: {}, note: "👻 The " + def.name + " was already defeated when your troops arrived. Energy refunded." }));
+      state.battleReports.unshift(Object.assign(base, { win: false, atkPower: 0, defPower: 0, attackerArmy: Object.assign({}, march.army), defenderArmy: {}, attackerLosses: {}, defenderLosses: {}, loot: {}, note: "👻 The " + def.name + " was already defeated when your troops arrived. Stamina refunded." }));
       if (state.battleReports.length > BATTLE_REPORTS_MAX) state.battleReports.length = BATTLE_REPORTS_MAX;
       log("March #" + march.id + " found the monster already gone.");
       march.result = { report: null, loot: {} }; march.status = "acting"; march.actionEnd = Math.min(now(), march.arriveAt || now()) + 1000; return;
@@ -12183,7 +12183,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1233"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1234"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17813,8 +17813,8 @@ function renderMonsterCard() {
   var h = '<div class="wi-card mon-card"><div class="wi-top">' + d.name + '<button class="wi-close" id="monClose" aria-label="Close">✕</button></div>';
   h += '<div class="mc-head"><img src="' + d.img + '" alt=""><div><div class="mc-nm">Level ' + m.level + '</div><div class="mc-sub">X:' + m.x + ' Y:' + m.y + ' · ' + dist + ' km away' + (m.summon ? ' · called up by you' : '') + '</div><div class="mc-sub">' + Object.keys(gar).map(function (t) { return (TROOP_ICON[troopBase(t)] || "") + ' ' + fmt(gar[t]) + ' ' + TROOP_DEFS[t].name + ' T' + monsterTier(m.level); }).join(", ") + '</div></div></div>';
   h += '<div class="mon-sec">Rewards</div><div class="mon-rw">' + rw.g + '</div><div class="mon-sec">Chance of</div><div class="mon-rw">' + rw.c + '</div>';
-  h += '<div class="pd-grp" style="margin:10px 12px 0"><div class="pd-row"><span>Enemy strength</span><span>' + fmt(defPow) + '</span></div><div class="pd-row"><span>Energy</span><span>⚡ ' + MONSTER_ENERGY_COST + ' <span class="pd-pct">(you have ' + en + '/' + MONSTER_ENERGY_MAX + ')</span></span></div></div>';
-  var msg = !open ? "🔒 Beat a Level " + Math.min(MONSTER_MAX_LEVEL, (game.state.monsters.maxBeat | 0) + 1) + " monster first." : en < MONSTER_ENERGY_COST ? "⚡ Not enough energy - next +1 in " + fmtTime(game.monsterEnergyNextSec()) + "." : "";
+  h += '<div class="pd-grp" style="margin:10px 12px 0"><div class="pd-row"><span>Enemy strength</span><span>' + fmt(defPow) + '</span></div><div class="pd-row"><span>Stamina</span><span>⚡ ' + MONSTER_ENERGY_COST + ' <span class="pd-pct">(you have ' + en + '/' + MONSTER_ENERGY_MAX + ')</span></span></div></div>';
+  var msg = !open ? "🔒 Beat a Level " + Math.min(MONSTER_MAX_LEVEL, (game.state.monsters.maxBeat | 0) + 1) + " monster first." : en < MONSTER_ENERGY_COST ? "⚡ Not enough stamina - next +1 in " + fmtTime(game.monsterEnergyNextSec()) + "." : "";
   if (msg) h += '<div class="mon-msg">' + msg + '</div>';
   h += '<div class="mon-fm">';
   (game.state.formations || []).forEach(function (f, idx) {
@@ -17826,7 +17826,7 @@ function renderMonsterCard() {
     var right = tot <= 0 ? "No troops home" : busy ? "Heroes busy" : (pv.win ? '<span class="win">' + fmt(pv.atkPower) + ' · Win</span>' : '<span class="lose">' + fmt(pv.atkPower) + ' · Too weak</span>');
     h += '<button data-f="' + idx + '"' + (!open || en < MONSTER_ENERGY_COST || tot <= 0 || busy ? " disabled" : "") + '><span>⚔️ ' + f.name + (leaders ? " · " + leaders : "") + '</span><small>' + right + '</small></button>';
   });
-  h += '</div><div class="pd-note">Hurt troops go to the Infirmary - none die. Energy comes back if the monster is gone when you arrive.</div></div>';
+  h += '</div><div class="pd-note">Hurt troops go to the Infirmary - none die. Stamina comes back if the monster is gone when you arrive.</div></div>';
   ov.innerHTML = h;
   document.getElementById("monClose").onclick = closeMonsterCard;
   [].forEach.call(ov.querySelectorAll(".mon-fm button[data-f]"), function (b) { b.onclick = function () { monAttack(m, +b.getAttribute("data-f")); }; });
@@ -17835,7 +17835,7 @@ function monAttack(m, idx) {
   var f = game.state.formations[idx]; if (!f) return;
   var army = monFormationArmy(f);
   var res = game.sendMarch(army, m.tileId, "attack", f.heroKeys, formationFortType(f, game.state.fortressTech), m);
-  if (!res.ok) { try { miniToast(({ no_energy: "Not enough energy.", monster_locked: "Beat the level below first.", hero_busy: "A hero in that formation is busy.", empty_army: "No troops home for that formation." })[res.reason] || ("Can't attack: " + res.reason)); } catch (e) {} return; }
+  if (!res.ok) { try { miniToast(({ no_energy: "Not enough stamina.", monster_locked: "Beat the level below first.", hero_busy: "A hero in that formation is busy.", empty_army: "No troops home for that formation." })[res.reason] || ("Can't attack: " + res.reason)); } catch (e) {} return; }
   res.march.skin = formationMarchSkin(f);
   closeMonsterCard(); selectedTile = null; persist(); render(); try { renderVisibleTiles(); renderTileInfo(); } catch (e) {}
 }
@@ -17870,7 +17870,7 @@ function renderMonsterSearch(note) {
     h += '<h5>Possible rewards</h5><div class="mon-rw" style="padding:0">' + rw.g + rw.c + '</div>';
     h += '<div class="ms-lv"><button class="ms-pm" id="msMinus">−</button><input type="range" id="msLv" min="1" max="' + MONSTER_MAX_LEVEL + '" value="' + S.level + '"><button class="ms-pm" id="msPlus">+</button></div>';
     h += '<div class="ms-lvt">Level ' + S.level + ' <small>· highest unlocked ' + U + (S.level > U ? ' · 🔒 locked' : '') + '</small></div>';
-    h += '<div class="ms-foot"><div class="ms-en">⚡ ' + en + '/' + MONSTER_ENERGY_MAX + ' <small>· ' + MONSTER_ENERGY_COST + ' per attack' + (en < MONSTER_ENERGY_MAX ? ' · +1 in ' + fmtTime(game.monsterEnergyNextSec()) : '') + '</small></div><button class="ms-go" id="msGo">Search</button></div>';
+    h += '<div class="ms-foot"><div class="ms-en">⚡ Stamina ' + en + '/' + MONSTER_ENERGY_MAX + ' <small>· ' + MONSTER_ENERGY_COST + ' per attack' + (en < MONSTER_ENERGY_MAX ? ' · +1 in ' + fmtTime(game.monsterEnergyNextSec()) : '') + '</small></div><button class="ms-go" id="msGo">Search</button></div>';
   } else {
     h += '<div class="ms-row">' + ["food", "wood", "stone", "gold"].map(function (r) { return '<button class="ms-pick' + (S.res === r ? " on" : "") + '" data-res="' + r + '"><div class="im">' + RES_ICON[r] + '</div>' + r.charAt(0).toUpperCase() + r.slice(1) + '</button>'; }).join("") + '</div>';
     h += '<div class="ms-foot"><div class="ms-en"><small>Finds the nearest node to your city</small></div><button class="ms-go" id="msGo">Search</button></div>';
