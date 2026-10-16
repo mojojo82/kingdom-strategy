@@ -2260,3 +2260,9 @@
 ## v1222 (17 Oct 2026) - Options: Research Points -> 0 (TEST only)
 - Harley wanted the RP on tomhector2003 (a non-admin account, so no Dev Tools) set to 0, from his phone. More > Options now has "🔬 Research Points: N [Set to 0]" on the TEST server only (asks first, saves to the cloud at once). Checked headless on a normal TEST account: 2,688,649 -> 0, cloud save 0.
 - Tonight's detours, for the record: v1221's Dev Tools button (admin-only - useless for Tom); an admin-panel "Set Research Points" button (parked in a git stash, not pushed); a manual one-off workflow (.github/workflows/oneoff.yml + tools/oneoff-set-rp.js) that failed and whose log I was blocked from reading - unused; can be deleted.
+
+## v1223 (17 Oct 2026) - march ship points at its target
+- Harley: the ship doesn't point straight at its target (chevrons fine). Measured from his screenshot: chevrons collinear within ~1 px; the Ghost Galleon looked turned ~10-15 deg off its route. Cause: on the slanted map the ship's keel DID follow the route, but squashing the picture vertically turns the on-screen outline of a wide hull toward the horizontal. Exact projection of the hull's waterline vertices (bottom 30% of the model): Ghost Galleon (width/length 0.41) up to 10 deg off, Voidspire (0.21) up to 2 deg.
+- Fix: marchVisualHeading() turns the ship on the water until its outline on screen lines up with the route on screen (per model width/length, from the model at load); the hull's small sideways offset (Galleon 0.043) is moved onto the keel line. Now under 1 deg for every direction tested (both models).
+- Still true and expected: the masts/sails stand straight up on screen, so the ship's body sits a little above its route line on diagonals (the hull at the water is on the line).
+- Tools: dev/simfork/p02_ship_aim.js renders ships on set routes (CASES, ZOOM, SHOTS).
