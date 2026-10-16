@@ -2200,3 +2200,7 @@
 - Harley: the Overlord Profile's bottom buttons were mostly useless now. Removed Settings (same as the gear / •••). Save Data, Playtest Link and Dev Notes moved to Dev Tools > "👤 Old profile buttons" (still work).
 - Trial replacements until Harley decides: Power Details (the existing popup), Battle Stats (Conquest kills + chapter, Arena rank / points / W-L-D / win rate, World battles won in the kept reports, Gauntlet floors), Achievements (a "coming soon" card - no achievements exist yet), Share Profile (phone share sheet, else copies name, ID, power, chapter + game link).
 - Row is now 4 equal columns; Achievements label at 12px so it fits. Test: g328.
+
+## v1212 (16 Oct 2026) - Warehouse / Infirmary power from Kingshot
+- Harley sent Kingshot's Infirmary and Storehouse tables (Lv1-30). Both are our building curve times a multiplier, exact at every level: Storehouse x1.1 (440 ... 335,170), Infirmary x0.75 (300 ... 228,525). Were guesses x0.1 / x0.5.
+- Maxed Warehouse 30,470 -> 335,170; maxed Infirmary 152,350 -> 228,525. Maxed buildings total ~3.38M -> ~3.76M.

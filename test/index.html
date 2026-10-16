@@ -5690,10 +5690,10 @@ var BUILDING_REAL_TABLE = {
 // Global (not inside createGame) so both game.governorPower() and the Arena power breakdown share one copy.
 /* v1203 (Harley, Kingshot video 16 Oct): every building follows ONE curve (Kingshot's Range/Barracks power per level) times a multiplier -
    Town Center x5, Academy x1.1, troop buildings x1, Mill/Sawmill etc x0.1 (all checked against Kingshot's tables). The level's number is the
-   building's power at that level (NOT a running sum - the old resource tables were summed, 8x too high). Guess (not in the video): Warehouse
-   x0.1, Infirmary x0.5. Wall (20 levels) = Kingshot's Guard Station shape: the curve at level round(1.5 x lv), so Wall 20 = Range 30. */
+   building's power at that level (NOT a running sum - the old resource tables were summed, 8x too high). v1212: Warehouse
+   x1.1 (Kingshot Storehouse), Infirmary x0.75 - from Harley's second video, exact at every level. Wall (20 levels) = Kingshot's Guard Station shape: the curve at level round(1.5 x lv), so Wall 20 = Range 30. */
 var KS_BUILD_CURVE = [400,760,1300,2020,3100,4720,7060,9400,11740,15140,18540,21940,27680,33420,39160,47240,55320,63400,74880,86360,97840,115060,132280,149500,166720,192020,217320,242620,267920,304700];
-var BUILDING_POWER_MULT = { townhall: 5, academy: 1.1, barracks: 1, archery: 1, stable: 1, farm: 0.1, sawmill: 0.1, quarry: 0.1, goldmine: 0.1, warehouse: 0.1, infirmary: 0.5 };
+var BUILDING_POWER_MULT = { townhall: 5, academy: 1.1, barracks: 1, archery: 1, stable: 1, farm: 0.1, sawmill: 0.1, quarry: 0.1, goldmine: 0.1, warehouse: 1.1, infirmary: 0.75 }; /* v1212 (Harley, Kingshot tables): Storehouse x1.1, Infirmary x0.75 - both match the curve exactly at every level (were guesses 0.1 / 0.5) */
 var BUILDING_REAL_POWER = (function () { var o = {};
   Object.keys(BUILDING_POWER_MULT).forEach(function (k) { o[k] = KS_BUILD_CURVE.map(function (v) { return Math.round(v * BUILDING_POWER_MULT[k]); }); });
   o.wall = []; for (var lv = 1; lv <= 20; lv++) o.wall.push(KS_BUILD_CURVE[Math.min(30, Math.max(1, Math.round(lv * 1.5))) - 1]);
@@ -11920,7 +11920,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1211"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1212"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
