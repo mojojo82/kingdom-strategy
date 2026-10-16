@@ -2289,3 +2289,8 @@
 - Draws take any number of tickets (no more blocks of 10). Draw pool progress is counted in tickets (same totals as before); old saves have weaponDraws ×10 once (`drawsInTickets` flag).
 - Income effect: 10 tickets used to give ~10–13.5 fragments, now exactly 10. Odds unchanged; the odds rework (match HSH Lv15) is next.
 - Test: dev/simfork/g335_tickets_x10.js updated (15 tickets → 15 fragments, old pool progress migrated once).
+
+## v1229 — weapon draw odds match HSH Lv15
+- Pool Lv15 = High Seas Hero Lv15: their Common/Rare/Elite → our Elite 74.66%, Exceptional → Super Rare 18%, Epic+Legendary+Immortal → Epic 7.3%, Transcendent → Legendary 0.04%.
+- Lower pool levels: smooth ramp (Lv1 Elite 85 / SR 15; Epic from Lv6 at 1%; Legendary from Lv13 at 0.01%). A guess until Harley sends their Lv1/Lv8 odds.
+- Free player (~200 tickets/day) at Lv15, one weapon to Lv50: Elite ~39 days, Super Rare ~98, Epic ~240; Legendary ~1 fragment per 2,500 tickets (more ticket sources to come).

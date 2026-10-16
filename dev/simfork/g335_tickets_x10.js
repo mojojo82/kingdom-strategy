@@ -43,6 +43,7 @@ const call = call0;
     /* 4. mail with 5 weapon tickets (server counts old tickets) -> 50 */
     const t0 = game.state.weaponTickets; ksMailApply("t1", [{ kind: "save", path: "weaponTickets", qty: 5 }]); out.mail = game.state.weaponTickets - t0;
     out.itemQty = ksItemQty("weapon_tickets", 3);
+    out.odds15 = game.weaponDrawOdds(15).map((x) => x.rarity + " " + +x.pct.toFixed(2)); out.odds1 = game.weaponDrawOdds(1).map((x) => x.rarity + " " + +x.pct.toFixed(2));
     return out;
   });
   console.log(JSON.stringify({ r, errs }));
@@ -54,6 +55,8 @@ const call = call0;
   assert.strictEqual(r.draw5, true, "any number of tickets can draw");
   assert.strictEqual(r.per10atLv1, 10, "10 tickets = 10 fragments");
   assert.deepStrictEqual(r.drawsMig, [300, 300, 4], "old pool progress x10 once, same pool level (30 old draws = Lv4)");
+  assert.deepStrictEqual(r.odds15, ["Elite 74.66", "Super Rare 18", "Epic 7.3", "Legendary 0.04"], "v1228 pool Lv15 odds");
+  assert.deepStrictEqual(r.odds1, ["Elite 85", "Super Rare 15"], "pool Lv1 odds");
   assert.strictEqual(r.mail, 50); assert.strictEqual(r.itemQty, 30);
   console.log("g335 ok");
 })().catch((e) => { console.error(e); process.exit(1); });
