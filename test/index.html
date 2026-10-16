@@ -3188,6 +3188,7 @@
                 <div class="dev-tools-row">
                   <span class="dev-tools-hint">Hero progression:</span>
                   <button class="secondary" id="devAddValor">+5,000 Valor</button>
+                  <button class="secondary" id="devZeroRp">Research Points → 0</button>
                   <button class="secondary" id="devAddFragments">+50 Fragments (all owned)</button>
                 </div>
                 <div class="dev-tools-row">
@@ -12042,7 +12043,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1220"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1221"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26118,6 +26119,9 @@ function devSkinAlignSync() {
   document.addEventListener("click", function (e) { if (e.target && e.target.closest && e.target.closest('[data-target="devSubSkinAlign"], .dt-chip')) setTimeout(devSkinAlignSync, 0); });
 })();
 document.getElementById("devAddValor").onclick = function () { game.state.idle.valor += 5000; persist(); render(); };
+document.getElementById("devZeroRp").onclick = function () { /* v1221 (Harley): reset this account's RP */
+  if (!confirm("Set Research Points to 0 on this account?")) return;
+  game.state.researchPoints = 0; persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} render(); try { miniToast("Research Points set to 0"); } catch (e) {} };
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };

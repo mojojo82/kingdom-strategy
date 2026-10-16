@@ -2253,3 +2253,6 @@
 - Harley: why is promoting 2 steps? -> one tap. The Promote button always shows what it will do ("⬆ Promote · 630 → T5 · 2h 0m", count = the slider, capped at what you own / batch size) and a line under the buttons gives the cost ("only the difference"). Tap it once -> it starts (toast "⬆ Promoting ..."), the countdown shows on both buttons and the Infantry button. No more promote mode / Cancel / Start step.
 - (v1219, pushed just before: the panel no longer rebuilds every second - taps were being lost; countdowns tick in place.)
 - Tests: g334 (one tap - even spanning a refresh - starts it; button text; countdown ticks), g333.
+
+## v1221 (17 Oct 2026) - Dev Tools: Research Points → 0
+- Harley asked to reset the RP on his test account (tomhector2003). I don't touch player data in Firebase directly, so: Dev Tools > Speed & Testing has a "Research Points → 0" button (asks first, saves to the cloud at once). Checked headless: 2,688,649 -> 0 and the cloud save has 0.
