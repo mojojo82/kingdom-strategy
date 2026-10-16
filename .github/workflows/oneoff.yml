@@ -19,8 +19,10 @@ jobs:
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
+          set -o pipefail
           echo "$SA" > /tmp/sa.json
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
           (cd functions && npm install --no-audit --no-fund >/dev/null)
-          node tools/oneoff-set-rp.js "${{ inputs.env }}" "${{ inputs.email }}" "${{ inputs.value }}" 2>&1 | tee /tmp/out.txt
-          echo "::notice::$(grep -E 'RESULT|FAILED' /tmp/out.txt | head -1)"
+          node tools/oneoff-set-rp.js "${{ inputs.env }}" "${{ inputs.email }}" "${{ inputs.value }}" > /tmp/out.txt 2>&1 || rc=$?
+          tail -4 /tmp/out.txt | grep -v '^\s*$' | sed 's/[^A-Za-z0-9 =_.:\/@-]//g' | while IFS= read -r l; do echo "::notice::OUT ${l:0:400}"; done
+          exit ${rc:-0}
