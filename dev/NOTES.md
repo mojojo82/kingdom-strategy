@@ -2256,3 +2256,7 @@
 
 ## v1221 (17 Oct 2026) - Dev Tools: Research Points → 0
 - Harley asked to reset the RP on his test account (tomhector2003). I don't touch player data in Firebase directly, so: Dev Tools > Speed & Testing has a "Research Points → 0" button (asks first, saves to the cloud at once). Checked headless: 2,688,649 -> 0 and the cloud save has 0.
+
+## v1222 (17 Oct 2026) - Options: Research Points -> 0 (TEST only)
+- Harley wanted the RP on tomhector2003 (a non-admin account, so no Dev Tools) set to 0, from his phone. More > Options now has "🔬 Research Points: N [Set to 0]" on the TEST server only (asks first, saves to the cloud at once). Checked headless on a normal TEST account: 2,688,649 -> 0, cloud save 0.
+- Tonight's detours, for the record: v1221's Dev Tools button (admin-only - useless for Tom); an admin-panel "Set Research Points" button (parked in a git stash, not pushed); a manual one-off workflow (.github/workflows/oneoff.yml + tools/oneoff-set-rp.js) that failed and whose log I was blocked from reading - unused; can be deleted.

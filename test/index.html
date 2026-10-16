@@ -12043,7 +12043,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1221"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1222"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -29772,7 +29772,9 @@ function renderOptionsScreen() {
     '<div class="op-note" id="opMusicSt">Music status: ' + musicStatusText() + '</div>' +
     '<div class="op-row"><span class="op-l">🔍 Map zoom buttons</span><button type="button" class="op-tg' + (mapZoomBtnsOn ? ' on' : '') + '" id="opZoomBtns">' + (mapZoomBtnsOn ? 'On' : 'Off') + '</button></div>' +
     '<div class="op-note">Shows + and − buttons on the world map, for anyone who can\'t pinch or scroll. PC: scroll wheel or + / − keys also zoom.</div>' +
-    '<div class="op-note">Music: "Kites Rising" by Kaazoom.</div>';
+    '<div class="op-note">Music: "Kites Rising" by Kaazoom.</div>' +
+    (window.KS_BACKEND && KS_BACKEND.env === "test" ? '<div class="op-row"><span class="op-l">🔬 Research Points: ' + fmt(Math.floor(game.state.researchPoints || 0)) + '</span><button type="button" class="op-tg" id="opZeroRp">Set to 0</button></div><div class="op-note">TEST server only - for testing RP from scratch.</div>' : ''); /* v1222 (Harley: reset this account's RP from the phone) */
+  var zr = document.getElementById("opZeroRp"); if (zr) zr.onclick = function () { if (!confirm("Set this account's Research Points to 0?")) return; game.state.researchPoints = 0; persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} renderOptionsScreen(); try { miniToast("Research Points set to 0"); } catch (e) {} };
   var sl = document.getElementById("opMusic");
   sl.oninput = function () { setMusicVol(sl.value / 100); document.getElementById("opMusicV").textContent = sl.value + "%"; };
   document.getElementById("opSfx").onclick = function () { setSoundFx(!soundFxEnabled); renderOptionsScreen(); };
