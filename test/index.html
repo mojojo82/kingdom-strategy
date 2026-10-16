@@ -12183,7 +12183,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1235"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1236"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18279,7 +18279,7 @@ function marchGLInit() {
     /* v832: the canvas lives INSIDE the scrolling map, so the browser scrolls it with the ground (no one-frame lag = no jiggle); ships are drawn in map coordinates and the canvas only re-centres when you've scrolled well away from where it was last placed. */
     var cv = document.createElement("canvas"); cv.id = "marchGL"; cv.style.cssText = "position:absolute;pointer-events:none;z-index:99999;display:none;";
     wrap.appendChild(cv);
-    var gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: true }); if (!gl) return false;
+    var gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false } /* v1236: edge smoothing off - about 2x faster (Harley: fps drops with marches out) */); if (!gl) return false;
     function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
     var vs = "attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; varying vec3 vC; uniform vec2 uRes; uniform vec2 uOrg; uniform float uU; uniform float uS; uniform vec2 uCS; uniform float uLift; uniform float uZ0; varying vec3 vN; varying vec3 vP; varying float vWY;" +
       "void main(){ vec3 p = aPos * uS; float c = uCS.x, s = uCS.y; vec3 w = vec3(p.x*c + p.z*s, p.y + uLift, -p.x*s + p.z*c); vN = vec3(aNrm.x*c + aNrm.z*s, aNrm.y, -aNrm.x*s + aNrm.z*c); vP = aPos; vC = aCol; vWY = w.y;" +
@@ -18374,9 +18374,24 @@ function marchGLDraw(ships, u) {
   var vp = document.getElementById("mapviewport"); if (!vp) return;
   var gl = G.gl, cv = G.cv;
   if (!ships.length) { if (G.hadShips) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); G.hadShips = false; cv.style.display = "none"; } return; }
-  var MG = 160, VW = vp.clientWidth, VH = vp.clientHeight, W = VW + 2 * MG, H = VH + 2 * MG, dpr = Math.min(window.devicePixelRatio || 1, 2);
-  if (G.ox === undefined || Math.abs(vp.scrollLeft - MG - G.ox) > MG * 0.5 || Math.abs(vp.scrollTop - MG - G.oy) > MG * 0.5) { G.ox = Math.round(vp.scrollLeft - MG); G.oy = Math.round(vp.scrollTop - MG); }
-  cv.style.display = "block"; cv.style.left = G.ox + "px"; cv.style.top = G.oy + "px";
+  /* v1236: the canvas only covers the box round the ships (+ their wakes), not the whole screen + 160px border - far fewer pixels to clear,
+     draw and blend over the map every frame. Size moves in 64px steps and only shrinks when it's much too big (no resize every frame). */
+  var VW = vp.clientWidth, VH = vp.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2), PADV = 40;
+  var vx0 = vp.scrollLeft - PADV, vy0 = vp.scrollTop - PADV, vx1 = vp.scrollLeft + VW + PADV, vy1 = vp.scrollTop + VH + PADV, bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  ships.forEach(function (sh) {
+    var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], R = (march3dSize * (mk.size || 1) * 0.9 + 0.8) * u, c = marchWaterCfg(mk.model || "void");
+    var w = march3dWater ? Math.min((c.wakeLen || 0) + 1, (sh.ld || 0) + 1) : 0, gl2 = Math.sqrt(sh.gx * sh.gx + sh.gz * sh.gz) || 1, Dx = sh.gx / gl2, Dz = sh.gz / gl2;
+    var tx = sh.ox - (Dx - Dz) * 0.70711 * u * w, ty = sh.oy - (Dx + Dz) * 0.40558 * u * w;
+    bx0 = Math.min(bx0, sh.ox - R, tx - R); by0 = Math.min(by0, sh.oy - R, ty - R); bx1 = Math.max(bx1, sh.ox + R, tx + R); by1 = Math.max(by1, sh.oy + R, ty + R);
+  });
+  bx0 = Math.max(bx0, vx0); by0 = Math.max(by0, vy0); bx1 = Math.min(bx1, vx1); by1 = Math.min(by1, vy1);
+  if (!(bx1 > bx0 && by1 > by0)) { if (G.hadShips) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); G.hadShips = false; cv.style.display = "none"; } return; }
+  var Q = 64, qx0 = Math.floor(bx0 / Q) * Q, qy0 = Math.floor(by0 / Q) * Q, nW = Math.ceil(bx1 / Q) * Q - qx0, nH = Math.ceil(by1 / Q) * Q - qy0;
+  var W = G.w, H = G.h, keep = W >= nW && H >= nH && W * H <= 2 * nW * nH && dpr === G.dpr;
+  if (!keep) { W = nW; H = nH; }
+  G.ox = qx0; G.oy = qy0;
+  if (G._l !== G.ox) { cv.style.left = G.ox + "px"; G._l = G.ox; } if (G._t !== G.oy) { cv.style.top = G.oy + "px"; G._t = G.oy; }
+  if (cv.style.display !== "block") cv.style.display = "block";
   if (W !== G.w || H !== G.h || dpr !== G.dpr) { G.w = W; G.h = H; G.dpr = dpr; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); cv.style.width = W + "px"; cv.style.height = H + "px"; }
   gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   var now = performance.now(), dt = G.last ? Math.min(0.1, (now - G.last) / 1000) : 0.016; G.last = now;

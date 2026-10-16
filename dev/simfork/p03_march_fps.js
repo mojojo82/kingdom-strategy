@@ -24,13 +24,14 @@ const call = call0;
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Hunter"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   await P.evaluate(() => { try { setScreen("world"); } catch (e) {} centerMapOnHome(); });
   await P.waitForTimeout(2000);
-  const sent = await P.evaluate(() => {
+  const sent = await P.evaluate((MID) => {
     const s = game.state, h = mapTileById(s.map, s.homeTileId), tk = Object.keys(s.troops).find((k) => /infantry/.test(k)) || Object.keys(s.troops)[0]; s.troops[tk] = 5000;
     const res = s.map.filter((t) => t.type === "resource" && Math.abs(t.x - h.x) + Math.abs(t.y - h.y) >= 4 && Math.abs(t.x - h.x) + Math.abs(t.y - h.y) <= 9).slice(0, 3);
-    const out = []; res.forEach((t) => { const a = {}; a[tk] = 100; const r = game.sendMarch(a, t.id, "gather", []); if (r && r.march) { const m = r.march; m.travelSec = 600; m.arriveAt = Date.now() + 600000; out.push(m.id); } });
+    const out = []; res.forEach((t) => { const a = {}; a[tk] = 100; const r = game.sendMarch(a, t.id, "gather", []); if (r && r.march) { const m = r.march; m.travelSec = 600; m.arriveAt = Date.now() + (MID ? 200000 : 600000); out.push(m.id); } });
     try { startMarchAnim(); } catch (e) {} return { n: out.length, tk };
-  });
+  }, !!process.env.MID);
   await P.waitForTimeout(1500);
+  if (process.env.SHOT) { await P.evaluate(() => { const m = game.state.marches[0]; if (m) centerMapOnMarch(m.id); }); await P.waitForTimeout(800); await P.screenshot({ path: process.env.SHOT }); }
   const cdp = await P.context().newCDPSession(P); await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await P.evaluate(() => {
     window.__T = { um: 0, gl: 0, wb: 0, rm: 0 };
