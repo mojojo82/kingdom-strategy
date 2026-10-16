@@ -29,13 +29,16 @@ const call = call0;
   await P.click("#trTrain"); await P.waitForTimeout(2500);
   const r = await P.evaluate(() => { const q = game.state.buildings.barracks.queue; const busy = document.querySelector(".tr-busy"); return { queued: q.length && { n: q[0].count, to: q[0].troopType, from: q[0].promoteFrom }, busyShown: busy ? busy.textContent.replace(/\s+/g, " ").slice(0, 120) : null, trainBtn: (document.getElementById("trTrain") || {}).textContent }; });
   if (SH) await P.screenshot({ path: SH + "/promo.png" });
+  /* v1218: the Infantry tab shows the timer even while looking at Caster */
+  const tabT = await P.evaluate(() => { troopTrainType = "archer"; renderTroops(); const b = document.querySelector('[data-trt="infantry"] .tr-tq'); const t = b ? b.textContent : null; troopTrainType = "infantry"; renderTroops(); return t; });
   /* pressing it again does nothing harmful */
   const again = await P.evaluate(() => { const before = JSON.stringify(game.state.buildings.barracks.queue) + game.state.troops.infantry_t3; const b = document.getElementById("trTrain"); if (b) b.click(); return before === JSON.stringify(game.state.buildings.barracks.queue) + game.state.troops.infantry_t3; });
-  console.log(JSON.stringify({ r, again, errs }));
+  console.log(JSON.stringify({ r, tabT, again, errs }));
   await b.close();
   assert.deepStrictEqual(errs, []);
   assert(r.queued && r.queued.from === "infantry_t3", "promotion queued");
   assert(r.busyShown && /Promoting/.test(r.busyShown) && /left/.test(r.busyShown), "the panel shows the promotion and its time left");
   assert(again, "a second press changes nothing");
+  assert(tabT && /⬆ 1h 5\dm/.test(tabT), "Infantry tab shows the promote timer from another tab");
   console.log("g333 ok");
 })().catch((e) => { console.error(e); process.exit(1); });

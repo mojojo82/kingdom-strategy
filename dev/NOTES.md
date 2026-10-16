@@ -2238,3 +2238,6 @@
 - Fix: Train / Promote press blurs the box, clears busy and redraws at once; a busy older than 15 s no longer blocks the refresh. The progress line now says "⬆ Promoting 630× Infantry T3 → Infantry T5 · 1h 59m left" (was "Training"), button "Promoting…".
 - Pressing Promote again while one is running: nothing happens to the queue or troops (one batch per building) - now also says "Wait for this batch to finish (or speed it up)".
 - Test g333: stuck-busy case -> v1216 panel stays on the Promote form; v1217 shows the promotion + time; a second press changes nothing.
+
+## v1218 (17 Oct 2026) - batch timers easier to see
+- Harley: how would someone know how much time is left? Besides the v1217 fix (progress line under the slider), each troop type button (Infantry / Caster / Ranged) now shows its own batch timer (⬆ promoting / ⚙️ training + time), so a batch running on another type is visible without switching. The Barracks/Range/Stable card in Buildings says Promoting vs Training and the time left. g333 extended.

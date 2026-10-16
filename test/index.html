@@ -470,6 +470,7 @@
 .tr-types { display:flex; gap:6px; }
 #troopsModeContent .tr-wrap button.tr-type.tr-type { flex:1 1 0; min-width:0; margin:0; padding:6px 4px; font-size:12.5px; display:flex; flex-direction:column; align-items:center; gap:1px; background:#241b12; color:#d8c08a; border:1.5px solid #4a3b24; box-shadow:none; }
 #troopsModeContent .tr-wrap button.tr-type.tr-type small { color:#a3906a; font-size:11px; font-weight:700; }
+#troopsModeContent .tr-wrap button.tr-type.tr-type small.tr-tq { color:#7fe3ff; } /* v1218: batch timer */
 #troopsModeContent .tr-wrap button.tr-type.tr-type.on { background:#b3985f; color:#362f28; border-color:#6f5c38; box-shadow:inset 0 0 0 2px #b3985f, inset 0 0 0 3px #ddc98f, 0 2px 0 #6f5c38; }
 #troopsModeContent .tr-wrap button.tr-type.tr-type.on small { color:#4a3b24; }
 .tr-stage { position:relative; height:170px; border-radius:10px; border:1.5px dashed #4a3b24; background:radial-gradient(ellipse at 50% 45%, #4a3b24 0%, #2a2117 58%, #14100b 100%); display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:8px 8px 7px; overflow:hidden; }
@@ -12039,7 +12040,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1217"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1218"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12744,7 +12745,7 @@ function renderBuildings() {
       infoHtml += '<div class="sub">Next: ' + costTxt + ' · ' + fmtTime(t) + '</div>';
     }
     if (def.trains && b.level > 0 && b.queue.length) {
-      infoHtml += '<div class="queueitem">⚙️ Training: ' + b.queue.map(function (q) { return q.count + "x " + TROOP_DEFS[q.troopType].name; }).join(", ") + '</div>';
+      infoHtml += '<div class="queueitem">' + (b.queue[0].promoteFrom ? "⬆ Promoting: " : "⚙️ Training: ") + b.queue.map(function (q) { return q.count + "x " + TROOP_DEFS[q.troopType].name; }).join(", ") + ' · ' + fmtTime(Math.max(0, (b.queue[b.queue.length - 1].finishAt - vnow()) / 1000)) + ' left</div>'; /* v1218: time left shown here too */
       // Progress bar for the currently-active job (queue[0]) only — same
       // treatment as the upgrade bar above. startedAt/duration are only
       // present on jobs queued after this feature shipped, so an
@@ -14984,7 +14985,8 @@ function renderTrainPanel(el) {
   var counterLabel = TROOP_DEFS[def.countersType] ? TROOP_DEFS[def.countersType].name : "Walls";
   var h = '<div class="tr-wrap"><div class="tr-types">';
   TROOP_TYPES.forEach(function (ty) { var sum = 0; Object.keys(TROOP_DEFS).forEach(function (k) { if (troopBase(k) === ty) sum += st.troops[k] || 0; });
-    h += '<button type="button" class="tr-type' + (ty === type ? " on" : "") + '" data-trt="' + ty + '">' + TROOP_ICON[ty] + " " + TROOP_DEFS[ty].name + '<small>' + fmtCompact(sum) + '</small></button>'; });
+    var tbk = Object.keys(BUILDING_DEFS).find(function (k) { return BUILDING_DEFS[k].trains === ty; }), tbb = st.buildings[tbk], tq = tbb && tbb.queue && tbb.queue.length ? tbb.queue[tbb.queue.length - 1] : null; /* v1218: each type's own timer, so a batch running on another tab is visible */
+    h += '<button type="button" class="tr-type' + (ty === type ? " on" : "") + '" data-trt="' + ty + '">' + TROOP_ICON[ty] + " " + TROOP_DEFS[ty].name + '<small>' + fmtCompact(sum) + '</small>' + (tq ? '<small class="tr-tq">' + (tbb.queue[0].promoteFrom ? "⬆ " : "⚙️ ") + fmtTime(Math.max(0, (tq.finishAt - vnow()) / 1000)) + '</small>' : '') + '</button>'; });
   var pi = built ? game.promoteInfo(bk, tier, 0) : { ok: false, reason: "locked", unlockLevel: PROMOTE_UNLOCK_LEVEL }, promo = !!(troopPromoteMode[type] && pi.ok);
   if (troopPromoteMode[type] && !pi.ok) troopPromoteMode[type] = false;
   h += '</div><div class="tr-stage"><div class="tr-title">' + (promo ? "⬆ " + def.name + " → " + TROOP_DEFS[pi.toKey].name : def.name) + '</div><div class="tr-fig">' + TROOP_ICON[type] + '</div>' +
