@@ -56,7 +56,7 @@ const call = call0;
   assert.strictEqual(r.per10atLv1, 10, "10 tickets = 10 fragments");
   assert.deepStrictEqual(r.drawsMig, [300, 300, 4], "old pool progress x10 once, same pool level (30 old draws = Lv4)");
   assert.deepStrictEqual(r.odds15, ["Elite 74.66", "Super Rare 18", "Epic 7.3", "Legendary 0.04"], "v1228 pool Lv15 odds");
-  assert.deepStrictEqual(r.odds1, ["Elite 85", "Super Rare 15"], "pool Lv1 odds");
+  assert.deepStrictEqual(r.odds1, ["Elite 100"], "pool Lv1 odds (HSH Lv1 = 100% Common)");
   assert.strictEqual(r.mail, 50); assert.strictEqual(r.itemQty, 30);
   console.log("g335 ok");
 })().catch((e) => { console.error(e); process.exit(1); });

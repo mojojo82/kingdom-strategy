@@ -2324,3 +2324,8 @@
 ## v1234 — monster energy is now called Stamina
 - Harley: "Call it Stamina. Most players are familiar with that." UI text only: search panel "⚡ Stamina N/100", monster card row, "Not enough stamina", refund notes. Same numbers (100 max, 10 per attack, +1 / 6 min); code names unchanged (state.monsters.energy).
 - g331 passes.
+
+## v1235 — weapon draw odds = HSH at every pool level
+- Harley's video of HSH's odds Lv1–15. Mapping: their Common + Rare + Elite -> Elite, Exceptional -> Super Rare, Epic + Legendary + Immortal -> Epic, Transcendent -> Legendary.
+- Lv1–3 100% Elite; Super Rare from Lv4 (2%); Epic from Lv6 (1%); Legendary only at Lv15 (0.04%). Replaces my guessed ramp (v1229). Panel hint: "unlocks Super Rare / Epic / Legendary weapons" at Lv3 / 5 / 14.
+- g335 updated (pool Lv1 = Elite 100).
