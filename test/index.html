@@ -6748,7 +6748,7 @@ function createGame(opts) {
     td: { day: "", runs: 0, best: 0 }, // v797: Fortress Defense daily run counter
     recon: { window: -1, missions: [], nextId: 1, devShift: 0, done: 0, xp: 0 }, // v787: Intel & Recon missions (refresh every 8h of server/UTC time)
     items: {}, /* v1024 backpack items: id -> count (ITEM_DEFS) */
-    weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, lastDraw: null, ticketsX10: true, /* v1227: new saves are already in x10 tickets */ // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
+    weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, lastDraw: null, ticketsX10: true, drawsInTickets: true, /* v1227: new saves are already in x10 tickets */ // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
     weaponLevels: {}, // { weaponId: level } — missing/absent means level 1. See WEAPON_DEFS' levelMods comment.
     weaponStatOverrides: {}, // { weaponId: { cooldown?, count?, dmgPct? } } — Dev Tools "Edit Stats" per-weapon raw overrides, layered on TOP of the level-resolved stats below (see weaponLevelStats/weaponCooldownFor); a field left out of a weapon's override object falls through to its normal level-resolved value.
     // Dev-only balance overrides for card effects (see CARD_EFFECTS_BY_NAME
@@ -9421,7 +9421,7 @@ function createGame(opts) {
   // Each weapon has its own fragments (state.weaponFrags[id]). Fragments come only from the draw pool, which is fed by weapon draw tickets
   // (state.weaponTickets — where tickets are earned isn't decided yet; Dev Tools can grant them). The pool has a level that rises purely
   // from the number of draws done (state.weaponDraws); the level decides which rarities are in the pool and how likely each one is.
-  var WEAPON_DRAW_ROLLS_PER_TICKET = 5; // fragment pulls per ticket spent
+  var WEAPON_DRAW_ROLLS_PER_TICKET = 1; // v1228: 1 ticket = 1 pull = 1 fragment
   var WEAPON_DRAW_MAX_LEVEL = 15;
   var WEAPON_DRAW_TIERS = ["Elite", "Super Rare", "Epic", "Legendary"];
   // weight of each rarity at draw level 1..15 (Epic opens at level 6, Legendary at 13 and stays very rare)
@@ -9431,8 +9431,8 @@ function createGame(opts) {
     "Epic":       [0, 0, 0, 0, 0, 7, 14, 21, 28, 33, 38, 42, 44, 46, 48],
     "Legendary":  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2, 0.35, 0.5]
   };
-  var WEAPON_DRAW_FRAGS = { "Elite": [2, 4], "Super Rare": [1, 3], "Epic": [1, 2], "Legendary": [1, 1] }; // fragments per pull (min,max): rarer = fewer
-  function weaponDrawsForLevel(lv) { return lv <= 1 ? 0 : Math.round(5 * Math.pow(lv - 1, 1.5)); } // total draws needed to REACH this level
+  var WEAPON_DRAW_FRAGS = { "Elite": [1, 1], "Super Rare": [1, 1], "Epic": [1, 1], "Legendary": [1, 1] }; // v1228: every pull = 1 fragment (1 ticket = 1 fragment)
+  function weaponDrawsForLevel(lv) { return lv <= 1 ? 0 : 10 * Math.round(5 * Math.pow(lv - 1, 1.5)); } // tickets drawn needed to REACH this level (v1228: counted in tickets; same ticket totals as before)
   function weaponDrawLevel() { var d = state.weaponDraws || 0, lv = 1; while (lv < WEAPON_DRAW_MAX_LEVEL && d >= weaponDrawsForLevel(lv + 1)) lv++; return lv; }
   function weaponDrawProgress() {
     var lv = weaponDrawLevel(), d = state.weaponDraws || 0;
@@ -9455,7 +9455,7 @@ function createGame(opts) {
     return { ok: true, level: lv + 1, cost: c };
   }
   function weaponDraw(tickets) {
-    var nd = Math.floor((Math.floor(tickets) || 0) / WEAPON_TICKET_SCALE); tickets = nd * WEAPON_TICKET_SCALE; /* v1227: a draw = 10 tickets (the old 1 ticket) */
+    var nd = Math.floor(tickets) || 0; tickets = nd; /* v1228: 1 ticket = 1 pull */
     if (nd < 1 || (state.weaponTickets || 0) < tickets) return { ok: false };
     state.weaponTickets -= tickets;
     var lvBefore = weaponDrawLevel(), got = {}, order = [];
@@ -9835,6 +9835,8 @@ function createGame(opts) {
     }
     state.ticketsX10 = true;
     if (typeof saved.weaponDraws === "number" && isFinite(saved.weaponDraws)) state.weaponDraws = Math.max(0, Math.floor(saved.weaponDraws));
+    if (!saved.drawsInTickets) state.weaponDraws = (state.weaponDraws || 0) * WEAPON_TICKET_SCALE; /* v1228: pool progress now counted in tickets */
+    state.drawsInTickets = true;
     if (saved.weaponLevels && typeof saved.weaponLevels === "object") {
       Object.keys(saved.weaponLevels).forEach(function (wid) {
         var lvl = saved.weaponLevels[wid];
@@ -12080,7 +12082,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1227"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1228"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13335,10 +13337,10 @@ function renderWeaponDrawPanel() {
   var h = '<div style="background:linear-gradient(145deg,#2a2150,#17122e);border:1px solid #6b57b8;border-radius:12px;padding:10px 12px;margin-bottom:12px;">';
   h += '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:15px;">' + ico("ticket") + ' Weapon Draw — Pool Lv. ' + pr.level + '/' + g.WEAPON_DRAW_MAX_LEVEL + '</b><span>Tickets: <b>' + tk + '</b></span></div>';
   h += '<div style="height:8px;background:#0006;border-radius:5px;margin:7px 0 3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:#a78bfa;"></div></div>';
-  h += '<div class="dev-tools-hint" style="margin-bottom:6px;">' + (maxed ? 'Pool at max level (' + fmt(pr.draws * WEAPON_TICKET_SCALE) + ' tickets drawn)' : fmt((pr.draws - pr.from) * WEAPON_TICKET_SCALE) + ' / ' + fmt((pr.to - pr.from) * WEAPON_TICKET_SCALE) + ' tickets to Pool Lv. ' + (pr.level + 1) + (pr.level === 5 ? ' — unlocks Epic weapons' : pr.level === 12 ? ' — unlocks Legendary weapons (very rare)' : '')) + '</div>';
+  h += '<div class="dev-tools-hint" style="margin-bottom:6px;">' + (maxed ? 'Pool at max level (' + fmt(pr.draws) + ' tickets drawn)' : fmt(pr.draws - pr.from) + ' / ' + fmt(pr.to - pr.from) + ' tickets to Pool Lv. ' + (pr.level + 1) + (pr.level === 5 ? ' — unlocks Epic weapons' : pr.level === 12 ? ' — unlocks Legendary weapons (very rare)' : '')) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' + odds.map(function (r) { return '<span class="wi-chip" style="background:' + (WEAPON_RARITY_COLOR[r.rarity] || "#888") + ';color:#fff;">' + r.rarity + ' ' + (r.pct < 1 ? r.pct.toFixed(2) : r.pct.toFixed(r.pct < 10 ? 1 : 0)) + '%</span>'; }).join("") + '</div>';
-  var tkUse = Math.floor(tk / WEAPON_TICKET_SCALE) * WEAPON_TICKET_SCALE; /* v1227: draws go in 10s */
-  h += '<div style="display:flex;gap:8px;"><button id="wdraw1" class="dev-btn"' + (tk < 10 ? ' disabled' : '') + '>Draw ×10</button><button id="wdraw10" class="dev-btn"' + (tk < 100 ? ' disabled' : '') + '>Draw ×100</button><button id="wdrawAll" class="dev-btn"' + (tk < 20 ? ' disabled' : '') + '>Use all (' + tkUse + ')</button></div>';
+  var tkUse = tk;
+  h += '<div style="display:flex;gap:8px;"><button id="wdraw1" class="dev-btn"' + (tk < 10 ? ' disabled' : '') + '>Draw ×10</button><button id="wdraw10" class="dev-btn"' + (tk < 100 ? ' disabled' : '') + '>Draw ×100</button><button id="wdrawAll" class="dev-btn"' + (tk < 1 ? ' disabled' : '') + '>Use all (' + tkUse + ')</button></div>';
   var ld = g.state.lastDraw;
   if (ld && ld.got) {
     h += '<div style="margin-top:8px;font-size:13px;"><b>Last draw (' + ld.tickets + ' ticket' + (ld.tickets > 1 ? 's' : '') + '):</b> ' + ld.got.map(function (x) { var d = WEAPON_DEFS_BY_ID[x.id]; return '<span style="white-space:nowrap;margin-right:8px;">' + (d ? d.icon + ' ' + d.name : x.id) + ' <b>+' + x.n + '</b></span>'; }).join("") + (ld.levelAfter > ld.levelBefore ? '<div style="color:#f0c95f;">⬆ Pool reached Lv. ' + ld.levelAfter + '!</div>' : '') + '</div>';

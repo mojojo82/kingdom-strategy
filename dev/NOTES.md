@@ -2283,3 +2283,9 @@
 - Old saves convert once on load (ticketsX10 flag): held tickets, tickets waiting in the Idle Chest and unclaimed Recon rewards x10.
 - Server-side items (shop packs, events, mail "weapon_tickets") keep their numbers in OLD tickets; the game multiplies them by 10 when shown and when granted (ksItemQty / ksMailApply), so their value is unchanged. The admin panel still shows the old numbers.
 - Tests: g335 (conversion once, draw = 10 tickets, 10 tickets ~12-14 fragments at pool Lv 1, mail x10); g266 updated (milestone 20 tickets); g225, g238 pass.
+
+## v1228 — 1 ticket = 1 fragment
+- Harley: tickets must be exactly 1:1 with fragments. Every ticket is now 1 pull, and every pull gives 1 fragment (all rarities; was Elite 2–4, SR 1–3, Epic 1–2).
+- Draws take any number of tickets (no more blocks of 10). Draw pool progress is counted in tickets (same totals as before); old saves have weaponDraws ×10 once (`drawsInTickets` flag).
+- Income effect: 10 tickets used to give ~10–13.5 fragments, now exactly 10. Odds unchanged; the odds rework (match HSH Lv15) is next.
+- Test: dev/simfork/g335_tickets_x10.js updated (15 tickets → 15 fragments, old pool progress migrated once).
