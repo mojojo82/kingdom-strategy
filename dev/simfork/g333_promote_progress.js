@@ -27,7 +27,7 @@ const call = call0;
   /* the phone case: the count box still has focus when Promote is tapped (iOS buttons don't take focus, so the box never blurs) */
   await P.evaluate(() => { trBusy(1); });
   await P.click("#trTrain"); await P.waitForTimeout(2500);
-  const r = await P.evaluate(() => { const q = game.state.buildings.barracks.queue; const busy = document.querySelector(".tr-busy"); return { queued: q.length && { n: q[0].count, to: q[0].troopType, from: q[0].promoteFrom }, busyShown: busy ? busy.textContent.replace(/\s+/g, " ").slice(0, 120) : null, trainBtn: (document.getElementById("trTrain") || {}).textContent }; });
+  const r = await P.evaluate(() => { const q = game.state.buildings.barracks.queue; const busy = document.querySelector(".tr-busy"); return { queued: q.length && { n: q[0].count, to: q[0].troopType, from: q[0].promoteFrom }, busyShown: busy ? busy.textContent.replace(/\s+/g, " ").slice(0, 120) : null, trainBtn: (document.getElementById("trTrain") || {}).textContent, promoBtn: (document.getElementById("trPromo") || {}).textContent }; });
   if (SH) await P.screenshot({ path: SH + "/promo.png" });
   /* v1218: the Infantry tab shows the timer even while looking at Caster */
   const tabT = await P.evaluate(() => { troopTrainType = "archer"; renderTroops(); const b = document.querySelector('[data-trt="infantry"] .tr-tq'); const t = b ? b.textContent : null; troopTrainType = "infantry"; renderTroops(); return t; });
@@ -39,6 +39,7 @@ const call = call0;
   assert(r.queued && r.queued.from === "infantry_t3", "promotion queued");
   assert(r.busyShown && /Promoting/.test(r.busyShown) && /left/.test(r.busyShown), "the panel shows the promotion and its time left");
   assert(again, "a second press changes nothing");
+  assert(/Promoting⏱ 01:5\d:\d\d left/.test(r.trainBtn) && /⬆ 01:5\d:\d\d/.test(r.promoBtn), "the buttons count down the time left");
   assert(tabT && /⬆ 1h 5\dm/.test(tabT), "Infantry tab shows the promote timer from another tab");
   console.log("g333 ok");
 })().catch((e) => { console.error(e); process.exit(1); });

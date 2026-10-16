@@ -2241,3 +2241,10 @@
 
 ## v1218 (17 Oct 2026) - batch timers easier to see
 - Harley: how would someone know how much time is left? Besides the v1217 fix (progress line under the slider), each troop type button (Infantry / Caster / Ranged) now shows its own batch timer (⬆ promoting / ⚙️ training + time), so a batch running on another type is visible without switching. The Barracks/Range/Stable card in Buildings says Promoting vs Training and the time left. g333 extended.
+
+## v1219 (17 Oct 2026) - Promote taps lost; countdown on the buttons
+- Harley pressed Promote (the big right button) and nothing started - no timer, 780 T3 still there, Promote form back. Cause: City > Troops rebuilt its whole panel every second, so a phone tap landing on a rebuild was lost (the button under the finger was replaced). g334 reproduces it on v1218: a tap spanning a refresh does nothing - even the first Promote tap.
+- Fix: the panel is only rebuilt when what it shows changes (signature of its HTML without the ticking parts); countdowns (.tr-cd) and the progress bar tick in place every second. Taps always land.
+- While a batch runs both buttons count down: "⬆ 01:59:58" / "Promoting ⏱ 01:59:58 left", and the type buttons tick too.
+- Promote mode: the start button is now "Start Promotion · takes 2h 0m" with "Tap Start Promotion to begin - nothing is spent until you do." (the first Promote tap only opens this).
+- Tests: g334 (taps spanning a refresh open promote mode and start it; countdown ticks), g333 still passes.
