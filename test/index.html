@@ -11920,7 +11920,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1212"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1213"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18218,7 +18218,7 @@ function startCitySync() {
       if (applyCityRecord(tileId, doc.data())) changed = true;
       if (occupiedTileIds[tileId]) seen[tileId] = true;
     });
-    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id] && !isForeignTile(id)) { delete occupiedTileIds[id]; delete citySkinByTile[id]; changed = true; } }); /* v1085: neighbours' bases are kept up by their own listeners */
+    Object.keys(occupiedTileIds).forEach(function (id) { if (!seen[id] && !isForeignTile(id) && !(tpCount > 0 && id === game.state.homeTileId)) { /* v1213: my teleport's new spot isn't on the server yet */ delete occupiedTileIds[id]; delete citySkinByTile[id]; changed = true; } }); /* v1085: neighbours' bases are kept up by their own listeners */
     try { publishMyCitySkin(); } catch (e) {} /* v1012: older city docs get the skin added */
     if (changed) { try { renderVisibleTiles(); } catch (e) {} try { nearBasesSave(); } catch (e) {} } /* v1076: draw bases the moment they arrive (they used to wait for the 1 s game tick) */
   }, function (e) { console.error("City sync error:", e && e.code, e && e.message); });
@@ -18226,7 +18226,7 @@ function startCitySync() {
 /* one base's shared record -> the local lookups (owner, skin, bot name, HP / fire, raid on my base). Returns true if something visible changed. */
 function applyCityRecord(tileId, data) {
   var changed = false;
-  if (tpPending && tileId === tpPending.from && data && data.owner === PLAYER_ID) return false; /* v1206: the server copy is a moment behind my teleport */
+  if (tpCount > 0 && data && data.owner === PLAYER_ID && tileId !== game.state.homeTileId) return false; /* v1206/v1213: the server copy is a moment behind my teleport(s) */
   if (data && data.owner && (occupiedTileIds[tileId] !== data.owner || (citySkinByTile[tileId] || "") !== (CITY_SKINS[data.sk] ? data.sk : ""))) changed = true; /* v1076 */
   if (data && data.owner) { occupiedTileIds[tileId] = data.owner; if (CITY_SKINS[data.sk]) citySkinByTile[tileId] = data.sk; else delete citySkinByTile[tileId]; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
   if (data && typeof data.hp === "number") { var ch = cityHp[tileId]; if (!ch || ch.hp !== data.hp || ch.hpT !== (data.hpT || 0) || ch.burnLeft !== (data.burnLeft || 0)) changed = true; cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; } else delete cityHp[tileId]; /* v894: base HP */
@@ -18683,6 +18683,11 @@ function ensureHomeTileAssigned() {
 // comment above) — a resource cost or cooldown belongs right here later,
 // checked before ever attempting the claim.
 var tpPending = null; /* v1206: { from, to } while the server is moving my city */
+/* v1213 (Harley: "Teleport failed (That isn't your city.)"): a second teleport tapped before the server had finished the first one could reach
+   the server FIRST and ask it to move the city from a spot the server didn't have yet. Now the server moves run one after another (tpQueue);
+   the city still moves on screen at once. If a move is refused, the queued ones are dropped and the city goes back to the last spot the server
+   agreed to (tpConfirmed). */
+var tpQueue = Promise.resolve(), tpCount = 0, tpGen = 0, tpConfirmed = null;
 function teleportTo(tileId) {
   if ((game.state.marches || []).length) return Promise.resolve({ ok: false, reason: "marches_out" }); /* v860: no moving the city while a march is still out (it would come home to the new spot) */
   var oldTileId = game.state.homeTileId;
@@ -18690,19 +18695,26 @@ function teleportTo(tileId) {
     /* v1206 (Harley: teleport took a couple of seconds - other games are near instant): move here at once, tell the server in the background,
        and put the city back if the server refuses (spot just taken, too close, ...). */
     if (isTileOccupied(tileId) || isTileTooCloseToCity(tileId)) return Promise.resolve({ ok: false, reason: isTileOccupied(tileId) ? "taken" : "too_close" });
-    var snap = { occ: occupiedTileIds[oldTileId], hp: cityHp[oldTileId], sk: citySkinByTile[oldTileId] };
+    if (tpCount === 0) tpConfirmed = oldTileId;
+    var moveLocal = function (from, to) { /* my city's lookups from one tile to another */
+      var occ = occupiedTileIds[from], sk = citySkinByTile[from], hp = cityHp[from];
+      if (occupiedTileIds[from] === PLAYER_ID) delete occupiedTileIds[from]; delete citySkinByTile[from]; delete cityHp[from];
+      occupiedTileIds[to] = PLAYER_ID; if (sk) citySkinByTile[to] = sk; if (hp) cityHp[to] = hp;
+      game.setHomeTile(to); persist();
+    };
     tpPending = { from: oldTileId, to: tileId };
-    delete occupiedTileIds[oldTileId]; occupiedTileIds[tileId] = PLAYER_ID;
-    if (snap.sk) { citySkinByTile[tileId] = snap.sk; delete citySkinByTile[oldTileId]; }
-    if (snap.hp) { cityHp[tileId] = snap.hp; delete cityHp[oldTileId]; }
-    game.setHomeTile(tileId); persist();
-    KS_BACKEND.call("relocateCity", { from: oldTileId, to: tileId }).then(function () { tpPending = null; }, function (e) {
-      tpPending = null;
-      if (occupiedTileIds[tileId] === PLAYER_ID) delete occupiedTileIds[tileId]; delete citySkinByTile[tileId]; delete cityHp[tileId];
-      if (snap.occ) occupiedTileIds[oldTileId] = snap.occ; if (snap.sk) citySkinByTile[oldTileId] = snap.sk; if (snap.hp) cityHp[oldTileId] = snap.hp;
-      game.setHomeTile(oldTileId); persist(); try { render(); } catch (e2) {}
-      try { miniToast("Teleport failed (" + ksErrText(e) + ") - your city is back where it was."); } catch (e3) {}
-    });
+    moveLocal(oldTileId, tileId);
+    var gen = tpGen; tpCount++;
+    tpQueue = tpQueue.then(function () {
+      if (gen !== tpGen) return; /* an earlier move was refused - this one is dropped */
+      return KS_BACKEND.call("relocateCity", { from: oldTileId, to: tileId }).then(function () { tpConfirmed = tileId; }, function (e) {
+        tpGen++;
+        var back = tpConfirmed || oldTileId, cur = game.state.homeTileId;
+        if (cur !== back) moveLocal(cur, back);
+        try { render(); } catch (e2) {}
+        try { miniToast("Teleport failed (" + ksErrText(e) + ") - your city is back where it was."); } catch (e3) {}
+      });
+    }).then(function () { tpCount--; if (tpCount === 0) tpPending = null; }, function () { tpCount--; if (tpCount === 0) tpPending = null; });
     return Promise.resolve({ ok: true });
   }
   return claimCityTile(tileId).then(function (res) {

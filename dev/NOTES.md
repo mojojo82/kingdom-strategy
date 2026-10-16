@@ -2204,3 +2204,8 @@
 ## v1212 (16 Oct 2026) - Warehouse / Infirmary power from Kingshot
 - Harley sent Kingshot's Infirmary and Storehouse tables (Lv1-30). Both are our building curve times a multiplier, exact at every level: Storehouse x1.1 (440 ... 335,170), Infirmary x0.75 (300 ... 228,525). Were guesses x0.1 / x0.5.
 - Maxed Warehouse 30,470 -> 335,170; maxed Infirmary 152,350 -> 228,525. Maxed buildings total ~3.38M -> ~3.76M.
+
+## v1213 (16 Oct 2026) - "Teleport failed (That isn't your city.)"
+- Harley's screenshot. Cause: teleporting again before the server had finished the first move. The second move's request could reach the server first and ask to move the city from a spot the server didn't have yet -> refused -> city put back.
+- Fix: server moves now run one after another (tpQueue); the city still moves on screen at once, so quick double teleports work. If a move is refused, the queued ones are dropped and the city goes back to the last spot the server agreed to (tpConfirmed). City sync ignores my server copy at old spots while moves are in flight, and doesn't drop my new spot before the server has it.
+- Test g329: first move slow to reach the server, second quick (like a phone on bad signal). v1212 = Harley's exact error; v1213 = both moves land, server and game agree. Also: first of two refused -> one message, city back at the server's spot, only one city on the map. g326 still passes.
