@@ -11906,7 +11906,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1209"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1210"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -29420,11 +29420,49 @@ function drawGovScene() {
     var sw = Math.min(w * 0.72, 290) * fortressSkin().govWidth, sh = sw * gImg.naturalHeight / gImg.naturalWidth;
     // soft ground shadow (static, on the canvas); the ship itself is a separate element so it can hover
     ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.28)"; ctx.beginPath(); ctx.ellipse(w * 0.5, groundY + 8, sw * 0.36, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    if (shipEl.getAttribute("src") !== gImg.src) shipEl.src = gImg.src;
-    shipEl.style.width = sw + "px"; shipEl.style.height = sh + "px";
-    shipEl.style.left = (w * 0.5 - sw / 2) + "px"; shipEl.style.top = (groundY - sh - 4) + "px";
+    var gc = govShipWithBarrels(gImg), gsrc = gc ? gc.src : gImg.src, gpx = gc ? gc.px : 0, gpy = gc ? gc.py : 0; /* v1210: the equipped weapons' barrels on the ship, like Conquest */
+    if (shipEl.getAttribute("src") !== gsrc) shipEl.src = gsrc;
+    shipEl.style.width = sw * (1 + 2 * gpx) + "px"; shipEl.style.height = sh * (1 + 2 * gpy) + "px";
+    shipEl.style.left = (w * 0.5 - sw / 2 - sw * gpx) + "px"; shipEl.style.top = (groundY - sh - 4 - sh * gpy) + "px";
     shipEl.style.display = "block";
   }
+}
+/* v1210 (Harley): the Overlord Profile ship shows the equipped weapons' barrels in the same spots as in Conquest. The profile uses the skin's
+   "gov" picture, Conquest its "cq" picture (can be a different size / crop), so slot points are mapped through each picture's solid-pixel box.
+   Ship + barrels are drawn into one picture (padded so a barrel can stick out), so they hover together. Cached per skin + weapons + barrel size. */
+var govAlphaBoxCache = {}, govBarrelCache = { key: "", val: null };
+function imgAlphaBox(im) { /* solid-pixel box of a picture, in its natural pixels */
+  var key = im.src.length + ":" + im.src.slice(-48) + ":" + im.naturalWidth; if (govAlphaBoxCache[key]) return govAlphaBoxCache[key];
+  var W = im.naturalWidth, H = im.naturalHeight, k = Math.min(1, 256 / W), n = Math.max(1, Math.round(W * k)), m = Math.max(1, Math.round(H * k));
+  var cv = document.createElement("canvas"); cv.width = n; cv.height = m; var cx = cv.getContext("2d"); cx.drawImage(im, 0, 0, n, m);
+  var d = cx.getImageData(0, 0, n, m).data, x0 = n, y0 = m, x1 = -1, y1 = -1;
+  for (var y = 0; y < m; y++) for (var x = 0; x < n; x++) if (d[(y * n + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  var r = x1 < 0 ? { x: 0, y: 0, w: W, h: H } : { x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
+  govAlphaBoxCache[key] = r; return r;
+}
+function govShipWithBarrels(gImg) { /* -> { src, px, py } (padding as a fraction of the ship's size on each side) or null = plain ship */
+  try {
+    if (!barrelsOn()) return null;
+    var sk = fortressSkin(), cq = sk.cq, list = (game.state.equippedWeapons || []).slice(0, 3), ids = [];
+    for (var i = 0; i < list.length; i++) if (list[i] && WEAPON_BARREL[list[i]]) ids.push(i + ":" + list[i]);
+    if (!ids.length || !cq || !cq.naturalWidth || !gImg.naturalWidth) return null;
+    for (var j = 0; j < list.length; j++) if (WEAPON_BARREL[list[j]] && !barrelImg(list[j])) return null; /* a barrel picture still loading - plain ship for now */
+    var key = sk.id + "|" + ids.join(",") + "|" + barrelSize + "|" + gImg.src.length + "|" + JSON.stringify(skinLayoutFor(sk) || {});
+    if (govBarrelCache.key === key) return govBarrelCache.val;
+    var cb = imgAlphaBox(cq), gb = imgAlphaBox(gImg), kk = gb.w / cb.w, L = skinLayoutFor(sk) || {};
+    var GW = gImg.naturalWidth, GH = gImg.naturalHeight, PX = 0.3, PY = 0.15, ox = GW * PX, oy = GH * PY;
+    var cv = document.createElement("canvas"); cv.width = Math.round(GW * (1 + 2 * PX)); cv.height = Math.round(GH * (1 + 2 * PY));
+    var cx = cv.getContext("2d"); cx.imageSmoothingEnabled = true; cx.drawImage(gImg, ox, oy, GW, GH);
+    for (var q = 0; q < list.length; q++) {
+      var id = list[q], b = WEAPON_BARREL[id], im = b && barrelImg(id); if (!im) continue;
+      var p = L["w" + q]; if (!p || p.length < 2) p = [[0.8, 0.45], [0.8, 0.78], [0.12, 0.62]][q]; /* same defaults as barrelPivot */
+      var gx = ox + gb.x + (p[0] * cq.naturalWidth - cb.x) * kk, gy = oy + gb.y + (p[1] * cq.naturalHeight - cb.y) * kk;
+      var sc = barrelSize * (cq.naturalWidth * kk) * (b.nat / 240) / b.w; /* same size vs the hull as in Conquest */
+      cx.save(); cx.translate(gx, gy); cx.scale(sc, sc); cx.drawImage(im, -b.pivot[0], -b.pivot[1], b.w, b.h); cx.restore();
+    }
+    var val = { src: cv.toDataURL("image/png"), px: PX, py: PY };
+    govBarrelCache = { key: key, val: val }; return val;
+  } catch (e) { return null; }
 }
 function renderFortressSkinList() {
   var el = document.getElementById("fortressSkinList"); if (!el) return;

@@ -2189,3 +2189,9 @@
 ## v1209 (16 Oct 2026) - new teleport sound
 - Harley's "shinggg" clip (4.7 s) is the new built-in teleport sound: trimmed to 1.22 s of sound with an eased fade (qsin, from 0.6 s), plus 0.28 s silence in front so the strike (0.22 s into the clip) lands on the bolt impact at 0.5 s. 1.54 s total, same loudness as the old clip.
 - Files: sfx/teleport.mp3 (what's in the game), sfx/originals/teleport_shinggg_original.mp3 (untouched upload), sfx/originals/teleport_old_default.mp3 (the old built-in, 0.73 s - Harley wants it kept as a backup; to use it, Dev Tools > Sound Effects > Teleport > Choose File, or ask to bake it back in).
+
+## v1210 (16 Oct 2026) - weapons on the Overlord Profile ship
+- Harley: the profile should show the equipped weapons like Conquest. The profile ship now has the equipped weapons' barrels in the same slots (skin layout w0/w1/w2, or the default spots) at the same size vs the hull as in Conquest, level (no aiming).
+- How: govShipWithBarrels() draws ship + barrels into one padded picture (cached per skin + weapons + barrel size + layout), so they hover together. The profile uses the skin's "gov" picture and Conquest its "cq" picture, so slot points are mapped through each picture's solid-pixel box (imgAlphaBox).
+- Weapons with no barrel picture (Droid, Dome, Repair...) show nothing - same as Conquest. Barrels switched off in Dev Tools = plain ship.
+- Only the player's own profile (there's no profile view of other players yet). Test: g327 (all 5 skins).
