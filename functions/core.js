@@ -497,5 +497,25 @@ function patchEntry(city) {
 function buildPatches(cities) { /* cities: [{id, data}] -> { pid: { cid: entry } } */
   const P = {}; cities.forEach((c) => { const pid = patchIdOfCity(c.id), e = patchEntry(c.data); if (!pid || !e) return; (P[pid] = P[pid] || {})[c.id] = e; }); return P;
 }
-module.exports = { PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+/* v1231: Daily Tasks. The game pays everything except gems; gems come from here: 20 per task (each task once per UTC day) and 300 for the
+   last chest (once per day, only after the server has paid tasks worth 100 activity points). wallet.daily = { d: utc day, t: [task ids], c: true } */
+const DAILY_TASK_PTS = { login: 5, chest: 5, arena: 10, monster: 10, gather: 10, recon: 5, train: 10, build: 10, research: 10, tickets: 5, levelup: 10, speedup: 10 };
+const DAILY_TASK_GEMS = 20, DAILY_CHEST_GEMS = 300, DAILY_CHEST_PTS = 100;
+function decideDailyClaim(rec, kind, id, now) {
+  const d = utcDay(now), cur = rec && rec.d === d ? { d, t: (rec.t || []).slice(), c: !!rec.c } : { d, t: [], c: false };
+  if (kind === "task") {
+    if (!Object.prototype.hasOwnProperty.call(DAILY_TASK_PTS, id)) throw new GameError("not-found", "no such task");
+    if (cur.t.indexOf(id) >= 0) return { dup: true, daily: cur };
+    cur.t.push(id); return { dup: false, daily: cur, gems: DAILY_TASK_GEMS };
+  }
+  if (kind === "chest") {
+    if (cur.c) return { dup: true, daily: cur };
+    const pts = cur.t.reduce((a, k) => a + (DAILY_TASK_PTS[k] || 0), 0);
+    if (pts < DAILY_CHEST_PTS) throw new GameError("failed-precondition", "not reached yet", { have: pts, need: DAILY_CHEST_PTS });
+    cur.c = true; return { dup: false, daily: cur, gems: DAILY_CHEST_GEMS };
+  }
+  throw new GameError("invalid-argument", "bad kind");
+}
+
+module.exports = { DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

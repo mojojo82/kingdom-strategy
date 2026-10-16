@@ -2300,3 +2300,11 @@
 - Resources per kill now 500 + 25·L³ (was 2500·L^1.5), stone share 0.4 → 0.25; valor now 20 + 10L (was 40 + 25L). Hero fragment chance unchanged (15%).
 - After (economy_daily data): day 7 food/wood ~35%, stone ~30%, gold ~18%, valor ~27% of a normal day; day 21 ~26% / ~21% / 13% / 42%. Early days (TH10 on day 3) still ~60%.
 - Stamina is coming soon and will also cap monster kills.
+
+## v1231 — Daily Tasks
+- World map 📋 button above Search (left side), red number = tasks/chests ready to claim. Panel like Harley's approved mockup (Growth/Weekly tabs locked for now).
+- 12 tasks, 100 activity points total: Log in 5, Idle chest ×3 5, Arena fights ×3 (losses count) 10, Monsters ×3 10, Gather from nodes ×2 10, Recon start 5, Train/promote 10, Building upgrade 10, Research start 10, 15 weapon tickets 5, Level up weapon/hero 10, Use a speedup 10. (No Conquest task — players get stuck; "make a purchase" dropped — no client purchase to detect.)
+- Every claimed task: points + 20 gems + 100 Valor + 5 tickets. Chests: 20 = 2×5-min speedups, 40 = 20 tickets, 60 = 3 hero fragments + 1 book, 80 = 2×5-min speedups + 2 h of food/wood, 100 = 300 gems. Full day = 540 gems.
+- Gems are paid by the server: new function `claimDaily` (core `decideDailyClaim`): each task once per UTC day, gem chest once and only after the server has paid 100 points of tasks. Missed calls retried when the panel opens (state.daily.sv / gc). Offline/local: the game adds them.
+- Resets midnight UTC (1 pm NZ). Engine: game.daily* (state.daily), hooks in collectBucket, startUpgrade, queueTraining, promoteTroops, researchTech/Fortress, reconStart, levelUpWeapon, levelUpHero, useSpeedup, weaponDraw, resolveMonsterArrival (win), resource gather arrival, recordArenaResult.
+- Tests: dev/simfork/g336_daily_tasks.js (button, badge, claims, server gems 540, next day reset); functions core test.

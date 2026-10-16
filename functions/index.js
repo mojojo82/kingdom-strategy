@@ -338,6 +338,15 @@ exports.claimTopup = wrap(async (req, uid, R, d) => {
     return { dup: false, topup: r.topup, gems: g, items: r.items };
   });
 });
+// v1231: Daily Tasks gems (see core decideDailyClaim). d = { kind: "task" | "chest", id }
+exports.claimDaily = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
+  const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {}, kind = String(d.kind || ""), id = String(d.id || "");
+  const r = C.decideDailyClaim(wd.daily, kind, id, Date.now());
+  if (r.dup) return { dup: true, gems: wd.gems || 0, daily: r.daily };
+  const g = (wd.gems || 0) + r.gems; ledger(tx, R, uid, "gems", r.gems, g, "daily_" + kind, id || "chest");
+  tx.set(walletRef(R, uid), { gems: g, daily: r.daily }, { merge: true });
+  return { dup: false, gems: g, added: r.gems, daily: r.daily };
+}));
 // Mark a purchase refunded / charged back. Records it (and who did it); what to do about the gems is your call, so nothing is taken back automatically.
 exports.adminMarkPurchase = wrap(async (req, uid, R, d) => {
   if (!isAdmin(uid, req)) throw new HttpsError("permission-denied", "admin only");

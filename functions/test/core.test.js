@@ -233,4 +233,12 @@ t("security panel (v995): tunable limits, config, ban state, summary", () => {
   assert.deepStrictEqual(S.repeat.map((x) => x.uid), ["c", "a"], "repeat offenders, dismissed left out"); assert.ok(S.topReasons.some((x) => x.what === "wood"));
   assert.ok(C.SEC_ACTIONS.indexOf("rollback") >= 0 && C.SUSPEND_MAX_HOURS > 24);
 });
+t("v1231 daily tasks gems: 20 per task once a day, 300 chest only after 100 server-paid points, new day resets", () => {
+  const T = Date.UTC(2026, 9, 17, 5), ids = Object.keys(C.DAILY_TASK_PTS); let rec = null;
+  ids.forEach((id, i) => { const r = C.decideDailyClaim(rec, "task", id, T); assert.strictEqual(r.gems, 20); rec = r.daily; if (i === 0) assert.strictEqual(C.decideDailyClaim(rec, "task", id, T).dup, true); if (i === ids.length - 2) assert.throws(() => C.decideDailyClaim(rec, "chest", "", T), /not reached/); });
+  const c = C.decideDailyClaim(rec, "chest", "", T); assert.strictEqual(c.gems, 300); assert.strictEqual(C.decideDailyClaim(c.daily, "chest", "", T).dup, true);
+  assert.strictEqual(C.decideDailyClaim(c.daily, "task", "login", T + 86400000).gems, 20, "next UTC day: free again");
+  assert.throws(() => C.decideDailyClaim(null, "task", "nope", T), /no such task/); assert.throws(() => C.decideDailyClaim(null, "x", "", T), /bad kind/);
+  assert.strictEqual(ids.reduce((a, k) => a + C.DAILY_TASK_PTS[k], 0), 100);
+});
 console.log(n + " tests passed");
