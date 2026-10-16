@@ -825,7 +825,32 @@
     85%  { transform: translateX(-50%) translateY(4px) scale(1.05); }
     100% { transform: translateX(-50%) translateY(0) scale(1); }
   }
-  .city-icon-img.city-drop-anim { animation: cityDropFall .2s steps(5, jump-end) both; }
+  .city-icon-img.city-drop-anim { animation: cityTpAppear 1.3s ease-out both; } /* v1206: Kingshot-style beam-in (was a 0.2 s fall) */
+  @keyframes cityTpAppear {
+    0%, 40% { transform: translateX(-50%) scale(.92); opacity: 0; filter: brightness(2.4) saturate(.3); }
+    46%     { transform: translateX(-50%) scale(1.04); opacity: 1; filter: brightness(2.2) saturate(.4) drop-shadow(0 0 10px #7fe3ff); }
+    75%     { transform: translateX(-50%) scale(1); filter: brightness(1.25) saturate(.85) drop-shadow(0 0 6px #7fe3ff88); }
+    100%    { transform: translateX(-50%) scale(1); opacity: 1; filter: none; }
+  }
+  /* v1206: teleport FX (Harley, from Kingshot): a glowing emblem ring on the new spot, a beam of light from the sky, then a blue swirl + dust as the base appears */
+  .tpx { position:absolute; pointer-events:none; z-index:9000; }
+  .tpx > * { position:absolute; left:50%; pointer-events:none; }
+  .tpx-ring { top:0; width:100%; aspect-ratio:2/1; transform:translate(-50%,-50%) scale(.4); border-radius:50%; border:2px solid #a8f0ff;
+    background:radial-gradient(ellipse at center, #4fd2ff55 0%, #2aa8e833 45%, transparent 70%); box-shadow:0 0 18px #4fd2ffaa, inset 0 0 14px #7fe3ffaa; opacity:0; animation:tpxRing 1.35s ease-out both; }
+  @keyframes tpxRing { 0% { opacity:0; transform:translate(-50%,-50%) scale(.4); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1); } 55% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.15); } }
+  .tpx-crest { top:0; width:34%; transform:translate(-50%,-60%); opacity:0; animation:tpxCrest 1.1s ease-out both; filter:drop-shadow(0 0 6px #7fe3ff); }
+  @keyframes tpxCrest { 0% { opacity:0; transform:translate(-50%,-50%) scale(.6); } 20% { opacity:1; transform:translate(-50%,-60%) scale(1); } 45% { opacity:1; } 70%, 100% { opacity:0; transform:translate(-50%,-70%) scale(1.05); } }
+  .tpx-beam { bottom:0; width:30%; transform:translateX(-50%) scaleY(0); transform-origin:50% 0;
+    background:linear-gradient(180deg, transparent 0%, #7fe3ff66 25%, #c9f6ff 80%, #ffffff 100%); border-radius:40% 40% 50% 50%;
+    box-shadow:0 0 22px #4fd2ff, 0 0 46px #2aa8e888; mix-blend-mode:screen; opacity:0; animation:tpxBeam 1s ease-in .12s both; }
+  @keyframes tpxBeam { 0% { opacity:1; transform:translateX(-50%) scaleY(0); } 40% { opacity:1; transform:translateX(-50%) scaleY(1); } 60% { opacity:.9; transform:translateX(-50%) scaleY(1) scaleX(1.25); } 100% { opacity:0; transform:translateX(-50%) scaleY(1) scaleX(.2); } }
+  .tpx-swirl { top:0; width:120%; aspect-ratio:2/1; transform:translate(-50%,-50%) scale(.5); border-radius:50%;
+    background:radial-gradient(ellipse at center, transparent 30%, #9fe8ffcc 50%, #4fb8e855 62%, transparent 72%); opacity:0; animation:tpxSwirl .9s ease-out .55s both; }
+  @keyframes tpxSwirl { 0% { opacity:0; transform:translate(-50%,-50%) scale(.5) rotate(0deg); } 25% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.35) rotate(40deg); } }
+  .tpx-dust { top:0; width:34%; aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle, #e8eef2dd 0%, #c9d3d988 45%, transparent 70%);
+    transform:translate(-50%,-50%) scale(.3); opacity:0; animation:tpxDust 1.1s ease-out .55s both; }
+  @keyframes tpxDust { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 20% { opacity:.9; } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.5); } }
+  @media (prefers-reduced-motion: reduce) { .tpx > * { animation-duration:.01s !important; animation-delay:0s !important; } }
   /* v951: water round a base on the sea (see baseWaterBuild) - a strip of frames slid along by the browser */
   .city-water { position:absolute; left:50%; transform:translateX(-50%); pointer-events:none; overflow:hidden; }
   .city-water img { display:block; height:100%; max-width:none; animation:cityWaterRun 1s steps(14) infinite; will-change:transform; }
@@ -843,11 +868,11 @@
        afterimages already, so a per-clone shadow pass added compositing
        cost for very little visible payoff. */
   @keyframes cityDropTileReveal {
-    0%   { opacity: 0; }
-    15%  { opacity: 1; }
+    0%, 40% { opacity: 0; }
+    46%  { opacity: 1; }
     100% { opacity: 1; }
   }
-  .tile.city-drop-anim-bg { animation: cityDropTileReveal .2s steps(5, jump-end) both; }
+  .tile.city-drop-anim-bg { animation: cityDropTileReveal 1.3s linear both; }
   @keyframes cityDropImpactShake {
     0%, 100% { transform: translateY(0); }
     30% { transform: translateY(2px); }
@@ -11862,7 +11887,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1205"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1206"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15775,40 +15800,23 @@ function renderMap() {
 var dropAnimTileId = null;
 var dropAnimUntil = 0;
 var dropAnimFallPx = 0;
-var DROP_ANIM_DURATION_MS = 200; // must match the steps() animation's own duration in the CSS above (cityDropFall / cityDropTileReveal)
+var DROP_ANIM_DURATION_MS = 1300; /* v1206: beam-in (was 200 for the fall); must match cityTpAppear / cityDropTileReveal in the CSS */
 function armTeleportDropEffect(tileId) {
   dropAnimTileId = tileId;
   dropAnimUntil = Date.now() + DROP_ANIM_DURATION_MS;
   dropAnimFallPx = tilePxZ() * 6; // scales with zoom rather than a fixed guess
 }
-function spawnTeleportDropExtras(tileId) {
-  var div = mapTileEls[tileId];
-  var img = div && div.querySelector(".city-drop-anim");
-  if (!div || !img) return; // tile isn't currently rendered (out of the visible/buffered window), or the arm step didn't apply for some reason
-  // A few crisp (unblurred), staggered clones of the real sprite falling
-  // just above it, fading out — reads as a stepped afterimage trail rather
-  // than a smeared motion blur.
-  var GHOST_COUNT = 2; // trimmed from 3 for perf — fewer cloned/animated DOM nodes per teleport
-  for (var g = 1; g <= GHOST_COUNT; g++) {
-    var ghost = img.cloneNode(true);
-    ghost.className = "city-drop-ghost";
-    ghost.style.setProperty("--drop-distance", (-dropAnimFallPx) + "px");
-    ghost.style.opacity = String(Math.max(0.1, 0.45 - g * 0.12));
-    ghost.style.animationDelay = (g * 20) + "ms"; // scaled back down alongside the shorter overall fall duration
-    (div.querySelector(".tile-up") || div).appendChild(ghost);
-    (function (ghostEl) { setTimeout(function () { ghostEl.remove(); }, DROP_ANIM_DURATION_MS + 100); })(ghost);
-  }
-  var dust = document.createElement("div");
-  dust.className = "city-drop-dust";
-  (div.querySelector(".tile-up") || div).appendChild(dust);
-  setTimeout(function () { dust.remove(); }, DROP_ANIM_DURATION_MS + 100);
-  // Small landing shake, timed to the fall keyframes' own 85% mark (where
-  // it settles into place) rather than a fixed offset, so it stays in sync
-  // if DROP_ANIM_DURATION_MS is ever retuned again.
-  setTimeout(function () {
-    div.classList.add("city-drop-impact");
-    setTimeout(function () { div.classList.remove("city-drop-impact"); }, 220);
-  }, Math.round(DROP_ANIM_DURATION_MS * 0.85));
+function spawnTeleportDropExtras(tileId) { /* v1206 (Harley, Kingshot style): emblem ring + crest, a beam from the sky, then swirl + dust as the base appears */
+  var world = document.getElementById("mapworld"); if (!world) return;
+  var xy = tileXY(tileId), c = tileCenterPx({ x: xy[0], y: xy[1] }), Wb = tilePxZ() * (mapIso ? isoCfg.base : 2.2);
+  var gy = c.y + (mapIso ? 0.5 - isoCfg.y / 100 : 0.5) * tilePxZ() - Wb * 0.18;
+  var box = document.createElement("div"); box.className = "tpx";
+  box.style.cssText = "left:" + (c.x - Wb / 2) + "px;top:" + gy + "px;width:" + Wb + "px;height:0;";
+  var crest = '<svg class="tpx-crest" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#e8fbff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 10 L48 16 V30 C48 42 40 50 32 54 C24 50 16 42 16 30 V16 Z" fill="#7fe3ff33"/><path d="M8 50 L24 34 M56 50 L40 34 M11 40 L18 47 M53 40 L46 47"/><path d="M32 20 V42 M25 28 H39"/></g></svg>';
+  var h = '<div class="tpx-ring"></div>' + crest + '<div class="tpx-beam" style="height:' + Math.round(Wb * 1.9) + 'px"></div><div class="tpx-swirl"></div>';
+  for (var i = 0; i < 6; i++) { var an = i / 6 * Math.PI * 2 + 0.3, d = Wb * 0.55; h += '<div class="tpx-dust" style="--dx:' + Math.round(Math.cos(an) * d) + 'px;--dy:' + Math.round(Math.sin(an) * d * 0.5) + 'px;animation-delay:' + (550 + i * 30) + 'ms"></div>'; }
+  box.innerHTML = h; world.appendChild(box);
+  setTimeout(function () { box.remove(); }, 1800);
 }
 /* v826: isometric map taps. Tile elements ignore the pointer in iso mode; the click is turned back into a tile here. A tap on a base's art selects that base (its art overhangs the tiles behind it); otherwise the diamond under the finger. */
 
@@ -18182,6 +18190,7 @@ function startCitySync() {
 /* one base's shared record -> the local lookups (owner, skin, bot name, HP / fire, raid on my base). Returns true if something visible changed. */
 function applyCityRecord(tileId, data) {
   var changed = false;
+  if (tpPending && tileId === tpPending.from && data && data.owner === PLAYER_ID) return false; /* v1206: the server copy is a moment behind my teleport */
   if (data && data.owner && (occupiedTileIds[tileId] !== data.owner || (citySkinByTile[tileId] || "") !== (CITY_SKINS[data.sk] ? data.sk : ""))) changed = true; /* v1076 */
   if (data && data.owner) { occupiedTileIds[tileId] = data.owner; if (CITY_SKINS[data.sk]) citySkinByTile[tileId] = data.sk; else delete citySkinByTile[tileId]; if (data.bn && data.owner.indexOf(BOT_OWNER_PREFIX) === 0) botNameByOwner[data.owner] = String(data.bn); } /* v999: bot alliance members carry their own name */
   if (data && typeof data.hp === "number") { var ch = cityHp[tileId]; if (!ch || ch.hp !== data.hp || ch.hpT !== (data.hpT || 0) || ch.burnLeft !== (data.burnLeft || 0)) changed = true; cityHp[tileId] = { hp: data.hp, hpT: data.hpT || 0, burnLeft: data.burnLeft || 0, raidedAt: data.raidedAt || 0 }; } else delete cityHp[tileId]; /* v894: base HP */
@@ -18637,11 +18646,28 @@ function ensureHomeTileAssigned() {
 // teleport never leaves the player cityless. Free for now (see the section
 // comment above) — a resource cost or cooldown belongs right here later,
 // checked before ever attempting the claim.
+var tpPending = null; /* v1206: { from, to } while the server is moving my city */
 function teleportTo(tileId) {
   if ((game.state.marches || []).length) return Promise.resolve({ ok: false, reason: "marches_out" }); /* v860: no moving the city while a march is still out (it would come home to the new spot) */
   var oldTileId = game.state.homeTileId;
   if (ksFb() && oldTileId) { /* v905: server moves the city so damage/fire move with it */
-    return KS_BACKEND.call("relocateCity", { from: oldTileId, to: tileId }).then(function () { delete occupiedTileIds[oldTileId]; occupiedTileIds[tileId] = PLAYER_ID; game.setHomeTile(tileId); persist(); return { ok: true }; }, function (e) { return { ok: false, reason: (e && e.message) || "server" }; });
+    /* v1206 (Harley: teleport took a couple of seconds - other games are near instant): move here at once, tell the server in the background,
+       and put the city back if the server refuses (spot just taken, too close, ...). */
+    if (isTileOccupied(tileId) || isTileTooCloseToCity(tileId)) return Promise.resolve({ ok: false, reason: isTileOccupied(tileId) ? "taken" : "too_close" });
+    var snap = { occ: occupiedTileIds[oldTileId], hp: cityHp[oldTileId], sk: citySkinByTile[oldTileId] };
+    tpPending = { from: oldTileId, to: tileId };
+    delete occupiedTileIds[oldTileId]; occupiedTileIds[tileId] = PLAYER_ID;
+    if (snap.sk) { citySkinByTile[tileId] = snap.sk; delete citySkinByTile[oldTileId]; }
+    if (snap.hp) { cityHp[tileId] = snap.hp; delete cityHp[oldTileId]; }
+    game.setHomeTile(tileId); persist();
+    KS_BACKEND.call("relocateCity", { from: oldTileId, to: tileId }).then(function () { tpPending = null; }, function (e) {
+      tpPending = null;
+      if (occupiedTileIds[tileId] === PLAYER_ID) delete occupiedTileIds[tileId]; delete citySkinByTile[tileId]; delete cityHp[tileId];
+      if (snap.occ) occupiedTileIds[oldTileId] = snap.occ; if (snap.sk) citySkinByTile[oldTileId] = snap.sk; if (snap.hp) cityHp[oldTileId] = snap.hp;
+      game.setHomeTile(oldTileId); persist(); try { render(); } catch (e2) {}
+      try { miniToast("Teleport failed (" + ksErrText(e) + ") - your city is back where it was."); } catch (e3) {}
+    });
+    return Promise.resolve({ ok: true });
   }
   return claimCityTile(tileId).then(function (res) {
     if (!res.ok) return res;

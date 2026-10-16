@@ -2170,3 +2170,8 @@
 ## v1205 - Base fire waits for the ship's volleys (TEST)
 - Harley: the fire came as the shots began; the damage should show once the shells have finished. A march resolves on arrival, then sits "acting" for 5 s firing volleys (marchFxVolley). cityAttackOutcome now calls holdBaseFire(tile, time left in the acting phase + 0.9 s for the last shells); baseFireRender skips held tiles. Only NEW fire is held (a base already burning keeps showing). The hit still goes to the server at once.
 - dev/simfork/g325_fire_after_shots.js (hit applied but fire held during the volleys, shown after; burning base never hidden). g324 passes. Not checked on a phone.
+
+## v1206 - Instant teleport + Kingshot-style beam-in (TEST)
+- Harley: teleport took a couple of seconds (it waited for the relocateCity Cloud Function); other games are near instant. teleportTo() now moves the city at once (home, occupied, skin, HP/fire) and calls the server in the background; if refused the city goes back and a toast says why. tpPending stops the listener redrawing my city at the old spot meanwhile.
+- Animation (Harley's Kingshot video): glowing emblem ring + crest on the new spot, a beam of light from the sky, then the base appears bright/blue with a swirl and 6 dust puffs (~1.3 s). Replaces the 0.2 s drop + ghosts + shake. CSS .tpx-*, cityTpAppear; DROP_ANIM_DURATION_MS 1300.
+- dev/simfork/g326_teleport_instant.js (server slowed 2.5 s: move in 27 ms - old build 2,532 ms; FX plays; refused move goes back; SHOTS=dir saves frames). g324 passes. Not checked on a phone.
