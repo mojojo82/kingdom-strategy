@@ -2299,6 +2299,9 @@
   /* v925: Intel & Recon on the world map, same look as the map mailbox, stacked with it (below it on PC, above it on phones) */
   #mapReconBtn { display:flex; position:absolute; right:10px; top:10px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
   #mapReconBtn .mmi { font-size:24px; line-height:1; }
+  /* v1225 (Harley): Search is an icon on the left side of the map, same look as the right-hand icons */
+  #mapSearchBtn { display:none; position:absolute; left:10px; top:120px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
+  body[data-screen="world"] #mapSearchBtn { display:flex; } #mapSearchBtn .mmi { font-size:24px; line-height:1; }
   html.ks-mail-on #mapReconBtn { top:66px; }
   /* v1002: idle rewards (the away bucket) on the world map, same look as the mailbox, with a fill bar; glows when there's something to collect */
   #mapIdleBtn { display:none; position:absolute; right:10px; top:148px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
@@ -2431,7 +2434,8 @@
     body[data-screen="world"] #mapReconBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
     body[data-screen="world"] #mapMailBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); } /* v929: mailbox above recon */
     body[data-screen="world"] #mapIdleBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 112px); }
-    body[data-screen="world"] #mapBagBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 168px); } /* v1023: backpack above the Idle Chest */ /* v1002: idle rewards above the mailbox */
+    body[data-screen="world"] #mapBagBtn { position:fixed; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 168px); }
+    body[data-screen="world"] #mapSearchBtn { position:fixed; left:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 224px); } /* v1225: left side, middle */ /* v1023: backpack above the Idle Chest */ /* v1002: idle rewards above the mailbox */
     #ksFbBadge { bottom:calc(var(--bnH,86px) + 54px) !important; z-index:39 !important; }
     body[data-screen="world"] #mapCoords { position:fixed; bottom:calc(var(--bnH,86px) + 46px + 10px); z-index:39; }
     body[data-screen="world"] #mapMailBtn, body[data-screen="world"] #mapReconBtn, html.ks-mail-on body[data-screen="world"] #mapReconBtn { top:auto; }
@@ -3112,7 +3116,6 @@
             <button id="mapHideResourcesBtn" class="secondary" style="font-size:11px;padding:4px 10px;">🙈 Hide Resources</button>
             <button id="mapHideThreatsBtn" class="secondary" style="font-size:11px;padding:4px 10px;display:none;">🙈 Hide Threats</button>
             <button id="mapBookmarksBtn" class="secondary" style="font-size:11px;padding:4px 10px;">⭐ Bookmarks</button>
-            <button id="mapSearchBtn" class="secondary" style="font-size:11px;padding:4px 10px;">🔍 Search</button>
             <button id="mapPaintBtn" class="secondary" style="font-size:11px;padding:4px 10px;display:none;">🖌️ Paint terrain</button>
           </div>
             </div>
@@ -3122,6 +3125,7 @@
             <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
             <div id="ksEvDock"></div>
             <button id="mapReconBtn" type="button" title="Intel &amp; Recon" aria-label="Intel and Recon"><span class="mmi">🛰️</span></button>
+            <button id="mapSearchBtn" type="button" title="Search monsters &amp; resources" aria-label="Search"><span class="mmi">🔍</span></button>
             <button id="mapBagBtn" type="button" title="Backpack" aria-label="Backpack"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#3b2a17" stroke-width="5" stroke-linecap="round"/><path d="M24 14 C24 6 40 6 40 14" fill="none" stroke="#a87440" stroke-width="2.5" stroke-linecap="round"/><rect x="11" y="14" width="42" height="44" rx="10" fill="#8a5a2b" stroke="#3b2a17" stroke-width="3"/><rect x="17" y="34" width="30" height="18" rx="5" fill="#6b4220" stroke="#3b2a17" stroke-width="2.5"/><path d="M13 26 Q32 34 51 26 L51 20 Q51 15 46 15 L18 15 Q13 15 13 20 Z" fill="#a8703a" stroke="#3b2a17" stroke-width="2.5" stroke-linejoin="round"/><rect x="28" y="24" width="8" height="10" rx="2" fill="#f0c95f" stroke="#3b2a17" stroke-width="2"/><line x1="32" y1="38" x2="32" y2="48" stroke="#3b2a17" stroke-width="2" opacity=".6"/><path d="M16 18 Q14 22 15 28" stroke="#c99560" stroke-width="2" fill="none" opacity=".7"/></svg></button><button id="mapIdleBtn" type="button" title="Idle Chest" aria-label="Idle Chest"><span class="mmi">🌙</span><span class="mib"><i></i></span></button>
             <div id="mapviewport">
               <div id="mapworld">
@@ -12043,7 +12047,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1224"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1225"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

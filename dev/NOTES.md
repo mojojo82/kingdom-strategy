@@ -2270,3 +2270,6 @@
 ## v1224 (17 Oct 2026) - ship heading, take 2
 - Harley's next screenshot (returning, route ~10 deg off vertical) still looked off: v1223 only lined up the hull outline at the waterline, but the eye reads the whole hull and deck, which stand up on screen. Now marchVisualHeading lines up the on-screen outline of the hull + deck (bottom half of the model, ~400-point sample incl. height) with the route on screen; cached per model and 0.5 deg of route. Hull+deck vs route, worst of 24 directions: Ghost Galleon 5.6 -> 0.3 deg, Voidspire 2.0 -> 0.4.
 - Masts / sails are deliberately not used: lining up the whole ship (sails included) would need the hull twisted ~10 deg the other way. With sails the whole outline can be up to ~13 deg off on some diagonals - that's the sails standing straight up.
+
+## v1225 (17 Oct 2026) - Search is an icon on the left of the map
+- Harley: give Search an icon and move it to the left side of the map (middle). The "🔍 Search" text button by Bookmarks is gone; #mapSearchBtn is a 🔍 icon in the same dashed square as the right-hand icons (backpack / mail / recon), on phones fixed at the left edge (bottom = 224 px above the recon icon's spot). Same Search panel. g331 still passes.
