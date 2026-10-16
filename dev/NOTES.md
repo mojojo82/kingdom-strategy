@@ -2155,3 +2155,9 @@
 - Harley: like High Seas Hero, tapping your power shows what goes into it. powerBreakdown() in the engine (buildings, research, fortress + type, heroes, troops, weapons, equipment, sword); governorPower() now sums it (same numbers as before).
 - openPowerDetails(): bronze Weapon Info card (wi-card), groups City / Army / Arsenal with totals and % of power; note that wounded troops come back once healed and cards / Espers add nothing. Opens from the top-bar power and the Governor Profile power line.
 - dev/simfork/g322_power_details.js (parts sum to total; both taps open it; 8 lines). Screenshot checked at 430 px. Not checked on a phone.
+
+## v1203 - Building power from Kingshot's tables (TEST)
+- Harley's Kingshot video: Town Center, Mill/Sawmill, Range, Academy, Guard Station power per level. All are one curve (Range: 400 ... 304,700 at Lv30) times a multiplier: Town Center x5 (= our old Town Hall table, unchanged), Academy x1.1, Range x1, Mill x0.1; Guard Station = the same curve squashed into 10 levels.
+- Fixed: resource buildings were a running sum of Kingshot's numbers (241K at Lv30, Kingshot 30,470); Barracks / Mage Tower / Archery Range / Academy / Infirmary / Warehouse gave 0 (an old note said Kingshot shows none - it does now); the Wall used the old cost formula (21M at Lv20). Now BUILDING_REAL_POWER is built from KS_BUILD_CURVE x BUILDING_POWER_MULT; the old formula covers nothing.
+- Guesses to confirm: Warehouse x0.1 (Storehouse), Infirmary x0.5. Wall Lv20 = 304,700 (Guard Station max).
+- Maxed buildings: 3.38M (was 23.4M). dev/simfork/g323_building_power.js checks Kingshot's numbers (TH30 1,523,500, Mill7 706, Range17 55,320, Academy15 43,076, ...). g195, g307, g319, g322 pass. Not checked on a phone.
