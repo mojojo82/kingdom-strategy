@@ -838,7 +838,7 @@
   /* v1206: teleport FX (Harley, from Kingshot): a glowing emblem ring on the new spot, a beam of light from the sky, then a blue swirl + dust as the base appears */
   /* v1215: map monsters, monster card, Search panel */
   .mon-map { position:absolute; cursor:pointer; pointer-events:auto; }
-  .mon-map img { width:100%; display:block; filter:drop-shadow(0 3px 3px #000a); pointer-events:none; }
+  .mon-map img { width:100%; display:block; pointer-events:none; } /* v1216: no drop-shadow filter (costly while scrolling) - the ground shadow below does the job */
   .mon-map .msh { position:absolute; left:50%; bottom:-4%; width:78%; height:22%; transform:translateX(-50%); border-radius:50%; background:radial-gradient(#0007, transparent 70%); z-index:-1; }
   .mon-map .mlv { position:absolute; left:50%; bottom:-11px; transform:translateX(-50%); background:#3a1414; border:1.5px solid #f0c95f; color:#ffe6a0; font:800 10px system-ui, sans-serif; padding:0 6px; border-radius:9px; white-space:nowrap; pointer-events:none; }
   .mon-map.locked .mlv { border-color:#7d6a4a; color:#c9b994; background:#2a2016; }
@@ -12039,7 +12039,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1215"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1216"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17551,10 +17551,19 @@ function monInCell(cx, cy, ep, seed) {
   if (!monTileOk(x, y)) return null;
   return { id: id, type: type, level: lv, x: x, y: y, tileId: x + "," + y, ep: ep };
 }
+/* v1216 (Harley: fps dropped when scrolling): each cell's monster is worked out once and remembered for a few seconds (the tile checks
+   were redone for every cell on every scroll frame). Cleared at once when a kill / my level / the seed changes. */
+var monCellCache = {}, monCellCacheT = 0, monCellCacheKey = "";
+function monCellCached(cx, cy, ep, seed) {
+  var nowMs = Date.now(), ck = seed + "|" + ep + "|" + (game.state.monsters.maxBeat | 0) + "|" + Object.keys(game.state.monsters.kills).length + "|" + Object.keys(monAllyKills).length;
+  if (ck !== monCellCacheKey || nowMs - monCellCacheT > 5000) { monCellCache = {}; monCellCacheKey = ck; monCellCacheT = nowMs; }
+  var k = cx + "," + cy; if (k in monCellCache) return monCellCache[k];
+  return (monCellCache[k] = monInCell(cx, cy, ep, seed));
+}
 function monstersIn(minX, maxX, minY, maxY) {
   var out = [], ep = monEpoch(), seed = monSeedKey(), n = mapSizeTiles();
   var cx0 = Math.max(0, Math.floor(minX / MONSTER_CELL)), cx1 = Math.floor(Math.min(n - 1, maxX) / MONSTER_CELL), cy0 = Math.max(0, Math.floor(minY / MONSTER_CELL)), cy1 = Math.floor(Math.min(n - 1, maxY) / MONSTER_CELL);
-  for (var cy = cy0; cy <= cy1; cy++) for (var cx = cx0; cx <= cx1; cx++) { var m = monInCell(cx, cy, ep, seed); if (m && m.x >= minX && m.x <= maxX && m.y >= minY && m.y <= maxY) out.push(m); }
+  for (var cy = cy0; cy <= cy1; cy++) for (var cx = cx0; cx <= cx1; cx++) { var m = monCellCached(cx, cy, ep, seed); if (m && m.x >= minX && m.x <= maxX && m.y >= minY && m.y <= maxY) out.push(m); }
   var sm = monSummon(); if (sm && sm.x >= minX && sm.x <= maxX && sm.y >= minY && sm.y <= maxY && !out.some(function (o) { return o.tileId === sm.tileId; })) out.push(sm);
   return out;
 }
@@ -17604,12 +17613,11 @@ function monsterRender(minX, maxX, minY, maxY) {
       el.addEventListener("click", function (e) { e.stopPropagation(); openMonsterCard(m.id); });
       world.appendChild(el); monEls[m.id] = el;
     }
-    el.querySelector(".mlv").textContent = "Lv " + m.level;
-    el.classList.toggle("locked", !game.monsterLevelOpen(m.level));
-    monPlace(el, m);
+    var lk = !game.monsterLevelOpen(m.level), st = m.level + (lk ? "L" : "") + "|" + mapZoom; /* v1216: touch the DOM only when something changed */
+    if (el._st !== st) { el._st = st; el.querySelector(".mlv").textContent = "Lv " + m.level; el.classList.toggle("locked", lk); monPlace(el, m); }
   });
   Object.keys(monEls).forEach(function (id) { if (!keep[id]) { monEls[id].remove(); delete monEls[id]; } });
-  if (Math.random() < 0.02) monPrune();
+  if (Math.random() < 0.01) monPrune();
 }
 function monsterReposition() { Object.keys(monEls).forEach(function (id) { if (monVisible[id]) monPlace(monEls[id], monVisible[id]); }); }
 function monResHtml(r, n, cls) { return '<div class="mon-it' + (cls ? " " + cls : "") + '">' + RES_ICON[r] + '<span>' + fmt(n) + '</span></div>'; }

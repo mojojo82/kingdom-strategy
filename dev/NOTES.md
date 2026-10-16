@@ -2224,3 +2224,11 @@
 - Rewards on a win: two resources (2,500 x L^1.5; stone x0.4, gold x0.2 like production) + Valor 40+25L; 50% a third resource; 15% 1-2 hero fragments. L30 = ~410K food+wood ~ 1.3 h of a Lv30 farm. FIRST PASS - tune with Harley.
 - UI: 🔍 Search button by Bookmarks -> panel (Monsters / Resources tabs, type, level slider, rewards, energy). Search jumps to the nearest match within 30 tiles, or calls one up 4-11 tiles from your city (only you see it). Tap a monster -> card (rewards, enemy strength, per-formation Win / Too weak, energy) -> Attack with a formation. Reports: "👹 Level L <name>" with Valor / fragments line.
 - Tests: g331 (search, card, attack, win, rewards, unlock, gone, no energy, resource search), g332 (alliance: same monsters, kill shared, teammate refunded, personal differs). g324-g326, g329, g330 still pass.
+
+## v1216 (16 Oct 2026) - map scrolling slower since monsters
+- Harley: fps dropped a lot when scrolling the map. Measured with new dev/simfork/p01_map_pan_perf.js (drag the map at normal zoom, CPU throttled 4x, new account each run):
+  - v1214 (no monsters): map redraw ~14.5 ms, frame avg ~35 ms.
+  - v1215: redraw ~22 ms (monsters alone 4.4-4.7 ms), frame avg ~40 ms, slow frames 100 ms.
+  - v1216: monsters 1.0-1.5 ms, redraw / frame avg back near v1214 (runs vary with where the account lands).
+- Fixes: each map cell's monster is remembered for 5 s (the base / tile checks were redone for every cell on every scroll frame; cleared at once on a kill, level-up or alliance change); monster DOM is only touched when its level / lock / zoom changes; dropped the drop-shadow filter on monster pictures (the ground shadow stays).
+- g331 / g332 still pass.
