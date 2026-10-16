@@ -2136,3 +2136,9 @@
 ## LIVE = v1198 (16 Oct 2026)
 - Harley: update LIVE (no players on it yet; it's an extra backup of the work). Root index.html = test/index.html v1198, root version.json written by stamp-version. Smoke test at the live path (fake Firebase): sign-up, Weapon Info, weapons list, no page errors. Not checked on a phone.
 - Note from the handover: the live world imports seed-world.json the first time an admin opens it. Live data sits at the Firestore root (TEST stays under envs/test).
+
+## v1199 - Owned weapons add power (TEST)
+- Harley: from High Seas Hero numbers (weapons 17.1M of a 425M account = 4%; max Legendary there 312.7K, Transcendent ~716K at Lv50 by its Lv2-7 slope, Elite max 105.5K; levels add little). Ours: WEAPON_POWER_MAX Elite 140K / Super Rare 280K / Epic 420K / Legendary 700K at Lv50, Lv1 = 70% (Harley picked 70% from their slope).
+- powerFromWeapons() added to governorPower (not scaled by POWER_SCALE, like troops). Counts every owned weapon. "Owned" for now = fragments > 0, level > 1 or equipped (no unlock system yet - weapons are all usable; see open topic), so a new player doesn't get ~4M free.
+- All 15 maxed = 5.74M (~4% of a maxed account with ~300k T10). Arena power breakdown not changed.
+- dev/simfork/g319_weapon_power.js; g195 (events power), g306 pass. Not checked on a phone.

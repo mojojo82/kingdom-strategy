@@ -9796,9 +9796,19 @@ function createGame(opts) {
     }
     return total;
   }
+  /* v1199 (Harley, from High Seas Hero: weapons ~4% of a big account; rarity sets most of it, levels add a little - Lv1 = 70% of Lv50).
+     Counts every OWNED weapon, equipped or not. Until the fragment-unlock system exists, "owned" = has fragments, is above Lv1, or is equipped. */
+  var WEAPON_POWER_MAX = { "Elite": 140000, "Super Rare": 280000, "Epic": 420000, "Legendary": 700000 };
+  function weaponOwnedForPower(id) { return (state.weaponFrags && state.weaponFrags[id] > 0) || (state.weaponLevels && state.weaponLevels[id] > 1) || (state.equippedWeapons || []).indexOf(id) !== -1; }
+  function weaponPowerOf(w, lv) { var mx = WEAPON_POWER_MAX[w.rarity] || 0; return Math.round(mx * (0.7 + 0.3 * (Math.max(1, Math.min(WEAPON_MAX_LEVEL, lv)) - 1) / (WEAPON_MAX_LEVEL - 1))); }
+  function powerFromWeapons() {
+    var total = 0;
+    WEAPON_DEFS.forEach(function (w) { if (!w.visualOnly && weaponOwnedForPower(w.id)) total += weaponPowerOf(w, weaponLevel(w.id)); });
+    return total;
+  }
   function governorPower() {
     var raw = powerFromBuildingsOld() + powerFromTech() + powerFromFortressTech() + powerFromHeroes();
-    return Math.round(raw * POWER_SCALE + powerFromBuildingsReal() + powerFromTroops()); /* v946: troops are already in real power units */
+    return Math.round(raw * POWER_SCALE + powerFromBuildingsReal() + powerFromTroops() + powerFromWeapons()); /* v946: troops are already in real power units; v1199: weapons too */
   }
   // DEV-ONLY: what this account is "worth" in USD, using USD_VALUES. `held` = stockpiles
   // on hand; the rest is what has been invested (cost of everything built/trained/levelled).
@@ -9886,7 +9896,7 @@ function createGame(opts) {
     getIdleEase: function () { return IDLE_EASE; }, setIdleEase: function (o) { Object.keys(o || {}).forEach(function (k) { if (k in IDLE_EASE) IDLE_EASE[k] = o[k]; }); },
     saveFormation: saveFormation, setActiveFormation: setActiveFormation,
     toggleFormationHero: toggleFormationHero, clearFormationHeroes: clearFormationHeroes,
-    governorPower: governorPower, infirmaryCapacity: infirmaryCapacity, woundedTotal: woundedTotal, healingTotal: healingTotal, healWounded: healWounded, healCost: healCost, heroLeadMult: heroLeadMult, heroLeadLossReduction: heroLeadLossReduction };
+    governorPower: governorPower, powerFromWeapons: powerFromWeapons, infirmaryCapacity: infirmaryCapacity, woundedTotal: woundedTotal, healingTotal: healingTotal, healWounded: healWounded, healCost: healCost, heroLeadMult: heroLeadMult, heroLeadLossReduction: heroLeadLossReduction };
 }
 
 // ===================== UI LAYER =====================
@@ -11822,7 +11832,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1198"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1199"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
