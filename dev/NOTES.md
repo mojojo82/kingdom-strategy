@@ -2161,3 +2161,8 @@
 - Fixed: resource buildings were a running sum of Kingshot's numbers (241K at Lv30, Kingshot 30,470); Barracks / Mage Tower / Archery Range / Academy / Infirmary / Warehouse gave 0 (an old note said Kingshot shows none - it does now); the Wall used the old cost formula (21M at Lv20). Now BUILDING_REAL_POWER is built from KS_BUILD_CURVE x BUILDING_POWER_MULT; the old formula covers nothing.
 - Guesses to confirm: Warehouse x0.1 (Storehouse), Infirmary x0.5. Wall Lv20 = 304,700 (Guard Station max).
 - Maxed buildings: 3.38M (was 23.4M). dev/simfork/g323_building_power.js checks Kingshot's numbers (TH30 1,523,500, Mill7 706, Range17 55,320, Academy15 43,076, ...). g195, g307, g319, g322 pass. Not checked on a phone.
+
+## v1204 - Base fire shows the moment you win (TEST)
+- Harley bug: beat a bot base, the fire didn't appear straight away. Cause: on Firebase hitBase() waited for the hitBase Cloud Function (a sleeping function can take seconds) before setting cityHp, so the report showed but the fire came late.
+- Fix: hitBase() shows the hit at once (same maths as the server: -1,000 HP, starts burning, zeroed -> raidedAt), then takes the server's answer; if the server refuses (cooldown, ally, ...) the base goes back to how it was.
+- dev/simfork/g324_fire_instant.js: server slowed to 2.5 s - fire up at 300 ms and still after; a refused hit takes it away (old build: no fire until the server answered). g258 passes; g153 has broken paths (fails on the old build too). Not checked on a phone.
