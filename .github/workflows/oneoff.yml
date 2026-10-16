@@ -1,0 +1,26 @@
+name: oneoff
+# Manual one-off data fixes Harley asked for (v1222: set a player's Research Points). Run with: gh workflow run oneoff -f env=test -f email=... -f value=0
+on:
+  workflow_dispatch:
+    inputs:
+      env: { description: "test or live", required: true, default: "test" }
+      email: { description: "player sign-in email", required: true }
+      value: { description: "new Research Points", required: true, default: "0" }
+permissions:
+  contents: read
+jobs:
+  setrp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Set Research Points
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$SA" > /tmp/sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
+          (cd functions && npm install --no-audit --no-fund >/dev/null)
+          node tools/oneoff-set-rp.js "${{ inputs.env }}" "${{ inputs.email }}" "${{ inputs.value }}" 2>&1 | tee /tmp/out.txt
+          echo "::notice::$(grep -E 'RESULT|FAILED' /tmp/out.txt | head -1)"
