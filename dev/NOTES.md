@@ -2146,3 +2146,7 @@
 ## v1200 - Sword of Power adds power (TEST)
 - Harley: High Seas Hero drone components (their Sword of Power) Lv 133/149/135 = 3.6M power; "make our power levels more equal to theirs". powerFromSword() = (atk + hp + def lane levels) x 8,600 (SWORD_POWER_PER_LEVEL), added to governorPower. Milestones add none.
 - dev/simfork/g320_sword_power.js (133/149/135 -> 3,586,200; none -> 0). g319 passes. Not checked on a phone.
+
+## v1201 - Worn equipment adds power (TEST)
+- Harley: High Seas Hero's 10 equipped top-tier pieces (~Lv150, luck-based levels) = 11.8M. Ours has no levels but rolled stats, so powerFromEquipment() = sum over worn slots of 36,000 x (atk + hp + def + bonus lines %). Average Legendary (8 + 8 + 4.8 + 6 + 6 = 32.8%) = 1,180,800; perfect rolls ~1.42M; average Common ~94K.
+- dev/simfork/g321_equipment_power.js (bag 0, one Legendary 1,180,800, full set 11,808,000). g195, g319, g320 pass. Not checked on a phone.
