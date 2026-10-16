@@ -2333,3 +2333,8 @@
 ## v1236 — fps with marches out
 - Harley: fps bad with marches out, back to 60 when home. Measured (dev/simfork/p03_march_fps.js, 3 marches, CPU ×4, headless): no marches ~50 fps; marches ~4–7; water off barely helps; arrows / march list no change; 3D ships off ~30. Culprit = the 3D ship canvas (full screen + 160px border, antialiased, cleared/drawn/blended every frame), not the 4K-triangle models or the water.
 - Fix: the WebGL canvas now only covers the box round the ships and their wakes (64px steps, shrinks only when >2× too big, clipped to the screen), and antialias off. Phone-density headless: 282–308 ms/frame -> 95–101 ms (~3× faster). Screenshots: ships and wakes look the same, nothing cut off. Headless GL is software — real phone numbers will differ; Harley to check.
+
+## v1237 — Update button stuck on the old version
+- Harley's video: tapped Update on v1235 (v1236 out), page came back as v1235 and the banner returned straight away, again and again.
+- Cause: Update reloaded "?u=<new version>" - the same address every tap. If the first tap got an old copy (CDN not caught up yet), that copy was cached under that address, so every later tap loaded it again. Fix: ksFreshReload adds the time too ("?u=v1237-<time>"), so every tap is a fresh download.
+- Phones still on v1236 or older have the old button: close and reopen the game (or wait ~10 min) to get past it once.
