@@ -2314,3 +2314,9 @@
 - Now: RP each level really costs × TECH_POWER_PER_RP (5M / 225.9M RP), no POWER_SCALE. All 18 techs maxed = 5.0M (Harley: 5M, room for future tech trees).
 - Side effect: because tech costs grow steeply, early levels are worth less than before (21-day sim player: 5.9K → 209; Lv1 Paved Roads ~25 power). Flagged to Harley.
 - Tests: g195, g253, g319–g322 pass.
+
+## v1233 — weapon power = HSH maxed values
+- Harley's HSH screens: Rare 57.5K, Elite 105.5K, Exceptional 179.8K, Epic 293.7K, Transcendent ~700K at max. Ours were a guessed even ladder (Elite 140K / SR 280K / Epic 420K / Legendary 700K).
+- WEAPON_POWER_MAX now Elite 105.5K, Super Rare 179.8K, Epic 293.7K, Legendary 700K (Lv1 still 70%). All weapons maxed ~4.2M (was 5.7M); the 5 Elite + 2 SR a new account gets from 15 tickets: 882K -> 621K.
+- Still open: a weapon counts as owned from its first fragment (no unlock step yet).
+- g319 updated; g195, g322 pass.

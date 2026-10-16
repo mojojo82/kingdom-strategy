@@ -37,7 +37,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   if (!process.env.NOASSERT) {
     assert.deepStrictEqual(errs, []); assert.strictEqual(v.none, 0, "nothing owned = no weapon power");
     assert.strictEqual(v.legLv1, 490000, "Legendary Lv1 = 70% of 700K"); assert.strictEqual(v.govDelta, 490000, "counted in governor power");
-    assert.strictEqual(v.legLv50, 700000); assert.strictEqual(v.elite50, 140000); assert.strictEqual(v.srEquippedLv1, 196000, "an equipped Super Rare counts (70% of 280K)");
+    assert.strictEqual(v.legLv50, 700000); assert.strictEqual(v.elite50, 105500); assert.strictEqual(v.srEquippedLv1, 125860, "an equipped Super Rare counts (70% of 179.8K)");
     console.log("g319 ok");
   }
 })().catch((e) => { console.error(e); process.exit(1); });
