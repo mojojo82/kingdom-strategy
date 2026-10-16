@@ -2166,3 +2166,7 @@
 - Harley bug: beat a bot base, the fire didn't appear straight away. Cause: on Firebase hitBase() waited for the hitBase Cloud Function (a sleeping function can take seconds) before setting cityHp, so the report showed but the fire came late.
 - Fix: hitBase() shows the hit at once (same maths as the server: -1,000 HP, starts burning, zeroed -> raidedAt), then takes the server's answer; if the server refuses (cooldown, ally, ...) the base goes back to how it was.
 - dev/simfork/g324_fire_instant.js: server slowed to 2.5 s - fire up at 300 ms and still after; a refused hit takes it away (old build: no fire until the server answered). g258 passes; g153 has broken paths (fails on the old build too). Not checked on a phone.
+
+## v1205 - Base fire waits for the ship's volleys (TEST)
+- Harley: the fire came as the shots began; the damage should show once the shells have finished. A march resolves on arrival, then sits "acting" for 5 s firing volleys (marchFxVolley). cityAttackOutcome now calls holdBaseFire(tile, time left in the acting phase + 0.9 s for the last shells); baseFireRender skips held tiles. Only NEW fire is held (a base already burning keeps showing). The hit still goes to the server at once.
+- dev/simfork/g325_fire_after_shots.js (hit applied but fire held during the volleys, shown after; burning base never hidden). g324 passes. Not checked on a phone.
