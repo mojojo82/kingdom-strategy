@@ -2195,3 +2195,8 @@
 - How: govShipWithBarrels() draws ship + barrels into one padded picture (cached per skin + weapons + barrel size + layout), so they hover together. The profile uses the skin's "gov" picture and Conquest its "cq" picture, so slot points are mapped through each picture's solid-pixel box (imgAlphaBox).
 - Weapons with no barrel picture (Droid, Dome, Repair...) show nothing - same as Conquest. Barrels switched off in Dev Tools = plain ship.
 - Only the player's own profile (there's no profile view of other players yet). Test: g327 (all 5 skins).
+
+## v1211 (16 Oct 2026) - profile buttons swapped
+- Harley: the Overlord Profile's bottom buttons were mostly useless now. Removed Settings (same as the gear / •••). Save Data, Playtest Link and Dev Notes moved to Dev Tools > "👤 Old profile buttons" (still work).
+- Trial replacements until Harley decides: Power Details (the existing popup), Battle Stats (Conquest kills + chapter, Arena rank / points / W-L-D / win rate, World battles won in the kept reports, Gauntlet floors), Achievements (a "coming soon" card - no achievements exist yet), Share Profile (phone share sheet, else copies name, ID, power, chapter + game link).
+- Row is now 4 equal columns; Achievements label at 12px so it fits. Test: g328.

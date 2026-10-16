@@ -1982,7 +1982,9 @@
   #govProfileOverlay .gp-stat.power { color:#a8730a; font-size:19px; }
   #govProfileOverlay .gp-stat .th { margin-left:auto; width:28px; height:28px; border-radius:50%; background:linear-gradient(145deg,#f0c95f,#b3801e); color:#3a2600; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid #fff6; }
   #govProfileOverlay .gp-btns { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:12px 12px calc(16px + env(safe-area-inset-bottom)); }
-  #govProfileOverlay .gp-btns { gap:10px; padding:14px 12px calc(18px + env(safe-area-inset-bottom)); }
+  #govProfileOverlay .gp-btns { gap:10px; padding:14px 12px calc(18px + env(safe-area-inset-bottom)); grid-template-columns:repeat(4,minmax(0,1fr)); } /* v1211: equal columns even with a long word (Achievements) */
+  #govProfileOverlay .gp-btns button { padding-left:2px; padding-right:2px; font-size:14px; }
+  #govProfileOverlay #gpAchBtn { font-size:12px; letter-spacing:-.2px; }
   #govProfileOverlay .gp-btns button { position:relative; font-family:var(--bodyfont) !important; background:radial-gradient(circle at 9px 8px,#e9fdff 0 2px,transparent 3px),linear-gradient(180deg,#86e6f0 0%,#57cfdf 42%,#39b6ca 100%); color:#fff; border:none; border-radius:13px; padding:12px 4px 13px; font-weight:800; font-size:16px; line-height:1.05; letter-spacing:.2px; -webkit-text-stroke:2px #143847; paint-order:stroke fill; text-shadow:none; box-shadow:inset 0 3px 0 rgba(255,255,255,.6), inset 0 -5px 0 #2b97ae, inset 0 0 0 1.5px #2a8ea6, 0 4px 0 #1f6c80, 0 7px 9px rgba(0,0,0,.45); }
   #govProfileOverlay .gp-btns button:active { transform:translateY(2px); box-shadow:inset 0 3px 0 rgba(255,255,255,.5), inset 0 -3px 0 #2b97ae, inset 0 0 0 1.5px #2a8ea6, 0 2px 0 #1f6c80, 0 3px 5px rgba(0,0,0,.45); }
   /* v855: profile buttons match the tile-card / Upgrade shape - flat cyan, thin dark border, light inner ring, small bottom edge (no gloss bubble) */
@@ -2844,10 +2846,10 @@
     </div>
   </div>
   <div class="gp-btns">
-    <button id="gpSettingsBtn">Settings</button>
-    <button id="gpSaveBtn">Save Data</button>
-    <button id="gpLinkBtn">Playtest Link</button>
-    <button id="gpNotesBtn">Dev Notes</button>
+    <button id="gpPowerBtn">Power Details</button>
+    <button id="gpStatsBtn">Battle Stats</button>
+    <button id="gpAchBtn">Achievements</button>
+    <button id="gpShareBtn">Share Profile</button>
   </div>
 </div>
 
@@ -3118,6 +3120,18 @@
           <div class="idle-debug-toggle" id="devToolsToggle">🛠️ Show Dev Tools</div>
           <div class="dev-tools" id="devToolsPanel" style="display:none;">
             <div class="dev-tools-label">🛠️ Dev Tools — not in final build</div>
+
+            <div class="dev-sub">
+              <div class="dev-sub-header" data-target="devSubOldProfile"><span class="dev-sub-arrow">▸</span> 👤 Old profile buttons</div>
+              <div class="dev-sub-body" id="devSubOldProfile" style="display:none;">
+                <div class="dev-tools-hint" style="margin-bottom:6px;">Moved here from the Overlord Profile in v1211 (players don't need them). Settings is the ⚙️ on the profile.</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <button class="dev-btn" id="devSaveDataBtn">💾 Save Data</button>
+                  <button class="dev-btn" id="devPlaytestLinkBtn">🔗 Playtest Link</button>
+                  <button class="dev-btn" id="devDevNotesBtn">📝 Dev Notes</button>
+                </div>
+              </div>
+            </div>
 
             <div class="dev-sub">
               <div class="dev-sub-header" data-target="devSubSpeed"><span class="dev-sub-arrow">▸</span> ⏱️ Speed &amp; Testing</div>
@@ -11906,7 +11920,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1210"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1211"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -29487,11 +29501,44 @@ function closeGovProfile() { document.getElementById("govProfileOverlay").style.
 document.getElementById("gpBackBtn").onclick = closeGovProfile;
 document.getElementById("gpGearBtn").onclick = function () { openProfileOverlay(); };
 document.getElementById("gpMoreBtn").onclick = function () { openProfileOverlay(); };
-document.getElementById("gpSettingsBtn").onclick = function () { openProfileOverlay(); };
 document.getElementById("gpAvatar").onclick = function () { document.getElementById("avatarInput").click(); };
-document.getElementById("gpSaveBtn").onclick = function () { document.getElementById("saveDataBtn").click(); };
-document.getElementById("gpLinkBtn").onclick = function () { document.getElementById("playtestLinkBtn").click(); };
-document.getElementById("gpNotesBtn").onclick = function () { document.getElementById("devNotesBtn").click(); };
+/* v1211 (Harley): Settings (same as the gear), Save Data, Playtest Link and Dev Notes left the profile - the last three live in Dev Tools > Old profile buttons.
+   In their place, trial buttons until Harley decides: Power Details, Battle Stats, Achievements (coming soon), Share Profile. */
+document.getElementById("devSaveDataBtn").onclick = function () { document.getElementById("saveDataBtn").click(); };
+document.getElementById("devPlaytestLinkBtn").onclick = function () { document.getElementById("playtestLinkBtn").click(); };
+document.getElementById("devDevNotesBtn").onclick = function () { document.getElementById("devNotesBtn").click(); };
+document.getElementById("gpPowerBtn").onclick = function () { openPowerDetails(); };
+document.getElementById("gpStatsBtn").onclick = function () { openBattleStats(); };
+document.getElementById("gpAchBtn").onclick = function () { openProfileInfoCard("Achievements", '<div class="pd-note" style="text-align:center;font-size:13.5px;padding:22px 16px;">🏆<br><br>Achievements are coming soon.</div>'); };
+document.getElementById("gpShareBtn").onclick = function () { shareMyProfile(); };
+function openProfileInfoCard(title, body) { /* same popup look as Power Details */
+  var ov = document.getElementById("profileInfoOverlay");
+  if (!ov) { ov = document.createElement("div"); ov.className = "hd-overlay"; ov.id = "profileInfoOverlay"; ov.onclick = function (e) { if (e.target === ov) ov.style.display = "none"; }; document.body.appendChild(ov); }
+  ov.innerHTML = '<div class="wi-card"><div class="wi-top">' + title + '<button class="wi-close" id="piClose" aria-label="Close">✕</button></div>' + body + '</div>';
+  ov.style.display = "flex"; document.getElementById("piClose").onclick = function () { ov.style.display = "none"; };
+}
+function openBattleStats() {
+  var st = game.state, ar = st.arena || {}, rec = ar.record || { wins: 0, losses: 0, draws: 0 }, games = rec.wins + rec.losses + rec.draws, rank = "—";
+  try { var lb = ensureArenaLeaderboard(), me = lb.filter(function (e) { return e.isPlayer; })[0]; if (me) rank = "#" + me.rank + " of " + lb.length; } catch (e) {}
+  var reps = st.battleReports || [], rw = reps.filter(function (r) { return r.win; }).length;
+  var gf = st.gauntlet ? st.gauntlet.floor : 1;
+  var row = function (l, v) { return '<div class="pd-row"><span>' + l + '</span><span>' + v + '</span></div>'; };
+  var grp = function (name, rows) { return '<div class="pd-grp"><div class="pd-head"><span>' + name + '</span></div>' + rows.join("") + '</div>'; };
+  var h = grp("🏔️ Conquest", [row("Enemies defeated", fmt(st.idle.defeated || 0)), row("Chapter", st.idle.chapter + "-" + st.idle.levelNum)]);
+  h += grp("🏟️ Arena", [row("Rank", rank), row("Points", fmt(ar.points || 0)), row("Wins / Losses / Draws", rec.wins + " / " + rec.losses + " / " + rec.draws), row("Win rate", games ? Math.round(100 * rec.wins / games) + "%" : "—")]);
+  h += grp("🗺️ World map", [row("Battles won (in your reports)", rw + " of " + reps.length)]);
+  h += grp("🗼 Gauntlet", [row("Floors cleared", gf > 100 ? "All 100" : String(Math.max(0, gf - 1)))]);
+  h += '<div class="pd-note">World map counts only cover battles still in your reports.</div>';
+  openProfileInfoCard("Battle Stats", h);
+}
+function shareMyProfile() {
+  var st = game.state, link = window.location.origin + window.location.pathname;
+  var txt = getPlayerName() + " (ID " + govShortId() + ") - Power " + fmt(Math.round(game.governorPower())) + ", Chapter " + st.idle.chapter + "-" + st.idle.levelNum + ". Come fight me in Kingdom Strategy!";
+  var done = function () { try { miniToast("Profile copied - paste it anywhere"); } catch (e) {} };
+  if (navigator.share) { navigator.share({ title: "Kingdom Strategy", text: txt, url: link }).catch(function () {}); return; }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt + " " + link).then(done).catch(function () { window.prompt("Copy your profile:", txt + " " + link); });
+  else window.prompt("Copy your profile:", txt + " " + link);
+}
 
 // ---- Profile modal (avatar + display name, 12-char limit) ----
 // Same size/visual language as the hero detail popup (.hd-overlay/.hd-close),
