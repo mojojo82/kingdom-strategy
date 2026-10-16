@@ -2185,3 +2185,7 @@
 - Now: faint landing glow grows on the spot (0-0.5 s) while a bright bolt (glowing head + tail) falls from ~4 base-widths up, speeding up; at 0.5 s it hits: white flash, shock ring, light pillar that thins out, swirl, 8 dust puffs, crest rising, and the base appears on that same frame with a landing squash/bounce. Total still 1.3 s (DROP_ANIM_DURATION_MS unchanged).
 - Bug fixed on the way: beam/ring had fill-mode "both", so the pillar showed at full before its delay - now "forwards".
 - g326 SHOTS=dir saves frames at fixed animation times (animations paused + scrubbed).
+
+## v1209 (16 Oct 2026) - new teleport sound
+- Harley's "shinggg" clip (4.7 s) is the new built-in teleport sound: trimmed to 1.22 s of sound with an eased fade (qsin, from 0.6 s), plus 0.28 s silence in front so the strike (0.22 s into the clip) lands on the bolt impact at 0.5 s. 1.54 s total, same loudness as the old clip.
+- Files: sfx/teleport.mp3 (what's in the game), sfx/originals/teleport_shinggg_original.mp3 (untouched upload), sfx/originals/teleport_old_default.mp3 (the old built-in, 0.73 s - Harley wants it kept as a backup; to use it, Dev Tools > Sound Effects > Teleport > Choose File, or ask to bake it back in).
