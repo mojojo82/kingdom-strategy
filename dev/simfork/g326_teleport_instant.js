@@ -27,8 +27,13 @@ const call = async (name, data, auth) => { if (name === "relocateCity") { await 
   const tp = (id) => P.evaluate((id) => { window.__t0 = performance.now(); return teleportTo(id).then((res) => { if (res.ok) { armTeleportDropEffect(id); persist(); render(); try { centerMapOnHome(); } catch (e) {} spawnTeleportDropExtras(id); }
     return { ok: res.ok, ms: Math.round(performance.now() - window.__t0), home: game.state.homeTileId, fx: document.querySelectorAll(".tpx").length }; }); }, id);
   const r1 = await tp(ids.to[0]);
-  if (process.env.SHOTS) { const bb = await P.evaluate(() => { const e = document.querySelector(".tpx"); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width }; });
-    for (let i = 0; i < 8; i++) { await P.screenshot({ path: process.env.SHOTS + "/tp_" + i + ".png", clip: bb ? { x: Math.max(0, bb.x - bb.w * 0.8), y: Math.max(0, bb.y - bb.w * 1.6), width: Math.min(430, bb.w * 2.6), height: bb.w * 2.4 } : undefined }); await P.waitForTimeout(160); } }
+  if (process.env.SHOTS) { /* frames at fixed animation times (animations paused + scrubbed, so screenshot speed doesn't matter) */
+    const bb = await P.evaluate(() => { const e = document.querySelector(".tpx"); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width }; });
+    for (const t of [0, 150, 300, 420, 500, 560, 650, 800, 1000, 1300]) {
+      await P.evaluate((t) => document.getAnimations().forEach((a) => { try { a.pause(); a.currentTime = t; } catch (e) {} }), t);
+      const top = bb ? Math.max(0, bb.y - Math.max(200, bb.w * 4) - bb.w * 0.6) : 0;
+      await P.screenshot({ path: process.env.SHOTS + "/tp_" + String(t).padStart(4, "0") + ".png", clip: bb ? { x: Math.max(0, bb.x - bb.w * 0.9), y: top, width: Math.min(430, bb.w * 2.8), height: Math.min(932 - top, bb.y - top + bb.w * 0.9) } : undefined }); }
+    await P.evaluate(() => document.getAnimations().forEach((a) => { try { a.finish(); } catch (e) {} })); }
   await P.waitForTimeout(DELAY + 600);
   const r1b = await P.evaluate((id) => ({ home: game.state.homeTileId, mine: occupiedTileIds[id] === PLAYER_ID }), ids.to[0]);
   /* v1207: teleport through the real button - the tapped tile becomes my base, but its card must NOT open */

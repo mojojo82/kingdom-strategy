@@ -826,30 +826,47 @@
     100% { transform: translateX(-50%) translateY(0) scale(1); }
   }
   .city-icon-img.city-drop-anim { animation: cityTpAppear 1.3s ease-out both; } /* v1206: Kingshot-style beam-in (was a 0.2 s fall) */
-  @keyframes cityTpAppear {
-    0%, 40% { transform: translateX(-50%) scale(.92); opacity: 0; filter: brightness(2.4) saturate(.3); }
-    46%     { transform: translateX(-50%) scale(1.04); opacity: 1; filter: brightness(2.2) saturate(.4) drop-shadow(0 0 10px #7fe3ff); }
-    75%     { transform: translateX(-50%) scale(1); filter: brightness(1.25) saturate(.85) drop-shadow(0 0 6px #7fe3ff88); }
+  @keyframes cityTpAppear { /* v1207: hidden until the bolt hits (0.5 s), then lands with a squash */
+    0%, 37% { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 0; filter: brightness(2.6) saturate(.3); }
+    38%     { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 1; filter: brightness(2.6) saturate(.3) drop-shadow(0 0 12px #7fe3ff); }
+    44%     { transform: translateX(-50%) translateY(0) scale(1.12, .86); filter: brightness(2) saturate(.5) drop-shadow(0 0 10px #7fe3ff); }
+    52%     { transform: translateX(-50%) translateY(-3%) scale(.96, 1.05); }
+    60%     { transform: translateX(-50%) translateY(0) scale(1.02, .98); filter: brightness(1.3) saturate(.85) drop-shadow(0 0 6px #7fe3ff88); }
+    68%     { transform: translateX(-50%) scale(1); }
     100%    { transform: translateX(-50%) scale(1); opacity: 1; filter: none; }
   }
   /* v1206: teleport FX (Harley, from Kingshot): a glowing emblem ring on the new spot, a beam of light from the sky, then a blue swirl + dust as the base appears */
   .tpx { position:absolute; pointer-events:none; z-index:9000; }
   .tpx > * { position:absolute; left:50%; pointer-events:none; }
-  .tpx-ring { top:0; width:100%; aspect-ratio:2/1; transform:translate(-50%,-50%) scale(.4); border-radius:50%; border:2px solid #a8f0ff;
-    background:radial-gradient(ellipse at center, #4fd2ff55 0%, #2aa8e833 45%, transparent 70%); box-shadow:0 0 18px #4fd2ffaa, inset 0 0 14px #7fe3ffaa; opacity:0; animation:tpxRing 1.35s ease-out both; }
-  @keyframes tpxRing { 0% { opacity:0; transform:translate(-50%,-50%) scale(.4); } 18% { opacity:1; transform:translate(-50%,-50%) scale(1); } 55% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.15); } }
-  .tpx-crest { top:0; width:34%; transform:translate(-50%,-60%); opacity:0; animation:tpxCrest 1.1s ease-out both; filter:drop-shadow(0 0 6px #7fe3ff); }
-  @keyframes tpxCrest { 0% { opacity:0; transform:translate(-50%,-50%) scale(.6); } 20% { opacity:1; transform:translate(-50%,-60%) scale(1); } 45% { opacity:1; } 70%, 100% { opacity:0; transform:translate(-50%,-70%) scale(1.05); } }
-  .tpx-beam { bottom:0; width:30%; transform:translateX(-50%) scaleY(0); transform-origin:50% 0;
-    background:linear-gradient(180deg, transparent 0%, #7fe3ff66 25%, #c9f6ff 80%, #ffffff 100%); border-radius:40% 40% 50% 50%;
-    box-shadow:0 0 22px #4fd2ff, 0 0 46px #2aa8e888; mix-blend-mode:screen; opacity:0; animation:tpxBeam 1s ease-in .12s both; }
-  @keyframes tpxBeam { 0% { opacity:1; transform:translateX(-50%) scaleY(0); } 40% { opacity:1; transform:translateX(-50%) scaleY(1); } 60% { opacity:.9; transform:translateX(-50%) scaleY(1) scaleX(1.25); } 100% { opacity:0; transform:translateX(-50%) scaleY(1) scaleX(.2); } }
+  /* v1207 (Harley): a bolt now falls from the sky and the base lands on impact at 0.5 s (was: light appearing, then the base) */
+  .tpx-mark { top:0; width:70%; aspect-ratio:2/1; border-radius:50%; transform:translate(-50%,-50%) scale(.3); opacity:0;
+    background:radial-gradient(ellipse at center, #9fe8ff88 0%, #4fd2ff44 40%, transparent 70%); animation:tpxMark .5s ease-in both; }
+  @keyframes tpxMark { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 100% { opacity:.9; transform:translate(-50%,-50%) scale(1); } }
+  .tpx-bolt { bottom:0; width:18%; border-radius:50% 50% 45% 45%; opacity:0; mix-blend-mode:screen;
+    background:linear-gradient(180deg, transparent 0%, #4fd2ff33 30%, #9fe8ffcc 70%, #e8fbff 92%, #ffffff 100%);
+    box-shadow:0 0 18px #4fd2ff, 0 0 40px #2aa8e8cc; animation:tpxBolt .56s cubic-bezier(.55,0,1,.6) .08s both; }
+  .tpx-bolt::after { content:""; position:absolute; left:50%; bottom:0; width:300%; aspect-ratio:1/1; border-radius:50%; transform:translate(-50%,45%);
+    background:radial-gradient(circle, #ffffff 0%, #c9f6ff 30%, #4fd2ff88 55%, transparent 72%); }
+  @keyframes tpxBolt { 0% { opacity:0; transform:translate(-50%, calc(-1 * var(--fall))) scaleY(.7); } 8% { opacity:1; }
+    75% { opacity:1; transform:translate(-50%, 0) scaleY(1); } 100% { opacity:0; transform:translate(-50%, 0) scaleY(.05); } }
+  .tpx-flash { top:0; width:170%; aspect-ratio:2/1; border-radius:50%; transform:translate(-50%,-50%) scale(.3); opacity:0; mix-blend-mode:screen;
+    background:radial-gradient(ellipse at center, #ffffff 0%, #c9f6ffdd 25%, #4fd2ff66 50%, transparent 70%); animation:tpxFlash .4s ease-out .5s both; }
+  @keyframes tpxFlash { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 20% { opacity:1; transform:translate(-50%,-50%) scale(1); } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.3); } }
+  .tpx-ring { top:0; width:100%; aspect-ratio:2/1; transform:translate(-50%,-50%) scale(.3); border-radius:50%; border:2px solid #a8f0ff;
+    background:radial-gradient(ellipse at center, #4fd2ff44 0%, #2aa8e822 45%, transparent 70%); box-shadow:0 0 18px #4fd2ffaa, inset 0 0 14px #7fe3ffaa; opacity:0; animation:tpxRing .7s ease-out .5s forwards; }
+  @keyframes tpxRing { 0% { opacity:1; transform:translate(-50%,-50%) scale(.3); } 60% { opacity:.8; } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.7); } }
+  .tpx-crest { top:0; width:30%; transform:translate(-50%,-60%); opacity:0; animation:tpxCrest .8s ease-out .52s both; filter:drop-shadow(0 0 6px #7fe3ff); }
+  @keyframes tpxCrest { 0% { opacity:0; transform:translate(-50%,-80%) scale(.6); } 20% { opacity:1; transform:translate(-50%,-110%) scale(1); } 100% { opacity:0; transform:translate(-50%,-190%) scale(1.05); } }
+  .tpx-beam { bottom:0; width:34%; transform:translateX(-50%); transform-origin:50% 100%;
+    background:linear-gradient(180deg, transparent 0%, #7fe3ff55 35%, #c9f6ffcc 85%, #ffffff 100%); border-radius:40% 40% 50% 50%;
+    box-shadow:0 0 22px #4fd2ff, 0 0 46px #2aa8e888; mix-blend-mode:screen; opacity:0; animation:tpxBeam .55s ease-out .5s forwards; }
+  @keyframes tpxBeam { 0% { opacity:1; transform:translateX(-50%) scaleX(1.1) scaleY(.9); } 100% { opacity:0; transform:translateX(-50%) scaleX(.12) scaleY(1); } }
   .tpx-swirl { top:0; width:120%; aspect-ratio:2/1; transform:translate(-50%,-50%) scale(.5); border-radius:50%;
-    background:radial-gradient(ellipse at center, transparent 30%, #9fe8ffcc 50%, #4fb8e855 62%, transparent 72%); opacity:0; animation:tpxSwirl .9s ease-out .55s both; }
+    background:radial-gradient(ellipse at center, transparent 30%, #9fe8ffcc 50%, #4fb8e855 62%, transparent 72%); opacity:0; animation:tpxSwirl .8s ease-out .55s both; }
   @keyframes tpxSwirl { 0% { opacity:0; transform:translate(-50%,-50%) scale(.5) rotate(0deg); } 25% { opacity:1; } 100% { opacity:0; transform:translate(-50%,-50%) scale(1.35) rotate(40deg); } }
   .tpx-dust { top:0; width:34%; aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle, #e8eef2dd 0%, #c9d3d988 45%, transparent 70%);
-    transform:translate(-50%,-50%) scale(.3); opacity:0; animation:tpxDust 1.1s ease-out .55s both; }
-  @keyframes tpxDust { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 20% { opacity:.9; } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.5); } }
+    transform:translate(-50%,-50%) scale(.3); opacity:0; animation:tpxDust 1s ease-out .5s both; }
+  @keyframes tpxDust { 0% { opacity:0; transform:translate(-50%,-50%) scale(.3); } 15% { opacity:.95; } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.6); } }
   @media (prefers-reduced-motion: reduce) { .tpx > * { animation-duration:.01s !important; animation-delay:0s !important; } }
   /* v951: water round a base on the sea (see baseWaterBuild) - a strip of frames slid along by the browser */
   .city-water { position:absolute; left:50%; transform:translateX(-50%); pointer-events:none; overflow:hidden; }
@@ -868,8 +885,8 @@
        afterimages already, so a per-clone shadow pass added compositing
        cost for very little visible payoff. */
   @keyframes cityDropTileReveal {
-    0%, 40% { opacity: 0; }
-    46%  { opacity: 1; }
+    0%, 37% { opacity: 0; }
+    38%  { opacity: 1; }
     100% { opacity: 1; }
   }
   .tile.city-drop-anim-bg { animation: cityDropTileReveal 1.3s linear both; }
@@ -11887,7 +11904,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1207"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1208"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -15806,15 +15823,18 @@ function armTeleportDropEffect(tileId) {
   dropAnimUntil = Date.now() + DROP_ANIM_DURATION_MS;
   dropAnimFallPx = tilePxZ() * 6; // scales with zoom rather than a fixed guess
 }
-function spawnTeleportDropExtras(tileId) { /* v1206 (Harley, Kingshot style): emblem ring + crest, a beam from the sky, then swirl + dust as the base appears */
+function spawnTeleportDropExtras(tileId) { /* v1206/v1207 (Harley, Kingshot style): a bolt falls from the sky; on impact flash + shock ring + dust, and the base lands */
   var world = document.getElementById("mapworld"); if (!world) return;
   var xy = tileXY(tileId), c = tileCenterPx({ x: xy[0], y: xy[1] }), Wb = tilePxZ() * (mapIso ? isoCfg.base : 2.2);
   var gy = c.y + (mapIso ? 0.5 - isoCfg.y / 100 : 0.5) * tilePxZ() - Wb * 0.18;
   var box = document.createElement("div"); box.className = "tpx";
   box.style.cssText = "left:" + (c.x - Wb / 2) + "px;top:" + gy + "px;width:" + Wb + "px;height:0;";
   var crest = '<svg class="tpx-crest" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#e8fbff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 10 L48 16 V30 C48 42 40 50 32 54 C24 50 16 42 16 30 V16 Z" fill="#7fe3ff33"/><path d="M8 50 L24 34 M56 50 L40 34 M11 40 L18 47 M53 40 L46 47"/><path d="M32 20 V42 M25 28 H39"/></g></svg>';
-  var h = '<div class="tpx-ring"></div>' + crest + '<div class="tpx-beam" style="height:' + Math.round(Wb * 1.9) + 'px"></div><div class="tpx-swirl"></div>';
-  for (var i = 0; i < 6; i++) { var an = i / 6 * Math.PI * 2 + 0.3, d = Wb * 0.55; h += '<div class="tpx-dust" style="--dx:' + Math.round(Math.cos(an) * d) + 'px;--dy:' + Math.round(Math.sin(an) * d * 0.5) + 'px;animation-delay:' + (550 + i * 30) + 'ms"></div>'; }
+  /* v1207: bolt falls from ~4 base-widths up (screen-capped) and hits at 0.5 s - the base appears on that impact (cityTpAppear) */
+  var fall = Math.round(Math.max(200, Wb * 4));
+  var h = '<div class="tpx-mark"></div><div class="tpx-bolt" style="height:' + Math.round(Wb * 1.5) + 'px;--fall:' + fall + 'px"></div>'
+    + '<div class="tpx-beam" style="height:' + Math.round(Wb * 1.7) + 'px"></div><div class="tpx-flash"></div><div class="tpx-ring"></div><div class="tpx-swirl"></div>' + crest;
+  for (var i = 0; i < 8; i++) { var an = i / 8 * Math.PI * 2 + 0.3, d = Wb * 0.6; h += '<div class="tpx-dust" style="--dx:' + Math.round(Math.cos(an) * d) + 'px;--dy:' + Math.round(Math.sin(an) * d * 0.5) + 'px;animation-delay:' + (500 + i * 20) + 'ms"></div>'; }
   box.innerHTML = h; world.appendChild(box);
   setTimeout(function () { box.remove(); }, 1800);
 }

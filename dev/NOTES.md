@@ -2179,3 +2179,9 @@
 ## v1207 (16 Oct 2026) - no base card after teleporting
 - Harley: after teleporting, my base's profile card popped open even though he only teleported. Cause: the tapped tile stayed selected and became the base.
 - Fix: the Teleport button clears the selection on success. Test: g326 now teleports through the real button (v1206: card open; v1207: closed).
+
+## v1208 (16 Oct 2026) - teleport: bolt falls, base lands on impact
+- Harley: Kingshot's teleport has a bolt of energy that travels down to the ground and the base appears on impact (looks dropped from the sky); ours was light appearing, then the base.
+- Now: faint landing glow grows on the spot (0-0.5 s) while a bright bolt (glowing head + tail) falls from ~4 base-widths up, speeding up; at 0.5 s it hits: white flash, shock ring, light pillar that thins out, swirl, 8 dust puffs, crest rising, and the base appears on that same frame with a landing squash/bounce. Total still 1.3 s (DROP_ANIM_DURATION_MS unchanged).
+- Bug fixed on the way: beam/ring had fill-mode "both", so the pillar showed at full before its delay - now "forwards".
+- g326 SHOTS=dir saves frames at fixed animation times (animations paused + scrubbed).
