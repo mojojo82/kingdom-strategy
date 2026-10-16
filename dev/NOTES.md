@@ -2142,3 +2142,7 @@
 - powerFromWeapons() added to governorPower (not scaled by POWER_SCALE, like troops). Counts every owned weapon. "Owned" for now = fragments > 0, level > 1 or equipped (no unlock system yet - weapons are all usable; see open topic), so a new player doesn't get ~4M free.
 - All 15 maxed = 5.74M (~4% of a maxed account with ~300k T10). Arena power breakdown not changed.
 - dev/simfork/g319_weapon_power.js; g195 (events power), g306 pass. Not checked on a phone.
+
+## v1200 - Sword of Power adds power (TEST)
+- Harley: High Seas Hero drone components (their Sword of Power) Lv 133/149/135 = 3.6M power; "make our power levels more equal to theirs". powerFromSword() = (atk + hp + def lane levels) x 8,600 (SWORD_POWER_PER_LEVEL), added to governorPower. Milestones add none.
+- dev/simfork/g320_sword_power.js (133/149/135 -> 3,586,200; none -> 0). g319 passes. Not checked on a phone.
