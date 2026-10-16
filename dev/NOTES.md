@@ -2294,3 +2294,9 @@
 - Pool Lv15 = High Seas Hero Lv15: their Common/Rare/Elite → our Elite 74.66%, Exceptional → Super Rare 18%, Epic+Legendary+Immortal → Epic 7.3%, Transcendent → Legendary 0.04%.
 - Lower pool levels: smooth ramp (Lv1 Elite 85 / SR 15; Epic from Lv6 at 1%; Legendary from Lv13 at 0.01%). A guess until Harley sends their Lv1/Lv8 odds.
 - Free player (~200 tickets/day) at Lv15, one weapon to Lv50: Elite ~39 days, Super Rare ~98, Epic ~240; Legendary ~1 fragment per 2,500 tickets (more ticket sources to come).
+
+## v1230 — monster rewards nerfed
+- Before, a free player using all energy (24 kills/day at monster level = TH level) got 40–190% extra food/wood, 50–300% extra stone and 55–100% extra valor.
+- Resources per kill now 500 + 25·L³ (was 2500·L^1.5), stone share 0.4 → 0.25; valor now 20 + 10L (was 40 + 25L). Hero fragment chance unchanged (15%).
+- After (economy_daily data): day 7 food/wood ~35%, stone ~30%, gold ~18%, valor ~27% of a normal day; day 21 ~26% / ~21% / 13% / 42%. Early days (TH10 on day 3) still ~60%.
+- Stamina is coming soon and will also cap monster kills.

@@ -5164,12 +5164,12 @@ var MONSTER_ORDER = ["knight", "rhino", "tank"], MONSTER_MAX_LEVEL = 30;
 var MONSTER_ENERGY_MAX = 100, MONSTER_ENERGY_COST = 10, MONSTER_ENERGY_REGEN_SEC = 360;
 var MONSTER_RESPAWN_MS = 5 * 60 * 1000, MONSTER_EPOCH_MS = 2 * 3600 * 1000, MONSTER_CELL = 6, MONSTER_CELL_CHANCE = 0.45;
 var MONSTER_TROOPS_BASE = 150, MONSTER_TROOPS_GROWTH = 1.24; /* level L: 150 x 1.24^(L-1) troops of the tier a Lv L barracks trains (L1 150 T1, L30 ~75K T10) */
-var MONSTER_RES_BASE = 2500, MONSTER_FRAG_CHANCE = 0.15, MONSTER_EXTRA_CHANCE = 0.5;
-var MONSTER_RES_SCALE = { food: 1, wood: 1, stone: 0.4, gold: 0.2 }; /* same ratios as the buildings produce them */
+var MONSTER_RES_BASE = 500, MONSTER_FRAG_CHANCE = 0.15, MONSTER_EXTRA_CHANCE = 0.5;
+var MONSTER_RES_SCALE = { food: 1, wood: 1, stone: 0.25, gold: 0.2 }; /* v1230: stone 0.4 -> 0.25 (was the biggest share) */ /* same ratios as the buildings produce them */
 function monsterTier(L) { var t = 1; for (var k in TROOP_TIER_UNLOCK_LEVEL) if (L >= TROOP_TIER_UNLOCK_LEVEL[k]) t = Math.max(t, +k); return t; }
 function monsterGarrison(type, L) { var d = MONSTER_DEFS[type] || MONSTER_DEFS.knight, o = {}; o[troopKey(d.troop, monsterTier(L))] = Math.round(MONSTER_TROOPS_BASE * Math.pow(MONSTER_TROOPS_GROWTH, L - 1)); return o; }
-function monsterResAmount(r, L) { return Math.round(MONSTER_RES_BASE * Math.pow(L, 1.5) * (MONSTER_RES_SCALE[r] || 1) / 10) * 10; }
-function monsterValor(L) { return 40 + 25 * L; }
+function monsterResAmount(r, L) { return Math.round((MONSTER_RES_BASE + 25 * Math.pow(L, 3)) * (MONSTER_RES_SCALE[r] || 1) / 10) * 10; } /* v1230 nerf: was 2500 x L^1.5 (could beat 100%+ of a day's resources) - now ~25-35% mid game with full energy */
+function monsterValor(L) { return 20 + 10 * L; } /* v1230 nerf: was 40 + 25L (full energy = ~100% of a day's valor) */
 function monsterRewards(type, L) { /* { res: guaranteed resources, valor, extra: {res: amount} (MONSTER_EXTRA_CHANCE), fragChance } */
   var d = MONSTER_DEFS[type] || MONSTER_DEFS.knight, res = {}, ex = {};
   d.res.forEach(function (r) { res[r] = monsterResAmount(r, L); }); ex[d.extra] = monsterResAmount(d.extra, L);
@@ -12083,7 +12083,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1229"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1230"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
