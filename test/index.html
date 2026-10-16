@@ -10054,13 +10054,16 @@ function createGame(opts) {
     }
     return total;
   }
+  /* v1232 (Harley): research power from the RP a level really costs now (it was the pre-v793 prices - all 18 techs maxed gave only 0.76M).
+     All 18 techs maxed (~226M RP) = ~5M power, leaving room for future tech trees. Not multiplied by POWER_SCALE. */
+  var TECH_POWER_PER_RP = 5000000 / 225883853;
   function powerFromTech() {
     var total = 0;
     for (var key in TECH_DEFS) {
-      var curLevel = state.tech[key] || 0;
-      for (var lvl = 1; lvl <= curLevel; lvl++) total += techLegacyCost(key, lvl) * POWER_RESOURCE_VALUE.researchPoints;
+      var curLevel = Math.min(TECH_DEFS[key].maxLevel || TECH_LEVELS, state.tech[key] || 0);
+      for (var lvl = 1; lvl <= curLevel; lvl++) total += techCostFor(key, lvl);
     }
-    return total;
+    return total * TECH_POWER_PER_RP;
   }
   function powerFromFortressTech() { // same rule as normal tech: research points spent x their power value
     var total = 0, ft = state.fortressTech || {};
@@ -10127,7 +10130,7 @@ function createGame(opts) {
   }
   /* v1202 (Harley): where power comes from, for the Power Details popup. governorPower() is the sum of these (same maths as before). */
   function powerBreakdown() {
-    return { buildings: powerFromBuildingsOld() * POWER_SCALE + powerFromBuildingsReal(), research: powerFromTech() * POWER_SCALE,
+    return { buildings: powerFromBuildingsOld() * POWER_SCALE + powerFromBuildingsReal(), research: powerFromTech(),
       fortress: powerFromFortressTech() * POWER_SCALE, fortType: fortressTypeOf(state.fortressTech || {}), heroes: powerFromHeroes() * POWER_SCALE,
       troops: powerFromTroops(), weapons: powerFromWeapons(), equipment: powerFromEquipment(), sword: powerFromSword() };
   }
@@ -12180,7 +12183,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1231"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1232"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

@@ -2308,3 +2308,9 @@
 - Gems are paid by the server: new function `claimDaily` (core `decideDailyClaim`): each task once per UTC day, gem chest once and only after the server has paid 100 points of tasks. Missed calls retried when the panel opens (state.daily.sv / gc). Offline/local: the game adds them.
 - Resets midnight UTC (1 pm NZ). Engine: game.daily* (state.daily), hooks in collectBucket, startUpgrade, queueTraining, promoteTroops, researchTech/Fortress, reconStart, levelUpWeapon, levelUpHero, useSpeedup, weaponDraw, resolveMonsterArrival (win), resource gather arrival, recordArenaResult.
 - Tests: dev/simfork/g336_daily_tasks.js (button, badge, claims, server gems 540, next day reset); functions core test.
+
+## v1232 — research power from real RP costs
+- Bug: research power still used the pre-v793 tech prices (Paved Roads Lv1 counted 60 RP, really 1,120), so all 18 techs maxed gave only 0.76M.
+- Now: RP each level really costs × TECH_POWER_PER_RP (5M / 225.9M RP), no POWER_SCALE. All 18 techs maxed = 5.0M (Harley: 5M, room for future tech trees).
+- Side effect: because tech costs grow steeply, early levels are worth less than before (21-day sim player: 5.9K → 209; Lv1 Paved Roads ~25 power). Flagged to Harley.
+- Tests: g195, g253, g319–g322 pass.
