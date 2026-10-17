@@ -12474,7 +12474,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1258"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1259"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -29556,7 +29556,10 @@ function renderScreenBar() {
     bar.appendChild(tabs);
   } else if (appScreen === "more" && appSub !== "menu") {
     bar.classList.add("on");
-    var b = document.createElement("button"); b.className = "secondary sb-back"; b.textContent = "◀ Back"; b.onclick = function () { setScreen("more", "menu"); };
+    var b = document.createElement("button"); b.className = "secondary sb-back"; b.textContent = "◀ Back";
+    b.onclick = function () { /* v1259 (Harley: "2 back buttons"): in an Arena fight, Back goes to the Arena leaderboard (the old "← Leaderboard" button is gone); elsewhere -> More */
+      if (appSub === "arena" && typeof arenaView !== "undefined" && arenaView !== "leaderboard") { if (arenaBattleRunning) return; stopArenaAnimLoop(); arenaView = "leaderboard"; renderArena(); return; }
+      setScreen("more", "menu"); };
     var ti = document.createElement("div"); ti.className = "sb-title";
     var it = MORE_ITEMS.filter(function (m) { return m.k === appSub; })[0]; ti.textContent = it ? it.ic + " " + it.l : "";
     bar.appendChild(b); bar.appendChild(ti);
@@ -34063,9 +34066,7 @@ function renderArenaBattleScreen() {
   if (!arenaOpponent) arenaOpponent = generateArenaOpponent();
   var p = arenaPlayerRosterAndHeroes();
   el.innerHTML =
-    '<div class="dev-tools-row" style="margin-bottom:8px;">' +
-      '<button class="dev-btn" id="arenaBackToLbBtn" style="padding:6px 12px;font-size:11.5px;">← Leaderboard</button>' +
-    '</div>' +
+
     '<div class="arena-canvas-wrap"><div class="arena-stage"><div class="arena-sky" id="arenaSky"></div><canvas id="arenaCanvas"></canvas>' +
       '<div class="arena-top-info">' +
         '<span id="arenaTimerSub">' + Math.round(ARENA_MAX_DURATION_MS / 1000) + 's</span>' +
@@ -34135,12 +34136,6 @@ function renderArenaBattleScreen() {
   stopArenaAnimLoop();
   startArenaAnimLoop();
 
-  document.getElementById("arenaBackToLbBtn").onclick = function () {
-    if (arenaBattleRunning) return;
-    stopArenaAnimLoop();
-    arenaView = "leaderboard";
-    renderArena();
-  };
   document.getElementById("arenaNewOpponentBtn").onclick = function () {
     if (arenaBattleRunning) return;
     arenaOpponent = generateArenaOpponent();

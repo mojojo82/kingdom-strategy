@@ -2496,3 +2496,8 @@
   picked a random spot at 30-80% of the target ship's full height, so on tall skins (ghost ship sails, serpent) it landed high up (ghost: 104-161 px, ground 170).
 - Now: a band 8-46 px above the ground line, still inside the ship's pixels, the same on every skin (ghost 124-161, serpent 133-162, default 139-162).
   Visual only - damage unchanged. Arena tests g204, g279, g292, g294, g307 pass.
+
+## v1259 — one Back button in Arena
+- Harley: "2 back buttons" (top bar "◀ Back" + "← Leaderboard" under it on the Arena fight screen). The "← Leaderboard" row is gone; the top-bar Back now goes
+  fight -> Arena leaderboard (ignored mid-battle, like the old button), and leaderboard -> More as before. The freed row goes to the Arena sky (v1257 fills the gap).
+- g346_arena_back.js.
