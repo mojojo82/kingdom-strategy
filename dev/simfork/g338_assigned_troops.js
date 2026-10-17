@@ -41,7 +41,7 @@ const call = call0;
     m.march.army.infantry = 3000; m.march.status = "returning"; m.march.returnAt = Date.now() - 10; s.troops.infantry += 1500; g.tick();
     out.after = { f0: Object.assign({}, F[0].held), f1: Object.assign({}, F[1].held), res: g.reserveAll() };
     /* 5. out of that tier: uses the same type's other tiers, best first */
-    s.troops.infantry_t3 = 300; s.troops.infantry_t2 = 900; g.tick(); out.tiers = Object.assign({}, F[0].held);
+    s.troops.infantry_t3 = 300; s.troops.infantry_t2 = 900; { const w0 = Date.now(); while (Date.now() === w0) {} } /* v1255: tick() skips if no time passed since the last one */ g.tick(); out.tiers = Object.assign({}, F[0].held);
     /* 6. heroes in one formation only */
     const hk = Object.keys(s.heroes).filter((k) => s.heroes[k].owned && HERO_DEFS[k].class !== "governor");
     g.toggleFormationHero(0, hk[0]); g.toggleFormationHero(1, hk[0]); out.heroMove = [F[0].heroKeys.slice(), F[1].heroKeys.slice()];

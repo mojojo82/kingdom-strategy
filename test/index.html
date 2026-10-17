@@ -746,11 +746,15 @@
   #mapProvinces .prov-label.t2 span { font-size:8.5px; } #mapProvinces .prov-label.t2.cap { font-size:10px; }
   #mapBorder { position:absolute; left:0; top:0; pointer-events:none; z-index:1; overflow:visible; } /* v858: dotted kingdom border */
   /* v856: march route arrows - chevrons flowing from base to target (outbound) and back to base (returning) */
-  .march-path { position:absolute; height:10px; margin-top:-5px; transform-origin:0 50%; pointer-events:none; background-repeat:repeat-x; background-size:16px 10px; animation:marchFlow .7s linear infinite; filter:drop-shadow(0 0 1.5px rgba(0,0,0,.85)); opacity:.95; }
-  .march-path.out { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%23ffd36b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
-  .march-path.back { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%237cd0ff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
-  .march-path.foe { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%23ff7a7a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); opacity:.75; }
-  @keyframes marchFlow { from { background-position:0 0; } to { background-position:16px 0; } }
+  /* v1255 (FPS): the arrows used to repaint every frame (animated background-position + a drop-shadow filter on every strip). Now the shadow is drawn into
+     the arrow picture and the strip slides by transform on its own layer, which the phone's GPU moves without repainting. Same look. */
+  .march-path { position:absolute; height:10px; margin-top:-5px; transform-origin:0 50%; pointer-events:none; overflow:hidden; opacity:.95; }
+  .march-path::before { content:""; position:absolute; top:0; bottom:0; left:-16px; right:0; background-repeat:repeat-x; background-size:16px 10px; animation:marchFlow .7s linear infinite; will-change:transform; }
+  .march-path.out { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%23ffd36b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
+  .march-path.back { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%237cd0ff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
+  .march-path.foe { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%23ff7a7a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); opacity:.75; }
+  .march-path::before { background-image:var(--mp); }
+  @keyframes marchFlow { from { transform:translateX(0); } to { transform:translateX(16px); } }
   .march-marker { position:absolute; transform:translate(-50%,-50%); font-size:15px; line-height:1;
     filter:drop-shadow(0 1px 2px #000c); }
   .march-marker.acting { animation:marchMarkerPulse 1s ease-in-out infinite; }
@@ -12465,7 +12469,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1254"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1255"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18890,16 +18894,18 @@ function updateMarchMarkers(manual) {
           var pe = marchPathEls[m.id];
           if (!pe) { pe = document.createElement("div"); (document.getElementById("mapPathLayer") || layer).appendChild(pe); marchPathEls[m.id] = pe; }
           var pc = "march-path " + (m.foreign ? "foe" : m.status === "returning" ? "back" : "out"); if (pe.className !== pc) pe.className = pc;
-          pe.style.left = (pA.x + pux * poff) + "px"; pe.style.top = (pA.y + puy * poff) + "px"; pe.style.width = Math.max(0, pend - poff) + "px"; pe.style.transform = "rotate(" + Math.atan2(pdy, pdx) + "rad)";
+          /* v1255: the arrow strip only changes when the map scrolls / zooms - skip the 4 style writes (and the re-layout they cause) when nothing moved */
+          var pl = Math.round(pA.x + pux * poff), ptp = Math.round(pA.y + puy * poff), pw = Math.round(Math.max(0, pend - poff)), pk = pl + "|" + ptp + "|" + pw + "|" + Math.round(Math.atan2(pdy, pdx) * 1e4);
+          if (pe._k !== pk) { pe._k = pk; pe.style.left = pl + "px"; pe.style.top = ptp + "px"; pe.style.width = pw + "px"; pe.style.transform = "rotate(" + Math.atan2(pdy, pdx) + "rad)"; }
           pathSeen[m.id] = true;
         }
         if (!shipIn) return; /* v1075: ship is off screen - no marker, no 3D ship */
         var el = marchMarkerEls[m.id];
         if (!el) { el = document.createElement("div"); layer.appendChild(el); marchMarkerEls[m.id] = el; }
-        el.className = "march-marker" + (m.status === "acting" ? " acting" : "");
-        el.title = m.foreign ? ((m.ownerName || "Another player") + "'s march — " + m.status) : ("March #" + m.id + " — " + m.status);
-        el.style.left = px + "px";
-        el.style.top = py + "px";
+        /* v1255 (Harley: 20 ships = bad FPS): only touch the marker when something changed - class / title / content were rewritten every frame for every ship */
+        var mcls = "march-marker" + (m.status === "acting" ? " acting" : ""); if (el._c !== mcls) { el._c = mcls; el.className = mcls; }
+        var mtt = m.foreign ? ((m.ownerName || "Another player") + "'s march — " + m.status) : ("March #" + m.id + " — " + m.status); if (el._t !== mtt) { el._t = mtt; el.title = mtt; }
+        var mpx = Math.round(px * 2) / 2, mpy = Math.round(py * 2) / 2; if (el._x !== mpx) { el._x = mpx; el.style.left = mpx + "px"; } if (el._y !== mpy) { el._y = mpy; el.style.top = mpy + "px"; }
         // Default march sprite: real ship art (Ironclad Starcruiser),
         // pre-rendered top-down at 16 fixed headings (see MARCH_SHIP_SPRITES
         // above) rather than one image rotated by CSS transform — the
@@ -18918,14 +18924,14 @@ function updateMarchMarkers(manual) {
         var dirIdx = Math.round((((angleDeg % 360) + 360) % 360) / 22.5) % 16;
         var badge = m.status === "acting" ? ('<span class="march-badge">' + (m.action === "attack" ? "⚔️" : "⛏️") + '</span>') : "";
         if (use3d) { /* v830: the ship itself is drawn by the WebGL layer; the marker keeps only its badge + tooltip */
-          el.innerHTML = badge;
+          if (el._h !== badge) { el._h = badge; el.innerHTML = badge; }
           var ghx = tile.x - hm.x, ghz = tile.y - hm.y; if (m.status === "returning") { ghx = -ghx; ghz = -ghz; }
           var tt = m.status === "acting" ? 1 : t, fx = m.status === "returning" ? stopX + (hm.x - stopX) * tt : hm.x + (stopX - hm.x) * tt, fy = m.status === "returning" ? stopY + (hm.y - stopY) * tt : hm.y + (stopY - hm.y) * tt;
           if (m.status === "acting") { fx = stopX; fy = stopY; }
           var legLen = Math.sqrt((stopX - hm.x) * (stopX - hm.x) + (stopY - hm.y) * (stopY - hm.y)); /* v1057: for the wake trail */
           ships3d.push({ id: m._sid || m.id, ox: px, oy: py, tx: fx, ty: fy, gx: ghx, gz: ghz, skin: m.skin || "voidspire", st: m.status, ld: m.status === "acting" ? legLen : legLen * t, stopped: m.status === "acting" ? Math.max(0, (vnow() - m.arriveAt) / 1000) : 0 });
         } else {
-        el.innerHTML = '<img class="march-ship-inner" src="' + MARCH_SHIP_SPRITES[dirIdx] + '" alt="ship">' + badge;
+        var mh = '<img class="march-ship-inner" src="' + MARCH_SHIP_SPRITES[dirIdx] + '" alt="ship">' + badge; if (el._h !== mh) { el._h = mh; el.innerHTML = mh; } /* v1255: was re-created (and the image re-set) every frame */
         }
       });
     }

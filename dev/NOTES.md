@@ -2465,3 +2465,13 @@
   empty tile 20 tiles out (21 if 20 isn't empty), 60 s trip, then they vanish. Visual only (stressMarches): never in game.state, never saved or sent to the
   server, no troops. Drawn by the normal march code (3D ships, wakes, route arrows), so the FPS counter shows the real cost.
 - g345_stress_ships.js. Headless (software GL, not a phone): 61 FPS -> ~12 FPS with 30 ships.
+
+## v1255 — smoother with lots of ships out
+- Harley: "20 is really bad" (stress buttons) -> "the update code could have a solution". Measured with dev/simfork/p04_stress_parts.js (20 ships, THROTTLE=4 ~ phone CPU)
+  and a CPU profile: the per-frame march update rewrote every ship's class, tooltip and content and every arrow strip's 4 styles each frame; the arrows also
+  repainted every frame (animated background-position + drop-shadow filter on every strip).
+- Fix 1: markers / arrow strips only write what changed (cached on the element; positions to 0.5 px). 2D-sprite mode no longer recreates the ship image every frame.
+- Fix 2: arrows slide by transform on their own layer (::before, GPU, no repaint); the shadow is drawn into the arrow picture. Same look (before/after screenshots).
+- Slow CPU, 20 ships: 3D off 27 -> 48 FPS; chevrons only 19 -> 44 FPS. Normal CPU: chevrons only 40 -> 60. With 3D ships on, headless numbers are limited by its
+  software graphics (no GPU) - Harley's phone is the real test.
+- g338 test fix: two tick() calls in the same millisecond (tick skips when no time passed) - waits 1 ms. g338, g339, g345 pass.
