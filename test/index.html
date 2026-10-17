@@ -12357,7 +12357,17 @@ var HERO_BONUS_KEY = "kingdom_prototype_heroBonus_v1";
 var heroBonus = (function () { var o = { atk: 0, hp: 0, def: 0, skill: 0 }; try { var r = JSON.parse(localStorage.getItem(HERO_BONUS_KEY) || "null"); if (r) ["atk", "hp", "def", "skill"].forEach(function (k) { if (typeof r[k] === "number" && isFinite(r[k]) && r[k] > 0) o[k] = r[k]; }); } catch (e) {} return o; })();
 var equipBonus = { atk: 0, hp: 0, def: 0, skill: 0, boss: 0, support: 0 }; // v727: summed worn-Equipment % (set by game.recomputeEquipBonus); heroBonus stays the Dev Tools part
 function setEquipBonus(o) { Object.keys(equipBonus).forEach(function (k) { equipBonus[k] = (o && typeof o[k] === "number" && isFinite(o[k])) ? o[k] : 0; }); }
-function heroBonusTotal(k) { var tb = 0; if ((k === "atk" || k === "hp" || k === "def") && typeof game !== "undefined" && game && game.state && game.state.training) tb = tgBonusOf(game.state)[k]; return (heroBonus[k] || 0) + (equipBonus[k] || 0) + tb; } /* v1093: + Training Grounds */
+/* v1252 (Harley, from High Seas Hero's weapon "Permanent Effects"): every weapon level adds a flat ATK / HP / DEF % to the global bonus, by rarity
+   (HSH: Elite 2.2, Exceptional 4, Epic 8, Transcendent 64 per level; ours Elite / Super Rare / Epic / Legendary). Lv1 counts. Every OWNED weapon counts
+   (same rule as power), equipped or not. Bots get it through botBonusFrom (they scale the player's total), like the rest of the kit. */
+var WEAPON_LEVEL_BONUS = { "Elite": 2.2, "Super Rare": 4, "Epic": 8, "Legendary": 64 };
+function weaponBonusOf(st) {
+  if (!st) return 0; var t = 0, fr = st.weaponFrags || {}, lv = st.weaponLevels || {}, eq = st.equippedWeapons || [];
+  WEAPON_DEFS.forEach(function (w) { if (w.visualOnly) return; var owned = fr[w.id] > 0 || lv[w.id] > 1 || eq.indexOf(w.id) !== -1; if (!owned) return;
+    t += (WEAPON_LEVEL_BONUS[w.rarity] || 0) * Math.max(1, Math.min(WEAPON_MAX_LEVEL, lv[w.id] || 1)); });
+  return Math.round(t * 10) / 10;
+}
+function heroBonusTotal(k) { var tb = 0, wb = 0; if ((k === "atk" || k === "hp" || k === "def") && typeof game !== "undefined" && game && game.state) { if (game.state.training) tb = tgBonusOf(game.state)[k]; wb = weaponBonusOf(game.state); } return (heroBonus[k] || 0) + (equipBonus[k] || 0) + tb + wb; } /* v1093: + Training Grounds */
 function heroBonusMult(k) { return 1 + heroBonusTotal(k) / 100; }
 function setHeroBonus(k, v) {
   heroBonus[k] = (v == null || isNaN(v) || v < 0) ? 0 : v;
@@ -12437,7 +12447,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1251"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1252"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13839,7 +13849,7 @@ function renderWeapons() {
   if (lbl) lbl.textContent = WEAPON_EQUIP_MAX;
   var eq = Array.isArray(game.state.equippedWeapons) ? game.state.equippedWeapons : [];
   var hint = document.getElementById("weaponsHint");
-  if (hint) hint.textContent = eq.length + "/" + WEAPON_EQUIP_MAX + " equipped";
+  if (hint) hint.textContent = eq.length + "/" + WEAPON_EQUIP_MAX + " equipped · Weapon levels: ATK, HP, DEF +" + fmtCompact(weaponBonusOf(game.state)) + "%"; /* v1252 */
   renderWeaponDrawPanel();
   var el = document.getElementById("weaponsList");
   if (!el) return;
@@ -13855,6 +13865,7 @@ function renderWeapons() {
     var wstats = game.weaponLevelStats(w);
     var name = document.createElement("div"); name.className = "weapon-name"; name.innerHTML = w.name + (w.visualOnly ? "" : " (Lv. " + wstats.level + ")") + (w.rarity ? " · " + w.rarity : "") + (w.visualOnly ? "" : " · " + ico("fragment") + (game.state.weaponFrags[w.id] || 0) + (game.weaponCanLevelUp(w.id) ? " ⬆" : "")) + (on ? " (Slot " + (pos + 1) + ")" : "");
     var desc = document.createElement("div"); desc.className = "weapon-desc"; desc.innerHTML = kwHtml(escapeHtml(w.desc(game.weaponDmgFor(w), wstats)));
+    if (!w.visualOnly && WEAPON_LEVEL_BONUS[w.rarity]) desc.innerHTML += '<div class="weapon-perm">Permanent: ATK, HP, DEF <b style="color:#6fd36a">+' + fmtCompact(Math.round(WEAPON_LEVEL_BONUS[w.rarity] * wstats.level * 10) / 10) + '%</b> <small>(+' + WEAPON_LEVEL_BONUS[w.rarity] + '% a level)</small></div>'; /* v1252 */
     info.appendChild(name); info.appendChild(desc);
     var btn = document.createElement("button");
     btn.className = "weapon-equip-btn" + (on ? " on" : "");

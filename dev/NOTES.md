@@ -2437,3 +2437,13 @@
 - Auto forges 50 a tick (~70 a second) and shows the best piece of the batch ("Forged 50 · kept 1"). Odds show small percentages (0.33%, 0.0021%).
 - Bug fixed on the way: a roll that missed by rounding landed on Legendary (even when locked); it lands on Common now.
 - Tests: new g343_forge_flat.js; g180 now checks per-Energon odds. Balance sims spend all their Energon on forging (it was 30 forges a step).
+
+## v1252 — weapon levels add ATK / HP / DEF
+- Harley (from High Seas Hero's weapon "Permanent Effects", flat per level; MAX = Lv200 except their Legendary = Lv50): each weapon level adds a flat % to the
+  global ATK, HP and DEF (heroBonusTotal), by rarity: Elite +2.2%, Super Rare +4% (HSH Exceptional), Epic +8%, Legendary +64% (HSH Transcendent). Read from his video:
+  Skybreaker (Common) 200/200, Rogue (Elite) 440/200, Odin's/Sunflare (Exceptional) 800/200, Territory Sentinel (Epic) 1600/200, Obsidian Skyguard (Legendary) 800/50,
+  Frostbite/Glacier (Immortal) 32/level, Twilight Haze / Beam Splitter / Skyfire (Transcendent) 64/level. Harley: "it does now" (OK to have numbers this big).
+- Lv1 counts; every OWNED weapon counts (same rule as power); capped at our Lv50 (a maxed Legendary = +3,200%). Bots: botBonusFrom scales the player's total.
+- Weapons screen: total in the hint ("Weapon levels: ATK, HP, DEF +x%") and each weapon shows its own permanent bonus.
+- Meta check: identical before/after (both sides get it). It already showed the META build NOT on top on v1251 - flagged to Harley (HANDOVER open item).
+- Test: g344_weapon_level_bonus.js.
