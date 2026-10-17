@@ -12375,7 +12375,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1244"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1245"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17866,7 +17866,7 @@ function baseFireReposition() { Object.keys(baseFireEls).forEach(function (id) {
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
 })();
 // ===== v1215: map monsters (UI side - see MONSTER_DEFS for the rules) =====
-var monAllyKills = {}, monAllySub = null, monAllyKey = "", monEls = {}, monVisible = {}, monCardId = null;
+var monAllyKills = {}, monAllySub = null, monAllyKey = "", monEls = {}, monVisible = {}, monCardId = null, monCardObj = null;
 function monHash(str) { var h = 2166136261; str = String(str); for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function monRng(key) { return seededRandom(monHash(key) % 2147483646 + 1); }
 function monEpoch(t) { return Math.floor((t || Date.now()) / MONSTER_EPOCH_MS); }
@@ -17915,7 +17915,7 @@ function monSummon() { /* the monster Search called up for me (only I see it), o
   var xy = tileXY(S.tileId); if (!monTileOk(xy[0], xy[1])) return null;
   return { id: S.id, type: S.type, level: S.level, x: xy[0], y: xy[1], tileId: S.tileId, ep: S.ep || monEpoch(S.t), summon: true };
 }
-function monById(id) { return monVisible[id] || null; }
+function monById(id) { return monVisible[id] || (monCardObj && monCardObj.id === id ? monCardObj : null); } /* v1245: the card's monster may not be on screen yet (Search moves the map to it) */
 function monPrune() { /* my kill list only needs the last two windows */
   var K = game.state.monsters.kills, ep = monEpoch(), cut = Date.now() - MONSTER_EPOCH_MS * 2;
   Object.keys(K).forEach(function (id) { var e = parseInt(id, 10); if ((isFinite(e) && e < ep - 1) || (!isFinite(e) && K[id] < cut) || (id.charAt(0) === "s" && K[id] < cut)) delete K[id]; });
@@ -17973,7 +17973,8 @@ function monFormationArmy(f, idx) { return game.formationArmy(idx); } /* v1241: 
 /* v1244 (Harley, like High Seas Hero): the monster card is a small popup ABOVE the monster on the map (map moves so the monster sits low
    in the middle), sized to fit the space between the top buttons and the monster. No dark screen; tap anywhere else to close. */
 function monCenterOn(m) { var vp = document.getElementById("mapviewport"); if (!vp) return; var c = tileCenterPx({ x: m.x, y: m.y }); worldMapKeep = null; vp.scrollTo({ left: Math.max(0, c.x - vp.clientWidth / 2), top: Math.max(0, c.y - vp.clientHeight * 0.68), behavior: "smooth" }); }
-function openMonsterCard(id) {
+function openMonsterCard(id, mObj) {
+  if (mObj && mObj.id === id) monCardObj = mObj; /* v1245: Search found it off screen - remember it until the map has moved there */
   var m = monById(id); if (!m) return;
   monCardId = id;
   var ov = document.getElementById("monCardOverlay");
@@ -17983,14 +17984,17 @@ function openMonsterCard(id) {
   renderMonsterCard(); ov.style.display = "block"; placeMonsterCard();
   [120, 350, 700].forEach(function (t) { setTimeout(function () { if (monCardId === id) { try { renderVisibleTiles(); } catch (e) {} placeMonsterCard(); } }, t); });
 }
-function closeMonsterCard() { monCardId = null; var ov = document.getElementById("monCardOverlay"); if (ov) ov.style.display = "none"; }
+function closeMonsterCard() { monCardId = null; monCardObj = null; var ov = document.getElementById("monCardOverlay"); if (ov) ov.style.display = "none"; }
 function placeMonsterCard() {
   var ov = document.getElementById("monCardOverlay"), card = ov && ov.querySelector(".mon-pop"), m = monCardId && monById(monCardId), vp = document.getElementById("mapviewport"); if (!card || !m || !vp) return;
   var el = monEls[m.id], r = el && el.isConnected ? el.getBoundingClientRect() : null, vr = vp.getBoundingClientRect();
   var ax, ay; if (r && r.width) { ax = r.left + r.width / 2; ay = r.top; } else { var c = tileCenterPx({ x: m.x, y: m.y }); ax = vr.left + c.x - vp.scrollLeft; ay = vr.top + c.y - vp.scrollTop - 30; }
   var W = Math.min(330, window.innerWidth - 24), left = Math.max(12, Math.min(window.innerWidth - W - 12, ax - W / 2)), top0 = vr.top + 64, bottom = ay - 10;
-  card.style.width = W + "px"; card.style.left = left + "px"; card.style.bottom = Math.max(0, window.innerHeight - bottom) + "px"; card.style.maxHeight = Math.max(160, bottom - top0) + "px";
-  var tail = card.querySelector(".mp-tail"); if (tail) tail.style.left = Math.max(14, Math.min(W - 28, ax - left - 9)) + "px";
+  card.style.width = W + "px"; card.style.left = left + "px";
+  var tail = card.querySelector(".mp-tail"), below = bottom - top0 < 220; /* v1245: monster near the top edge of the world (map can't scroll further) - card goes under it */
+  if (below) { var by = (r && r.height ? r.bottom : ay + 40) + 12; card.style.bottom = "auto"; card.style.top = by + "px"; card.style.maxHeight = Math.max(160, vr.bottom - by - 8) + "px"; }
+  else { card.style.top = "auto"; card.style.bottom = Math.max(0, window.innerHeight - bottom) + "px"; card.style.maxHeight = Math.max(160, bottom - top0) + "px"; }
+  if (tail) { tail.style.left = Math.max(14, Math.min(W - 28, ax - left - 9)) + "px"; tail.style.bottom = below ? "auto" : "-11px"; tail.style.top = below ? "-11px" : "auto"; tail.style.transform = below ? "rotate(225deg)" : "rotate(45deg)"; }
 }
 function renderMonsterCard() {
   var ov = document.getElementById("monCardOverlay"), m = monCardId && monById(monCardId); if (!ov) return; if (!m) { closeMonsterCard(); return; }
@@ -18089,7 +18093,7 @@ function monDoSearch() {
     m = monSummon();
   }
   closeMonsterSearch(); selectedTile = null; try { renderTileInfo(); } catch (e) {}
-  openMonsterCard(m.id); /* v1244: moves the map to it and shows the card above it */
+  openMonsterCard(m.id, m); /* v1244: moves the map to it and shows the card above it (v1245: even when it's off screen) */
 }
 function monDoResSearch() {
   var home = mapTileById(game.state.map, game.state.homeTileId); if (!home) return;

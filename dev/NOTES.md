@@ -2384,3 +2384,7 @@
 - Harley (video + red box): Search (or tapping a monster) moves the map so the monster sits low in the middle (68% down) and the card appears as a small popup above it with a pointer, sized to the space between the top buttons and the monster (scrolls inside if needed). No dark screen; tap elsewhere to close; follows the map if it moves.
 - Compact card: picture + "Level N Name" header, rewards / chance rows, stamina + enemy strength on one line, formation buttons.
 - g331 checks the card is above the monster, below the top buttons and on screen.
+
+## v1245 — monster Search was flaky
+- Harley's video: Search closed the panel but often nothing happened. Cause (v1244): the card looked the monster up among the ones already drawn on screen; when Search found one off screen it gave up. Now Search hands the monster over and the card waits for the map to arrive. Reproduced first: dev/simfork/g339_monster_search_far.js (look away, search 6 times) failed 4/6, now 6/6 (twice).
+- Also: a monster near the top edge of the world (map can't scroll further) gets its card underneath instead of off the top of the screen.
