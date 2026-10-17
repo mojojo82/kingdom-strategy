@@ -2349,3 +2349,12 @@
 - sfx/reward_pickup.mp3: first 1.05 s, -1 dB, eased fade from 0.7 s. sfx/reward_chest.mp3: 0.05–0.52 s, +7 dB (it was quiet), eased fade. Both embedded (REWARD_SFX).
 - sfxReward() plays on: Daily Tasks task/chest claims, Idle Chest collect (both buttons), mail claims, Recon collect, backpack item use. Dev Tools slot "Reward Claim". Choice Pickup / Chest in More → Options (TEST only, saved per device), default Pickup.
 - g336 checks 17 plays for 12 tasks + 5 chests, both clips decode, Options choice.
+
+## v1240 — march size cap + Command Center (step 1 of assigned troops)
+- Harley: copy Kingshot's march capacity (not a made-up scale). March size = 500 + Command Center + each hero in the march by level × 0.6 (we have 5 hero slots, Kingshot 3; 1:1 numbers kept in dev/plans/march_capacity.md, HERO_TROOP_CAP_MULT).
+- New building **Command Center** (🎖️, Buildings list, unlocks at Town Hall 10): Kingshot's costs/times (kingshotguide.org; iron -> gold), deploy 400 (Lv1) … 67,000 (Lv30), power = Kingshot's (curve × 0.7). Kingshot's per-level Town Center/Embassy requirement not copied (our buildings only have an unlock level).
+- Hero troops capacity from Harley's screenshots (level only): Lv17 2,040 … Lv80 13,470; ×0.6 → Lv80 8,082.
+- sendMarch trims an army over the size to fit (same mix), march.capped. Formation editor shows "March size: N / cap" (red + "only X will march"), attack buttons say so, monster card previews the capped army, Command Center card shows "+X (next +Y)".
+- Marches already out bigger than the cap (e.g. Tom Hector's) are left alone; the cap applies to new marches.
+- Next (step 2): troops assigned to formations + Reserve (healed troops go to the Reserve).
+- Tests: g337_march_capacity.js (new), g331, g336 pass.

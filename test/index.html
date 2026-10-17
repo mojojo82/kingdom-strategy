@@ -5105,8 +5105,20 @@ var BUILDING_DEFS = {
   academy:   { name: "Academy",        maxLevel: 30, baseCost: { wood: 180, gold: 20 }, baseTime: 30, research: 0.5, requires: { townhall: 4 } }, // v1133: RP per second per Academy level 3 -> 0.5 (Harley: RP piled up, never the limit - free-player sim had 14M spare by day 10)
   /* v1183 (Harley): Hall of Heroes (tavern) deleted - it only gated recruiting; heroes can be recruited from the start now. Old saves' tavern level is ignored. */
   infirmary: { name: "Infirmary",      maxLevel: 30, baseCost: { wood: 160, stone: 80 }, baseTime: 30, woundedCap: 100, requires: { townhall: 3 },
-    costMult: 1.6, timeMult: 1.45 }
+    costMult: 1.6, timeMult: 1.45 },
+  /* v1240 (Harley): Kingshot's Command Center - the biggest source of march size (see MARCH_CC_DEPLOY). Unlocks at Town Hall 10 like Kingshot. */
+  commandcenter: { name: "Command Center", maxLevel: 30, baseCost: { wood: 80 }, baseTime: 2, deploy: true, requires: { townhall: 10 } }
 };
+/* v1240: march size (Kingshot "squad deployment capacity") = MARCH_BASE_CAP + Command Center + every hero in the march (by level) x HERO_TROOP_CAP_MULT.
+   Command Center values = Kingshot's table (kingshotguide.org / kingshotoptimizer.com). Hero numbers = Harley's screenshots (level only - stars and
+   rarity make no difference): Lv17 2,040 / Lv30 4,905 / Lv45 9,245 / Lv50 10,685 / Lv60 12,370 / Lv72 13,150 / Lv79 13,430 / Lv80 13,470, straight lines
+   between (Lv1-17 = 120 a level). x0.6 because we have 5 hero slots (Kingshot 3) - Harley may switch to 1:1 later (HERO_TROOP_CAP_MULT = 1). dev/plans/march_capacity.md */
+var MARCH_BASE_CAP = 500, HERO_TROOP_CAP_MULT = 0.6;
+var MARCH_CC_DEPLOY = [400,700,1000,1400,1800,2800,3800,5000,6500,8000,10500,13000,16000,19000,22000,27000,32000,34000,36000,38000,40500,43000,46000,48500,52000,54500,57000,60500,64000,67000];
+var HERO_TROOP_CAP_PTS = [[0,0],[17,2040],[30,4905],[45,9245],[50,10685],[60,12370],[72,13150],[79,13430],[80,13470]];
+function heroTroopCapRaw(lv) { lv = Math.max(0, Math.min(80, lv | 0)); var P = HERO_TROOP_CAP_PTS; for (var i = 1; i < P.length; i++) if (lv <= P[i][0]) { var a = P[i - 1], b = P[i]; return Math.round(a[1] + (b[1] - a[1]) * (lv - a[0]) / (b[0] - a[0])); } return P[P.length - 1][1]; }
+function heroTroopCap(lv) { return Math.round(heroTroopCapRaw(lv) * HERO_TROOP_CAP_MULT); }
+function ccDeploy(level) { level = level | 0; return level > 0 ? MARCH_CC_DEPLOY[Math.min(level, MARCH_CC_DEPLOY.length) - 1] : 0; }
 // Infirmary rules (Kingshot-style): troops lost on a march are split — a share
 // go to the infirmary as "wounded" (up to its free capacity), the rest die.
 // Healing costs a fraction of the troop's training cost and takes time.
@@ -5788,6 +5800,7 @@ var BUILDING_REAL_TABLE = {
   archery: [[0,0,0,0,2],[140,0,0,0,9],[645,0,0,0,45],[1400,0,285,0,125],[6000,0,1200,0,270],[15000,0,3000,765,540],[55000,0,11000,2700,1080],[100000,0,20000,5000,1620],[200000,0,41000,10000,2430],[360000,0,73000,18000,3240],[460000,460000,92000,23000,4050],[580000,580000,110000,29000,4860],[830000,830000,160000,41000,5940],[1100000,1100000,220000,55000,7560],[1600000,1600000,320000,81000,9720],[2000000,2000000,410000,100000,16440],[3200000,3200000,650000,160000,19740],[4300000,4300000,870000,210000,23700],[5400000,5400000,1000000,270000,35520],[7500000,7500000,1500000,370000,44430],[9500000,9500000,1900000,470000,57750],[12000000,12000000,2500000,630000,86640],[15000000,15000000,3100000,780000,121320],[21000000,21000000,4200000,1000000,169860],[28000000,28000000,5700000,1400000,237780],[36000000,36000000,7300000,1800000,273420],[52000000,52000000,10000000,2600000,328140],[69000000,69000000,13000000,3400000,377340],[86000000,86000000,17000000,4300000,433980],[100000000,100000000,21000000,5800000,520800]],
   stable: [[0,0,0,0,2],[140,0,0,0,9],[645,0,0,0,45],[1400,0,285,0,125],[6000,0,1200,0,270],[15000,0,3000,765,540],[55000,0,11000,2700,1080],[100000,0,20000,5000,1620],[200000,0,41000,10000,2430],[360000,0,73000,18000,3240],[460000,460000,92000,23000,4050],[580000,580000,110000,29000,4860],[830000,830000,160000,41000,5940],[1100000,1100000,220000,55000,7560],[1600000,1600000,320000,81000,9720],[2000000,2000000,410000,100000,16440],[3200000,3200000,650000,160000,19740],[4300000,4300000,870000,210000,23700],[5400000,5400000,1000000,270000,35520],[7500000,7500000,1500000,370000,44430],[9500000,9500000,1900000,470000,57750],[12000000,12000000,2500000,630000,86640],[15000000,15000000,3100000,780000,121320],[21000000,21000000,4200000,1000000,169860],[28000000,28000000,5700000,1400000,237780],[36000000,36000000,7300000,1800000,273420],[52000000,52000000,10000000,2600000,328140],[69000000,69000000,13000000,3400000,377340],[86000000,86000000,17000000,4300000,433980],[100000000,100000000,21000000,5800000,520800]],
   academy: [[0,0,0,0,2],[160,0,0,0,9],[725,0,0,0,45],[1600,0,320,0,125],[6800,0,1300,0,270],[17000,0,3400,860,540],[62000,0,12000,3100,1080],[110000,0,22000,5600,1620],[230000,0,47000,11000,2430],[410000,0,82000,20000,3240],[520000,520000,100000,26000,4050],[670000,670000,130000,33000,4860],[950000,950000,190000,47000,5940],[1200000,1200000,250000,63000,7560],[1800000,1800000,370000,93000,9720],[2300000,2300000,470000,110000,16440],[3700000,3700000,740000,180000,19740],[5000000,5000000,1000000,250000,23700],[6200000,6200000,1200000,310000,35520],[8600000,8600000,1700000,430000,44430],[10000000,10000000,2100000,540000,57750],[14000000,14000000,2800000,720000,86640],[17000000,17000000,3500000,890000,121320],[24000000,24000000,4800000,1200000,169860],[32000000,32000000,6500000,1600000,237780],[42000000,42000000,8400000,2100000,273420],[59000000,59000000,11000000,2900000,328140],[79000000,79000000,15000000,3900000,377340],[98000000,98000000,19000000,4900000,433980],[120000000,120000000,24000000,6000000,520800]],
+  commandcenter: [[80,0,0,0,2],[125,0,0,0,8],[565,0,0,0,35],[1200,0,250,0,105],[5300,0,1000,0,215],[13000,0,2600,670,430],[48000,0,9600,2400,840],[88000,0,17000,4400,1290],[180000,0,36000,9100,1920],[320000,0,64000,16000,2580],[390000,390000,79000,19000,3240],[500000,500000,100000,25000,3870],[710000,710000,140000,35000,4740],[940000,940000,180000,47000,6030],[1300000,1300000,270000,69000,7770],[1700000,1700000,350000,89000,13140],[2700000,2700000,550000,130000,15780],[3700000,3700000,750000,180000,18960],[4700000,4700000,940000,230000,28440],[6400000,6400000,1200000,320000,35520],[8100000,8100000,1600000,400000,46200],[10000000,10000000,2100000,540000,69330],[13000000,13000000,2600000,670000,97020],[18000000,18000000,3600000,900000,135840],[24000000,24000000,4900000,1200000,190200],[31000000,31000000,6300000,1500000,218760],[44000000,44000000,8900000,2200000,262500],[59000000,59000000,11000000,2900000,301860],[73000000,73000000,14000000,3600000,347160],[90000000,90000000,18000000,4500000,416640]], /* v1240: Kingshot Command Center (kingshotguide.org), iron -> gold */
   infirmary: [[0,0,0,0,0],[100,0,0,0,0],[460,0,0,0,0],[1000,0,205,0,120],[4300,0,865,0,240],[10000,0,2100,545,480],[39000,0,7800,1900,960],[72000,0,14000,3600,1500],[140000,0,29000,7400,2220],[260000,0,52000,13000,3000],[320000,320000,65000,16000,3780],[420000,420000,84000,21000,4500],[590000,590000,110000,29000,5520],[780000,780000,150000,39000,7020],[1100000,1100000,230000,58000,9060],[1400000,1400000,290000,74000,15360],[2300000,2300000,460000,100000,18420],[3100000,3100000,620000,150000,22080],[3900000,3900000,780000,190000,33180],[5300000,5300000,1000000,260000,41460],[6800000,6800000,1300000,340000,53880],[9000000,9000000,1800000,450000,80880],[11000000,11000000,2200000,560000,113220],[15000000,15000000,3000000,750000,158520],[20000000,20000000,4000000,1000000,221940],[26000000,26000000,5200000,1300000,255240],[37000000,37000000,7400000,1800000,306240],[49000000,49000000,9900000,2400000,352200],[61000000,61000000,12000000,3000000,405060],[75000000,75000000,15000000,3700000,486060]],
 };
 
@@ -5801,7 +5814,7 @@ var BUILDING_REAL_TABLE = {
    building's power at that level (NOT a running sum - the old resource tables were summed, 8x too high). v1212: Warehouse
    x1.1 (Kingshot Storehouse), Infirmary x0.75 - from Harley's second video, exact at every level. Wall (20 levels) = Kingshot's Guard Station shape: the curve at level round(1.5 x lv), so Wall 20 = Range 30. */
 var KS_BUILD_CURVE = [400,760,1300,2020,3100,4720,7060,9400,11740,15140,18540,21940,27680,33420,39160,47240,55320,63400,74880,86360,97840,115060,132280,149500,166720,192020,217320,242620,267920,304700];
-var BUILDING_POWER_MULT = { townhall: 5, academy: 1.1, barracks: 1, archery: 1, stable: 1, farm: 0.1, sawmill: 0.1, quarry: 0.1, goldmine: 0.1, warehouse: 1.1, infirmary: 0.75 }; /* v1212 (Harley, Kingshot tables): Storehouse x1.1, Infirmary x0.75 - both match the curve exactly at every level (were guesses 0.1 / 0.5) */
+var BUILDING_POWER_MULT = { townhall: 5, academy: 1.1, barracks: 1, archery: 1, stable: 1, farm: 0.1, sawmill: 0.1, quarry: 0.1, goldmine: 0.1, warehouse: 1.1, infirmary: 0.75, commandcenter: 0.7 }; /* v1212 (Harley, Kingshot tables): Storehouse x1.1, Infirmary x0.75 - both match the curve exactly at every level (were guesses 0.1 / 0.5) */
 var BUILDING_REAL_POWER = (function () { var o = {};
   Object.keys(BUILDING_POWER_MULT).forEach(function (k) { o[k] = KS_BUILD_CURVE.map(function (v) { return Math.round(v * BUILDING_POWER_MULT[k]); }); });
   o.wall = []; for (var lv = 1; lv <= 20; lv++) o.wall.push(KS_BUILD_CURVE[Math.min(30, Math.max(1, Math.round(lv * 1.5))) - 1]);
@@ -7122,6 +7135,19 @@ function createGame(opts) {
   }
   function distanceBetween(a, b) { return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
   function totalTroops(army) { var s = 0; for (var t in army) s += army[t]; return s; }
+  /* v1240: how many troops one march can take with these heroes leading it */
+  function marchCapacity(heroKeys) {
+    var cap = MARCH_BASE_CAP + ccDeploy(state.buildings.commandcenter ? state.buildings.commandcenter.level : 0);
+    asHeroKeyArray(heroKeys).slice(0, MAX_FORMATION_HEROES).forEach(function (hk) { var h = state.heroes[hk]; if (h && h.owned) cap += heroTroopCap(h.level || 1); });
+    return cap;
+  }
+  function fitArmyToCap(army, cap) { /* scales every troop type down by the same share so the total fits (largest remainder) */
+    var tot = totalTroops(army); if (tot <= cap) return army;
+    var out = {}, rem = [], used = 0;
+    Object.keys(army).forEach(function (t) { var x = army[t] * cap / tot, f = Math.floor(x); out[t] = f; used += f; rem.push([x - f, t]); });
+    rem.sort(function (a, b) { return b[0] - a[0]; }); for (var i = 0; i < rem.length && used < cap; i++) { out[rem[i][1]]++; used++; }
+    return out;
+  }
   function setHomeTile(tileId) { state.homeTileId = tileId; }
   function setWorldVersion(v) { state.worldVersion = v; }
   function setServerId(id) { state.serverId = id; }
@@ -7161,6 +7187,7 @@ function createGame(opts) {
       if (!hero || !hero.owned) return { ok: false, reason: "hero_not_owned" };
       if (hero.busy) return { ok: false, reason: "hero_busy" };
     }
+    var mcap = marchCapacity(heroArr), capped = total > mcap; if (capped) army = fitArmyToCap(army, mcap); /* v1240: march size cap */
     var home = mapTileById(state.map, state.homeTileId);
     var dist = distanceBetween(home, tile);
     var speed = armySpeed(army) * marchSpeedMult() * heroLeadMarchSpeedMult(heroArr);
@@ -7171,6 +7198,7 @@ function createGame(opts) {
       status: "outbound", heroKeys: heroArr, heroKey: heroArr[0] || null, // heroKey kept as first-hero alias for any older display code
       travelSec: travelSec, arriveAt: now() + travelSec * 1000, actionEnd: null, returnAt: null, result: null };
     if (fort === 1 || fort === 3) march.fort = fort; /* v1033: the formation's fortress type */
+    if (capped) march.capped = mcap;
     if (monster) { if (state.monsters.energy >= MONSTER_ENERGY_MAX) state.monsters.energyT = now(); state.monsters.energy -= MONSTER_ENERGY_COST; march.monster = { id: String(monster.id), type: monster.type, level: monster.level | 0, ep: monster.ep || 0 }; } /* v1215 */
     state.marches.push(march);
     var ledBy = heroArr.length ? " led by " + heroArr.map(function (hk) { return HERO_DEFS[hk].name; }).join(", ") : "";
@@ -10177,7 +10205,7 @@ function createGame(opts) {
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
   return { state: state, tick: tick, useSpeedup: useSpeedup, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
-    sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
+    sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
     healSpeedMult: healSpeedMult, techTimeFor: techTimeFor, researchFinishNow: researchFinishNow, techCostFor: techCostFor, techExtraFor: techExtraFor, techExtraAffordable: techExtraAffordable, meetsTechRequirements: meetsTechRequirements, buildSpeedMult: buildSpeedMult,
@@ -10403,7 +10431,7 @@ function publishMyCitySkin() { /* write my skin onto my city doc (only when it d
 var BUILDING_ICON = {
   townhall: "🏛️", farm: "🌾", sawmill: "🪚", quarry: "⛰️", goldmine: "💰",
   warehouse: "🏬", barracks: "⚔️", archery: "🔮", stable: "🏹",
-  wall: "🧱", academy: "📚", infirmary: "🏥"
+  wall: "🧱", academy: "📚", infirmary: "🏥", commandcenter: "🎖️"
 };
 /* v1185 (Harley): class rename (display only - the keys stay "archer"/"cavalry" for saves, server and bots): Archer -> Caster, Cavalry -> Ranged.
    Buildings: Archery Range -> Mage Tower (trains Casters), Stable -> Archery Range (trains Ranged). */
@@ -12206,7 +12234,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1239"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1240"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12894,6 +12922,7 @@ function renderBuildings() {
     var meets = game.meetsRequirements(key);
     row.className = "bld" + (!meets ? " locked-row" : "");
     var infoHtml = '<div class="name">' + def.name + ' <span class="lvlbadge">Lv ' + b.level + '</span></div>';
+    if (def.deploy) infoHtml += '<div class="sub">🎖️ March size +' + fmt(ccDeploy(b.level)) + (b.level < def.maxLevel ? ' (next +' + fmt(ccDeploy(b.level + 1)) + ')' : '') + '</div>'; /* v1240 */
     if (!meets) {
       var reqTxt = Object.keys(def.requires).map(function (r) { return BUILDING_DEFS[r].name + " Lv" + def.requires[r]; }).join(", ");
       infoHtml += '<div class="locked">🔒 Requires ' + reqTxt + '</div>';
@@ -14286,7 +14315,13 @@ function renderFormations() {
         troopSliderEls[type] = slider;
         troopRowEls[type] = row;
         card.appendChild(row);
+        slider.addEventListener("input", function () { updCap(); }); numInput.addEventListener("input", function () { updCap(); });
       });
+      /* v1240: march size line - total in this formation vs what one march can take with its heroes */
+      var capLine = document.createElement("div"); capLine.className = "dev-tools-hint fm-cap"; capLine.style.margin = "4px 0 6px";
+      function updCap() { var tot = 0; Object.keys(inputs).forEach(function (t) { tot += Math.max(0, parseInt(inputs[t].value, 10) || 0); }); var cap = game.marchCapacity(f.heroKeys);
+        capLine.innerHTML = '🎖️ March size: <b style="color:' + (tot > cap ? '#ff9a8a' : '#cfe8b8') + '">' + fmt(tot) + ' / ' + fmt(cap) + '</b>' + (tot > cap ? ' — only ' + fmt(cap) + ' will march' : '') + ' <span style="opacity:.7">(500 + Command Center + heroes)</span>'; }
+      updCap(); card.appendChild(capLine);
 
       // ---- Leader roster grid ----
       // A compact grid of small square hero portraits (art if uploaded, else
@@ -17823,7 +17858,7 @@ function monRewardsHtml(type, L) {
   var c = Object.keys(rw.extra).map(function (r) { return monResHtml(r, Math.round(rw.extra[r] * gm)); }).join("") + '<div class="mon-it g"><span class="em">🧩</span><span>1-2</span></div>';
   return { g: g, c: c };
 }
-function monFormationArmy(f) { var a = {}; Object.keys(f.troops || {}).forEach(function (t) { a[t] = Math.max(0, Math.min(f.troops[t] || 0, Math.floor(game.state.troops[t] || 0))); }); return a; }
+function monFormationArmy(f) { var a = {}; Object.keys(f.troops || {}).forEach(function (t) { a[t] = Math.max(0, Math.min(f.troops[t] || 0, Math.floor(game.state.troops[t] || 0))); }); return game.fitArmyToCap(a, game.marchCapacity(f.heroKeys)); } /* v1240: march size cap */
 function openMonsterCard(id) {
   var m = monById(id); if (!m) return;
   monCardId = id;
@@ -20290,9 +20325,11 @@ function updateFormationAttackButtons(buttons) {
       total += Math.min(val, have); // sendable = what's actually home
     });
     var busyHeroes = (f.heroKeys || []).filter(function (hk) { return game.state.heroes[hk] && game.state.heroes[hk].busy; });
+    var mcap = game.marchCapacity(f.heroKeys), overCap = total > mcap; /* v1240 */
     ref.btn.disabled = total <= 0 || invalid || busyHeroes.length > 0;
     var parts = Object.keys(f.troops).filter(function (t) { return f.troops[t] > 0; }).map(function (t) { return troopTag(t) + f.troops[t]; });
     var msg = parts.length ? parts.join(" ") + (shortBy ? (total > 0 ? " — sends only the " + total + " available" : " — no troops at home") : "") : "empty — set counts in the Troops tab";
+    if (overCap && total > 0) msg += " — march size " + fmt(mcap) + ", sends " + fmt(mcap);
     if (busyHeroes.length) msg += " — " + busyHeroes.map(function (hk) { return HERO_DEFS[hk].name; }).join(", ") + " away";
     ref.summaryLine.textContent = msg; ref.btn.title = msg;
   });
