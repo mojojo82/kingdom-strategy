@@ -21,6 +21,31 @@ const fs = require("fs"), path = require("path"); const ROOT = path.join(__dirna
   await P.waitForSelector("#ksN", { timeout: 20000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => setScreen("city"));
 
+  if (process.env.WB_FULL) { /* whole account: maxed vs 30% less on everything (hero level, stars, skills, Town Hall, gear, fortress research, weapon levels) */
+    const r2 = await P.evaluate(() => {
+      const HE = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && HERO_DEFS[k].class !== "governor" && !HERO_DEFS[k].vipOnly).slice(0, 5);
+      const ALL = WEAPON_DEFS.filter((w) => !w.visualOnly), W3 = ["missile_barrage", "laser_beam", "railgun"], GEAR = { atk: 48, hp: 48, def: 29, skill: 24, boss: 24, support: 24 };
+      const partial = (f) => { const T = FORTRESS1_TREE, keys = Object.keys(T).sort((a, b) => T[a].row - T[b].row || T[a].col - T[b].col); let budget = Math.round(keys.reduce((a, k) => a + T[k].maxLevel, 0) * f); const m = {}; keys.forEach((k) => { const n = Math.min(T[k].maxLevel, budget); if (n > 0) { m[k] = n; budget -= n; } }); return m; };
+      const ACC = { max: { lv: 80, stars: 25, sk: 5, th: 30, g: 1, f: 1, wl: 50 }, less: { lv: 56, stars: 17, sk: 4, th: 21, g: 0.7, f: 0.7, wl: 35 } };
+      const side = (a, mode, isP) => { const hs = {}; HE.forEach((k) => { hs[k] = { owned: true, level: a.lv, stars: a.stars, skillLevels: { conquest: [a.sk, a.sk, a.sk], expedition: [a.sk, a.sk, a.sk] } }; });
+        const b = {}; Object.keys(GEAR).forEach((k) => { b[k] = GEAR[k] * a.g; }); const x = ALL.reduce((t, w) => t + (WEAPON_LEVEL_BONUS[w.rarity] || 0) * a.wl, 0);
+        if (mode !== "none") { b.atk += x; if (mode === "all") { b.hp += x; b.def += x; } }
+        const st = arenaSideStats(HE, hs, a.th, 0, false, null, partial(a.f), undefined, b); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, HE.indexOf(e.id), isP); }); return st; };
+      const kit = (L) => { const m = {}; W3.forEach((id) => { m[id] = L; }); return botWeaponsToSim(m); };
+      const out = [];
+      for (const [hiK, loK, label] of [["max", "max", "Even (both maxed)"], ["less", "less", "Even (both 30% less)"], ["max", "less", "Maxed vs 30% less"]]) for (const mode of ["none", "all", "atk"]) {
+        const hi = ACC[hiK], lo = ACC[loK]; let sw = 0, n = 0; const secs = [], left = [];
+        for (let sd = 0; sd < 25; sd++) for (const sP of [true, false]) {
+          const seed = "wf" + label + mode + sd + sP, kh = kit(hi.wl), kl = kit(lo.wl), P0 = side(sP ? hi : lo, mode, true), A0 = side(sP ? lo : hi, mode, false);
+          const sim = arenaMakeSim(P0, A0, { rng: worldPvpSeededRng(seed), critSeed: seed, weapons: (sP ? kh : kl).specs, aiWeapons: (sP ? kl : kh).specs, shieldPct: (sP ? kh : kl).shieldPct, aiShieldPct: (sP ? kl : kh).shieldPct });
+          const w = sim.runToEnd(); n++; secs.push(sim.tick * ARENA_TICK_MS / 1000); if ((w === "player") === sP && w !== "draw") sw++;
+          left.push(w === "player" ? sim.playerHp / P0.maxHp : w === "ai" ? sim.aiHp / A0.maxHp : 0); }
+        secs.sort((a, b) => a - b); out.push({ match: label, mode, strongWin: Math.round(100 * sw / n), medSecs: Math.round(secs[secs.length >> 1]), winnerHpLeft: Math.round(100 * left.reduce((a, b) => a + b, 0) / n) });
+      }
+      return out;
+    });
+    console.log(JSON.stringify(r2).replace(/},{/g, "},\n{")); await b.close(); return;
+  }
   const res = await P.evaluate(([ONLY, PAIRS]) => {
     const HE = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && HERO_DEFS[k].class !== "governor" && !HERO_DEFS[k].vipOnly).slice(0, 5);
     const hs = {}; HE.forEach((k) => { hs[k] = { owned: true, level: 80, stars: 25, skillLevels: { conquest: [5, 5, 5], expedition: [5, 5, 5] } }; });
