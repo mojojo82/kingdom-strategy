@@ -2490,3 +2490,9 @@
   A new #arenaSky div above it shows the picture's extra sky; its height = the space left above the bottom nav (phones only, <= 900 px wide; 0 when there's
   no room, e.g. iPhone SE), above the picture's top it fades into the sky colour. Timer moves down with it. Static, so no FPS cost.
 - Arena tests g204, g279, g292, g307 pass. Headless 430x932: panels end 8 px above the nav.
+
+## v1258 — Piercing Volley aims at the hull, not the sails
+- Harley (video): Roran's Piercing Volley (the big blue comet) flew up into the sky. Not caused by v1257 (checked: v1256 aimed the same) - arenaHullDeepPoint
+  picked a random spot at 30-80% of the target ship's full height, so on tall skins (ghost ship sails, serpent) it landed high up (ghost: 104-161 px, ground 170).
+- Now: a band 8-46 px above the ground line, still inside the ship's pixels, the same on every skin (ghost 124-161, serpent 133-162, default 139-162).
+  Visual only - damage unchanged. Arena tests g204, g279, g292, g294, g307 pass.

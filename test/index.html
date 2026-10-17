@@ -12474,7 +12474,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1257"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1258"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22246,7 +22246,9 @@ function arenaHullDeepPoint(w, h, targetIsPlayerSide, fallback) {
   var sw = mask.w * sc, sh = mask.h * sc, g = arenaFortressGeom(w, h, targetIsPlayerSide);
   var top = groundYFor(h) - sh + 14 - fortLift(skin);
   for (var tries = 0; tries < 150; tries++) {
-    var x = g.nose - g.dir * (0.12 + Math.random() * 0.4) * sw, y = top + (0.3 + Math.random() * 0.5) * sh, ok = true;
+    /* v1258 (Harley: Piercing Volley flew into the sky): aim at hull level only - a band 8-46 px above the ground line, the same on every ship.
+       It used to pick 30-80% of the ship's full height, which on tall skins (ghost ship / serpent sails) landed high up in the sails */
+    var x = g.nose - g.dir * (0.12 + Math.random() * 0.4) * sw, y = groundYFor(h) - 8 - Math.random() * 38, ok = true;
     for (var dx = -3; dx <= 3 && ok; dx += 3) for (var dy = -3; dy <= 3 && ok; dy += 3) if (!arenaFortressPixelHit(w, h, targetIsPlayerSide, x + dx, y + dy)) ok = false;
     if (ok) return { x: x, y: y };
   }
