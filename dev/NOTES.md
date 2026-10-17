@@ -2480,3 +2480,13 @@
 - Harley: "hide the stress test tool in dev tools now" (after v1255: ~60 FPS with 30 ships on his phone). The world-map 🧪 Stress bar is hidden unless
   Dev Tools > Speed & Testing > "FPS stress buttons on the world map" is set to Show (remembered per device; Hide also clears any ships out). Still TEST only.
 - g345 checks it's hidden by default and shows after the toggle.
+
+## v1257 — taller Arena: night sky fills the empty space
+- Harley: move everything under the header down to fill the empty space above the bottom nav; the Arena background extended upward (GPT, "only night sky,
+  no floating things"). "I specifically want to look at the updated arena directly on my phone." Conquest waits for the taller forest/village layers.
+- Art: art/originals/backgrounds/arena_bg_tall_original_1416x1111.png -> scaled to 1200 wide and lined up with the old floor (6 px trimmed): arena_bg_tall_1200x936;
+  phone copy art/arena/arena_bg_tall.webp (119 KB).
+- How: the battle canvas is unchanged (same size, fighters, ground line, maths) and now draws the bottom 660 rows of the tall picture (= the old framing).
+  A new #arenaSky div above it shows the picture's extra sky; its height = the space left above the bottom nav (phones only, <= 900 px wide; 0 when there's
+  no room, e.g. iPhone SE), above the picture's top it fades into the sky colour. Timer moves down with it. Static, so no FPS cost.
+- Arena tests g204, g279, g292, g307 pass. Headless 430x932: panels end 8 px above the nav.
