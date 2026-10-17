@@ -2501,3 +2501,9 @@
 - Harley: "2 back buttons" (top bar "◀ Back" + "← Leaderboard" under it on the Arena fight screen). The "← Leaderboard" row is gone; the top-bar Back now goes
   fight -> Arena leaderboard (ignored mid-battle, like the old button), and leaderboard -> More as before. The freed row goes to the Arena sky (v1257 fills the gap).
 - g346_arena_back.js.
+
+## v1260 — Arena rain/snow falls through the extra sky
+- Harley: "top part of sky is cut off, look where the rain begins" - the rain only fell inside the battle canvas, so it started at a hard line half way up.
+- The weather drops now live in one space from the top of the sky strip (-skyH) to the ground; a small canvas inside #arenaSky draws the part above the
+  battle canvas (arenaDrawSkyWeather). Extra drops are added for the sky so the density stays the same. Rain and snow; night/day unchanged.
+- Arena tests g204, g292, g307, g346 pass.

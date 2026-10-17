@@ -1840,7 +1840,8 @@
   #idleCanvas { display:block; width:100%; aspect-ratio:400/240; height:auto; background:linear-gradient(180deg,#1a2438 0%, #131b28 60%, #0d1119 100%); }
   #arenaCanvas { display:block; width:100%; aspect-ratio:400/220; height:auto; background:linear-gradient(180deg,#2a3550 0%, #1a2233 60%, #10151f 100%); border-radius:10px 10px 0 0; }
   .arena-stage { position:relative; line-height:0; }
-  .arena-sky { display:block; width:100%; height:0; background-color:#0c1233; background-repeat:no-repeat; } /* v1257 */
+  .arena-sky { display:block; width:100%; height:0; background-color:#0c1233; background-repeat:no-repeat; position:relative; overflow:hidden; } /* v1257 */
+  .arena-sky canvas { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; } /* v1260: rain/snow keeps falling through the extra sky */
   .arena-actions { display:contents; }
   .arena-actions button { height:26px; margin:0; padding:0 6px; font-size:11px; font-weight:800; white-space:nowrap; border-radius:5px; transition:opacity .45s ease; }
   .arena-actions #arenaAttackBtn { grid-column:2; clip-path:polygon(0 0, 100% 0, calc(100% - 9px) 100%, 0 100%); padding-right:10px; }
@@ -12474,7 +12475,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1259"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1260"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -33025,6 +33026,8 @@ function arenaFitSky() {
     skyH = Math.max(0, Math.min(700, Math.floor(nav.getBoundingClientRect().top - bottom - 8 + cur)));
   }
   if (Math.abs(skyH - cur) > 1) sky.style.height = skyH + "px";
+  arenaAnim.skyH = skyH; /* v1260: the weather falls from the top of this strip */
+  var fx = document.getElementById("arenaSkyFx"); if (fx) { var dp = canvasDPR(), fw = Math.round((cv.clientWidth || wrap.clientWidth) * dp), fh = Math.round(skyH * dp); if (fx.width !== fw || fx.height !== fh) { fx.width = fw; fx.height = Math.max(1, fh); } }
   var W = cv.clientWidth || wrap.clientWidth, Ht = W * ARENA_TALL_H / ARENA_TALL_W, above = Ht - W * ARENA_TALL_CROP / ARENA_TALL_W, top = skyH - above;
   var key = W + "|" + skyH; if (sky._k === key) return; sky._k = key;
   sky.style.backgroundImage = "linear-gradient(180deg, " + ARENA_SKY_TOP + " 0px, " + ARENA_SKY_TOP + " " + Math.max(0, top) + "px, rgba(12,18,51,0) " + Math.max(0, top + 46) + "px), url(" + ARENA_BG_TALL.src + ")";
@@ -33639,6 +33642,7 @@ function drawArenaFrame(ctx, w, h) {
   // Weather — falls in front of the whole scene, same technique as Border
   // Skirmish's drawIdleAnim, drawn from arenaAnim's own particle list.
   var arenaEnvDraw = arenaEnvironment();
+  arenaDrawSkyWeather(arenaEnvDraw);
   if (arenaEnvDraw === "snow") {
     ctx.save();
     ctx.fillStyle = "#ffffff"; ctx.globalAlpha = 0.8;
@@ -33654,6 +33658,14 @@ function drawArenaFrame(ctx, w, h) {
     });
     ctx.restore();
   }
+}
+/* v1260 (Harley: "top part of sky is cut off, look where the rain begins"): the same drops are drawn in the sky strip above the battle canvas */
+function arenaDrawSkyWeather(env) {
+  var fx = document.getElementById("arenaSkyFx"), skyH = arenaAnim.skyH || 0; if (!fx || !fx.width) return;
+  var c = fx.getContext("2d"), dp = canvasDPR(); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, fx.width, fx.height); if (skyH < 1 || (env !== "snow" && env !== "rain")) return;
+  c.setTransform(dp, 0, 0, dp, 0, skyH * dp); /* drop y is battle-canvas space: -skyH..0 = the strip */
+  if (env === "snow") { c.fillStyle = "#ffffff"; c.globalAlpha = 0.8; arenaAnim.weatherParticles.forEach(function (p) { if (p.y < 4) { c.beginPath(); c.arc(p.x, p.y, p.size, 0, Math.PI * 2); c.fill(); } }); c.globalAlpha = 1; }
+  else { c.strokeStyle = "rgba(195,215,235,0.55)"; c.lineWidth = 1.2; arenaAnim.weatherParticles.forEach(function (p) { if (p.y < 0) { c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x - 3, p.y + p.len); c.stroke(); } }); }
 }
 var ARENA_CAV_ARC_LIFT = 20; // px — smaller arena canvas than Conquest's, so a lighter lift than IDLE_CAV_ARC_LIFT
 // v668: Arena bolt — zigzag from startY down to EXACTLY endY (the heroes' feet line), with an optional short fork; jitter = sideways wobble per step
@@ -33767,14 +33779,20 @@ function stepArenaAnim(dtSec, w, h) {
   // actually spawned any falling particles. Mirrors Border Skirmish's
   // stepIdleAnim snow/rain stepping exactly, just against arenaAnim's own
   // particle list via ensureWeatherParticles(arenaAnim, ...).
-  var arenaEnv = arenaEnvironment();
+  var arenaEnv = arenaEnvironment(), skyH = arenaAnim.skyH || 0;
   ensureWeatherParticles(arenaAnim, arenaEnv, w, h);
+  if (arenaAnim.weatherSky !== skyH + "|" + arenaAnim.weatherEnv + "|" + w) { /* v1260: spread the drops over sky + battlefield, same density */
+    arenaAnim.weatherSky = skyH + "|" + arenaAnim.weatherEnv + "|" + w;
+    var base = arenaAnim.weatherParticles.filter(function (p) { return !p.sky; }), extra = Math.round(base.length * skyH / Math.max(1, h));
+    for (var ei = 0; ei < extra && base.length; ei++) { var src = base[ei % base.length], cp = Object.assign({}, src); cp.sky = true; cp.y = -Math.random() * skyH; cp.x = Math.random() * w; base.push(cp); }
+    arenaAnim.weatherParticles = base;
+  }
   if (arenaEnv === "snow") {
     arenaAnim.weatherParticles.forEach(function (p) {
       p.sway += dtSec * 1.4;
       p.y += p.speed * dtSec;
       p.x += Math.sin(p.sway) * 8 * dtSec;
-      if (p.y > h) { p.y = -4; p.x = Math.random() * w; }
+      if (p.y > h) { p.y = -4 - skyH; p.x = Math.random() * w; }
     });
   } else if (arenaEnv === "rain") {
     arenaAnim.weatherParticles.forEach(function (p) {
@@ -33783,7 +33801,7 @@ function stepArenaAnim(dtSec, w, h) {
       // drop travels along the angle it's drawn at instead of straight down.
       p.x += (-3 / p.len) * p.speed * dtSec;
       p.y += p.speed * dtSec;
-      if (p.y > h) { p.y = -10; p.x = Math.random() * w; }
+      if (p.y > h) { p.y = -10 - skyH; p.x = Math.random() * w; }
     });
   }
   Object.keys(arenaAnim.flashHero).forEach(function (k) { if (arenaAnim.flashHero[k] > 0) arenaAnim.flashHero[k] -= dtSec / 0.3; });
@@ -34067,7 +34085,7 @@ function renderArenaBattleScreen() {
   var p = arenaPlayerRosterAndHeroes();
   el.innerHTML =
 
-    '<div class="arena-canvas-wrap"><div class="arena-stage"><div class="arena-sky" id="arenaSky"></div><canvas id="arenaCanvas"></canvas>' +
+    '<div class="arena-canvas-wrap"><div class="arena-stage"><div class="arena-sky" id="arenaSky"><canvas id="arenaSkyFx"></canvas></div><canvas id="arenaCanvas"></canvas>' +
       '<div class="arena-top-info">' +
         '<span id="arenaTimerSub">' + Math.round(ARENA_MAX_DURATION_MS / 1000) + 's</span>' +
       '</div>' +
