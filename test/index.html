@@ -12375,7 +12375,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1245"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1246"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18057,9 +18057,9 @@ function renderMonsterSearch(note) {
   if (S.tab === "mon") {
     h += '<div class="ms-row">' + MONSTER_ORDER.map(function (k) { return '<button class="ms-pick' + (S.type === k ? " on" : "") + '" data-type="' + k + '"><div class="im"><img src="' + MONSTER_DEFS[k].img + '" alt=""></div>' + MONSTER_DEFS[k].name + '</button>'; }).join("") + '</div>';
     var rw = monRewardsHtml(S.type, S.level);
-    h += '<h5>Possible rewards</h5><div class="mon-rw" style="padding:0">' + rw.g + rw.c + '</div>';
+    h += '<h5>Possible rewards</h5><div class="mon-rw" id="msRw" style="padding:0">' + rw.g + rw.c + '</div>';
     h += '<div class="ms-lv"><button class="ms-pm" id="msMinus">−</button><input type="range" id="msLv" min="1" max="' + MONSTER_MAX_LEVEL + '" value="' + S.level + '"><button class="ms-pm" id="msPlus">+</button></div>';
-    h += '<div class="ms-lvt">Level ' + S.level + ' <small>· highest unlocked ' + U + (S.level > U ? ' · 🔒 locked' : '') + '</small></div>';
+    h += '<div class="ms-lvt" id="msLvt">Level ' + S.level + ' <small>· highest unlocked ' + U + (S.level > U ? ' · 🔒 locked' : '') + '</small></div>';
     h += '<div class="ms-foot"><div class="ms-en">⚡ Stamina ' + en + '/' + MONSTER_ENERGY_MAX + ' <small>· ' + MONSTER_ENERGY_COST + ' per attack' + (en < MONSTER_ENERGY_MAX ? ' · +1 in ' + fmtTime(game.monsterEnergyNextSec()) : '') + '</small></div><button class="ms-go" id="msGo">Search</button></div>';
   } else {
     h += '<div class="ms-row">' + ["food", "wood", "stone", "gold"].map(function (r) { return '<button class="ms-pick' + (S.res === r ? " on" : "") + '" data-res="' + r + '"><div class="im">' + RES_ICON[r] + '</div>' + r.charAt(0).toUpperCase() + r.slice(1) + '</button>'; }).join("") + '</div>';
@@ -18071,7 +18071,9 @@ function renderMonsterSearch(note) {
   [].forEach.call(sh.querySelectorAll("[data-type]"), function (b) { b.onclick = function () { S.type = b.getAttribute("data-type"); renderMonsterSearch(""); }; });
   [].forEach.call(sh.querySelectorAll("[data-res]"), function (b) { b.onclick = function () { S.res = b.getAttribute("data-res"); renderMonsterSearch(""); }; });
   document.getElementById("msClose").onclick = closeMonsterSearch;
-  var lv = document.getElementById("msLv"); if (lv) lv.oninput = function () { S.level = +lv.value; renderMonsterSearch(""); };
+  var lv = document.getElementById("msLv"); if (lv) lv.oninput = function () { /* v1246: only update the text + rewards while dragging - rebuilding the panel threw the slider away after one step */
+    S.level = +lv.value; var U2 = Math.min(MONSTER_MAX_LEVEL, (game.state.monsters.maxBeat | 0) + 1), rw2 = monRewardsHtml(S.type, S.level), t = document.getElementById("msLvt"), r2 = document.getElementById("msRw");
+    if (t) t.innerHTML = 'Level ' + S.level + ' <small>· highest unlocked ' + U2 + (S.level > U2 ? ' · 🔒 locked' : '') + '</small>'; if (r2) r2.innerHTML = rw2.g + rw2.c; };
   var mi = document.getElementById("msMinus"); if (mi) mi.onclick = function () { S.level = Math.max(1, S.level - 1); renderMonsterSearch(""); };
   var pl = document.getElementById("msPlus"); if (pl) pl.onclick = function () { S.level = Math.min(MONSTER_MAX_LEVEL, S.level + 1); renderMonsterSearch(""); };
   document.getElementById("msGo").onclick = function () { if (S.tab === "mon") monDoSearch(); else monDoResSearch(); };
