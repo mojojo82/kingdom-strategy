@@ -2475,3 +2475,8 @@
 - Slow CPU, 20 ships: 3D off 27 -> 48 FPS; chevrons only 19 -> 44 FPS. Normal CPU: chevrons only 40 -> 60. With 3D ships on, headless numbers are limited by its
   software graphics (no GPU) - Harley's phone is the real test.
 - g338 test fix: two tick() calls in the same millisecond (tick skips when no time passed) - waits 1 ms. g338, g339, g345 pass.
+
+## v1256 — stress buttons hidden behind Dev Tools
+- Harley: "hide the stress test tool in dev tools now" (after v1255: ~60 FPS with 30 ships on his phone). The world-map 🧪 Stress bar is hidden unless
+  Dev Tools > Speed & Testing > "FPS stress buttons on the world map" is set to Show (remembered per device; Hide also clears any ships out). Still TEST only.
+- g345 checks it's hidden by default and shows after the toggle.

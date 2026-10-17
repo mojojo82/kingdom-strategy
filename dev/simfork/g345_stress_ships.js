@@ -1,4 +1,4 @@
-/* v1254 (Harley): TEST-only world-map stress buttons 10/20/30 send visual-only ships ~20 tiles out; they vanish on arrival; nothing saved / sent. Run: node dev/simfork/g345_stress_ships.js */
+/* v1254/v1256 (Harley): TEST-only world-map stress buttons 10/20/30 send visual-only ships ~20 tiles out; they vanish on arrival; nothing saved / sent. Run: node dev/simfork/g345_stress_ships.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -21,6 +21,8 @@ const call = call0;
   await P.fill("#ksE", "g345@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Stress"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   await P.evaluate(() => { setScreen("world"); stressBarShow(); }); await P.waitForTimeout(1500);
+  const hidden0 = await P.evaluate(() => getComputedStyle(document.getElementById("mapStressBar")).display); /* v1256: hidden until turned on in Dev Tools */
+  await P.evaluate(() => document.getElementById("devStressToggle").click()); await P.waitForTimeout(200);
   const fps = () => P.evaluate(() => new Promise((ok) => { let n = 0; const t0 = performance.now(); (function f() { n++; if (performance.now() - t0 < 2000) requestAnimationFrame(f); else ok(Math.round(n / ((performance.now() - t0) / 1000))); })(); }));
   const o = { bar: await P.evaluate(() => getComputedStyle(document.getElementById("mapStressBar")).display), fps0: await fps() };
   await P.click('[data-stress="30"]'); await P.waitForTimeout(1500);
@@ -37,7 +39,7 @@ const call = call0;
   console.log(JSON.stringify({ o, errs }));
   await b.close();
   assert.deepStrictEqual(errs, []);
-  assert.strictEqual(o.bar, "flex"); assert.strictEqual(o.n, 30); assert(/30 out/.test(o.label));
+  assert.strictEqual(hidden0, "none", "hidden by default"); assert.strictEqual(o.bar, "flex"); assert.strictEqual(o.n, 30); assert(/30 out/.test(o.label));
   assert(o.inState === 0 && !o.saved, "not in the save"); assert(o.dists.every((d) => d >= 17 && d <= 23) && o.empty, "~20 tiles out, empty tiles: " + o.dists);
   assert.strictEqual(o.after.n, 0, "gone on arrival"); assert.strictEqual(o.ten, 10); assert.strictEqual(o.clear, 0);
   console.log("g345 ok");
