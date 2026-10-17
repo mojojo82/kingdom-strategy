@@ -74,3 +74,5 @@ Escorts (not used by us): Lv17 4, Lv30 6, Lv45 7, Lv50 8, Lv60 9, Lv72+ 10.
 - When several formations are short: **whichever returns to base first** gets refilled first.
 - If the exact tier has run out: **fill with what's available** (assumption: same troop type, best tier first).
 - Build order: step 1 march cap + Command Center (v1240) done; step 2 assigned troops after a mockup.
+- Formation quick buttons (Harley's mockup notes): **⚖️ Equalise** = fill to march size, even split across the 3 troop types, best tiers first. **⭐ Preset** = fill with a saved preset.
+- **5 presets** per account. Each preset = troop mix (% ratio OR exact numbers, trimmed to the march size) **+ heroes**. ⭐ opens the 5 to pick from; ✏️ edits them.
