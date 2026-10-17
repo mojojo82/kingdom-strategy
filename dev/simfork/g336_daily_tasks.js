@@ -28,6 +28,7 @@ const call = call0;
   if (SH) await P.screenshot({ path: SH + "/map_button.png" });
   await P.click("#mapTasksBtn"); await P.waitForTimeout(400);
   if (SH) await P.screenshot({ path: SH + "/panel_start.png" });
+  await P.evaluate(() => { window.__rs = 0; const o = window.sfxReward; window.sfxReward = function () { window.__rs++; return o.apply(this, arguments); }; });
   const g0 = await P.evaluate(() => game.state.gems);
   await P.click('#dailySheet [data-claim="login"]'); await P.waitForTimeout(2500);
   const r1 = await P.evaluate((g0) => ({ gemsAdded: game.state.gems - g0, pts: game.dailyPoints(), badge: document.getElementById("mapTasksBadge").textContent, note: document.getElementById("dtNote").textContent, sv: game.state.daily.sv.slice() }), g0);
@@ -48,6 +49,8 @@ const call = call0;
   /* the server refuses the gem chest before 100 server-paid points (fresh player) */
   /* next UTC day resets */
   const r4 = await P.evaluate(() => { const real = Date.now; Date.now = () => real() + 86400000; const L = game.dailyList(), out = { pts: game.dailyPoints(), login: L[0].have, claimed: L.filter((t) => t.claimed).length, chests: game.dailyChests().filter((c) => c.claimed).length }; Date.now = real; return out; });
+  const snd = await P.evaluate(async () => { const out = { calls: window.__rs }; for (const k of Object.keys(REWARD_SFX)) { const b = await ensureRewardSfxBuf(k); out[k] = b ? +b.duration.toFixed(2) : null; } setScreen("more", "options"); await new Promise((r) => setTimeout(r, 300)); const btn = document.querySelector('[data-rsfx="chest"]'); if (btn) btn.click(); out.pick = rewardSfxPick; out.row = !!btn; return out; });
+  console.log(JSON.stringify({ snd }));
   console.log(JSON.stringify({ r0, r1, r2, badgeAll, r3, wallet: { gems: wallet.gems, daily: wallet.daily }, r4, errs }));
   await b.close();
   assert.deepStrictEqual(errs, []);
@@ -60,5 +63,6 @@ const call = call0;
   assert.strictEqual(r3.badge, ""); assert.strictEqual(r3.again, "claimed");
   assert.strictEqual(wallet.daily.t.length, 12); assert.strictEqual(wallet.daily.c, true);
   assert.deepStrictEqual(r4, { pts: 0, login: 1, claimed: 0, chests: 0 }, "next day starts fresh");
+  assert(snd.calls >= 17, "reward sound on every claim (12 tasks + 5 chests)"); assert(snd.pickup > 1 && snd.chest > 0.4, "both clips decode"); assert(snd.row && snd.pick === "chest", "Options: reward sound choice (TEST)");
   console.log("g336 ok");
 })().catch((e) => { console.error(e); process.exit(1); });

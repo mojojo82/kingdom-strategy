@@ -2343,3 +2343,9 @@
 - Harley: v1236 fix works but fps still drops sometimes (7–24), more when zoomed in close to the ships. Cause: the canvas box grows with zoom / spread-out ships, so pixels to draw and blend grow too.
 - MARCH_GL_PX = 600,000 device pixels: above that the layer draws at lower sharpness (0.25 steps, min 0.75). Small boxes keep full sharpness.
 - Measured (p03_march_fps.js MID=1 ZOOM=2 DPR=3): canvas 1152×1280 -> 720×800 px, 168 -> 112 ms/frame headless (budget 420K: 100 ms but visibly jaggy). p03 now takes ZOOM= and logs canvas size.
+
+## v1239 — reward claim sound
+- Harley picked two clips (like High Seas Hero's claim sound): yodguard "item pickup 3" (the two uploads were the same file) and freesound "material chest open". Originals in sfx/originals/reward_item_pickup_original.mp3 / reward_chest_open_original.mp3.
+- sfx/reward_pickup.mp3: first 1.05 s, -1 dB, eased fade from 0.7 s. sfx/reward_chest.mp3: 0.05–0.52 s, +7 dB (it was quiet), eased fade. Both embedded (REWARD_SFX).
+- sfxReward() plays on: Daily Tasks task/chest claims, Idle Chest collect (both buttons), mail claims, Recon collect, backpack item use. Dev Tools slot "Reward Claim". Choice Pickup / Chest in More → Options (TEST only, saved per device), default Pickup.
+- g336 checks 17 plays for 12 tasks + 5 chests, both clips decode, Options choice.
