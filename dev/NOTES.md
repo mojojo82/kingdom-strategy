@@ -2507,3 +2507,10 @@
 - The weather drops now live in one space from the top of the sky strip (-skyH) to the ground; a small canvas inside #arenaSky draws the part above the
   battle canvas (arenaDrawSkyWeather). Extra drops are added for the sky so the density stays the same. Rain and snow; night/day unchanged.
 - Arena tests g204, g292, g307, g346 pass.
+
+## v1261 — the Arena battle canvas reaches up into the sky
+- Harley: "the spinning cube is still cut off" - anything drawn above the old canvas top (Esper cube over a tall ship, sails, lightning) was clipped at the
+  line where the sky strip (v1257) met the canvas. Real fix: the canvas itself now covers the sky strip (CSS height base+skyH, margin-top -skyH); the battle
+  keeps its old coordinates - w/h exclude the sky and the loop translates down by skyH, so the strip is negative y. The tall painting is drawn whole
+  (its extra sky in the strip, flat sky colour fading in above it on very tall phones). Weather drops are drawn there by the main canvas (v1260 strip canvas unused).
+- Arena tests g204, g279, g292, g294 (flaky Conquest timer once; passed 2/2 on rerun, also flaky on v1260), g307, g346 pass.
