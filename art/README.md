@@ -86,3 +86,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | rig/rig_tower_stacked.png | All rig pieces stacked (roof, 6 room floors, engine room, legs), green removed | 941x2178 | source of art/rig/rig_tower.webp |
 | rig/rig_decor_items_sheet.png | 64 room decoration items (beds, seats, tables, storage, tech, wall items, lights, plants, kitchen, fun) | 1254x1254 | not in the game yet (room decorating, later) |
 | rig/old_v1_*.png, rig/rig_mockup.png | First (cleaner) rig set and the phone mockup | 941x1672 | not in the game |
+| backgrounds/arena_bg_1200x660.png, forest_layer1/2, village_layer1/2 | Current Conquest/Arena background art, pulled out of the game file 18 Oct (the originals weren't kept): Arena backdrop, rain-level haunted forest parallax layers, day-level village layers (transparent) | as named | being regenerated taller (+~40% on top) for the taller Conquest/Arena scene |
