@@ -21,7 +21,7 @@ const fs = require("fs"), path = require("path"); const ROOT = path.join(__dirna
   await P.waitForSelector("#ksN", { timeout: 20000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => setScreen("city"));
 
-  const res = await P.evaluate((ONLY) => {
+  const res = await P.evaluate(([ONLY, PAIRS]) => {
     const HE = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && HERO_DEFS[k].class !== "governor" && !HERO_DEFS[k].vipOnly).slice(0, 5);
     const hs = {}; HE.forEach((k) => { hs[k] = { owned: true, level: 80, stars: 25, skillLevels: { conquest: [5, 5, 5], expedition: [5, 5, 5] } }; });
     const ALL = WEAPON_DEFS.filter((w) => !w.visualOnly), W3 = ["missile_barrage", "laser_beam", "railgun"], GEAR = { atk: 48, hp: 48, def: 29, skill: 24, boss: 24, support: 24 };
@@ -30,9 +30,9 @@ const fs = require("fs"), path = require("path"); const ROOT = path.join(__dirna
       const st = arenaSideStats(HE, hs, 20, 0, false, null, fortressMaxMap(1), undefined, b); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, HE.indexOf(e.id), isP); }); return st; };
     const kit = (L) => { const m = {}; W3.forEach((id) => { m[id] = L; }); return botWeaponsToSim(m); };
     const out = [];
-    for (const [hi, lo] of (ONLY ? [[10, 10]] : [[10, 10], [30, 30], [50, 50], [20, 10], [35, 10], [50, 10], [50, 30]])) for (const mode of (ONLY ? ["none"] : ["all", "atk"])) {
+    for (const [hi, lo] of (ONLY ? [[10, 10]] : PAIRS || [[10, 10], [30, 30], [50, 50], [20, 10], [35, 10], [50, 10], [50, 30]])) for (const mode of (ONLY ? ["none"] : ["all", "atk"])) {
       let sw = 0, n = 0, to = 0; const secs = [], left = [];
-      for (let sd = 0; sd < 12; sd++) for (const strongIsP of [true, false]) {
+      for (let sd = 0; sd < (PAIRS ? 25 : 12); sd++) for (const strongIsP of [true, false]) {
         const seed = "wb" + hi + lo + mode + sd + strongIsP, kh = kit(hi), kl = kit(lo);
         const P0 = strongIsP ? side(hi, mode, true) : side(lo, mode, true), A0 = strongIsP ? side(lo, mode, false) : side(hi, mode, false);
         const sim = arenaMakeSim(P0, A0, { rng: worldPvpSeededRng(seed), critSeed: seed, weapons: (strongIsP ? kh : kl).specs, aiWeapons: (strongIsP ? kl : kh).specs, shieldPct: (strongIsP ? kh : kl).shieldPct, aiShieldPct: (strongIsP ? kl : kh).shieldPct });
@@ -45,7 +45,7 @@ const fs = require("fs"), path = require("path"); const ROOT = path.join(__dirna
       out.push({ match: hi === lo ? "Even Lv" + hi : "Lv" + hi + " vs Lv" + lo, mode, bonusHi: wb(hi), bonusLo: wb(lo), strongWin: Math.round(100 * sw / n), medSecs: Math.round(med), timeouts: to, winnerHpLeft: Math.round(100 * left.reduce((a, b) => a + b, 0) / n) });
     }
     return out;
-  }, !!process.env.WB_ONLY);
+  }, [!!process.env.WB_ONLY, process.env.WB_PAIRS ? JSON.parse(process.env.WB_PAIRS) : null]);
   console.log(JSON.stringify(res, null, 0).replace(/},{/g, "},\n{"));
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
