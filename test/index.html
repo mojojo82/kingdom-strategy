@@ -2766,7 +2766,18 @@
   #buildingsModeContent .rig-card .rc-b button.rig-b.blocked { opacity:.55; }
   .rig-card .rc-x { position:absolute; top:-9px; right:-9px; width:20px; height:20px; border-radius:50%; background:#241c10; border:1.5px solid #b3985f; color:#f2ece0; font-size:11px; font-style:normal; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   #buildingsModeContent.rig-on #buildingsList { display:none !important; }
-  #buildingsModeContent.rig-on #buildingsProdStats { margin-top:12px !important; }
+  #buildingsModeContent.rig-on #buildingsProdStats { margin:12px 10px 10px !important; }
+  /* v1248 (Harley: "you've got the tower stuck in a frame"): the rig fills the whole city screen - no box, no header; queue + Rig/List float on the sky */
+  body[data-screen="city"] #mainPanel > #buildingsModeContent.rig-on { padding:0 !important; border:0 !important; border-radius:0 !important; background:#2c3742 !important; box-shadow:none !important; margin:0 !important; }
+  body[data-screen="city"] #mainPanel > #buildingsModeContent.rig-on > h2 { display:none !important; }
+  body[data-screen="city"] #mainPanel:has(> #buildingsModeContent.rig-on) { padding:0 !important; }
+  body[data-screen="city"] #mainPanel > #buildingsModeContent > #rigView { position:relative; margin:0 !important; padding:0 !important; }
+  #rigView .rig-scene { border:0; border-radius:0; padding:56px 0 30px; }
+  #rigView .rig-wrap { margin:0 4%; }
+  #rigView .rig-q { position:absolute; z-index:5; left:10px; top:10px; margin:0; background:#241c10dd; border:1.5px dashed #b3985f; border-radius:8px; padding:4px 8px; color:#f2ece0; }
+  #rigView #bldViewTabs { position:absolute; z-index:6; right:10px; top:10px; margin:0; }
+  #rigView #bldViewTabs span { flex:none; padding:4px 10px; font-size:12px; background:#241c10dd; }
+  #rigView #bldViewTabs span.on { background:#57cfdf; }
   .rq-list { margin:8px 0 4px; display:flex; flex-direction:column; gap:5px; text-align:left; }
   .rq-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(0,0,0,.28); border:1px solid rgba(185,138,76,.45); font-size:12.5px; }
   .rq-row .rq-ic { width:22px; text-align:center; flex:none; } .rq-row .rq-ic .ri { width:18px; height:18px; vertical-align:-3px; }
@@ -12410,7 +12421,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1247"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1248"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -13206,7 +13217,8 @@ function renderBuildings() {
   if (vt) vt.querySelectorAll("[data-bv]").forEach(function (x) { x.className = x.getAttribute("data-bv") === bv ? "on" : ""; });
   if (bmc) bmc.classList.toggle("rig-on", bv === "rig");
   if (rv) rv.style.display = bv === "rig" ? "" : "none";
-  if (bv === "rig") { renderRig(); return; }
+  if (bv === "rig") { renderRig(); if (vt && rv && vt.parentNode !== rv) rv.insertBefore(vt, rv.firstChild); return; } /* v1248: the toggle floats on the rig's sky */
+  if (vt && rv && vt.parentNode === rv) rv.parentNode.insertBefore(vt, rv);
   var el = document.getElementById("buildingsList");
   el.innerHTML = "";
   var qFull = game.buildQueueUsed() >= game.buildQueueSlots();

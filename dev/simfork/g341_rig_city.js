@@ -26,7 +26,9 @@ const call = call0;
     listHidden: getComputedStyle(document.getElementById("buildingsList")).display === "none",
     th: document.querySelector('.rig-room[data-rk="townhall"]').textContent, farm: document.querySelector('.rig-room[data-rk="farm"]').textContent,
     quarryLocked: document.querySelector('.rig-room[data-rk="quarry"]').classList.contains("locked"),
-    sea: (function () { var c = document.querySelector("#rigView canvas"); return c.width > 0 && c.height > 0; })() }));
+    sea: (function () { var c = document.querySelector("#rigView canvas"); return c.width > 0 && c.height > 0; })(),
+    edge: (function () { var r = document.querySelector("#rigView .rig-scene").getBoundingClientRect(); return { l: Math.round(r.left), w: Math.round(r.width), vw: innerWidth }; })(),
+    h2: getComputedStyle(document.querySelector("#buildingsModeContent > h2")).display, tabsIn: document.getElementById("bldViewTabs").parentNode.id }));
   if (SH) await P.screenshot({ path: SH + "/g341_rig.png", fullPage: false });
   /* tap the Farm room -> its card, Build */
   await P.click('.rig-room[data-rk="farm"]'); await P.waitForTimeout(300);
@@ -49,13 +51,15 @@ const call = call0;
   const f = await P.evaluate(() => document.getElementById("rigCard").style.display);
   /* List toggle and back */
   await P.click('#bldViewTabs [data-bv="list"]'); await P.waitForTimeout(300);
-  const g = await P.evaluate(() => ({ list: document.querySelectorAll("#buildingsList .bld").length, rigHidden: document.getElementById("rigView").style.display === "none", saved: localStorage.getItem("kingdom_bld_view_v1") }));
+  const g = await P.evaluate(() => ({ tabsOut: document.getElementById("bldViewTabs").parentNode.id, h2: getComputedStyle(document.querySelector("#buildingsModeContent > h2")).display, list: document.querySelectorAll("#buildingsList .bld").length, rigHidden: document.getElementById("rigView").style.display === "none", saved: localStorage.getItem("kingdom_bld_view_v1") }));
   await P.click('#bldViewTabs [data-bv="rig"]'); await P.waitForTimeout(300);
-  const h = await P.evaluate(() => document.getElementById("rigView").style.display !== "none" && getComputedStyle(document.getElementById("buildingsList")).display === "none");
+  const h = await P.evaluate(() => document.getElementById("rigView").style.display !== "none" && getComputedStyle(document.getElementById("buildingsList")).display === "none" && document.getElementById("bldViewTabs").parentNode.id === "rigView");
   console.log(JSON.stringify({ a, bb, c, d, e, f, g, h, errs }));
   await b.close();
   assert.deepStrictEqual(errs, []);
   assert(a.rig && a.rooms === 13 && a.listHidden && a.sea, "rig shown with 13 rooms, list hidden, sea drawn");
+  assert(a.edge.l === 0 && a.edge.w === a.edge.vw && a.h2 === "none" && a.tabsIn === "rigView", "v1248: rig fills the screen edge to edge, no header, toggle on the sky");
+  assert(g.tabsOut === "buildingsModeContent" && g.h2 !== "none", "List view gets its header and toggle back");
   assert(/Lv 1/.test(a.th) && /Build/.test(a.farm) && a.quarryLocked, "badges: Town Hall Lv 1, Farm Build, Quarry locked");
   assert(bb.shown && /Farm/.test(bb.txt) && /Build/.test(bb.txt) && bb.overSawmill, "Farm card over the Sawmill");
   assert(c.up && /⏳/.test(c.badge) && /Upgrading/.test(c.card), "Build from the card starts it, badge shows the timer");

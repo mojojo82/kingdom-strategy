@@ -2405,3 +2405,8 @@
   water tint baked in below the waterline, rooms dry). Cutting notes: dev/plans/oil_rig_city.md.
 - Tests: new dev/simfork/g341_rig_city.js (13 rooms, badges, card positions, Build from the card, locked room, toggle). g195 / g237 / g337 now pick the List view
   (they check the list); g337 also renders before reading (it was flaky on v1246 too).
+
+## v1248 — the rig fills the city screen
+- Harley: "you've got the tower stuck in a frame". Rig view now goes edge to edge: no box, border or "Buildings" header; the sky/sea fill the screen and the rig is a bit bigger.
+  Build queue + 🛢️ Rig / 📋 List float on the sky as small chips (the toggle moves back above the list in List view, header back too). Approved from a mockup first.
+- g341 checks the rig starts at the left edge and is the full screen width, header hidden, toggle on the sky, and List view gets both back.
