@@ -22,7 +22,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Smith"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   const r = await P.evaluate(() => {
     const out = { odds: {}, cost: {} }, F = game.state.forge, L0 = F.level;
-    [1, 2, 3, 6, 10, 15, 20, 30].forEach((L) => { F.level = L; const fi = game.forgeInfo(); out.odds[L] = fi.odds.map((x) => Math.round(x * 100) / 100); out.cost[L] = fi.cost; });
+    [1, 2, 3, 6, 10, 15, 20, 30].forEach((L) => { F.level = L; const fi = game.forgeInfo(); out.odds[L] = fi.odds.slice(); out.cost[L] = fi.cost; });
     F.level = L0;
     let toL3 = 0; for (let L = 1; L < 3; L++) { F.level = L; toL3 += game.forgeInfo().cost * game.forgeInfo().need; } F.level = L0; out.toL3 = toL3;
     out.rate0 = game.bucketInfo().enHr;
@@ -34,7 +34,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   });
   console.log("odds by Forge level:", JSON.stringify(r.odds)); console.log("pull cost:", JSON.stringify(r.cost), "| Energon to reach Forge 3:", r.toL3);
   console.log("idle Energon/h:", r.rate0, "-> with Energon Siphon maxed:", r.rateMax, "(8 h cap", r.capMax + ") | 2 h away ->", r.after2h);
-  assert.deepStrictEqual(r.odds[3], [69, 26, 5, 0, 0, 0]); assert.deepStrictEqual(r.odds[15], [40, 30, 16, 9.6, 4, 0.4]); assert.deepStrictEqual(r.odds[30], [28, 31, 22, 12, 5.5, 1.5]);
+  /* v1251: a forge costs 1 Energon; per Energon each rarity above Common is as likely as before (the old odds / the old price at that level) */
+  const per = (L, price, old) => old.slice(1).forEach((v, i) => assert.ok(Math.abs(r.odds[L][i + 1] * price - v) < 0.02, "Lv" + L + " rarity " + (i + 1) + ": " + r.odds[L][i + 1] * price + " vs " + v));
+  per(3, 250, [69, 26, 5, 0, 0, 0]); per(15, 1650, [40, 30, 16, 9.6, 4, 0.4]); per(30, 3600, [28, 31, 22, 12, 5.5, 1.5]);
+  assert.deepStrictEqual([r.cost[1], r.cost[15], r.cost[30]], [1, 1, 1]);
   assert.strictEqual(r.toL3, 60 * 10 + 250 * 12); assert.strictEqual(r.rate0, 40); assert.strictEqual(r.rateMax, 240); assert.ok(r.after2h >= 79 && r.after2h <= 81, "2 h x 40/h"); assert.ok(r.techListed);
   /* the research list (Growth) shows the new tech */
   await P.evaluate(() => { try { activeTechCategory = "growth"; mapMode = "research"; setScreen("city"); } catch (e) {} try { renderTechs(); } catch (e) {} });

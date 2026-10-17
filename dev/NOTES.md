@@ -2425,3 +2425,15 @@
 - Row 44 of the clip sits on the rig's water line; below the clip the sea is a gradient from the clip's own blue (#033f6d -> #06223f). The sky gradient is now flat
   #7d878e from 52% down so the clip has no visible edge. Muted + playsinline (iOS autoplay). Paused whenever the Buildings view isn't on screen.
 - g341 checks: the clip plays, muted, on the water line (0 px off), full width, pauses on the world map, plays again back in the city.
+
+## v1251 — Forge: 1 Energon = 1 piece
+- Harley: "1 energy should get 1 equipment", "slowed down by the rarity level alone, costs completely flat", "same pace", "dismantle gives nothing", "auto ok",
+  "bag size levels up with forge", "9000 [a day] is ok". If the bag is full (auto-dismantle off or not), forging just stops until there's space.
+- A forge always costs 1 Energon. The old rising price (60 -> 3,600, now forgeOldCost) is folded in so the pace per Energon is exactly the same:
+  forges to the next level = old price x old forges (Lv1 600, Lv2 3,000, Lv10 33,600 ...); each rarity above Common = old odds / old price (Lv1 Rare 0.33%,
+  Lv10 Epic 0.0021%), Common takes the rest. Old saves: progress x old price (flag forge.flat1).
+- Dismantle gives nothing (EQ_DISMANTLE all 0 - a refund would be a free-forging loop). Auto-dismantle (Off / Common / <= Rare / <= Elite / <= Super Rare,
+  state.forge.autoDis): new + old accounts start on Common. Bag: 60 at Forge 1, +5 a level, 205 at Forge 30.
+- Auto forges 50 a tick (~70 a second) and shows the best piece of the batch ("Forged 50 · kept 1"). Odds show small percentages (0.33%, 0.0021%).
+- Bug fixed on the way: a roll that missed by rounding landed on Legendary (even when locked); it lands on Common now.
+- Tests: new g343_forge_flat.js; g180 now checks per-Energon odds. Balance sims spend all their Energon on forging (it was 30 forges a step).

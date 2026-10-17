@@ -52,7 +52,7 @@ const ROOT = path.join(__dirname, "../.."), DAYS = +process.argv[2] || 40;
         WEAPON_DEFS.forEach((w) => { for (let n = 0; n < 50; n++) if (!g.levelUpWeapon(w.id).ok) break; });
         const wl = WEAPON_DEFS.filter((w) => !w.visualOnly && g.weaponLevel(w.id) > 0).sort((a, b) => g.weaponLevel(b.id) - g.weaponLevel(a.id));
         s.equippedWeapons = wl.slice(0, 3).map((w) => w.id);
-        for (let n = 0; n < 30; n++) { const r = g.forgeOnce(); if (!r.ok) { if (r.reason === "inventory_full") { g.equipBest(); g.dismantleUpTo(1); continue; } break; } }
+        for (let n = 0; n < 20000; n++) { const r = g.forgeOnce(); /* v1251: 1 Energon a forge - spend it all, like before */ if (!r.ok) { if (r.reason === "inventory_full") { g.equipBest(); g.dismantleUpTo(1); continue; } break; } }
         g.equipBest(); g.dismantleUpTo(0);
         const BLD = ["academy", "goldmine", "farm", "sawmill", "quarry", "warehouse", "wall", "infirmary"];
         for (let n = 0; n < 3; n++) { if (g.startUpgrade("townhall").ok) continue; const c = BLD.filter((k) => s.buildings[k] && !s.buildings[k].upgrading).sort((a, b) => s.buildings[a].level - s.buildings[b].level); let started = false; for (const k of c) { if (g.startUpgrade(k).ok) { started = true; break; } } if (!started) break; }
