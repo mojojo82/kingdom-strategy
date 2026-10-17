@@ -64,7 +64,7 @@ const call = call0;
   assert(r4.food > before.food && r4.valor > before.valor, "rewards paid");
   assert.strictEqual(r4.marches, 0, "march came home");
   assert.strictEqual(r5.ok, false); assert.strictEqual(r5.reason, "no_energy");
-  assert.strictEqual(lbl, "👹 Level 1 Dark Knight", "report title");
+  assert.strictEqual(lbl, "👹 Level 1 Ironclaw Lobster", "report title");
   assert.strictEqual(rs, "resource/wood", "Resources search selects the nearest wood node");
   console.log("g331 ok");
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -2374,3 +2374,8 @@
 - Hero slots: tap -> picker sheet (owned leaders; tags In here / other formation's name / Marching (can't pick)); a filled slot offers Remove. Engine setFormationHeroSlot (moves the hero out of any other formation).
 - Fixed: the Reserve box crashed the Formations screen when the Reserve held two tiers of one type (troopTierOf isn't global - now troopTier).
 - Tests: g338 (+ card layout + hero picker), g301, g331, g336, g337 pass.
+
+## v1243 — new monster art
+- Harley's 3 new pictures replace the placeholders: Ironclaw Lobster (was Dark Knight), Kraken Drone (was Rhino Mech), Crystal Crab (was Steam Tank). Same troops/rewards. Names made up by me (Harley: "make up some names").
+- Originals in art/originals/monster_*_original.png; 240px webp copies in art/monsters/ (old ones kept as backups). Drawn "a lot smaller": w 1.2 (were 1.5 / 2.3 / 2.5; mockup 2.3).
+- g331 (report title), g332 pass.
