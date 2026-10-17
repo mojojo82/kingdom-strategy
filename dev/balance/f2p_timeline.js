@@ -31,6 +31,8 @@ const ROOT = path.join(__dirname, "../.."), DAYS = +process.argv[2] || 40;
     const g = window.__f2p = createGame({ now: () => simTime, mapSize: 5, seed: 1, combatSeed: 777 }), s = g.state;
     window.__f2pClock = { get: () => simTime, add: (ms) => { simTime += ms; }, start: START };
     s.idle.fortressCannonEnabled = true; s.idle.fortressCannonTargetMode = "front"; setEquipBonus({});
+    /* v1252 sim fix: the global ATK/HP/DEF bonus (Sword of Power, weapon levels) must come from THIS sim's account, not the logged-in test account */
+    if (typeof heroBonusTotal === "function") window.heroBonusTotal = function (k) { var st = g.state, tb = 0, wb = 0; if (k === "atk" || k === "hp" || k === "def") { if (st.training) tb = tgBonusOf(st)[k]; if (typeof weaponBonusOf === "function") wb = weaponBonusOf(st); } return (heroBonus[k] || 0) + (equipBonus[k] || 0) + tb + wb; };
     window.__f2pLog = { reached: {}, days: [] };
   });
   /* v1090 sim fix: Conquest only fights while the game is open (advanceCombat banks at most IDLE_MAX_CATCHUP_SEC = 20 s across a gap), so the day is
@@ -86,6 +88,6 @@ const ROOT = path.join(__dirname, "../.."), DAYS = +process.argv[2] || 40;
   const lab = (gl) => (Math.floor((gl - 1) / 20) + 1) + "-" + (((gl - 1) % 20) + 1);
   console.log("\nDay each chapter / milestone was reached:");
   [61, 81, 91, 96, 101, 111, 121, 141, 161, 181, 201].forEach((gl) => { if (L.reached[gl] != null) console.log("  " + lab(gl).padEnd(6) + " day " + L.reached[gl].toFixed(1)); });
-  fs.mkdirSync(path.join(__dirname, "results"), { recursive: true }); fs.writeFileSync(path.join(__dirname, "results", "f2p_timeline.json"), JSON.stringify({ when: new Date().toISOString(), days: DAYS, reached: L.reached, daily: L.days }, null, 1));
+  fs.mkdirSync(path.join(__dirname, "results"), { recursive: true }); fs.writeFileSync(path.join(__dirname, "results", (process.env.OUT || "f2p_timeline") + ".json"), JSON.stringify({ when: new Date().toISOString(), days: DAYS, reached: L.reached, daily: L.days }, null, 1));
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
