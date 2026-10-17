@@ -34,7 +34,7 @@ const call = call0;
   const r1 = await P.evaluate(() => { const ov = document.getElementById("monCardOverlay"); const m = monCardId && monById(monCardId); return { card: !!(ov && ov.style.display === "flex"), m, btns: ov ? [...ov.querySelectorAll(".mon-fm button")].map((b) => b.textContent + (b.disabled ? " [off]" : "")) : [] }; });
   if (SH) await P.screenshot({ path: SH + "/card_empty.png" });
   /* give Formation 1 some troops + Gareth, reopen */
-  const r2 = await P.evaluate(() => { game.state.troops.infantry = 2000; const f = game.state.formations[0]; f.troops = { infantry: 2000, archer: 0, cavalry: 0 }; f.heroKeys = ["gareth"]; renderMonsterCard(); const ov = document.getElementById("monCardOverlay"); return [...ov.querySelectorAll(".mon-fm button")].map((b) => b.textContent + (b.disabled ? " [off]" : "")); });
+  const r2 = await P.evaluate(() => { game.state.troops.infantry = 2000; const f = game.state.formations[0]; f.troops = { infantry: 2000, archer: 0, cavalry: 0 }; f.heroKeys = ["gareth"]; game.formSync(); renderMonsterCard(); const ov = document.getElementById("monCardOverlay"); return [...ov.querySelectorAll(".mon-fm button")].map((b) => b.textContent + (b.disabled ? " [off]" : "")); });
   if (SH) await P.screenshot({ path: SH + "/card.png" });
   const target = r1.m;
   const before = await P.evaluate(() => ({ food: game.state.resources.food, wood: game.state.resources.wood, valor: game.state.idle.valor, inf: game.state.troops.infantry }));

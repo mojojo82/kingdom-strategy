@@ -605,11 +605,24 @@
   .formation-active-badge { flex-shrink:0; font-size:9.5px; padding:2px 7px; border-radius:20px; background:var(--gold); color:#332600; font-weight:800; }
   .formation-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 0; }
   .formation-row .flabel { color:var(--muted); font-size:12px; display:flex; align-items:center; gap:4px; flex:0 0 auto; }
-  .formation-card input[type=number] { width:60px; }
+  .formation-card input[type=number] { width:76px; } /* v1241: was 60px - 4/5-digit counts were cut off */
   .formation-slider-wrap { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
   .formation-slider { flex:1; min-width:0; accent-color:var(--gold); height:4px; cursor:pointer; }
-  .formation-slider-num { width:58px; text-align:right; flex:0 0 auto; }
+  .formation-slider-num { width:76px; text-align:right; flex:0 0 auto; box-sizing:border-box; padding:4px 6px !important; } /* v1241: 5-digit numbers fit */
   .formation-actions { display:flex; gap:6px; margin-top:10px; }
+  .fm-have { font-size:11px; font-weight:700; color:#7fbf5f; min-width:40px; text-align:right; white-space:nowrap; } .fm-have.short { color:#ff9a8a; }
+  .fm-quick { display:flex; gap:6px; margin:8px 0 2px; } .fm-quick button { flex:1; font-size:11.5px; padding:6px 4px; border-radius:8px; font-weight:800; }
+  .fm-quick .fq-eq { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; } .fm-quick .fq-pr { background:#2a2012; color:#f0c95f; border:1.5px solid #f0c95f; } .fm-quick .fq-rl { background:none; color:#cdbf9f; border:1.5px dashed #6b5a3a; }
+  .fm-reserve { background:#14181a; border:2px dashed #57cfdf55; border-radius:12px; padding:9px 10px; margin-bottom:10px; } .fm-reserve b.t { color:#f0c95f; font-size:14px; }
+  .fm-reserve .rr { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; } .fm-reserve .chip { background:#241c10; border:1px dotted #6b5a3a; border-radius:8px; padding:4px 7px; font-size:11.5px; } .fm-reserve .chip b { color:#cfe8b8; }
+  #presetSheet { position:fixed; left:0; right:0; bottom:0; z-index:9500; max-height:86vh; overflow-y:auto; background:linear-gradient(180deg,#4a3b24,#2f2616 18%,#241c10); border-top:2px solid #b3985f; border-radius:16px 16px 0 0; padding:10px 12px calc(14px + env(safe-area-inset-bottom)); color:#f2ece0; max-width:520px; margin:0 auto; box-shadow:0 -6px 20px #0009; display:none; }
+  #presetSheet h3 { margin:0; font-size:16px; color:#f0c95f; flex:1; } #presetSheet .ps-top { display:flex; align-items:center; margin-bottom:8px; } #presetSheet .ps-x { background:none; border:none; color:#f2ece0; font-size:18px; font-weight:900; padding:4px 8px; }
+  #presetSheet .ps-row { display:flex; align-items:center; gap:8px; background:#1a140e; border:1.5px dotted #6b5a3a; border-radius:10px; padding:7px 8px; margin-bottom:6px; } #presetSheet .ps-row .l { flex:1; min-width:0; font-size:13px; font-weight:700; } #presetSheet .ps-row small { display:block; color:#9a8c70; font-weight:600; font-size:11px; }
+  #presetSheet button.ps-use { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:8px; font-weight:800; padding:7px 12px; } #presetSheet button.ps-ed { background:none; border:1.5px dashed #6b5a3a; color:#f0c95f; border-radius:8px; padding:6px 9px; }
+  #presetSheet .ps-seg { display:flex; gap:6px; margin:6px 0 8px; } #presetSheet .ps-seg button { flex:1; padding:6px 0; border-radius:8px; border:1.5px dashed #6b5a3a; background:none; color:#cdbf9f; font-weight:700; font-size:12px; } #presetSheet .ps-seg button.on { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; }
+  #presetSheet .ps-mix { display:flex; align-items:center; gap:8px; margin:5px 0; font-size:13px; } #presetSheet .ps-mix span.n { width:92px; } #presetSheet .ps-mix input[type=range] { flex:1; accent-color:#f0c95f; } #presetSheet .ps-mix input[type=number] { width:74px; }
+  #presetSheet .ps-heroes { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0; } #presetSheet .ps-h { width:38px; height:38px; border-radius:8px; border:1.5px dashed #6b5a3a; background:#2f2616; display:flex; align-items:center; justify-content:center; font-size:18px; position:relative; padding:0; } #presetSheet .ps-h.on { border:2px solid #f0c95f; background:#3a2e14; } #presetSheet .ps-h small { position:absolute; bottom:-1px; right:1px; font-size:8.5px; color:#fff; text-shadow:0 0 2px #000; }
+  #presetSheet .ps-save { width:100%; margin-top:8px; background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; font-weight:800; padding:9px 0; font-size:14px; }
   .formation-actions button { flex:1; font-size:11.5px; padding:6px 8px; }
   .formation-actions button.secondary.active { background:var(--gold); color:#332600; border-color:var(--gold); }
 
@@ -3897,7 +3910,7 @@
       <div id="troopsModeContent" style="display:none;">
         <h2 class="trp-only" style="margin:0 0 10px;">🛡️ Troops <span id="troopsTotalTag"></span></h2>
         <h2 class="frm-only" style="margin:0 0 10px;">⚔️ Formations</h2>
-        <div class="dev-tools-hint frm-only" style="margin-bottom:10px;">Saved troop-count presets. Dial in counts per slot and Save, then Select whichever one you want active — this never moves or reserves troops out of your totals below.</div>
+        <div class="dev-tools-hint frm-only" style="margin-bottom:10px;">Troops in a formation belong to it. Set the numbers and Save — after losses it refills itself from the Reserve when it gets home. A hero can be in one formation only.</div>
         <div id="formationsList" class="frm-only"></div>
         <h2 class="inf-only" style="margin:18px 0 10px;">🏥 Infirmary</h2>
         <div id="infirmaryPanel" class="inf-only"></div>
@@ -7088,10 +7101,8 @@ function createGame(opts) {
   function saveFormation(index, troops, name) {
     var slot = state.formations[index];
     if (!slot) return { ok: false, reason: "invalid_slot" };
-    var clean = {};
-    Object.keys(TROOP_DEFS).forEach(function (t) { clean[t] = Math.max(0, Math.floor((troops && troops[t]) || 0)); });
-    slot.troops = clean;
     if (typeof name === "string" && name.trim()) slot.name = name.trim().slice(0, 24);
+    formAssign(index, troops); /* v1241: the formation now owns these troops */
     log("Saved " + slot.name + ".");
     return { ok: true };
   }
@@ -7118,6 +7129,7 @@ function createGame(opts) {
     var pos = slot.heroKeys.indexOf(heroKey);
     if (pos !== -1) { slot.heroKeys.splice(pos, 1); return { ok: true, equipped: false }; }
     if (slot.heroKeys.length >= MAX_FORMATION_HEROES) return { ok: false, reason: "formation_full" };
+    state.formations.forEach(function (g, j) { if (j !== index && g.heroKeys) { var q = g.heroKeys.indexOf(heroKey); if (q !== -1) g.heroKeys.splice(q, 1); } }); /* v1241: a hero belongs to one formation */
     slot.heroKeys.push(heroKey);
     return { ok: true, equipped: true };
   }
@@ -7126,6 +7138,83 @@ function createGame(opts) {
     if (!slot) return { ok: false, reason: "invalid_slot" };
     slot.heroKeys = [];
     return { ok: true };
+  }
+  /* ---- v1241 (Harley): assigned troops. A formation OWNS troops: f.troops = the numbers you set, f.held = its troops that are at home now
+     (a marching formation's troops are on the march). Reserve = troops at home that no formation holds. New / healed / released troops land in
+     the Reserve; formSync() tops formations back up from it (no taps) - formations that got home first are filled first; if a tier has run out
+     it uses the same troop type's best other tier. Heroes belong to one formation only. 5 presets (troop mix + heroes). dev/plans/march_capacity.md */
+  var FORM_BASES = ["infantry", "archer", "cavalry"];
+  function formHeld(f) { if (!f.held || typeof f.held !== "object") f.held = {}; return f.held; }
+  function formHeldSum(t) { var n = 0; (state.formations || []).forEach(function (f) { if (f && f.held) n += f.held[t] || 0; }); return n; }
+  function reserveOf(t) { return Math.max(0, Math.floor(state.troops[t] || 0) - formHeldSum(t)); }
+  function reserveAll() { var o = {}; Object.keys(state.troops || {}).forEach(function (t) { var n = reserveOf(t); if (n > 0) o[t] = n; }); return o; }
+  function formOut(idx) { return (state.marches || []).some(function (m) { return m.formIdx === idx && !m.foreign; }); }
+  function tiersOfBase(b) { return Object.keys(TROOP_DEFS).filter(function (k) { return troopBase(k) === b; }).sort(function (x, y) { return troopTierOf(y) - troopTierOf(x); }); }
+  function formFill(f, idx) { /* top f.held up to f.troops from the Reserve: exact troop first, then the same type's best other tier */
+    if (formOut(idx)) return;
+    var held = formHeld(f), set = f.troops || {};
+    function baseGap(b) { var w = 0, h = 0; Object.keys(set).forEach(function (k) { if (troopBase(k) === b) w += set[k] || 0; }); Object.keys(held).forEach(function (k) { if (troopBase(k) === b) h += held[k] || 0; }); return w - h; }
+    Object.keys(set).forEach(function (k) { if (!TROOP_DEFS[k]) return; var need = Math.min((set[k] || 0) - (held[k] || 0), baseGap(troopBase(k))); if (need <= 0) return; var take = Math.min(need, reserveOf(k)); if (take > 0) held[k] = (held[k] || 0) + take; }); /* never more of a type than its set numbers (stand-in tiers count) */
+    FORM_BASES.forEach(function (b) {
+      var want = 0, have = 0; Object.keys(set).forEach(function (k) { if (troopBase(k) === b) want += set[k] || 0; }); Object.keys(held).forEach(function (k) { if (troopBase(k) === b) have += held[k] || 0; });
+      var need = want - have; if (need <= 0) return;
+      tiersOfBase(b).forEach(function (k) { if (need <= 0) return; var take = Math.min(need, reserveOf(k)); if (take > 0) { held[k] = (held[k] || 0) + take; need -= take; } });
+    });
+  }
+  function formSync(firstIdx) {
+    var F = state.formations || []; if (!F.length) return;
+    /* 1. never hold more than is at home (troops lost at home / promoted / spent elsewhere come off the last formations first) */
+    var keys = {}; F.forEach(function (f) { if (f) Object.keys(formHeld(f)).forEach(function (k) { keys[k] = 1; }); });
+    Object.keys(keys).forEach(function (k) {
+      var over = formHeldSum(k) - Math.floor(state.troops[k] || 0);
+      for (var i = F.length - 1; i >= 0 && over > 0; i--) { var h = F[i] && F[i].held; if (!h || !h[k]) continue; var cut = Math.min(over, h[k]); h[k] -= cut; over -= cut; }
+    });
+    F.forEach(function (f) { if (f && f.held) Object.keys(f.held).forEach(function (k) { if (!(f.held[k] > 0) || !TROOP_DEFS[k]) delete f.held[k]; }); });
+    /* 2. refill: the formation just saved first, then whoever got home first */
+    var order = F.map(function (f, i) { return i; }).filter(function (i) { return F[i]; });
+    order.sort(function (a, b) { if (a === firstIdx) return -1; if (b === firstIdx) return 1; return (F[a].homeAt || 0) - (F[b].homeAt || 0) || a - b; });
+    order.forEach(function (i) { formFill(F[i], i); });
+  }
+  function formationArmy(idx) { var f = state.formations[idx]; if (!f) return {}; var a = {}; Object.keys(formHeld(f)).forEach(function (k) { if (f.held[k] > 0) a[k] = Math.floor(f.held[k]); }); return f.guard ? a : fitArmyToCap(a, marchCapacity(f.heroKeys)); }
+  function formSetCap(f, troops) { var c = {}; Object.keys(troops || {}).forEach(function (k) { var n = Math.max(0, Math.floor(troops[k] || 0)); if (n > 0 && TROOP_DEFS[k]) c[k] = n; }); return f.guard ? c : fitArmyToCap(c, marchCapacity(f.heroKeys)); }
+  function formAssign(index, troops) { /* new set numbers: hand the formation's home troops back to the Reserve, then take the new numbers */
+    var f = state.formations[index]; if (!f) return { ok: false, reason: "invalid_slot" };
+    f.troops = formSetCap(f, troops); if (!formOut(index)) f.held = {}; formSync(index); return { ok: true };
+  }
+  function releaseFormation(index) { var f = state.formations[index]; if (!f) return { ok: false }; f.troops = {}; if (!formOut(index)) f.held = {}; return { ok: true }; }
+  function formPool(idx, b) { /* troops of one type this formation could use: its own at home + the Reserve, best tier first */
+    var f = state.formations[idx], held = formHeld(f), out = []; tiersOfBase(b).forEach(function (k) { var n = (held[k] || 0) + reserveOf(k); if (n > 0) out.push([k, n]); }); return out;
+  }
+  function formMixSet(idx, perBase) { /* perBase {infantry: n, ...} -> per-tier set numbers, best tiers first, never more than exists */
+    var set = {}; FORM_BASES.forEach(function (b) { var need = Math.floor(perBase[b] || 0); formPool(idx, b).forEach(function (p) { if (need <= 0) return; var n = Math.min(need, p[1]); set[p[0]] = n; need -= n; }); }); return set;
+  }
+  function formShares(idx, weights, cap) { /* split cap by weights; a type that runs short hands its share to the others */
+    var avail = {}, left = cap, w = {}, out = {}; FORM_BASES.forEach(function (b) { avail[b] = formPool(idx, b).reduce(function (a, p) { return a + p[1]; }, 0); w[b] = Math.max(0, +weights[b] || 0); out[b] = 0; });
+    for (var guard = 0; guard < 4 && left > 0; guard++) {
+      var act = FORM_BASES.filter(function (b) { return w[b] > 0 && out[b] < avail[b]; }), tw = act.reduce(function (a, b) { return a + w[b]; }, 0); if (!tw) break;
+      var given = 0; act.forEach(function (b) { var n = Math.min(avail[b] - out[b], Math.floor(left * w[b] / tw)); out[b] += n; given += n; });
+      left -= given; if (!given) { act.some(function (b) { if (out[b] < avail[b]) { out[b]++; left--; return true; } return false; }); }
+    }
+    return out;
+  }
+  function equaliseFormation(idx) { var f = state.formations[idx]; if (!f || f.guard) return { ok: false }; return formAssign(idx, formMixSet(idx, formShares(idx, { infantry: 1, archer: 1, cavalry: 1 }, marchCapacity(f.heroKeys)))); }
+  var FORM_PRESET_COUNT = 5;
+  function formPresets() { if (!Array.isArray(state.formPresets)) state.formPresets = []; while (state.formPresets.length < FORM_PRESET_COUNT) state.formPresets.push({ name: "Preset " + (state.formPresets.length + 1), mode: "ratio", mix: { infantry: 34, archer: 33, cavalry: 33 }, heroKeys: [] }); return state.formPresets; }
+  function savePreset(i, p) {
+    var P = formPresets(); if (!P[i] || !p) return { ok: false };
+    var mix = {}; FORM_BASES.forEach(function (b) { mix[b] = Math.max(0, Math.floor(+((p.mix || {})[b]) || 0)); });
+    P[i] = { name: String(p.name || P[i].name).trim().slice(0, 18) || P[i].name, mode: p.mode === "exact" ? "exact" : "ratio", mix: mix,
+      heroKeys: (Array.isArray(p.heroKeys) ? p.heroKeys : []).filter(function (hk, j, a) { var d = HERO_DEFS[hk], h = state.heroes[hk]; return d && d.class !== "governor" && h && h.owned && a.indexOf(hk) === j; }).slice(0, MAX_FORMATION_HEROES) };
+    return { ok: true };
+  }
+  function applyPreset(idx, i) {
+    var f = state.formations[idx], p = formPresets()[i]; if (!f || f.guard || !p) return { ok: false };
+    var moved = [], skipped = [];
+    if (p.heroKeys.length) { f.heroKeys = []; p.heroKeys.forEach(function (hk) { var h = state.heroes[hk]; if (!h || !h.owned) return; if (h.busy) { skipped.push(hk); return; } state.formations.forEach(function (g, j) { if (j !== idx && g.heroKeys && g.heroKeys.indexOf(hk) !== -1) { g.heroKeys.splice(g.heroKeys.indexOf(hk), 1); moved.push(hk); } }); if (f.heroKeys.length < MAX_FORMATION_HEROES) f.heroKeys.push(hk); }); }
+    var cap = marchCapacity(f.heroKeys), per;
+    if (p.mode === "exact") { per = {}; var tot = 0; FORM_BASES.forEach(function (b) { tot += p.mix[b] || 0; }); FORM_BASES.forEach(function (b) { per[b] = tot > cap ? Math.floor((p.mix[b] || 0) * cap / tot) : (p.mix[b] || 0); }); }
+    else per = formShares(idx, p.mix, cap);
+    var r = formAssign(idx, formMixSet(idx, per)); r.moved = moved; r.skipped = skipped; return r;
   }
   function armySpeed(army) {
     var minSpeed = Infinity;
@@ -7169,7 +7258,7 @@ function createGame(opts) {
   }
   function monsterEnergyNextSec() { var M = state.monsters; monsterEnergy(); return M.energy >= MONSTER_ENERGY_MAX ? 0 : Math.max(0, Math.ceil((M.energyT + MONSTER_ENERGY_REGEN_SEC * 1000 - now()) / 1000)); }
   function monsterLevelOpen(L) { return L <= Math.min(MONSTER_MAX_LEVEL, (state.monsters.maxBeat | 0) + 1); }
-  function sendMarch(army, tileId, action, heroKeys, fort, monster) {
+  function sendMarch(army, tileId, action, heroKeys, fort, monster, formIdx) {
     if (monster) { /* v1215 */
       if (!MONSTER_DEFS[monster.type] || !(monster.level >= 1)) return { ok: false, reason: "invalid_target" };
       if (!monsterLevelOpen(monster.level)) return { ok: false, reason: "monster_locked" };
@@ -7177,7 +7266,9 @@ function createGame(opts) {
     }
     var total = totalTroops(army);
     if (total <= 0) return { ok: false, reason: "empty_army" };
-    for (var t in army) if (army[t] > (state.troops[t] || 0)) return { ok: false, reason: "not_enough_" + t };
+    var fF = formIdx != null ? state.formations[formIdx] : null; if (fF && fF.guard) return { ok: false, reason: "guard_slot" };
+    if (fF && formOut(formIdx)) return { ok: false, reason: "formation_out" };
+    for (var t in army) if (army[t] > (fF ? (formHeld(fF)[t] || 0) : reserveOf(t))) return { ok: false, reason: "not_enough_" + t }; /* v1241: a formation sends its own troops, anything else comes from the Reserve */
     var tile = mapTileById(state.map, tileId);
     if (!tile || tile.type === "home") return { ok: false, reason: "invalid_target" };
     if (!state.homeTileId) return { ok: false, reason: "no_home_tile" }; // first-time city claim hasn't resolved yet
@@ -7192,13 +7283,14 @@ function createGame(opts) {
     var dist = distanceBetween(home, tile);
     var speed = armySpeed(army) * marchSpeedMult() * heroLeadMarchSpeedMult(heroArr);
     var travelSec = Math.max(2, (dist * TRAVEL_CONST) / speed);
-    for (var tt in army) state.troops[tt] -= army[tt];
+    for (var tt in army) { state.troops[tt] -= army[tt]; if (fF) { fF.held[tt] = Math.max(0, (fF.held[tt] || 0) - army[tt]); } }
     heroArr.forEach(function (hk) { state.heroes[hk].busy = true; });
     var march = { id: state.nextMarchId++, army: army, tileId: tileId, action: action,
       status: "outbound", heroKeys: heroArr, heroKey: heroArr[0] || null, // heroKey kept as first-hero alias for any older display code
       travelSec: travelSec, arriveAt: now() + travelSec * 1000, actionEnd: null, returnAt: null, result: null };
     if (fort === 1 || fort === 3) march.fort = fort; /* v1033: the formation's fortress type */
     if (capped) march.capped = mcap;
+    if (fF) march.formIdx = formIdx;
     if (monster) { if (state.monsters.energy >= MONSTER_ENERGY_MAX) state.monsters.energyT = now(); state.monsters.energy -= MONSTER_ENERGY_COST; march.monster = { id: String(monster.id), type: monster.type, level: monster.level | 0, ep: monster.ep || 0 }; } /* v1215 */
     state.marches.push(march);
     var ledBy = heroArr.length ? " led by " + heroArr.map(function (hk) { return HERO_DEFS[hk].name; }).join(", ") : "";
@@ -7408,6 +7500,8 @@ function createGame(opts) {
   }
   function resolveReturn(march) {
     for (var t in march.army) state.troops[t] = (state.troops[t] || 0) + march.army[t];
+    var rf = march.formIdx != null ? state.formations[march.formIdx] : null; /* v1241: survivors go back to their formation; it refills from the Reserve */
+    if (rf) { var rh = formHeld(rf); for (var rt in march.army) if (march.army[rt] > 0) rh[rt] = (rh[rt] || 0) + march.army[rt]; rf.homeAt = now(); march.formIdx = null; }
     // march.heroKeys covers marches sent after multi-hero Formations shipped;
     // march.heroKey is the fallback for any march still in flight from
     // before that (single hero, no heroKeys array on it at all).
@@ -7497,7 +7591,7 @@ function createGame(opts) {
     if (state.conquest.cleared[stageIndex]) return { ok: false, reason: "already_cleared" };
     var total = totalTroops(army);
     if (total <= 0) return { ok: false, reason: "empty_army" };
-    for (var t in army) if (army[t] > (state.troops[t] || 0)) return { ok: false, reason: "not_enough_" + t };
+    for (var t in army) if (army[t] > reserveOf(t)) return { ok: false, reason: "not_enough_" + t }; /* v1241: from the Reserve */
     if (heroKey) {
       var hero = state.heroes[heroKey];
       if (!hero || !hero.owned) return { ok: false, reason: "hero_not_owned" };
@@ -9786,6 +9880,7 @@ function createGame(opts) {
       if (m.status === "returning" && t >= m.returnAt) resolveReturn(m);
     }
     state.marches = state.marches.filter(function (m) { return m.status !== "returning" || t < m.returnAt; });
+    formSync();
     advanceCombat(t);
   }
   // v765: the combat engine's own advance, split out of tick() so a fast timer can drive it (see the setInterval near the bottom). Both callers share the same millisecond bank, so whichever runs first just consumes the elapsed slices.
@@ -10018,6 +10113,8 @@ function createGame(opts) {
         if (f.fort === 1 || f.fort === 3) state.formations[idx].fort = f.fort; /* v1033 */
         if (typeof f.marchSkin === "string") state.formations[idx].marchSkin = f.marchSkin; /* v1048 */
         if (f.troops) Object.assign(state.formations[idx].troops, f.troops);
+        if (f.held && typeof f.held === "object") { var hd = {}; Object.keys(f.held).forEach(function (k) { var v = Math.floor(+f.held[k]); if (TROOP_DEFS[k] && v > 0) hd[k] = v; }); state.formations[idx].held = hd; } /* v1241 */
+        if (typeof f.homeAt === "number") state.formations[idx].homeAt = f.homeAt;
         if (Array.isArray(f.heroKeys)) {
           // Only real, currently-owned, non-governor heroes survive the
           // load — a hero that's since been reset/removed from HERO_DEFS
@@ -10035,6 +10132,10 @@ function createGame(opts) {
       });
     }
     if (typeof saved.activeFormation === "number" || saved.activeFormation === null) state.activeFormation = saved.activeFormation;
+    /* v1241: presets; a hero sits in one formation only (first one wins); formations take their troops (old saves: as much of the set numbers as is home) */
+    if (Array.isArray(saved.formPresets)) { state.formPresets = []; saved.formPresets.slice(0, FORM_PRESET_COUNT).forEach(function (p, i) { formPresets(); savePreset(i, p); }); }
+    var seenH = {}; state.formations.forEach(function (f) { f.heroKeys = (f.heroKeys || []).filter(function (hk) { if (seenH[hk]) return false; seenH[hk] = 1; return true; }); });
+    try { formSync(); } catch (e) {}
     /* v812: the live game always opens a session on a FRESH attempt of the saved level. The save holds whatever fight was in flight (frozen boss, fortress at 0 HP behind a Defeat screen, enemies at the wall) and `pending` is never saved, so the first combat step after a load re-defeated the player at once and the Defeat screen was waiting on Conquest. Chapter/level progress is kept; only the in-flight attempt is reset. Sims and the estimator (no deferConquest) are untouched. */
     if (opts.deferConquest) {
       var _ri = state.idle;
@@ -10205,7 +10306,7 @@ function createGame(opts) {
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
   return { state: state, tick: tick, useSpeedup: useSpeedup, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
-    sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
+    sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
     healSpeedMult: healSpeedMult, techTimeFor: techTimeFor, researchFinishNow: researchFinishNow, techCostFor: techCostFor, techExtraFor: techExtraFor, techExtraAffordable: techExtraAffordable, meetsTechRequirements: meetsTechRequirements, buildSpeedMult: buildSpeedMult,
@@ -12234,7 +12335,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1240"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1241"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14249,6 +14350,42 @@ function techTreeDetail(key) {
 // active-state bits (border, badge, Select button label) and never reassign
 // any <input>.value.
 var formationCardEls = null; // [{card, nameInput, inputs, selectBtn}, ...] once built, else null
+/* v1241: formation presets (5): troop mix (% or exact) + heroes. openPresetSheet(idx) lists them to apply to formation idx; ✏️ edits one. */
+var presetSheetState = { idx: 0, edit: -1, draft: null, after: null };
+function openPresetSheet(idx, after) { presetSheetState = { idx: idx, edit: -1, draft: null, after: after || null }; var sh = document.getElementById("presetSheet"); if (!sh) { sh = document.createElement("div"); sh.id = "presetSheet"; document.body.appendChild(sh); } renderPresetSheet(); sh.style.display = "block"; }
+function closePresetSheet() { var sh = document.getElementById("presetSheet"); if (sh) sh.style.display = "none"; }
+function presetSummary(p) { var mix = ["infantry", "archer", "cavalry"].map(function (b) { return TROOP_ICON[b] + " " + (p.mode === "exact" ? fmt(p.mix[b] || 0) : (p.mix[b] || 0) + "%"); }).join("  "); var hs = (p.heroKeys || []).map(function (hk) { return HERO_DEFS[hk] ? HERO_DEFS[hk].icon : ""; }).join(""); return mix + (hs ? " · " + hs : ""); }
+function renderPresetSheet() {
+  var sh = document.getElementById("presetSheet"); if (!sh) return; var S = presetSheetState, P = game.formPresets(), f = game.state.formations[S.idx], h = "";
+  if (S.edit < 0) {
+    h += '<div class="ps-top"><h3>⭐ Presets → ' + escapeHtml(f ? f.name : "") + '</h3><button class="ps-x" id="psX">✕</button></div>';
+    P.forEach(function (p, i) { h += '<div class="ps-row"><div class="l">' + escapeHtml(p.name) + '<small>' + presetSummary(p) + '</small></div><button class="ps-ed" data-ed="' + i + '">✏️</button><button class="ps-use" data-use="' + i + '">Use</button></div>'; });
+    h += '<div class="dev-tools-hint">Use fills this formation to its march size with the preset (best tiers first) and puts its heroes in — a hero leaves any other formation.</div>';
+    sh.innerHTML = h;
+    document.getElementById("psX").onclick = closePresetSheet;
+    [].forEach.call(sh.querySelectorAll("[data-use]"), function (b) { b.onclick = function () { var r = game.applyPreset(S.idx, +b.getAttribute("data-use")); persist(); closePresetSheet(); if (S.after) S.after(); render(); try { if (r.skipped && r.skipped.length) miniToast(r.skipped.length + " hero(es) are out marching and were left out"); } catch (e) {} }; });
+    [].forEach.call(sh.querySelectorAll("[data-ed]"), function (b) { b.onclick = function () { var i = +b.getAttribute("data-ed"); S.edit = i; S.draft = JSON.parse(JSON.stringify(P[i])); renderPresetSheet(); }; });
+    return;
+  }
+  var d = S.draft, ex = d.mode === "exact";
+  h += '<div class="ps-top"><h3>✏️ Edit preset</h3><button class="ps-x" id="psBack">✕</button></div>';
+  h += '<input type="text" id="psName" maxlength="18" value="' + escapeHtml(d.name) + '" style="width:100%;box-sizing:border-box;margin-bottom:4px">';
+  h += '<div class="ps-seg"><button data-mode="ratio" class="' + (ex ? "" : "on") + '">% Ratio</button><button data-mode="exact" class="' + (ex ? "on" : "") + '">Exact numbers</button></div>';
+  ["infantry", "archer", "cavalry"].forEach(function (b) { h += '<div class="ps-mix"><span class="n">' + TROOP_ICON[b] + ' ' + TROOP_DEFS[b].name + '</span><input type="range" data-mr="' + b + '" min="0" max="' + (ex ? 100000 : 100) + '" step="' + (ex ? 100 : 1) + '" value="' + (d.mix[b] || 0) + '"><input type="number" data-mn="' + b + '" min="0" value="' + (d.mix[b] || 0) + '"></div>'; });
+  h += '<div class="dev-tools-hint" id="psTot"></div><div style="margin-top:8px;font-weight:700;font-size:13px">Heroes (' + d.heroKeys.length + '/' + MAX_FORMATION_HEROES + ')</div><div class="ps-heroes">';
+  Object.keys(HERO_DEFS).forEach(function (hk) { var hd = HERO_DEFS[hk], hh = game.state.heroes[hk]; if (hd.class === "governor" || !hh || !hh.owned) return; h += '<button class="ps-h' + (d.heroKeys.indexOf(hk) !== -1 ? " on" : "") + '" data-h="' + hk + '" title="' + escapeHtml(hd.name) + '">' + hd.icon + '<small>' + hh.level + '</small></button>'; });
+  h += '</div><button class="ps-save" id="psSave">💾 Save preset</button>';
+  sh.innerHTML = h;
+  function tot() { var t = 0; ["infantry", "archer", "cavalry"].forEach(function (b) { t += d.mix[b] || 0; }); var e = document.getElementById("psTot"); if (e) e.textContent = ex ? "Total " + fmt(t) + " (trimmed to the march size)" : "Total " + t + "% " + (t === 100 ? "✓" : "(scaled to 100%)"); }
+  tot();
+  document.getElementById("psBack").onclick = function () { S.edit = -1; renderPresetSheet(); };
+  document.getElementById("psName").oninput = function () { d.name = this.value; };
+  [].forEach.call(sh.querySelectorAll("[data-mode]"), function (b) { b.onclick = function () { var m = b.getAttribute("data-mode"); if (m === d.mode) return; d.mode = m; d.mix = m === "exact" ? { infantry: 1000, archer: 1000, cavalry: 1000 } : { infantry: 34, archer: 33, cavalry: 33 }; renderPresetSheet(); }; });
+  [].forEach.call(sh.querySelectorAll("[data-mr]"), function (r) { r.oninput = function () { var b = r.getAttribute("data-mr"); d.mix[b] = +r.value; sh.querySelector('[data-mn="' + b + '"]').value = r.value; tot(); }; });
+  [].forEach.call(sh.querySelectorAll("[data-mn]"), function (r) { r.oninput = function () { var b = r.getAttribute("data-mn"); d.mix[b] = Math.max(0, parseInt(r.value, 10) || 0); var rr = sh.querySelector('[data-mr="' + b + '"]'); if (d.mix[b] > +rr.max) rr.max = String(d.mix[b]); rr.value = String(d.mix[b]); tot(); }; });
+  [].forEach.call(sh.querySelectorAll("[data-h]"), function (b) { b.onclick = function () { var hk = b.getAttribute("data-h"), q = d.heroKeys.indexOf(hk); if (q !== -1) d.heroKeys.splice(q, 1); else if (d.heroKeys.length < MAX_FORMATION_HEROES) d.heroKeys.push(hk); renderPresetSheet(); }; });
+  document.getElementById("psSave").onclick = function () { game.savePreset(S.edit, d); persist(); S.edit = -1; renderPresetSheet(); };
+}
 function renderFormations() {
   var el = document.getElementById("formationsList");
   if (!el) return;
@@ -14277,7 +14414,7 @@ function renderFormations() {
       // grows to match rather than clamping it down). Slider ranges are
       // refreshed every render (see the patch loop below) so training more
       // troops widens the slider without ever resetting what's selected.
-      var inputs = {};
+      var inputs = {}, haveEls = {};
       var troopSliderEls = {};
       var troopRowEls = {};
       Object.keys(TROOP_DEFS).forEach(function (type) {
@@ -14308,9 +14445,12 @@ function renderFormations() {
           if (v > (parseInt(slider.max, 10) || 0)) slider.max = String(v);
           slider.value = String(v);
         });
+        var haveSpan = document.createElement("span"); haveSpan.className = "fm-have"; /* v1241: troops this formation holds at home / its set number */
         sliderWrap.appendChild(slider);
+        sliderWrap.appendChild(haveSpan);
         sliderWrap.appendChild(numInput);
         row.appendChild(sliderWrap);
+        haveEls[type] = haveSpan;
         inputs[type] = numInput;
         troopSliderEls[type] = slider;
         troopRowEls[type] = row;
@@ -14319,8 +14459,9 @@ function renderFormations() {
       });
       /* v1240: march size line - total in this formation vs what one march can take with its heroes */
       var capLine = document.createElement("div"); capLine.className = "dev-tools-hint fm-cap"; capLine.style.margin = "4px 0 6px";
-      function updCap() { var tot = 0; Object.keys(inputs).forEach(function (t) { tot += Math.max(0, parseInt(inputs[t].value, 10) || 0); }); var cap = game.marchCapacity(f.heroKeys);
-        capLine.innerHTML = '🎖️ March size: <b style="color:' + (tot > cap ? '#ff9a8a' : '#cfe8b8') + '">' + fmt(tot) + ' / ' + fmt(cap) + '</b>' + (tot > cap ? ' — only ' + fmt(cap) + ' will march' : '') + ' <span style="opacity:.7">(500 + Command Center + heroes)</span>'; }
+      function updCap() { var f = game.state.formations[idx], tot = 0; Object.keys(inputs).forEach(function (t) { tot += Math.max(0, parseInt(inputs[t].value, 10) || 0); }); var cap = game.marchCapacity(f.heroKeys);
+        if (f.guard) { capLine.innerHTML = '🛡️ Defends your base while the Guard is on.'; return; }
+        capLine.innerHTML = '🎖️ March size: <b style="color:' + (tot > cap ? '#ff9a8a' : '#cfe8b8') + '">' + fmt(tot) + ' / ' + fmt(cap) + '</b>' + (tot > cap ? ' — saved as ' + fmt(cap) : '') + (game.formOut(idx) ? ' · <b style="color:#f0c95f">⚔️ marching</b>' : '') + ' <span style="opacity:.7">(500 + Command Center + heroes)</span>'; }
       updCap(); card.appendChild(capLine);
 
       // ---- Leader roster grid ----
@@ -14377,6 +14518,16 @@ function renderFormations() {
         heroSlotEls[hkey] = { el: slot, lvlTag: lvlTag };
       });
       card.appendChild(heroGrid);
+      /* v1241: quick fill buttons */
+      var quick = document.createElement("div"); quick.className = "fm-quick";
+      function setInputsFromSet() { var fs = game.state.formations[idx].troops || {}; Object.keys(inputs).forEach(function (t) { inputs[t].value = String(fs[t] || 0); var sl = troopSliderEls[t]; if (sl) { if ((fs[t] || 0) > (+sl.max || 0)) sl.max = String(fs[t]); sl.value = String(fs[t] || 0); } }); updCap(); }
+      if (!f.guard) {
+        var eqB = document.createElement("button"); eqB.className = "fq-eq"; eqB.textContent = "⚖️ Equalise"; eqB.onclick = function () { game.equaliseFormation(idx); setInputsFromSet(); persist(); render(); };
+        var prB = document.createElement("button"); prB.className = "fq-pr"; prB.textContent = "⭐ Preset ✏️"; prB.onclick = function () { openPresetSheet(idx, function () { setInputsFromSet(); }); };
+        quick.appendChild(eqB); quick.appendChild(prB);
+      }
+      var rlB = document.createElement("button"); rlB.className = "fq-rl"; rlB.textContent = "Release to Reserve"; rlB.onclick = function () { if (!confirm("Release " + game.state.formations[idx].name + "'s troops to the Reserve?")) return; game.releaseFormation(idx); setInputsFromSet(); persist(); render(); };
+      quick.appendChild(rlB); card.appendChild(quick);
 
       var fortRow = document.createElement("div"); /* v1033: fortress type this formation fights with (World PvP) */
       fortRow.className = "formation-fort"; fortRow.innerHTML = '<span>🏰 Fortress</span>' + fortPickHtml("f" + idx);
@@ -14404,10 +14555,14 @@ function renderFormations() {
       card.appendChild(actions);
 
       wrap.appendChild(card);
-      return { card: card, nameRow: nameRow, selectBtn: selectBtn, heroLabel: heroLabel, heroSlotEls: heroSlotEls, troopSliderEls: troopSliderEls, troopRowEls: troopRowEls };
+      return { card: card, nameRow: nameRow, selectBtn: selectBtn, heroLabel: heroLabel, heroSlotEls: heroSlotEls, troopSliderEls: troopSliderEls, troopRowEls: troopRowEls, haveEls: haveEls, inputs: inputs, updCap: updCap };
     });
+    var resEl = document.createElement("div"); resEl.className = "fm-reserve"; resEl.id = "fmReserve"; wrap.insertBefore(resEl, wrap.firstChild); /* v1241 */
     el.appendChild(wrap);
   }
+  (function () { var re = document.getElementById("fmReserve"); if (!re) return; var R = game.reserveAll(), ks = Object.keys(R).sort(function (a, b) { return troopBase(a) < troopBase(b) ? -1 : troopBase(a) > troopBase(b) ? 1 : troopTierOf(b) - troopTierOf(a); }), tot = 0; ks.forEach(function (k) { tot += R[k]; });
+    var h = '<b class="t">🏕️ Reserve</b> <span class="dev-tools-hint">· ' + fmt(tot) + ' at home, not in a formation</span><div class="rr">' + (ks.length ? ks.map(function (k) { return '<span class="chip">' + (TROOP_ICON[troopBase(k)] || "") + ' ' + TROOP_DEFS[k].name + ' <b>' + fmt(R[k]) + '</b></span>'; }).join("") : '<span class="dev-tools-hint">Empty — every troop at home is in a formation.</span>') + '</div><div class="dev-tools-hint" style="margin-top:5px">New, healed and released troops land here, then top up any formation that is short.</div>';
+    if (re._h !== h) { re.innerHTML = h; re._h = h; } })();
   // Every render (including the very first, right after building above):
   // only the active-state visuals get touched, never an <input>.value.
   fortPickSync(); /* v1033 */
@@ -14448,9 +14603,12 @@ function renderFormations() {
     // Widen (never narrow) each slider's range to cover current ownership,
     // so training more troops extends how far it can drag without ever
     // yanking the thumb/value out from under an in-progress edit.
+    var heldNow = f.held || {}, outNowF = game.formOut(idx);
+    Object.keys(c.haveEls || {}).forEach(function (type) { var hv = Math.floor(heldNow[type] || 0), st = (f.troops || {})[type] || 0, txt = outNowF ? (st ? "out" : "") : (st || hv ? fmt(hv) + " /" : ""), el2 = c.haveEls[type]; if (el2.textContent !== txt) el2.textContent = txt; el2.classList.toggle("short", !outNowF && hv < st); });
+    if (c.updCap) c.updCap();
     Object.keys(c.troopSliderEls || {}).forEach(function (type) {
       var slider = c.troopSliderEls[type];
-      var owned = game.state.troops[type] || 0;
+      var owned = Math.floor(heldNow[type] || 0) + game.reserveOf(type); /* v1241: what this formation could hold */
       var curVal = parseInt(slider.value, 10) || 0;
       var newMax = Math.max(owned, curVal, 1);
       if (newMax !== (parseInt(slider.max, 10) || 0)) slider.max = String(newMax);
@@ -17858,7 +18016,7 @@ function monRewardsHtml(type, L) {
   var c = Object.keys(rw.extra).map(function (r) { return monResHtml(r, Math.round(rw.extra[r] * gm)); }).join("") + '<div class="mon-it g"><span class="em">🧩</span><span>1-2</span></div>';
   return { g: g, c: c };
 }
-function monFormationArmy(f) { var a = {}; Object.keys(f.troops || {}).forEach(function (t) { a[t] = Math.max(0, Math.min(f.troops[t] || 0, Math.floor(game.state.troops[t] || 0))); }); return game.fitArmyToCap(a, game.marchCapacity(f.heroKeys)); } /* v1240: march size cap */
+function monFormationArmy(f, idx) { return game.formationArmy(idx); } /* v1241: the formation's own troops at home, capped to the march size */
 function openMonsterCard(id) {
   var m = monById(id); if (!m) return;
   monCardId = id;
@@ -17880,11 +18038,11 @@ function renderMonsterCard() {
   h += '<div class="mon-fm">';
   (game.state.formations || []).forEach(function (f, idx) {
     if (f.guard) return;
-    var army = monFormationArmy(f), tot = 0; Object.keys(army).forEach(function (t) { tot += army[t]; });
+    var army = monFormationArmy(f, idx), tot = 0; Object.keys(army).forEach(function (t) { tot += army[t]; });
     var busy = (f.heroKeys || []).some(function (hk) { return game.state.heroes[hk] && game.state.heroes[hk].busy; });
     var pv = tot > 0 ? game.previewBattle(army, gar, f.heroKeys || []) : null;
     var leaders = (f.heroKeys || []).filter(function (hk) { return HERO_DEFS[hk]; }).map(function (hk) { return HERO_DEFS[hk].icon; }).join(" ");
-    var right = tot <= 0 ? "No troops home" : busy ? "Heroes busy" : (pv.win ? '<span class="win">' + fmt(pv.atkPower) + ' · Win</span>' : '<span class="lose">' + fmt(pv.atkPower) + ' · Too weak</span>');
+    var right = game.formOut(idx) ? "Out marching" : tot <= 0 ? "No troops home" : busy ? "Heroes busy" : (pv.win ? '<span class="win">' + fmt(pv.atkPower) + ' · Win</span>' : '<span class="lose">' + fmt(pv.atkPower) + ' · Too weak</span>');
     h += '<button data-f="' + idx + '"' + (!open || en < MONSTER_ENERGY_COST || tot <= 0 || busy ? " disabled" : "") + '><span>⚔️ ' + f.name + (leaders ? " · " + leaders : "") + '</span><small>' + right + '</small></button>';
   });
   h += '</div><div class="pd-note">Hurt troops go to the Infirmary - none die. Stamina comes back if the monster is gone when you arrive.</div></div>';
@@ -17894,8 +18052,8 @@ function renderMonsterCard() {
 }
 function monAttack(m, idx) {
   var f = game.state.formations[idx]; if (!f) return;
-  var army = monFormationArmy(f);
-  var res = game.sendMarch(army, m.tileId, "attack", f.heroKeys, formationFortType(f, game.state.fortressTech), m);
+  var army = monFormationArmy(f, idx);
+  var res = game.sendMarch(army, m.tileId, "attack", f.heroKeys, formationFortType(f, game.state.fortressTech), m, idx);
   if (!res.ok) { try { miniToast(({ no_energy: "Not enough stamina.", monster_locked: "Beat the level below first.", hero_busy: "A hero in that formation is busy.", empty_army: "No troops home for that formation." })[res.reason] || ("Can't attack: " + res.reason)); } catch (e) {} return; }
   res.march.skin = formationMarchSkin(f);
   closeMonsterCard(); selectedTile = null; persist(); render(); try { renderVisibleTiles(); renderTileInfo(); } catch (e) {}
@@ -19778,7 +19936,8 @@ function defenderFromSave(saved, opts) { // v798: split out of fetchDefenderForm
   if (opts && opts.cityGuard && hasGuard) {
     var g = forms.filter(function (f) { return f && f.guard; })[0];
     var garmy = {};
-    if (st.guardOn && g) for (var gt in g.troops) { if (!TROOP_DEFS[gt]) continue; var gn = Math.min(g.troops[gt] || 0, stock[gt] || 0); if (gn > 0) garmy[gt] = Math.floor(gn); }
+    var gsrc = g && g.held && Object.keys(g.held).length ? g.held : g ? g.troops : {}; /* v1241: the City Guard's own troops */
+    if (st.guardOn && g) for (var gt in gsrc) { if (!TROOP_DEFS[gt]) continue; var gn = Math.min(gsrc[gt] || 0, stock[gt] || 0); if (gn > 0) garmy[gt] = Math.floor(gn); }
     if (!sum(garmy)) return { army: {}, heroKeys: [], sim: dsim, undefended: true };
     return { army: garmy, heroKeys: (g.heroKeys || []).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && st.heroes[k] && st.heroes[k].owned; }), sim: dsim, fort: formationFortType(g, st.fortressTech) };
   }
@@ -20298,10 +20457,8 @@ function buildFormationAttackForm(tile, action) {
       // is the live formation slot itself. Sharing the reference would mean
       // re-saving this formation later (or anything else touching it) could
       // silently rewrite an army that's already mid-march.
-      var army = {};
-      // Send what's actually at home if the saved formation is bigger than the available troops (e.g. some are still out / were lost).
-      Object.keys(f.troops).forEach(function (t) { army[t] = Math.max(0, Math.min(f.troops[t] || 0, Math.floor(game.state.troops[t] || 0))); });
-      var result = game.sendMarch(army, tile.id, action, f.heroKeys, formationFortType(f, game.state.fortressTech));
+      var army = game.formationArmy(idx); /* v1241: the formation's own troops at home (capped to the march size) */
+      var result = game.sendMarch(army, tile.id, action, f.heroKeys, formationFortType(f, game.state.fortressTech), null, idx);
       if (!result.ok) return;
       result.march.skin = formationMarchSkin(f); /* v1048 */
       selectedTile = null; lastArmyFormTile = null; /* v848: march sent - close the tile card */
@@ -20318,18 +20475,15 @@ function updateFormationAttackButtons(buttons) {
   game.state.formations.forEach(function (f, idx) {
     var ref = buttons[idx];
     if (!ref || f.guard) return;
-    var total = 0, invalid = false, shortBy = false;
-    Object.keys(f.troops).forEach(function (t) {
-      var val = f.troops[t] || 0, have = Math.floor(game.state.troops[t] || 0);
-      if (val > have) shortBy = true;
-      total += Math.min(val, have); // sendable = what's actually home
-    });
+    var total = 0, invalid = false, shortBy = false, setTot = 0, outNow = game.formOut(idx); /* v1241: a formation sends its own troops */
+    var fa = game.formationArmy(idx); Object.keys(fa).forEach(function (t) { total += fa[t]; }); Object.keys(f.troops || {}).forEach(function (t) { setTot += f.troops[t] || 0; });
+    if (total < Math.min(setTot, game.marchCapacity(f.heroKeys))) shortBy = true;
     var busyHeroes = (f.heroKeys || []).filter(function (hk) { return game.state.heroes[hk] && game.state.heroes[hk].busy; });
     var mcap = game.marchCapacity(f.heroKeys), overCap = total > mcap; /* v1240 */
-    ref.btn.disabled = total <= 0 || invalid || busyHeroes.length > 0;
+    ref.btn.disabled = total <= 0 || invalid || busyHeroes.length > 0 || outNow;
     var parts = Object.keys(f.troops).filter(function (t) { return f.troops[t] > 0; }).map(function (t) { return troopTag(t) + f.troops[t]; });
-    var msg = parts.length ? parts.join(" ") + (shortBy ? (total > 0 ? " — sends only the " + total + " available" : " — no troops at home") : "") : "empty — set counts in the Troops tab";
-    if (overCap && total > 0) msg += " — march size " + fmt(mcap) + ", sends " + fmt(mcap);
+    var msg = outNow ? "⚔️ out marching" : parts.length ? fmt(total) + " troops" + (shortBy ? (total > 0 ? " — short of its set numbers (refills from the Reserve)" : " — no troops at home") : "") : "empty — set troops in Formations";
+    if (overCap && total > 0 && !outNow) msg += " — march size " + fmt(mcap);
     if (busyHeroes.length) msg += " — " + busyHeroes.map(function (hk) { return HERO_DEFS[hk].name; }).join(", ") + " away";
     ref.summaryLine.textContent = msg; ref.btn.title = msg;
   });

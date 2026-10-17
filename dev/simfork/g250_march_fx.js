@@ -19,7 +19,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
   await P.fill("#ksE", "g250@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
-  const o = await P.evaluate(async () => { const st = game.state; st.troops.infantry = 500; st.formations[1].troops = { infantry: 50, archer: 0, cavalry: 0 }; setScreen("world");
+  const o = await P.evaluate(async () => { const st = game.state; st.troops.infantry = 500; st.formations[1].troops = { infantry: 50, archer: 0, cavalry: 0 }; game.formSync(); setScreen("world");
     const h = tileXY(st.homeTileId); let t = null; for (let r = 3; r < 15 && !t; r++) for (let dx = -r; dx <= r && !t; dx++) { const tt = mapTileById(st.map, (h[0] + dx) + "," + (h[1] + r)); if (tt && tt.type === "resource") t = tt; }
     selectedTile = t.id; renderTileInfo(); await new Promise((r) => setTimeout(r, 300));
     [...document.querySelectorAll(".formation-attack-btn")][1].click(); await new Promise((r) => setTimeout(r, 300));

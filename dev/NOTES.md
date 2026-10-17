@@ -2358,3 +2358,13 @@
 - Marches already out bigger than the cap (e.g. Tom Hector's) are left alone; the cap applies to new marches.
 - Next (step 2): troops assigned to formations + Reserve (healed troops go to the Reserve).
 - Tests: g337_march_capacity.js (new), g331, g336 pass.
+
+## v1241 — assigned troops (step 2): formations own troops + heroes, Reserve, auto-refill, Equalise, 5 presets
+- Harley's rules (dev/plans/march_capacity.md): a formation owns its troops (f.troops = set numbers, f.held = its troops at home) and its heroes (a hero is in one formation only; adding one elsewhere moves it). Reserve = troops at home in no formation; new, healed and released troops land there.
+- Auto-refill, no taps: formSync() (every tick + on load) tops formations up from the Reserve - home longest / got home first first; if a tier has run out it uses the same troop type's other tiers, best first (stand-ins count toward the type, never over the set numbers). It also takes troops off formations (last first) if fewer are home than they hold (losses at home, promotions).
+- Marches: formation buttons / monster card send the formation's own troops (capped to the march size), march.formIdx; survivors return to it. Anything else (manual gather, old conquest stage) uses the Reserve. A marching formation can't be sent again.
+- Save = assign (capped to the march size). Quick buttons: ⚖️ Equalise (fill to march size, even split, short types hand their share on), ⭐ Preset (5 presets: name, % ratio or exact numbers, + heroes; ✏️ edit in the same sheet), Release to Reserve.
+- Formations screen: Reserve card, "have /" next to each set number (red when short), marching shown. Number boxes widened (4–5 digit counts were cut off).
+- City Guard is a formation too: it holds its own troops and still defends the base (defenderFromSave uses its held troops).
+- Old saves: formations take their numbers in order from what's home; duplicate heroes stay in the first formation; marches already out return to the Reserve.
+- Tests: g338_assigned_troops.js (new); g301, g331, g332, g336, g337, g250, g260, g262 pass (tests that set f.troops directly now call game.formSync()).
