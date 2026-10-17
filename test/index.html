@@ -693,6 +693,10 @@
   #mapviewport::-webkit-scrollbar { display:none; width:0; height:0; }
   #mapviewport.dragging { cursor:grabbing; user-select:none; -webkit-user-select:none; }
   #mapviewportWrap { position:relative; width:100%; max-width:420px; margin:0 auto; }
+  /* v1254 (Harley): TEST-only FPS stress buttons on the world map */
+  #mapStressBar { position:absolute; z-index:6; left:50%; top:34%; transform:translateX(-50%); display:flex; align-items:center; gap:5px; background:#0b1424d9; border:1.5px dashed #b3985f; border-radius:10px; padding:5px 8px; font-size:12px; color:#f2ece0; }
+  #mapStressBar button { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:7px; font-weight:800; font-size:12px; padding:4px 9px; }
+  #mapStressBar b { min-width:44px; color:#f0c95f; font-size:11.5px; }
   #fpsCounter { position:absolute; top:6px; left:6px; z-index:5; pointer-events:auto; cursor:pointer; /* v1025: tap = map-look check */
     font:700 11px/1 "Segoe UI", monospace; font-variant-numeric:tabular-nums;
     background:rgba(0,0,0,.55); color:#5fd67a; padding:3px 7px; border-radius:5px;
@@ -3239,6 +3243,7 @@
           </div>
             </div>
             <div id="fpsCounter">-- FPS</div>
+            <div id="mapStressBar" style="display:none;"><span>🧪 Stress</span><button type="button" data-stress="10">10</button><button type="button" data-stress="20">20</button><button type="button" data-stress="30">30</button><button type="button" data-stress="0">✕</button><b id="mapStressN"></b></div>
             <button id="mapMailBtn" type="button" title="Mail" aria-label="Mail"><span class="mmi">📪</span><span id="mapMailBadge"></span></button>
             <div id="mapHomeBubble" title="Back to my city" aria-label="Back to my city"><span class="ht"></span><span class="hi">🏠</span><span class="hd"></span></div>
             <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
@@ -12460,7 +12465,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1253"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1254"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -18851,7 +18856,7 @@ function updateMarchMarkers(manual) {
     /* v1075: only marches on or near the screen are drawn (like the map tiles). view = what's visible in #mapworld pixels plus half a screen each way */
     var view = vpEl && vpEl.clientWidth ? { x0: vpEl.scrollLeft - vpEl.clientWidth * 0.5, y0: vpEl.scrollTop - vpEl.clientHeight * 0.5, x1: vpEl.scrollLeft + vpEl.clientWidth * 1.5, y1: vpEl.scrollTop + vpEl.clientHeight * 1.5 } : null;
     if (home) {
-      var allMarches = game.state.marches.concat(foreignMarchList(vnow()));
+      var allMarches = game.state.marches.concat(foreignMarchList(vnow()), stressMarchList(vnow())); /* v1254: + stress-test ships */
       allMarches.forEach(function (m) {
         var tile = mapTileById(game.state.map, m.tileId);
         if (!tile) return;
@@ -20374,6 +20379,26 @@ function startMarchPatchSync() {
   syncMarchPatchSubs(); setInterval(syncMarchPatchSubs, 3000);
 }
 // Other players' marches as synthetic march objects for the map overlay (position follows from the fixed timeline)
+/* v1254 (Harley: "stress test buttons ... X march boats sent out from your base to an outward empty target ~20 away, gone when they arrive - I just want to
+   measure fps on my phone"): TEST only. Visual-only ships: never in game.state, never saved or sent to the server, no troops used. */
+var stressMarches = [], stressSeq = 0, STRESS_DIST = 20, STRESS_SECS = 60;
+function stressMarchList(t) { if (stressMarches.length) stressMarches = stressMarches.filter(function (m) { return t < m.arriveAt; }); var e = document.getElementById("mapStressN"); if (e) e.textContent = stressMarches.length ? stressMarches.length + " out" : ""; return stressMarches; }
+function stressSend(n) {
+  if (!n) { stressMarches = []; stressMarchList(vnow()); return; }
+  var home = mapTileById(game.state.map, game.state.homeTileId); if (!home) return;
+  var skin = (game.state.formations && game.state.formations[0] && game.state.formations[0].marchSkin) || "voidspire", t0 = vnow(), off = Math.random();
+  for (var i = 0; i < n; i++) {
+    var a = 2 * Math.PI * (i + off) / n, tile = null;
+    for (var tr = 0; tr < 40 && !tile; tr++) { var r = STRESS_DIST + [0, 1, -1, 2, -2][tr % 5], aa = a + (Math.floor(tr / 5) * 0.03) * (tr % 2 ? 1 : -1);
+      var c = mapTileAt(game.state.map, Math.round(home.x + Math.cos(aa) * r), Math.round(home.y + Math.sin(aa) * r)); if (c && c.type === "empty") tile = c; }
+    if (!tile) continue;
+    stressSeq++; stressMarches.push({ id: "st_" + stressSeq, _sid: 90000 + stressSeq, skin: skin, ownerName: "Stress test", status: "outbound", action: "gather", tileId: tile.id, travelSec: STRESS_SECS, arriveAt: t0 + STRESS_SECS * 1000 });
+  }
+  stressMarchList(t0); try { startMarchAnim(); } catch (e) {}
+}
+document.addEventListener("click", function (e) { var b = e.target && e.target.closest && e.target.closest("[data-stress]"); if (!b) return; e.preventDefault(); stressSend(parseInt(b.getAttribute("data-stress"), 10) || 0); });
+function stressBarShow() { var b = document.getElementById("mapStressBar"); if (b) b.style.display = (window.KS_BACKEND && KS_BACKEND.env === "test") ? "flex" : "none"; }
+setTimeout(stressBarShow, 1500); setTimeout(stressBarShow, 6000);
 function foreignMarchList(t) {
   var out = [];
   Object.keys(worldMarches).forEach(function (k) {

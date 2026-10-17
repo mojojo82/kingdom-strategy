@@ -2457,3 +2457,11 @@
   that level ([1,15] [100,90] [123,145] [159,200] [181,255] [194,330] [208,390] [250,510] [281,690] [300,900] [580,2000], same slope after). DEF + rewards untouched.
 - Result (f2p_v1253b vs v1251): ch10 day 4 (same), ch11 day 8 (same), ch15 day 16 (15-5 vs 15-2); at most ~half a chapter off in between.
 - g306 test: Duplicate now owned before both Hex measurements (owned weapons add HP since v1252). g211, g280, g306 pass. Arena untouched (no meta re-run needed).
+
+## v1254 — FPS stress buttons on the world map (TEST only)
+- Harley: "stress test buttons here. 10, 20, 30 ... X march boats sent out from your base to an outwardly facing empty target about 20 away. When they reach
+  their destination they just destroy from existence. I just want to measure fps on my phone."
+- World map (TEST server only), above the city: 🧪 Stress 10 / 20 / 30 / ✕ (clear) + "N out". Each tap sends that many ships fanned evenly around the base to an
+  empty tile 20 tiles out (21 if 20 isn't empty), 60 s trip, then they vanish. Visual only (stressMarches): never in game.state, never saved or sent to the
+  server, no troops. Drawn by the normal march code (3D ships, wakes, route arrows), so the FPS counter shows the real cost.
+- g345_stress_ships.js. Headless (software GL, not a phone): 61 FPS -> ~12 FPS with 30 ships.
