@@ -79,7 +79,7 @@ const ROOT = path.join(__dirname, "../.."), DAYS = +process.argv[2] || 40;
       const g = window.__f2p, s = g.state, L = window.__f2pLog, r = s.conquestRoster;
       const d = { day: day + 1, level: (s.idle.chapter - 1) * 20 + s.idle.levelNum, label: g.idleLevelLabel(), heroes: r.map((k) => k.slice(0, 3) + s.heroes[k].level + "/" + (s.heroes[k].stars || 0)).join(" "),
         th: s.buildings.townhall.level, acad: s.buildings.academy.level, fort: Object.keys(s.fortressTech || {}).filter((k) => k[0] !== "_").reduce((a, k) => a + s.fortressTech[k], 0),
-        weapons: (s.equippedWeapons || []).map((w) => g.weaponLevel(w)).join("/"), skills: r.reduce((a, k) => a + s.heroes[k].skillLevels.conquest.reduce((x, y) => x + y, 0), 0), rp: Math.round(s.researchPoints), valor: Math.round(s.idle.valor), books: s.idle.conquestBooks || 0 };
+        weapons: (s.equippedWeapons || []).map((w) => g.weaponLevel(w)).join("/"), wb: typeof weaponBonusOf === "function" ? weaponBonusOf(s) : 0, tg: s.training ? tgBonusOf(s).atk : 0, skills: r.reduce((a, k) => a + s.heroes[k].skillLevels.conquest.reduce((x, y) => x + y, 0), 0), rp: Math.round(s.researchPoints), valor: Math.round(s.idle.valor), books: s.idle.conquestBooks || 0 };
       L.days.push(d); return d;
     }, day);
     console.log(JSON.stringify(snap) + "  (" + Math.round((Date.now() - t0) / 1000) + "s)");
