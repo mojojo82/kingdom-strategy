@@ -7983,6 +7983,19 @@ function createGame(opts) {
     return m * Math.pow(1 + inc(ch), k / IDLE_LEVELS_PER_CHAPTER);
   }
   function idleStepMult() { return idleStepMultAt(idleGlobalLevelNum()); }
+  /* v1253 (Harley: "retune conquest so it follows the difficulty curve we had"): the v1252 weapon level bonus made a free player ~10 chapters faster
+     (16-day sim: 25-3 vs 15-2). Enemy HP and ATK are now x (1 + the weapon bonus a free player has when the old curve had them at that level):
+     dev/balance/f2p_timeline.js day by day (v1251 = old curve: level per day; v1252: weapon bonus per day +90% day 1 ... +886% day 16). Beyond the sim
+     (after ~15-1) it keeps the same slope. Enemy DEF and rewards are not touched. */
+  var CQ_WPN_CURVE = [[1, 15], [100, 90], [123, 145], [159, 200], [181, 255], [194, 330], [208, 390], [250, 510], [281, 690], [300, 900], [580, 2000]];
+  function idleWpnMultAt(lvl) {
+    var P = CQ_WPN_CURVE, n = P.length, v;
+    if (lvl <= P[0][0]) v = P[0][1];
+    else if (lvl >= P[n - 1][0]) v = P[n - 1][1] + (lvl - P[n - 1][0]) * (P[n - 1][1] - P[n - 2][1]) / (P[n - 1][0] - P[n - 2][0]);
+    else for (var i = 0; i < n - 1; i++) if (lvl <= P[i + 1][0]) { v = P[i][1] + (P[i + 1][1] - P[i][1]) * (lvl - P[i][0]) / (P[i + 1][0] - P[i][0]); break; }
+    return 1 + v / 100;
+  }
+  function idleWpnMult() { return idleWpnMultAt(idleGlobalLevelNum()); }
   // Every ×-10 level (1-10, 2-10, ...) is a boss level: a single, much tougher
   // enemy replaces the normal horde, and clearing it (not a headcount) advances you.
   function idleIsBossLevel() { return !!state.idle.bossPhase; } // v748: EVERY level ends with a boss — the horde quota comes first, then bossPhase flips on
@@ -8411,7 +8424,7 @@ function createGame(opts) {
     state.idle.enemySpawnIndex++;
     var base = IDLE_ENEMY_TYPES[type];
     var ebp = enemyBonusPct(idleCurveLvl(), false) * idleEaseBon(), stp = idleStepMult();
-    var hp = Math.max(1, Math.round(HORDE_HP_FRAC * base.hp * idleEnemyHpMult() * idleEaseHp() * (1 + ebp / 100) * stp * idleHordeHpCurve())); /* v1132: x idleHordeHpCurve */
+    var hp = Math.max(1, Math.round(HORDE_HP_FRAC * base.hp * idleEnemyHpMult() * idleEaseHp() * (1 + ebp / 100) * stp * idleHordeHpCurve() * idleWpnMult())); /* v1132: x idleHordeHpCurve */
     state.idle.nextEnemyId = (state.idle.nextEnemyId || 0) + 1;
     state.idle.enemies.push({
       id: state.idle.nextEnemyId, type: type, hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100 * stp,
@@ -8445,7 +8458,7 @@ function createGame(opts) {
   function idleSpawnBoss() {
     var base = IDLE_ENEMY_TYPES.boss;
     var ebp = enemyBonusPct(idleCurveLvl(), true) * idleEaseBon(), stp = idleStepMult();
-    var hp = Math.max(1, Math.round(base.hp * idleEnemyHpMult() * Math.max(BOSS_EASE_HP_FLOOR, idleEaseHp()) * (1 + ebp / 100) * stp * idleBossHpCurve())); // v1127: x idleBossHpCurve (longer boss fights from ch6). v757: bosses keep at least half their HP in the eased early chapters, so a boss is a fight, not a pop
+    var hp = Math.max(1, Math.round(base.hp * idleEnemyHpMult() * Math.max(BOSS_EASE_HP_FLOOR, idleEaseHp()) * (1 + ebp / 100) * stp * idleBossHpCurve() * idleWpnMult())); // v1127: x idleBossHpCurve (longer boss fights from ch6). v757: bosses keep at least half their HP in the eased early chapters, so a boss is a fight, not a pop
     state.idle.nextEnemyId = (state.idle.nextEnemyId || 0) + 1;
     state.idle.enemies.push({
       id: state.idle.nextEnemyId, type: "boss", hp: hp, maxHp: hp, def: enemyScale.def * ebp / 100 * stp,
@@ -9840,9 +9853,9 @@ function createGame(opts) {
     var eAtkMult = 1 + enemyBonusPct(idleCurveLvl(), type === "boss") * idleEaseBon() / 100;
     if (type === "boss") { /* v1091 (Harley: bosses, not hordes, were the wall from late chapter 5): the boss ATTACK bonus is 1.4x a normal enemy's (was enemyScale.boss = 2.2x, which still sets boss HP), and its easy mode fades out over chapters 5-6 instead of 5 only. Chapters 1-4 unchanged. */
       var bAtkMult = 1 + enemyBonusPct(idleCurveLvl(), false) * BOSS_ATK_BONUS_FACTOR * idleEaseBon() / 100;
-      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss() * idleStepMult() * idleBossAtkCurve(); /* v1128: x idleBossAtkCurve */
+      return base.atk * IDLE_BOSS_DMG_BUFF * (1 + IDLE_BOSS_DMG_LEVEL_SCALE * (idleEnemyHpMult() - 1)) * bAtkMult * idleEaseAtkBoss() * idleStepMult() * idleBossAtkCurve() * idleWpnMult(); /* v1128: x idleBossAtkCurve */
     }
-    return base.atk * HORDE_ATK_FRAC * eAtkMult * idleEaseAtk() * idleStepMult(); /* v1092 */
+    return base.atk * HORDE_ATK_FRAC * eAtkMult * idleEaseAtk() * idleStepMult() * idleWpnMult(); /* v1092; v1253 x weapon curve */
   }
   function idleFortressCannonBulletInterval() { return IDLE_FORTRESS_CANNON_BULLET_INTERVAL; }
   // Fortress Cannon target selection (Dev Tools option). "front" reproduces
@@ -12447,7 +12460,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1252"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1253"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

@@ -2447,3 +2447,13 @@
 - Weapons screen: total in the hint ("Weapon levels: ATK, HP, DEF +x%") and each weapon shows its own permanent bonus.
 - Meta check: identical before/after (both sides get it). It already showed the META build NOT on top on v1251 - flagged to Harley (HANDOVER open item).
 - Test: g344_weapon_level_bonus.js.
+
+## v1253 — Conquest retuned to the old difficulty curve
+- Harley: "retune conquest ... so it follows the difficulty curve we had already setup" (after v1252's weapon level bonus).
+- Measured with the 16-day free-player sim (dev/balance/f2p_timeline.js; sim fixed to use its OWN account's Sword/weapon bonus - it read the logged-in
+  test account before): v1251 = the old curve (5-20 day 1, 10-1 day 4, 13-10 day 10, 15-1 day 13); v1252 = 8-13 day 1, 15-2 day 4, 25-3 day 16.
+  Free player's weapon bonus: +90% day 1 -> +886% day 16 (f2p_v1252_wb).
+- Fix: enemy HP and ATK (hordes + bosses) x idleWpnMult() = 1 + CQ_WPN_CURVE(level)/100, the weapon bonus a free player has when the old curve had them at
+  that level ([1,15] [100,90] [123,145] [159,200] [181,255] [194,330] [208,390] [250,510] [281,690] [300,900] [580,2000], same slope after). DEF + rewards untouched.
+- Result (f2p_v1253b vs v1251): ch10 day 4 (same), ch11 day 8 (same), ch15 day 16 (15-5 vs 15-2); at most ~half a chapter off in between.
+- g306 test: Duplicate now owned before both Hex measurements (owned weapons add HP since v1252). g211, g280, g306 pass. Arena untouched (no meta re-run needed).

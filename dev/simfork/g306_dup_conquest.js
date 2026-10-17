@@ -34,7 +34,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.laserDup = await run(["laser_beam", "duplicate"], "laser_beam", 25000);
   o.after = await run(["laser_beam"], "laser_beam", 25000);
   o.misDup = await run(["missile_barrage", "duplicate"], "missile_barrage", 20000);
-  o.hex = await P.evaluate(async () => { const st = game.state; st.equippedWeapons = ["hex_shield"]; st.idle.shieldOn = false; await new Promise((r) => setTimeout(r, 1500)); const a = st.idle.shieldMax;
+  o.hex = await P.evaluate(async () => { const st = game.state; st.weaponFrags = st.weaponFrags || {}; st.weaponFrags.duplicate = Math.max(1, st.weaponFrags.duplicate || 0); /* v1253: owned in both runs (v1252 owned weapons add HP) */ st.equippedWeapons = ["hex_shield"]; st.idle.shieldOn = false; await new Promise((r) => setTimeout(r, 1500)); const a = st.idle.shieldMax;
     st.equippedWeapons = ["hex_shield", "duplicate"]; st.duplicateTarget = "hex_shield"; await new Promise((r) => setTimeout(r, 1500)); return { solo: a, dup: st.idle.shieldMax }; });
   o.stale = await P.evaluate(async () => { const st = game.state; st.equippedWeapons = ["railgun", "duplicate"]; st.duplicateTarget = "railgun"; await new Promise((r) => setTimeout(r, 2500)); const had = Object.keys(st.idle.fxT || {});
     st.equippedWeapons = ["railgun"]; await new Promise((r) => setTimeout(r, 2500)); return { had, now: Object.keys(st.idle.fxT || {}) }; });
