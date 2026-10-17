@@ -2417,3 +2417,11 @@
 - The Options Pickup / Chest test choice is gone (their data stays in REWARD_SFX). Plays on the same claims as before (Daily Tasks, Idle Chest, mail, Recon, items).
 - NOTE (told Harley): it's that game's sound - fine for TEST, replace before the game goes public (HANDOVER open item).
 - Tests: new g342_reward_sound.js (popup decodes ~1.4-1.6 s, sfxReward plays it, Options renders with no choice); g336 updated.
+
+## v1250 — animated sea behind the rig
+- Harley: ChatGPT painted the waves (art/originals/rig/sea_waves_gpt.png), Leonardo animated them (sea_waves_leonardo.mp4, 6.6 s). "Good to go" after a mockup.
+- Cut to the wave band (rows 250-426 of 1344x768), green swapped for the sky colour #7d878e, 960x126, looped with a 1 s crossfade (end -> start, 5.6 s):
+  art/rig/waves_loop.mp4 (H.264, phones; 315 KB) + waves_loop.webm (VP9 fallback; headless Chromium has no H.264) + a poster frame (iOS Low Power Mode won't autoplay).
+- Row 44 of the clip sits on the rig's water line; below the clip the sea is a gradient from the clip's own blue (#033f6d -> #06223f). The sky gradient is now flat
+  #7d878e from 52% down so the clip has no visible edge. Muted + playsinline (iOS autoplay). Paused whenever the Buildings view isn't on screen.
+- g341 checks: the clip plays, muted, on the water line (0 px off), full width, pauses on the world map, plays again back in the city.

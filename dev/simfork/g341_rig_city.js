@@ -30,6 +30,17 @@ const call = call0;
     edge: (function () { var r = document.querySelector("#rigView .rig-scene").getBoundingClientRect(); return { l: Math.round(r.left), w: Math.round(r.width), vw: innerWidth }; })(),
     h2: getComputedStyle(document.querySelector("#buildingsModeContent > h2")).display, tabsIn: document.getElementById("bldViewTabs").parentNode.id }));
   if (SH) await P.screenshot({ path: SH + "/g341_rig.png", fullPage: false });
+  /* v1250: the animated sea - plays on the city, sits on the water line, pauses when you leave */
+  await P.waitForTimeout(1200);
+  const w = await P.evaluate(() => { const v = document.getElementById("rigWaves"), sc = document.querySelector("#rigView .rig-scene"), img = sc.querySelector(".rig-wrap > img");
+    const WL = img.parentNode.offsetTop + img.offsetHeight * RIG_WL, line = parseFloat(v.style.top) + parseFloat(v.style.height) * RIG_WAVES_LINE / RIG_WAVES_H;
+    return { has: !!v, src: v.currentSrc.slice(0, 16), playing: !v.paused && v.currentTime > 0.2, muted: v.muted, lineOff: Math.round(Math.abs(line - WL)), wide: Math.round(v.getBoundingClientRect().width) === sc.clientWidth }; });
+  await P.evaluate(() => { setScreen("world"); render(); }); await P.waitForTimeout(400);
+  w.pausedAway = await P.evaluate(() => document.getElementById("rigWaves").paused);
+  await P.evaluate(() => { setScreen("city", "buildings"); render(); }); await P.waitForTimeout(600);
+  w.playsAgain = await P.evaluate(() => !document.getElementById("rigWaves").paused);
+  console.log("waves", JSON.stringify(w));
+  assert(w.has && w.playing && w.muted && w.lineOff <= 1 && w.wide && w.pausedAway && w.playsAgain, "v1250 waves: play, on the water line, full width, pause away, play again");
   /* tap the Farm room -> its card, Build */
   await P.click('.rig-room[data-rk="farm"]'); await P.waitForTimeout(300);
   const bb = await P.evaluate(() => { var c = document.getElementById("rigCard"), r = c.getBoundingClientRect(), s = document.querySelector('.rig-room[data-rk="sawmill"]').getBoundingClientRect();
