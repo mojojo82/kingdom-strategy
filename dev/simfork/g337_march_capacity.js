@@ -42,7 +42,7 @@ const call = call0;
     out.leftHome = s.troops[tk] + s.troops[tk2];
     return out;
   });
-  await P.evaluate(() => { setScreen("city", "buildings"); }); await P.waitForTimeout(500);
+  await P.evaluate(() => { try { localStorage.setItem("kingdom_bld_view_v1", "list"); } catch (e) {} setScreen("city", "buildings"); render(); }); await P.waitForTimeout(500); /* v1247: the list view (rig is the default); render() so it does not wait for the next tick */
   const ui1 = await P.evaluate(() => { const rows = [...document.querySelectorAll("#buildingsList .bld")].map((e) => e.textContent); return rows.find((t) => /Command Center/.test(t)) || null; });
   if (SH) await P.screenshot({ path: SH + "/cc_buildings.png" });
   await P.evaluate(() => { const s = game.state; const k = Object.keys(s.troops).filter((x) => /infantry/.test(x))[0]; s.troops[k] = 50000; const f = s.formations.find((x) => !x.guard); f.troops[k] = 40000; game.formSync(); setScreen("city", "formations"); }); await P.waitForTimeout(600);

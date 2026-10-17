@@ -18,6 +18,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
   await P.fill("#ksE", "g237@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => { try { localStorage.setItem("kingdom_bld_view_v1", "list"); } catch (e) {} }); /* v1247: this test checks the building LIST (the rig is the default view now) */
   await P.evaluate(() => { const st = game.state; st.buildings.townhall.level = 6; st.resources.wood = 80000; st.resources.stone = 20000; st.resources.gold = 120; st.resources.food = 99999; setScreen("city"); render(); });
   await P.waitForTimeout(800);
   const thRow = () => P.evaluateHandle(() => [...document.querySelectorAll("#buildingsList .bld")].find((r) => /Town Hall/.test(r.textContent)));

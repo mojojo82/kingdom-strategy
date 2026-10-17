@@ -2392,3 +2392,16 @@
 ## v1246 — monster level slider drags again
 - Harley: "can't drag the slider, it moves 1 number then stops". Cause: every slider move rebuilt the whole Search panel, so the slider under your finger was thrown away after one step. Now dragging only updates the level text + rewards.
 - dev/simfork/g340_monster_level_slider.js drags with the mouse: v1245 = stuck (slider replaced), v1246 = Level 18 (slider kept).
+
+## v1247 — the city is an oil rig
+- Harley: "Lets do it. Time to evolve". City > Buildings now opens the side view of an oil rig: each room is a building, only a level badge on each room.
+  Tap a room: dashed outline + its card over the room next door (left room -> right, right -> left, Town Hall engine room -> the floor above).
+  The card has the same status and Build/Upgrade/speed-up rules as the list, plus a shortcut (Train / Research / Heal / Formations).
+- Room badges: 🔒 (locked, room dimmed), Build (cyan, level 0), ⏳ timer + green bar (upgrading), Lv N, ⚙️ when troops are training.
+- Rooms (my order, Harley OK'd): Command Center | Barracks, Academy | Infirmary, Mage Tower | Archery Range, Warehouse | Wall, Farm | Sawmill,
+  Quarry | Gold Mine, Town Hall = the engine room at the bottom. Gloomy sky, static darker sea (Harley has his own idea for animated waves later).
+- The old list is one tap away (🛢️ Rig / 📋 List, remembered per device). Production stats sit under the rig.
+- Art: art/originals/rig/ (all ChatGPT originals incl. the older v1 set + the 64-item decoration sheet, not used yet), phone copy art/rig/rig_tower.webp (760 px, 383 KB,
+  water tint baked in below the waterline, rooms dry). Cutting notes: dev/plans/oil_rig_city.md.
+- Tests: new dev/simfork/g341_rig_city.js (13 rooms, badges, card positions, Build from the card, locked room, toggle). g195 / g237 / g337 now pick the List view
+  (they check the list); g337 also renders before reading (it was flaky on v1246 too).

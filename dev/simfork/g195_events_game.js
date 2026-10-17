@@ -25,6 +25,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
   await P.fill("#ksE", "g195@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Newbie"); await P.click("#ksGo"); await P.waitForTimeout(6000);
+  await P.evaluate(() => { try { localStorage.setItem("kingdom_bld_view_v1", "list"); } catch (e) {} }); /* v1247: this test checks the building LIST (the rig is the default view now) */
   const uid = await P.evaluate(() => PLAYER_ID);
   /* new player: Watchtower, no Neptune; troop power is small now */
   const s0 = await P.evaluate(() => ({ skin: myCitySkinId(), neptuneOwned: citySkinOwned("titan"), cityList: skinsCatalog("city").map((x) => x.id), power: game.governorPower(), troopPowerFor1000: (function () { const t = game.state.troops.infantry; game.state.troops.infantry = t + 1000; const p = game.governorPower(); game.state.troops.infantry = t; return p - game.governorPower(); })() }));
