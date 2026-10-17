@@ -2410,3 +2410,10 @@
 - Harley: "you've got the tower stuck in a frame". Rig view now goes edge to edge: no box, border or "Buildings" header; the sky/sea fill the screen and the rig is a bit bigger.
   Build queue + 🛢️ Rig / 📋 List float on the sky as small chips (the toggle moves back above the list in List view, header back too). Approved from a mockup first.
 - g341 checks the rig starts at the left edge and is the full screen width, header hidden, toggle on the sky, and List view gets both back.
+
+## v1249 — new reward sound
+- Harley: "that's our new sound, put it in". The reward claim sound is now the Rewards-popup sound cut from Harley's High Seas Hero screen recording (1.4 s, from 0.12 s in his clip).
+  Phone copy sfx/reward_popup.mp3 (mono 96k, 20 KB); originals sfx/originals/reward_popup_original.mp3 + the clip's audio (reward_popup_source_clip.m4a).
+- The Options Pickup / Chest test choice is gone (their data stays in REWARD_SFX). Plays on the same claims as before (Daily Tasks, Idle Chest, mail, Recon, items).
+- NOTE (told Harley): it's that game's sound - fine for TEST, replace before the game goes public (HANDOVER open item).
+- Tests: new g342_reward_sound.js (popup decodes ~1.4-1.6 s, sfxReward plays it, Options renders with no choice); g336 updated.

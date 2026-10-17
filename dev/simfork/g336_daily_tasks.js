@@ -63,6 +63,6 @@ const call = call0;
   assert.strictEqual(r3.badge, ""); assert.strictEqual(r3.again, "claimed");
   assert.strictEqual(wallet.daily.t.length, 12); assert.strictEqual(wallet.daily.c, true);
   assert.deepStrictEqual(r4, { pts: 0, login: 1, claimed: 0, chests: 0 }, "next day starts fresh");
-  assert(snd.calls >= 17, "reward sound on every claim (12 tasks + 5 chests)"); assert(snd.pickup > 1 && snd.chest > 0.4, "both clips decode"); assert(snd.row && snd.pick === "chest", "Options: reward sound choice (TEST)");
+  assert(snd.calls >= 17, "reward sound on every claim (12 tasks + 5 chests)"); assert(snd.pickup > 1 && snd.chest > 0.4, "both clips decode"); assert(snd.popup > 1.2 && !snd.row && snd.pick === "popup", "v1249: the reward sound is the new popup one, no Options choice");
   console.log("g336 ok");
 })().catch((e) => { console.error(e); process.exit(1); });
