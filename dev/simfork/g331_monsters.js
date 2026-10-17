@@ -31,7 +31,7 @@ const call = call0;
   await P.click("#mapSearchBtn"); await P.waitForTimeout(300);
   if (SH) await P.screenshot({ path: SH + "/search.png" });
   await P.click('#monSearchSheet [data-type="knight"]'); await P.click("#msGo"); await P.waitForTimeout(1500);
-  const r1 = await P.evaluate(() => { const ov = document.getElementById("monCardOverlay"); const m = monCardId && monById(monCardId); return { card: !!(ov && ov.style.display === "flex"), m, btns: ov ? [...ov.querySelectorAll(".mon-fm button")].map((b) => b.textContent + (b.disabled ? " [off]" : "")) : [] }; });
+  const r1 = await P.evaluate(() => { const ov = document.getElementById("monCardOverlay"); const m = monCardId && monById(monCardId); return { card: !!(ov && ov.style.display === "block"), geo: (() => { const c = ov && ov.querySelector(".mon-pop"), e = m && monEls[m.id], vp = document.getElementById("mapviewport"); if (!c || !e) return null; const cr = c.getBoundingClientRect(), er = e.getBoundingClientRect(), vr = vp.getBoundingClientRect(); return { above: cr.bottom <= er.top + 2, top: cr.top >= vr.top + 60, inScreen: cr.left >= 0 && cr.right <= innerWidth, h: Math.round(cr.height), w: Math.round(cr.width), mon: Math.round((er.top - vr.top) / vr.height * 100) }; })(), m, btns: ov ? [...ov.querySelectorAll(".mon-fm button")].map((b) => b.textContent + (b.disabled ? " [off]" : "")) : [] }; });
   if (SH) await P.screenshot({ path: SH + "/card_empty.png" });
   /* give Formation 1 some troops + Gareth, reopen */
   const r2 = await P.evaluate(() => { game.state.troops.infantry = 2000; const f = game.state.formations[0]; f.troops = { infantry: 2000, archer: 0, cavalry: 0 }; f.heroKeys = ["gareth"]; game.formSync(); renderMonsterCard(); const ov = document.getElementById("monCardOverlay"); return [...ov.querySelectorAll(".mon-fm button")].map((b) => b.textContent + (b.disabled ? " [off]" : "")); });
@@ -57,6 +57,7 @@ const call = call0;
   console.log(JSON.stringify({ r0, r1: { card: r1.card, m: r1.m, btns: r1.btns }, r2, before, r3, r4, r5, errs }, null, 1));
   await b.close();
   assert.deepStrictEqual(errs, []);
+  assert(r1.geo && r1.geo.above && r1.geo.top && r1.geo.inScreen, "card sits above the monster, below the top buttons, on screen: " + JSON.stringify(r1.geo));
   assert(r1.card && target && target.type === "knight" && target.level === 1, "Search found / called up a Lv1 Dark Knight and opened its card");
   assert(r3.marches === 1 && r3.monster && r3.energy === 90 && r3.card === "none", "attack sent, 10 energy spent, card closed");
   assert(r4.rep && r4.rep.type === "monster" && r4.rep.win, "won the fight, report written");

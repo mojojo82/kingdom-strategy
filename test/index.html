@@ -888,6 +888,16 @@
   .mon-fm button { display:flex; justify-content:space-between; align-items:center; gap:8px; background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; font-weight:800; font-size:14px; padding:9px 12px; box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 2px 0 #1f6c80; text-align:left; }
   .mon-fm button small { font-weight:700; font-size:11.5px; } .mon-fm button .win { color:#145c22; } .mon-fm button .lose { color:#8a1f1f; }
   .mon-fm button:disabled { background:#3b4a5e; color:#aab6c4; border-color:#26303f; box-shadow:none; }
+  #monCardOverlay { position:fixed; inset:0; z-index:9400; display:none; background:transparent; } /* v1244: popup above the monster, no dark screen */
+  #monCardOverlay .mon-pop { position:fixed; display:flex; flex-direction:column; background:linear-gradient(180deg,#4a3b24,#2f2616 22%,#241c10); border:2px solid #b3985f; border-radius:14px; box-shadow:0 8px 24px #000b; color:#f2ece0; }
+  #monCardOverlay .mp-scroll { overflow-y:auto; border-radius:12px; -webkit-overflow-scrolling:touch; }
+  #monCardOverlay .mp-tail { position:absolute; bottom:-11px; width:18px; height:18px; background:#241c10; border-right:2px solid #b3985f; border-bottom:2px solid #b3985f; transform:rotate(45deg); }
+  #monCardOverlay .mp-head { display:flex; align-items:center; gap:8px; padding:8px 8px 4px 10px; background:linear-gradient(180deg,#1f4a5c,#16323f); border-radius:12px 12px 0 0; border-bottom:1.5px solid #b3985f; }
+  #monCardOverlay .mp-head img { width:64px; height:48px; object-fit:contain; flex:none; } #monCardOverlay .mp-t { flex:1; min-width:0; } #monCardOverlay .mp-t b { display:block; font-size:14px; } #monCardOverlay .mp-t small { color:#b9d4de; font-size:11px; }
+  #monCardOverlay .mp-x { background:none; border:none; color:#f2ece0; font-size:16px; font-weight:900; padding:2px 6px; align-self:flex-start; }
+  #monCardOverlay .mp-sec { padding:6px 10px 0; color:#cdbf9f; font-size:11px; font-weight:700; } #monCardOverlay .mon-rw { padding:4px 10px 0; gap:5px; } #monCardOverlay .mon-it { min-width:38px; height:38px; font-size:10px; } #monCardOverlay .mon-it .ri { width:18px; height:18px; } #monCardOverlay .mon-it .em { font-size:16px; }
+  #monCardOverlay .mp-info { display:flex; justify-content:space-between; padding:7px 10px 0; font-size:12px; font-weight:700; } #monCardOverlay .mp-info small { color:#9a8c70; font-weight:600; }
+  #monCardOverlay .mon-fm { gap:5px; padding:7px 10px 4px; } #monCardOverlay .mon-fm button { font-size:12.5px; padding:6px 10px; } #monCardOverlay .mon-fm button small { font-size:10.5px; }
   .mon-msg { padding:8px 14px 2px; color:#ffb98a; font-size:12px; font-weight:700; text-align:center; }
   #monSearchSheet { position:fixed; left:0; right:0; bottom:0; z-index:9500; background:linear-gradient(180deg,#4a3b24,#2f2616 18%,#241c10); border-top:2px solid #b3985f; border-radius:16px 16px 0 0; padding:10px 12px calc(14px + env(safe-area-inset-bottom)); color:#f2ece0; max-width:520px; margin:0 auto; box-shadow:0 -6px 20px #0009; }
   #monSearchSheet .ms-top { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
@@ -12365,7 +12375,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1243"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1244"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -17960,22 +17970,35 @@ function monRewardsHtml(type, L) {
   return { g: g, c: c };
 }
 function monFormationArmy(f, idx) { return game.formationArmy(idx); } /* v1241: the formation's own troops at home, capped to the march size */
+/* v1244 (Harley, like High Seas Hero): the monster card is a small popup ABOVE the monster on the map (map moves so the monster sits low
+   in the middle), sized to fit the space between the top buttons and the monster. No dark screen; tap anywhere else to close. */
+function monCenterOn(m) { var vp = document.getElementById("mapviewport"); if (!vp) return; var c = tileCenterPx({ x: m.x, y: m.y }); worldMapKeep = null; vp.scrollTo({ left: Math.max(0, c.x - vp.clientWidth / 2), top: Math.max(0, c.y - vp.clientHeight * 0.68), behavior: "smooth" }); }
 function openMonsterCard(id) {
   var m = monById(id); if (!m) return;
   monCardId = id;
   var ov = document.getElementById("monCardOverlay");
-  if (!ov) { ov = document.createElement("div"); ov.className = "hd-overlay"; ov.id = "monCardOverlay"; ov.onclick = function (e) { if (e.target === ov) closeMonsterCard(); }; document.body.appendChild(ov); }
-  renderMonsterCard(); ov.style.display = "flex";
+  if (!ov) { ov = document.createElement("div"); ov.id = "monCardOverlay"; ov.onclick = function (e) { if (e.target === ov) closeMonsterCard(); }; document.body.appendChild(ov);
+    var vp0 = document.getElementById("mapviewport"); if (vp0) vp0.addEventListener("scroll", function () { if (monCardId) placeMonsterCard(); }, { passive: true }); }
+  monCenterOn(m);
+  renderMonsterCard(); ov.style.display = "block"; placeMonsterCard();
+  [120, 350, 700].forEach(function (t) { setTimeout(function () { if (monCardId === id) { try { renderVisibleTiles(); } catch (e) {} placeMonsterCard(); } }, t); });
 }
 function closeMonsterCard() { monCardId = null; var ov = document.getElementById("monCardOverlay"); if (ov) ov.style.display = "none"; }
+function placeMonsterCard() {
+  var ov = document.getElementById("monCardOverlay"), card = ov && ov.querySelector(".mon-pop"), m = monCardId && monById(monCardId), vp = document.getElementById("mapviewport"); if (!card || !m || !vp) return;
+  var el = monEls[m.id], r = el && el.isConnected ? el.getBoundingClientRect() : null, vr = vp.getBoundingClientRect();
+  var ax, ay; if (r && r.width) { ax = r.left + r.width / 2; ay = r.top; } else { var c = tileCenterPx({ x: m.x, y: m.y }); ax = vr.left + c.x - vp.scrollLeft; ay = vr.top + c.y - vp.scrollTop - 30; }
+  var W = Math.min(330, window.innerWidth - 24), left = Math.max(12, Math.min(window.innerWidth - W - 12, ax - W / 2)), top0 = vr.top + 64, bottom = ay - 10;
+  card.style.width = W + "px"; card.style.left = left + "px"; card.style.bottom = Math.max(0, window.innerHeight - bottom) + "px"; card.style.maxHeight = Math.max(160, bottom - top0) + "px";
+  var tail = card.querySelector(".mp-tail"); if (tail) tail.style.left = Math.max(14, Math.min(W - 28, ax - left - 9)) + "px";
+}
 function renderMonsterCard() {
   var ov = document.getElementById("monCardOverlay"), m = monCardId && monById(monCardId); if (!ov) return; if (!m) { closeMonsterCard(); return; }
   var d = MONSTER_DEFS[m.type], gar = monsterGarrison(m.type, m.level), home = mapTileById(game.state.map, game.state.homeTileId), dist = home ? Math.max(Math.abs(home.x - m.x), Math.abs(home.y - m.y)) : 0;
   var defPow = game.previewBattle({}, gar, []).defPower, en = game.monsterEnergy(), open = game.monsterLevelOpen(m.level), rw = monRewardsHtml(m.type, m.level);
-  var h = '<div class="wi-card mon-card"><div class="wi-top">' + d.name + '<button class="wi-close" id="monClose" aria-label="Close">✕</button></div>';
-  h += '<div class="mc-head"><img src="' + d.img + '" alt=""><div><div class="mc-nm">Level ' + m.level + '</div><div class="mc-sub">X:' + m.x + ' Y:' + m.y + ' · ' + dist + ' km away' + (m.summon ? ' · called up by you' : '') + '</div><div class="mc-sub">' + Object.keys(gar).map(function (t) { return (TROOP_ICON[troopBase(t)] || "") + ' ' + fmt(gar[t]) + ' ' + TROOP_DEFS[t].name + ' T' + monsterTier(m.level); }).join(", ") + '</div></div></div>';
-  h += '<div class="mon-sec">Rewards</div><div class="mon-rw">' + rw.g + '</div><div class="mon-sec">Chance of</div><div class="mon-rw">' + rw.c + '</div>';
-  h += '<div class="pd-grp" style="margin:10px 12px 0"><div class="pd-row"><span>Enemy strength</span><span>' + fmt(defPow) + '</span></div><div class="pd-row"><span>Stamina</span><span>⚡ ' + MONSTER_ENERGY_COST + ' <span class="pd-pct">(you have ' + en + '/' + MONSTER_ENERGY_MAX + ')</span></span></div></div>';
+  var h = '<div class="mon-pop"><div class="mp-scroll"><div class="mp-head"><img src="' + d.img + '" alt=""><div class="mp-t"><b>Level ' + m.level + ' ' + d.name + '</b><small>X:' + m.x + ' Y:' + m.y + ' · ' + dist + ' km' + (m.summon ? ' · called up by you' : '') + '</small></div><button class="mp-x" id="monClose" aria-label="Close">✕</button></div>';
+  h += '<div class="mp-sec">Rewards</div><div class="mon-rw">' + rw.g + '</div><div class="mp-sec">Chance of</div><div class="mon-rw">' + rw.c + '</div>';
+  h += '<div class="mp-info"><span>⚡ ' + MONSTER_ENERGY_COST + ' <small>(' + en + '/' + MONSTER_ENERGY_MAX + ')</small></span><span>💪 Enemy ' + fmt(defPow) + '</span></div>';
   var msg = !open ? "🔒 Beat a Level " + Math.min(MONSTER_MAX_LEVEL, (game.state.monsters.maxBeat | 0) + 1) + " monster first." : en < MONSTER_ENERGY_COST ? "⚡ Not enough stamina - next +1 in " + fmtTime(game.monsterEnergyNextSec()) + "." : "";
   if (msg) h += '<div class="mon-msg">' + msg + '</div>';
   h += '<div class="mon-fm">';
@@ -17988,10 +18011,11 @@ function renderMonsterCard() {
     var right = game.formOut(idx) ? "Out marching" : tot <= 0 ? "No troops home" : busy ? "Heroes busy" : (pv.win ? '<span class="win">' + fmt(pv.atkPower) + ' · Win</span>' : '<span class="lose">' + fmt(pv.atkPower) + ' · Too weak</span>');
     h += '<button data-f="' + idx + '"' + (!open || en < MONSTER_ENERGY_COST || tot <= 0 || busy ? " disabled" : "") + '><span>⚔️ ' + f.name + (leaders ? " · " + leaders : "") + '</span><small>' + right + '</small></button>';
   });
-  h += '</div><div class="pd-note">Hurt troops go to the Infirmary - none die. Stamina comes back if the monster is gone when you arrive.</div></div>';
+  h += '</div><div class="pd-note" style="padding:2px 10px 8px">Hurt troops go to the Infirmary - none die.</div></div><div class="mp-tail"></div></div>';
   ov.innerHTML = h;
   document.getElementById("monClose").onclick = closeMonsterCard;
   [].forEach.call(ov.querySelectorAll(".mon-fm button[data-f]"), function (b) { b.onclick = function () { monAttack(m, +b.getAttribute("data-f")); }; });
+  placeMonsterCard();
 }
 function monAttack(m, idx) {
   var f = game.state.formations[idx]; if (!f) return;
@@ -18065,8 +18089,7 @@ function monDoSearch() {
     m = monSummon();
   }
   closeMonsterSearch(); selectedTile = null; try { renderTileInfo(); } catch (e) {}
-  centerMapOnTile(m.tileId);
-  setTimeout(function () { try { renderVisibleTiles(); } catch (e) {} if (monById(m.id)) openMonsterCard(m.id); }, 650);
+  openMonsterCard(m.id); /* v1244: moves the map to it and shows the card above it */
 }
 function monDoResSearch() {
   var home = mapTileById(game.state.map, game.state.homeTileId); if (!home) return;

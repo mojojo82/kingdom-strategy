@@ -2379,3 +2379,8 @@
 - Harley's 3 new pictures replace the placeholders: Ironclaw Lobster (was Dark Knight), Kraken Drone (was Rhino Mech), Crystal Crab (was Steam Tank). Same troops/rewards. Names made up by me (Harley: "make up some names").
 - Originals in art/originals/monster_*_original.png; 240px webp copies in art/monsters/ (old ones kept as backups). Drawn "a lot smaller": w 1.2 (were 1.5 / 2.3 / 2.5; mockup 2.3).
 - g331 (report title), g332 pass.
+
+## v1244 — monster card pops up above the monster (like HSH)
+- Harley (video + red box): Search (or tapping a monster) moves the map so the monster sits low in the middle (68% down) and the card appears as a small popup above it with a pointer, sized to the space between the top buttons and the monster (scrolls inside if needed). No dark screen; tap elsewhere to close; follows the map if it moves.
+- Compact card: picture + "Level N Name" header, rewards / chance rows, stamina + enemy strength on one line, formation buttons.
+- g331 checks the card is above the monster, below the top buttons and on screen.
