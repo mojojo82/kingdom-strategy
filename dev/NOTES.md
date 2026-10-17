@@ -2368,3 +2368,9 @@
 - City Guard is a formation too: it holds its own troops and still defends the base (defenderFromSave uses its held troops).
 - Old saves: formations take their numbers in order from what's home; duplicate heroes stay in the first formation; marches already out return to the Reserve.
 - Tests: g338_assigned_troops.js (new); g301, g331, g332, g336, g337, g250, g260, g262 pass (tests that set f.troops directly now call game.formSync()).
+
+## v1242 — formation card rebuilt to match the mockup + hero slots
+- Harley: "the formation window was different from your mockup". Card now: name + status tag (ACTIVE · Home / Home / ⚔️ Marching · back in m:ss / 🛡️ GUARDING), march size line + bar, ONE row per troop type (have / set, the tiers it holds listed under the name; Save turns the totals into tiers best first via formMixSet), refill note when short, 5 hero slots + ⚖️ Equalise / ⭐ Preset ✏️, Fortress, Save / Select (Guard on/off) / Release to Reserve.
+- Hero slots: tap -> picker sheet (owned leaders; tags In here / other formation's name / Marching (can't pick)); a filled slot offers Remove. Engine setFormationHeroSlot (moves the hero out of any other formation).
+- Fixed: the Reserve box crashed the Formations screen when the Reserve held two tiers of one type (troopTierOf isn't global - now troopTier).
+- Tests: g338 (+ card layout + hero picker), g301, g331, g336, g337 pass.
