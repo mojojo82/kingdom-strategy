@@ -67,3 +67,10 @@ Escorts (not used by us): Lv17 4, Lv30 6, Lv45 7, Lv50 8, Lv60 9, Lv72+ 10.
 - Reserve pool for unassigned troops; new troops land there; "Fill formation" button.
 - Healed troops: back to their formation, or to the Reserve? (Harley to decide)
 - Losses come off the formation; promotions stay in the formation; every troop at home defends the base; bots follow the same rules.
+
+## Assigned troops — decisions (Harley, 17 Oct)
+- Healed troops go to the **Reserve**.
+- **Auto-refill**, no taps ("we can't be stopping to do refill taps in the middle of an intense fight"): each formation remembers its set numbers and tops itself up from the Reserve.
+- When several formations are short: **whichever returns to base first** gets refilled first.
+- If the exact tier has run out: **fill with what's available** (assumption: same troop type, best tier first).
+- Build order: step 1 march cap + Command Center (v1240) done; step 2 assigned troops after a mockup.
