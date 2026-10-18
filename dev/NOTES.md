@@ -2747,3 +2747,16 @@ Harley's 3 points:
 - Also: resizeIdleCanvas only sets canvas width/height when they really change. The v1262 sky re-check calls it every 0.7s and setting the size (even to the
   same number) wiped and re-allocated the whole canvas each time.
 - g270 "enough slams" fails the same on v1291 (only 4 slams fit in its time window headless) - not this change; its real check (no unfired Death Strike) passes.
+
+## v1293 — the skeleton ("lancer" enemy) is now an imp grenadier
+- Harley's imp (ChatGPT still, art/originals/imp_grenadier_magenta.png) animated in Leonardo/Hailuo from one padded start image: idle, walk (in place) and
+  throw (attempt 3 of 3 - quick overhand lob). dev/imp/build_imp.py cuts the loops (idle 66-114 every 3rd = 17 @8fps, walk 47-84 every 2nd = 19, throw 1-35
+  every 2nd = 18 over 1.0s), keys out the magenta, wipes the bomb's streak after release, packs art/conquest/imp.webp (3 rows, 115x112 cells, 258 KB).
+  Full-size keyed rows in art/originals/sprites_hires/imp/. Drawn 35 game px cell (~26 px body), faces left (no mirror), no code bob.
+- Walk plays while he's moving (paced to his real speed), idle when still, throw when attacking. The lancer attacks once a second, so the throw is a 1.0s
+  cycle timed off vis.atkStart (= the moment the shot launches): the bomb leaves his raised hand on the release frame right then, and the next wind-up is
+  played ahead of the next shot. The first throw after arriving starts at the release frame.
+- His shot is drawn as a lit bomb (spinning fuse spark, faint smoke) instead of the javelin, starting from his raised hand (x-5, groundY-26 instead of groundY-16).
+  Same flight time / landing / damage. Feet drawn on the road (groundY+7.5, the orc/slime feet line) - the old skeleton floated ~12px above it. His x and
+  everything aimed at him are unchanged. ENEMY_IMP.on = false brings the skeleton back.
+- Harley: walk apron flickers a little and the look is a bit smoother than his drawing - OK for now, he'll judge in game and may re-roll the walk.

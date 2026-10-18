@@ -90,3 +90,6 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | bat_still_magenta.png | Bat enemy still, Harley's, magenta bg | 1536x1024 | start image for the flap video (padded square copy) |
 | bat_flap_hailuo.mp4 | Bat idle flap from Leonardo/Hailuo, 480x480 24fps, magenta | video | v1290: ENEMY_BAT (replaces the archer enemy) - 10 frames, art/conquest/bat_flap.webp, built by dev/bat/build_bat.py |
 | sprites_hires/bat/bat_flap_10.png | The 10 flap frames cut out at full video size (264x260 cells) | backup | shrunk to 146x144 cells for the game |
+| imp_grenadier_magenta.png | Imp grenadier still (ChatGPT), magenta bg | 1536x1024 | start image (padded square copy) for the three clips below |
+| imp_idle_hailuo.mp4 / imp_walk_hailuo.mp4 / imp_throw3_hailuo.mp4 | Imp idle / walk-in-place / throw, Leonardo/Hailuo 480x480 24fps magenta (imp_throw_hailuo.mp4 = attempt 1, not used) | video | v1293: ENEMY_IMP (replaces the lancer skeleton), art/conquest/imp.webp, built by dev/imp/build_imp.py |
+| sprites_hires/imp/imp_{idle,walk,throw}.png | The cut frames at full video size (325x317 cells), keyed | backup | shrunk to 115x112 cells for the game |
