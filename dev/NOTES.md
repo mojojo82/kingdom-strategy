@@ -2571,3 +2571,7 @@
 - Headless can't measure the phone's GPU work, so the real check is Harley's FPS counter. Next suspects if still low: the full-screen frame layer behind
   a see-through page, the glow text-shadows, the strips over the canvas.
 - g348 passes.
+
+## v1268 — Dev Tools switches to find Blue's FPS cost
+- Dev Tools > Speed & Testing > "Blue style FPS test, turn off": Frame art / Glows / Edge strips / Night sky. Tap = that part off (button goes gold,
+  "(off)"); tap again = back on. This device only, not saved. Harley compares the FPS counter to find which part costs frames on the phone.

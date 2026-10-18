@@ -3317,6 +3317,13 @@
                   <button class="dev-btn" id="devStressToggle" type="button">Show</button>
                 </div>
                 <div class="dev-tools-row">
+                  <span class="dev-tools-hint">🔬 Blue style FPS test, turn off:</span>
+                  <button class="dev-btn" type="button" data-bluefps="layer">Frame art</button>
+                  <button class="dev-btn" type="button" data-bluefps="glow">Glows</button>
+                  <button class="dev-btn" type="button" data-bluefps="strip">Edge strips</button>
+                  <button class="dev-btn" type="button" data-bluefps="sky">Night sky</button>
+                </div>
+                <div class="dev-tools-row">
                   <span class="dev-tools-hint">🌙 Night sky drift (Blue style, village):</span>
                   <button class="dev-btn" id="devSkyDrift" type="button" onclick="try{localStorage.setItem('kingdom_sky_drift_v1',skyDriftOn()?'0':'1')}catch(e){};this.textContent=skyDriftOn()?'On':'Off'">Off</button>
                 </div>
@@ -12479,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1267"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1268"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30554,7 +30561,7 @@ function uiSkinActive() {
   return !!(nav && nav.offsetParent && cv && cv.offsetParent);
 }
 /* the night sky goes with the blue style on the village (day) level */
-function nightSkyOn(env) { return env === "day" && uiSkin() === "blue" && NIGHT_SKY_IMG.complete && NIGHT_SKY_IMG.naturalWidth > 0; }
+function nightSkyOn(env) { return env === "day" && uiSkin() === "blue" && !(window.blueFpsOff && blueFpsOff.sky) && NIGHT_SKY_IMG.complete && NIGHT_SKY_IMG.naturalWidth > 0; }
 var nightSkyCache = null; /* v1267 (Harley: Blue costs 10-15 fps): the sky is scaled ONCE into a canvas at screen resolution, each frame is a 1:1 copy */
 function drawNightSky(ctx, w, groundY) {
   var top = -(idleAnim.skyPx || 0), H = Math.round(groundY - top + 6), W = Math.round(H * NIGHT_SKY_IMG.naturalWidth / NIGHT_SKY_IMG.naturalHeight), dpr = canvasDPR();
@@ -30649,6 +30656,18 @@ function uiSkinApply() {
   uiSkinKey = key;
 }
 setInterval(function () { try { uiSkinApply(); } catch (e) {} }, 250);
+/* v1268: Dev Tools switches to find what costs FPS in the Blue style (this device only, not saved) - a lit button = that part is OFF */
+var blueFpsOff = {};
+(function () {
+  var st = document.createElement("style"); st.textContent =
+    'body.bf-layer #uiSkinLayer { display:none !important; }\n' +
+    'body.bf-strip .ui-skin-strip { display:none !important; }\n' +
+    'body.bf-glow.ui-blue *, body.bf-glow.ui-blue *::before, body.bf-glow.ui-blue *::after { text-shadow:none !important; filter:none !important; }\n';
+  document.head.appendChild(st);
+  document.addEventListener("click", function (e) { var b = e.target && e.target.closest && e.target.closest("[data-bluefps]"); if (!b) return; e.preventDefault();
+    var k = b.getAttribute("data-bluefps"); blueFpsOff[k] = !blueFpsOff[k]; document.body.classList.toggle("bf-" + k, !!blueFpsOff[k]);
+    b.style.background = blueFpsOff[k] ? "#f0c95f" : ""; b.style.color = blueFpsOff[k] ? "#241c10" : ""; b.textContent = b.textContent.replace(/ \(off\)$/, "") + (blueFpsOff[k] ? " (off)" : ""); });
+})();
 setTimeout(function () { var b = document.getElementById("devSkyDrift"); if (b) b.textContent = skyDriftOn() ? "On" : "Off"; }, 1500);
 window.addEventListener("resize", function () { uiSkinKey = ""; });
 function renderOptionsScreen() {
