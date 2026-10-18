@@ -12479,7 +12479,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1265"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1266"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30589,6 +30589,12 @@ var uiSkinKey = "", uiSkinEls = [];
 var uiSkinSheet = (function () { var st = document.createElement("style"); st.id = "uiSkinPos"; document.head.appendChild(st); return st; })();
 function uiSkinSel(el) { var parts = []; while (el && el !== document.body) { if (el.id) { parts.unshift("#" + el.id); break; } var i = [].indexOf.call(el.parentNode.children, el) + 1; parts.unshift(el.tagName.toLowerCase() + ":nth-child(" + i + ")"); el = el.parentNode; } return parts.join(" > "); }
 function uiSkinClear() { uiSkinSheet.textContent = ""; }
+function uiSkinLayoutBox(el) { /* viewport box from layout offsets (ignores every transform on the element and its parents) */
+  var x = 0, y = 0, e = el, fixed = false; while (e) { x += e.offsetLeft; y += e.offsetTop; if (getComputedStyle(e).position === "fixed") { fixed = true; break; } e = e.offsetParent; }
+  for (var a = el.parentNode; a && a !== document.body && a.nodeType === 1; a = a.parentNode) { x -= a.scrollLeft; y -= a.scrollTop; }
+  if (!fixed) { x -= window.scrollX; y -= window.scrollY; }
+  return { left: x, top: y, width: el.offsetWidth, height: el.offsetHeight };
+}
 function uiSkinCanvasBox() { /* the canvas's layout box: its own rect moves with the screen shake, so take the parent's rect + offsets */
   var cv = document.getElementById("idleCanvas"), pr = cv.offsetParent ? cv.offsetParent.getBoundingClientRect() : { top: 0 }, t = pr.top + cv.offsetTop;
   return { top: t, bottom: t + cv.offsetHeight };
@@ -30599,10 +30605,10 @@ function uiSkinApply() {
   if (!on) { if (uiSkinKey) uiSkinClear(); uiSkinKey = ""; return; }
   var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); };
   var cvR = uiSkinCanvasBox(), k = window.innerWidth / 430;
-  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > *").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|");
+  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|");
   if (key === uiSkinKey) return;
-  /* measure with every transition/animation off, or an element still sliding back from its old spot is measured mid-way */
-  uiSkinSheet.textContent = 'body.ui-blue[data-screen="conquest"] * { transition:none !important; animation:none !important; transform:none !important; }'; /* own transforms (e.g. Forge's translateX(-50%)) are folded into the rule */ cvR = uiSkinCanvasBox();
+  /* v1266 (Harley's video: flashes + panels sliding): elements are measured by their LAYOUT box (offsets), which transforms never touch, so the
+     rules are never switched off to measure - switching them off restarted every animation (a dim flash) and made transitions slide things around */
   var Y0 = cvR.bottom - 30 * k, TOPY = -28 * k;
   var ti = document.getElementById("uiSkinTopImg"), bi = document.getElementById("uiSkinBotImg");
   ti.style.width = bi.style.width = (430 * k) + "px"; ti.style.top = TOPY + "px"; bi.style.top = Y0 + "px";
@@ -30627,7 +30633,7 @@ function uiSkinApply() {
   var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); });
   fit(q("#avatarWrap"), 10, 36, 52, 52, TOPY); fit(q("#resBtn"), 380, 38, 44, 44, TOPY);
   var RX = [[143, 44, 75, 32], [222, 44, 74, 32], [302, 44, 59, 32]]; qa(".resbar .res").forEach(function (e, i) { var t = RX[i]; if (t) jobs.push({ el: e, x: t[0] * k, y: TOPY + t[1] * k, w: t[2] * k, h: t[3] * k, noScale: true }); });
-  jobs.forEach(function (j) { j.r = j.el.getBoundingClientRect(); j.s = j.sub ? j.sub.getBoundingClientRect() : j.r; });
+  jobs.forEach(function (j) { j.r = uiSkinLayoutBox(j.el); j.s = j.sub ? uiSkinLayoutBox(j.sub) : j.r; });
   var css = "";
   jobs.forEach(function (j) {
     var r = j.r, b = j.s, sx, sy, tx, ty;
@@ -30636,7 +30642,7 @@ function uiSkinApply() {
     else { var s = j.noScale ? 1 : Math.min(j.w / b.width, j.h / b.height); sx = sy = s; tx = j.x + (j.w - b.width * s) / 2 - (b.left - r.left) * s - r.left; ty = j.y + (j.h - b.height * s) / 2 - (b.top - r.top) * s - r.top; }
     css += 'body.ui-blue[data-screen="conquest"] ' + uiSkinSel(j.el) + " { transition:none !important; transform-origin:0 0 !important; transform:translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px) scale(" + sx.toFixed(4) + "," + sy.toFixed(4) + ") !important; }\n";
   });
-  uiSkinSheet.textContent = css;
+  if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;
   uiSkinKey = key;
 }
 setInterval(function () { try { uiSkinApply(); } catch (e) {} }, 250);

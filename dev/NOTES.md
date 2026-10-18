@@ -2551,3 +2551,14 @@
 - Blue also turns on the night sky on the village level (art/conquest/night_sky_loop.webp, moon.webp separate). Dev Tools > Speed & Testing: sky drift on/off.
 - Weapon tiles fill their frames (corner cut 3 px), hero portraits centred in the rings, timer at the bottom of the circle, + in empty rings.
 - g348_ui_skin.js (new); g346, g347, g296 pass; g294 flaky timer (fails the same way on v1263).
+
+## v1266 — Blue UI: no more flashes / sliding panels
+- Harley's video (village, Blue): every so often the whole screen dimmed for a frame and the panel / nav slid ~14 px and back.
+- Cause: when uiSkinApply re-measured (any time the skill bar's child count changed - effects come and go - or the canvas moved a pixel), it switched
+  every rule off ("transform/transition/animation: none") to measure. That restarted all CSS animations (the dim flash) and, because the browser
+  saw the "off" state, transitions then slid elements from their plain spot back to the frame.
+- Fix: elements are measured by their layout box (offsetLeft/Top chain - transforms never affect it), the rules are never switched off, the sheet is only
+  rewritten if it actually changed, and only real slot counts are in the change key. Reproduced headless: forced re-measure on v1265 = 20 frames of
+  movement + 2 restarted animations; v1266 = 0 and 0.
+- Low FPS (41-46 in the video) not looked at yet - compare Classic vs Blue on the phone with the FPS counter.
+- g348, g347, g296 pass.
