@@ -2718,3 +2718,7 @@ Harley's 3 points:
 - The toggle is now two equal halves filling the inside of its frame (outline x 338.7-418, y 297.1-319.9), icons centred, thin divider; the chosen half
   gets a cyan fill + glow like the concept. (A Blue reset rule with ID-level specificity had been blanking the chosen colour - the new rules use :not(#z)
   to outrank it.)
+
+## v1289 — night sky drift is smooth
+- Harley: the drift looked choppy (jumping a few px). The sky's x was snapped to whole device pixels; at ~3 px/s that's a 1 px jump every ~20 frames on a
+  PC (every ~7 on a 3x phone). Now drawn at the exact sub-pixel position, so it glides.

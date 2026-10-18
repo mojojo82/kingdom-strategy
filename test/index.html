@@ -12502,7 +12502,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1288"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1289"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30588,7 +30588,7 @@ function drawNightSky(ctx, w, groundY) {
   var ck = W + "|" + H + "|" + dpr;
   if (!nightSkyCache || nightSkyCache.k !== ck) { var c = document.createElement("canvas"); c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.getContext("2d").drawImage(NIGHT_SKY_IMG, 0, 0, c.width, c.height); nightSkyCache = { k: ck, c: c }; }
   var off = skyDriftOn() ? performance.now() / 1000 * 3 : 300; /* drift: ~3 px a second */
-  for (var x = -(off % W); x < w; x += W) ctx.drawImage(nightSkyCache.c, Math.round(x * dpr) / dpr, top, W, H);
+  for (var x = -(off % W); x < w; x += W) ctx.drawImage(nightSkyCache.c, x, top, W, H); /* v1289 (Harley: drift looked choppy): no snapping to whole pixels - at ~3 px/s the snap made it jump 1 px every ~20 frames on a PC, now it glides */
   if (NIGHT_MOON_IMG.complete && NIGHT_MOON_IMG.naturalWidth) { var ms = 40, mx = w * 0.78, my = top + H * 0.2; ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.drawImage(NIGHT_MOON_IMG, mx - ms / 2, my - ms / 2, ms, ms * NIGHT_MOON_IMG.naturalHeight / NIGHT_MOON_IMG.naturalWidth); ctx.restore(); }
 }
 var uiSkinKey = "", uiSkinEls = [];
