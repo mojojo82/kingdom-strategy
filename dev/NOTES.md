@@ -2667,3 +2667,13 @@ Harley's 3 points:
 - Fix: the boxes are only created if missing; cards and weapons refresh through their own change checks. Headless, 15 s of frames with 2 weapons on:
   30 position jumps before, 0 after.
 - g246, g212, g309, g348, g347 pass.
+
+## v1281 — Blue: cards, weapons and the top bar sit inside their frames
+- Harley: weapon and card icons too low; top bar data doesn't fit its frame; avatar should fill its frame with the same shape.
+- Frame insides measured off the art (dark area inside each outline): card boxes row 1 y 226.2 (were placed at 230), the two bottom-left cards share
+  one wide box (12.7-100 x 271.5-322) so they sit side by side in it, weapon slots y 226.2 (were 231). All now stretched to the inside (0.5 unit inset).
+- Top bar: the currency pills were never placed (the first 4 pills in #resbar are hidden, the placement used them) - now the shown 3 go into the 3 pill
+  frames with their own dark backgrounds removed; backpack into its box; power badge into the area between avatar and pills (re-fits when the number
+  grows); avatar fills its frame (12.3-59.4 x 33.5-80.2) clipped to the frame's cut-corner shape, edit badge left outside the clip.
+- g348, g246 pass.
+- Note for later: if the Esper slot comes back to the card boxes, it needs its own change check (renderPowerSlots no longer rebuilds the row - v1280).

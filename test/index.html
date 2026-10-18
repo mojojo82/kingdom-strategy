@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1280"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1281"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30589,6 +30589,10 @@ var uiSkinKey = "", uiSkinEls = [];
     B + '.skill-slot.empty .skill-icon-wrap { display:flex !important; align-items:center; justify-content:center; box-sizing:border-box !important; padding:0 0 2.5px !important; /* v1270: the + glyph sits low in the font - lift it to the ring centre */ color:#7fd2ff !important; font:700 22px/1 sans-serif !important; }\n' +
     B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .idle-forge-btn *, #bottomNav .bn.active, #bottomNav .bn.active *) { color:#eaf7ff !important; }\n' +
     B + '.idle-header { position:relative; z-index:3; }\n' +
+    B + '#resbar .res { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
+    B + '#avatarWrap { overflow:visible !important; border:none !important; border-radius:0 !important; background:transparent !important; }\n' +
+    B + '#avatarWrap > :is(#avatarImg, #avatarPlaceholder) { clip-path:polygon(13% 0, 87% 0, 100% 13%, 100% 87%, 87% 100%, 13% 100%, 0 87%, 0 13%); border-radius:0 !important; }\n' +
+    B + '#avatarWrap > #avatarPlaceholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0b1628; }\n' +
     /* v1274: no slide-in when Conquest opens in Blue - the frame art can't slide with it, so the page and the frame drifted apart for ~10 frames */
     'body.ui-blue[data-screen="conquest"] #layout, ' + B + '#conquestModeContent { animation:none !important; }\n' +
     /* v1269 (Harley's FPS test: the glows cost the frames): no text glow in the Blue style - not on our own labels, and not on text that changes all the
@@ -30672,7 +30676,7 @@ function uiSkinApply() {
   if (!on) { if (uiSkinSheet.textContent) uiSkinClear(); uiSkinKey = ""; return; }
   var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); };
   var cvR = uiSkinCanvasBox(), k = window.innerWidth / 430;
-  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|");
+  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length, (q("#powerBadge") || {}).offsetWidth, qa("#resbar .res").map(function (e) { return e.offsetParent ? e.offsetWidth : 0; }).join(",")].join("|"); /* v1281: re-fit when the power number or a pill grows */
   if (key === uiSkinKey) return;
   /* v1266 (Harley's video: flashes + panels sliding): elements are measured by their LAYOUT box (offsets), which transforms never touch, so the
      rules are never switched off to measure - switching them off restarted every animation (a dim flash) and made transitions slide things around */
@@ -30693,13 +30697,19 @@ function uiSkinApply() {
   var wx = [[153.9, 200.8], [207.6, 254.6], [261.6, 308.4], [315.9, 362.5], [369.9, 416.9]], wy = [[111.8, 156.6], [163.8, 209.2]];
   qa(".ig-cell").forEach(function (e, i) { if (i < 10) { var X = wx[i % 5], Yy = wy[Math.floor(i / 5)]; fit(e, X[0], Yy[0], X[1] - X[0], Yy[1] - Yy[0], Y0, null, true); } });
   var ps = qa(".power-slot"), left = ps.filter(function (e) { return !e.closest(".idle-weapon-slots"); }), right = ps.filter(function (e) { return e.closest(".idle-weapon-slots"); });
-  var LT = [[12, 230, 40, 38], [60, 230, 40, 38], [108, 230, 41, 38], [14, 279, 40, 45], [58, 279, 40, 45], [108, 283, 41, 44]], RT = [[280, 231, 41, 44], [327, 231, 42, 44], [375, 231, 42, 44]];
-  left.forEach(function (e, i) { var t = LT[i]; if (t) fit(e, t[0], t[1], t[2], t[3], Y0); });
-  right.forEach(function (e, i) { var t = RT[i]; if (t) fit(e, t[0], t[1], t[2], t[3], Y0); });
+  /* v1281 (Harley: card and weapon icons too low): the inside of each frame, measured off the art (dark area inside the outline), 0.5 unit inset; the
+     2 bottom-left cards share one wide box, so they sit side by side in it */
+  var LT = [[13, 226.2, 39.5, 37.3], [60.5, 226.2, 39.5, 37.3], [109, 226.2, 39.5, 37.3], [14.5, 276.3, 41, 41], [57.2, 276.3, 41, 41], [108.7, 278.4, 40.2, 43.1]],
+      RT = [[280, 226.2, 40.6, 42.4], [327.5, 226.2, 40.9, 42.4], [375.7, 226.2, 41.3, 42.4]];
+  var ins = function (t) { return [t[0] + 0.5, t[1] + 0.5, t[2] - 1, t[3] - 1]; };
+  left.forEach(function (e, i) { var t = LT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
+  right.forEach(function (e, i) { var t = RT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
   var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
   fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 337, 299, 82, 28, Y0);
-  fit(q("#avatarWrap"), 10, 36, 52, 52, TOPY); fit(q("#resBtn"), 380, 38, 44, 44, TOPY);
-  var RX = [[143, 44, 75, 32], [222, 44, 74, 32], [302, 44, 59, 32]]; qa(".resbar .res").forEach(function (e, i) { var t = RX[i]; if (t) jobs.push({ el: e, x: t[0] * k, y: TOPY + t[1] * k, w: t[2] * k, h: t[3] * k, noScale: true }); });
+  /* v1281 (Harley: the top bar's player data doesn't sit in its frame; avatar should fill its frame, same shape): frame insides measured off the art */
+  fit(q("#avatarWrap"), 12.3, 33.5, 47.1, 46.7, TOPY, null, true); fit(q("#resBtn"), 379.1, 36.7, 38.1, 38.1, TOPY); fit(q("#powerBadge"), 66, 37, 90, 40, TOPY);
+  var RX = [[161.2, 42, 69.6, 27.5], [240.5, 42.4, 69.6, 27.2], [319.9, 42.4, 48.2, 27.2]];
+  qa("#resbar .res").filter(function (e) { return e.offsetParent; }).forEach(function (e, i) { var t = RX[i]; if (t) fit(e, t[0] + 2, t[1] + 1.5, t[2] - 4, t[3] - 3, TOPY); }); /* only the shown pills (the first ones in the bar are hidden) */
   jobs.forEach(function (j) { j.r = uiSkinLayoutBox(j.el); j.s = j.sub ? uiSkinLayoutBox(j.sub) : j.r; });
   var css = "";
   jobs.forEach(function (j) {
