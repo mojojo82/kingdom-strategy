@@ -2605,3 +2605,12 @@
 - On Conquest the nav is see-through again over the Conquest art (its own nav and gap) and its buttons are placed on it as in v1271; the cut nav bar is only
   for the other screens. Measured: nav/Stats/Forge/panel positions identical to v1271 (nav 854, Stats 812-833, panel bottom line 849).
 - g348 passes.
+
+## v1274 — Blue: Conquest opens already in place
+- Harley's video: tapping Conquest, the Blue UI visibly settles into place (2 steps).
+- Causes (reproduced headless, switching from World/Heroes/City and logging every frame): (1) the screen slide-in animations (screenSwap on #layout,
+  nativeScreenIn on #conquestModeContent) move the page but not the fixed frame art, so they drifted apart for ~10 frames; (2) the canvas sky was fitted
+  during that slide (rects measured mid-animation), then corrected ~250 ms later, moving the whole panel again; (3) placement only re-checked every 250 ms.
+- Fix: no slide-in on Conquest in Blue; setScreen (wrapped) sets the Blue class, fits the canvas twice, then places everything before the first paint;
+  the placement check runs every frame (cheap - work only when something changed). Before: 9-12 different positions over ~12 frames; after: 1.
+- g348, g347, g346 pass.

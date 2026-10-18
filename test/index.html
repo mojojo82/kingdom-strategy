@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1273"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1274"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30586,6 +30586,8 @@ var uiSkinKey = "", uiSkinEls = [];
     B + '.skill-slot.empty .skill-icon-wrap { display:flex !important; align-items:center; justify-content:center; box-sizing:border-box !important; padding:0 0 2.5px !important; /* v1270: the + glyph sits low in the font - lift it to the ring centre */ color:#7fd2ff !important; font:700 22px/1 sans-serif !important; }\n' +
     B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .idle-forge-btn *, #bottomNav .bn.active, #bottomNav .bn.active *) { color:#eaf7ff !important; }\n' +
     B + '.idle-header { position:relative; z-index:3; }\n' +
+    /* v1274: no slide-in when Conquest opens in Blue - the frame art can't slide with it, so the page and the frame drifted apart for ~10 frames */
+    'body.ui-blue[data-screen="conquest"] #layout, ' + B + '#conquestModeContent { animation:none !important; }\n' +
     /* v1269 (Harley's FPS test: the glows cost the frames): no text glow in the Blue style - not on our own labels, and not on text that changes all the
        time (header counters, timers, Forge numbers), which had to be re-glowed over the see-through frame on every change */
     B + ':is(.idle-header, .idle-header *, .cd-text, .skill-icon-wrap, .skill-auto-btn, #idleStatsBtn, #idleForgeBtn, #idleForgeBtn *, #topbar *, #bottomNav *) { text-shadow:none !important; }\n' + B + '.layout, ' + B + '#topbar { position:relative; z-index:1; }\n' + B + '#bottomNav { z-index:5; }\n' +
@@ -30669,7 +30671,11 @@ function uiSkinApply() {
   if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;
   uiSkinKey = key;
 }
-setInterval(function () { try { uiSkinApply(); } catch (e) {} }, 250);
+/* v1274 (Harley's video: tapping Conquest, the UI visibly settles into place in 2 steps): check every frame instead of every 250 ms (the check is cheap,
+   the work only runs when something changed), and on a screen switch size the Conquest canvas + place everything before the first paint */
+(function uiSkinLoop() { try { uiSkinApply(); } catch (e) {} requestAnimationFrame(uiSkinLoop); })();
+(function () { var orig = setScreen; setScreen = function () { var r = orig.apply(this, arguments);
+  try { if (uiSkin() === "blue" && document.body.getAttribute("data-screen") === "conquest") { uiSkinApply(); resizeIdleCanvas(); resizeIdleCanvas(); uiSkinKey = ""; uiSkinApply(); } /* class first (it turns the slide-in off), then fit the canvas (twice: the fit settles in 2 steps), then place */ } catch (e) {} return r; }; })();
 /* v1268: Dev Tools switches to find what costs FPS in the Blue style (this device only, not saved) - a lit button = that part is OFF */
 var blueFpsOff = {};
 (function () {
