@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1283"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1284"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30589,10 +30589,14 @@ var uiSkinKey = "", uiSkinEls = [];
     B + '.skill-slot.empty .skill-icon-wrap { display:flex !important; align-items:center; justify-content:center; box-sizing:border-box !important; padding:0 0 2.5px !important; /* v1270: the + glyph sits low in the font - lift it to the ring centre */ color:#7fd2ff !important; font:700 22px/1 sans-serif !important; }\n' +
     B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .idle-forge-btn *, #bottomNav .bn.active, #bottomNav .bn.active *) { color:#eaf7ff !important; }\n' +
     B + '.idle-header { position:relative; z-index:3; }\n' +
-    B + '#resbar .res { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
-    B + '#avatarWrap { overflow:visible !important; border:none !important; border-radius:0 !important; background:transparent !important; }\n' +
-    B + '#avatarWrap > :is(#avatarImg, #avatarPlaceholder) { clip-path:polygon(13% 0, 87% 0, 100% 13%, 100% 87%, 87% 100%, 13% 100%, 0 87%, 0 13%); border-radius:0 !important; }\n' +
-    B + '#avatarWrap > #avatarPlaceholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0b1628; }\n' +
+    'body.ui-blue-top #topbar { background:transparent !important; border-color:transparent !important; box-shadow:none !important; position:relative; z-index:1; }\n' +
+    'body.ui-blue-top :is(#resBtn, #avatarWrap, #powerBadge) { background:transparent !important; border:none !important; box-shadow:none !important; }\n' +
+    'body.ui-blue-top #topbar * { text-shadow:none !important; }\n' +
+    'body.ui-blue-top:not(.ui-blue) #uiSkinLayer { display:block; inset:0; z-index:0; } body.ui-blue-top:not(.ui-blue) #uiSkinBotImg { display:none; }\n' +
+    'body.ui-blue-top #resbar .res { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
+    'body.ui-blue-top #avatarWrap { overflow:visible !important; border:none !important; border-radius:0 !important; background:transparent !important; }\n' +
+    'body.ui-blue-top #avatarWrap > :is(#avatarImg, #avatarPlaceholder) { clip-path:polygon(13% 0, 87% 0, 100% 13%, 100% 87%, 87% 100%, 13% 100%, 0 87%, 0 13%); border-radius:0 !important; }\n' +
+    'body.ui-blue-top #avatarWrap > #avatarPlaceholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0b1628; }\n' +
     /* v1274: no slide-in when Conquest opens in Blue - the frame art can't slide with it, so the page and the frame drifted apart for ~10 frames */
     'body.ui-blue[data-screen="conquest"] #layout, ' + B + '#conquestModeContent { animation:none !important; }\n' +
     /* v1269 (Harley's FPS test: the glows cost the frames): no text glow in the Blue style - not on our own labels, and not on text that changes all the
@@ -30670,13 +30674,15 @@ function uiNavApply() { /* v1275: the Blue nav on screens other than Conquest, p
 }
 function uiSkinApply() {
   document.body.classList.toggle("ui-blue-nav", uiSkin() === "blue" && window.innerWidth <= 900); /* v1272: every screen */
+  document.body.classList.toggle("ui-blue-top", uiSkin() === "blue" && window.innerWidth <= 900); /* v1284: the top bar too */
+  document.body.classList.toggle("ui-blue", uiSkin() === "blue" && uiSkinActive()); try { uiTopApply(); } catch (e) {}
   if (document.body.classList.contains("ui-blue-nav") && !document.body.classList.contains("ui-blue")) { try { uiNavApply(); } catch (e) {} } else uiNavKey = "";
   var on = uiSkinActive();
   document.body.classList.toggle("ui-blue", uiSkin() === "blue" && on);
   if (!on) { if (uiSkinSheet.textContent) uiSkinClear(); uiSkinKey = ""; return; }
   var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); };
   var cvR = uiSkinCanvasBox(), k = window.innerWidth / 430;
-  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length, (q("#powerBadge") || {}).offsetWidth, qa("#resbar .res").map(function (e) { return e.offsetParent ? e.offsetWidth : 0; }).join(",")].join("|"); /* v1281: re-fit when the power number or a pill grows */
+  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|"); /* v1281: re-fit when the power number or a pill grows */
   if (key === uiSkinKey) return;
   /* v1266 (Harley's video: flashes + panels sliding): elements are measured by their LAYOUT box (offsets), which transforms never touch, so the
      rules are never switched off to measure - switching them off restarted every animation (a dim flash) and made transitions slide things around */
@@ -30706,13 +30712,11 @@ function uiSkinApply() {
   right.forEach(function (e, i) { var t = RT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
   var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
   fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 337, 299, 82, 28, Y0);
-  /* v1281 (Harley: the top bar's player data doesn't sit in its frame; avatar should fill its frame, same shape): frame insides measured off the art */
-  fit(q("#avatarWrap"), 12.9, 33.6, 46.2, 46.2, TOPY, null, true); /* v1282 (Harley: left side 1-2 px over the frame): inside the glow of the frame's inner line on all 4 sides (line centres 11.6 / 60.2 / 31.9 / 80.6) */ fit(q("#resBtn"), 379.1, 36.7, 38.1, 38.1, TOPY); (function () { /* v1283 (Harley: power number too big, must fit 4 digits + letter e.g. 888.8M): one fixed size for every value - worked out for the widest
-    value "888.8M" - and left-aligned, instead of blowing short values like "1.5M" up to fill the box */
-    var pb = q("#powerBadge"), pv = q("#powerValue"); if (!pb || !pv) return; var real = pv.textContent; pv.textContent = "888.8M"; var w = pb.offsetWidth, h = pb.offsetHeight; pv.textContent = real;
-    var sc = Math.min(88 * k / w, 38 * k / h), r0 = uiSkinLayoutBox(pb); jobs.push({ el: pb, x: 67 * k, y: TOPY + (37 + (38 - h * sc / k) / 2) * k, w: w * sc, h: h * sc, fixedScale: sc }); })();
-  var RX = [[161.2, 42, 69.6, 27.5], [240.5, 42.4, 69.6, 27.2], [319.9, 42.4, 48.2, 27.2]];
-  qa("#resbar .res").filter(function (e) { return e.offsetParent; }).forEach(function (e, i) { var t = RX[i]; if (t) fit(e, t[0] + 2, t[1] + 1.5, t[2] - 4, t[3] - 3, TOPY); }); /* only the shown pills (the first ones in the bar are hidden) */
+  var css = uiJobsCss(jobs, 'body.ui-blue[data-screen="conquest"] ');
+  if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;
+  uiSkinKey = key;
+}
+function uiJobsCss(jobs, prefix) { /* placement rules for a list of fit jobs (v1284: shared by the Conquest layout and the top bar on every screen) */
   jobs.forEach(function (j) { j.r = uiSkinLayoutBox(j.el); j.s = j.sub ? uiSkinLayoutBox(j.sub) : j.r; });
   var css = "";
   jobs.forEach(function (j) {
@@ -30721,16 +30725,36 @@ function uiSkinApply() {
     if (j.stretch) { sx = j.w / r.width; sy = j.h / r.height; tx = j.x - r.left; ty = j.y - r.top; }
     else if (j.fixedScale) { sx = sy = j.fixedScale; tx = j.x - r.left; ty = j.y - r.top; }
     else { var s = j.noScale ? 1 : Math.min(j.w / b.width, j.h / b.height); sx = sy = s; tx = j.x + (j.w - b.width * s) / 2 - (b.left - r.left) * s - r.left; ty = j.y + (j.h - b.height * s) / 2 - (b.top - r.top) * s - r.top; }
-    css += 'body.ui-blue[data-screen="conquest"] ' + uiSkinSel(j.el) + " { transition:none !important; transform-origin:0 0 !important; transform:translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px) scale(" + sx.toFixed(4) + "," + sy.toFixed(4) + ") !important; }\n";
+    css += prefix + uiSkinSel(j.el) + " { transition:none !important; transform-origin:0 0 !important; transform:translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px) scale(" + sx.toFixed(4) + "," + sy.toFixed(4) + ") !important; }\n";
   });
-  if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;
-  uiSkinKey = key;
+  return css;
+}
+/* v1284 (Harley: the Blue top bar on every screen, not just Conquest): the same top art at the same place, clipped just under the bar's frame
+   (art row 87 - the Conquest header frame below it stays Conquest-only), and the bar's items placed with the same numbers on every screen */
+var uiTopSheet = (function () { var st = document.createElement("style"); st.id = "uiTopPos"; document.head.appendChild(st); return st; })(), uiTopKey = "";
+function uiTopApply() {
+  var on = document.body.classList.contains("ui-blue-top"); if (!on) { if (uiTopSheet.textContent) uiTopSheet.textContent = ""; uiTopKey = ""; return; }
+  var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); }, k = window.innerWidth / 430, TOPY = -28 * k;
+  var cq = document.body.classList.contains("ui-blue"), ti = document.getElementById("uiSkinTopImg");
+  ti.style.width = (430 * k) + "px"; ti.style.top = TOPY + "px"; ti.style.clipPath = cq ? "" : "inset(0 0 " + ((UI_SKIN_TOP_H - 87) * k).toFixed(2) + "px 0)";
+  var key = [window.innerWidth, document.body.getAttribute("data-screen"), (q("#topbar") || {}).offsetHeight, (q("#powerBadge") || {}).offsetWidth, qa("#resbar .res").map(function (e) { return e.offsetParent ? e.offsetWidth : 0; }).join(",")].join("|");
+  if (key === uiTopKey) return; uiTopKey = key;
+  var jobs = []; function fit(el, x, y, w, h, base, sub, stretch) { if (el) jobs.push({ el: el, x: x * k, y: base + y * k, w: w * k, h: h * k, sub: sub, stretch: stretch }); }
+  /* v1281 (Harley: the top bar's player data doesn't sit in its frame; avatar should fill its frame, same shape): frame insides measured off the art */
+  fit(q("#avatarWrap"), 12.9, 33.6, 46.2, 46.2, TOPY, null, true); /* v1282 (Harley: left side 1-2 px over the frame): inside the glow of the frame's inner line on all 4 sides (line centres 11.6 / 60.2 / 31.9 / 80.6) */ fit(q("#resBtn"), 379.1, 36.7, 38.1, 38.1, TOPY); (function () { /* v1283 (Harley: power number too big, must fit 4 digits + letter e.g. 888.8M): one fixed size for every value - worked out for the widest
+    value "888.8M" - and left-aligned, instead of blowing short values like "1.5M" up to fill the box */
+    var pb = q("#powerBadge"), pv = q("#powerValue"); if (!pb || !pv) return; var real = pv.textContent; pv.textContent = "888.8M"; var w = pb.offsetWidth, h = pb.offsetHeight; pv.textContent = real;
+    var sc = Math.min(88 * k / w, 38 * k / h), r0 = uiSkinLayoutBox(pb); jobs.push({ el: pb, x: 67 * k, y: TOPY + (37 + (38 - h * sc / k) / 2) * k, w: w * sc, h: h * sc, fixedScale: sc }); })();
+  var RX = [[161.2, 42, 69.6, 27.5], [240.5, 42.4, 69.6, 27.2], [319.9, 42.4, 48.2, 27.2]];
+  qa("#resbar .res").filter(function (e) { return e.offsetParent; }).forEach(function (e, i) { var t = RX[i]; if (t) fit(e, t[0] + 2, t[1] + 1.5, t[2] - 4, t[3] - 3, TOPY); }); /* only the shown pills (the first ones in the bar are hidden) */
+  var css = uiJobsCss(jobs, "body.ui-blue-top ");
+  if (uiTopSheet.textContent !== css) uiTopSheet.textContent = css;
 }
 /* v1274 (Harley's video: tapping Conquest, the UI visibly settles into place in 2 steps): check every frame instead of every 250 ms (the check is cheap,
    the work only runs when something changed), and on a screen switch size the Conquest canvas + place everything before the first paint */
 (function uiSkinLoop() { try { uiSkinApply(); } catch (e) {} requestAnimationFrame(uiSkinLoop); })();
 (function () { var orig = setScreen; setScreen = function () { var r = orig.apply(this, arguments);
-  try { if (uiSkin() === "blue") { uiNavKey = ""; uiSkinApply(); } /* v1279: every screen - nav placed before the first paint (Harley's video: icons jumped for 1-2 frames) */
+  try { if (uiSkin() === "blue") { uiNavKey = ""; uiTopKey = ""; uiSkinApply(); } /* v1279: every screen - nav placed before the first paint (Harley's video: icons jumped for 1-2 frames) */
     if (uiSkin() === "blue" && document.body.getAttribute("data-screen") === "conquest") { resizeIdleCanvas(); resizeIdleCanvas(); uiSkinKey = ""; uiSkinApply(); } /* class first (it turns the slide-in off), then fit the canvas (twice: the fit settles in 2 steps), then place */ } catch (e) {} return r; }; })();
 /* v1268: Dev Tools switches to find what costs FPS in the Blue style (this device only, not saved) - a lit button = that part is OFF */
 var blueFpsOff = {};

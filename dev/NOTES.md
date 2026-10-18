@@ -2687,3 +2687,11 @@ Harley's 3 points:
 - Harley: the power number is too big; it must fit at least 4 digits + a letter (888.8M). The badge was scaled to fill its box, so short values like
   "1.5M" were blown up. Now one fixed scale, worked out from the widest value "888.8M", left-aligned in the area between avatar and pills; same size for
   every value. Checked: 1.5M, 18,000, 888.8M and 999,999 all fit.
+
+## v1284 — Blue top bar on every screen
+- Harley: the Blue top bar (avatar, power, gems/valor/books, backpack) from Conquest on the other screens too, instead of the old grey one.
+- Same method as the nav: the same top art <img> at the same place (TOPY -28 units), clipped just under the bar's frame (art row 87 - the Conquest
+  header frame below stays Conquest-only); the bar's items placed by uiTopApply() with the same numbers on every screen (moved out of the Conquest-only
+  placement, shared job->CSS helper uiJobsCss). body.ui-blue-top on any screen in Blue on a phone.
+- Pixel diff of the bar against Conquest's: 0 on Heroes and City; World/More only differ where the resource numbers themselves changed.
+- g348, g347 pass.
