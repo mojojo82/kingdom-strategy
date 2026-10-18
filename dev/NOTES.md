@@ -2712,3 +2712,9 @@ Harley's 3 points:
 - Harley: ?phoneview=1 gave a blank dark page. The v1285 trick (stop the page, rebuild it in place) didn't survive a real browser load. Now the game page
   just redirects to a tiny separate page, test/phone.html, which shows the game in a 430 px frame (+ Back to PC view). Checked headless: link with
   ?phoneview=1 -> phone.html -> inner game 430 wide with the phone nav; Back -> normal PC game, setting cleared.
+
+## v1288 — Blue: Fortress I / III toggle lined up + selected half lit
+- Harley: the two toggle icons weren't lined up and you couldn't tell which was selected (the concept fills the chosen half, like Classic).
+- The toggle is now two equal halves filling the inside of its frame (outline x 338.7-418, y 297.1-319.9), icons centred, thin divider; the chosen half
+  gets a cyan fill + glow like the concept. (A Blue reset rule with ID-level specificity had been blanking the chosen colour - the new rules use :not(#z)
+  to outrank it.)
