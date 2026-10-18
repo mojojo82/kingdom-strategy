@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1272"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1273"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30593,10 +30593,13 @@ var uiSkinKey = "", uiSkinEls = [];
     B + '.ig-cell :is(.ig-bgfill, .ig-fxbg) { -webkit-mask-image:none !important; mask-image:none !important; border-radius:0 !important; }\n' +
     /* v1272 (Harley: the blue nav bar on every screen, part of the style choice): the nav draws its own frame (cut from the Conquest art, tab 1's glow
        moved to a separate piece that follows the active tab) */
-    'body.ui-blue-nav #bottomNav { background:#070d18 url(' + UI_NAV_PLAIN + ') 0 0/100% 100% no-repeat !important; border:none !important; box-shadow:none !important; padding-top:4px !important; }\n' +
-    'body.ui-blue-nav #bottomNav .bn { background:transparent !important; border:none !important; box-shadow:none !important; border-radius:0 !important; }\n' +
-    'body.ui-blue-nav #bottomNav .bn.active { background:url(' + UI_NAV_ACTIVE + ') 50% 50%/100% 100% no-repeat !important; }\n' +
-    'body.ui-blue-nav #bottomNav .bn.active, body.ui-blue-nav #bottomNav .bn.active * { color:#eaf7ff !important; }\n' +
+    'body.ui-blue-nav:not(.ui-blue) #bottomNav { background:#070d18 url(' + UI_NAV_PLAIN + ') 0 0/100% 100% no-repeat !important; border:none !important; box-shadow:none !important; padding-top:4px !important; }\n' +
+    'body.ui-blue-nav:not(.ui-blue) #bottomNav .bn { background:transparent !important; border:none !important; box-shadow:none !important; border-radius:0 !important; }\n' +
+    'body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active { background:url(' + UI_NAV_ACTIVE + ') 50% 50%/100% 100% no-repeat !important; }\n' +
+    'body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active, body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active * { color:#eaf7ff !important; }\n' +
+    /* v1273 (Harley: the gap above the nav closed up on Conquest): on Conquest the nav stays see-through over the Conquest art (its own nav, with the
+       original gap) and the buttons are placed on it as before; the cut nav bar is for the other screens */
+    B + '#bottomNav, ' + B + '#bottomNav .bn { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
     '#uiSkinLayer, .ui-skin-strip { display:none; position:fixed; left:0; pointer-events:none; }\n' + B + '#uiSkinLayer { display:block; inset:0; z-index:0; }\n' + B + '.ui-skin-strip { display:block; z-index:6; background-repeat:no-repeat; }\n';
   var st = document.createElement("style"); st.id = "uiSkinCss"; st.textContent = css; document.head.appendChild(st);
   var L = document.createElement("div"); L.id = "uiSkinLayer"; L.innerHTML = '<img id="uiSkinTopImg" style="position:absolute;left:0"><img id="uiSkinBotImg" style="position:absolute;left:0">';
@@ -30626,7 +30629,7 @@ function uiSkinApply() {
   if (!on) { if (uiSkinKey) uiSkinClear(); uiSkinKey = ""; return; }
   var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); };
   var cvR = uiSkinCanvasBox(), k = window.innerWidth / 430;
-  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length].join("|");
+  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|");
   if (key === uiSkinKey) return;
   /* v1266 (Harley's video: flashes + panels sliding): elements are measured by their LAYOUT box (offsets), which transforms never touch, so the
      rules are never switched off to measure - switching them off restarted every animation (a dim flash) and made transitions slide things around */
@@ -30650,6 +30653,7 @@ function uiSkinApply() {
   var LT = [[12, 230, 40, 38], [60, 230, 40, 38], [108, 230, 41, 38], [14, 279, 40, 45], [58, 279, 40, 45], [108, 283, 41, 44]], RT = [[280, 231, 41, 44], [327, 231, 42, 44], [375, 231, 42, 44]];
   left.forEach(function (e, i) { var t = LT[i]; if (t) fit(e, t[0], t[1], t[2], t[3], Y0); });
   right.forEach(function (e, i) { var t = RT[i]; if (t) fit(e, t[0], t[1], t[2], t[3], Y0); });
+  var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
   fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 337, 299, 82, 28, Y0);
   fit(q("#avatarWrap"), 10, 36, 52, 52, TOPY); fit(q("#resBtn"), 380, 38, 44, 44, TOPY);
   var RX = [[143, 44, 75, 32], [222, 44, 74, 32], [302, 44, 59, 32]]; qa(".resbar .res").forEach(function (e, i) { var t = RX[i]; if (t) jobs.push({ el: e, x: t[0] * k, y: TOPY + t[1] * k, w: t[2] * k, h: t[3] * k, noScale: true }); });

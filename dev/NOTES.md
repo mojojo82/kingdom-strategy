@@ -2598,3 +2598,10 @@
   phone (≤900 px); the nav gets the strip as its background + 4 px top padding so the buttons sit in the art's tabs. Conquest no longer moves the nav
   buttons - it uses the same nav.
 - g348 also checks the blue nav on another screen; passes.
+
+## v1273 — Blue: Conquest gets its original nav + gap back
+- Harley: on Conquest the frame part above the nav moved down and touched it (there was a small gap before). v1272's nav bar (cut strip, +4 px top
+  padding) was also used on Conquest: the extra padding shrank the sky 2 px and the strip's own top band sat right under the panel's bottom edge.
+- On Conquest the nav is see-through again over the Conquest art (its own nav and gap) and its buttons are placed on it as in v1271; the cut nav bar is only
+  for the other screens. Measured: nav/Stats/Forge/panel positions identical to v1271 (nav 854, Stats 812-833, panel bottom line 849).
+- g348 passes.
