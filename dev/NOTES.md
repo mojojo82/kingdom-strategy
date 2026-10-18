@@ -2677,3 +2677,8 @@ Harley's 3 points:
   grows); avatar fills its frame (12.3-59.4 x 33.5-80.2) clipped to the frame's cut-corner shape, edit badge left outside the clip.
 - g348, g246 pass.
 - Note for later: if the Esper slot comes back to the card boxes, it needs its own change check (renderPowerSlots no longer rebuilds the row - v1280).
+
+## v1282 — Blue: avatar evenly inside its frame
+- Harley: the avatar covers 1-2 px of the frame on the left. Measured: the frame's inner line is centred at x 11.6 / 60.2 (y 31.9 / 80.6); v1281's box
+  started at 12.3 (on the line's glow) but ended at 59.4 (clear of it). Now 12.9-59.1 x 33.6-79.8: same dark gap before the line on every side
+  (screen check at 3x: left line 11.7 -> gap -> picture 13.0; picture 58.7 -> gap -> right line 60.3).
