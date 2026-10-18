@@ -2590,3 +2590,11 @@
 ## v1271 — Blue UI: AUTO and Stats text centred
 - Harley: "Stats" and "AUTO" text are off centre. Measured against each button's bright outline: AUTO text 3 units low, Stats 3.5 low (x was fine).
   Target boxes moved up (AUTO y 49 -> 46, Stats 299 -> 295.5). Now AUTO text centre 65.5 vs outline 65.2, Stats 308.8 vs 308.4 (units).
+
+## v1272 — Blue nav bar on every screen
+- Harley: the blue nav bar on all screens, as part of the Blue / Classic style choice.
+- Nav art cut from the Conquest frame (rows 336+ of blue2_bottom): blue_nav_plain.webp (tab 1's glow replaced by a copy of plain tab 2) and
+  blue_nav_active.webp (tab 1's glow box, rows 16-224) which goes behind whichever tab is active. body.ui-blue-nav on any screen when the style is Blue on a
+  phone (≤900 px); the nav gets the strip as its background + 4 px top padding so the buttons sit in the art's tabs. Conquest no longer moves the nav
+  buttons - it uses the same nav.
+- g348 also checks the blue nav on another screen; passes.
