@@ -2760,3 +2760,16 @@ Harley's 3 points:
   Same flight time / landing / damage. Feet drawn on the road (groundY+7.5, the orc/slime feet line) - the old skeleton floated ~12px above it. His x and
   everything aimed at him are unchanged. ENEMY_IMP.on = false brings the skeleton back.
 - Harley: walk apron flickers a little and the look is a bit smoother than his drawing - OK for now, he'll judge in game and may re-roll the walk.
+
+## v1294 — night level (chapter 2) is a haunted graveyard
+- Harley's ChatGPT composite (art/originals/backgrounds/graveyard_v2_composite_1536x1024.png) split by GPT into far / near / road on magenta
+  (graveyard_layer_far/near/road2_gpt_*.png; road attempt 1 was looked down on from too high - redone at the village road's eye-level).
+- dev/levels/build_graveyard.py: strict magenta key (GPT edges are darker pink - a lavender line showed on the road otherwise), far mist extended down to
+  the road line, ends cross-faded so each layer repeats seamlessly, road top surface flattened to 38% (village eye-level, Harley: "the ground view must be
+  the same on every level"), road 2x with crisp pixels. Out: art/levels/graveyard_{far,near,road}.webp (+ full PNGs in art/originals/backgrounds/graveyard_built/).
+- TMP_ENV_BG.night: backdrop at 0.3 game px per source px (0.9 phone px on a 3x phone = crisp, no stretch blur), lift 2.5; road k = 0.21/185.76 (2x image),
+  road row 28 = walking line on groundY (solid top at row 16). Code night sky + moon kept; the code dead-tree line is skipped like on the village.
+- Sharpness finding (Harley noticed the village is soft on his iPhone, crisp on PC): on a 3x phone the village layers are stretched 1.9x / 1.75x and its road
+  1.4x (measured). Target for new art is ~1 phone px per source px. Leonardo's AI upscaler smeared GPT's pixel style (Fix Artifacts made it worse) - a plain
+  2x with crisp pixels on GPT's own output works best. Leonardo's GPT Image 2.5 "Large" gave a smoother, less pixel-art style - parked.
+- Open: the near layer is only ~1 phone screen wide at this size, so the chapel repeats each screen (village: every 2.5). Fix = GPT extends it sideways.

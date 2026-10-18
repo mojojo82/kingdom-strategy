@@ -93,3 +93,6 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | imp_grenadier_magenta.png | Imp grenadier still (ChatGPT), magenta bg | 1536x1024 | start image (padded square copy) for the three clips below |
 | imp_idle_hailuo.mp4 / imp_walk_hailuo.mp4 / imp_throw3_hailuo.mp4 | Imp idle / walk-in-place / throw, Leonardo/Hailuo 480x480 24fps magenta (imp_throw_hailuo.mp4 = attempt 1, not used) | video | v1293: ENEMY_IMP (replaces the lancer skeleton), art/conquest/imp.webp, built by dev/imp/build_imp.py |
 | sprites_hires/imp/imp_{idle,walk,throw}.png | The cut frames at full video size (325x317 cells), keyed | backup | shrunk to 115x112 cells for the game |
+| backgrounds/graveyard_v1/v2_composite_1536x1024.png | Night level graveyard composites from ChatGPT (v2 = new ground: mud path, grave slabs, buried coffins) | 1536x1024 | v1294 night level, via the layers below |
+| backgrounds/graveyard_layer_{far,near,road,road2}_gpt_1536x1024.png | GPT's layer split on magenta (road = too high a view, road2 used) | 1536x1024 | dev/levels/build_graveyard.py -> art/levels/graveyard_*.webp |
+| backgrounds/village_reference_ingame_1536x1024.png / village_reference_sharp_1800x612.png | Village rebuilt from the game's own layers with the current road (the sharp one is native size - use it as GPT's style reference) | - | reference only |
