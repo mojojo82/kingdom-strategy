@@ -12479,7 +12479,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1266"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1267"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30555,10 +30555,13 @@ function uiSkinActive() {
 }
 /* the night sky goes with the blue style on the village (day) level */
 function nightSkyOn(env) { return env === "day" && uiSkin() === "blue" && NIGHT_SKY_IMG.complete && NIGHT_SKY_IMG.naturalWidth > 0; }
+var nightSkyCache = null; /* v1267 (Harley: Blue costs 10-15 fps): the sky is scaled ONCE into a canvas at screen resolution, each frame is a 1:1 copy */
 function drawNightSky(ctx, w, groundY) {
-  var top = -(idleAnim.skyPx || 0), H = groundY - top + 6, W = H * NIGHT_SKY_IMG.naturalWidth / NIGHT_SKY_IMG.naturalHeight;
+  var top = -(idleAnim.skyPx || 0), H = Math.round(groundY - top + 6), W = Math.round(H * NIGHT_SKY_IMG.naturalWidth / NIGHT_SKY_IMG.naturalHeight), dpr = canvasDPR();
+  var ck = W + "|" + H + "|" + dpr;
+  if (!nightSkyCache || nightSkyCache.k !== ck) { var c = document.createElement("canvas"); c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.getContext("2d").drawImage(NIGHT_SKY_IMG, 0, 0, c.width, c.height); nightSkyCache = { k: ck, c: c }; }
   var off = skyDriftOn() ? performance.now() / 1000 * 3 : 300; /* drift: ~3 px a second */
-  for (var x = -(off % W); x < w; x += W) ctx.drawImage(NIGHT_SKY_IMG, x, top, W + 1, H);
+  for (var x = -(off % W); x < w; x += W) ctx.drawImage(nightSkyCache.c, Math.round(x * dpr) / dpr, top, W, H);
   if (NIGHT_MOON_IMG.complete && NIGHT_MOON_IMG.naturalWidth) { var ms = 40, mx = w * 0.78, my = top + H * 0.2; ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.drawImage(NIGHT_MOON_IMG, mx - ms / 2, my - ms / 2, ms, ms * NIGHT_MOON_IMG.naturalHeight / NIGHT_MOON_IMG.naturalWidth); ctx.restore(); }
 }
 var uiSkinKey = "", uiSkinEls = [];
@@ -30575,7 +30578,7 @@ var uiSkinKey = "", uiSkinEls = [];
     B + '.skill-slot.empty .skill-icon-wrap { display:flex !important; align-items:center; justify-content:center; color:#7fd2ff !important; font:700 22px/1 sans-serif !important; text-shadow:0 0 6px #2f9dff; }\n' +
     B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .idle-forge-btn *, #bottomNav .bn.active, #bottomNav .bn.active *) { color:#eaf7ff !important; text-shadow:0 0 6px #3fb5ff; }\n' +
     B + '.idle-header { position:relative; z-index:3; }\n' + B + '.layout, ' + B + '#topbar { position:relative; z-index:1; }\n' + B + '#bottomNav { z-index:5; }\n' +
-    B + '.ig-cell { border-radius:0 !important; clip-path:polygon(3px 0,calc(100% - 3px) 0,100% 3px,100% calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,0 calc(100% - 3px),0 3px); }\n' +
+    B + '.ig-cell { border-radius:3px !important; overflow:hidden; }\n' + /* v1267: rounded 3 px instead of a cut-corner clip-path - the clip made every animated tile repaint */
     B + '.ig-cell :is(.ig-bgfill, .ig-fxbg) { -webkit-mask-image:none !important; mask-image:none !important; border-radius:0 !important; }\n' +
     '#uiSkinLayer, .ui-skin-strip { display:none; position:fixed; left:0; pointer-events:none; }\n' + B + '#uiSkinLayer { display:block; inset:0; z-index:0; }\n' + B + '.ui-skin-strip { display:block; z-index:6; background-repeat:no-repeat; }\n';
   var st = document.createElement("style"); st.id = "uiSkinCss"; st.textContent = css; document.head.appendChild(st);

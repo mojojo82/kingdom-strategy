@@ -2562,3 +2562,12 @@
   movement + 2 restarted animations; v1266 = 0 and 0.
 - Low FPS (41-46 in the video) not looked at yet - compare Classic vs Blue on the phone with the FPS counter.
 - g348, g347, g296 pass.
+
+## v1267 — Blue UI: cheaper night sky + weapon tiles
+- Harley: Blue loses 10-15 fps at times (Classic ~60).
+- The night sky was scaled from the 1216x1024 picture every frame; now it is scaled once into a canvas at screen resolution and copied 1:1 (cached per
+  size). Headless (software, CPU x4): Blue draw time 5.5 -> 4.1 ms, same as with no sky. Weapon tiles: 3 px rounded corners instead of the cut-corner
+  clip-path (a clip on animated tiles repaints them every frame).
+- Headless can't measure the phone's GPU work, so the real check is Harley's FPS counter. Next suspects if still low: the full-screen frame layer behind
+  a see-through page, the glow text-shadows, the strips over the canvas.
+- g348 passes.
