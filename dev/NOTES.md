@@ -2707,3 +2707,8 @@ Harley's 3 points:
 
 ## v1286 — Phone view: switch on from the link
 - The PC layout has no Options button, so Phone view can also be turned on with ?phoneview=1 on the link (?phoneview=0 turns it off). Remembered in this browser.
+
+## v1287 — Phone view fixed (blank screen in Edge)
+- Harley: ?phoneview=1 gave a blank dark page. The v1285 trick (stop the page, rebuild it in place) didn't survive a real browser load. Now the game page
+  just redirects to a tiny separate page, test/phone.html, which shows the game in a 430 px frame (+ Back to PC view). Checked headless: link with
+  ?phoneview=1 -> phone.html -> inner game 430 wide with the phone nav; Back -> normal PC game, setting cleared.

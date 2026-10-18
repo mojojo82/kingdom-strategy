@@ -15,26 +15,9 @@
   try { on = localStorage.getItem(KEY) === "1"; } catch (e) {}
   window.KS_PHONE_FRAME = inner;
   if (inner || !on || window.innerWidth <= 900) return;
-  var url = location.pathname + (location.search ? location.search + "&" : "?") + "phoneframe=1" + location.hash;
-  /* stop the rest of this page loading (the game must not run out here), then swap in the frame page. document.open() is ignored while the page is
-     still being parsed, so the frame page is built with DOM calls instead */
+  /* v1287 (Harley: the in-page swap gave a blank screen in Edge): go to the small phone.html page next to this one, which holds the game in a frame */
   window.KS_PHONE_OUTER = true;
-  try { window.stop(); } catch (e) {}
-  var build = function () {
-    var de = document.documentElement; while (de.firstChild) de.removeChild(de.firstChild);
-    var head = document.createElement("head"), body = document.createElement("body"); de.appendChild(head); de.appendChild(body);
-    document.title = "Kingdom Strategy (phone view)";
-    var st = document.createElement("style"); st.textContent =
-      'html,body{margin:0;height:100%;background:#05080f radial-gradient(ellipse at 50% 40%,#13213d 0%,#05080f 70%);overflow:hidden;font-family:sans-serif}' +
-      '#pf{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:430px;height:min(932px,100vh);border:0;border-radius:18px;box-shadow:0 0 0 2px #2a4f86,0 0 40px #1f6fd055;background:#000}' +
-      '#pcv{position:fixed;right:16px;top:16px;padding:8px 14px;border-radius:8px;border:1.5px solid #1f6c80;background:#57cfdf;color:#0e3440;font-weight:800;cursor:pointer}' +
-      '#pnote{position:fixed;left:16px;top:18px;color:#8fa6c4;font-size:13px}';
-    head.appendChild(st);
-    body.innerHTML = '<div id="pnote">📱 Phone view (430 wide) - PC only, this browser only</div><button id="pcv" type="button">Back to PC view</button>';
-    var f = document.createElement("iframe"); f.id = "pf"; f.src = url; f.allow = "autoplay; clipboard-write"; body.appendChild(f);
-    document.getElementById("pcv").onclick = function () { try { localStorage.setItem(KEY, "0"); } catch (e) {} location.reload(); };
-  };
-  if (document.body) build(); else setTimeout(build, 0);
+  location.replace("phone.html" + location.hash);
 })();
 </script>
 <script id="ksFirebaseAdapter">
@@ -12519,7 +12502,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1286"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1287"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30822,7 +30805,7 @@ function renderOptionsScreen() {
   sl.oninput = function () { setMusicVol(sl.value / 100); document.getElementById("opMusicV").textContent = sl.value + "%"; };
   document.getElementById("opSfx").onclick = function () { setSoundFx(!soundFxEnabled); renderOptionsScreen(); };
   document.getElementById("opZoomBtns").onclick = function () { setMapZoomBtns(!mapZoomBtnsOn); renderOptionsScreen(); };
-  var pvb = document.getElementById("opPhoneView"); if (pvb) pvb.onclick = function () { var turnOn = !window.KS_PHONE_FRAME; try { localStorage.setItem("kingdom_phone_view_v1", turnOn ? "1" : "0"); } catch (e) {} (window.top || window).location.reload(); };
+  var pvb = document.getElementById("opPhoneView"); if (pvb) pvb.onclick = function () { var turnOn = !window.KS_PHONE_FRAME; try { localStorage.setItem("kingdom_phone_view_v1", turnOn ? "1" : "0"); } catch (e) {} if (turnOn) (window.top || window).location.href = "phone.html"; else (window.top || window).location.href = (window.top || window).location.pathname.replace(/phone\.html$/, ""); };
   document.getElementById("opSkinClassic").onclick = function () { setUiSkin("classic"); renderOptionsScreen(); };
   document.getElementById("opSkinBlue").onclick = function () { setUiSkin("blue"); renderOptionsScreen(); };
 }
