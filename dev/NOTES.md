@@ -2540,3 +2540,14 @@
   dark showed. Now on a level with its own road the backdrop reaches down to where the stones start (floor.top = 30, webp px) and the dark fill starts
   under the stones; the thin ground line isn't drawn across the road. Background only - no sprite, hit or projectile position changed.
 - g294, g296, g347 pass.
+
+## v1265 — UI style switcher (Classic / Blue, work in progress)
+- Harley: "treat it as player swappable but before launch I might go 1 way or the other", "I'm not done tweaking the blue UI yet".
+- Options > 🎨 UI style: Classic (default, the brown/gold UI, untouched) or Blue. Blue = the emptied + upscaled GPT concept frame
+  (art/ui/blue2_top.webp, blue2_bottom.webp) on Conquest only, phones only (≤900 px with the bottom nav). Plan + slot numbers: dev/plans/ui_skins.md.
+- How: the art sits in a fixed layer behind the page; the frame edges that hang over the battle are redrawn above it; every button/slot is moved onto its
+  spot in the art by CSS rules (path selectors) written by uiSkinApply(), so elements the game rebuilds (skill bar, power slots) keep their spot with no jump.
+  Measured with transitions/animations/own transforms off; anchored to the canvas layout box (the canvas itself shakes). Spots are in 430-unit art space x width/430.
+- Blue also turns on the night sky on the village level (art/conquest/night_sky_loop.webp, moon.webp separate). Dev Tools > Speed & Testing: sky drift on/off.
+- Weapon tiles fill their frames (corner cut 3 px), hero portraits centred in the rings, timer at the bottom of the circle, + in empty rings.
+- g348_ui_skin.js (new); g346, g347, g296 pass; g294 flaky timer (fails the same way on v1263).
