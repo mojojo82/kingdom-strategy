@@ -2704,3 +2704,6 @@ Harley's 3 points:
   runs the game (?phoneframe=1). Off = normal PC view, untouched.
 - Checked headless at 1400x900: outer page has no game running, inner frame is 430x900 with the phone nav; Back button returns to the PC view and
   clears the setting. (Headless couldn't screenshot the framed page - the check is by measurements.)
+
+## v1286 — Phone view: switch on from the link
+- The PC layout has no Options button, so Phone view can also be turned on with ?phoneview=1 on the link (?phoneview=0 turns it off). Remembered in this browser.
