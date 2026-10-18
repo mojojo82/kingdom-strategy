@@ -34,6 +34,6 @@ const call = call0;
   assert.strictEqual(classic.skin, "classic"); assert(!classic.cls && classic.rules === 0 && classic.nav === "none", "classic untouched");
   assert(blue.cls && blue.rules > 30, "blue applied"); assert(Math.abs(blue.forgeX - 160) < 3 && Math.abs(blue.forgeW - 110) < 3, "forge on its frame");
   Object.entries(jitter).forEach(([k, n]) => assert.strictEqual(n, 1, k + " stays put"));
-  assert(!other.cls && other.nav === "none", "other screens: no Conquest layout"); assert(other.navBlue, "blue nav bar on other screens (v1272)"); assert(!back.cls && back.rules === 0, "back to classic");
+  assert(!other.cls, "other screens: no Conquest layout"); /* v1275: nav buttons are placed on the nav art on every screen */ assert(other.navBlue, "blue nav bar on other screens (v1272)"); assert(!back.cls && back.rules === 0, "back to classic");
   assert.deepStrictEqual(errs, []); console.log("g348 ok"); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
