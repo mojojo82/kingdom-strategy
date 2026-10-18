@@ -12514,7 +12514,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1291"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1292"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24317,6 +24317,22 @@ var CHARGE_WINDUP = 130, CHARGE_DASH = 180, CHARGE_IMPACT = 260; // ms
 function heroChargeStart(id, fromX, opts) { try { sfxCharge(); } catch (e) {} var m = { t0: performance.now(), fromX: fromX, impacted: false, lastX: fromX, cx: fromX, px: fromX, through: false }; if (opts && opts.left) { m.left = true; m.hitX = opts.hitX; } if (opts && opts.endX != null) { m.through = true; m.endX = opts.endX; m.dashMs = Math.max(CHARGE_DASH, Math.min(400, 140 + Math.abs(opts.endX - fromX) * 0.5)); } heroChargeMem[id] = m; }
 // Returns 0 = no charge running, 1 = charge in progress (sprite drawn here — caller must NOT draw the normal one), 3 = impact flare after arrival (caller draws the normal sprite).
 // Sets mem.justImpacted for exactly one frame when he lands.
+/* v1292 (Harley: "micro-lag" on Gareth's Death Strike): the lag was Blade Rush, which drew its whole effect through ctx.filter = hue-rotate(CHARGE_FX.hue).
+   A live canvas filter renders every shape into a hidden layer and recolours it - 150-300ms stalls per dash in testing. Same look now, done ahead of time:
+   chHue rotates a colour with the exact CSS hue-rotate matrix (cached), chTinted bakes a recoloured copy of a sprite once. */
+var chHueCache = {}, chTintCache = typeof WeakMap === "function" ? new WeakMap() : null;
+function chHueMat(deg) { var a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  return [0.213 + c * 0.787 - s * 0.213, 0.715 - c * 0.715 - s * 0.715, 0.072 - c * 0.072 + s * 0.928,
+          0.213 - c * 0.213 + s * 0.143, 0.715 + c * 0.285 + s * 0.140, 0.072 - c * 0.072 - s * 0.283,
+          0.213 - c * 0.213 - s * 0.787, 0.715 - c * 0.715 + s * 0.715, 0.072 + c * 0.928 + s * 0.072]; }
+function chHue(r, g, b) { var h = CHARGE_FX.hue || 0; if (!h) return r + "," + g + "," + b; var key = h + ":" + r + "," + g + "," + b, v = chHueCache[key]; if (v) return v;
+  var m = chHueMat(h), cl = function (x) { return Math.max(0, Math.min(255, Math.round(x))); };
+  return (chHueCache[key] = cl(m[0] * r + m[1] * g + m[2] * b) + "," + cl(m[3] * r + m[4] * g + m[5] * b) + "," + cl(m[6] * r + m[7] * g + m[8] * b)); }
+function chTinted(im) { var h = CHARGE_FX.hue || 0; if (!h || !chTintCache || !im || !im.naturalWidth) return im; var e = chTintCache.get(im); if (e && e.h === h) return e.c;
+  try { var c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight; var x = c.getContext("2d"); x.drawImage(im, 0, 0);
+    var d = x.getImageData(0, 0, c.width, c.height), p = d.data, m = chHueMat(h);
+    for (var i = 0; i < p.length; i += 4) { var r = p[i], g = p[i + 1], b = p[i + 2]; p[i] = m[0] * r + m[1] * g + m[2] * b; p[i + 1] = m[3] * r + m[4] * g + m[5] * b; p[i + 2] = m[6] * r + m[7] * g + m[8] * b; }
+    x.putImageData(d, 0, 0); chTintCache.set(im, { h: h, c: c }); return c; } catch (e2) { return im; } }
 function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
   var st = heroChargeMem[id], c = HERO_CHARGE[key], im = heroChargeImg(key);
   if (!st || !c || !im) { if (st && !im) delete heroChargeMem[id]; return 0; }
@@ -24335,25 +24351,25 @@ function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
       var len = (16 + 12 * Math.sin(u * 22 + i * 1.9) + 6 * Math.sin(u * 37 + i)) * sc * power * size * CHARGE_FX.flameLen / 100, wob = Math.sin(u * 18 + i * 2.3) * 5 * sc;
       var ex = bx - len, ey = by + wob * 0.6 + Math.sin(a0) * 4 * sc;
       var g = ctx.createLinearGradient(bx, by, ex, ey);
-      g.addColorStop(0, "rgba(255,236,160," + Math.min(1, 0.9 * power * gl) + ")"); g.addColorStop(0.45, "rgba(255,130,30," + Math.min(1, 0.7 * power * gl) + ")"); g.addColorStop(1, "rgba(190,30,0,0)");
+      g.addColorStop(0, "rgba(" + chHue(255,236,160) + "," + Math.min(1, 0.9 * power * gl) + ")"); g.addColorStop(0.45, "rgba(" + chHue(255,130,30) + "," + Math.min(1, 0.7 * power * gl) + ")"); g.addColorStop(1, "rgba(" + chHue(190,30,0) + ",0)");
       ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(bx, by - 3.2 * sc * size);
       ctx.quadraticCurveTo(bx - len * 0.5, by - 4 * sc * size + wob, ex, ey);
       ctx.quadraticCurveTo(bx - len * 0.5, by + 4 * sc * size + wob, bx, by + 3.2 * sc * size); ctx.closePath(); ctx.fill();
     }
     var gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, ry * 1.25);
-    gr.addColorStop(0, "rgba(255,252,225," + Math.min(1, 0.95 * power * gl) + ")"); gr.addColorStop(0.32, "rgba(255,196,80," + Math.min(1, 0.75 * power * gl) + ")"); gr.addColorStop(0.7, "rgba(255,105,20," + Math.min(1, 0.42 * power * gl) + ")"); gr.addColorStop(1, "rgba(200,40,0,0)");
+    gr.addColorStop(0, "rgba(" + chHue(255,252,225) + "," + Math.min(1, 0.95 * power * gl) + ")"); gr.addColorStop(0.32, "rgba(" + chHue(255,196,80) + "," + Math.min(1, 0.75 * power * gl) + ")"); gr.addColorStop(0.7, "rgba(" + chHue(255,105,20) + "," + Math.min(1, 0.42 * power * gl) + ")"); gr.addColorStop(1, "rgba(" + chHue(200,40,0) + ",0)");
     ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(cx, cy, rx * 1.15, ry * 1.25, 0, 0, 7); ctx.fill();
-    ctx.strokeStyle = "rgba(255,244,190," + Math.min(1, 0.9 * power * gl) + ")"; ctx.lineWidth = 1.6 * sc; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, -1.25, 1.25); ctx.stroke(); // bright leading rim = the shield edge
+    ctx.strokeStyle = "rgba(" + chHue(255,244,190) + "," + Math.min(1, 0.9 * power * gl) + ")"; ctx.lineWidth = 1.6 * sc; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, -1.25, 1.25); ctx.stroke(); // bright leading rim = the shield edge
     ctx.restore();
   }
-  ctx.save(); ctx.translate(0, 0); if (CHARGE_FX.hue) ctx.filter = "hue-rotate(" + CHARGE_FX.hue + "deg)";
+  ctx.save(); ctx.translate(0, 0); /* v1292: no live ctx.filter any more - the fire colours are pre-rotated (chHue) and the afterimage sprite is a pre-tinted copy (chTinted) */
   if (el < CHARGE_WINDUP) { // gather: he crouches at the fortress while the shield ignites
     var w = el / CHARGE_WINDUP, px = st.fromX - dirS * 3 * w;
     ctx.save(); ctx.translate(px, y); if (flip) ctx.scale(-1, 1);
     var wa = HERO_ANIMS[key], wIm = wa && wa.rows.charge && heroAnimImg(key);
     var wF = ctx.filter; if (wa && wa.model3d) ctx.filter = "none"; // v1100: the fire's hue shift is for the flames - the 3D knight keeps his own colours
     if (wIm) { var wk = wa.dispH * sc / wa.ch, wf = Math.min(wa.rows.charge[1] - 1, Math.floor(w * wa.rows.charge[1])); ctx.drawImage(wIm, wf * wa.cw, wa.rows.charge[0] * wa.ch, wa.cw, wa.ch, -wa.ax * wk, -wa.ay * wk + 2 * sc, wa.cw * wk, wa.ch * wk); } // v1100: crouch, then push-off
-    else ctx.drawImage(im, -c.ax * k, -c.ay * k, c.w * k, c.h * k);
+    else ctx.drawImage((wa && wa.model3d) ? im : chTinted(im), -c.ax * k, -c.ay * k, c.w * k, c.h * k);
     ctx.filter = wF;
     shield(c.tipx * k + 7 * sc, c.tipy * k, 0.35 + 0.65 * w, 0.4 + 0.6 * w);
     ctx.restore(); ctx.restore(); return 1;
@@ -24362,9 +24378,9 @@ function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
   function flare(hx, hy, ti) { // impact glow + shock ring
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     var rr = (8 + 34 * ti) * sc * CHARGE_FX.flare / 100, ga = 1 - ti, gi = ctx.createRadialGradient(hx, hy, rr * 0.2, hx, hy, rr);
-    gi.addColorStop(0, "rgba(255,250,220," + 0.9 * ga + ")"); gi.addColorStop(0.5, "rgba(255,140,30," + 0.55 * ga + ")"); gi.addColorStop(1, "rgba(200,40,0,0)");
+    gi.addColorStop(0, "rgba(" + chHue(255,250,220) + "," + 0.9 * ga + ")"); gi.addColorStop(0.5, "rgba(" + chHue(255,140,30) + "," + 0.55 * ga + ")"); gi.addColorStop(1, "rgba(" + chHue(200,40,0) + ",0)");
     ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(hx, hy, rr, 0, 7); ctx.fill();
-    ctx.strokeStyle = "rgba(255,220,140," + 0.8 * ga + ")"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.ellipse(hx, hy, rr * 0.9, rr * 1.15, 0, 0, 7); ctx.stroke();
+    ctx.strokeStyle = "rgba(" + chHue(255,220,140) + "," + 0.8 * ga + ")"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.ellipse(hx, hy, rr * 0.9, rr * 1.15, 0, 0, 7); ctx.stroke();
     ctx.restore();
   }
   if (el < CHARGE_WINDUP + dashMs) { // the dart
@@ -24379,7 +24395,7 @@ function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
     ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
     for (var s2 = 0; s2 < CHARGE_FX.streaks; s2++) {
       var yy = y - (4 + s2 * 3.1) * sc, l2 = (30 + 55 * ((s2 * 37) % 10) / 10) * sc * CHARGE_FX.streakLen / 100 + Math.min(140 * sc, Math.abs(cx0 - st.fromX) * 0.35);
-      var gsl = ctx.createLinearGradient(cx0, 0, cx0 - dirS * l2, 0); gsl.addColorStop(0, "rgba(255,220,140,0.85)"); gsl.addColorStop(1, "rgba(255,90,10,0)");
+      var gsl = ctx.createLinearGradient(cx0, 0, cx0 - dirS * l2, 0); gsl.addColorStop(0, "rgba(" + chHue(255,220,140) + ",0.85)"); gsl.addColorStop(1, "rgba(" + chHue(255,90,10) + ",0)");
       ctx.strokeStyle = gsl; ctx.lineWidth = (1.2 + (s2 % 3) * 0.5) * sc; ctx.beginPath(); ctx.moveTo(cx0, yy); ctx.lineTo(cx0 - dirS * l2, yy); ctx.stroke();
     }
     ctx.restore();
@@ -24387,11 +24403,11 @@ function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
       var pg = Math.max(0, p - gh * 0.09), gx = st.fromX + (dEnd - st.fromX) * pg;
       var gSep = Math.abs(cx0 - gx); if (gSep < 7 * sc) continue; // v753: as the dash eases out the afterimages piled up under him and read as a 2nd Gareth — only draw one when it is clearly trailing behind
       ctx.save(); ctx.globalAlpha = 0.34 / gh * Math.min(1, 3 / CHARGE_FX.ghosts) * Math.min(1, (gSep - 7 * sc) / (14 * sc)); ctx.translate(gx, y); if (flip) ctx.scale(-1, 1);
-      ctx.drawImage(im, -c.ax * k, -c.ay * k, c.w * k, c.h * k); ctx.restore();
+      ctx.drawImage(chTinted(im), -c.ax * k, -c.ay * k, c.w * k, c.h * k); ctx.restore();
     }
     ctx.save(); ctx.translate(cx0, y); if (flip) ctx.scale(-1, 1);
     var dF = ctx.filter; if (HERO_ANIMS[key] && HERO_ANIMS[key].model3d) ctx.filter = "none"; // v1100: knight untinted, flames keep the hue
-    ctx.drawImage(im, -c.ax * k, -c.ay * k, c.w * k, c.h * k); ctx.filter = dF;
+    ctx.drawImage((HERO_ANIMS[key] && HERO_ANIMS[key].model3d) ? im : chTinted(im), -c.ax * k, -c.ay * k, c.w * k, c.h * k); ctx.filter = dF;
     shield(c.tipx * k + 7 * sc, c.tipy * k, 1.15, 1);
     ctx.restore();
     for (var em = 0; em < CHARGE_FX.embers; em++) spawnFireEmber(cx0 - dirS * (6 + Math.random() * 10) * sc, y - (8 + Math.random() * 16) * sc, -dirS * (20 + Math.random() * 50), -20 - Math.random() * 30);
@@ -24403,7 +24419,7 @@ function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
       var q = te / THRU_END; st.px = st.cx; st.cx = st.endX;
       flare(st.endX + dirS * c.tipx * k * 0.3, y - 20 * sc, q * 0.8);
       ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 1 - q; ctx.translate(st.endX, y); if (flip) ctx.scale(-1, 1);
-      ctx.drawImage(im, -c.ax * k, -c.ay * k, c.w * k, c.h * k); ctx.restore();
+      ctx.drawImage(chTinted(im), -c.ax * k, -c.ay * k, c.w * k, c.h * k); ctx.restore();
       if (Math.random() < 0.7) spawnFireEmber(st.endX, y - (6 + Math.random() * 20) * sc, -dirS * 40 * Math.random(), -30 - Math.random() * 40);
       ctx.restore(); return 3; // he stays where he landed
     }
@@ -24417,9 +24433,9 @@ function drawHeroCharge(ctx, id, key, toX, feetY, scale, flip) {
   ctx.save(); ctx.globalCompositeOperation = "lighter";
   var rr = (8 + 34 * ti) * sc, ga = 1 - ti;
   var gi = ctx.createRadialGradient(hx, hy, rr * 0.2, hx, hy, rr);
-  gi.addColorStop(0, "rgba(255,250,220," + 0.9 * ga + ")"); gi.addColorStop(0.5, "rgba(255,140,30," + 0.55 * ga + ")"); gi.addColorStop(1, "rgba(200,40,0,0)");
+  gi.addColorStop(0, "rgba(" + chHue(255,250,220) + "," + 0.9 * ga + ")"); gi.addColorStop(0.5, "rgba(" + chHue(255,140,30) + "," + 0.55 * ga + ")"); gi.addColorStop(1, "rgba(" + chHue(200,40,0) + ",0)");
   ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(hx, hy, rr, 0, 7); ctx.fill();
-  ctx.strokeStyle = "rgba(255,220,140," + 0.8 * ga + ")"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.ellipse(hx, hy, rr * 0.9, rr * 1.15, 0, 0, 7); ctx.stroke(); // shock ring
+  ctx.strokeStyle = "rgba(" + chHue(255,220,140) + "," + 0.8 * ga + ")"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.ellipse(hx, hy, rr * 0.9, rr * 1.15, 0, 0, 7); ctx.stroke(); // shock ring
   ctx.restore();
   ctx.restore(); return 3;
 }
@@ -26420,8 +26436,9 @@ function resizeIdleCanvas() {
   // keeps it displayed at the original logical size on screen.
   var logicalW = Math.max(200, Math.round(rect.width));
   var logicalH = Math.max(120, Math.round(rect.height));
-  canvas.width = Math.round(logicalW * dpr);
-  canvas.height = Math.round(logicalH * dpr);
+  var bw = Math.round(logicalW * dpr), bh = Math.round(logicalH * dpr);
+  if (canvas.width !== bw) canvas.width = bw; /* v1292: only when the size really changed - setting it (even to the same number) wipes and re-allocates the whole */
+  if (canvas.height !== bh) canvas.height = bh; /* canvas, and the v1262 sky re-check calls this every 0.7s - that was a regular little hitch */
 }
 
 // Cached once on first successful render rather than looked up by

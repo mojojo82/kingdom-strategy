@@ -2733,3 +2733,17 @@ Harley's 3 points:
 
 ## v1291 — bat smaller
 - Harley: "can we make that bat smaller". ENEMY_BAT.h 48 -> 36 game px (25% smaller). Body still on the same spot.
+
+## v1292 — Blade Rush hitch fixed (the "Death Strike micro-lag")
+- Harley saw a micro-lag on Death Strike that the FPS counter didn't show. Measured every frame (dev scripts in the session scratchpad): every **Blade Rush**
+  froze the game 150-350ms (one or two frames), with or without Death Strike - Death Strike only fires on a Blade Rush, so that's where it was noticed.
+  Not the Death Strike maths (2-4 enemies, microseconds), not the sound, not the screen shake.
+- Cause: drawHeroCharge drew the whole effect through ctx.filter = "hue-rotate(106deg)" (CHARGE_FX.hue). A live canvas filter renders each shape into a
+  hidden layer and recolours it. Fix: chHue() rotates each fire colour with the exact CSS hue-rotate matrix (cached) and chTinted() bakes a recoloured copy of
+  the afterimage sprite once. Pixel compare old vs new: max 16/255 on one pixel - same look. After: Blade Rush frames a flat ~17ms (worst frame 350 -> ~120ms).
+  Arena uses the same function, so it's fixed there too.
+- Note: old comment (v~800) says canvas filters were ignored on some iPhones. If Harley's phone ignored it, his Blade Rush fire was orange there and is now
+  green like on PC. CHARGE_FX.hue = 0 gives the orange back.
+- Also: resizeIdleCanvas only sets canvas width/height when they really change. The v1262 sky re-check calls it every 0.7s and setting the size (even to the
+  same number) wiped and re-allocated the whole canvas each time.
+- g270 "enough slams" fails the same on v1291 (only 4 slams fit in its time window headless) - not this change; its real check (no unfired Death Strike) passes.
