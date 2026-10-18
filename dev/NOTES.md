@@ -2773,3 +2773,8 @@ Harley's 3 points:
   1.4x (measured). Target for new art is ~1 phone px per source px. Leonardo's AI upscaler smeared GPT's pixel style (Fix Artifacts made it worse) - a plain
   2x with crisp pixels on GPT's own output works best. Leonardo's GPT Image 2.5 "Large" gave a smoother, less pixel-art style - parked.
 - Open: the near layer is only ~1 phone screen wide at this size, so the chapel repeats each screen (village: every 2.5). Fix = GPT extends it sideways.
+
+## v1295 — Dev Tools: Jump to chapter
+- Harley: no quick way to reach the new graveyard. Dev Tools > Speed & Testing has a "Jump to chapter" row: 1 Village / 2 Graveyard / 3 Snow / 4 Forest.
+  game.devJumpChapter(ch) = resetConquestProgress() then chapter = ch, level 1 (real Conquest progress moves there; enemies scale to that chapter).
+  Labels come from game.idleEnvForChapter(ch), so they follow IDLE_ENVIRONMENTS. Tested headless: labels, chapter/level/env after the tap, jump back to 1.
