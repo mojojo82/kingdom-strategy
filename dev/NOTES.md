@@ -2785,3 +2785,9 @@ Harley's 3 points:
 - Dev Tools > Speed & Testing: "Graveyard near layer sharpness (test)": Sharp (as built) / Soft (0.6 px blur) / Village-like (shrunk to 1/1.75 and back =
   the same softening the village gets). Pre-baked webps (art/levels/graveyard_near_soft/villagelike.webp, premultiplied so the edges don't darken), no live filter.
   Per device (localStorage kingdom_gy_near_soft_v1). Test-only - drop the unused variants once Harley picks.
+
+## v1297 — graveyard near layer softened (village-like); test switch removed
+- Harley: Soft and Village-like both good, razor sharp "makes it have this cardboard cutout feel... less immersive". Locked in Village-like
+  (build_graveyard.py village_soft: shrink to 1/1.75 and back, premultiplied). Sharp copy kept: art/originals/backgrounds/graveyard_built/graveyard_near_sharp.png.
+  Dev Tools switch + the extra variants removed.
+- Lesson for future levels (Harley's eyes): the ROAD wants to be crisp, the backdrop layers a touch soft (reads as depth). Don't chase razor-sharp backdrops.

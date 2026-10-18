@@ -6,6 +6,7 @@
 Writes art/levels/graveyard_{far,near,road}.webp (+ full-size PNGs in art/originals/backgrounds/graveyard_built/).
 Run: python3 dev/levels/build_graveyard.py"""
 import os
+import numpy as np
 from PIL import Image
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 SRC = os.path.join(ROOT, "art/originals/backgrounds")
@@ -54,10 +55,19 @@ for x in range(W):
 far = seamless(far.crop((0, 130, W, ROAD_TOP + 1)))
 save(far, "graveyard_far")
 
-# --- near: chapel, trees, fences, graves.
+def village_soft(im, k=1 / 1.75):
+    """v1297 (Harley: razor sharp looked like a cardboard cut-out): soften like the village is softened on a 3x phone - shrink to 1/1.75 and blow back up.
+    Done premultiplied so the cut-out edges don't darken."""
+    x = np.asarray(im.convert("RGBA")).astype(np.float32) / 255; x[..., :3] *= x[..., 3:4]; h, w = x.shape[:2]
+    ch = [np.asarray(Image.fromarray(x[..., i], "F").resize((round(w * k), round(h * k)), Image.LANCZOS).resize((w, h), Image.BILINEAR)) for i in range(4)]
+    y = np.clip(np.stack(ch, -1), 0, 1); a = np.clip(y[..., 3:4], 1e-6, 1); y[..., :3] = np.where(y[..., 3:4] > 1e-4, y[..., :3] / a, 0)
+    return Image.fromarray((np.clip(y, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
+
+# --- near: chapel, trees, fences, graves. Full-sharp copy kept as graveyard_near_sharp.png; the game gets the village-soft one.
 near = key(Image.open(os.path.join(SRC, "graveyard_layer_near_gpt_1536x1024.png")))
 near = seamless(near.crop((0, 95, near.width, ROAD_TOP + 1)))
-save(near, "graveyard_near")
+near.save(os.path.join(FULL, "graveyard_near_sharp.png"))
+save(village_soft(near), "graveyard_near")
 
 # --- road: flatten the top surface band (grass line ~712 to the cut face ~787) to ~38% so it matches the village road's eye-level.
 road = key(Image.open(os.path.join(SRC, "graveyard_layer_road2_gpt_1536x1024.png")))
