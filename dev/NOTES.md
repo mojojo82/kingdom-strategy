@@ -2532,3 +2532,11 @@
 ## v1263 — no gap between the Conquest panel and the nav
 - Harley (phone screenshot): "small gap" - idleFitSky left 8 px above the bottom nav (copied from the Arena). Now flush (rounded up, so no hairline).
 - g347 (now asserts < 0.5 px gap) passes.
+
+## v1264 — v1263 undone; the gap between the village and the road closed
+- Harley: the "small gap" was the thin dark strip between the bottom of the village picture and the top of the road stones (circled), not the nav gap.
+  v1263 is undone (8 px above the nav again, as in v1262).
+- Cause: the road art has a few transparent rows above the stones; the backdrop stopped at groundY+4 and the dark fill started at groundY, so ~5-8 px of
+  dark showed. Now on a level with its own road the backdrop reaches down to where the stones start (floor.top = 30, webp px) and the dark fill starts
+  under the stones; the thin ground line isn't drawn across the road. Background only - no sprite, hit or projectile position changed.
+- g294, g296, g347 pass.
