@@ -2622,3 +2622,12 @@
   (nx 3/88/173/258/343, y 348, 85x66 units) by CSS rules from their layout boxes; the active glow piece sits on the active tab's art box. Nav labels have
   no shadow in Blue on any screen (Conquest already had none).
 - g348 (checks the nav art on another screen) passes.
+
+## v1276 — Blue nav: same height + not covered on other screens
+- Harley: outside Conquest every tab moved the nav down, and the top of the nav art was chopped off.
+- Causes: (1) "border:none" removed the nav's 2 px top border on other screens (Conquest keeps it, transparent) -> nav 2 px shorter, art + buttons lower;
+  (2) "z-index:5" replaced the nav's original z-index 50, so page content could paint over the art's top edge (which sits 5 px above the nav box);
+  (3) button offsets skipped the nav border (another 2 px). Reproduced with the iPhone bottom inset simulated (nav padding 50 px).
+- Fix: transparent border kept, z-index 50, border added to the button offsets. Now nav top / button top are identical on all 5 screens (820/830 with
+  the inset, 854/864 without).
+- g348 passes.
