@@ -2722,3 +2722,11 @@ Harley's 3 points:
 ## v1289 — night sky drift is smooth
 - Harley: the drift looked choppy (jumping a few px). The sky's x was snapped to whole device pixels; at ~3 px/s that's a 1 px jump every ~20 frames on a
   PC (every ~7 on a 3x phone). Now drawn at the exact sub-pixel position, so it glides.
+
+## v1290 — the "prawn" archer enemy is now a flapping bat
+- Harley's friend said the curled orange archer looked like a prawn. Harley's bat image was animated in Leonardo (Hailuo, 480p, magenta bg, padded start
+  image so the wings stay in frame). One flap = 20 video frames; every 2nd kept = 10 frames at 12fps. dev/bat/build_bat.py cuts it out and builds the sheet.
+- Originals: art/originals/bat_still_magenta.png, bat_flap_hailuo.mp4, sprites_hires/bat/bat_flap_10.png. Phone copy: art/conquest/bat_flap.webp (146x144 cells),
+  embedded as ENEMY_BAT; drawn ~48 game px tall, mirrored to face the fortress.
+- The body sits on the old archer spot (targeting / projectiles unchanged). No code bob for the bat (Harley) - the flap is the only motion. Other enemies keep theirs.
+- Takes priority over any Dev Tools archer sprite (ENEMY_BAT.on = false brings the old one back).

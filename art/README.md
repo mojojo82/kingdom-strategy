@@ -87,3 +87,6 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | rig/rig_decor_items_sheet.png | 64 room decoration items (beds, seats, tables, storage, tech, wall items, lights, plants, kitchen, fun) | 1254x1254 | not in the game yet (room decorating, later) |
 | rig/old_v1_*.png, rig/rig_mockup.png | First (cleaner) rig set and the phone mockup | 941x1672 | not in the game |
 | backgrounds/arena_bg_1200x660.png, forest_layer1/2, village_layer1/2 | Current Conquest/Arena background art, pulled out of the game file 18 Oct (the originals weren't kept): Arena backdrop, rain-level haunted forest parallax layers, day-level village layers (transparent) | as named | being regenerated taller (+~40% on top) for the taller Conquest/Arena scene |
+| bat_still_magenta.png | Bat enemy still, Harley's, magenta bg | 1536x1024 | start image for the flap video (padded square copy) |
+| bat_flap_hailuo.mp4 | Bat idle flap from Leonardo/Hailuo, 480x480 24fps, magenta | video | v1290: ENEMY_BAT (replaces the archer enemy) - 10 frames, art/conquest/bat_flap.webp, built by dev/bat/build_bat.py |
+| sprites_hires/bat/bat_flap_10.png | The 10 flap frames cut out at full video size (264x260 cells) | backup | shrunk to 146x144 cells for the game |
