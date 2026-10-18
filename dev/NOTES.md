@@ -2637,3 +2637,14 @@
   copy of tab 2, which also wiped the outer frame/edge that wraps tab 1 (the far-left end of the bar). Now only the glowing inner box (rows 6.5-80,
   x 6-87.5 units) is replaced, so the bar's outer frame stays the same on every screen.
 - g348 passes.
+
+## v1278 — Blue nav: "Conquest's nav is law" - other screens now pixel-identical
+- Harley: still different from Conquest; the Conquest tab's outer frame changed.
+- Checked by pixel-diffing each screen's nav against Conquest's at 3x (iPhone bottom inset simulated). Found: (1) art 1.7 px lower (the ::before was
+  positioned inside the nav's 2 px border); (2) the bar drawn from a separately-cut, separately-compressed strip as a background, which rasterises
+  differently from Conquest's <img>; (3) Conquest's art at a fractional y (0.28 px), so even the same image landed on different pixels.
+- Fix: the bar on other screens is the SAME image file, drawn as an <img> at the same width/offset as on Conquest (inside a clipping box from art row 336);
+  the plain-tab patch over tab 1's glow and the active-tab glow are cut live from that same image (patch = inner box only, so tab 1's outer frame and
+  bottom step stay); offsets account for the border; Conquest's art y is rounded to whole pixels. Result: 0 pixels differ outside tab 1 and the active
+  tab on Heroes, City, World and More (threshold 60 summed RGB). blue_nav_plain/active.webp no longer used.
+- g348 (nav check updated), g347 pass.

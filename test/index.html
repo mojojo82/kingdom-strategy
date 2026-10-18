@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1277"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1278"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30598,12 +30598,15 @@ var uiSkinKey = "", uiSkinEls = [];
     /* v1275 (Harley: the nav outside Conquest looked different + changed): the nav on other screens is now drawn exactly like Conquest's - same art at
        the same scale, 5 px above the nav box, buttons placed on the same tab spots (uiNavApply) - instead of a squashed copy */
     'body.ui-blue-nav:not(.ui-blue) #bottomNav { background:#070d18 !important; border-color:transparent !important; box-shadow:none !important; position:relative; z-index:50; }\n' + /* v1276: keep the 2 px border (transparent, as on Conquest) so the nav is the same height everywhere, and the original z-index 50 so page content can't cover the art's top edge */
-    'body.ui-blue-nav:not(.ui-blue) #bottomNav::before { content:""; position:absolute; left:0; width:var(--navArtW); top:var(--navArtTop); height:var(--navArtH); background:url(' + UI_NAV_PLAIN + ') 0 0/100% 100% no-repeat; pointer-events:none; z-index:0; }\n' +
+    'body.ui-blue-nav:not(.ui-blue) #uiNavArt { display:block; }\n' +
+    '#uiNavArt { display:none; position:absolute; left:0; overflow:hidden; pointer-events:none; z-index:0; } #uiNavArt img { position:absolute; left:0; display:block; }\n' +
+    'body.ui-blue-nav:not(.ui-blue) #uiNavPatch { display:block; }\n' +
+    '#uiNavPatch { display:none; position:absolute; pointer-events:none; z-index:0; }\n' +
     'body.ui-blue-nav:not(.ui-blue) #bottomNav .bn { background:transparent !important; border:none !important; box-shadow:none !important; border-radius:0 !important; position:relative; z-index:1; }\n' +
     'body.ui-blue-nav:not(.ui-blue) #uiNavActive { display:block; }\n' +
     'body.ui-blue-nav #bottomNav, body.ui-blue-nav #bottomNav * { text-shadow:none !important; }\n' +
     'body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active, body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active * { color:#eaf7ff !important; }\n' +
-    '#uiNavActive { display:none; position:absolute; pointer-events:none; z-index:0; background:url(' + UI_NAV_ACTIVE + ') 0 0/100% 100% no-repeat; }\n' +
+    '#uiNavActive { display:none; position:absolute; pointer-events:none; z-index:0; }\n' +
     /* v1273 (Harley: the gap above the nav closed up on Conquest): on Conquest the nav stays see-through over the Conquest art (its own nav, with the
        original gap) and the buttons are placed on it as before; the cut nav bar is for the other screens */
     B + '#bottomNav, ' + B + '#bottomNav .bn { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
@@ -30634,11 +30637,20 @@ function uiNavApply() { /* v1275: the Blue nav on screens other than Conquest, p
   var nav = document.getElementById("bottomNav"); if (!nav || !nav.offsetParent) return;
   var k = window.innerWidth / 430, bns = [].slice.call(nav.querySelectorAll(":scope > .bn")), act = bns.findIndex(function (b) { return b.classList.contains("active"); });
   var key = [window.innerWidth, nav.offsetHeight, bns.length, act].join("|"); if (key === uiNavKey) return; uiNavKey = key;
-  var stripTop = -5 * k, base = stripTop - 336 * k; /* art row 336 = 5 px above the nav box, as on Conquest */
+  var stripTop = -5 * k - nav.clientTop, base = stripTop - 336 * k + nav.clientTop; /* v1278: art positions are measured from inside the 2 px border */ /* art row 336 = 5 px above the nav box, as on Conquest */
+  /* v1278 (Harley: "the Conquest nav is law"): every piece is cut live from the SAME Conquest art at the SAME scale - the bar itself, a patch of plain
+     tab 2 over tab 1's glow (inner box only, so tab 1's outer frame stays), and tab 1's glow box behind the active tab - so the pixels match Conquest's */
   nav.style.setProperty("--navArtW", 430 * k + "px"); nav.style.setProperty("--navArtTop", stripTop + "px"); nav.style.setProperty("--navArtH", (UI_SKIN_BOT_H - 336) * k + "px");
-  var na = document.getElementById("uiNavActive"); if (!na) { na = document.createElement("div"); na.id = "uiNavActive"; nav.insertBefore(na, nav.firstChild); }
+  nav.style.setProperty("--navArtY", (-336 * k) + "px"); nav.style.setProperty("--navArtFullH", UI_SKIN_BOT_H * k + "px");
+  function piece(id, artX, artY, w, h, x, y) { var d = document.getElementById(id); if (!d) { d = document.createElement("div"); d.id = id; nav.insertBefore(d, art.nextSibling); }
+    d.style.cssText = "left:" + x * k + "px;top:" + (stripTop + y * k) + "px;width:" + w * k + "px;height:" + h * k + "px;background:url(" + UI_SKIN_BOT.src + ") " + (-artX * k) + "px " + (-(336 + artY) * k) + "px/" + 430 * k + "px " + UI_SKIN_BOT_H * k + "px no-repeat"; return d; }
+  /* the bar: the same <img> of the Conquest art, same width, rows 336+ showing - drawn exactly the way Conquest draws it */
+  var art = document.getElementById("uiNavArt"); if (!art) { art = document.createElement("div"); art.id = "uiNavArt"; art.innerHTML = "<img alt=''>"; art.firstChild.src = UI_SKIN_BOT.src; nav.insertBefore(art, nav.firstChild); }
+  art.style.top = stripTop + "px"; art.style.width = 430 * k + "px"; art.style.height = (UI_SKIN_BOT_H - 336) * k + "px";
+  art.firstChild.style.width = 430 * k + "px"; art.firstChild.style.top = (-336 * k) + "px";
+  var patch = piece("uiNavPatch", 89, 6.5, 81.5, 67.7, 6, 6.5);
   var tabs = [[4, 88], [88, 172.4], [172.4, 257.1], [257.1, 341.6], [341.6, 426]];
-  if (act >= 0 && tabs[act]) { var cxm = (tabs[act][0] + tabs[act][1]) / 2, aw = 83.5; na.style.cssText = "left:" + (cxm - aw / 2) * k + "px;width:" + aw * k + "px;top:" + (stripTop + 5.8 * k) + "px;height:" + 75.3 * k + "px"; }
+  if (act >= 0 && tabs[act]) { var cxm = (tabs[act][0] + tabs[act][1]) / 2, aw = 83.5; var na = piece("uiNavActive", 0, 5.8, aw, 75.3, cxm - aw / 2, 5.8); if (na.previousSibling !== patch) nav.insertBefore(na, patch.nextSibling); }
   var nr = uiSkinLayoutBox(nav), css = "", nx = [3, 88, 173, 258, 343];
   bns.forEach(function (b, i) { if (i > 4) return; var r = uiSkinLayoutBox(b), bx = r.left - nr.left + nav.clientLeft, by = r.top - nr.top + nav.clientTop, /* v1276: offsets skip the nav's 2 px border */ s = Math.min(85 * k / r.width, 66 * k / r.height);
     var tx = nx[i] * k + (85 * k - r.width * s) / 2 - bx, ty = (base + 348 * k) + (66 * k - r.height * s) / 2 - by;
@@ -30657,7 +30669,7 @@ function uiSkinApply() {
   if (key === uiSkinKey) return;
   /* v1266 (Harley's video: flashes + panels sliding): elements are measured by their LAYOUT box (offsets), which transforms never touch, so the
      rules are never switched off to measure - switching them off restarted every animation (a dim flash) and made transitions slide things around */
-  var Y0 = cvR.bottom - 30 * k, TOPY = -28 * k;
+  var Y0 = Math.round(cvR.bottom - 30 * k), TOPY = -28 * k; /* v1278: whole pixels, so the nav art lands on exactly the same pixels as on the other screens */
   var ti = document.getElementById("uiSkinTopImg"), bi = document.getElementById("uiSkinBotImg");
   ti.style.width = bi.style.width = (430 * k) + "px"; ti.style.top = TOPY + "px"; bi.style.top = Y0 + "px";
   var sT = document.getElementById("uiSkinStripTop"), sB = document.getElementById("uiSkinStripBot");
