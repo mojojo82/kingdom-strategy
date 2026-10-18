@@ -24,7 +24,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   const probe = () => P.evaluate(async () => { const calls = []; const o = CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage = function (im) { if (im === KNIGHT_IDLE.img) calls.push([].slice.call(arguments, 1)); return o.apply(this, arguments); };
     await new Promise((r) => setTimeout(r, 700)); CanvasRenderingContext2D.prototype.drawImage = o;
-    const cv = document.getElementById("idleCanvas"), w = cv.clientWidth, h = cv.clientHeight;
+    const cv = document.getElementById("idleCanvas"), w = cv.clientWidth, h = cv.clientHeight - (cv._skyH || 0); /* v1262: minus the taller-screen sky */
     return { calls: calls.length, frames: new Set(calls.map((c) => c[0] + "," + c[1])).size, last: calls[calls.length - 1], bossX: idleBossX(w), feet: groundYFor(h) + 15, enemies: game.state.idle.enemies.length, boss: game.state.idle.enemies.some((e) => e.type === "boss") }; });
   const off = await probe();
   const en0 = await P.evaluate(() => game.state.idle.enemies.map((e) => e.id).join());

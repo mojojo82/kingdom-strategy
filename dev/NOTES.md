@@ -2514,3 +2514,17 @@
   keeps its old coordinates - w/h exclude the sky and the loop translates down by skyH, so the strip is negative y. The tall painting is drawn whole
   (its extra sky in the strip, flat sky colour fading in above it on very tall phones). Weather drops are drawn there by the main canvas (v1260 strip canvas unused).
 - Arena tests g204, g279, g292, g294 (flaky Conquest timer once; passed 2/2 on rerun, also flaky on v1260), g307, g346 pass.
+
+## v1262 — taller Conquest screen + the village's own cobblestone road
+- Harley: fill the empty space under the Conquest panel (keep the blue header where it is), "I dont want the height of the fortress, the heroes or enemies
+  messed with at all ... the first image/original/current is perfect"; picked road position "H" from in-engine mockups (G is the other contender).
+- Phones (≤900 px, bottom nav showing): idleFitSky() grows #idleCanvas by the gap between the brown panel (.idle-power-slots) and the nav (164 px on a
+  430x932 screen). Same trick as the Arena (v1261): the fight keeps its old 400:240 coordinates, the loop translates down by idleAnim.skyPx, the extra is sky
+  (negative y): a gradient from IDLE_SKY_HIGH down to each sky's top colour, backdrop layers' clip extended, rain/snow spread over it, lightning flash covers it.
+  PC layout untouched (skyH 0).
+- Village (day) level: TMP_ENV_BG.day.floor = Harley's side-on cobble road (art/originals/backgrounds/village_floor_original_2172x724.png; keyed copy
+  village_floor_keyed_2172x499.png; game copy art/conquest/village_floor.webp 1400 wide). Drawn at 0.30x original size on a 430 px phone, image row 20
+  (original px) on the ground line, scrolls with the near background; replaces the ground tiles + grass on that level only.
+- Forest (rain) level: tree layer's top edge now shows under the extra sky - Harley is making new forest art anyway.
+- Fortress remembered height (st.lastH) ignores a sky strip (both screens).
+- g347_conquest_sky.js (new); g267, g276, g293, g294, g295, g296 (test now measures without the sky), g305, g327, g341, g345, g346 pass. g271 fails the same way on v1261 (pre-existing).
