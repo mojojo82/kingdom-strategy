@@ -2648,3 +2648,13 @@
   bottom step stay); offsets account for the border; Conquest's art y is rounded to whole pixels. Result: 0 pixels differ outside tab 1 and the active
   tab on Heroes, City, World and More (threshold 60 summed RGB). blue_nav_plain/active.webp no longer used.
 - g348 (nav check updated), g347 pass.
+
+## v1279 — Blue nav: spikes, full glow, no jump when switching
+Harley's 3 points:
+1. Top-left / top-right spikes cut off outside Conquest: the bar was clipped at art row 336, the spikes reach ~6 units higher. Added the two corner tips
+   (art x 0-9 / 421-430, rows 330-336) as small cut-outs with the dark panel background made see-through, drawn above the glow.
+2. Active glow cut at the sides (new in v1278): the piece was art x 0-83.5; the glow box is x 1.5-90.5 (measured). Now the whole box, moved by the tab offset.
+3. Icons glitching when switching (video, 1-2 frames): setScreen only re-placed things for Conquest; other screens waited for the next frame. Now the
+   wrapper applies the style + nav placement on every switch before the first paint. Frame-sampled switches (Conquest<->Heroes/More, Heroes->City,
+   More->World): v1273 showed 2-3 states, now 1.
+- g348 passes.
