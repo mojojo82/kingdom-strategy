@@ -2778,3 +2778,10 @@ Harley's 3 points:
 - Harley: no quick way to reach the new graveyard. Dev Tools > Speed & Testing has a "Jump to chapter" row: 1 Village / 2 Graveyard / 3 Snow / 4 Forest.
   game.devJumpChapter(ch) = resetConquestProgress() then chapter = ch, level 1 (real Conquest progress moves there; enemies scale to that chapter).
   Labels come from game.idleEnvForChapter(ch), so they follow IDLE_ENVIRONMENTS. Tested headless: labels, chapter/level/env after the tap, jump back to 1.
+
+## v1296 — Dev Tools test switch: graveyard near layer sharpness
+- Harley: the graveyard near layer is "REALLY sharp" vs the village - not sure he wants it that sharp. Why: graveyard near is drawn at 0.9 phone px per source px
+  (1446 px wide, ~1 screen per repeat), the village near at 1.75 (1800 px original, already enlarged to 2172 in-game, drawn over 2.4 screens).
+- Dev Tools > Speed & Testing: "Graveyard near layer sharpness (test)": Sharp (as built) / Soft (0.6 px blur) / Village-like (shrunk to 1/1.75 and back =
+  the same softening the village gets). Pre-baked webps (art/levels/graveyard_near_soft/villagelike.webp, premultiplied so the edges don't darken), no live filter.
+  Per device (localStorage kingdom_gy_near_soft_v1). Test-only - drop the unused variants once Harley picks.
