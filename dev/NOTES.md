@@ -2800,3 +2800,11 @@ Harley's 3 points:
 - Dev Tools > Speed & Testing > "Scenery sharpness (the level you're on)": Far / Near rows, Sharp / Soft / Village-like, "•" = the level's own setting.
   Overrides are this device only (localStorage kingdom_layer_soft_v1, "env:layerIndex"). When Harley settles on one, set the layer's .soft so players get it.
   Works for any level with TMP_ENV_BG layers (village, graveyard, forest now; new levels automatically). Row follows the level you're on (checks each second).
+
+## v1299 — graveyard gets its own sky (from the composite)
+- Harley: harsh jump from the light far layer straight into the very dark code sky; the composite had soft clouds and a glow.
+- dev/levels/build_graveyard_sky.py: sky = composite pixels where neither the far nor the near GPT layer has art (rows < 215); everything else
+  OpenCV-inpainted (at 1/4 size, blurred) so parallax never shows a hole; ends cross-faded. art/levels/graveyard_sky.webp (1446x728).
+- TMP_ENV_BG.night: new first layer "Sky" (same scale/rows as the far layer, speed 0.1), flat "#0f152d" (the composite's top colour) fills the extra phone sky.
+  The code night sky / moon / stars are now hidden on the graveyard (covered by the flat + sky). Layers carry a name ("Sky" / "Far" / "Near") for the
+  Dev Tools sharpness rows.
