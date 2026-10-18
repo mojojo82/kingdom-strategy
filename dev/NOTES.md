@@ -2614,3 +2614,11 @@
 - Fix: no slide-in on Conquest in Blue; setScreen (wrapped) sets the Blue class, fits the canvas twice, then places everything before the first paint;
   the placement check runs every frame (cheap - work only when something changed). Before: 9-12 different positions over ~12 frames; after: 1.
 - g348, g347, g346 pass.
+
+## v1275 — Blue nav on other screens drawn exactly like Conquest's
+- Harley: the nav outside Conquest looked different (squashed, labels lower) and changed between screens.
+- v1272 stretched the cut strip into the nav box (78 px) - the art is 87.7 units tall, so it was squashed, plus a 4 px padding hack. Now (uiNavApply) the
+  strip is drawn at the same scale as on Conquest, 5 px above the nav box (as the Conquest art sits), and the buttons are placed on the same tab spots
+  (nx 3/88/173/258/343, y 348, 85x66 units) by CSS rules from their layout boxes; the active glow piece sits on the active tab's art box. Nav labels have
+  no shadow in Blue on any screen (Conquest already had none).
+- g348 (checks the nav art on another screen) passes.
