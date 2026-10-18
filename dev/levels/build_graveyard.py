@@ -63,11 +63,12 @@ def village_soft(im, k=1 / 1.75):
     y = np.clip(np.stack(ch, -1), 0, 1); a = np.clip(y[..., 3:4], 1e-6, 1); y[..., :3] = np.where(y[..., 3:4] > 1e-4, y[..., :3] / a, 0)
     return Image.fromarray((np.clip(y, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
 
-# --- near: chapel, trees, fences, graves. Full-sharp copy kept as graveyard_near_sharp.png; the game gets the village-soft one.
+# --- near: chapel, trees, fences, graves. v1298 (Harley: "lets not auto soften the images"): the game gets the sharp original; softness is a
+#     per-level setting (TMP_ENV_BG layer .soft + the Dev Tools "Scenery sharpness" row), applied at load time. village_soft() kept for reference only.
 near = key(Image.open(os.path.join(SRC, "graveyard_layer_near_gpt_1536x1024.png")))
 near = seamless(near.crop((0, 95, near.width, ROAD_TOP + 1)))
 near.save(os.path.join(FULL, "graveyard_near_sharp.png"))
-save(village_soft(near), "graveyard_near")
+save(near, "graveyard_near")
 
 # --- road: flatten the top surface band (grass line ~712 to the cut face ~787) to ~38% so it matches the village road's eye-level.
 road = key(Image.open(os.path.join(SRC, "graveyard_layer_road2_gpt_1536x1024.png")))

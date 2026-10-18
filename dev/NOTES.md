@@ -2791,3 +2791,12 @@ Harley's 3 points:
   (build_graveyard.py village_soft: shrink to 1/1.75 and back, premultiplied). Sharp copy kept: art/originals/backgrounds/graveyard_built/graveyard_near_sharp.png.
   Dev Tools switch + the extra variants removed.
 - Lesson for future levels (Harley's eyes): the ROAD wants to be crisp, the backdrop layers a touch soft (reads as depth). Don't chase razor-sharp backdrops.
+
+## v1298 — scenery sharpness is a per-level setting (originals stay sharp) + Dev Tools control
+- Harley: "lets not auto soften the images. just leave that dev tool in there for me to control for all the next levels".
+- Art stays the original (graveyard near is the sharp cut-out again; build_graveyard.py no longer bakes softness). Each TMP_ENV_BG layer can carry
+  soft: "sharp" | "soft" | "village"; layerImgFor() softens ONCE into a cached canvas (shrink 1/1.35 or 1/1.75 and back - no live filter).
+  Graveyard near = soft: "village" (Harley's pick v1297). Everything else = sharp (= unchanged).
+- Dev Tools > Speed & Testing > "Scenery sharpness (the level you're on)": Far / Near rows, Sharp / Soft / Village-like, "•" = the level's own setting.
+  Overrides are this device only (localStorage kingdom_layer_soft_v1, "env:layerIndex"). When Harley settles on one, set the layer's .soft so players get it.
+  Works for any level with TMP_ENV_BG layers (village, graveyard, forest now; new levels automatically). Row follows the level you're on (checks each second).
