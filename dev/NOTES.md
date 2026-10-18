@@ -2695,3 +2695,12 @@ Harley's 3 points:
   placement, shared job->CSS helper uiJobsCss). body.ui-blue-top on any screen in Blue on a phone.
 - Pixel diff of the bar against Conquest's: 0 on Heroes and City; World/More only differ where the resource numbers themselves changed.
 - g348, g347 pass.
+
+## v1285 — temporary "Phone view" on PC
+- Harley (working from his PC today): temporarily show the full mobile view on PC, switch back later.
+- Options > 📱 Phone view on PC (only shown on a wide screen; saved in this browser only, key kingdom_phone_view_v1). When on, a tiny script at the very top
+  of the page stops the page loading and builds a dark page with the real game in a 430 px wide iframe (height = window, max 932) in the middle, plus a
+  "Back to PC view" button. The game inside sees a 430 px screen, so it's the exact phone layout (Blue frames, nav, everything). Only the inner copy
+  runs the game (?phoneframe=1). Off = normal PC view, untouched.
+- Checked headless at 1400x900: outer page has no game running, inner frame is 430x900 with the phone nav; Back button returns to the PC view and
+  clears the setting. (Headless couldn't screenshot the framed page - the check is by measurements.)
