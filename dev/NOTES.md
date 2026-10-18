@@ -2575,3 +2575,10 @@
 ## v1268 — Dev Tools switches to find Blue's FPS cost
 - Dev Tools > Speed & Testing > "Blue style FPS test, turn off": Frame art / Glows / Edge strips / Night sky. Tap = that part off (button goes gold,
   "(off)"); tap again = back on. This device only, not saved. Harley compares the FPS counter to find which part costs frames on the phone.
+
+## v1269 — Blue UI: text glows removed (the FPS cost)
+- Harley's test with the v1268 switches: turning off "Glows" is what brings Blue back to full FPS.
+- Blue no longer has any text glow: my own (AUTO, Stats, Forge, "+", active nav) are gone, and the shared ones are off in Blue on the top bar, header,
+  skill timers, Forge and nav - mostly text that changes all the time (counters, timers), which had to be re-glowed over the see-through frame each time.
+  Classic unchanged. The game's own icon filters (e.g. dimmed nav icons) are kept - the switch removed those too; if FPS is still short, they're next.
+- g348 passes.

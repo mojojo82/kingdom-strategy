@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1268"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1269"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30582,9 +30582,12 @@ var uiSkinKey = "", uiSkinEls = [];
     B + '.idle-skillbar .skill-auto-btn { display:flex !important; align-items:center !important; justify-content:center !important; text-align:center !important; padding:0 !important; }\n' +
     B + '.skill-slot .cd-text { position:absolute !important; left:50% !important; top:auto !important; bottom:1px !important; transform:translateX(-50%) !important; background:rgba(5,10,22,.85) !important; border-radius:7px !important; padding:0 4px !important; font-size:8.5px !important; line-height:12px !important; z-index:3; }\n' +
     B + '.skill-slot .skill-hero-tag { position:relative; top:3px; color:#c9d6e6 !important; }\n' +
-    B + '.skill-slot.empty .skill-icon-wrap { display:flex !important; align-items:center; justify-content:center; color:#7fd2ff !important; font:700 22px/1 sans-serif !important; text-shadow:0 0 6px #2f9dff; }\n' +
-    B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .idle-forge-btn *, #bottomNav .bn.active, #bottomNav .bn.active *) { color:#eaf7ff !important; text-shadow:0 0 6px #3fb5ff; }\n' +
-    B + '.idle-header { position:relative; z-index:3; }\n' + B + '.layout, ' + B + '#topbar { position:relative; z-index:1; }\n' + B + '#bottomNav { z-index:5; }\n' +
+    B + '.skill-slot.empty .skill-icon-wrap { display:flex !important; align-items:center; justify-content:center; color:#7fd2ff !important; font:700 22px/1 sans-serif !important; }\n' +
+    B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .idle-forge-btn *, #bottomNav .bn.active, #bottomNav .bn.active *) { color:#eaf7ff !important; }\n' +
+    B + '.idle-header { position:relative; z-index:3; }\n' +
+    /* v1269 (Harley's FPS test: the glows cost the frames): no text glow in the Blue style - not on our own labels, and not on text that changes all the
+       time (header counters, timers, Forge numbers), which had to be re-glowed over the see-through frame on every change */
+    B + ':is(.idle-header, .idle-header *, .cd-text, .skill-icon-wrap, .skill-auto-btn, #idleStatsBtn, #idleForgeBtn, #idleForgeBtn *, #topbar *, #bottomNav *) { text-shadow:none !important; }\n' + B + '.layout, ' + B + '#topbar { position:relative; z-index:1; }\n' + B + '#bottomNav { z-index:5; }\n' +
     B + '.ig-cell { border-radius:3px !important; overflow:hidden; }\n' + /* v1267: rounded 3 px instead of a cut-corner clip-path - the clip made every animated tile repaint */
     B + '.ig-cell :is(.ig-bgfill, .ig-fxbg) { -webkit-mask-image:none !important; mask-image:none !important; border-radius:0 !important; }\n' +
     '#uiSkinLayer, .ui-skin-strip { display:none; position:fixed; left:0; pointer-events:none; }\n' + B + '#uiSkinLayer { display:block; inset:0; z-index:0; }\n' + B + '.ui-skin-strip { display:block; z-index:6; background-repeat:no-repeat; }\n';
