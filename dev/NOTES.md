@@ -2682,3 +2682,8 @@ Harley's 3 points:
 - Harley: the avatar covers 1-2 px of the frame on the left. Measured: the frame's inner line is centred at x 11.6 / 60.2 (y 31.9 / 80.6); v1281's box
   started at 12.3 (on the line's glow) but ended at 59.4 (clear of it). Now 12.9-59.1 x 33.6-79.8: same dark gap before the line on every side
   (screen check at 3x: left line 11.7 -> gap -> picture 13.0; picture 58.7 -> gap -> right line 60.3).
+
+## v1283 — Blue: power number one fixed, smaller size
+- Harley: the power number is too big; it must fit at least 4 digits + a letter (888.8M). The badge was scaled to fill its box, so short values like
+  "1.5M" were blown up. Now one fixed scale, worked out from the widest value "888.8M", left-aligned in the area between avatar and pills; same size for
+  every value. Checked: 1.5M, 18,000, 888.8M and 999,999 all fit.

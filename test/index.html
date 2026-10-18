@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1282"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1283"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30707,7 +30707,10 @@ function uiSkinApply() {
   var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
   fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 337, 299, 82, 28, Y0);
   /* v1281 (Harley: the top bar's player data doesn't sit in its frame; avatar should fill its frame, same shape): frame insides measured off the art */
-  fit(q("#avatarWrap"), 12.9, 33.6, 46.2, 46.2, TOPY, null, true); /* v1282 (Harley: left side 1-2 px over the frame): inside the glow of the frame's inner line on all 4 sides (line centres 11.6 / 60.2 / 31.9 / 80.6) */ fit(q("#resBtn"), 379.1, 36.7, 38.1, 38.1, TOPY); fit(q("#powerBadge"), 66, 37, 90, 40, TOPY);
+  fit(q("#avatarWrap"), 12.9, 33.6, 46.2, 46.2, TOPY, null, true); /* v1282 (Harley: left side 1-2 px over the frame): inside the glow of the frame's inner line on all 4 sides (line centres 11.6 / 60.2 / 31.9 / 80.6) */ fit(q("#resBtn"), 379.1, 36.7, 38.1, 38.1, TOPY); (function () { /* v1283 (Harley: power number too big, must fit 4 digits + letter e.g. 888.8M): one fixed size for every value - worked out for the widest
+    value "888.8M" - and left-aligned, instead of blowing short values like "1.5M" up to fill the box */
+    var pb = q("#powerBadge"), pv = q("#powerValue"); if (!pb || !pv) return; var real = pv.textContent; pv.textContent = "888.8M"; var w = pb.offsetWidth, h = pb.offsetHeight; pv.textContent = real;
+    var sc = Math.min(88 * k / w, 38 * k / h), r0 = uiSkinLayoutBox(pb); jobs.push({ el: pb, x: 67 * k, y: TOPY + (37 + (38 - h * sc / k) / 2) * k, w: w * sc, h: h * sc, fixedScale: sc }); })();
   var RX = [[161.2, 42, 69.6, 27.5], [240.5, 42.4, 69.6, 27.2], [319.9, 42.4, 48.2, 27.2]];
   qa("#resbar .res").filter(function (e) { return e.offsetParent; }).forEach(function (e, i) { var t = RX[i]; if (t) fit(e, t[0] + 2, t[1] + 1.5, t[2] - 4, t[3] - 3, TOPY); }); /* only the shown pills (the first ones in the bar are hidden) */
   jobs.forEach(function (j) { j.r = uiSkinLayoutBox(j.el); j.s = j.sub ? uiSkinLayoutBox(j.sub) : j.r; });
@@ -30716,6 +30719,7 @@ function uiSkinApply() {
     var r = j.r, b = j.s, sx, sy, tx, ty;
     if (!r.width || !r.height) return;
     if (j.stretch) { sx = j.w / r.width; sy = j.h / r.height; tx = j.x - r.left; ty = j.y - r.top; }
+    else if (j.fixedScale) { sx = sy = j.fixedScale; tx = j.x - r.left; ty = j.y - r.top; }
     else { var s = j.noScale ? 1 : Math.min(j.w / b.width, j.h / b.height); sx = sy = s; tx = j.x + (j.w - b.width * s) / 2 - (b.left - r.left) * s - r.left; ty = j.y + (j.h - b.height * s) / 2 - (b.top - r.top) * s - r.top; }
     css += 'body.ui-blue[data-screen="conquest"] ' + uiSkinSel(j.el) + " { transition:none !important; transform-origin:0 0 !important; transform:translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px) scale(" + sx.toFixed(4) + "," + sy.toFixed(4) + ") !important; }\n";
   });
