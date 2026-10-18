@@ -2582,3 +2582,7 @@
   skill timers, Forge and nav - mostly text that changes all the time (counters, timers), which had to be re-glowed over the see-through frame each time.
   Classic unchanged. The game's own icon filters (e.g. dimmed nav icons) are kept - the switch removed those too; if FPS is still short, they're next.
 - g348 passes.
+
+## v1270 — Blue UI: + centred in the empty hero rings
+- Harley: the + is slightly too low. Measured: + centre 1.4 units below the ring centre (the glyph sits low in the font). Empty wrap gets 2.5 px bottom
+  padding (border-box) -> + centre 578.5 vs ring centre 578.6 (units, 430 phone).
