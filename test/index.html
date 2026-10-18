@@ -12486,7 +12486,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1270"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1271"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30632,7 +30632,7 @@ function uiSkinApply() {
   var jobs = [];
   /* fit: element (or its sub-box) is scaled to fit inside x,y,w,h (units, y from base) and centred; stretch: fills it exactly */
   function fit(el, x, y, w, h, base, sub, stretch) { if (el) jobs.push({ el: el, x: x * k, y: base + y * k, w: w * k, h: h * k, sub: sub, stretch: stretch }); }
-  fit(q(".skill-auto-btn"), 9, 49, 56, 36, Y0);
+  fit(q(".skill-auto-btn"), 9, 46, 56, 36, Y0); /* v1271: y 49 -> 46, text was 3 units low */
   var cx = [102.6, 164.9, 236.5, 304.7, 372.5], cy = 64.8, D = 41;
   qa(".idle-skillbar > .skill-slot").forEach(function (e, i) { if (i < 5) fit(e, cx[i] - D / 2, cy - D / 2, D, D, Y0, e.querySelector(".skill-icon-wrap")); });
   var lx = [12, 58, 103], ly = [118, 168]; qa(".lg-cell").forEach(function (e, i) { if (i < 6) fit(e, lx[i % 3], ly[Math.floor(i / 3)], 39, 40, Y0); });
@@ -30642,7 +30642,7 @@ function uiSkinApply() {
   var LT = [[12, 230, 40, 38], [60, 230, 40, 38], [108, 230, 41, 38], [14, 279, 40, 45], [58, 279, 40, 45], [108, 283, 41, 44]], RT = [[280, 231, 41, 44], [327, 231, 42, 44], [375, 231, 42, 44]];
   left.forEach(function (e, i) { var t = LT[i]; if (t) fit(e, t[0], t[1], t[2], t[3], Y0); });
   right.forEach(function (e, i) { var t = RT[i]; if (t) fit(e, t[0], t[1], t[2], t[3], Y0); });
-  fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 299, 50, 28, Y0); fit(q(".fort-pick"), 337, 299, 82, 28, Y0);
+  fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 337, 299, 82, 28, Y0);
   var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); });
   fit(q("#avatarWrap"), 10, 36, 52, 52, TOPY); fit(q("#resBtn"), 380, 38, 44, 44, TOPY);
   var RX = [[143, 44, 75, 32], [222, 44, 74, 32], [302, 44, 59, 32]]; qa(".resbar .res").forEach(function (e, i) { var t = RX[i]; if (t) jobs.push({ el: e, x: t[0] * k, y: TOPY + t[1] * k, w: t[2] * k, h: t[3] * k, noScale: true }); });

@@ -2586,3 +2586,7 @@
 ## v1270 — Blue UI: + centred in the empty hero rings
 - Harley: the + is slightly too low. Measured: + centre 1.4 units below the ring centre (the glyph sits low in the font). Empty wrap gets 2.5 px bottom
   padding (border-box) -> + centre 578.5 vs ring centre 578.6 (units, 430 phone).
+
+## v1271 — Blue UI: AUTO and Stats text centred
+- Harley: "Stats" and "AUTO" text are off centre. Measured against each button's bright outline: AUTO text 3 units low, Stats 3.5 low (x was fine).
+  Target boxes moved up (AUTO y 49 -> 46, Stats 299 -> 295.5). Now AUTO text centre 65.5 vs outline 65.2, Stats 308.8 vs 308.4 (units).
