@@ -2631,3 +2631,9 @@
 - Fix: transparent border kept, z-index 50, border added to the button offsets. Now nav top / button top are identical on all 5 screens (820/830 with
   the inset, 854/864 without).
 - g348 passes.
+
+## v1277 — Blue nav: Conquest tab keeps its outer frame on other screens
+- Harley: going to another screen, part of the frame around the Conquest tab vanished. The plain nav strip (v1272) replaced tab 1's whole area with a
+  copy of tab 2, which also wiped the outer frame/edge that wraps tab 1 (the far-left end of the bar). Now only the glowing inner box (rows 6.5-80,
+  x 6-87.5 units) is replaced, so the bar's outer frame stays the same on every screen.
+- g348 passes.
