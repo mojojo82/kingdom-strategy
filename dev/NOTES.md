@@ -2730,3 +2730,6 @@ Harley's 3 points:
   embedded as ENEMY_BAT; drawn ~48 game px tall, mirrored to face the fortress.
 - The body sits on the old archer spot (targeting / projectiles unchanged). No code bob for the bat (Harley) - the flap is the only motion. Other enemies keep theirs.
 - Takes priority over any Dev Tools archer sprite (ENEMY_BAT.on = false brings the old one back).
+
+## v1291 — bat smaller
+- Harley: "can we make that bat smaller". ENEMY_BAT.h 48 -> 36 game px (25% smaller). Body still on the same spot.
