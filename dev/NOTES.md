@@ -2658,3 +2658,12 @@ Harley's 3 points:
    wrapper applies the style + nav placement on every switch before the first paint. Frame-sampled switches (Conquest<->Heroes/More, Heroes->City,
    More->World): v1273 showed 2-3 states, now 1.
 - g348 passes.
+
+## v1280 — weapon slots no longer rebuilt every second (Blue icons jumping)
+- Harley's video: the 3 weapon icons (Lv1) jumped out of their frames for a moment every second in Blue.
+- Cause (pre-existing): renderPowerSlots() runs on every 1 s tick and wiped #idlePowerSlots (3 card boxes + the weapon slots) then rebuilt them a step
+  later; in that gap the Blue layout re-placed things with the weapon slots missing, so they showed unplaced for 1-2 frames. (In Classic the same churn
+  happened every second, just invisibly.)
+- Fix: the boxes are only created if missing; cards and weapons refresh through their own change checks. Headless, 15 s of frames with 2 weapons on:
+  30 position jumps before, 0 after.
+- g246, g212, g309, g348, g347 pass.
