@@ -2528,3 +2528,7 @@
 - Forest (rain) level: tree layer's top edge now shows under the extra sky - Harley is making new forest art anyway.
 - Fortress remembered height (st.lastH) ignores a sky strip (both screens).
 - g347_conquest_sky.js (new); g267, g276, g293, g294, g295, g296 (test now measures without the sky), g305, g327, g341, g345, g346 pass. g271 fails the same way on v1261 (pre-existing).
+
+## v1263 — no gap between the Conquest panel and the nav
+- Harley (phone screenshot): "small gap" - idleFitSky left 8 px above the bottom nav (copied from the Arena). Now flush (rounded up, so no hairline).
+- g347 (now asserts < 0.5 px gap) passes.

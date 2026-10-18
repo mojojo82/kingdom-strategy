@@ -32,7 +32,7 @@ const call = call0;
   /* Arena unaffected */
   await P.evaluate(() => { setScreen("more", "arena"); renderArena(); }); await P.waitForTimeout(800);
   console.log(JSON.stringify({ o, errs }));
-  assert(o.sky > 100, "sky strip on a phone"); assert(Math.abs(o.logicalH - o.base) <= 2, "fight keeps its old height"); assert(o.psBottom <= o.navTop, "panel above the nav");
-  assert(o.navTop - o.psBottom < 20, "empty space used"); assert(o.floor, "village road loaded"); assert(o.env === "day"); assert(errs.length === 0, errs.join(" | "));
+  assert(o.sky > 100, "sky strip on a phone"); assert(Math.abs(o.logicalH - o.base) <= 2, "fight keeps its old height"); assert(o.psBottom <= o.navTop + 1, "panel ends at the nav (may tuck under it by <1px)");
+  assert(o.navTop - o.psBottom < 0.5, "no gap above the nav"); assert(o.floor, "village road loaded"); assert(o.env === "day"); assert(errs.length === 0, errs.join(" | "));
   console.log("g347 ok"); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

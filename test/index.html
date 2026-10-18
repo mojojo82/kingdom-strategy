@@ -12475,7 +12475,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1262"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1263"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26336,7 +26336,7 @@ function idleFitSky(cv) {
   var navOn = nav && nav.offsetParent && nav.getBoundingClientRect().height > 0;
   if (navOn && window.innerWidth <= 900) {
     var bottom = 0; document.querySelectorAll("#conquestModeContent .idle-power-slots").forEach(function (e) { if (e.offsetParent) bottom = Math.max(bottom, e.getBoundingClientRect().bottom); });
-    if (bottom > 0) skyH = Math.max(0, Math.min(400, Math.floor(nav.getBoundingClientRect().top - bottom - 8 + cur)));
+    if (bottom > 0) skyH = Math.max(0, Math.min(400, Math.ceil(nav.getBoundingClientRect().top - bottom + cur))); /* v1263 (Harley: "small gap"): flush with the nav */
   }
   var baseH = Math.round(cv.clientWidth * 240 / 400);
   if (Math.abs(skyH - cur) <= 1 && cv._baseH === baseH) return false;
