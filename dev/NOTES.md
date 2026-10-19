@@ -2929,3 +2929,10 @@ Harley's 3 points:
   --check fails on a missing/stale one. HANDOVER: how to add level art now; claude.ai artifact publishes must pass the level files.
 - Tested headless (art served with a 0.7s delay, one forced failure): ch1 fetches the graveyard in the background, a jump to ch5 fetches the cave
   (retry worked) then the crystal mine, ch7 fetches the lava cavern; no page errors.
+
+## v1316 — Harley's scenery sharpness settings built in (all devices / accounts)
+- Harley (20 Oct) pasted his phone's "Copy my settings"; he needs them on more than one device and account. Made them each level's own setting:
+  Forest far Soft, near Light, ground Light + Darker below; Cave ground Light + Darker below; Crystal mine and Lava cavern Darker below;
+  everything else as it was (Graveyard near Village-like, rest Sharp). A fresh device's summary now matches his paste exactly.
+- Dev Tools: "↺ Reset to the levels' own settings (all levels)" clears this device's picks (sharpness + ground version) so other devices snap to
+  the built-in ones. He can keep tweaking on the phone and paste again whenever.

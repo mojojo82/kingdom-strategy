@@ -12555,7 +12555,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1315"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1316"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25546,13 +25546,14 @@ function ensureLevelArtAround(env) { /* this level now; the next chapter's level
 // Per-environment parallax backdrops (back to front). baseY = the image row that
 // sits on the ground line; scale is relative to groundY; lift raises it.
 var TMP_ENV_BG = {
+  /* v1316: every level's own sharpness + ground version = Harley's phone settings (20 Oct, "Copy my settings") - what every player and device gets. */
   /* v1301 (Harley 19 Oct): the rain level is rebuilt from scratch - deep inside an enchanted forest (no sky; both tree layers reach the top,
      Harley: "looks more like they are actually inside the forest"). dev/levels/build_forest.py: far = GPT split, top fading into the canopy colour;
      near = cut from the composite with GPT's split as a stencil; road = natural forest floor at the village eye-level. Old forest art kept in
      art/originals/backgrounds/forest_layer1/2_*.png. Tree layers drawn at 0.46 (not 0.3) so the canopy reaches the top of tall phones. */
-  rain: { flat: "#0d2136", floor: { img: levelArt("forest_road.webp", "845cfa81d4"), alt: { name: "Darker below", img: levelArt("forest_road_dark.webp", "8b6f13458c") }, k: 0.21 / 185.76, road: 160, top: 144, upx: 2, fill: "#0a0807" }, layers: [
-    { name: "Far", img: levelArt("forest_far.webp", "cf7c580330"), ow: 1446, oh: 796, baseY: 795, scale: 0.46 / 185.76, lift: 2.5, speed: 0.25 },
-    { name: "Near", img: levelArt("forest_near.webp", "9e1639dc6b"), ow: 1506, oh: 797, baseY: 795, scale: 0.46 / 185.76, lift: 2.5, speed: 0.5 }
+  rain: { flat: "#0d2136", floor: { img: levelArt("forest_road.webp", "845cfa81d4"), alt: { name: "Darker below", img: levelArt("forest_road_dark.webp", "8b6f13458c") }, k: 0.21 / 185.76, road: 160, top: 144, upx: 2, fill: "#0a0807", soft: "light", useAlt: true }, layers: [
+    { name: "Far", img: levelArt("forest_far.webp", "cf7c580330"), ow: 1446, oh: 796, baseY: 795, scale: 0.46 / 185.76, lift: 2.5, speed: 0.25, soft: "soft" },
+    { name: "Near", img: levelArt("forest_near.webp", "9e1639dc6b"), ow: 1506, oh: 797, baseY: 795, scale: 0.46 / 185.76, lift: 2.5, speed: 0.5, soft: "light" }
   ] },
   /* v1294 (Harley 19 Oct): the night level is a haunted graveyard - Harley's ChatGPT composite split into far / near / road (dev/levels/build_graveyard.py).
      Backdrop drawn at ~0.3 game px per source px (0.9 phone px on a 3x phone = crisp). Road: top surface flattened to the village road's eye-level,
@@ -25573,21 +25574,21 @@ var TMP_ENV_BG = {
   /* v1304 (Harley 19 Oct): the sunlit cavern - first new stop of the journey (forest -> cave -> volcano ...). dev/levels/build_cave_sunlit.py.
      Matched to the composite (Harley: "priority should be to get all layers to match the composite", no readability toning). Drawn at 0.32 so the arch composition shows like the composite;
      the near layer has 300 rows of mirrored, darkened ceiling added on top so tall phones never see an edge. Added as chapter 5 for now - the journey reorder comes later. */
-  cave: { flat: "#14181e", floor: { img: levelArt("cave_road.webp", "3caeedcceb"), alt: { name: "Darker below", img: levelArt("cave_road_dark.webp", "8a001009bf") }, k: 0.21 / 185.76, road: 64, top: 48, upx: 2, fill: "#0c0b0c" }, layers: [
+  cave: { flat: "#14181e", floor: { img: levelArt("cave_road.webp", "3caeedcceb"), alt: { name: "Darker below", img: levelArt("cave_road_dark.webp", "8a001009bf") }, k: 0.21 / 185.76, road: 64, top: 48, upx: 2, fill: "#0c0b0c", soft: "light", useAlt: true }, layers: [
     { name: "Far", img: levelArt("cave_far.webp", "fb12bbc4ed"), ow: 1446, oh: 810, baseY: 809, scale: 0.32 / 185.76, lift: 2.5, speed: 0.25 },
     { name: "Near", img: levelArt("cave_near.webp", "c42b5ba117"), ow: 1515, oh: 1111, baseY: 1109, scale: 0.32 / 185.76, lift: 2.5, speed: 0.5 }
   ] },
   /* v1309 (Harley 19 Oct): the crystal mine - next journey stop after the sunlit cavern. dev/levels/build_cave_crystal.py (same steps as the
      sunlit cave: near cut from the composite, rock ceiling grown for tall phones). Road made by giving GPT the sunlit road as the shape reference;
      two ground versions (Original / Darker below). Chapter 6 for now. */
-  crystal: { flat: "#121424", floor: { img: levelArt("crystal_road.webp", "1e18c0ef64"), alt: { name: "Darker below", img: levelArt("crystal_road_dark.webp", "6f90334916") }, k: 0.21 / 185.76, road: 64, top: 48, upx: 2, fill: "#0b0a12" }, layers: [
+  crystal: { flat: "#121424", floor: { img: levelArt("crystal_road.webp", "1e18c0ef64"), alt: { name: "Darker below", img: levelArt("crystal_road_dark.webp", "6f90334916") }, k: 0.21 / 185.76, road: 64, top: 48, upx: 2, fill: "#0b0a12", useAlt: true }, layers: [
     { name: "Far", img: levelArt("crystal_far.webp", "0fbaffe8d5"), ow: 1446, oh: 810, baseY: 809, scale: 0.32 / 185.76, lift: 2.5, speed: 0.25 },
     { name: "Near", img: levelArt("crystal_near.webp", "401be1cab6"), ow: 1450, oh: 1111, baseY: 1109, scale: 0.32 / 185.76, lift: 2.5, speed: 0.5 }
   ] },
   /* v1310 (Harley 19 Oct): the lava cavern - journey stop after the crystal mine. Harley's design: dark rocky ground, the near layer is a lava lake
      (animated: Leonardo clip -> 24-frame loop, blended), the rocky far interior behind, no sunlight. Lava falls in the far layer are animated in code
      (VOLCANO_FALLS). dev/levels/build_volcano.py. Chapter 7 for now. */
-  volcano: { flat: "#160a09", floor: { img: levelArt("volcano_road.webp", "63411441be"), alt: { name: "Darker below", img: levelArt("volcano_road_dark.webp", "a28e1f9b04") }, k: 0.21 / 185.76, road: 64, top: 48, upx: 2, fill: "#0d0706" }, layers: [
+  volcano: { flat: "#160a09", floor: { img: levelArt("volcano_road.webp", "63411441be"), alt: { name: "Darker below", img: levelArt("volcano_road_dark.webp", "a28e1f9b04") }, k: 0.21 / 185.76, road: 64, top: 48, upx: 2, fill: "#0d0706", useAlt: true }, layers: [
     { name: "Far", img: levelArt("volcano_far.webp", "8b3e9d6d4e"), ow: 1446, oh: 1441, baseY: 1440, scale: 0.32 / 185.76, lift: 2.5, speed: 0.25, falls: true },
     { name: "Lake", img: levelArt("volcano_lake_sheet.webp", "c5010a7ce4"), ow: 1446, oh: 230, baseY: 147, scale: 0.32 / 185.76, lift: 2.5, speed: 0.5, anim: { n: 24, fps: 8 } }
   ] },
@@ -25642,7 +25643,11 @@ function renderDevLayerSoft(force) {
       + '<div class="dev-speed-btn' + (!ua ? " active" : "") + '" onclick="setFloorAlt(\'' + env + '\',0)">Original' + (!cfg.floor.useAlt ? " •" : "") + '</div>'
       + '<div class="dev-speed-btn' + (ua ? " active" : "") + '" onclick="setFloorAlt(\'' + env + '\',1)">' + cfg.floor.alt.name + (cfg.floor.useAlt ? " •" : "") + '</div></div></div>'; }
   el.innerHTML = h + '<div class="dev-tools-hint" style="opacity:.7;">• = the level\'s own setting (what players get)</div>'
-    + '<button class="dev-btn" type="button" style="margin-top:6px;" onclick="copyLayerSoftSettings(this)">📋 Copy my settings (all levels)</button>';
+    + '<button class="dev-btn" type="button" style="margin-top:6px;" onclick="copyLayerSoftSettings(this)">📋 Copy my settings (all levels)</button>'
+    + ' <button class="dev-btn" type="button" style="margin-top:6px;" onclick="resetLayerSoftAll()">↺ Reset to the levels\' own settings (all levels)</button>';
+}
+function resetLayerSoftAll() { /* v1316: forget this device's picks - back to the built-in (•) settings on every level */
+  layerSoftOverride = {}; floorAltPick = {}; try { localStorage.removeItem("kingdom_layer_soft_v1"); localStorage.removeItem("kingdom_floor_alt_v1"); } catch (e) {} renderDevLayerSoft(true);
 }
 function layerSoftSummary() { /* every level, every layer: what this phone shows right now */
   var NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern" }, out = [];
