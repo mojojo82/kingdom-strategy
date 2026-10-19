@@ -21,7 +21,7 @@ const call = call0;
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
   await P.fill("#ksE", "g347@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Sky"); await P.click("#ksGo"); await P.waitForTimeout(6000);
-  await P.evaluate(() => { game.state.idle.chapter = 5; game.state.idle.levelNum = 3; setScreen("conquest"); }); await P.waitForTimeout(3000);
+  await P.evaluate(() => { game.state.idle.chapter = 1; game.state.idle.levelNum = 3; /* v1304: chapter 5 is the cave now - the village is chapter 1 */ setScreen("conquest"); }); await P.waitForTimeout(3000);
   const o = await P.evaluate(() => { const cv = document.getElementById("idleCanvas"), r = cv.getBoundingClientRect(), dpr = canvasDPR();
     const ps = Math.max(...[...document.querySelectorAll("#conquestModeContent .idle-power-slots")].map((e) => e.getBoundingClientRect().bottom));
     return { cvH: r.height, cvW: r.width, sky: idleAnim.skyPx, logicalH: Math.round(cv.height / dpr) - idleAnim.skyPx, base: Math.round(r.width * 240 / 400), psBottom: ps, navTop: document.getElementById("bottomNav").getBoundingClientRect().top,
