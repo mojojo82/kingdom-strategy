@@ -2836,3 +2836,11 @@ Harley's 3 points:
   carry upx: 2 so a step softens their real detail, not just the doubled pixels. Village road has no upx.
 - "📋 Copy my settings (all levels)" copies a plain-text summary of every level/layer as shown on that phone - Harley pastes it to Claude, who makes
   those the real settings (the layer's / floor's .soft).
+
+## v1303 — forest: rain splashes on the path + Rain2 (straight, shorter, with depth)
+- Splashes (Harley: "random splashes appearing on the ground out of nowhere"): drawRainSplashes - ~45/s at random spots on the road's walking strip
+  (road coordinates, so they scroll with it), ripple ring + 2-3 hopping droplets, ~0.3s each, ~13 on screen. Forest only. Dev Tools on/off
+  (kingdom_rain_splash_v1).
+- Rain2 (Harley: in a forest rain drops more vertical; then "shorter"): straight down, z depth per drop - far half thin/faint, near half brighter,
+  drawn in 2 batched strokes; length = len x (0.4..0.85), about half of rain1. Default = Rain2; Dev Tools "Rain style" flips to Rain1
+  (kingdom_rain_style_v1). Conquest only - the Arena keeps its own slanted rain.

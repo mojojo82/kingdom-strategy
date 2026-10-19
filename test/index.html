@@ -3351,6 +3351,12 @@
                   <span class="dev-tools-hint">Jump to chapter (moves your real Conquest progress to its first level):</span>
                   <div class="dev-speed-btns" id="devChapterBtns"></div>
                 </div>
+                <div class="dev-tools-row">
+                  <span class="dev-tools-hint">🌧️ Rain style:</span>
+                  <button class="dev-btn" type="button" onclick="try{localStorage.setItem('kingdom_rain_style_v1',rainStyle()===2?'1':'2')}catch(e){};this.textContent='Rain'+rainStyle()">Rain2</button>
+                  <span class="dev-tools-hint">Splashes on the forest path:</span>
+                  <button class="dev-btn" type="button" onclick="try{localStorage.setItem('kingdom_rain_splash_v1',rainSplashOn()?'0':'1')}catch(e){};this.textContent=rainSplashOn()?'On':'Off'">On</button>
+                </div>
                 <div class="dev-tools-row" style="display:block;">
                   <div class="dev-tools-hint">🖼️ Scenery sharpness (the level you're on):</div>
                   <div id="devLayerSoft"></div>
@@ -12545,7 +12551,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1302"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1303"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22764,7 +22770,7 @@ function ensureWeatherParticles(target, env, w, h) {
     }
   } else if (env === "rain") {
     for (var j = 0; j < 42; j++) {
-      list.push({ x: Math.random() * w, y: Math.random() * h, speed: 340 + Math.random() * 150, len: 9 + Math.random() * 7 });
+      list.push({ x: Math.random() * w, y: Math.random() * h, speed: 340 + Math.random() * 150, len: 9 + Math.random() * 7, z: Math.random() }); /* z: v1303 rain2 depth (0 far .. 1 near) */
     }
   }
   target.weatherParticles = list;
@@ -24098,7 +24104,7 @@ function stepIdleAnim(dtSec, w, h) {
       // drawIdleAnim: lineTo(p.x - 3, p.y + p.len)) so the drop's actual
       // fall path matches its angled look instead of falling straight
       // down while appearing slanted.
-      p.x += (-3 / p.len) * p.speed * dtSec * Math.max(1, devSpeedMult);
+      if (rainStyle() === 1) p.x += (-3 / p.len) * p.speed * dtSec * Math.max(1, devSpeedMult); /* v1303: rain2 falls straight down */
       p.y += p.speed * dtSec * Math.max(1, devSpeedMult);
       if (p.y > h) { p.y = -10 - cqSky; p.x = Math.random() * w; }
     });
@@ -25566,6 +25572,27 @@ function copyLayerSoftSettings(btn) {
 }
 setInterval(function () { try { renderDevLayerSoft(false); } catch (e) {} }, 1000);
 Object.keys(TMP_ENV_BG).forEach(function (k) { TMP_ENV_BG[k]._env = k; });
+/* v1303 (Harley: "random splashes appearing on the ground out of nowhere might work"): rain splashes on the forest path. Not tied to the falling
+   rain - they just pop up at random spots on the walking strip: a flat ripple ring that spreads and fades + 2-3 droplets that hop and fall back.
+   Stored in road coordinates so they scroll with the road. ~45 a second, each ~0.3s -> about 12-15 on screen. Plain shapes, no filters. Dev Tools on/off. */
+function rainStyle() { try { return localStorage.getItem("kingdom_rain_style_v1") === "1" ? 1 : 2; } catch (e) { return 2; } } /* v1303: 1 = slanted (rain1), 2 = straight forest rain (rain2, default) */
+function rainSplashOn() { try { return localStorage.getItem("kingdom_rain_splash_v1") !== "0"; } catch (e) { return true; } }
+function drawRainSplashes(ctx, w, top, depth) {
+  var now = performance.now(), A = idleAnim, dt = A.splashT ? Math.min(0.1, (now - A.splashT) / 1000) : 0; A.splashT = now;
+  var L = A.splashes || (A.splashes = []), off = A.bgOffsetFar || 0;
+  A.splashAcc = (A.splashAcc || 0) + dt * 45;
+  while (A.splashAcc >= 1) { A.splashAcc -= 1; var d = Math.random(), drops = [];
+    for (var k = 0, n = 2 + (Math.random() < 0.5 ? 1 : 0); k < n; k++) drops.push({ vx: (Math.random() - 0.5) * 22, vy: -(14 + Math.random() * 16) });
+    L.push({ x: Math.random() * w + off, y: top + d * depth, s: 0.6 + d * 0.7, t: 0, life: 0.26 + Math.random() * 0.12, drops: drops }); }
+  ctx.save(); ctx.lineWidth = 0.9;
+  for (var i = L.length - 1; i >= 0; i--) { var p = L[i]; p.t += dt; var q = p.t / p.life; if (q >= 1) { L.splice(i, 1); continue; }
+    var x = p.x - off, y = p.y; if (x < -10 || x > w + 10) continue;
+    var r = (1.5 + 5.5 * q) * p.s; ctx.strokeStyle = "rgba(205,228,255," + (0.8 * (1 - q)).toFixed(3) + ")";
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.28, 0, 0, 6.2832); ctx.stroke();
+    if (q < 0.75) { ctx.fillStyle = "rgba(220,238,255," + (0.9 * (1 - q / 0.75)).toFixed(3) + ")"; var tt = p.t;
+      for (var j = 0; j < p.drops.length; j++) { var dr = p.drops[j], dx = x + dr.vx * tt * p.s, dy = y + (dr.vy * tt + 90 * tt * tt) * p.s; if (dy > y) continue; ctx.fillRect(dx - 0.6, dy - 0.6, 1.2 * p.s + 0.3, 1.2 * p.s + 0.3); } } }
+  ctx.restore();
+}
 function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
   ctx.save();
   var skyT = -(idleAnim.skyPx || 0); /* v1262: the taller Conquest screen - negative y is the extra sky above the old top edge */
@@ -25618,6 +25645,7 @@ function drawIdleAnim(ctx, w, h) {
     var fI = layerImgFor(currentEnv, "floor", envFloor) /* v1302: Ground sharpness setting */, fS = groundY * envFloor.k, fW = fI.width * fS, fH = fI.height * fS, fT = groundY - envFloor.road * fS;
     ctx.fillStyle = envFloor.fill; ctx.fillRect(0, fT + envFloor.top * fS, w, h - fT - envFloor.top * fS); /* v1264: dark fill only under the stones (was from the ground line = the gap) */
     for (var fX = -(idleAnim.bgOffsetFar % fW); fX < w; fX += fW) ctx.drawImage(fI, fX, fT, fW + 1, fH);
+    if (currentEnv === "rain" && rainSplashOn()) drawRainSplashes(ctx, w, fT + envFloor.top * fS, (envFloor.road - envFloor.top) * fS * 2.4); /* v1303: random little splashes on the wet path */
   } else if (groundFiltered) {
     var gts = Math.max(8, 32 * groundTileScale);
     var gxOff = idleAnim.bgOffsetFar % gts;
@@ -26437,10 +26465,19 @@ function drawIdleAnim(ctx, w, h) {
     ctx.restore();
   } else if (currentEnv === "rain") {
     ctx.save();
+    if (rainStyle() === 2) { /* v1303 rain2 (Harley: "in a forest rain tends to drop more vertical"): straight down, with depth - far drops thin, short and faint,
+                                 near drops longer and brighter. Two batches (far / near) so it's still only a couple of strokes per frame. */
+      [[0, 0.5, 0.75, "rgba(180,200,225,0.28)"], [0.5, 1.01, 1.15, "rgba(200,220,240,0.55)"]].forEach(function (B) {
+        ctx.strokeStyle = B[3]; ctx.lineWidth = B[2]; ctx.beginPath();
+        idleAnim.weatherParticles.forEach(function (p) { var z = p.z == null ? 0.6 : p.z; if (z < B[0] || z >= B[1]) return; var L = p.len * (0.4 + z * 0.45); /* Harley: shorter in the forest (~half rain1) */ ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + L); });
+        ctx.stroke();
+      });
+    } else {
     ctx.strokeStyle = "rgba(195,215,235,0.55)"; ctx.lineWidth = 1.2;
     idleAnim.weatherParticles.forEach(function (p) {
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 3, p.y + p.len); ctx.stroke();
     });
+    }
     ctx.restore();
   }
 
