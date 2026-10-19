@@ -2916,3 +2916,16 @@ Harley's 3 points:
   within HALT_NEAR_PX (60) of getFortressNoseX (enemy melee reach is 46). Stays stopped until nothing's been near for 0.8s (no stop-go jitter as
   enemies die and the next walk in); eases to a stop in ~0.3s, pulls away in ~0.6s. Dev Tools "Halt scenery when an enemy is near" (default On,
   kingdom_halt_near_v1). Heroes / enemies / attacks / timing untouched.
+
+## v1315 — level art loads per level instead of all at first load
+- Harley (game size talk: 40 MB now, ~65 MB at 20 levels): "why would you need to pull that on first load if the player can only be in 1 chapter at a time".
+- The 24 level pictures (graveyard, snow, forest, cave, crystal, lava - all already in art/levels/, byte-identical) are taken out of test/index.html:
+  39.6 MB -> 28.0 MB. TMP_ENV_BG uses levelArt(file, fingerprint): an Image with no src until ensureLevelArt(env) asks for it. drawIdleAnim calls
+  ensureLevelArtAround(current env): fetch this level, and once it's all in, the next chapter's (via game.idleEnvForChapter, so a reorder just works).
+  Failed fetch retries up to 4 times (3s, 6s, 9s, 12s). Village stays built in.
+- While a level's art is on its way: its flat colour + its road's dark fill (no village tiles / grass / ground line). Guards: layerImgFor skips an
+  image that isn't loaded (no 0-size canvas cached); a chosen "Darker below" ground falls back to the original until it arrives.
+- tools/stamp-version.js keeps the ?h= fingerprints matching the files (so a changed picture is re-downloaded, unchanged ones come from cache) and
+  --check fails on a missing/stale one. HANDOVER: how to add level art now; claude.ai artifact publishes must pass the level files.
+- Tested headless (art served with a 0.7s delay, one forced failure): ch1 fetches the graveyard in the background, a jump to ch5 fetches the cave
+  (retry worked) then the crystal mine, ch7 fetches the lava cavern; no page errors.
