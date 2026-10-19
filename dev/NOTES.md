@@ -2999,3 +2999,12 @@ Harley's 3 points:
   (compositor-friendly opacity/transform; sfLife/sfLife2 CSS kept for reference, .sf no longer references them). prefers-reduced-motion keeps its old
   static look (seaFoam.still). Headless after: JS 24% -> 9%, style 18% -> 11%, foam visually unchanged (48 streaks, 43 animating), ships animate and
   clean up (markers 3 -> 0, hadAny closes). g347 + g296 + p03 pass; no page errors. Not checked on a phone.
+
+## v1321 — Kessa's dead card flipbook removed (28.0 -> 26.3 MB)
+- Harley ("lily has a video also on her card") caught my audit being wrong: ALL card heroes (gareth, kessa, ironlily) have v1139 card VIDEOS, and the
+  video branch hides the v1119 frame-sheet canvas. Kessa's 36-frame 6300x4410 sheet (1.76 MB, the single biggest asset in the file) was therefore
+  never shown and never decoded - the audit's "110 MB memory" worry never actually happened. Dead weight only.
+- Removed the HERO_CARD_ANIM kessa entry (sheet archived to art/originals/kessa_card_sheet_6300x4410.webp; sources in dev/kessa/). The sheet-canvas
+  machinery (makeHeroAnimCanvas / drawHeroCardAnims) stays for any future sheet hero; with HERO_CARD_ANIM empty it no-ops. If her video is ever
+  removed, her card now falls back to the still image, not the flipbook.
+- Checked headless: kessa / gareth / ironlily cards all show the video element, sheet canvas hidden, no page errors; g347 ok. Not checked on a phone.
