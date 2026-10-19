@@ -2953,3 +2953,9 @@ Harley's 3 points:
   copies freed) - Harley: "the level that got loaded just gets destroyed from memory".
 - Tested headless: 3-7 -> pick 2-14 -> graveyard, 32 kills past the 30-kill quota with no boss, best stays 3-7; Back -> 3-7 snow with the progress bar.
   Meta check: same pre-existing warning, same numbers as v1316. Not checked on a phone.
+
+## Performance audit step 1 (20 Oct, no game change)
+- dev/simfork/p06_screen_audit.js: every screen, nothing touched, CPU x4, 6 s: fps, long tasks, CPU busy split, DOM rebuilt/s, CPU profile (self time
+  per function with its line; built-ins shown with their caller). DPR=1 takes most software drawing out; HOOK= runs an experiment; OUT= saves json.
+- Results + ranking: dev/audit/perf_audit_step1.md (+ perf_v1317_dpr3.json / _dpr1.json). Top: Conquest drawing (hero sprites, lava lake; size on a
+  phone unknown - headless draws on the CPU), world map updateMarchMarkers ~20% + style ~20%, the every-second panel rebuilds on every screen.
