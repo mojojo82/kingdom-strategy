@@ -2819,3 +2819,12 @@ Harley's 3 points:
 - Far/near seams: the 90px cross-fade left half-transparent ghost peaks/trees on see-through layers -> seamless_cut() picks the best-matching wrap
   width and only blends where both sides are solid (graveyard unaffected; build_graveyard.py now import-safe).
 - TMP_ENV_BG.snow: Sky (scale .36, glow behind the far peaks), Far, Near at 0.3/185.76 like the graveyard, road k .21/185.76 row 30 top 16. Falling snow stays.
+
+## v1301 — rain level (chapter 4) rebuilt from scratch: deep inside an enchanted forest
+- Harley: start the forest from scratch; "both the near and far layers reach the top... looks more like they are actually inside the forest". No sky.
+- ChatGPT composite v1 (forest_v1_composite_1536x1024.png; Harley preferred it over v2). Road: v1 was a flat side-on edge with glowing mushrooms
+  underground (Harley: why?) -> GPT road try 1 looked like paving (row of blocks, loud colours) -> try 2 = natural forest floor (mud, moss, puddles, roots).
+- dev/levels/build_forest.py: far = GPT full-frame split, top fades into the canopy colour (flat #0d2136); near = cut from the composite with GPT's split
+  as a stencil (it aligned at 0,0 but came out brighter/saturated - same as the snow near); road ferns kept, walking strip flattened to the village eye-level.
+- Tree layers at 0.46 game px per source px (not 0.3): at 0.3 the canopy stopped short on tall phones (flat dark band at the top). Slightly softer too.
+- Old forest art kept in art/originals/backgrounds/forest_layer1/2_*.png. build_snowpass.py / build_graveyard.py are import-safe now.

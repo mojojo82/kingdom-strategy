@@ -32,19 +32,20 @@ def seamless_cut(im, search=260, band=16):
 ROOT = os.path.join(os.path.dirname(__file__), "..", ".."); SRC = os.path.join(ROOT, "art/originals/backgrounds")
 OUT = os.path.join(ROOT, "art/levels"); FULL = os.path.join(SRC, "snowpass_built"); os.makedirs(FULL, exist_ok=True)
 ROAD_TOP = 762                                   # composite row where the near layer meets the road
-def save(im, name, q=90):
-    im.save(os.path.join(FULL, name + ".png")); im.save(os.path.join(OUT, name + ".webp"), quality=q, method=6); print(name, im.size)
-save(seamless(Image.open(os.path.join(SRC, "snowpass_sky_gpt_1536x1024.png")).convert("RGBA")), "snowpass_sky", 88)
-far = key(Image.open(os.path.join(SRC, "snowpass_layer_far_gpt_1536x1024.png")))
-save(seamless_cut(far.crop((0, 180, far.width, ROAD_TOP + 1))), "snowpass_far")
-near = Image.open(os.path.join(FULL, "snowpass_near_cut.png")).convert("RGBA")
-save(seamless_cut(near.crop((0, 140, near.width, ROAD_TOP + 8))), "snowpass_near")
-road = key(Image.open(os.path.join(SRC, "snowpass_layer_road_gpt_1536x1024.png")))
-TOP, CUT, BAND = 712, 776, 43                    # snow surface 722-776 (front edge where the icicles start) -> squashed to ~33 + 10 margin
-band = road.crop((0, TOP, road.width, CUT)).resize((road.width, BAND), Image.LANCZOS)
-face = road.crop((0, CUT, road.width, road.height))
-r2 = Image.new("RGBA", (road.width, BAND + face.height)); r2.paste(band, (0, 0)); r2.paste(face, (0, BAND))
-r2 = seamless(r2); r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)
-save(r2, "snowpass_road")
-a = r2.getchannel("A"); tops = sorted(next((y for y in range(r2.height) if a.getpixel((x, y)) > 200), 0) for x in range(0, r2.width, 40))
-print("road solid top (median row)", tops[len(tops) // 2])
+if __name__ == "__main__":
+    def save(im, name, q=90):
+        im.save(os.path.join(FULL, name + ".png")); im.save(os.path.join(OUT, name + ".webp"), quality=q, method=6); print(name, im.size)
+    save(seamless(Image.open(os.path.join(SRC, "snowpass_sky_gpt_1536x1024.png")).convert("RGBA")), "snowpass_sky", 88)
+    far = key(Image.open(os.path.join(SRC, "snowpass_layer_far_gpt_1536x1024.png")))
+    save(seamless_cut(far.crop((0, 180, far.width, ROAD_TOP + 1))), "snowpass_far")
+    near = Image.open(os.path.join(FULL, "snowpass_near_cut.png")).convert("RGBA")
+    save(seamless_cut(near.crop((0, 140, near.width, ROAD_TOP + 8))), "snowpass_near")
+    road = key(Image.open(os.path.join(SRC, "snowpass_layer_road_gpt_1536x1024.png")))
+    TOP, CUT, BAND = 712, 776, 43                    # snow surface 722-776 (front edge where the icicles start) -> squashed to ~33 + 10 margin
+    band = road.crop((0, TOP, road.width, CUT)).resize((road.width, BAND), Image.LANCZOS)
+    face = road.crop((0, CUT, road.width, road.height))
+    r2 = Image.new("RGBA", (road.width, BAND + face.height)); r2.paste(band, (0, 0)); r2.paste(face, (0, BAND))
+    r2 = seamless(r2); r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)
+    save(r2, "snowpass_road")
+    a = r2.getchannel("A"); tops = sorted(next((y for y in range(r2.height) if a.getpixel((x, y)) > 200), 0) for x in range(0, r2.width, 40))
+    print("road solid top (median row)", tops[len(tops) // 2])
