@@ -12551,7 +12551,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1305"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1306"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22797,7 +22797,9 @@ function stepIdleAnim(dtSec, w, h) {
   // Lightning 1 — random background strikes (Dev Tools toggle). Countdown timer
   // set to a new random gap (5–14s) each time it fires, so strikes feel sporadic
   // rather than metronomic. The bolt shape is regenerated fresh per strike.
-  if (lightning1Enabled) {
+  var LIGHTNING_OFF_ENVS = { day: 1, cave: 1 }; /* v1306 (Harley): no lightning on the village or in the cave */
+  if (lightning1Enabled && LIGHTNING_OFF_ENVS[game.idleEnvironment()]) { idleAnim.lightningFlash = 0; idleAnim.lightningBoltPts = null; }
+  else if (lightning1Enabled) {
     idleAnim.lightningTimer -= dtSec * Math.max(1, devSpeedMult);
     if (idleAnim.lightningTimer <= 0) {
       idleAnim.lightningTimer = 5 + Math.random() * 9;

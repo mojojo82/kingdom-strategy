@@ -2861,3 +2861,7 @@ Harley's 3 points:
   their shine. A floor can now carry alt: { name, img }; Dev Tools > Scenery sharpness shows a "Ground version" row (Original / Darker below,
   "•" = floor.useAlt, players get Original for now). Per device: localStorage kingdom_floor_alt_v1. Ground sharpness steps apply to either version.
   "Copy my settings" includes the ground version.
+
+## v1306 — no lightning on the village or in the cave
+- Harley: remove the lightning on the cave and village levels. stepIdleAnim: LIGHTNING_OFF_ENVS { day, cave } - no strikes there (any flash in progress
+  is cleared). Graveyard / snow / forest keep it; Arena lightning unchanged. Tested: 30s at 20x per level -> day 0, night 10, snow 6, rain 7, cave 0.
