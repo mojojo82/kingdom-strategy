@@ -34,12 +34,22 @@ for x in range(1536):
 # (template match 0.92, scale 1, x 0). Stack it on top; cross-fade the 120 rows below the join so there's no seam. (No mirrored fake ceiling.)
 ext = np.asarray(Image.open(os.path.join(SRC, "volcano_far_ceiling_ext_gpt_1536x1024.png")).convert("RGB")).astype(np.float32)
 EXT = 723; OV = min(120, 1024 - EXT)
-# v1312 (Harley: the new ceiling looked like a second floor above them - "might look better just as really dark rock"): the extension darkens
-# with height into near-black rock (100% at the join -> ~12% at the top) and its glow is desaturated, so it reads as solid rock overhead.
-yy = np.clip((np.arange(EXT, dtype=np.float32) - 430) / (EXT - 430), 0, 1)[:, None, None]   # only rows 430-723 ever show on a phone: dark by row 430
-k = 0.08 + 0.92 * yy ** 1.8
-g = ext[:EXT].mean(2, keepdims=True); sat = 0.35 + 0.65 * yy ** 2           # less orange higher up
-ex = (g + (ext[:EXT] - g) * sat) * k
+# v1313 (Harley: darker, but "not a straight line - sculpted in there carefully"; full light where the lava light reaches, then dark): the darkness
+# follows the rock. A vertical light reach (~220 rows) is smoothed edge-aware with the rock as the guide (guided filter), long stalactites that hang
+# down into the light carry it further up their bodies, and orange-lit rims fade slower than flat rock. Higher up it's near-black, desaturated.
+e = ext[:EXT]; lum = e.mean(2) / 255.0
+yv = np.arange(EXT, dtype=np.float32)[:, None]; ramp = np.repeat(np.clip(1 - ((EXT - yv) / EXT) / 0.30, 0, 1) ** 1.6, 1536, 1)
+def _box(q, r): return cv2.blur(q, (2 * r + 1, 2 * r + 1))
+def _guided(I, p, r, eps):
+    mI = _box(I, r); mp = _box(p, r); cIp = _box(I * p, r) - mI * mp; vI = _box(I * I, r) - mI * mI
+    aa = cIp / (vI + eps); bb = mp - aa * mI; return _box(aa, r) * I + _box(bb, r)
+shaped = np.clip(_guided(cv2.GaussianBlur(lum, (0, 0), 2), ramp, 28, 0.002), 0, 1)
+rockm = (cv2.GaussianBlur(lum, (0, 0), 6) > 0.12).astype(np.float32); hang = np.zeros_like(rockm); acc = np.zeros(1536, np.float32)
+for yy_ in range(EXT - 1, -1, -1):
+    acc = np.where(rockm[yy_] > 0, acc + 1, 0); hang[yy_] = acc
+orange = np.clip((e[..., 0] - e[..., 2]) / 120, 0, 1) * np.clip((lum - 0.25) / 0.4, 0, 1)
+kk = 0.04 + 0.96 * np.clip(shaped + np.clip(hang / 180, 0, 1) * 0.35 * shaped + orange * 0.5 * np.clip(ramp * 1.6, 0, 1), 0, 1)
+ex = e * kk[..., None]; gr = ex.mean(2, keepdims=True); ex = gr + (ex - gr) * (0.4 + 0.6 * np.clip(ramp * 1.4, 0, 1))[..., None]
 top = np.dstack([ex, np.full((EXT, 1536), 255, np.float32)])
 ov = a[:OV].astype(np.float32); t = np.linspace(0, 1, OV)[:, None, None]
 ov[..., :3] = ext[EXT:EXT + OV] * (1 - t) + ov[..., :3] * t

@@ -2904,3 +2904,8 @@ Harley's 3 points:
 - Harley: the GPT extension made it look like a second floor above them, not trapped deep underground; "might look better just as really dark rock".
   build_volcano.py darkens the extension from the join upward (rows 430-723 are all a phone ever shows): to ~8% brightness at row 430 and less orange.
   Real GPT rock shapes kept, no mirroring. The game file is the only change.
+
+## v1313 — lava cavern ceiling: darkness sculpted to the rock
+- Harley: darker, but not a straight line - "sculpted in there carefully"; full light where the lava light reaches, then dark. build_volcano.py: a
+  ~220-row light reach smoothed edge-aware with the rock as the guide (guided filter), stalactites hanging into the light carry it further up,
+  orange-lit rims fade slower; above that near-black and desaturated. Harley OK'd the preview first.
