@@ -94,6 +94,10 @@ frames = [wrap(np.dstack([f, alpha])) for f in frames]
 sheet = np.vstack(frames).clip(0, 255).astype(np.uint8)
 sh = Image.fromarray(sheet, "RGBA"); sh.save(os.path.join(FULL, "volcano_lake_sheet.png"))
 sh.save(os.path.join(OUT, "volcano_lake_sheet.webp"), quality=80, method=6)
+# v1322: the game uses the 2-col x 12-row fold (1x24 is 5520 px tall - over the 4096 px texture limit of many older phones' graphics chips)
+g = Image.new("RGBA", (sh.width * 2, BH * 12))
+for f in range(len(frames)): g.paste(sh.crop((0, f * BH, sh.width, (f + 1) * BH)), ((f % 2) * sh.width, (f // 2) * BH))
+g.save(os.path.join(FULL, "volcano_lake_sheet_2x12.png")); g.save(os.path.join(OUT, "volcano_lake_sheet_2x12.webp"), quality=80, method=6)
 print("lake sheet", sh.size, "frames", len(frames), "band", BH, "lake top row in composite", LTOP, "video top", vtop, "file", os.path.getsize(os.path.join(OUT, "volcano_lake_sheet.webp")))
 
 # ---- road

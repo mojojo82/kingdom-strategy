@@ -3008,3 +3008,15 @@ Harley's 3 points:
   machinery (makeHeroAnimCanvas / drawHeroCardAnims) stays for any future sheet hero; with HERO_CARD_ANIM empty it no-ops. If her video is ever
   removed, her card now falls back to the still image, not the flipbook.
 - Checked headless: kessa / gareth / ironlily cards all show the video element, sheet canvas hidden, no page errors; g347 ok. Not checked on a phone.
+
+## v1322 — refolds: the two over-4096 sheets now fit older phones' texture limit
+- Lava lake: 1 col x 24 rows (1446x5520) -> 2 cols x 12 rows (2892x2760), rebuilt from the LOSSLESS master
+  (art/originals/backgrounds/volcano_built/volcano_lake_sheet.png) at the pipeline's own q80 - zero extra generation loss, alpha top edge kept,
+  1.15 MB (old 1.14). New file volcano_lake_sheet_2x12.webp (old kept untouched per the "new art gets a new name" rule); build_volcano.py now also
+  emits the 2x12. drawTmpEnvBg's animated-layer branch takes anim.cols (grid, not only one column); refold verified cell-by-cell pre-encode.
+- Roran: 26 cols x 2 rows (6838x422) -> 13 cols x 4 rows (3419x844), each logical row = 2 physical rows. HERO_ANIMS roran gets wrap: 13; the one
+  frame-coordinate choke point (frame() in drawHeroAnim) maps (f, row) -> ((f % wrap), row*2 + f/wrap). Re-encoded q92 exact (keeps RGB under
+  transparent px): embedded b64 341 -> 419 kB. Every logical frame compared old vs new through the game's own mapping: worst VISIBLE (premultiplied)
+  diff 0.52/255, alpha byte-identical (a naive diff says 14.8 - that is all in fully-transparent regions, invisible).
+- Gareth / Kessa have no wrap -> their math is untouched. Tested headless: lava cavern with Roran equipped - lake animates (2892x2760 loaded),
+  falls run, sprites coherent; g347 + g296 pass, no page errors, fingerprints ok. Not checked on a phone.
