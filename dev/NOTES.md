@@ -3020,3 +3020,16 @@ Harley's 3 points:
   diff 0.52/255, alpha byte-identical (a naive diff says 14.8 - that is all in fully-transparent regions, invisible).
 - Gareth / Kessa have no wrap -> their math is untouched. Tested headless: lava cavern with Roran equipped - lake animates (2892x2760 loaded),
   falls run, sprites coherent; g347 + g296 pass, no page errors, fingerprints ok. Not checked on a phone.
+
+## v1323 — the Stats popover wears the new ornate panel (the juice/dressing pattern-setter)
+- Harley's AFK Arena-style dressing project, screen 1 of the hit list. He picked 3 refs (AFK star popup = template, AFK bag = shaped tabs,
+  Fortress Saga = perimeter ornaments/plaque), GPT mocked it, he locked: cyan active tab, green values, lozenge buttons for later, Stats itself =
+  no tabs/no buttons/X only. GPT then did a "repair pass" to close the bottom (no tab tray) - that repaired frame is the keeper.
+- Game change: #idleStatsPop (the Conquest/Arena Stats chip popover) is now a centered min(92vw,400px) panel: the GPT frame as background
+  (63 kB webp b64), rows restyled via scoped CSS only (renderStats markup untouched): stretchable strip border-image (2 kB), emoji in gold
+  medallion badges, cream names / green values, baked X covered by the real close hotspot. The old anchored-position code removed (CSS centers).
+  The 1 s refresh stays and is churn-free thanks to v1318's signature gating.
+- Assets + kit in art/originals/ui/ (frame, first mock with tabs, strip, cyan/inactive tabs) for the rest of the hit list (City tabs, Backpack,
+  Level Select, Hero index). Ref screenshots from other games deliberately NOT committed.
+- Tested headless: popover opens centered over Conquest with 15 live rows (real HP value), scrolls, closes on X; no page errors; g347 ok.
+  Not checked on a phone.
