@@ -2936,3 +2936,20 @@ Harley's 3 points:
   everything else as it was (Graveyard near Village-like, rest Sharp). A fresh device's summary now matches his paste exactly.
 - Dev Tools: "↺ Reset to the levels' own settings (all levels)" clears this device's picks (sharpness + ground version) so other devices snap to
   the built-in ones. He can keep tweaking on the phone and paste again whenever.
+
+## v1317 — Level select: farm any completed stage (endless hordes, no boss)
+- Harley: "all players can go back to any previous level they've completed. in doing so they won't see the boss again, it will just be unlimited
+  hordes. the game i showed does a fade. maybe they do a load on pick too"; single stage (not chapter); "for farmed kills we need to link it to the
+  level they're on... 1-19 earns more than 1-10"; the Idle Chest should be its own thing.
+- Engine: state.idle.farm = {ch, lv}; idleStageCh/Lv feed idleGlobalLevelNum, the horde/boss curves, idleDispChapter (backdrop), labels. Farming:
+  idleAfterKill keeps the kill count at 0 (endless, like the boss-retry horde), idleClearLevel / boss attempt refuse, the chapter-boss check is off.
+  Horde kill pay x idleFarmPayK() = stage global level / best global level (2-14 with best 3-7 = 72%). The Idle Chest's live Valor-rate window is
+  skipped while farming. idleSetStage(ch, lv) = fresh attempt at that stage (null / best = back). chapter/levelNum never change, so the server,
+  level gems, ranks and events are untouched.
+- UI: the 📍 stage in the Conquest bar is a dashed button (▾) -> Level Select popup (chapter tabs, the level's picture, 20 stages: ✓ / Furthest /
+  Here / 🔒, info line with the pay %, cyan Enter, "↩ Back to X-Y" while farming). While farming: cyan "↩ Back to X-Y · Farming 2-14" button at the
+  top of the scene (the progress bar is hidden). Switching fades the scene to black and back once the level's art is in (max 2.5 s).
+- Level art: the tapped level is fetched at once (levelArtPicked); any level that isn't on screen, next, or picked is released (src dropped, soft
+  copies freed) - Harley: "the level that got loaded just gets destroyed from memory".
+- Tested headless: 3-7 -> pick 2-14 -> graveyard, 32 kills past the 30-kill quota with no boss, best stays 3-7; Back -> 3-7 snow with the progress bar.
+  Meta check: same pre-existing warning, same numbers as v1316. Not checked on a phone.
