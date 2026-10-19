@@ -2976,3 +2976,14 @@ Harley's 3 points:
 - dev/audit/perf_v1318_dpr1.json = the after numbers. (p06_screen_audit.js re-added - the v1317 cleanup's git clean ate it before its commit.)
 - Still open, ranked: world map updateMarchMarkers (~18-21% CPU with no own marches) + ~20% style recalc; stragglers #rigQ / #formationsList /
   #infirmaryPanel / #tileinfo (1-4/s); level-switch decode hitches (Harley's forest 50 fps on first visit); oversized sheets for weaker phones.
+
+## v1319 — level art loads from any screen + pre-decodes on arrival
+- Harley (farming 4-2, screenshot): came from the world map, Conquest opened on the dark fallback with no forest. v1315's fetch only ran inside
+  drawIdleAnim, i.e. only while the Conquest scene was being drawn - on any other screen nothing downloaded. The old preloadConquestAssets (still
+  there, still runs 2.5 s after open: hero/enemy/turret/boss sheets + sounds) never covered level backgrounds because pre-v1315 they lived inside
+  the game file.
+- Fix: the always-on 1 s render() tick now calls ensureLevelArtAround(current env) on every screen, so the current level and the next chapter's are
+  in before the player ever opens Conquest; each level picture runs img.decode() on arrival (same pattern as preloadConquestAssets), which also
+  takes the first-draw unpack hitch out (Harley's forest "around 50" on first visit).
+- Tested headless: farm 4-2 + best 7-1, sat on the WORLD map only: forest then cave (next chapter) both fetched and ready; opening Conquest then
+  shows the full forest on the first frame. g347 + g296 pass, no page errors. Not checked on a phone.

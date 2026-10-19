@@ -12617,7 +12617,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1318"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1319"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25597,6 +25597,7 @@ function ensureLevelArt(env) {
     if (!im || !im._lazySrc) return;
     if (!im._asked) { im._asked = 1; im._tries = 0; im.decoding = "async";
       im.onerror = function () { if (++im._tries <= 4) setTimeout(function () { im.src = im._lazySrc + "&r=" + im._tries; }, 3000 * im._tries); };
+      im.onload = function () { if (im.decode) im.decode().catch(function () {}); }; /* v1319: unpack off-screen on arrival (preloadConquestAssets pattern) so the first draw doesn't hitch */
       im.src = im._lazySrc; }
     if (!im.complete || !im.naturalWidth) ready = false;
   });
@@ -28861,6 +28862,10 @@ function renderPower() {
 }
 
 function render() {
+  /* v1319 (Harley: farming 4-2, came from the world map, Conquest opened on the dark fallback): v1315's level art fetch only ran while the Conquest
+     scene was being DRAWN, so on any other screen nothing downloaded. This 1 s tick runs on every screen, so the current level's art (and the next
+     chapter's) is fetched the moment the game knows about it - by the time the player taps Conquest it is already in. Costs nothing once loaded. */
+  try { ensureLevelArtAround(game.idleEnvironment()); } catch (e) {}
   renderPower();
   renderStats();
   renderResources();
