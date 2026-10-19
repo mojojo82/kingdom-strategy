@@ -40,3 +40,12 @@ r2 = seamless(r2)
 r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)
 save(r2, "forest_road")
 print("road: strip top row", ferns.height * 2, " walking line ~", ferns.height * 2 + round(BAND * 2 * 0.25))
+
+# v1308 (Harley): second ground version, same as the cave's - the strip where the heroes stand stays as is, below its front edge it darkens with depth
+# (to ~38% over 140 rows), bright glints keep up to half their shine.
+import numpy as np
+a = np.asarray(r2).astype(np.float32); H = a.shape[0]; y0 = ferns.height * 2 + BAND * 2
+yy = np.arange(H, dtype=np.float32)[:, None]; t = np.clip((yy - y0) / 140.0, 0, 1)
+k = 1 - 0.62 * t ** 0.8; lum = a[..., :3].mean(2); keep = np.clip((lum - 150) / 80, 0, 1) * 0.5
+a[..., :3] = a[..., :3] * (k + (1 - k) * keep)[..., None]
+save(Image.fromarray(a.clip(0, 255).astype(np.uint8), "RGBA"), "forest_road_dark")

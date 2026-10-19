@@ -2874,3 +2874,7 @@ Harley's 3 points:
   (sessionStorage guard per version, so no loop; the banner still covers a stubborn cache). phone.html frame gets a fresh ?t= every open.
   ksFreshReload keeps the other query params. Logout/wipe reload is cache-busted too. Tested headless: same version -> no reload; newer -> exactly
   one reload, ?phoneframe=1 kept.
+
+## v1308 — forest: second ground version (Darker below)
+- Harley: same as the cave - top of the ground as is, underneath darker. build_forest.py makes forest_road_dark.webp (same ramp as the cave, from the
+  walking strip's front edge down to ~38%, glints keep half their shine); TMP_ENV_BG.rain.floor.alt. Dev Tools "Ground version" row on the forest.
