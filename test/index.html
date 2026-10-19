@@ -12617,7 +12617,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1317"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1318"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -12999,6 +12999,7 @@ function fmtTime(sec) {
 
 function renderModeTabs() {
   var el = document.getElementById("modeTabs");
+  if (el._sig === mapMode) return; el._sig = mapMode; /* v1318 audit: was torn down + rebuilt every 1 s tick (18 nodes/s) even though it only shows which tab is active */
   el.innerHTML = "";
   [{ key: "world", label: "🗺️ World Map" }, { key: "troops", label: "🛡️ Troops" }, { key: "conquest", label: "🏯 Conquest" }, { key: "arena", label: "🏟️ Arena" }, { key: "research", label: "📚 Research" }, { key: "buildings", label: "🏗️ Buildings" }, { key: "espers", label: "✨ Espers" }, { key: "cards", label: "🃏 Cards" }, { key: "weapons", label: "🚀 Weapons" }, { key: "recon", label: "🛰️ Recon" }, { key: "td", label: "🏰 Defense" }, { key: "gauntlet", label: "🏯 Gauntlet" }, { key: "reports", label: "📜 Reports" }, { key: "fortress", label: "🏰 Fortress" }, { key: "bosssim", label: "🎯 Boss Sim" }, { key: "pvpsim", label: "🧪 PvP Sim" }, { key: "skins", label: "🎨 Skins" }, { key: "alliance", label: "🏳️ Alliance" }].forEach(function (m) {
     var tab = document.createElement("div");
@@ -13123,51 +13124,34 @@ function statValueText(row) {
 function renderStats(target) {
   var el = target || document.getElementById("statsList");
   if (!el) return;
-  el.innerHTML = "";
-  var baseDiv = document.createElement("div");
-  baseDiv.className = "tech";
-  baseDiv.innerHTML =
-    '<div class="icon-badge">🔟</div>' +
+  /* v1318 audit: the values below rarely change, but the whole panel was rebuilt every 1 s tick (15 nodes/s on every screen).
+     Same rows, built as one string; the DOM is only written when the string differs from last time. */
+  var html = '<div class="tech"><div class="icon-badge">🔟</div>' +
     '<div style="flex:1;"><div class="name">Base ATK</div>' +
-    '<div class="stat-line cur">' + fmt(game.idleBaseAtk()) + '</div></div>';
-  el.appendChild(baseDiv);
+    '<div class="stat-line cur">' + fmt(game.idleBaseAtk()) + '</div></div></div>';
 
-  var defDiv = document.createElement("div");
-  defDiv.className = "tech";
-  defDiv.innerHTML =
-    '<div class="icon-badge">🛡️</div>' +
+  html += '<div class="tech"><div class="icon-badge">🛡️</div>' +
     '<div style="flex:1;"><div class="name">Base DEF</div>' +
-    '<div class="stat-line cur">' + (Math.round(heroBaseDef * 10) / 10) + '</div></div>';
-  el.appendChild(defDiv);
+    '<div class="stat-line cur">' + (Math.round(heroBaseDef * 10) / 10) + '</div></div></div>';
 
   STATS_ROWS.slice().sort(function (a, b) { return (b.type === "hp" ? 1 : 0) - (a.type === "hp" ? 1 : 0); }).forEach(function (row) {
-    var div = document.createElement("div");
-    div.className = "tech";
-    div.innerHTML =
-      '<div class="icon-badge">' + row.icon + '</div>' +
+    html += '<div class="tech"><div class="icon-badge">' + row.icon + '</div>' +
       '<div style="flex:1;"><div class="name">' + row.label + '</div>' +
-      '<div class="stat-line cur">' + statValueText(row) + '</div></div>';
-    el.appendChild(div);
+      '<div class="stat-line cur">' + statValueText(row) + '</div></div></div>';
   });
   // Descriptive/explanatory text for Protected Reserve, Base ATK, and
   // Garrison Damage used to live here as a muted sub-line under each stat.
   // Moved out to the "Developer Notes" overlay (see DEV_NOTES / openDevNotesOverlay
   // below) to keep this stats panel to just labels + current values; the
   // rows themselves (and their live values) stay exactly where they were.
-  var capDiv = document.createElement("div");
-  capDiv.className = "tech";
-  capDiv.innerHTML =
-    '<div class="icon-badge">🏬</div>' +
+  html += '<div class="tech"><div class="icon-badge">🏬</div>' +
     '<div style="flex:1;"><div class="name">Protected Reserve</div>' +
-    '<div class="stat-line cur">' + fmt(game.protectedReserve()) + ' per resource</div></div>';
-  el.appendChild(capDiv);
+    '<div class="stat-line cur">' + fmt(game.protectedReserve()) + ' per resource</div></div></div>';
 
   [["⚔️", "ATK Bonus", "atk"], ["❤️", "HP Bonus", "hp"], ["🛡️", "DEF Bonus", "def"], ["💥", "Skill Damage", "skill"], ["👑", "Boss Damage", "boss"], ["💚", "Support Power", "support"]].forEach(function (m) {
-    var d = document.createElement("div");
-    d.className = "tech";
-    d.innerHTML = '<div class="icon-badge">' + m[0] + '</div><div style="flex:1;"><div class="name">' + m[1] + '</div><div class="stat-line cur">+' + fmtCompact(heroBonusTotal(m[2])) + '%</div></div>';
-    el.appendChild(d);
+    html += '<div class="tech"><div class="icon-badge">' + m[0] + '</div><div style="flex:1;"><div class="name">' + m[1] + '</div><div class="stat-line cur">+' + fmtCompact(heroBonusTotal(m[2])) + '%</div></div></div>';
   });
+  if (el._sig !== html) { el._sig = html; el.innerHTML = html; }
 }
 
 // ---- Developer Notes overlay ----
@@ -13203,28 +13187,34 @@ function closeDevNotesOverlay() {
 }
 
 function renderResources() {
+  /* v1318 audit: the top bar was torn down + rebuilt every 1 s tick on every screen (7 nodes/s - also a tap/flicker risk).
+     The bar's structure never changes, so it is built once; after that only the number text is updated, and only when it changed. */
   var el = document.getElementById("resbar");
-  el.innerHTML = "";
-  ["food","wood","stone","gold"].forEach(function (res) {
-    // No storage cap (see protectedReserve()/BASE_PROTECTED comments in the
-    // engine) — just the raw amount, no "/ cap" suffix.
-    var div = document.createElement("div");
-    div.className = "res res-basic";
-    div.innerHTML = '<span class="icon">' + RES_ICON[res] + '</span>' + fmt(game.state.resources[res]);
-    el.appendChild(div);
-  });
-  var gemsDiv = document.createElement("div");
-  gemsDiv.className = "res";
-  gemsDiv.innerHTML = '<span class="icon">' + ico("gems") + '</span>' + fmt(game.state.gems || 0) + ' <span class="cap">Gems</span>';
-  el.appendChild(gemsDiv);
-  var valorDiv = document.createElement("div");
-  valorDiv.className = "res";
-  valorDiv.innerHTML = '<span class="icon">' + VALOR_ICON + '</span>' + fmt(game.state.idle.valor) + ' <span class="cap">Valor</span>';
-  el.appendChild(valorDiv);
-  var booksDiv = document.createElement("div");
-  booksDiv.className = "res";
-  booksDiv.innerHTML = '<span class="icon">' + CONQUEST_BOOK_ICON + '</span>' + fmt(game.state.idle.conquestBooks) + ' <span class="cap">Books</span>';
-  el.appendChild(booksDiv);
+  if (!el._resEls) {
+    el.innerHTML = "";
+    el._resEls = {};
+    ["food","wood","stone","gold"].forEach(function (res) {
+      // No storage cap (see protectedReserve()/BASE_PROTECTED comments in the
+      // engine) — just the raw amount, no "/ cap" suffix.
+      var div = document.createElement("div");
+      div.className = "res res-basic";
+      div.innerHTML = '<span class="icon">' + RES_ICON[res] + '</span><span class="rv"></span>';
+      el.appendChild(div);
+      el._resEls[res] = div.querySelector(".rv");
+    });
+    [["gems", ico("gems"), "Gems"], ["valor", VALOR_ICON, "Valor"], ["books", CONQUEST_BOOK_ICON, "Books"]].forEach(function (m) {
+      var div = document.createElement("div");
+      div.className = "res";
+      div.innerHTML = '<span class="icon">' + m[1] + '</span><span class="rv"></span> <span class="cap">' + m[2] + '</span>';
+      el.appendChild(div);
+      el._resEls[m[0]] = div.querySelector(".rv");
+    });
+  }
+  var E = el._resEls, put = function (k, txt) { if (E[k].textContent !== txt) E[k].textContent = txt; };
+  ["food","wood","stone","gold"].forEach(function (res) { put(res, fmt(game.state.resources[res])); });
+  put("gems", fmt(game.state.gems || 0));
+  put("valor", fmt(game.state.idle.valor));
+  put("books", fmt(game.state.idle.conquestBooks));
   renderResOverlay();
 }
 // Phones show a single resources button in the top bar; tapping it opens this small popup with every resource.
@@ -15805,9 +15795,21 @@ function drawHeroCardAnims(now) {
 function startHeroCardAnim() { if (!heroCardAnimRaf) heroCardAnimRaf = requestAnimationFrame(drawHeroCardAnims); }
 function renderHeroes() {
   var el = document.getElementById("heroesList");
+  var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
+  /* v1318 audit: the whole hero grid (cards + their art) was rebuilt every 1 s tick on EVERY screen (9 nodes/s + re-set img.src).
+     Everything a card shows is in this signature; the grid is only rebuilt when one of those changed. */
+  var sig = "";
+  Object.keys(HERO_DEFS).forEach(function (key) {
+    var def = HERO_DEFS[key], h = game.state.heroes[key];
+    var isCombat = def.class !== "governor";
+    var art = HERO_STILL_BUILTIN[key] || getHeroArt(key);
+    var canAct = !h.owned ? (!def.vipOnly && tavernLevel >= 1 && Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; }))
+      : (game.heroCanAffordLevel(key) || game.heroCanAffordStar(key));
+    sig += key + (h.owned ? 1 : 0) + "." + h.level + "." + heroStarArms(h) + "." + (h.busy ? 1 : 0) + (isCombat && game.state.conquestRoster.indexOf(key) !== -1 ? "E" : "") + (!isCombat && game.state.governorHero === key ? "G" : "") + (canAct ? "!" : "") + (art ? art.length : 0) + ";";
+  });
+  if (el._sig === sig) return; el._sig = sig;
   el.innerHTML = "";
   el.className = "hero-grid";
-  var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
   var CLASS_ICON = { infantry: "🛡️", archer: "🔮", cavalry: "🏹", governor: "👑" };
   Object.keys(HERO_DEFS).forEach(function (key) {
     var def = HERO_DEFS[key], h = game.state.heroes[key];
@@ -28069,9 +28071,14 @@ function wireSkillAutoBtn(el) { var b = el.querySelector(".skill-auto-btn"); if 
 function renderIdleSkillbar() {
   var el = document.getElementById("idleSkillbar");
   if (!el) return;
+  var roster = game.state.conquestRoster;
+  /* v1318 audit: rebuilt every 1 s tick while on Conquest (7 nodes/s), throwing away the buttons mid-tap. The live parts (cooldown ring,
+     countdown text, ready glow) are updated per frame by updateIdleSkillbarDom via cached nodes, so a rebuild is only needed when the
+     bar's static content changes: the roster, the size setting, the timer-text setting, or a skill icon. */
+  var sig = roster.join(",") + "|" + skillbarSizeMode + "|" + (skillTimerTextEnabled ? 1 : 0) + (game.state.idle.skillAuto !== false ? "A" : "a") + "|" + roster.map(function (k) { var ic = getSkillIcon(k); return ic ? ic.length : 0; }).join(",");
+  if (el._sig === sig) return; el._sig = sig;
   el.className = "idle-skillbar" + (skillbarSizeMode === "8heroes" ? " skillbar-8heroes" : "");
   var notchHtml = '<div class="skillbar-notch"></div>';
-  var roster = game.state.conquestRoster;
   // Reset the node cache every time this rebuilds the DOM — any refs from
   // the previous build point at now-detached elements (innerHTML below
   // throws them away), so updateIdleSkillbarDom() below must not keep
@@ -28684,6 +28691,10 @@ function renderFleetHud() {
 function renderMarches() {
   try { renderFleetHud(); } catch (e) {}
   var el = document.getElementById("marchesList");
+  /* v1318 audit: with no marches out this still replaced its "No active marches" line every 1 s tick. The countdown texts need a rebuild
+     once a second, but only while a march is actually out. */
+  var sig = game.state.marches.map(function (m) { return m.id + m.status; }).join(",") + (game.state.marches.length ? "|" + Math.floor(vnow() / 1000) : "");
+  if (el._sig === sig) return; el._sig = sig;
   el.innerHTML = "";
   if (!game.state.marches.length) { el.innerHTML = '<span class="sub">No active marches.</span>'; return; }
   game.state.marches.forEach(function (m) {
@@ -28832,6 +28843,8 @@ function renderReports() {
 
 function renderLog() {
   var el = document.getElementById("log");
+  var L0 = game.state.log[0], sig = game.state.log.length + "|" + (L0 ? L0.t + L0.msg : "");
+  if (el._sig === sig) return; el._sig = sig; /* v1318 audit: the log only changes when a line is added */
   el.innerHTML = "";
   game.state.log.slice(0, 40).forEach(function (entry) {
     var div = document.createElement("div");
@@ -28925,6 +28938,7 @@ function renderCoreSaveDebugPanel() {
     el.style.cssText = "position:fixed;bottom:8px;left:8px;z-index:99999;background:rgba(10,14,20,0.92);color:#cfe0ff;font:11px/1.4 monospace;padding:8px 10px;border:1px solid #33445e;border-radius:8px;max-width:280px;box-shadow:0 2px 10px rgba(0,0,0,0.4);";
     document.body.appendChild(el);
   }
+  if (!el.getClientRects().length) return; /* v1318 audit: phones hide this dev floater with CSS, but it was still rebuilt every 1 s tick (8 nodes/s) */
   var lastWriteRaw = null;
   try { lastWriteRaw = localStorage.getItem(SAVE_KEY + "_lastwrite"); } catch (e) {}
   var lastWriteTxt = "(never)";
@@ -30595,7 +30609,8 @@ function fgMsg(t) { var m = document.getElementById("fgMsg"); if (m) { m.innerHT
 function updateForgeBtn() {
   if (!forgeBtnEl) return;
   var bi = game.bucketInfo(), en = Math.floor(game.state.energon);
-  forgeBtnEl.querySelector(".fgb-en").innerHTML = ico("energon") + " " + fmtCompact(en);
+  var enTxt = fmtCompact(en); /* v1318 audit: was rewritten every 1 s tick even when unchanged */
+  if (forgeBtnEl._enTxt !== enTxt) { forgeBtnEl._enTxt = enTxt; forgeBtnEl.querySelector(".fgb-en").innerHTML = ico("energon") + " " + enTxt; }
   forgeBtnEl.classList.toggle("auto", forgeAuto);
   forgeBtnEl.classList.toggle("has-bucket", bi.energon >= 1 || bi.valor >= 1);
   forgeBtnEl.querySelector(".fgb-sub").textContent = forgeAuto ? "AUTO" : (bi.energon >= 1 || bi.valor >= 1 ? "Rewards!" : "Forge");

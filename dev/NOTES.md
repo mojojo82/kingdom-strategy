@@ -2959,3 +2959,20 @@ Harley's 3 points:
   per function with its line; built-ins shown with their caller). DPR=1 takes most software drawing out; HOOK= runs an experiment; OUT= saves json.
 - Results + ranking: dev/audit/perf_audit_step1.md (+ perf_v1317_dpr3.json / _dpr1.json). Top: Conquest drawing (hero sprites, lava lake; size on a
   phone unknown - headless draws on the CPU), world map updateMarchMarkers ~20% + style ~20%, the every-second panel rebuilds on every screen.
+
+## v1318 — audit fix 1: panels only rebuild when what they show changed
+- Step 2 of the performance audit (Fable). The 1 s render() tick rebuilt whole panels with nothing changed: measured 60-97 DOM nodes torn down +
+  rebuilt per second on every screen (worst: #modeTabs 18/s, #statsList 15/s, #heroesList 9/s + re-set img.src, #coreSaveDebugPanel 8/s, #resbar 7/s,
+  #idleSkillbar 7/s - the last two visible, a tap/flicker risk).
+- Fix (v1280 renderPowerSlots pattern, same look): renderModeTabs (sig = active tab), renderStats (same rows as one string, written only on change),
+  renderResources (structure built once, numbers updated in place via a .rv span), renderLog (sig = length + newest line), renderMarches (sig =
+  ids+statuses, + a per-second tick only while a march is out), renderHeroes (sig = everything a card shows: owned/level/stars/busy/equipped/governor/
+  red-dot/art), renderCoreSaveDebugPanel (skipped while CSS hides it on phones), renderIdleSkillbar (sig = roster/size/timer-text/AUTO/icons; its
+  cooldown ring+text were already per-frame via cached nodes, which now survive), updateForgeBtn (Energon text only on change).
+- Gotcha fixed along the way: the skill AUTO button bakes its on/off look into the rebuild, so skillAuto is part of the skillbar signature.
+- Measured (p06_screen_audit.js, CPU x4, DPR=1): DOM rebuilt 60-97/s -> 1-5/s on every screen; conquest village 35.3 -> 37.2 fps, long tasks 9 -> 4;
+  heroes 58.2 -> 60 fps, long tasks 0. Functional check: resbar/log/hero cards/stats repaint on change, AUTO toggle repaints, cooldown text still
+  ticks per frame, marches placeholder intact; g347 + g296 pass; no page errors. Not checked on a phone.
+- dev/audit/perf_v1318_dpr1.json = the after numbers. (p06_screen_audit.js re-added - the v1317 cleanup's git clean ate it before its commit.)
+- Still open, ranked: world map updateMarchMarkers (~18-21% CPU with no own marches) + ~20% style recalc; stragglers #rigQ / #formationsList /
+  #infirmaryPanel / #tileinfo (1-4/s); level-switch decode hitches (Harley's forest 50 fps on first visit); oversized sheets for weaker phones.
