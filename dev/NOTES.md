@@ -2844,3 +2844,13 @@ Harley's 3 points:
 - Rain2 (Harley: in a forest rain drops more vertical; then "shorter"): straight down, z depth per drop - far half thin/faint, near half brighter,
   drawn in 2 batched strokes; length = len x (0.4..0.85), about half of rain1. Default = Rain2; Dev Tools "Rain style" flips to Rain1
   (kingdom_rain_style_v1). Conquest only - the Arena keeps its own slanted rain.
+
+## v1304 — sunlit cavern (chapter 5 for now; first new stop of the "journey")
+- Harley: the levels become a journey (village ... forest -> cave -> volcano ... up to ~10). Reorder later; for now IDLE_ENVIRONMENTS gets "cave" as #5.
+  Two cave composites made (crystal mine, sunlit cavern) - Harley picked the sunlit one; crystal kept for later.
+- Harley: "priority should be to get all layers to match the composite. Readability is less important" - no toning, show first.
+- dev/levels/build_cave_sunlit.py: far = GPT split; near = cut from the composite with GPT's split aligned (sx .995 sy .925 dy -36) as a stencil,
+  bright blue/white pixels near its edges dropped (no far-cavern halo on the arch), BORDER_REPLICATE (an empty edge column made a light seam line);
+  300 rows of mirrored, darkened rock ceiling added on top for tall phones. Road = GPT try 3 (rich small detail; Harley likes the snow road's small
+  underground objects), colours untouched (Harley will judge the brightness in game). Drawn at 0.32 (0.46 zoomed past the arch).
+- Dev Tools chapter jump + Scenery sharpness know "Cave". g347 now uses chapter 1 for the village (chapter 5 is the cave).
