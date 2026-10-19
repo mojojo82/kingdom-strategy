@@ -41,43 +41,44 @@ def save(im, name, q=90):
     im.save(os.path.join(OUT, name + ".webp"), quality=q, method=6)
     print(name, im.size)
 
-# --- far: hills, abbey, mist. Extend the mist down to the road line.
-far = key(Image.open(os.path.join(SRC, "graveyard_layer_far_gpt_1536x1024.png")))
-px = far.load(); W, H = far.size
-for x in range(W):
-    last = None
-    for y in range(ROAD_TOP, 150, -1):
-        if px[x, y][3] > 200: last = y; break
-    if last is None: continue
-    r, g, b, _ = px[x, last - 3]
-    for y in range(last + 1, ROAD_TOP + 1):
-        px[x, y] = (r, g, b, 255)
-far = seamless(far.crop((0, 130, W, ROAD_TOP + 1)))
-save(far, "graveyard_far")
+if __name__ == "__main__":
+    # --- far: hills, abbey, mist. Extend the mist down to the road line.
+    far = key(Image.open(os.path.join(SRC, "graveyard_layer_far_gpt_1536x1024.png")))
+    px = far.load(); W, H = far.size
+    for x in range(W):
+        last = None
+        for y in range(ROAD_TOP, 150, -1):
+            if px[x, y][3] > 200: last = y; break
+        if last is None: continue
+        r, g, b, _ = px[x, last - 3]
+        for y in range(last + 1, ROAD_TOP + 1):
+            px[x, y] = (r, g, b, 255)
+    far = seamless(far.crop((0, 130, W, ROAD_TOP + 1)))
+    save(far, "graveyard_far")
 
-def village_soft(im, k=1 / 1.75):
-    """v1297 (Harley: razor sharp looked like a cardboard cut-out): soften like the village is softened on a 3x phone - shrink to 1/1.75 and blow back up.
-    Done premultiplied so the cut-out edges don't darken."""
-    x = np.asarray(im.convert("RGBA")).astype(np.float32) / 255; x[..., :3] *= x[..., 3:4]; h, w = x.shape[:2]
-    ch = [np.asarray(Image.fromarray(x[..., i], "F").resize((round(w * k), round(h * k)), Image.LANCZOS).resize((w, h), Image.BILINEAR)) for i in range(4)]
-    y = np.clip(np.stack(ch, -1), 0, 1); a = np.clip(y[..., 3:4], 1e-6, 1); y[..., :3] = np.where(y[..., 3:4] > 1e-4, y[..., :3] / a, 0)
-    return Image.fromarray((np.clip(y, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
+    def village_soft(im, k=1 / 1.75):
+        """v1297 (Harley: razor sharp looked like a cardboard cut-out): soften like the village is softened on a 3x phone - shrink to 1/1.75 and blow back up.
+        Done premultiplied so the cut-out edges don't darken."""
+        x = np.asarray(im.convert("RGBA")).astype(np.float32) / 255; x[..., :3] *= x[..., 3:4]; h, w = x.shape[:2]
+        ch = [np.asarray(Image.fromarray(x[..., i], "F").resize((round(w * k), round(h * k)), Image.LANCZOS).resize((w, h), Image.BILINEAR)) for i in range(4)]
+        y = np.clip(np.stack(ch, -1), 0, 1); a = np.clip(y[..., 3:4], 1e-6, 1); y[..., :3] = np.where(y[..., 3:4] > 1e-4, y[..., :3] / a, 0)
+        return Image.fromarray((np.clip(y, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
 
-# --- near: chapel, trees, fences, graves. v1298 (Harley: "lets not auto soften the images"): the game gets the sharp original; softness is a
-#     per-level setting (TMP_ENV_BG layer .soft + the Dev Tools "Scenery sharpness" row), applied at load time. village_soft() kept for reference only.
-near = key(Image.open(os.path.join(SRC, "graveyard_layer_near_gpt_1536x1024.png")))
-near = seamless(near.crop((0, 95, near.width, ROAD_TOP + 1)))
-near.save(os.path.join(FULL, "graveyard_near_sharp.png"))
-save(near, "graveyard_near")
+    # --- near: chapel, trees, fences, graves. v1298 (Harley: "lets not auto soften the images"): the game gets the sharp original; softness is a
+    #     per-level setting (TMP_ENV_BG layer .soft + the Dev Tools "Scenery sharpness" row), applied at load time. village_soft() kept for reference only.
+    near = key(Image.open(os.path.join(SRC, "graveyard_layer_near_gpt_1536x1024.png")))
+    near = seamless(near.crop((0, 95, near.width, ROAD_TOP + 1)))
+    near.save(os.path.join(FULL, "graveyard_near_sharp.png"))
+    save(near, "graveyard_near")
 
-# --- road: flatten the top surface band (grass line ~712 to the cut face ~787) to ~38% so it matches the village road's eye-level.
-road = key(Image.open(os.path.join(SRC, "graveyard_layer_road2_gpt_1536x1024.png")))
-TOP, CUT, KEEP = 700, 787, 0.38
-band = road.crop((0, TOP, road.width, CUT)); bh = max(1, round((CUT - TOP) * KEEP))
-band = band.resize((road.width, bh), Image.LANCZOS)
-face = road.crop((0, CUT, road.width, road.height))
-r2 = Image.new("RGBA", (road.width, bh + face.height)); r2.paste(band, (0, 0)); r2.paste(face, (0, bh))
-r2 = seamless(r2)
-r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)   # crisp 2x
-save(r2, "graveyard_road")
-print("road surface band now", bh, "src px (x2 =", bh * 2, ") ; walking line (25% down the band) =", round(bh * 2 * 0.25), "px from the road image top")
+    # --- road: flatten the top surface band (grass line ~712 to the cut face ~787) to ~38% so it matches the village road's eye-level.
+    road = key(Image.open(os.path.join(SRC, "graveyard_layer_road2_gpt_1536x1024.png")))
+    TOP, CUT, KEEP = 700, 787, 0.38
+    band = road.crop((0, TOP, road.width, CUT)); bh = max(1, round((CUT - TOP) * KEEP))
+    band = band.resize((road.width, bh), Image.LANCZOS)
+    face = road.crop((0, CUT, road.width, road.height))
+    r2 = Image.new("RGBA", (road.width, bh + face.height)); r2.paste(band, (0, 0)); r2.paste(face, (0, bh))
+    r2 = seamless(r2)
+    r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)   # crisp 2x
+    save(r2, "graveyard_road")
+    print("road surface band now", bh, "src px (x2 =", bh * 2, ") ; walking line (25% down the band) =", round(bh * 2 * 0.25), "px from the road image top")

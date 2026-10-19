@@ -2808,3 +2808,14 @@ Harley's 3 points:
 - TMP_ENV_BG.night: new first layer "Sky" (same scale/rows as the far layer, speed 0.1), flat "#0f152d" (the composite's top colour) fills the extra phone sky.
   The code night sky / moon / stars are now hidden on the graveyard (covered by the flat + sky). Layers carry a name ("Sky" / "Far" / "Near") for the
   Dev Tools sharpness rows.
+
+## v1300 — snow level (chapter 3) is a frozen mountain pass at dusk
+- Harley's ChatGPT composite (art/originals/backgrounds/snowpass_v1_composite_1536x1024.png, attached the sharp village reference -> road angle right first try).
+- Road: Harley: the snow belongs ON the walking strip (the slightly raised stone surface), not as a flat white rim on top - GPT road layer redone that way.
+- Near: GPT's near split came out harsh/saturated and ~63px low (twice). dev/levels/build_snowpass_near.py aligns GPT's split onto the composite
+  (sx .998, sy .97, dy -63) and uses it only as a STENCIL to cut the near scenery straight out of the composite = original painterly look and position.
+  Good trick for future levels when GPT redraws a layer.
+- Sky: the composite didn't hold enough (GPT's far mountains are lower, so the glow band behind the peaks would be uncovered) -> GPT sky on its own.
+- Far/near seams: the 90px cross-fade left half-transparent ghost peaks/trees on see-through layers -> seamless_cut() picks the best-matching wrap
+  width and only blends where both sides are solid (graveyard unaffected; build_graveyard.py now import-safe).
+- TMP_ENV_BG.snow: Sky (scale .36, glow behind the far peaks), Far, Near at 0.3/185.76 like the graveyard, road k .21/185.76 row 30 top 16. Falling snow stays.
