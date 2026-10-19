@@ -2899,3 +2899,8 @@ Harley's 3 points:
 - Harley: no mirrored ceilings - get GPT to do an extension pass. GPT drew the cave above the far layer (volcano_far_ceiling_ext_gpt_1536x1024.png);
   its row 723 matches the far layer's row 0 exactly (template match 0.92, scale 1). build_volcano.py stacks the 723 new rows on top and cross-fades
   120 rows at the join. Far layer is now 1446x1441 (baseY 1440); VOLCANO_FALLS rows +423. Cave + crystal mine still have mirrored ceilings (to redo).
+
+## v1312 — lava cavern ceiling darkened into solid rock
+- Harley: the GPT extension made it look like a second floor above them, not trapped deep underground; "might look better just as really dark rock".
+  build_volcano.py darkens the extension from the join upward (rows 430-723 are all a phone ever shows): to ~8% brightness at row 430 and less orange.
+  Real GPT rock shapes kept, no mirroring. The game file is the only change.

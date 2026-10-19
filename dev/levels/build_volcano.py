@@ -34,7 +34,13 @@ for x in range(1536):
 # (template match 0.92, scale 1, x 0). Stack it on top; cross-fade the 120 rows below the join so there's no seam. (No mirrored fake ceiling.)
 ext = np.asarray(Image.open(os.path.join(SRC, "volcano_far_ceiling_ext_gpt_1536x1024.png")).convert("RGB")).astype(np.float32)
 EXT = 723; OV = min(120, 1024 - EXT)
-top = np.dstack([ext[:EXT], np.full((EXT, 1536), 255, np.float32)])
+# v1312 (Harley: the new ceiling looked like a second floor above them - "might look better just as really dark rock"): the extension darkens
+# with height into near-black rock (100% at the join -> ~12% at the top) and its glow is desaturated, so it reads as solid rock overhead.
+yy = np.clip((np.arange(EXT, dtype=np.float32) - 430) / (EXT - 430), 0, 1)[:, None, None]   # only rows 430-723 ever show on a phone: dark by row 430
+k = 0.08 + 0.92 * yy ** 1.8
+g = ext[:EXT].mean(2, keepdims=True); sat = 0.35 + 0.65 * yy ** 2           # less orange higher up
+ex = (g + (ext[:EXT] - g) * sat) * k
+top = np.dstack([ex, np.full((EXT, 1536), 255, np.float32)])
 ov = a[:OV].astype(np.float32); t = np.linspace(0, 1, OV)[:, None, None]
 ov[..., :3] = ext[EXT:EXT + OV] * (1 - t) + ov[..., :3] * t
 a = np.vstack([top, ov, a[OV:].astype(np.float32)]).clip(0, 255).astype(np.uint8)
