@@ -2878,3 +2878,9 @@ Harley's 3 points:
 ## v1308 — forest: second ground version (Darker below)
 - Harley: same as the cave - top of the ground as is, underneath darker. build_forest.py makes forest_road_dark.webp (same ramp as the cave, from the
   walking strip's front edge down to ~38%, glints keep half their shine); TMP_ENV_BG.rain.floor.alt. Dev Tools "Ground version" row on the forest.
+
+## v1309 — crystal mine (chapter 6 for now)
+- Second cave composite (cave_crystal_composite_1536x1024.png). Road: GPT kept copying the composite's tiled ledge (try 1-2: square slabs + block kerb);
+  try 3 = new chat with the approved sunlit road as the SHAPE reference + the crystal composite as the theme -> natural floor. Good trick for roads.
+- dev/levels/build_cave_crystal.py (copy of the sunlit build: near cut from the composite, GPT near aligned at 0,0; rock ceiling grown 300 rows).
+  Two ground versions (Original / Darker below, Harley asked). No lightning here (underground, like the cave). Dev Tools jump: "6 Crystal mine".
