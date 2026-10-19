@@ -2884,3 +2884,13 @@ Harley's 3 points:
   try 3 = new chat with the approved sunlit road as the SHAPE reference + the crystal composite as the theme -> natural floor. Good trick for roads.
 - dev/levels/build_cave_crystal.py (copy of the sunlit build: near cut from the composite, GPT near aligned at 0,0; rock ceiling grown 300 rows).
   Two ground versions (Original / Darker below, Harley asked). No lightning here (underground, like the cave). Dev Tools jump: "6 Crystal mine".
+
+## v1310 — lava cavern (chapter 7 for now): animated lava lake + code-animated lava falls
+- Harley's design: dark rocky ground; near layer = a lava lake (he animated it in Leonardo, 2k); rocky far interior behind; no sunlight; "cheat
+  movement" on the far lava falls in code.
+- dev/levels/build_volcano.py: far = GPT split, magenta under the ragged shore filled with dark rock, +300 rows of grown ceiling; lake = Hailuo 2k clip
+  (it turned the magenta near-black after frame 6 - harmless, the band is cut by rows), aligned to the still GPT lake (top row 570), 3s loop with the
+  end cross-faded into the start, 24 frames in one sheet (1446x230 per frame, 1.1 MB webp), each frame wrapped seamless; road from the sunlit road
+  reference, flattened + Darker below version.
+- Engine: a TMP_ENV_BG layer can be animated (anim: { n, fps } = frames stacked in one sheet; the next frame is blended in). drawLavaFalls():
+  VOLCANO_FALLS = [x, top, bottom, width] in far-layer pixels; additive flicker + 5 sliding blobs per fall. No lightning (LIGHTNING_OFF_ENVS).
