@@ -2894,3 +2894,8 @@ Harley's 3 points:
   reference, flattened + Darker below version.
 - Engine: a TMP_ENV_BG layer can be animated (anim: { n, fps } = frames stacked in one sheet; the next frame is blended in). drawLavaFalls():
   VOLCANO_FALLS = [x, top, bottom, width] in far-layer pixels; additive flicker + 5 sliding blobs per fall. No lightning (LIGHTNING_OFF_ENVS).
+
+## v1311 — lava cavern ceiling: GPT extension pass instead of the mirrored fake
+- Harley: no mirrored ceilings - get GPT to do an extension pass. GPT drew the cave above the far layer (volcano_far_ceiling_ext_gpt_1536x1024.png);
+  its row 723 matches the far layer's row 0 exactly (template match 0.92, scale 1). build_volcano.py stacks the 723 new rows on top and cross-fades
+  120 rows at the join. Far layer is now 1446x1441 (baseY 1440); VOLCANO_FALLS rows +423. Cave + crystal mine still have mirrored ceilings (to redo).

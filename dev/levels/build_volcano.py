@@ -30,11 +30,15 @@ for x in range(1536):
         a[last + 1:, x] = np.clip(fill, 0, 255).astype(np.uint8); a[last + 1:, x, 3] = 255
     gaps = np.where(col[: last] < 200)[0]                   # holes above the shore line -> same rock
     a[gaps[gaps > 150], x] = rock
-# taller phones show more above the composite's top: grow the rock ceiling 300 rows (mirrored, fading into the dark ceiling colour)
-EXT = 300; flat = np.array([22, 10, 9], np.float32); t = (np.arange(EXT, dtype=np.float32)[::-1] / EXT)[:, None, None]
-top = a[:EXT][::-1, :, :3].astype(np.float32); dark = 0.5 * (1 - t) ** 1.5; top = top * dark + flat * (1 - dark)
-a = np.vstack([np.dstack([top.clip(0, 255).astype(np.uint8), np.full((EXT, 1536), 255, np.uint8)]), a])
-farI = seamless(Image.fromarray(a, "RGBA")); save(farI, "volcano_far")   # falls in VOLCANO_FALLS are in rows of THIS image (+300)
+# taller phones show more above the composite's top: Harley's GPT extension pass (volcano_far_ceiling_ext_gpt) - its row 723 = the far layer's row 0
+# (template match 0.92, scale 1, x 0). Stack it on top; cross-fade the 120 rows below the join so there's no seam. (No mirrored fake ceiling.)
+ext = np.asarray(Image.open(os.path.join(SRC, "volcano_far_ceiling_ext_gpt_1536x1024.png")).convert("RGB")).astype(np.float32)
+EXT = 723; OV = min(120, 1024 - EXT)
+top = np.dstack([ext[:EXT], np.full((EXT, 1536), 255, np.float32)])
+ov = a[:OV].astype(np.float32); t = np.linspace(0, 1, OV)[:, None, None]
+ov[..., :3] = ext[EXT:EXT + OV] * (1 - t) + ov[..., :3] * t
+a = np.vstack([top, ov, a[OV:].astype(np.float32)]).clip(0, 255).astype(np.uint8)
+farI = seamless(Image.fromarray(a, "RGBA")); save(farI, "volcano_far")   # falls in VOLCANO_FALLS are in rows of THIS image (+723)
 
 # ---- lake (animated)
 lake_still = np.asarray(Image.open(os.path.join(SRC, "volcano_layer_lake_gpt_1536x1024.png")).convert("RGB")).astype(int)
