@@ -2854,3 +2854,10 @@ Harley's 3 points:
   300 rows of mirrored, darkened rock ceiling added on top for tall phones. Road = GPT try 3 (rich small detail; Harley likes the snow road's small
   underground objects), colours untouched (Harley will judge the brightness in game). Drawn at 0.32 (0.46 zoomed past the arch).
 - Dev Tools chapter jump + Scenery sharpness know "Cave". g347 now uses chapter 1 for the village (chapter 5 is the cave).
+
+## v1305 — cave: two ground versions (Original / Darker below)
+- Harley: "make the cave have 2 ground versions... light still hitting the upper part of the ground where the heroes are but below that it gets dark".
+- build_cave_sunlit.py makes cave_road_dark.webp: from the strip's front edge down, brightness ramps to ~38% over 140 rows; bright glints keep up to half
+  their shine. A floor can now carry alt: { name, img }; Dev Tools > Scenery sharpness shows a "Ground version" row (Original / Darker below,
+  "•" = floor.useAlt, players get Original for now). Per device: localStorage kingdom_floor_alt_v1. Ground sharpness steps apply to either version.
+  "Copy my settings" includes the ground version.

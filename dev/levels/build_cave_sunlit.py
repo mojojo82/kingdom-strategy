@@ -49,3 +49,13 @@ face = road.crop((0, CUT, road.width, road.height))
 r2 = Image.new("RGBA", (road.width, pre.height + BAND + face.height)); r2.paste(pre, (0, 0)); r2.paste(band, (0, pre.height)); r2.paste(face, (0, pre.height + BAND))
 r2 = seamless(r2); r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)
 save(r2, "cave_road"); print("road strip top", pre.height * 2, "walking line", pre.height * 2 + round(BAND * 2 * 0.25), "(strip row in GPT image", STRIP, ")")
+
+# v1305 (Harley): a second ground version - the ground beneath the walking strip goes dark with depth (light still on the strip where the heroes
+# stand). Highlights (water shine) keep part of their brightness so it doesn't go flat. Front edge of the strip = pre*2 + BAND*2 rows.
+a = np.asarray(r2).astype(np.float32); H = a.shape[0]; y0 = pre.height * 2 + BAND * 2
+yy = np.arange(H, dtype=np.float32)[:, None]; t = np.clip((yy - y0) / 140.0, 0, 1)            # 0 at the strip's front edge .. 1 at 140 rows down
+k = 1 - 0.62 * t ** 0.8                                                                         # down to ~38% brightness
+lum = a[..., :3].mean(2); keep = np.clip((lum - 150) / 80, 0, 1) * 0.5                          # bright glints keep up to half their shine
+kk = (k + (1 - k) * keep)[..., None]
+a[..., :3] = a[..., :3] * kk
+dark = Image.fromarray(a.clip(0, 255).astype(np.uint8), "RGBA"); save(dark, "cave_road_dark")
