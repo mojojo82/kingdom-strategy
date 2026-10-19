@@ -701,7 +701,7 @@
   #mapviewport { cursor:grab; scrollbar-width:none; contain:layout paint; } /* v868: changes inside the map never make the browser re-lay-out or repaint the rest of the page (it already clips its content, so paint containment changes nothing visually) */
   /* v926d: sea foam = small plain elements inside the map (like the islands), animated by the browser itself: fade in, drift, fade out */
   #mapSeaFoam { position:absolute; left:0; top:0; width:0; height:0; pointer-events:none; z-index:0; }
-  #mapSeaFoam .sf { position:absolute; height:6px; opacity:0; background-repeat:no-repeat; background-size:100% 100%; animation:sfLife var(--life,4s) linear forwards; }
+  #mapSeaFoam .sf { position:absolute; height:6px; opacity:0; background-repeat:no-repeat; background-size:100% 100%; } /* v1320 audit: the keyframes used var() custom properties, which keeps every streak's animation on the main thread (~18% of a phone-speed core in style recalc). The same animation now runs per-streak via el.animate with resolved values, which the compositor handles. sfLife/sfLife2 kept for reference. */
   @keyframes sfLife { 0% { opacity:0; transform:translate(0,0) rotate(var(--rot,0deg)); } 25% { opacity:var(--op,.55); } 65% { opacity:var(--op,.55); } 100% { opacity:0; transform:translate(var(--dx,8px), var(--dy,2px)) rotate(var(--rot,0deg)); } }
   @keyframes sfLife2 { 0% { opacity:0; transform:translate(0,0) rotate(var(--rot,0deg)); } 25% { opacity:var(--op,.55); } 65% { opacity:var(--op,.55); } 100% { opacity:0; transform:translate(var(--dx,8px), var(--dy,2px)) rotate(var(--rot,0deg)); } } /* v936: same as sfLife; switching name restarts a streak without forcing a page re-layout */
   @media (prefers-reduced-motion: reduce) { #mapSeaFoam .sf { animation:none; opacity:.45; transform:rotate(var(--rot,0deg)); } }
@@ -12617,7 +12617,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1319"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1320"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16893,6 +16893,7 @@ function seaFoamIsSea(X, Y) {
   for (var dy = -1; dy <= 1; dy++) for (var dx = -1; dx <= 1; dx++) if (terrainAt(t[0] + dx, t[1] + dy) > 0) return false; /* keep off the shore too */
   return true;
 }
+try { seaFoam.still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {} /* v1320: same behaviour the old CSS media block gave these streaks */
 function seaFoamBox() {
   var world = document.getElementById("mapworld"); if (!world) return null;
   var b = seaFoam.box;
@@ -16907,10 +16908,16 @@ function seaFoamPlace(el, vp, scale) { /* (re)start one streak somewhere on open
     var len = Math.round((10 + Math.random() * 18) * scale), life = 2.6 + Math.random() * 2.6;
     el.style.left = Math.round(X) + "px"; el.style.top = Math.round(Y) + "px"; el.style.width = len + "px"; el.style.height = Math.max(3, Math.round(6 * scale)) + "px";
     el.style.backgroundImage = SEA_FOAM_SHAPES[Math.floor(Math.random() * SEA_FOAM_SHAPES.length)];
-    el.style.setProperty("--rot", (-7 + Math.random() * 14).toFixed(1) + "deg");
-    el.style.setProperty("--life", life.toFixed(2) + "s"); el.style.setProperty("--dx", Math.round((6 + Math.random() * 6) * scale) + "px"); el.style.setProperty("--dy", Math.round((1 + Math.random() * 2) * scale) + "px");
-    el.style.setProperty("--op", (0.4 + Math.random() * 0.25).toFixed(2));
-    el.style.animationName = el.style.animationName === "sfLife2" ? "sfLife" : "sfLife2"; /* v936: restart the fade/drift by swapping to the twin keyframes - no forced layout (was 1 per streak) */
+    var rot = (-7 + Math.random() * 14).toFixed(1) + "deg", ddx = Math.round((6 + Math.random() * 6) * scale), ddy = Math.round((1 + Math.random() * 2) * scale), op = +(0.4 + Math.random() * 0.25).toFixed(2);
+    /* v1320: same keyframes as sfLife, with the values resolved (see the .sf CSS comment). el.animate replaces the v936 twin-keyframes restart. */
+    if (el._anim) el._anim.cancel();
+    if (seaFoam.still || !el.animate) { el.style.opacity = "0.45"; el.style.transform = "rotate(" + rot + ")"; }
+    else el._anim = el.animate([
+      { opacity: 0, transform: "translate(0,0) rotate(" + rot + ")" },
+      { opacity: op, offset: 0.25 },
+      { opacity: op, offset: 0.65 },
+      { opacity: 0, transform: "translate(" + ddx + "px," + ddy + "px) rotate(" + rot + ")" }
+    ], { duration: life * 1000, easing: "linear", fill: "forwards" });
     el.dataset.x = X; el.dataset.y = Y; el.dataset.end = String(performance.now() + life * 1000);
     el.style.display = ""; return true;
   }
@@ -19020,6 +19027,13 @@ function clamp01(n) { return n < 0 ? 0 : n > 1 ? 1 : n; }
 
 function updateMarchMarkers(manual) {
   var layer = document.getElementById("mapMarchLayer");
+  /* v1320 audit: this ran its whole body every frame even with NOTHING on the sea (own + foreign + stress all empty) - measured ~16% of a
+     phone-speed core on the world map. With no ships anywhere the frame does only this check; one last normal pass still runs right after the
+     last ship goes home, so markers / routes / the GL layer are cleaned up exactly as before. */
+  var anyShips = game.state.marches.length > 0 || stressMarches.length > 0;
+  if (!anyShips) { var _t0 = vnow(); for (var _wk in worldMarches) { var _wr = worldMarches[_wk]; if (_wr && _wr.ownerId !== PLAYER_ID && _t0 < _wr.returnAt) { anyShips = true; break; } } }
+  if (!anyShips && !marchAnim.hadAny) { if (manual !== true) marchAnim.rafId = requestAnimationFrame(updateMarchMarkers); return; }
+  marchAnim.hadAny = anyShips;
   if (layer && deviceIsActive) {
     var home = mapTileById(game.state.map, game.state.homeTileId);
     var seen = {};
@@ -20557,7 +20571,7 @@ function startMarchPatchSync() {
 /* v1254 (Harley: "stress test buttons ... X march boats sent out from your base to an outward empty target ~20 away, gone when they arrive - I just want to
    measure fps on my phone"): TEST only. Visual-only ships: never in game.state, never saved or sent to the server, no troops used. */
 var stressMarches = [], stressSeq = 0, STRESS_DIST = 20, STRESS_SECS = 60;
-function stressMarchList(t) { if (stressMarches.length) stressMarches = stressMarches.filter(function (m) { return t < m.arriveAt; }); var e = document.getElementById("mapStressN"); if (e) e.textContent = stressMarches.length ? stressMarches.length + " out" : ""; return stressMarches; }
+function stressMarchList(t) { if (stressMarches.length) stressMarches = stressMarches.filter(function (m) { return t < m.arriveAt; }); var e = document.getElementById("mapStressN"), _sx = stressMarches.length ? stressMarches.length + " out" : ""; if (e && e._t !== _sx) { e._t = _sx; e.textContent = _sx; } return stressMarches; }
 function stressSend(n) {
   if (!n) { stressMarches = []; stressMarchList(vnow()); return; }
   var home = mapTileById(game.state.map, game.state.homeTileId); if (!home) return;

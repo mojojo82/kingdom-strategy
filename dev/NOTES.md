@@ -2987,3 +2987,15 @@ Harley's 3 points:
   takes the first-draw unpack hitch out (Harley's forest "around 50" on first visit).
 - Tested headless: farm 4-2 + best 7-1, sat on the WORLD map only: forest then cave (next chapter) both fetched and ready; opening Conquest then
   shows the full forest on the first frame. g347 + g296 pass, no page errors. Not checked on a phone.
+
+## v1320 — audit fix 2: world map costs nothing while the sea is empty
+- The two world-map hot spots from the audit, isolated with p06 HOOK kill-switch runs (busy 64% total; foam off -> 46%, march loop off -> JS 24% -> 8%):
+- updateMarchMarkers ran its full body every frame with NOTHING on the sea (~16% of a phone-speed core: list building, home lookup, a stress-bar
+  textContent write per frame). Now: a cheap "any ships at all?" check (own + stress arrays + a worldMarches scan vs returnAt) and the frame ends
+  there; one last normal pass still runs after the last ship goes home so markers / routes / the GL layer clean up exactly as before (marchAnim.hadAny).
+  The stress-bar readout also only writes on change. p03 "no marches": marchJsMs 0.04 ms/frame.
+- Sea foam: the sfLife keyframes animate via var(--rot/--dx/--dy/--op/--life), and var() keyframes keep every streak's animation on the MAIN thread -
+  ~57 streaks = 18% of a core in style recalc, real on phones. Same fade/drift now runs per streak via el.animate with the values resolved
+  (compositor-friendly opacity/transform; sfLife/sfLife2 CSS kept for reference, .sf no longer references them). prefers-reduced-motion keeps its old
+  static look (seaFoam.still). Headless after: JS 24% -> 9%, style 18% -> 11%, foam visually unchanged (48 streaks, 43 animating), ships animate and
+  clean up (markers 3 -> 0, hadAny closes). g347 + g296 + p03 pass; no page errors. Not checked on a phone.
