@@ -2828,3 +2828,11 @@ Harley's 3 points:
   as a stencil (it aligned at 0,0 but came out brighter/saturated - same as the snow near); road ferns kept, walking strip flattened to the village eye-level.
 - Tree layers at 0.46 game px per source px (not 0.3): at 0.3 the canopy stopped short on tall phones (flat dark band at the top). Slightly softer too.
 - Old forest art kept in art/originals/backgrounds/forest_layer1/2_*.png. build_snowpass.py / build_graveyard.py are import-safe now.
+
+## v1302 — Scenery sharpness: "Light" step, Ground row, Copy my settings
+- Harley: the buttons are essential (each level needs its own), wants a step between Sharp and Soft, and the ground in the tool ("this forest level is
+  the first one I thought the ground is too sharp").
+- Steps: Sharp 1 / Light 1.17 / Soft 1.35 / Village-like 1.75. Ground row per level (key "env:floor"); the 2x crisp roads (graveyard/snow/forest)
+  carry upx: 2 so a step softens their real detail, not just the doubled pixels. Village road has no upx.
+- "📋 Copy my settings (all levels)" copies a plain-text summary of every level/layer as shown on that phone - Harley pastes it to Claude, who makes
+  those the real settings (the layer's / floor's .soft).
