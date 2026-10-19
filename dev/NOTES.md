@@ -2909,3 +2909,10 @@ Harley's 3 points:
 - Harley: darker, but not a straight line - "sculpted in there carefully"; full light where the lava light reaches, then dark. build_volcano.py: a
   ~220-row light reach smoothed edge-aware with the rock as the guide (guided filter), stalactites hanging into the light carry it further up,
   orange-lit rims fade slower; above that near-black and desaturated. Harley OK'd the preview first.
+
+## v1314 — prototype: the scenery halts while an enemy is near the fortress
+- Harley: when an enemy is near the fortress the march halts (all level layers stop); once those enemies are cleared it moves on again. Visual only.
+- stepIdleAnim: idleAnim.scrollK scales only the backdrop scroll (bgOffset / bgOffsetFar - nothing else reads them). "Near" = an alive enemy's drawn x
+  within HALT_NEAR_PX (60) of getFortressNoseX (enemy melee reach is 46). Stays stopped until nothing's been near for 0.8s (no stop-go jitter as
+  enemies die and the next walk in); eases to a stop in ~0.3s, pulls away in ~0.6s. Dev Tools "Halt scenery when an enemy is near" (default On,
+  kingdom_halt_near_v1). Heroes / enemies / attacks / timing untouched.

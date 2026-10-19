@@ -3352,6 +3352,10 @@
                   <div class="dev-speed-btns" id="devChapterBtns"></div>
                 </div>
                 <div class="dev-tools-row">
+                  <span class="dev-tools-hint">🛑 Halt scenery when an enemy is near the fortress:</span>
+                  <button class="dev-btn" type="button" onclick="try{localStorage.setItem('kingdom_halt_near_v1',haltNearOn()?'0':'1')}catch(e){};this.textContent=haltNearOn()?'On':'Off'">On</button>
+                </div>
+                <div class="dev-tools-row">
                   <span class="dev-tools-hint">🌧️ Rain style:</span>
                   <button class="dev-btn" type="button" onclick="try{localStorage.setItem('kingdom_rain_style_v1',rainStyle()===2?'1':'2')}catch(e){};this.textContent='Rain'+rainStyle()">Rain2</button>
                   <span class="dev-tools-hint">Splashes on the forest path:</span>
@@ -12551,7 +12555,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1313"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1314"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22804,11 +22808,20 @@ function stepIdleAnim(dtSec, w, h) {
   // itself holds a fixed spot rather than the squad marching toward it.
   var _pd = game.state.idle.pending; // v785: the world stops scrolling while the defeat screen is up
   if (!game.idleIsBossLevel() && !(_pd && _pd.type === "defeat")) {
-    idleAnim.bgOffset = (idleAnim.bgOffset + 55 * dtSec) % 40;
+    /* v1314 (Harley prototype): an enemy up close to the fortress halts the march - the scenery eases to a stop, and eases back into motion
+       once those enemies are cleared. Purely visual: only the scroll speed of the backdrop changes; heroes, enemies, attacks untouched. */
+    var hk = 1;
+    if (haltNearOn()) { var noseX = getFortressNoseX(w) + HALT_NEAR_PX, nearE = false;
+      game.state.idle.enemies.forEach(function (re) { var v = idleAnim.enemyById[re.id]; if (v && re.hp > 0 && v.x <= noseX) nearE = true; });
+      if (nearE) idleAnim.haltHold = 0.8; else idleAnim.haltHold = Math.max(0, (idleAnim.haltHold || 0) - dtSec); /* stays stopped until nothing's been near for 0.8s - no stop-go jitter as enemies die and walk in */
+      hk = idleAnim.haltHold > 0 ? 0 : 1; }
+    idleAnim.scrollK = idleAnim.scrollK == null ? hk : idleAnim.scrollK + (hk - idleAnim.scrollK) * Math.min(1, dtSec / (hk ? 0.6 : 0.3)); /* stop in ~0.3s, pull away in ~0.6s */
+    var sdt = dtSec * idleAnim.scrollK;
+    idleAnim.bgOffset = (idleAnim.bgOffset + 55 * sdt) % 40;
     // Separate accumulator for the hills/treeline layer: it needs a much longer
     // repeat period (120–130px) than the ground stripes (40px). Reusing bgOffset
     // directly made it wrap — and visibly snap back — every ~0.7s.
-    idleAnim.bgOffsetFar = (idleAnim.bgOffsetFar + 55 * dtSec) % 300000;
+    idleAnim.bgOffsetFar = (idleAnim.bgOffsetFar + 55 * sdt) % 300000;
   }
 
   // Lightning 1 — random background strikes (Dev Tools toggle). Countdown timer
@@ -25625,6 +25638,8 @@ Object.keys(TMP_ENV_BG).forEach(function (k) { TMP_ENV_BG[k]._env = k; });
 /* v1303 (Harley: "random splashes appearing on the ground out of nowhere might work"): rain splashes on the forest path. Not tied to the falling
    rain - they just pop up at random spots on the walking strip: a flat ripple ring that spreads and fades + 2-3 droplets that hop and fall back.
    Stored in road coordinates so they scroll with the road. ~45 a second, each ~0.3s -> about 12-15 on screen. Plain shapes, no filters. Dev Tools on/off. */
+var HALT_NEAR_PX = 60; /* v1314: "near the fortress" = within this many px of its nose (enemy melee reach is 46) */
+function haltNearOn() { try { return localStorage.getItem("kingdom_halt_near_v1") !== "0"; } catch (e) { return true; } }
 function rainStyle() { try { return localStorage.getItem("kingdom_rain_style_v1") === "1" ? 1 : 2; } catch (e) { return 2; } } /* v1303: 1 = slanted (rain1), 2 = straight forest rain (rain2, default) */
 function rainSplashOn() { try { return localStorage.getItem("kingdom_rain_splash_v1") !== "0"; } catch (e) { return true; } }
 function drawRainSplashes(ctx, w, top, depth) {
