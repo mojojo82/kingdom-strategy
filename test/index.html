@@ -197,7 +197,7 @@
   function wipeAndReload() { /* the running game may save once more before the page unloads, so the wipe is repeated at the very start of the next load */
     try { window.saveLoadFailed = true; } catch (e) {} /* the game's own guard: persist() stops writing */
     try { localStorage.setItem("ks_wipe", "1"); } catch (e) {}
-    wipeLocalGame(); location.reload();
+    wipeLocalGame(); try { var q = new URLSearchParams(location.search); q.set("u", "w" + Date.now().toString(36)); location.replace(location.pathname + "?" + q.toString() + location.hash); } catch (e) { location.reload(); } /* v1307: past any cached copy */
   }
 
   var ready = null;
@@ -12551,7 +12551,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1306"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1307"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16870,8 +16870,25 @@ var KS_UPD = { latest: null, shown: false };
 function ksFreshReload(tag) { /* reload past any cached copy of the page (a different query = a fresh download) */
   /* v1237: the address is new on EVERY tap (version + time). It used to be "?u=v1236" - if the first tap got an old copy (the CDN still had it),
      that copy was cached under that exact address, so every later Update tap reloaded the same old page and the banner came straight back. */
-  try { location.replace(location.pathname + "?u=" + encodeURIComponent((tag || "v") + "-" + Date.now().toString(36))); } catch (e) { location.reload(); }
+  /* v1307: keep the other query bits (phone view's ?phoneframe=1 used to be dropped) */
+  try { var q = new URLSearchParams(location.search); q.set("u", (tag || "v") + "-" + Date.now().toString(36)); location.replace(location.pathname + "?" + q.toString() + location.hash); } catch (e) { location.reload(); }
 }
+/* v1307 (Harley: "logging back in after a very recent update - the update has reverted to the previous", several times): the browser / GitHub's
+   cache can hand back the OLD page for up to ~10 min after a push (the phone-view frame always loads the exact same address, so it hit this most).
+   On load, ask the server which version is live; if it's NEWER than this page, reload once past the cache. Only in the first 20s after loading
+   (never mid-game), and at most once per version (sessionStorage) so a stubborn cache can't cause a reload loop - the banner still covers it then. */
+(function () {
+  var t0 = Date.now(), num = function (v) { return parseInt(String(v).replace(/[^0-9]/g, ""), 10) || 0; };
+  function early() {
+    if (typeof fetch !== "function" || Date.now() - t0 > 20000) return;
+    fetch("version.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || typeof j.v !== "string" || num(j.v) <= num(KS_BUILD) || Date.now() - t0 > 20000) return;
+      var key = "ks_fresh_tried_" + j.v; try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); } catch (e) { return; }
+      ksFreshReload(j.v);
+    }).catch(function () {});
+  }
+  setTimeout(early, 300);
+})();
 function ksUpdBanner() {
   if (KS_UPD.shown || document.getElementById("ksUpdBanner")) return; KS_UPD.shown = true;
   var b = document.createElement("div"); b.id = "ksUpdBanner";

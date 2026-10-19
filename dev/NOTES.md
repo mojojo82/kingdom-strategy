@@ -2865,3 +2865,12 @@ Harley's 3 points:
 ## v1306 — no lightning on the village or in the cave
 - Harley: remove the lightning on the cave and village levels. stepIdleAnim: LIGHTNING_OFF_ENVS { day, cave } - no strikes there (any flash in progress
   is cleared). Graveyard / snow / forest keep it; Arena lightning unchanged. Tested: 30s at 20x per level -> day 0, night 10, snow 6, rain 7, cave 0.
+
+## v1307 — no more "reverted to the previous version" after an update
+- Harley: several times, logging back in right after an update showed the previous version. Cause: GitHub Pages / the browser cache hand back the
+  old page for up to ~10 min after a push. Worst in the PC phone view: phone.html always loaded the exact same frame address (./?phoneframe=1),
+  and the logout reload / Update button reloaded cached copies too (the Update button also dropped ?phoneframe=1).
+- Fixes: on load, version.json (no-store) is checked within the first 20s; if the live version is NEWER than this page -> one cache-busting reload
+  (sessionStorage guard per version, so no loop; the banner still covers a stubborn cache). phone.html frame gets a fresh ?t= every open.
+  ksFreshReload keeps the other query params. Logout/wipe reload is cache-busted too. Tested headless: same version -> no reload; newer -> exactly
+  one reload, ?phoneframe=1 kept.
