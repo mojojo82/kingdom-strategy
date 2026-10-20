@@ -3093,3 +3093,13 @@ Harley's 3 points:
   teal label, inactive = bronze + cream.
 - Originals: art/originals/ui/tabs_pair_gpt_magenta.png (full sheet) + tab_active_cyan_alpha / tab_inactive_alpha (full-res keyed cuts).
 - Headless: 4 tabs render as the art, switching works, labels live, X closes, no errors. Not checked on a phone.
+
+## v1331 — Type B panels: the Backpack's tabs move into a bottom tray with the REAL tab shapes
+- Harley defined the system: "we need 2 types of ui menus" - Type A plain (Stats), Type B tabbed. And he called my first tab art what it was:
+  "these are the types of tabs. what you made is closer to buttons" - true tabs attach (flat borderless base), the shield pair were sealed badges.
+- GPT magenta roll 2 (AFK bag = shape ref, shield pair = material ref): file-folder tabs, flat base, gold trim top/sides only. Keyed, split,
+  embedded 320px (~8 kB each). The Backpack re-laid as Type B: grid (order 1), Use area (2), tab row (3) at the BOTTOM inside a dark tray
+  (the first mock's band as a smooth column-average gradient strip, 2 kB), tabs flush on the tray floor, cyan active + dark label.
+- The shield pair stays in the kit as the lozenge BUTTON style (we needed buttons anyway). art/originals/ui/: tabs2_pair_gpt_magenta.png,
+  tab2_*_alpha.png, tabs_tray_840x156.png.
+- Headless: tray at the bottom, 4 tabs switch, flat bases flush, grid/use unchanged, X closes, no errors. Not checked on a phone.
