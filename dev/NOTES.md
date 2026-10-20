@@ -3123,3 +3123,15 @@ Harley's 3 points:
   his 739 dmg/s squad melts chapters 8-12. The receipts will show whether future jumps are that, or a real bug. The server-side gem ledger
   (claimLevel, one entry per level with a timestamp) exists as deeper forensics, but reading his account data needs his explicit OK (handover rule).
 - Headless: cleared 3-20 -> log shows the receipt with time; g347 + g296 pass, no errors. Not checked on a phone.
+
+## v1333 addendum — navy-gold Stats panel candidate, built at home (no GPT pass)
+- Harley brought two GPT mocks: our gold frame + NAVY interior/rows over lava ("Thoughts?"), picked the darker one and said "lets take a crack
+  at it". Built from our own kit: parchment flood -> navy (4,34,66 + grain + vignette), per-column lip line with contact shadow, corner knots
+  parchment-keyed (sat/lum/teal classifier, checked as a red-overlay BEFORE compositing - that discipline is what finally worked), navy row
+  strip from the mock's clean Gathering Yield row (mirrored left cap; right cap carried the panel-edge bleed).
+- Top-right was a war zone (parchment sheet-corner tucked under the X disc): fixed by mirroring the clean LEFT strip over, protecting the X
+  disc circle + ribbon silhouette. Lesson: the frame is mirror-symmetric about x=1022 for rails/interior but the painted corner knots are NOT
+  (right knot ~18 px inboard, teal centroids 112 vs 891.6) - measure the axis before mirroring, and full-box replace beats axis-blending.
+- Candidates banked (no game change, no decision): art/originals/ui/candidates/stats_navy_gold_{frame_1024x1536,row_strip_844x65}.png +
+  stats_navy_gold_vs_mock.png; builder dev/ui/build_navy_frame.py (base build; the corner/X-pocket mirrors were applied on top).
+- Verified by swapping the art into the REAL game at runtime (headless, lava ch 7, Stats open) - screenshots only, test/index.html untouched.
