@@ -8646,7 +8646,10 @@ function createGame(opts) {
     _lr.gems = LEVEL_CLEAR_GEMS; if (!(typeof window !== "undefined" && window.KS_BACKEND && window.KS_BACKEND.kind === "firebase")) state.gems = (state.gems || 0) + LEVEL_CLEAR_GEMS; else setTimeout(function () { try { ksClaimLoop(); } catch (e) {} }, 0); /* v905: on Firebase the server pays (claimLevel) */
     if (manualResults) state.idle.pending = { type: "victory", at: now(), chapterNum: state.idle.chapter, label: state.idle.chapter + "-" + state.idle.levelNum, rewards: _lr || { valor: 0, energon: 0, fragments: 0 }, chapterBoss: idleIsChapterBossLevel() };
     state.idle.levelNum++;
-    if (state.idle.levelNum > IDLE_LEVELS_PER_CHAPTER) { state.idle.levelNum = 1; state.idle.chapter++; var tEss = trainSync(); if (tEss && state.idle.pending && state.idle.pending.rewards) state.idle.pending.rewards.essence = tEss; } /* v1093: chapter complete pays Essence */
+    if (state.idle.levelNum > IDLE_LEVELS_PER_CHAPTER) { state.idle.levelNum = 1; state.idle.chapter++; var tEss = trainSync(); if (tEss && state.idle.pending && state.idle.pending.rewards) state.idle.pending.rewards.essence = tEss; /* v1093: chapter complete pays Essence */
+      /* v1333 (Harley: reached 12-8 without remembering beating the lava boss - "we should log it because i believe theres a bug"): every chapter-up
+         leaves a receipt in the Event Log, with the time, so silent background progression (or a real bug) is visible after the fact. */
+      try { var _tm = ""; try { _tm = ", " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); } catch (e) {} log("🏆 Reached Chapter " + state.idle.chapter + " (cleared " + state.idle.lastLevelClearLabel + _tm + ")"); } catch (e) {} }
     state.idle.enemiesKilledInLevel = 0;
     state.idle.playerHp = idlePlayerMaxHp();
     idleResetHeroHp(); // v527: every hero back up at full HP for the new attempt
@@ -12634,7 +12637,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1332"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1333"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);

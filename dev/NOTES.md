@@ -3114,3 +3114,12 @@ Harley's 3 points:
   tray floor); grid/use get the full parchment. Two failed attempts first (guessed slivers smeared the tabs; the splice at y1240 caught the last
   row's ghost) - both diagnosed from render checks before they shipped.
 - Headless: parchment -> lip -> tray -> base reads exactly like the mock, 4 tabs switch in the tray, X closes, no errors; not checked on a phone.
+
+## v1333 — chapter-ups leave receipts in the Event Log
+- Harley reached 12-8 on the tomhector TEST account without remembering ever beating the lava (ch 7) boss; the Event Log had no trail because
+  level clears were never logged ("we should log it because i believe theres a bug"). Now every chapter-up writes "🏆 Reached Chapter N
+  (cleared X-20, 7:34 PM)" via the engine's own log() at the increment in idleClearLevel - visible under More > Event Log, survives in the save.
+- Context for the 12-8 question: every level's boss spawns and is fought automatically (v748), so an open page progresses entirely on its own;
+  his 739 dmg/s squad melts chapters 8-12. The receipts will show whether future jumps are that, or a real bug. The server-side gem ledger
+  (claimLevel, one entry per level with a timestamp) exists as deeper forensics, but reading his account data needs his explicit OK (handover rule).
+- Headless: cleared 3-20 -> log shows the receipt with time; g347 + g296 pass, no errors. Not checked on a phone.
