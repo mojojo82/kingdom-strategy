@@ -3172,3 +3172,11 @@ Harley's 3 points:
 - v1336's img rule (width/height 82% + margin:auto) only centered horizontally; block flow left each icon riding ~9% high in its slot.
   The slot buttons are now flex (align+justify center) with the img at max 82% - true centering both axes, all 6 cells, Classic and Blue.
 - Headless: 6 imgs still render, bag opens, Troops jumps, no errors. Not checked on his phone.
+
+## v1338 — Blue chrome: the 6 quick slots re-measured off the art (Harley's phone screenshot)
+- v1337's flex fix was right but not the (whole) story: in Blue the cells are transform-fitted onto the frame art's drawn squares, and those
+  targets were round guesses ([12,58,103] x [118,168], 39x40) sitting ~1 unit left and ~4 low of where the art actually paints the squares.
+  Icons were perfectly centered in boxes that weren't where the squares are.
+- Boxes measured off UI_SKIN_BOT like the v1281 card boxes (inner dark area per square, threshold lum<28, 0.5-unit inset):
+  row1 y 115.2, row2 y 163.4, x 12.7 / 58.3 / 104.0-104.3, ~38x39.8 each. Per-cell LG table replaces the lx/ly loop.
+- Headless Blue: all 6 dead-center in their drawn squares; buttons still work; Classic unchanged. Not re-checked on his phone.
