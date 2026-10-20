@@ -3167,3 +3167,8 @@ Harley's 3 points:
 - Full sheet banked: art/originals/ui/quick_icons_sheet_gpt_magenta.png (plenty of spares: 5 bags, 5 helmets, 5 gears, 5 crystals, 5 swords,
   5 shields, 6 stat medallions, 5 staves, 6 potions - the medallions could serve the Stats rows later).
 - Headless: 6 cells, 6 imgs, titles right; bag opens the Backpack, Troops jumps to City>Troops, no errors. Not checked on his phone.
+
+## v1337 — quick-slot icons centered (Harley: "need centering within their slots")
+- v1336's img rule (width/height 82% + margin:auto) only centered horizontally; block flow left each icon riding ~9% high in its slot.
+  The slot buttons are now flex (align+justify center) with the img at max 82% - true centering both axes, all 6 cells, Classic and Blue.
+- Headless: 6 imgs still render, bag opens, Troops jumps, no errors. Not checked on his phone.
