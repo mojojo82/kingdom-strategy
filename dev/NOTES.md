@@ -3084,3 +3084,12 @@ Harley's 3 points:
 - Spill fix: the Use area's cyan button poked over the frame's bottom edge -> bottom padding 17% -> 20%, use-area max-height 34% -> 31%.
 - Headless: both panels share the frame with correct titles, 4 tabs switch, tiles render, real-click X closes both, no errors; g347 ok. Not
   checked on a phone.
+
+## v1330 — the Backpack gets the real kit tabs (magenta-keyed GPT redraw)
+- Harley: "The backpack is where we need to use tabs, like the ones you deleted some msgs up" - the mock's actual tab art, not my v1329 CSS
+  stand-ins. Two extraction attempts on the mock failed (fills matched the band; rims not closed). The fix was the house pipeline: GPT redrew the
+  pair (cyan active + bronze inactive, blank) on solid magenta, keyed like level art (magenta-ness alpha + de-fringe), split by component, 320px
+  copies embedded (~25 kB total). border-image slices 0 86 / 0 22px keep the corner-key caps crisp at any tab width; active = cyan art + dark
+  teal label, inactive = bronze + cream.
+- Originals: art/originals/ui/tabs_pair_gpt_magenta.png (full sheet) + tab_active_cyan_alpha / tab_inactive_alpha (full-res keyed cuts).
+- Headless: 4 tabs render as the art, switching works, labels live, X closes, no errors. Not checked on a phone.
