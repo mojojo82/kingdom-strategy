@@ -3033,3 +3033,9 @@ Harley's 3 points:
   Level Select, Hero index). Ref screenshots from other games deliberately NOT committed.
 - Tested headless: popover opens centered over Conquest with 15 live rows (real HP value), scrolls, closes on X; no page errors; g347 ok.
   Not checked on a phone.
+
+## v1324 — the Stats panel's navy mat made transparent
+- Harley: "why is the blue rectangle there" - the GPT frame was embedded without alpha, so its navy backdrop drew as a rectangle around the panel
+  over the game scene (invisible on the mock page, which was the same navy). Flood-filled the navy from the image edges to transparent (inside-the-
+  art navy/teal untouched), 1 px feathered edge, re-embedded (73 kB). art/originals/ui/stats_frame_gpt_1024x1536_alpha.png = the cut version.
+- Headless: panel floats over the scene with the ornate edge against the game; opens/closes fine; no page errors. Not checked on a phone.
