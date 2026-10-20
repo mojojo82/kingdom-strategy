@@ -3135,3 +3135,11 @@ Harley's 3 points:
 - Candidates banked (no game change, no decision): art/originals/ui/candidates/stats_navy_gold_{frame_1024x1536,row_strip_844x65}.png +
   stats_navy_gold_vs_mock.png; builder dev/ui/build_navy_frame.py (base build; the corner/X-pocket mirrors were applied on top).
 - Verified by swapping the art into the REAL game at runtime (headless, lava ch 7, Stats open) - screenshots only, test/index.html untouched.
+
+## v1334 — navy-gold skin goes INTO the Stats panel (still a candidate)
+- Harley: "Put it in, though its still just a candidate. I can never judge properly unless i see how it feels in game." So the Stats panel now
+  wears it for real: new :root --ks-frame-navy (the home-built frame, webp q90, 78 kB), #idleStatsPop points its background at it, and the
+  Stats row strip swapped to the navy one (rebuilt with smooth mottle instead of per-pixel noise - lossless webp went 59 kB -> 8.8 kB).
+- Going back to parchment = delete the #idleStatsPop background-image line and swap the .tech border-image url back; --ks-frame and the
+  Backpack/Type B are untouched, so only Stats changed.
+- Headless: Stats opens on village, 15 rows on the navy skin, real-click X closes, no errors. Not checked on his phone.
