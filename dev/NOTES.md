@@ -3157,3 +3157,13 @@ Harley's 3 points:
   replaced with the RGBA version.
 - Headless (real finger-style clicks): open -> cascade -> chip flips skin + label -> X plays ks-out then removes pop AND dim -> reopen remembers
   parchment -> outside tap closes. No errors. Not checked on his phone.
+
+## v1336 — the 6 quick slots left of the equipment grid get real placeholder art (Harley's magenta sheet)
+- Harley sent a GPT icon sheet on magenta (the house keying trick) and said to use it for the 4 placeholder icons in the Conquest UI plus the 2
+  empty slots next to them. "All these are placeholders."
+- The 6: Backpack -> brown pack, Troops shortcut -> plumed helmet, old wrench (still no action) -> bronze gear, Sword of Power -> straight
+  sword, and the 2 empties -> cross shield + red potion (titles "Reserved", no action). Keyed with the standard fn (mag=(min(r,b)-g)/140,
+  alpha=(1-mag)^1.5, de-fringe), largest-component cleanup per crop (stray neighbour flecks), 128 px webp q88 data URLs in LG_ICONS.
+- Full sheet banked: art/originals/ui/quick_icons_sheet_gpt_magenta.png (plenty of spares: 5 bags, 5 helmets, 5 gears, 5 crystals, 5 swords,
+  5 shields, 6 stat medallions, 5 staves, 6 potions - the medallions could serve the Stats rows later).
+- Headless: 6 cells, 6 imgs, titles right; bag opens the Backpack, Troops jumps to City>Troops, no errors. Not checked on his phone.
