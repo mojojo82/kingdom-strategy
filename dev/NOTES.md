@@ -3103,3 +3103,14 @@ Harley's 3 points:
 - The shield pair stays in the kit as the lozenge BUTTON style (we needed buttons anyway). art/originals/ui/: tabs2_pair_gpt_magenta.png,
   tab2_*_alpha.png, tabs_tray_840x156.png.
 - Headless: tray at the bottom, 4 tabs switch, flat bases flush, grid/use unchanged, X closes, no errors. Not checked on a phone.
+
+## v1332 — Type B's tray is the mock's real bottom section
+- Harley: "The bottom section. Cant you just use it for the backpack" - instead of the synthetic gradient strip, the Type B frame now carries the
+  first mock's actual bottom: parchment ending at the gold lip (with the little center diamond), the dark tray, the frame base, all flowing into
+  the corner hooks. Built: spliced onto the fixed blank frame at y1282 (16 px fade, below the mock's last baked row), the baked Stat/Hero/Gear
+  rebuilt out of the band per-row from the darkest third of its pixels (clean-column detection failed - the tabs' glow touches every column),
+  real rail ends kept with feathered joins. panel_frame_typeB_1024x1536.png -> --ks-frame-b (56 kB webp).
+- Backpack: .bg-box uses the Type B frame; the tab row is position:absolute over the baked tray (top 85%, flex-end so the flat bases sit on the
+  tray floor); grid/use get the full parchment. Two failed attempts first (guessed slivers smeared the tabs; the splice at y1240 caught the last
+  row's ghost) - both diagnosed from render checks before they shipped.
+- Headless: parchment -> lip -> tray -> base reads exactly like the mock, 4 tabs switch in the tray, X closes, no errors; not checked on a phone.
