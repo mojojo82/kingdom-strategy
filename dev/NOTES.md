@@ -3044,3 +3044,12 @@ Harley's 3 points:
 - It wasn't: the v1323 strip was clone-filled by repeating a 100 px block sideways, leaving a repeating vertical seam. Rebuilt: per-scanline median
   colour from the strip's clean zone (perfectly smooth gradient) + blurred mottle so it isn't plastic-flat, ornate end caps untouched; lossless
   webp 11 kB. art/originals/ui/stats_row_strip_844x65.png updated. Headless zoom: no seams. Not checked on a phone.
+
+## v1326 — stats panel: corners restored + the X actually taps
+- Harley (phone): two frame corners "covered up" + X dead. (1) The v1324 navy-cut flood crept INTO the corner ornaments through their dark shading
+  and ate chunks; recut with near-navy AND locally-uniform (the backdrop is flat, ornament shading is textured; scipy uniform_filter variance),
+  tighter tolerance - 230k px cut vs 248k, ornaments intact, enclosed dark pockets safe by construction. (2) The X lived inside .isp-head which the
+  v1323 skin set display:none - a JS .click() in the headless test still fired, a real finger found no tap target. Head shown again (its "Stats"
+  label hidden), X hotspot bigger (15% x 9.5%, z-index 2). Test now uses a REAL P.click - lesson: hotspot tests must click like a finger, not via
+  element.click().
+- Headless: both corners drawn clean over the scene, real click closes. Not checked on a phone.
