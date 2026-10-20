@@ -3053,3 +3053,13 @@ Harley's 3 points:
   label hidden), X hotspot bigger (15% x 9.5%, z-index 2). Test now uses a REAL P.click - lesson: hotspot tests must click like a finger, not via
   element.click().
 - Headless: both corners drawn clean over the scene, real click closes. Not checked on a phone.
+
+## v1327 — the Stats frame, final art (Harley's 3 catches fixed)
+- Harley caught, over 3 GPT repair rolls on the frame: (1) the top outer corner hooks drawn BEHIND the parchment box ("the ornate design is
+  covered by the main box") and thinner than the bottom pair; (2) the right rail missing the left rail's carved vine detail; (3) the top inner
+  filigree corner ornaments only half-drawn - horizontal arm only, the parchment sheet edge covering where the vertical arm belongs (the bottom
+  ones are complete Ls with the teal inset). Final roll fixed all: hooks full weight in front (TR behind the X, X on top), both rails carved,
+  4 complete filigree Ls. Lesson logged: review corners/rails/filigree against EACH OTHER before shipping frame art - Harley went 3-for-3 on
+  things I'd walked past.
+- art/originals/ui/stats_frame_gpt_v3_1024x1536.png (+_alpha) = the keeper; embedded 83 kB webp (same textured-aware navy cut as v1326).
+- Headless: panel in game with complete corners, real-click X closes, no errors. Not checked on a phone.
