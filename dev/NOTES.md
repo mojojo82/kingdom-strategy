@@ -3180,3 +3180,21 @@ Harley's 3 points:
 - Boxes measured off UI_SKIN_BOT like the v1281 card boxes (inner dark area per square, threshold lum<28, 0.5-unit inset):
   row1 y 115.2, row2 y 163.4, x 12.7 / 58.3 / 104.0-104.3, ~38x39.8 each. Per-cell LG table replaces the lx/ly loop.
 - Headless Blue: all 6 dead-center in their drawn squares; buttons still work; Classic unchanged. Not re-checked on his phone.
+
+## v1339 — graveyard Leonardo near layer, TEST-ONLY switch (old graveyard untouched)
+- Harley: "okay but this isnt permanent. we are just testing ok. dont delete the old graveyard. do not". So: a Dev Tools switch, default OFF.
+  graveyard_near.webp / _far / _road / _sky are byte-identical (md5 checked before and after). Players get exactly the old graveyard.
+- Why: Harley found graveyard "the most cartoony" (outlined, flat shading, no aerial perspective) vs cave's semi-realistic look; a mock with the
+  near layer removed showed the Far layer was already cave-style. He repainted the near in Leonardo on magenta.
+- The test layer (art/levels/graveyard_near_test_leo.webp, 1536x923): keyed; bottom cut at the last fully-solid row (the soft magenta fade
+  made a purple band over the road - Harley circled it; lesson: trim Leonardo layers to solid before seating); cut-off objects removed
+  (top-left branch, cut tree right), chapel roof + gate wall ends sculpted into ragged ruin breaks; wrap join = chapel boundary wall meeting the
+  cemetery gate, slit filled with cloned wall stone + soft junction shadow; Grade A values (x0.86, 12% desat, shadows cooled toward night navy,
+  lantern glow protected); scale 0.3/185.76*(700/962), lift 0, baseY = its solid bottom row. Scroll-proven (pan video, seam crosses twice).
+- New machinery: a scenery LAYER can carry alt {name,img,ow,oh,baseY,scale,lift} (like floor.alt since v1305). Pick per device in
+  localStorage kingdom_layer_alt_v1; Dev Tools shows "Near version: Original • / Leonardo (test)". The alt image is only downloaded on a device
+  that picked it. Copy-my-settings and Reset include it.
+- Also: graveyard got a "Darker below" ground (graveyard_road_dark.webp, the v1308 forest recipe, front edge y=66) - also default OFF.
+- Originals: art/originals/backgrounds/graveyard_leonardo_test/ (Leonardo magenta source + wrapped ungraded PNG).
+- Headless: default fetches no test file and draws the old graveyard; Dev Tools buttons flip to Leonardo + Darker below; flipping back restores
+  the old look; no errors. Not checked on his phone.

@@ -12673,7 +12673,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1338"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1339"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25660,7 +25660,7 @@ function tmpBgImg(d) { var im = new Image(); im.src = d; return im; }
    it right), so a changed picture is re-downloaded and an unchanged one comes from the phone's cache. Until a level's art arrives, its own colours show. */
 var LEVEL_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/levels/" : "art/levels/";
 function levelArt(file, h) { var im = new Image(); im._lazySrc = LEVEL_ART_BASE + file + "?h=" + h; return im; }
-function levelArtImgs(cfg) { var a = []; if (cfg.floor) { a.push(cfg.floor.img); if (cfg.floor.alt) a.push(cfg.floor.alt.img); } (cfg.layers || []).forEach(function (L) { a.push(L.img); }); return a; }
+function levelArtImgs(cfg) { var a = []; if (cfg.floor) { a.push(cfg.floor.img); if (cfg.floor.alt) a.push(cfg.floor.alt.img); } (cfg.layers || []).forEach(function (L, i) { a.push(L.img); if (L.alt && layerUsesAlt(cfg._env, i, L)) a.push(L.alt.img); }); return a; }
 function ensureLevelArt(env) {
   var cfg = TMP_ENV_BG[env]; if (!cfg) return true;
   if (cfg._artReady) return true;
@@ -25682,9 +25682,9 @@ function ensureLevelArt(env) {
 var levelArtPicked = null, levelArtKeepSig = "";
 function releaseLevelArt(env) {
   var cfg = TMP_ENV_BG[env]; if (!cfg) return;
-  levelArtImgs(cfg).forEach(function (im) { if (!im || !im._lazySrc || !im._asked) return; im.onerror = null; im.removeAttribute("src"); im._asked = 0; });
+  levelArtImgs(cfg).concat((cfg.layers || []).filter(function (L) { return L.alt; }).map(function (L) { return L.alt.img; })).forEach(function (im) { if (!im || !im._lazySrc || !im._asked) return; im.onerror = null; im.removeAttribute("src"); im._asked = 0; });
   cfg._artReady = false;
-  (cfg.layers || []).concat(cfg.floor ? [cfg.floor] : [], cfg.floor && cfg.floor.alt ? [cfg.floor.alt] : []).forEach(function (L) { L._soft = null; });
+  (cfg.layers || []).concat(cfg.floor ? [cfg.floor] : [], cfg.floor && cfg.floor.alt ? [cfg.floor.alt] : []).forEach(function (L) { L._soft = null; if (L.alt) L.alt._soft = null; });
 }
 function ensureLevelArtAround(env) { /* this level now; the next chapter's level once this one is in */
   var nx = null;
@@ -25710,10 +25710,12 @@ var TMP_ENV_BG = {
   /* v1294 (Harley 19 Oct): the night level is a haunted graveyard - Harley's ChatGPT composite split into far / near / road (dev/levels/build_graveyard.py).
      Backdrop drawn at ~0.3 game px per source px (0.9 phone px on a 3x phone = crisp). Road: top surface flattened to the village road's eye-level,
      2x crisp copy (near layer: sharp original + soft: "village" = Harley's pick, v1297/v1298 - razor sharp looked like a cardboard cut-out); its solid top starts at row 16 and the walking line (row 28, a quarter down the path) sits on the ground line. Code-drawn night sky stays. */
-  night: { flat: "#0f152d", floor: { img: levelArt("graveyard_road.webp", "712a9411ed"), k: 0.21 / 185.76, road: 28, top: 16, upx: 2, fill: "#0e0a0e" }, layers: [
+  night: { flat: "#0f152d", floor: { img: levelArt("graveyard_road.webp", "712a9411ed"), alt: { name: "Darker below", img: levelArt("graveyard_road_dark.webp", "d1f398effb") }, k: 0.21 / 185.76, road: 28, top: 16, upx: 2, fill: "#0e0a0e" }, layers: [
     { name: "Sky", img: levelArt("graveyard_sky.webp", "fae5f67df4"), ow: 1446, oh: 728, baseY: 727, scale: 0.3 / 185.76, lift: 2.5, speed: 0.1 }, /* v1299 (Harley: hard jump from the light hills into the very dark code sky): the composite's own clouds + horizon glow, dev/levels/build_graveyard_sky.py */
     { name: "Far", img: levelArt("graveyard_far.webp", "adea4d3752"), ow: 1446, oh: 598, baseY: 598, scale: 0.3 / 185.76, lift: 2.5, speed: 0.25 },
-    { name: "Near", img: levelArt("graveyard_near.webp", "754648c3eb"), ow: 1446, oh: 633, baseY: 633, scale: 0.3 / 185.76, lift: 2.5, speed: 0.5, soft: "village" }
+    { name: "Near", img: levelArt("graveyard_near.webp", "754648c3eb"), ow: 1446, oh: 633, baseY: 633, scale: 0.3 / 185.76, lift: 2.5, speed: 0.5, soft: "village",
+      /* v1339 TEST ONLY (Harley: "this isnt permanent. we are just testing ok. dont delete the old graveyard"): Leonardo repaint, cave-style. Original stays default; Dev Tools "Near version" flips this device. */
+      alt: { name: "Leonardo (test)", img: levelArt("graveyard_near_test_leo.webp", "2f2d09e01e"), ow: 1536, oh: 923, baseY: 923, scale: 0.3 / 185.76 * (700 / 962), lift: 0 } }
   ] },
   /* v1300 (Harley 19 Oct): the snow level is a frozen mountain pass at dusk - dev/levels/build_snowpass*.py. Sky = GPT sky on its own (glow lined up
      behind the far mountains), far = GPT split, near = cut straight out of the composite (GPT's near split was too harsh), road = GPT split with the
@@ -25766,6 +25768,12 @@ function setLayerSoft(env, i, m) { if (m) layerSoftOverride[env + ":" + i] = m; 
 var floorAltPick = (function () { try { return JSON.parse(localStorage.getItem("kingdom_floor_alt_v1") || "{}") || {}; } catch (e) { return {}; } })();
 function floorUsesAlt(env, F) { return !!(F && F.alt) && (floorAltPick[env] != null ? !!floorAltPick[env] : !!F.useAlt); }
 function setFloorAlt(env, on) { floorAltPick[env] = on ? 1 : 0; try { localStorage.setItem("kingdom_floor_alt_v1", JSON.stringify(floorAltPick)); } catch (e) {} renderDevLayerSoft(true); }
+/* v1339: a scenery LAYER can carry alt: { name, img, ow, oh, baseY, scale, lift } too - Dev Tools "<layer> version" picks Original / alt on this
+   device only (default = Original). First use: the graveyard's Leonardo near layer test. */
+var layerAltPick = (function () { try { return JSON.parse(localStorage.getItem("kingdom_layer_alt_v1") || "{}") || {}; } catch (e) { return {}; } })();
+function layerUsesAlt(env, i, L) { return !!(L && L.alt) && !!layerAltPick[env + ":" + i]; }
+function setLayerAlt(env, i, on) { layerAltPick[env + ":" + i] = on ? 1 : 0; try { localStorage.setItem("kingdom_layer_alt_v1", JSON.stringify(layerAltPick)); } catch (e) {}
+  var cfg = TMP_ENV_BG[env]; if (cfg) cfg._artReady = false; /* fetch the picked picture */ renderDevLayerSoft(true); }
 function floorImgFor(env, F) { if (!floorUsesAlt(env, F) || !F.alt.img.naturalWidth) return layerImgFor(env, "floor", F); var A = F.alt; if (!A.soft) A.soft = F.soft; if (A.upx == null) A.upx = F.upx; return layerImgFor(env, "floor", A); }
 function layerImgFor(env, i, L) {
   var m = layerSoftMode(env, i, L), im = L.img; if (m === "sharp" || !im.naturalWidth) return im;
@@ -25790,6 +25798,10 @@ function renderDevLayerSoft(force) {
     LAYER_SOFT_ORDER.forEach(function (m) { h += '<div class="dev-speed-btn' + (cur === m ? " active" : "") + '" onclick="setLayerSoft(\'' + env + '\',' + ik + ',\'' + m + '\')">' + LAYER_SOFT_NAMES[m] + (def === m ? " •" : "") + '</div>'; });
     h += '</div></div>';
   });
+  rows.forEach(function (r) { if (typeof r.i !== "number" || !r.L.alt) return; var la = layerUsesAlt(env, r.i, r.L);
+    h += '<div style="display:flex;align-items:center;gap:6px;margin:6px 0 3px;"><span class="dev-tools-hint" style="min-width:46px;">' + r.name + ' version</span><div class="dev-speed-btns">'
+      + '<div class="dev-speed-btn' + (!la ? " active" : "") + '" onclick="setLayerAlt(\'' + env + '\',' + r.i + ',0)">Original •</div>'
+      + '<div class="dev-speed-btn' + (la ? " active" : "") + '" onclick="setLayerAlt(\'' + env + '\',' + r.i + ',1)">' + r.L.alt.name + '</div></div></div>'; });
   if (cfg.floor && cfg.floor.alt) { var ua = floorUsesAlt(env, cfg.floor);
     h += '<div style="display:flex;align-items:center;gap:6px;margin:6px 0 3px;"><span class="dev-tools-hint" style="min-width:46px;">Ground version</span><div class="dev-speed-btns">'
       + '<div class="dev-speed-btn' + (!ua ? " active" : "") + '" onclick="setFloorAlt(\'' + env + '\',0)">Original' + (!cfg.floor.useAlt ? " •" : "") + '</div>'
@@ -25799,12 +25811,13 @@ function renderDevLayerSoft(force) {
     + ' <button class="dev-btn" type="button" style="margin-top:6px;" onclick="resetLayerSoftAll()">↺ Reset to the levels\' own settings (all levels)</button>';
 }
 function resetLayerSoftAll() { /* v1316: forget this device's picks - back to the built-in (•) settings on every level */
-  layerSoftOverride = {}; floorAltPick = {}; try { localStorage.removeItem("kingdom_layer_soft_v1"); localStorage.removeItem("kingdom_floor_alt_v1"); } catch (e) {} renderDevLayerSoft(true);
+  layerSoftOverride = {}; floorAltPick = {}; layerAltPick = {}; try { localStorage.removeItem("kingdom_layer_soft_v1"); localStorage.removeItem("kingdom_floor_alt_v1"); localStorage.removeItem("kingdom_layer_alt_v1"); } catch (e) {}
+  Object.keys(TMP_ENV_BG).forEach(function (k) { TMP_ENV_BG[k]._artReady = false; }); renderDevLayerSoft(true);
 }
 function layerSoftSummary() { /* every level, every layer: what this phone shows right now */
   var NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern" }, out = [];
   Object.keys(TMP_ENV_BG).forEach(function (env) { var cfg = TMP_ENV_BG[env], parts = [];
-    (cfg.layers || []).forEach(function (L, i) { parts.push((L.name || (i === 0 ? "Far" : "Near")) + " = " + LAYER_SOFT_NAMES[layerSoftMode(env, i, L)]); });
+    (cfg.layers || []).forEach(function (L, i) { parts.push((L.name || (i === 0 ? "Far" : "Near")) + " = " + LAYER_SOFT_NAMES[layerSoftMode(env, i, L)]); if (L.alt) parts.push((L.name || "Layer") + " version = " + (layerUsesAlt(env, i, L) ? L.alt.name : "Original")); });
     if (cfg.floor) parts.push("Ground = " + LAYER_SOFT_NAMES[layerSoftMode(env, "floor", cfg.floor)]); if (cfg.floor && cfg.floor.alt) parts.push("Ground version = " + (floorUsesAlt(env, cfg.floor) ? cfg.floor.alt.name : "Original"));
     if (parts.length) out.push((NAMES[env] || env) + ": " + parts.join(", ")); });
   return "Scenery sharpness settings:\n" + out.join("\n");
@@ -25870,6 +25883,7 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
   ctx.imageSmoothingEnabled = true;
   cfg.layers.forEach(function (L, li) {
     if (!L.img.complete || !L.img.naturalWidth) return;
+    if (L.alt && layerUsesAlt(cfg._env, li, L) && L.alt.img.complete && L.alt.img.naturalWidth) { var LS = L.speed, LF = L.falls; L = L.alt; L.speed = LS; L.falls = LF; } /* v1339: the picked test version */
     var im = layerImgFor(cfg._env, li, L); /* v1298: Sharp / Soft / Village-like per level + layer */
     var s = groundY * L.scale, tw = L.ow * s, th = L.oh * s;
     var top = groundY - L.lift - L.baseY * s;
