@@ -3072,3 +3072,15 @@ Harley's 3 points:
   under the hook shadows; the X re-stamped on top of the new TR corner with a circular mask. Every pixel is v1 - no re-grade needed.
 - art/originals/ui/stats_frame_v1_fixed_1024x1536.png (+_alpha); embedded 73 kB webp, same textured-aware navy cut. v3 + the tone-matched candidate
   stay in the repo as reference. Headless: opens, 15 live rows, real-click X closes, no errors. Not checked on a phone.
+
+## v1329 — the Backpack dressed (hit list screen 2) + ONE shared frame for all panels
+- The plaque's STATS text inpainted away (per-scanline interpolation, same trick as the strip) -> panel_frame_blank_1024x1536.png, embedded ONCE as
+  the --ks-frame CSS var; every dressed popup now shares the same 69 kB image and draws its own live title over the plaque (Stats = .ks-panel +
+  data-title; net file cost of dressing the Backpack: ~0).
+- Backpack (#bagPop, logic untouched): the shared frame + "BACKPACK" plaque title; the 4 category tabs are CSS shield shapes (clip-path, gold rim
+  via a 2px gradient layer, cyan gradient when active - the kit's tab look; the mock-image tab crops kept losing their borders to the alpha cut,
+  and CSS stays crisp at any size, so the SHAPE is code); tiles keep their rarity gradients but get bronze borders on a parchment inset; the
+  Use/qty area sits in its own parchment inset with dark text; X = hotspot over the baked X.
+- Spill fix: the Use area's cyan button poked over the frame's bottom edge -> bottom padding 17% -> 20%, use-area max-height 34% -> 31%.
+- Headless: both panels share the frame with correct titles, 4 tabs switch, tiles render, real-click X closes both, no errors; g347 ok. Not
+  checked on a phone.
