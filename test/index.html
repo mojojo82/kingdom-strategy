@@ -255,6 +255,21 @@
   body { margin:0; background:var(--bg); color:var(--text); font-family: var(--bodyfont); font-size:14px; }
   :root { --bodyfont: "Chakra Petch", "Segoe UI", -apple-system, Roboto, Arial, sans-serif; }
   body[data-bodyfont="orig"] { --bodyfont: "Segoe UI", -apple-system, Roboto, Arial, sans-serif; }
+  /* v1340 (Harley: "add in lilita as an alternate font to chakra"): third choice on the More > Font tile. Lilita One (OFL, fonts/) has ONE weight,
+     so bold requests use it as-is (no fake bold). The file is only fetched when this font is picked (lilitaLoad). Archero-style treatments below
+     apply ONLY in this mode - Chakra and Original look exactly as before. */
+  body[data-bodyfont="lilita"] { --bodyfont: "Lilita One", "Chakra Petch", "Segoe UI", -apple-system, Roboto, Arial, sans-serif; font-synthesis:none; }
+  body[data-bodyfont="lilita"] * { font-synthesis:none; }
+  body[data-bodyfont="lilita"] :is(.idle-title, #idleStageBtn, .skill-auto-btn, .idle-stats-btn, .fort-pick button, #idleFarmBackBtn, #bottomNav .bn, .idle-forge-btn) {
+    color:#fff; text-shadow:-1px -1px 0 #0b1d33, 1px -1px 0 #0b1d33, -1px 1px 0 #0b1d33, 1px 1px 0 #0b1d33, 0 2px 0 #0b1d33 !important; }
+  body[data-bodyfont="lilita"] :is(#resbar .res, #powerBadge, .idle-header b, .skill-slot .cd-text) {
+    text-shadow:-1px -1px 0 #0b1d33, 1px -1px 0 #0b1d33, -1px 1px 0 #0b1d33, 1px 1px 0 #0b1d33, 0 2px 0 #0b1d33 !important; }
+  body[data-bodyfont="lilita"] .ks-panel::before { font-family:"Lilita One", var(--bodyfont); font-weight:400; letter-spacing:.5px; color:#fff;
+    -webkit-text-stroke:3px #0b1d33; paint-order:stroke fill; text-shadow:0 3px 0 #0b1d33; }
+  /* the Conquest header reserves its slots in character widths; Lilita's characters are wider, so the reserves shrink (else "on screen" wraps out) */
+  body[data-bodyfont="lilita"] .idle-header, body[data-bodyfont="lilita"] .idle-header * { letter-spacing:0; }
+  body[data-bodyfont="lilita"] .idle-header .stat-defeated { min-width:11ch; }
+  body[data-bodyfont="lilita"] .idle-header .stat-horde { min-width:9.5ch; }
 
   /* ---- Arena ladder, Kingshot-style light panel ---- */
   @media (max-width:900px) { #arenaModeContent > h2, #arenaModeContent > .dev-tools-hint { display:none; } }
@@ -12673,7 +12688,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1339"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1340"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30157,6 +30172,29 @@ function renderBottomNav() {
     nav.appendChild(d);
   });
 }
+/* v1340: Lilita One is fetched only when picked. Same file serves TEST and LIVE (../ from /test/). Canvas text (damage numbers, HP bars, the
+   progress counter) sets its own font strings, so while Lilita is on, ctx.font is rewritten to Lilita (monospace left alone; cached per string). */
+var lilitaLoaded = false;
+function lilitaLoad() {
+  if (lilitaLoaded) return; lilitaLoaded = true;
+  var base = /\/test\/[^\/]*$/.test(location.pathname) ? "../fonts/" : "fonts/";
+  var st = document.createElement("style");
+  st.textContent = "@font-face{font-family:'Lilita One';src:url(" + base + "LilitaOne-Regular.woff?v=1) format('woff');font-weight:400;font-display:swap}";
+  document.head.appendChild(st);
+}
+(function lilitaCanvas() {
+  var P = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype, d = P && Object.getOwnPropertyDescriptor(P, "font");
+  if (!d || !d.set) return;
+  var cache = {};
+  Object.defineProperty(P, "font", { configurable: true, get: function () { return d.get.call(this); },
+    set: function (v) {
+      if (document.body && document.body.getAttribute("data-bodyfont") === "lilita" && v.indexOf("monospace") < 0) {
+        var c = cache[v]; if (c === undefined) { c = cache[v] = v.replace(/\b(bold|bolder|[5-9]00)\s+/, "").replace(/(\d+(?:\.\d+)?px)\s+.*$/, "$1 'Lilita One', sans-serif"); }
+        v = c;
+      }
+      d.set.call(this, v);
+    } });
+})();
 (function initMoreMenu() {
   var m = document.getElementById("moreMenu");
   MORE_ITEMS.forEach(function (it) {
@@ -30166,13 +30204,14 @@ function renderBottomNav() {
   });
   var ft = document.createElement("div"); ft.className = "mm-tile"; m.appendChild(ft);
   function applyBodyFont(v) {
+    if (v === "lilita") lilitaLoad(); /* v1340 */
     document.body.setAttribute("data-bodyfont", v);
-    ft.innerHTML = '<span class="ic">🔤</span>Font: ' + (v === "orig" ? "Original" : "Chakra Petch");
+    ft.innerHTML = '<span class="ic">🔤</span>Font: ' + (v === "orig" ? "Original" : v === "lilita" ? "Lilita One" : "Chakra Petch");
   }
   var savedFont = "chakra"; try { savedFont = localStorage.getItem("bodyFont") || "chakra"; } catch (e) {}
   applyBodyFont(savedFont);
   ft.onclick = function () {
-    var nv = document.body.getAttribute("data-bodyfont") === "orig" ? "chakra" : "orig";
+    var cur = document.body.getAttribute("data-bodyfont"), nv = cur === "chakra" ? "lilita" : cur === "lilita" ? "orig" : "chakra"; /* v1340: Chakra -> Lilita -> Original */
     applyBodyFont(nv); try { localStorage.setItem("bodyFont", nv); } catch (e) {}
   };
   renderBottomNav();

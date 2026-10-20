@@ -3198,3 +3198,22 @@ Harley's 3 points:
 - Originals: art/originals/backgrounds/graveyard_leonardo_test/ (Leonardo magenta source + wrapped ungraded PNG).
 - Headless: default fetches no test file and draws the old graveyard; Dev Tools buttons flip to Leonardo + Darker below; flipping back restores
   the old look; no errors. Not checked on his phone.
+
+## v1340 — Lilita One as a third font (More > Font: Chakra Petch -> Lilita One -> Original)
+- Harley: "add in lilita as an alternate font to chakra. once its in. ill go eyeball it and check for hiccups." Default stays Chakra Petch.
+- Why Lilita: Archero 2 reference - one heavy rounded font everywhere, variety from colour/outline treatments. Font shoot-out on the Stats header
+  (system vs Lilita One vs Titan One): Lilita fits the plate best and is the smallest. Harley sent both font zips (OFL licence).
+- fonts/LilitaOne-Regular.woff (14.8 kB, converted from the TTF with fontTools; no brotli here so no woff2) + fonts/LilitaOne-OFL.txt (licence must
+  ship with the font). Fetched only when picked (lilitaLoad; ../fonts/ under /test/, so the same file serves LIVE later).
+- body[data-bodyfont="lilita"]: --bodyfont = Lilita One, font-synthesis:none (one weight - no fake bold). Treatments, Lilita mode ONLY:
+  title/button = white + 1px dark-navy outline + 2px hard drop (header title, level pill, AUTO, Stats, fortress pick, farm-back, nav, Forge);
+  value = keeps its colour + same outline (resource bar, Power, header numbers, skill timers); .ks-panel titles = Lilita + 3px stroke + hard drop.
+- Canvas text (damage numbers, HP bars, progress counter) sets its own fonts: in Lilita mode ctx.font is rewritten to Lilita (monospace untouched,
+  per-string cache) via a CanvasRenderingContext2D font setter wrapper.
+- GOTCHA: the Conquest header reserves slots in ch units; Lilita's ch is wider, so "on screen" wrapped out of the box. Only .stat-defeated
+  (15->11ch) and .stat-horde (13->9.5ch) shrink - shrinking all 7 re-flowed the header (valor jumped to row 1). Other screens may have ch-sized
+  things too - Harley is eyeballing every screen.
+- Not converted: hero card (own --hcfont), mail panel (hard-coded Chakra). Also: earlier "system font" mocks were really a fallback font - the
+  headless browser blocks Google Fonts, so Chakra Petch never rendered in mocks.
+- Headless: tile cycles Chakra -> Lilita -> Original -> Chakra; woff fetched only once picked; document.fonts.check passes; canvas font becomes
+  Lilita (monospace kept); header layout unchanged; pick survives reload; no errors. Not checked on his phone.
