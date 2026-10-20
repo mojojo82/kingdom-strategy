@@ -3143,3 +3143,17 @@ Harley's 3 points:
 - Going back to parchment = delete the #idleStatsPop background-image line and swap the .tech border-image url back; --ks-frame and the
   Backpack/Type B are untouched, so only Stats changed.
 - Headless: Stats opens on village, 15 rows on the navy skin, real-click X closes, no errors. Not checked on his phone.
+
+## v1335 — first juice pass + skin A/B chip, both on Stats (the guinea pig)
+- Harley's idea: all the UI style candidates look good standing still, so "maybe the decider needs to be the juice". Stats got both: motion AND an
+  on-the-spot skin flipper, so he can feel navy-gold vs parchment with the same animation on his phone.
+- Juice (transform/opacity only, respects the v1318-20 perf work; all killed under prefers-reduced-motion): panel pops in .3s with a 2.5%
+  overshoot, rows cascade (40ms + 22ms per row), a dim layer (rgba .45) fades in behind, X/outside-tap shrinks the panel away .15s before
+  removal. Pattern lives on .ks-panel, so every future dressed popup inherits the entrance for free.
+- Skin chip (bottom-left, dashed dev style): "Skin: Navy" <-> "Skin: Parchment", saved in localStorage, pure CSS class swap (.parch flips the
+  frame var and the row strip). First pass timing is standard mobile-game grammar - to be tuned against his High Seas Hero videos when recorded.
+- ALSO: Harley caught the navy frame's flat rectangle ("Still got that flat rectangle around it") - same bug as v1324's blue one: the webp was
+  embedded without alpha. Outer surround flood-cut to transparent (same uniform-variance guard), re-embedded (86 kB). Banked candidate PNG
+  replaced with the RGBA version.
+- Headless (real finger-style clicks): open -> cascade -> chip flips skin + label -> X plays ks-out then removes pop AND dim -> reopen remembers
+  parchment -> outside tap closes. No errors. Not checked on his phone.
