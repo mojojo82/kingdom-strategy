@@ -3039,3 +3039,8 @@ Harley's 3 points:
   over the game scene (invisible on the mock page, which was the same navy). Flood-filled the navy from the image edges to transparent (inside-the-
   art navy/teal untouched), 1 px feathered edge, re-embedded (73 kB). art/originals/ui/stats_frame_gpt_1024x1536_alpha.png = the cut version.
 - Headless: panel floats over the scene with the ornate edge against the game; opens/closes fine; no page errors. Not checked on a phone.
+
+## v1325 — row strip rebuilt seamless (Harley: "is that banding in the gradient on the rows intentional?")
+- It wasn't: the v1323 strip was clone-filled by repeating a 100 px block sideways, leaving a repeating vertical seam. Rebuilt: per-scanline median
+  colour from the strip's clean zone (perfectly smooth gradient) + blurred mottle so it isn't plastic-flat, ornate end caps untouched; lossless
+  webp 11 kB. art/originals/ui/stats_row_strip_844x65.png updated. Headless zoom: no seams. Not checked on a phone.
