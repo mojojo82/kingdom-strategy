@@ -3063,3 +3063,12 @@ Harley's 3 points:
   things I'd walked past.
 - art/originals/ui/stats_frame_gpt_v3_1024x1536.png (+_alpha) = the keeper; embedded 83 kB webp (same textured-aware navy cut as v1326).
 - Headless: panel in game with complete corners, real-click X closes, no errors. Not checked on a phone.
+
+## v1328 — stats frame: back to v1's muted grade, fixed at home (Harley: "Lets go from scratch. V1.")
+- Harley called the GPT loop what it is: Chinese whispers - every repair roll re-renders everything and the contrast/saturation crept up each
+  generation; v3 was fixed but hot. His call: start from v1 (the muted one) and fix it locally. Done with mirrors, which he asked for by name:
+  bottom corner blocks (hook + full filigree + teal inset) reflected about the frame's centerline (y752; outer edges measured symmetric at y59/1445)
+  onto both top corners, over the parchment; left rail's carved vine mirrored onto the bald right rail, hook to hook, feathered joints tucked
+  under the hook shadows; the X re-stamped on top of the new TR corner with a circular mask. Every pixel is v1 - no re-grade needed.
+- art/originals/ui/stats_frame_v1_fixed_1024x1536.png (+_alpha); embedded 73 kB webp, same textured-aware navy cut. v3 + the tone-matched candidate
+  stay in the repo as reference. Headless: opens, 15 live rows, real-click X closes, no errors. Not checked on a phone.
