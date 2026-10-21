@@ -3351,3 +3351,9 @@ Harley's 3 points:
   existing synced kingdom_prototype_garethhop_v1). Originals: art/originals/gareth_dodge_skid/ (both videos, start/end canvases, keyed frames).
 - Headless (forced often): 8 dodges in 30 s, draws hop/skid/stand-up, ends on his idle spot, no errors. Not checked on his phone.
   Engine damage unchanged; like the old hop, swings owed while he is dodging can expire as misses in the drawn fight.
+
+## v1355 — skid dodge actually slides back (Harley: "he's not actually sliding back, he should be getting closer to the fortress")
+- The video's skid barely moves him (~6 sheet px), so it read as "hop back, then a pose on the ground". Added a code slide over the skid
+  frames (sheet frames 15-28): GARETH_DODGE.slide = 130 sheet px, fast off the landing and easing to a stop; frames shift with it and
+  vis.x/bars follow. Total move back: ~22 -> ~47 px at 100% hero scale (about 2 body heights). Ground dust puffs every 50 ms while
+  sliding. Room check includes the slide. Headless capture: slides toward the fortress, no errors. Not checked on his phone.
