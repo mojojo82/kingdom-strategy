@@ -3426,3 +3426,10 @@ Harley's 3 points:
   Now each hole is a clean shape: straight sides set from the median edge profile (card x18-134 y18-138, portrait x24-215 y23-209 - just
   inside each frame's inner line), octagon corners (portrait: traced, only narrowing toward a corner; card: 4 px chamfer, its gold corner
   tabs kept), hard edge. Holed frames saved lossless. Pictures sized to hole + 2 px. Zoomed headless checks: straight, no specks.
+
+## v1366 — frame holes cut Harley's way (his Photoshop cut as the rule: straight sides, 45-degree corners, cut right inside the dark line)
+- Harley's own cut (of the parts-sheet frame, which GPT drew wider than the design's - saved as portrait_frame_cut_by_harley_reference.png)
+  showed the rule: a perfect octagon whose edge sits directly inside the thin dark line, so the line is kept and GPT's patchy light bevel
+  inside it goes. Applied to the design frames: portrait hole x21-218 y22-212, 10 px 45-degree corners (measured along each diagonal);
+  card x19-134 y19-138, corners 7/4/9/9 px (GPT drew them unevenly), its bottom gold ornaments kept on top. Polygon drawn at 8x and
+  averaged, so the diagonals are clean. Pictures sized to hole + 2 px. Headless zoom: thin even line all round.
