@@ -3217,3 +3217,14 @@ Harley's 3 points:
   headless browser blocks Google Fonts, so Chakra Petch never rendered in mocks.
 - Headless: tile cycles Chakra -> Lilita -> Original -> Chakra; woff fetched only once picked; document.fonts.check passes; canvas font becomes
   Lilita (monospace kept); header layout unchanged; pick survives reload; no errors. Not checked on his phone.
+
+## v1341 — white text pass ("do a white on rice pass")
+- Harley asked where else the game has dark text; a headless scan of every screen (Blue chrome + Lilita) found 28 spots on buttons/chips/tags
+  and 11 on parchment. Archero reference: white + dark outline is the default; dark text only on the selected tab of a bright gold plate.
+- Rule applied (one CSS block, all fonts, delete it to revert): cyan buttons (#57cfdf / #3ec8e0 family, 29 selectors) -> white + #0b3a44 outline;
+  tan/gold buttons (#b3985f + Forge gold, 24 selectors) -> white + #3a2410 outline; Research "Warfare" banner -> white + #5a1f0c; the Blue chrome
+  fortress toggle sets its own !important colour, so it got its own rule. Selectors were collected by parsing every style rule for those
+  backgrounds with dark text (so new buttons in those styles need adding to the block).
+- KEPT DARK on purpose: active tabs on bright cream/gold plates (City tabs, Skins tab, Chat World tab, formation "Selected"), the Gauntlet header,
+  and everything on parchment (profile stat lines, Arena leaderboard, Skins names, Troops cards) - ink on paper.
+- Rescan after: only the intended dark spots remain. Before/after sheet checked by eye. Not checked on his phone.
