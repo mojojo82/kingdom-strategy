@@ -3279,3 +3279,19 @@ Harley's 3 points:
   original sfx/originals/gareth_slam_sword_slash_original.mp3. Web Audio buffer like the reward sound, gain 0.85, Sound FX toggle respected,
   overridable via playSfxOverrideIfSet("garethSlam").
 - Headless: 8 slams -> 8 calls -> 8 buffer plays, decoded 1.2 s. Not heard on his phone.
+
+## v1347 — jump slam re-cut to read like the original + new sound + hits never lost
+- Harley: the jump looked smaller than the video. Measured: same height (125 px rise both), but only 0.21 s airborne after the v1344 trim.
+  "We dont need the animation to be over and done with as quick as atk 1. The movement needs to read clearly like the original."
+- Re-cut: 36 frames at 24 fps = 1.5 s - wind-up 6, rise 8, hang 7 (2x faster than the floaty video), slam 3, landing crouch 7 (was 14),
+  stand up 5. Airborne 0.71 s. Landing frame 23 (0.958 s). Slot 2 now secMult 3 (3 swings long, 3x damage - DPS unchanged).
+- New sound (Harley's 2nd clip, slash-sword.mp3): peak 0.26 s -> played with a 0.70 s delay so the peak lands on the landing frame. sfx/gareth_slam.mp3
+  (0.9 s, mono); original sfx/originals/gareth_slam_slash_sword_v2_original.mp3.
+- Fixes found by measuring (drawn-scene damage had dropped ~30% with the longer slam):
+  * the slam's impact now lands EVERY owed hit (slashes that came in during the 1.5 s slam timed out before);
+  * a slam that comes down on nothing (target died while he was in the air) CARRIES its hit to his next swing (engine o.carry + visual
+    x.carry); carried hits ride on any swing and don't force another slam;
+  * a slam hit is never lost: past its window (owedSec 3.5) it lands the old way, on its target or the front enemy;
+  * a skill charge (Blade Rush) mid-slam ends the slam cycle (heroChargeStart) - it had kept playing under the dash (one 99 px "slide").
+- Measured 40 s x3: Gareth's landed damage ON 111-126 vs OFF 111-135, same enemies defeated; forward movement during slams 0; sound 8/8.
+  Meta check identical (pre-existing warning). Not checked on his phone.
