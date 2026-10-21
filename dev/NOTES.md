@@ -3318,3 +3318,13 @@ Harley's 3 points:
   swing window grows by 100 ms so the end of the animation isn't cut. GARETH_SLASH.on = false turns all of it off.
 - Lab page (claude.ai artifact "Gareth slash lab") kept for trying other looks. Headless: 11 slams in 35 s, slash and sparks drawn, no errors.
   Not checked on his phone. No combat numbers changed.
+
+## v1351 — slam slash: Harley's GPT ice set (3 frames), tuned in the slash lab
+- Style "ice2" (now the default): frame 1 streak sweeps in from his first swing frame (21) to the landing, blends to frame 2 (crystal
+  burst) on landing, frame 3 (mist) after. Lab settings pasted by Harley: frame 1 hold 10, frame 2 hold 40, frame 3 hold 50, fade 120,
+  frame 3 tail cut 55% (its top is wiped off so it reads as the slash moving on), frame 3 size 80% (GPT drew its base wider), freeze 100,
+  no sparks, no glow, shake = the existing slam landing jolt. Wipes use a conic-gradient mask (no mask = whole frame if a browser lacks it).
+- Frames lined up on the ground-hit point; phone copies art/fx/gareth_slash_ice2_f{1,2,3}.webp (222x200, 52 kB total) embedded in
+  GARETH_ICE2; originals in art/originals/fx/gareth_slash_ice2/. Images decode at start so the first slam has them.
+- Dev Tools: "Slam slash: Ice (GPT) / Anime white / None" (this device only, kingdom_prototype_slamslash_v1). Anime white = v1350 look.
+- Headless: 11 slams in 35 s, all frames drawn, no errors. Not checked on his phone. No combat numbers changed.

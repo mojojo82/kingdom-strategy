@@ -98,3 +98,4 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | backgrounds/village_reference_ingame_1536x1024.png / village_reference_sharp_1800x612.png | Village rebuilt from the game's own layers with the current road (the sharp one is native size - use it as GPT's style reference) | - | reference only |
 
 | art/originals/rpg_items_sheet_1254.png | Harley 10 Oct 2026: 4 RPG items on black (dark red sword, gold sword, ice shield, purple staff). The dark sword was the v1037 Overlord Profile slot mockup (never in game). Re-found 21 Oct in old uploads and banked. |
+| art/originals/fx/gareth_slash_ice2/ | Harley 21 Oct 2026: GPT ice slash set (streak / crystal burst / mist, ice_set2 sheet) + the earlier 10-slash GPT sheet. frameN_aligned_472x425 = the 3 frames cut out and lined up on the ground-hit point | sheet 2172x724 | art/fx/gareth_slash_ice2_f{1,2,3}.webp (222x200, phone size) -> embedded in GARETH_ICE2 (v1351) |
