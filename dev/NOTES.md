@@ -3453,3 +3453,12 @@ Harley's 3 points:
   all 4 dashed slots separately. Card frames: the original's 2nd frame (Harley picked it - most muted clean one; its faint teal bottom kept
   "for now") used for all 5, evenly spaced (x 71/228/386/544/701), rounded gold with the picture right up to it.
 - Heat map after: static parts < 3 (was up to 55), whole screen ~1. Headless 390x844: buttons all still work, no errors. Not on his phone.
+
+## v1370 — test fortress skin "Bonewake 2" (Harley: "add bonewake 2 to the skins list. when I see it moving I'll know")
+- Hull = the ship from GPT's Overlord Profile concept (GPT's accidental re-draw of Bonewake): cut from the original composite, the two
+  baked guns replaced with the matching strip of GPT's "remove the guns" version (aligned, colour-graded to the concept, feathered),
+  keel + hanging spikes from GPT's clean version; edges un-mixed from the background (no glow/magenta fringe). Scaled to Bonewake's hull
+  length on the same keel line. Masts, sails, flags, chain = Bonewake's own animation (sheet shared, not duplicated); back layer =
+  Bonewake's with the old hull cut out. Same layout/lift/scale as Bonewake. Original Bonewake untouched.
+- Skins list: More > Skins > Fortress > "Bonewake 2". Files: art/originals/bonewake2/ (incl. GPT's no-guns + weapons pictures; the
+  weapons were mockup-only). Headless: equips, animates, Conquest + profile draw, no errors. Not on his phone.
