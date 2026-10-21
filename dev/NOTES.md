@@ -3416,3 +3416,7 @@ Harley's 3 points:
   portrait_frame_holed) drawn ON TOP of the picture; the picture is a few px bigger than the hole, so any picture fills it with no gaps
   and the frame's inner bevel overlaps it, like GPT's design. The original frame stays underneath, so empty slots look as before.
   Checked headless with GPT's own portrait/card pictures dropped in. Not checked on his phone.
+
+## v1364 — frame holes 2-3 px smaller so the inner border line stays (Harley: "you cut off about 1 or 2 px too much")
+- The v1363 flood fill also ate the frames' thin dark inner line. Hole now eroded back (card 2 px, portrait 3 px - the portrait has a dark
+  line plus a light bevel), straightened (5x5 opening), sharper edge; pictures sized to hole + 2 px. Zoomed headless check: straight lines.
