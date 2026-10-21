@@ -3442,3 +3442,14 @@ Harley's 3 points:
 ## v1368 — portrait inner line moved over the dark line, a softer silver (Harley: "it should go inwards to mask some of that darkness... slightly darker so it doesn't read as a 1px line")
 - v1367 put the light line inside the hole, next to the dark line. Now it is painted over the inner pixel of the dark line (frame side),
   colour #b2b6c1 (mid silver, was #e4e8f0): outside in = silver bevel, 1 px dark, 1 px soft silver, picture. Mockup approved first.
+
+## v1369 — Overlord Profile rebuilt against GPT's ORIGINAL composite (heat-mapped) (Harley: "take it to 100%", "the frames poke")
+- Heat map (game rendered at 918 px vs the original, text/ship/pictures ignored) showed the gap came from mixing GPT's three drawings:
+  portrait/card frames + name bar were cut from the empty version, the background from the bg-only image (both drawn darker/sharper).
+- Background now baked from the original itself: only the ship, text, picture and UI-piece spots filled from the bg-only image with a
+  smooth colour-gain field (stray ship specks removed). Static, done offline (art/originals/ui/profile_gpt/background_baked_from_original.png).
+- Cut from the original: portrait frame (its own light inner bevel - the v1368 added line is gone with it), name bar (name + dots removed,
+  dots by carrying the button rows across), right stone slot (red-dot corner patched from the empty version, outline lifted to match),
+  all 4 dashed slots separately. Card frames: the original's 2nd frame (Harley picked it - most muted clean one; its faint teal bottom kept
+  "for now") used for all 5, evenly spaced (x 71/228/386/544/701), rounded gold with the picture right up to it.
+- Heat map after: static parts < 3 (was up to 55), whole screen ~1. Headless 390x844: buttons all still work, no errors. Not on his phone.
