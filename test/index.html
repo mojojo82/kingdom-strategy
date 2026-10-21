@@ -8138,11 +8138,8 @@ function createGame(opts) {
   }
   function idleMeleeLand(aid, bladeId, slotKind) { /* the sword's impact frame: every hit this hero owes lands on the enemy at his blade; returns [{id, dmg}] actually dealt.
        v1344: slotKind 2 = only slam hits land (the slam's landing frame); 1 = only normal swings (his slash frame); none = all, as before */
-    var pick = function (o) { return o.aid === aid && (!slotKind || slotKind === 2 || o.slot !== 2 || o.carry); }; /* v1347: the slam's impact lands EVERY owed hit (slashes that came in during the 1.5 s slam too); a slash lands slash hits + carried slam hits */
+    var pick = function (o) { return o.aid === aid && (!slotKind || slotKind === 2 || o.slot !== 2); }; /* v1347: the slam's impact lands EVERY owed hit (slashes that came in during the 1.5 s slam too); a slash lands only slash hits. v1348 (Harley: "if he misses he misses"): a slam on nothing is a miss - no carry */
     var mine = idleMeleeOwed.filter(pick); if (!mine.length) return [];
-    if (slotKind === 2 && !state.idle.pending && (bladeId == null || !idleFindEnemy(bladeId) || idleFindEnemy(bladeId).hp <= 0)) { /* v1347: the slam came down on nothing (its target died while he was in the air) - the hits CARRY to his next swing instead of being lost */
-      mine.forEach(function (o) { o.carry = 1; o.at = Date.now(); }); return [];
-    }
     idleMeleeOwed = idleMeleeOwed.filter(function (o) { return !pick(o); });
     if (state.idle.pending || bladeId == null) return [];
     var out = [];
@@ -8157,9 +8154,9 @@ function createGame(opts) {
   function idleMeleeSettle() { /* engine side, every combat slice: not drawn any more -> owed hits land the old way on their target; drawn -> a hit the sword never delivered expires (a miss) */
     if (!idleMeleeOwed.length) return;
     var live = idleMeleeLive(), nowMs = Date.now(), keep = [], due = [];
-    idleMeleeOwed.forEach(function (o) { var lim = IDLE_MELEE_OWED_SEC; if (o.slot && o.slot !== 1) { var cS = COMBAT_TIMING.heroAttackSlots[o.aid], sS = cS && cS.slots && cS.slots[o.slot]; if (sS && sS.owedSec) lim = sS.owedSec; } if (!live) due.push(o); else if (nowMs - o.at <= lim * 1000) keep.push(o); else if (o.slot === 2) due.push(o); }); /* v1347: per-slot wait; a slam hit is never lost - past its window it lands the old way */
+    idleMeleeOwed.forEach(function (o) { var lim = IDLE_MELEE_OWED_SEC; if (o.slot && o.slot !== 1) { var cS = COMBAT_TIMING.heroAttackSlots[o.aid], sS = cS && cS.slots && cS.slots[o.slot]; if (sS && sS.owedSec) lim = sS.owedSec; } if (!live) due.push(o); else if (nowMs - o.at <= lim * 1000) keep.push(o); }); /* v1347: per-slot wait (v1348: past it, a miss like any swing) */
     idleMeleeOwed = keep;
-    due.forEach(function (o) { var e = idleFindEnemy(o.id); if ((!e || e.hp <= 0) && o.slot === 2) { var f0 = state.idle.enemies[0]; e = f0 && f0.arrived ? f0 : null; } /* v1347: a slam's target died - it lands on the front enemy */ if (!e || e.hp <= 0 || state.idle.pending) return; e.hp -= o.dmg * idleMarkMult(e, o.aid) * idleEnemyDefTake(e, o.dmg); idleMeleeKillCheck(e); });
+    due.forEach(function (o) { var e = idleFindEnemy(o.id); if (!e || e.hp <= 0 || state.idle.pending) return; e.hp -= o.dmg * idleMarkMult(e, o.aid) * idleEnemyDefTake(e, o.dmg); idleMeleeKillCheck(e); });
   }
   function idleLogBasicHit(aid, e, dmg, owed, slot) { var L = state.idle.basicHitLog || (state.idle.basicHitLog = []); if (e && L.length < IDLE_PROJECTILE_QUEUE_CAP) L.push({ aid: aid, id: e.id, dmg: dmg, owed: !!owed, slot: slot || 1 }); } // engine-side record of WHO a hero's basic hit landed on, so the visuals can show it on that enemy
   var IDLE_ARRIVE_DELAY = 4.5;       // (v766: 4.5 brings the pace back near v764, whose whole-second step rounded arrivals up) seconds an enemy is "still arriving" — nothing can damage it yet, at any range
@@ -12737,7 +12734,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1347"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1348"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23158,11 +23155,10 @@ function stepIdleAnim(dtSec, w, h) {
       var slotKind = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid] ? (sw && sw.slam ? 2 : 1) : 0;
       if (an && sw && nowM < sw.until && sw.landedFor !== sw.t0 && (nowM - sw.t0) >= impMs) {
         sw.landedFor = sw.t0;
-        var owedQ = q.filter(function (x) { return x.owed && (!slotKind || slotKind === 2 || x.slot !== 2 || x.carry); });
+        var owedQ = q.filter(function (x) { return x.owed && (!slotKind || slotKind === 2 || x.slot !== 2); });
         if (owedQ.length) { /* v917: the real damage happens HERE, on the impact frame, to whoever is at the blade */
           var bl = bladeEnemy(aid, owedQ[0].id), res = game.idleMeleeLand(aid, bl == null ? null : Number(bl), slotKind || undefined);
           if (slotKind === 2) try { chargeShakeKick(); } catch (e) {}
-          if (slotKind === 2 && !res.length && game.idleMeleeOwedCount(aid) > 0) { owedQ.forEach(function (x) { x.carry = 1; x.t = nowM; }); return; } /* v1347: carried to his next swing - keep them queued (fresh timer) */
           owedQ.forEach(function (x) { idleAnim.pendingArrows[x.id] = Math.max(0, (idleAnim.pendingArrows[x.id] || 0) - 1); });
           q = mqs[aid] = q.filter(function (x) { return owedQ.indexOf(x) < 0; });
           res.forEach(function (r) { var ev = idleAnim.enemyById[r.id]; if (ev && game.state.conquestRoster.indexOf(aid) !== -1) meleeVisualHit(aid, r.dmg, ev, r.id, h); });
@@ -25089,7 +25085,7 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
     if (isMeleeHero && !(HERO_ANIMS[key].once && HERO_ANIMS[key].once.attack)) { // v659: swings always play whole — start on frame 0 and finish the cycle even if the hits pause (no half swipes)
       var swS = idleAnim.swingRun || (idleAnim.swingRun = {}), nowW = performance.now(), cycMs = HERO_ANIMS[key].rows.attack[1] / HERO_ANIMS[key].fps.attack * 1000;
       if (!flashing && swingWant && !(swS[key] && nowW < swS[key].until)) {
-        var mqK = (idleAnim.meleeQ || {})[key] || [], owK = mqK.filter(function (x) { return x.owed && !x.carry; }); /* v1347: carried hits ride on any swing, they don't force another slam */
+        var mqK = (idleAnim.meleeQ || {})[key] || [], owK = mqK.filter(function (x) { return x.owed; });
         var slamNext = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[key] && key === "gareth" && garethSlamReady() && owK.length && owK[0].slot === 2; /* v1344 */
         swS[key] = slamNext ? { t0: nowW, until: nowW + garethSlamMs(), slam: true } : { t0: nowW, until: nowW + cycMs }; heroAnimRestart(key);
         if (slamNext) try { sfxGarethSlam(); } catch (e) {} /* v1346 */

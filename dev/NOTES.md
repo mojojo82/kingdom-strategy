@@ -3295,3 +3295,11 @@ Harley's 3 points:
   * a skill charge (Blade Rush) mid-slam ends the slam cycle (heroChargeStart) - it had kept playing under the dash (one 99 px "slide").
 - Measured 40 s x3: Gareth's landed damage ON 111-126 vs OFF 111-135, same enemies defeated; forward movement during slams 0; sound 8/8.
   Meta check identical (pre-existing warning). Not checked on his phone.
+
+## v1348 — slam misses are misses again (Harley: "Undo your slam damage change. If he misses he misses.")
+- Removed from v1347: the carry (a slam on nothing passing its hit to the next swing) and the never-lost fallback (expired slam hits landing
+  on the front enemy). A slam that comes down on nothing, or whose hit outlives its window, is a miss - same rule as every swing (v917).
+- Kept: the 1.5 s re-cut, secMult 3, the sound, the slam impact landing slash hits that came in during it, owedSec 3.5 (the wait for its own
+  swing), the movement lock and the skill-charge cut. Expect drawn-scene damage below the no-slam numbers (v1347 measured ~25-40% less
+  before the carry fix) - that is the accepted cost.
+- Headless: no errors, sound 7/7, forward movement 0. Not checked on his phone.
