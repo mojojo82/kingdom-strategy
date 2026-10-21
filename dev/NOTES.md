@@ -3303,3 +3303,7 @@ Harley's 3 points:
   swing), the movement lock and the skill-charge cut. Expect drawn-scene damage below the no-slam numbers (v1347 measured ~25-40% less
   before the carry fix) - that is the accepted cost.
 - Headless: no errors, sound 7/7, forward movement 0. Not checked on his phone.
+
+## v1349 — slam sound replaced again (Harley's 3rd clip, sword-slash-4.mp3)
+- 0.57 s, peak 0.10 s -> delay 0.86 s so the peak lands on the landing frame (delay now reads GARETH_SLAM_SFX_PEAK). Whole clip, mono 96k.
+  Original: sfx/originals/gareth_slam_sword_slash4_v3_original.mp3. Headless: plays once per slam. Not heard on his phone.
