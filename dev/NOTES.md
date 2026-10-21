@@ -3433,3 +3433,8 @@ Harley's 3 points:
   inside it goes. Applied to the design frames: portrait hole x21-218 y22-212, 10 px 45-degree corners (measured along each diagonal);
   card x19-134 y19-138, corners 7/4/9/9 px (GPT drew them unevenly), its bottom gold ornaments kept on top. Polygon drawn at 8x and
   averaged, so the diagonals are clean. Pictures sized to hole + 2 px. Headless zoom: thin even line all round.
+
+## v1367 — portrait frame: 1 px light inner line (Harley: "add a 1px line inside that frame on the border edge to lighten it up")
+- Like a Photoshop 1 px inside stroke on the hole: a light silver line (#e4e8f0) on the inner edge of the portrait frame's hole, drawn
+  into the frame image (so it sits over the picture), corners following the 45-degree cuts. GPT's concept had a lighter inner edge than
+  v1366's dark line. Card frames unchanged.
