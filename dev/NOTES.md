@@ -3389,3 +3389,7 @@ Harley's 3 points:
 - Default on; Dev Tools > Old profile buttons > "Overlord Profile look: GPT (new) / Classic" (this device). Below the design on tall
   phones: matching navy fill. Headless 390x844: all buttons open what they did (Share runs the same handler), back closes, Classic look
   unchanged, no errors. Not checked on his phone.
+
+## v1360 — "Back to 3-6" farming button: small line readable (Harley: "difficult to read some of that text")
+- The white pass (v1341) outlines the button in dark teal, but its small line kept its own dark teal colour at 9px, so it became a dark
+  blur. Small line now white, 10px, with a thin 1px outline. Checked before/after with the real CSS rendered at 3x. Not checked on his phone.
