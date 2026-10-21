@@ -3410,3 +3410,9 @@ Harley's 3 points:
   title in sentence case (white, dark outline), list inset and X spot as in the approved mock.
 - Assets + mocks: art/originals/ui/candidates/stats_thin_gold/ and stats_blue_gpt_frame/. Skin choice is per device (localStorage
   ksStatsSkin). Headless: all four render and the chip cycles, no errors. Not checked on his phone. A 5th is coming from Harley.
+
+## v1363 — Overlord Profile: pictures sit IN their frames (Harley: "your version is not sitting down in there... the centre is just a transparent area")
+- Card frame and portrait frame now have a see-through middle (flood-filled from the centre, 1 px soft edge: card_frame_holed /
+  portrait_frame_holed) drawn ON TOP of the picture; the picture is a few px bigger than the hole, so any picture fills it with no gaps
+  and the frame's inner bevel overlaps it, like GPT's design. The original frame stays underneath, so empty slots look as before.
+  Checked headless with GPT's own portrait/card pictures dropped in. Not checked on his phone.
