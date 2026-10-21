@@ -3402,3 +3402,11 @@ Harley's 3 points:
   Dim items that are dim on purpose (disabled/locked/unselected): weapon Draw buttons with no tickets, Gauntlet Fight with no troops,
   locked research names, unselected troop types, unaffordable TD towers. Borderline: the recon map mission icons (grey telescope etc. on
   dark circles). Scanner false positives (dark text on parchment/gold): arena ladder, skins list, Overlord Profile panel.
+
+## v1362 — Stats skin candidates 3 and 4 on the chip (Harley: "put them both in as 3rd and 4th... when it's decided the extras get removed")
+- The skin chip on Stats now cycles 4: Navy (1) -> Parchment (2) -> Thin gold (3) -> Blue frame (4); label shows "Skin n/4: name".
+- Thin gold = the very thin ornate gold frame (frame_thin.webp, 73 kB) with the navy rows; it has no baked X, so a small round gold X is drawn.
+- Blue frame = Harley's Photoshop Frankenstein panel, cleaned + GPT pass (gpt_panel2.webp, 96 kB), navy "borrowed" rows, smaller "Stats"
+  title in sentence case (white, dark outline), list inset and X spot as in the approved mock.
+- Assets + mocks: art/originals/ui/candidates/stats_thin_gold/ and stats_blue_gpt_frame/. Skin choice is per device (localStorage
+  ksStatsSkin). Headless: all four render and the chip cycles, no errors. Not checked on his phone. A 5th is coming from Harley.
