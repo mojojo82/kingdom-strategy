@@ -3307,3 +3307,14 @@ Harley's 3 points:
 ## v1349 — slam sound replaced again (Harley's 3rd clip, sword-slash-4.mp3)
 - 0.57 s, peak 0.10 s -> delay 0.86 s so the peak lands on the landing frame (delay now reads GARETH_SLAM_SFX_PEAK). Whole clip, mono 96k.
   Original: sfx/originals/gareth_slam_sword_slash4_v3_original.mp3. Headless: plays once per slam. Not heard on his phone.
+
+## v1350 — slam slash effect (Harley's pick from the in-chat slash lab: "Anime white (tweaked)")
+- GARETH_SLASH = core #ffffff, edge #cfeeff, size 1.15, thick 20, arc 155°, linger 80 ms, glow 0, sparks 52, freeze 100 ms; shake on
+  (the existing chargeShakeKick on landing), flash/shockwave/speed lines off. Lab geometry is in lab units (lab drew him at 0.62 of the
+  source sheet) and scaled by k/0.62, so the arc sits on him exactly as in the lab, and flips with him.
+- The white crescent sweeps the last 120 ms before the landing frame, then fades over 80 ms. 52 sparks fly from the blade tip on the ground
+  (own little list, drawn from drawWeldSparks).
+- Freeze: his picture holds the landing frame for 100 ms (picture only - damage, sound and the fight keep their timing); the slam's
+  swing window grows by 100 ms so the end of the animation isn't cut. GARETH_SLASH.on = false turns all of it off.
+- Lab page (claude.ai artifact "Gareth slash lab") kept for trying other looks. Headless: 11 slams in 35 s, slash and sparks drawn, no errors.
+  Not checked on his phone. No combat numbers changed.
