@@ -3393,3 +3393,12 @@ Harley's 3 points:
 ## v1360 — "Back to 3-6" farming button: small line readable (Harley: "difficult to read some of that text")
 - The white pass (v1341) outlines the button in dark teal, but its small line kept its own dark teal colour at 9px, so it became a dark
   blur. Small line now white, 10px, with a thin 1px outline. Checked before/after with the real CSS rendered at 3x. Not checked on his phone.
+
+## v1361 — Teleport button icon readable + readability scan (Harley: "the old teleport symbol... is 1 offender")
+- The 🌀 emoji (blue on the cyan button) is now a small white spiral (inline SVG) with the same dark teal outline as the white button text
+  (.ico-svg). Before/after rendered with the real CSS at 3x.
+- Scan (headless, Blue + Lilita, 30 screens; text contrast vs its background, dark-on-dark outlines, tiny outlined text; every emoji on a
+  button cropped and ranked by contrast, then checked by eye). Real issues found: only the two already fixed (farming Back line, teleport).
+  Dim items that are dim on purpose (disabled/locked/unselected): weapon Draw buttons with no tickets, Gauntlet Fight with no troops,
+  locked research names, unselected troop types, unaffordable TD towers. Borderline: the recon map mission icons (grey telescope etc. on
+  dark circles). Scanner false positives (dark text on parchment/gold): arena ladder, skins list, Overlord Profile panel.
