@@ -12717,7 +12717,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1344"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1345"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23417,7 +23417,8 @@ function stepIdleAnim(dtSec, w, h) {
         });
       }
     } else {
-      vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
+      var swLk = idleAnim.swingRun && idleAnim.swingRun[key], slamLock = swLk && swLk.slam && performance.now() < swLk.until; /* v1345 (Harley: in his crouch he "physically moves forward at running speed" - movement locked until he stands back up) */
+      if (!slamLock) vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
     }
   });
   Object.keys(idleAnim.heroVis).forEach(function (key) {

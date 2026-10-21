@@ -3265,3 +3265,10 @@ Harley's 3 points:
 - Balance: dev/balance/run.js now needs WORKERS=1 here (2 workers time out at login - also on the old build). Meta check output identical
   before/after (pre-existing warning unchanged). Arena untouched.
 - Not done: Arena (same code path once he likes it); slam-specific slash arc/sparks; footage capture in headless was fiddly - judge on phone.
+
+## v1345 — FIX: Gareth slid forward during the jump slam's crouch
+- Harley: "in his crouched frame, sometimes he physically moves forward at running speed. his movement needs to be locked until he stands back
+  up". Cause: if the enemy he slammed dies mid-slam, he flips to "chasing" and the hero step moves him at run speed while the slam still plays.
+- Fix: while swingRun.gareth.slam is playing, the run step (vis.x toward targetX) is skipped. The ground-scroll contact drift is kept on
+  purpose (it keeps him planted relative to the scrolling ground, same as his normal swings).
+- Measured over 40 s of fighting: forward movement during slams before 0-45 px (5 of 13 slams), after 0 px in all 12. Not checked on phone.
