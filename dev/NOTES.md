@@ -3272,3 +3272,10 @@ Harley's 3 points:
 - Fix: while swingRun.gareth.slam is playing, the run step (vis.x toward targetX) is skipped. The ground-scroll contact drift is kept on
   purpose (it keeps him planted relative to the scrolling ground, same as his normal swings).
 - Measured over 40 s of fighting: forward movement during slams before 0-45 px (5 of 13 slams), after 0 px in all 12. Not checked on phone.
+
+## v1346 — sound for Gareth's jump slam
+- Harley sent sword-slash_NkdUSLZ.mp3 ("heres a sound for that attack"). Measured: whoosh onset ~0.26 s, peak ~0.38 s; the slam's landing frame is
+  0.375 s after it starts, so it plays at slam start with no offset. Cut to 1.2 s with a 0.25 s fade, mono 96k (15 kB): sfx/gareth_slam.mp3;
+  original sfx/originals/gareth_slam_sword_slash_original.mp3. Web Audio buffer like the reward sound, gain 0.85, Sound FX toggle respected,
+  overridable via playSfxOverrideIfSet("garethSlam").
+- Headless: 8 slams -> 8 calls -> 8 buffer plays, decoded 1.2 s. Not heard on his phone.
