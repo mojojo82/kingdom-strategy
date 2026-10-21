@@ -3338,3 +3338,16 @@ Harley's 3 points:
 ## v1353 — ice slam slash 1.5x, nudged forward (Harley picked it from in-game captures of 1x / 1.5x+forward / 2x)
 - GARETH_ICE2.size 1 -> 1.5 and new fwd: 14 (lab units, ~1/4 of his width) so it lands on the enemy in front instead of covering him
   (2x hid him). Grows from the same ground-hit point. Headless: no errors. Not checked on his phone.
+
+## v1354 — Gareth dodge "skid" (Hailuo video 1, re-cut) replaces the old back-hop look (test - Harley: "be prepared to take it out")
+- Cut from Harley's 1st Hailuo dodge video: frames 4-18 (hop back) + 47-66 (skid with dust) + 79-94 (stand up to idle) = 51 frames,
+  24 fps, 2.1 s. The one-leg landing (19-46) is cut out - he lands straight into the skid. Green keyed, fixed-camera crop, scaled so his
+  idle matches the game idle (0.4541 of video px); sheet 298x139 cells, 26 cols, webp 177 kB embedded (GARETH_DODGE).
+- Movement is inside the frames (fixed camera): drawn from hop.x0; vis.x follows the tracked travel (never forward) so his bars move,
+  ending where the last idle frame stands (~22 px back at 100% hero scale). Old 3D hop row kept ("Old hop").
+- Uses the existing back-hop trigger (v1100): while in contact with a non-boss enemy, not on boss levels, every 6-10 s, only when the
+  whole slide fits behind him (else retry in 1.5 s). The boss "get out from under it" hop still uses the old hop.
+- Dev Tools "Gareth back-hop": Skid (new) -> Old hop -> Off (style on this device: kingdom_prototype_garethhopstyle_v1; on/off is the
+  existing synced kingdom_prototype_garethhop_v1). Originals: art/originals/gareth_dodge_skid/ (both videos, start/end canvases, keyed frames).
+- Headless (forced often): 8 dodges in 30 s, draws hop/skid/stand-up, ends on his idle spot, no errors. Not checked on his phone.
+  Engine damage unchanged; like the old hop, swings owed while he is dodging can expire as misses in the drawn fight.
