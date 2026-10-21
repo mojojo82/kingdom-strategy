@@ -3328,3 +3328,9 @@ Harley's 3 points:
   GARETH_ICE2; originals in art/originals/fx/gareth_slash_ice2/. Images decode at start so the first slam has them.
 - Dev Tools: "Slam slash: Ice (GPT) / Anime white / None" (this device only, kingdom_prototype_slamslash_v1). Anime white = v1350 look.
 - Headless: 11 slams in 35 s, all frames drawn, no errors. Not checked on his phone. No combat numbers changed.
+
+## v1352 — slam much rarer: 1 in 8 attacks (Harley: "I feel like I should be seeing it much less")
+- Bag [1,1,2] -> [1,1,1,1,1,1,1,2]. The slam lasts 3 swings, so [1,1,2] meant he was slamming 60% of the time; now ~30%, one slam per
+  8 attacks (avg one every ~5 s at base attack speed; still a seeded shuffle, so it can land close together or ~7.5 s apart).
+  DPS unchanged (secMult 3 = 3x damage over 3x time). Headless 35 s: 3 slams (was 11), no errors. Meta check identical to v1351
+  (same pre-existing warning). Not checked on his phone.
