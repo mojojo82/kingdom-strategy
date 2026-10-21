@@ -3357,3 +3357,10 @@ Harley's 3 points:
   frames (sheet frames 15-28): GARETH_DODGE.slide = 130 sheet px, fast off the landing and easing to a stop; frames shift with it and
   vis.x/bars follow. Total move back: ~22 -> ~47 px at 100% hero scale (about 2 body heights). Ground dust puffs every 50 ms while
   sliding. Room check includes the slide. Headless capture: slides toward the fortress, no errors. Not checked on his phone.
+
+## v1356 — skid dodge: never moves forward while sliding (Harley: "he can't be in the sliding pose and be moving forward")
+- Two causes: the code slide stopped (v1355 ended at sheet frame 28) while the video's skid pose ran to frame 34, and inside the video his
+  body drifts forward in the skid lean and at the cut into the stand-up (helmet +20 video px). Fix: slide now runs frames 15-35, gentler
+  ease (power 1.6); per-frame shift (GARETH_DODGE.shift, helmet-tracked) pushes any frame back so his body is never ahead of where it was;
+  travel (vis.x/bars) re-tracked on the helmet. Checked frame by frame: from landing to the end his on-screen position only goes back,
+  ending exactly on the idle spot (240 sheet px ~ 48 px at 100%). Headless capture, no errors. Not checked on his phone.
