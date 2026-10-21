@@ -3236,3 +3236,11 @@ Harley's 3 points:
 - Fix: the white-text block now also sets -webkit-text-stroke:0 transparent and paint-order:normal (!important) so the outline is plain
   text-shadow on every engine. No WebKit browser here to prove it - Harley checks on his phone. If still missing: switch the outline to
   -webkit-text-stroke (what the old glossy style used successfully on iOS).
+
+## v1343 — white pass follow-up: selected troop cards + disabled buttons (Harley: "Difficult to read")
+- His phone: the selected Ranged card's count/timer ("4.1K", "51m 20s") kept their own dark brown (rgb 74,59,36) but inherited the white
+  pass's dark outline -> unreadable blobs; the greyed-out Promoting/train buttons looked embossed too.
+- Fix: everything inside selected .tr-type / .tr-tier buttons goes white; disabled tan buttons (buildings/troops/research/fortress/espers/
+  forge/chat send) go back to plain dark text, no outline. The disabled rule needed :not(#z) to outrank "button:not(.secondary):not(.dev-btn)".
+- LESSON: a white-text override must also cover a button's CHILDREN that set their own colour, and disabled states. Reproduced headless
+  (computed colours checked before/after); not checked on his phone.
