@@ -12735,7 +12735,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1357"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1358"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24836,7 +24836,7 @@ var HERO_HOP_TOTAL = 830; // ms (sum of dur)
 /* v1354: Gareth dodge "skid" - Hailuo video (art/originals/gareth_dodge_skid/): hop back, land straight into a skid (the one-leg landing cut out),
    stand back up. Frames are cut with a fixed camera, so his movement is inside the frames: drawn from where he started (hop.x0); vis.x follows
    the tracked travel so his bars move with him, and ends exactly where the last (idle) frame stands. Uses the existing back-hop trigger. */
-var HERO_HOP_STYLE_KEY = "kingdom_prototype_garethhopstyle_v1", heroHopStyle = "skid";
+var HERO_HOP_STYLE_KEY = "kingdom_prototype_garethhopstyle_v2", heroHopStyle = "old"; /* v1358: skid dodge off by default (Harley: "not liking how it looks... don't delete it"); new key so earlier "skid" picks reset */
 try { var _hs = localStorage.getItem(HERO_HOP_STYLE_KEY); if (_hs === "skid" || _hs === "old") heroHopStyle = _hs; } catch (e) {}
 var GARETH_DODGE = { slide: 130, slideFrom: 15, slideTo: 35, /* v1356: slide lasts the whole skid pose (to the stand-up), easing out gently so he is still moving until it ends */ /* v1355: extra code-driven slide (sheet px) over the skid frames - the video barely moves him there */ cw: 298, ch: 139, cols: 26, frames: 51, fps: 24, ax: 258.66, ay: 135.09,
   travel: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6.3, 23.5, 31.8, 45.7, 58.6, 93.7, 97.9, 102.4, 102.4, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 102.5, 103.1, 107.0, 108.0, 109.8, 109.9, 109.9, 109.9], /* sheet px moved back by each frame (never forward; v1356: helmet-tracked) */
@@ -27774,7 +27774,7 @@ function renderShowGarrisonBtn() {
   btn.className = "dev-btn" + (showGarrisonEnabled ? " active" : "");
 }
 renderShowGarrisonBtn();
-function renderHeroHopBtn() { var b = document.getElementById("devHeroHopBtn"); if (!b) return; b.textContent = "🦘 Gareth back-hop: " + (heroHopOn ? (heroHopStyle === "skid" ? "Skid (new)" : "Old hop") : "Off"); b.className = "dev-btn" + (heroHopOn ? " active" : ""); }
+function renderHeroHopBtn() { var b = document.getElementById("devHeroHopBtn"); if (!b) return; b.textContent = "🦘 Gareth back-hop: " + (heroHopOn ? (heroHopStyle === "skid" ? "Skid (test)" : "Old hop") : "Off"); b.className = "dev-btn" + (heroHopOn ? " active" : ""); }
 var RUN_BLEND_KEY = "kingdom_prototype_garethrunblend_v1";
 function setRunBlend(on) { HERO_ANIMS.gareth.noBlend = on ? {} : { run: true }; try { localStorage.setItem(RUN_BLEND_KEY, on ? "1" : "0"); } catch (e) {} }
 try { if (localStorage.getItem(RUN_BLEND_KEY) === "1") setRunBlend(true); } catch (e) {}
@@ -27919,7 +27919,7 @@ renderMarch3dBtn();
 function renderMarch3dWaterBtn() { var b = document.getElementById("devMarch3dWaterBtn"); if (!b) return; b.textContent = "🌊 Ship water: " + (march3dWater ? "On" : "Off"); b.className = "dev-btn" + (march3dWater ? " active" : ""); } /* v1057: foam + wake round the 3D march ships (all players) */
 document.getElementById("devMarch3dWaterBtn").onclick = function () { march3dWater = !march3dWater; try { localStorage.setItem(MARCH3D_WATER_KEY, march3dWater ? "1" : "0"); } catch (e) {} assetSyncUpload(MARCH3D_WATER_KEY, march3dWater ? "1" : "0"); renderMarch3dWaterBtn(); };
 renderMarch3dWaterBtn();
-document.getElementById("devHeroHopBtn").onclick = function () { /* v1354: Skid (new) -> Old hop -> Off */ if (heroHopOn && heroHopStyle === "skid") heroHopStyle = "old"; else if (heroHopOn) setHeroHop(false); else { setHeroHop(true); heroHopStyle = "skid"; } try { localStorage.setItem(HERO_HOP_STYLE_KEY, heroHopStyle); } catch (e) {} renderHeroHopBtn(); };
+document.getElementById("devHeroHopBtn").onclick = function () { /* v1358: Old hop -> Skid (test) -> Off */ if (heroHopOn && heroHopStyle === "old") heroHopStyle = "skid"; else if (heroHopOn) setHeroHop(false); else { setHeroHop(true); heroHopStyle = "old"; } try { localStorage.setItem(HERO_HOP_STYLE_KEY, heroHopStyle); } catch (e) {} renderHeroHopBtn(); };
 document.getElementById("devShowGarrisonBtn").onclick = function () {
   setShowGarrison(!showGarrisonEnabled);
   renderShowGarrisonBtn();

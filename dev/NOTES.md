@@ -3371,3 +3371,8 @@ Harley's 3 points:
   any swing cycle (swingRun.until) or skill flash freezes his own movement; he runs the gap after the swing. The ground drift toward the
   fortress (standing on scrolling ground) still applies. Measured 35 s headless: frames moving during a swing 161 (663 px) -> 13 (299 px,
   the Blade Rush dash, which has its own pose). No errors. Not checked on his phone.
+
+## v1358 — skid dodge OFF by default (Harley: "I'm not liking how it looks. Disable it, don't delete it, off by default")
+- Default back-hop style back to the old hop (pre-v1354 look). Style key bumped to kingdom_prototype_garethhopstyle_v2 so any device
+  that picked "skid" resets. Dev Tools > Effects & Sound > "Gareth back-hop" now cycles Old hop -> Skid (test) -> Off. All skid code,
+  sheet and originals kept. v1357's "no run, no move" rule stays.
