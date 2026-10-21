@@ -96,3 +96,5 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | backgrounds/graveyard_v1/v2_composite_1536x1024.png | Night level graveyard composites from ChatGPT (v2 = new ground: mud path, grave slabs, buried coffins) | 1536x1024 | v1294 night level, via the layers below |
 | backgrounds/graveyard_layer_{far,near,road,road2}_gpt_1536x1024.png | GPT's layer split on magenta (road = too high a view, road2 used) | 1536x1024 | dev/levels/build_graveyard.py -> art/levels/graveyard_*.webp |
 | backgrounds/village_reference_ingame_1536x1024.png / village_reference_sharp_1800x612.png | Village rebuilt from the game's own layers with the current road (the sharp one is native size - use it as GPT's style reference) | - | reference only |
+
+| art/originals/rpg_items_sheet_1254.png | Harley 10 Oct 2026: 4 RPG items on black (dark red sword, gold sword, ice shield, purple staff). The dark sword was the v1037 Overlord Profile slot mockup (never in game). Re-found 21 Oct in old uploads and banked. |
