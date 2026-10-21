@@ -3376,3 +3376,16 @@ Harley's 3 points:
 - Default back-hop style back to the old hop (pre-v1354 look). Style key bumped to kingdom_prototype_garethhopstyle_v2 so any device
   that picked "skid" resets. Dev Tools > Effects & Sound > "Gareth back-hop" now cycles Old hop -> Skid (test) -> Off. All skid code,
   sheet and originals kept. v1357's "no run, no move" rule stays.
+
+## v1359 — Overlord Profile: GPT's design, 1:1 (Harley: "priority to make the overlord profile a 1:1 match with gpt's composite UI design")
+- GPT made a filled composite, an empty version and a background-only version (same 918x1713 framing). Pieces are cut from the composites
+  (alpha = where they differ from the background; red notification dots painted out, the TH badge's "1" inpainted so the number is live),
+  so they match the picture exactly; GPT's separate parts sheet was not used (different shapes/shades). 20 pieces + background, 136 kB webp.
+- Built as a design box (aspect 918:1713, container query units: 1 design px = 100cqw/918, max 520 px wide) over the existing DOM: same
+  ids and handlers, a wrapper (#gpDesign, display:contents in Classic) and emoji spans (.gp-emo) were the only HTML changes. Live: ship
+  (+barrels, fitted to the pedestal: 565 units wide, keel y 632), cards in the gold frames, avatar in the silver frame, name (white, plum
+  outline), ID, power, TH badge, kills, alliance, kingdom, chapter - Lilita One, positions/sizes matched by overlaying a mock on GPT's image.
+  Static art: title, back/gear, Fortress Skin pill, 4 hex buttons (labels baked, as in GPT's picture). The 6 side slots stay display-only.
+- Default on; Dev Tools > Old profile buttons > "Overlord Profile look: GPT (new) / Classic" (this device). Below the design on tall
+  phones: matching navy fill. Headless 390x844: all buttons open what they did (Share runs the same handler), back closes, Classic look
+  unchanged, no errors. Not checked on his phone.
