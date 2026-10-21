@@ -3334,3 +3334,7 @@ Harley's 3 points:
   8 attacks (avg one every ~5 s at base attack speed; still a seeded shuffle, so it can land close together or ~7.5 s apart).
   DPS unchanged (secMult 3 = 3x damage over 3x time). Headless 35 s: 3 slams (was 11), no errors. Meta check identical to v1351
   (same pre-existing warning). Not checked on his phone.
+
+## v1353 — ice slam slash 1.5x, nudged forward (Harley picked it from in-game captures of 1x / 1.5x+forward / 2x)
+- GARETH_ICE2.size 1 -> 1.5 and new fwd: 14 (lab units, ~1/4 of his width) so it lands on the enemy in front instead of covering him
+  (2x hid him). Grows from the same ground-hit point. Headless: no errors. Not checked on his phone.
