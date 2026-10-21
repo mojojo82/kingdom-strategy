@@ -3420,3 +3420,9 @@ Harley's 3 points:
 ## v1364 — frame holes 2-3 px smaller so the inner border line stays (Harley: "you cut off about 1 or 2 px too much")
 - The v1363 flood fill also ate the frames' thin dark inner line. Hole now eroded back (card 2 px, portrait 3 px - the portrait has a dark
   line plus a light bevel), straightened (5x5 opening), sharper edge; pictures sized to hole + 2 px. Zoomed headless check: straight lines.
+
+## v1365 — frame holes are clean shapes, no specks on the inner edge (Harley: "an octagon... with random specks and lines on the internal edge")
+- v1363/64 holes followed the GPT pixels (a colour flood, then shrunk), so leftover interior pixels made specks/1 px lines along the inside.
+  Now each hole is a clean shape: straight sides set from the median edge profile (card x18-134 y18-138, portrait x24-215 y23-209 - just
+  inside each frame's inner line), octagon corners (portrait: traced, only narrowing toward a corner; card: 4 px chamfer, its gold corner
+  tabs kept), hard edge. Holed frames saved lossless. Pictures sized to hole + 2 px. Zoomed headless checks: straight, no specks.
