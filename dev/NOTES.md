@@ -3364,3 +3364,10 @@ Harley's 3 points:
   ease (power 1.6); per-frame shift (GARETH_DODGE.shift, helmet-tracked) pushes any frame back so his body is never ahead of where it was;
   travel (vis.x/bars) re-tracked on the helmet. Checked frame by frame: from landing to the end his on-screen position only goes back,
   ending exactly on the idle spot (240 sheet px ~ 48 px at 100%). Headless capture, no errors. Not checked on his phone.
+
+## v1357 — "no run, no move": melee heroes can't slide while a swing/skill pose plays
+- Harley: after the dodge he moved forward without running. The swing pose wins over the run pose (st = attack when swingWant), but the
+  chase step still moved him, so he slid forward mid-swing (also when closing the last few px to an enemy). Now, like the v1345 slam lock,
+  any swing cycle (swingRun.until) or skill flash freezes his own movement; he runs the gap after the swing. The ground drift toward the
+  fortress (standing on scrolling ground) still applies. Measured 35 s headless: frames moving during a swing 161 (663 px) -> 13 (299 px,
+  the Blade Rush dash, which has its own pose). No errors. Not checked on his phone.

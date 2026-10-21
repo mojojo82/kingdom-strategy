@@ -12735,7 +12735,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1356"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1357"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23440,7 +23440,8 @@ function stepIdleAnim(dtSec, w, h) {
       }
     } else {
       var swLk = idleAnim.swingRun && idleAnim.swingRun[key], slamLock = swLk && swLk.slam && performance.now() < swLk.until; /* v1345 (Harley: in his crouch he "physically moves forward at running speed" - movement locked until he stands back up) */
-      if (!slamLock) vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
+      var swingLock = isMeleeHero && HERO_ANIMS[key] && ((swLk && performance.now() < swLk.until) || idleAnim.skillFlash[key] > 0); /* v1357 (Harley: "no run, no move") - while a swing / skill pose is playing he can't slide either way; the ground drift back toward the fortress still applies */
+      if (!slamLock && !swingLock) vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
     }
   });
   Object.keys(idleAnim.heroVis).forEach(function (key) {
