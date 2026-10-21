@@ -3228,3 +3228,11 @@ Harley's 3 points:
 - KEPT DARK on purpose: active tabs on bright cream/gold plates (City tabs, Skins tab, Chat World tab, formation "Selected"), the Gauntlet header,
   and everything on parchment (profile stat lines, Arena leaderboard, Skins names, Troops cards) - ink on paper.
 - Rescan after: only the intended dark spots remain. Before/after sheet checked by eye. Not checked on his phone.
+
+## v1342 — FIX (suspected): v1341's outline missing on iPhone
+- Harley's iPhone screenshot: the profile buttons were white with NO outline, while headless Chromium drew it. Both affected buttons (the 4
+  profile buttons + Fortress Skin) inherit an older glossy style (v8xx) with -webkit-text-stroke + paint-order:stroke fill, later "reset" by a
+  rule with -webkit-text-stroke:0 but leaving paint-order. Chromium ignores that; WebKit (iOS) is suspected to drop text-shadow there.
+- Fix: the white-text block now also sets -webkit-text-stroke:0 transparent and paint-order:normal (!important) so the outline is plain
+  text-shadow on every engine. No WebKit browser here to prove it - Harley checks on his phone. If still missing: switch the outline to
+  -webkit-text-stroke (what the old glossy style used successfully on iOS).
