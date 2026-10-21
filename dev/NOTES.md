@@ -3438,3 +3438,7 @@ Harley's 3 points:
 - Like a Photoshop 1 px inside stroke on the hole: a light silver line (#e4e8f0) on the inner edge of the portrait frame's hole, drawn
   into the frame image (so it sits over the picture), corners following the 45-degree cuts. GPT's concept had a lighter inner edge than
   v1366's dark line. Card frames unchanged.
+
+## v1368 — portrait inner line moved over the dark line, a softer silver (Harley: "it should go inwards to mask some of that darkness... slightly darker so it doesn't read as a 1px line")
+- v1367 put the light line inside the hole, next to the dark line. Now it is painted over the inner pixel of the dark line (frame side),
+  colour #b2b6c1 (mid silver, was #e4e8f0): outside in = silver bevel, 1 px dark, 1 px soft silver, picture. Mockup approved first.
