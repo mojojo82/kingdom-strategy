@@ -3244,3 +3244,24 @@ Harley's 3 points:
   forge/chat send) go back to plain dark text, no outline. The disabled rule needed :not(#z) to outrank "button:not(.secondary):not(.dev-btn)".
 - LESSON: a white-text override must also cover a button's CHILDREN that set their own colour, and disabled states. Reproduced headless
   (computed colours checked before/after); not checked on his phone.
+
+## v1344 — Gareth Atk 2: the jump slam, as an engine attack SLOT in a seeded shuffle bag (TEST, Conquest only)
+- Harley: new moves to make Gareth read as "a little character capable of self thought"; attacks must be named slots ("base atk 1 ... atk 2 ...
+  maybe a 3rd") and "need to appear random (although its not)". Built first so he can judge it in game.
+- Art: Leonardo/Hailuo image-to-video (3rd roll; start+end frame = his attack-row frame 0 on a 16:9 green canvas with 2x headroom - the tight
+  canvas made Hailuo crop/zoom). Keyed, hang time trimmed (0.8 s hover -> ~0.3 s), 24 frames at 24 fps = 1.0 s, landing on frame 9. Scaled +
+  anchored so frame 0 sits exactly on his game attack frame 0 (sheet 156x282 cells, same pixel scale as his game sheet). He jumps IN PLACE
+  (measured: up ~1.1x his height, sideways <20 px). Originals: art/originals/gareth_atk2_jumpslam/ (video, sheet, meta, start/end canvas).
+- Engine: COMBAT_TIMING.heroAttackSlots = { gareth: { bag: [1, 1, 2], slots: { 2: { secMult: 2 } } } }. Each swing draws idleNextAtkSlot()
+  from a bag shuffled with combatRng (seeded per level -> deterministic). A slot-2 swing takes 2 x heroAttackSec and does 2 x damage (and
+  fills the limit bar twice) -> DPS identical. Owed melee hits carry their slot; idleMeleeLand(aid, blade, slotKind) lands only that kind.
+- UI: a swing cycle whose oldest owed hit is a slam plays the slam sheet (1.0 s) instead of his 0.5 s swing; damage lands on the slam's landing
+  frame + chargeShakeKick. Dev Tools "Gareth Atk 2 (jump slam): On/Off" (this device).
+- BUG found+fixed while testing: the old fallback `else land(aid, q.shift())` landed whatever was first in the queue - including an owed SLAM
+  waiting for its own swing -> slams went missing. Now it only lands a plain (non-owed) hit.
+- Measured headless (Conquest graveyard, 30 s runs): slots ON ~65-80% of owed hits land vs OFF ~80-88% (the slam's later impact gives
+  enemies time to die/move first - more misses, as designed by v917 "nothing at the blade = a miss"); landed damage ON 102-120 vs OFF
+  102-117 over 4 runs - same range. Watch this on the phone.
+- Balance: dev/balance/run.js now needs WORKERS=1 here (2 workers time out at login - also on the old build). Meta check output identical
+  before/after (pre-existing warning unchanged). Arena untouched.
+- Not done: Arena (same code path once he likes it); slam-specific slash arc/sparks; footage capture in headless was fiddly - judge on phone.
