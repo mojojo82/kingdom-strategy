@@ -3493,3 +3493,9 @@ Harley's 3 points:
   same height as the others) hung in its place, number badge and first hero slot kept on top. Other cards unchanged.
 - Fix: City Guard's "Defends your base · N troops" line was half hidden under the bar cover - now on top.
 - GPT's banner sheet + scripts: art/originals/ui/formations_gpt/ (banners_gpt.png, guard.py, guard2.py). Headless only, not on his phone.
+
+## v1375 — City Guard banner redone from GPT's same-size version (Harley got GPT to swap Formation 1's banner in the concept itself)
+- GPT's re-render lines up pixel-for-pixel with the original concept, so the black crowned-helm banner was swapped in exactly like the
+  red/purple ones (difference mask, base badge kept on top). Same size, pole and position as the other banners. Replaces v1374's
+  rebuilt card (that one's scripts guard.py/guard2.py stay in the folder for reference). File: formations_concept_black_banner.png, guard3.py.
+- Headless only, not on his phone.
