@@ -3543,3 +3543,7 @@ Harley's 3 points:
 - Cut with transparency (stray specks dropped, edge fringe cleaned), fitted bottom-aligned on 360x480 (3:4). HERO_CARD_ART2 shown first
   everywhere a hero picture is used (hero list, picker, Formations slots, getHeroArt). Iron Lily keeps her video frame; Mira unchanged.
   The full hero card still plays the Gareth / Kessa / Iron Lily videos. ~221 KB. Headless: hero list, picker, Formations OK, no errors.
+
+## v1382 — Hero pictures fill the card (Harley: "size so they're taking up more of the card frames")
+- Each figure scaled to fill the card height (head near the top, sides/feet cropped) instead of fitting the whole body.
+  Square slots (picker, Formations) aim at the top of the picture so heads stay in view. Headless only.
