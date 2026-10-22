@@ -3514,3 +3514,11 @@ Harley's 3 points:
 - Same rules/actions as before. Follows the Formations look switch (Classic look = the old picker).
 - Headless 430x932: pick, remove, move a hero from another formation, X, Leave empty, marching locked, classic switch - all work,
   no errors. 9 heroes = 3rd row scrolls inside the panel. Not on his phone.
+
+## v1378 — Hero picker back to mockup A's look (Harley: "some parts of your A concept i prefer" - picked "all of it")
+- Panel + header bar (shield badge, title, close) = the pieces cut from GPT's backpack concept; hero cards = the Overlord Profile's gold
+  card frames (GP2_ART card-o, shared, not duplicated) with Lv on the picture; tags sit on the card tops ("In here" blue, formation name /
+  "Marching" dark - GPT's clean pills, no house icon); bronze "Leave empty" + Formations' blue "Pick X". No hint text, no stars/badges.
+- GPT parts-sheet pieces from v1377 stay in art/originals/ui/kit_gpt/pieces/ for later (only its tag pill + blue button still used).
+- Same rules/actions; headless: pick, remove, move from another formation, X, Leave empty, marching locked, classic switch - all work,
+  no errors. Not on his phone.
