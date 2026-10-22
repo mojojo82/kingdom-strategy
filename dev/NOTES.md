@@ -3563,3 +3563,8 @@ Harley's 3 points:
   (text only, same skill shapes as the existing heroes), "🔒 Coming soon" button, can't be recruited/equipped, not on bots / Arena.
   Stats = the normal hero stats (no new stats). Caelum's 4th lore skill (Hellfire Dive) left out - heroes have 3 skill slots.
 - No combat change, so no balance run needed. Headless: hero list + detail OK, recruit blocked, not in the Arena pool, no errors.
+
+## v1386 — Mira deleted (Harley: "delete mira")
+- Mira (the only governor hero, "Overlord": +3% all resource production per level) removed from HERO_DEFS and the hero lore.
+  A save with Mira owned / appointed now loads without her (governorHero cleared, no bonus, no errors). The governor code itself is left in
+  (unused) in case a new governor hero comes later. Headless: hero list (13 cards), profile, old save with Mira as Overlord - no errors.

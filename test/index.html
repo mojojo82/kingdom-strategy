@@ -6150,9 +6150,7 @@ var HERO_DEFS = {
       { name: "Torn Between", icon: "⚖️", kind: "passive", desc: "Hits harder the lower his HP gets, as the demon tech takes over." }
     ],
     expeditionSkills: [] },
-  mira: { name: "Mira", title: "The Steward", class: "governor", icon: "👑", rarity: "Legendary",
-    maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, stone: 60, food: 60 }, levelCostMult: 1.4,
-    skillLabel: "All Resource Production (as Overlord)", skillType: "governorResourceMult", perLevel: 0.03 }
+  /* v1386 (Harley: "delete mira"): Mira (the only governor hero, Overlord resource bonus) removed. The governor code stays (no hero uses it now). */
 };
 
 // ===== Espers =====
@@ -10425,7 +10423,7 @@ function createGame(opts) {
     if (saved.equippedEsper && ESPER_DEFS[saved.equippedEsper] && state.espers[saved.equippedEsper] && state.espers[saved.equippedEsper].owned) {
       state.equippedEsper = saved.equippedEsper;
     }
-    if (typeof saved.governorHero !== "undefined") state.governorHero = saved.governorHero;
+    if (typeof saved.governorHero !== "undefined") state.governorHero = saved.governorHero; if (state.governorHero && !HERO_DEFS[state.governorHero]) state.governorHero = null; /* v1386: Mira removed */
     if (saved.conquestRoster) state.conquestRoster = saved.conquestRoster.filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].class !== "governor"; });
     if (saved.heroCooldowns) Object.assign(state.heroCooldowns, saved.heroCooldowns);
     if (saved.conquest) { if (saved.conquest.cleared) state.conquest.cleared = saved.conquest.cleared; if (saved.conquest.lastResult) state.conquest.lastResult = saved.conquest.lastResult; }
@@ -12865,7 +12863,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1385"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1386"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30053,7 +30051,6 @@ var HERO_FLAVOR = {
   sera: "A field chaplain who followed the army out of the border chapel and kept the wounded breathing. Sera is no fighter, but give her twelve quiet seconds and the line will hold a little longer.",
   torvald: "A gate-warden with forty years of watches behind him. Torvald never wins a fight fast — he just makes sure there is still a fortress standing when the others finish it.",
   hanzo: "Nobody hears Hanzo arrive, and nobody remembers him leaving. One leap, a storm of steel from above, and the field below is never quite the same.",
-  mira: "A former treasury minister who traded ledgers for a governor's seat. Mira has never swung a blade, but no kingdom under her stewardship has ever gone hungry."
 };
 
 function heroDetailBadgesHtml(def) {
