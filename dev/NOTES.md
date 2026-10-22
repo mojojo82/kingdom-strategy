@@ -3522,3 +3522,7 @@ Harley's 3 points:
 - GPT parts-sheet pieces from v1377 stay in art/originals/ui/kit_gpt/pieces/ for later (only its tag pill + blue button still used).
 - Same rules/actions; headless: pick, remove, move from another formation, X, Leave empty, marching locked, classic switch - all work,
   no errors. Not on his phone.
+
+## v1379 — Hero picker: shield centred in the header badge (Harley's screenshot: it sat top-left)
+- Badge centre measured on the header art (169.5, 68.5 of 492x142) -> icon box centred on it. Dark specks left inside the badge from
+  the earlier clean-up smoothed out. Headless only, not on his phone.
