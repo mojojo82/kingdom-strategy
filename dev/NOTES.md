@@ -3547,3 +3547,7 @@ Harley's 3 points:
 ## v1382 — Hero pictures fill the card (Harley: "size so they're taking up more of the card frames")
 - Each figure scaled to fill the card height (head near the top, sides/feet cropped) instead of fitting the whole body.
   Square slots (picker, Formations) aim at the top of the picture so heads stay in view. Headless only.
+
+## v1383 — Iron Lily's card picture zoomed in (Harley: "zoom up on lily a little also so she matches better")
+- Same picture (her video frame), cropped ~1.6x around head/upper body so she's sized like the new placeholders. Her video on the full
+  hero card is unchanged. Headless only.
