@@ -3476,3 +3476,7 @@ Harley's 3 points:
 - Classic cards kept: Dev Tools > Old profile buttons > "Formations look" (this device only). Originals + scripts: art/originals/ui/formations_gpt/.
 - Headless 430x932: Save, Select, Release (confirm), Equalise, Preset sheet, hero picker, fortress I/III, rename, help, Guard on/off,
   classic toggle and back all work; 3 troop types + heroes shown; no errors. Not on his phone.
+
+## v1372 — Formations slider sized like GPT's (Harley: "Match the slider button size")
+- Measured GPT's concept: knob ~36 px across with its outline, blue track ~14 px tall (in the 1024 px art). Ours was 52 / 26.
+  Now knob 32 + 2 px outline, track 13 + 2 px outline (scales with the screen). Headless crop vs the concept: same size. Not on his phone.
