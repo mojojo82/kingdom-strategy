@@ -3486,3 +3486,10 @@ Harley's 3 points:
   art: knob cut out of the concept with transparency (its bevel/emboss + shadow), track = GPT's right end cap, a 1 px middle slice
   stretched, and the cap mirrored for the left end. Same size as the concept. Script: art/originals/ui/formations_gpt/slcut.py.
 - Headless: matches the concept crop; knob moves along the track with troops set. Not on his phone.
+
+## v1374 — City Guard gets its own banner (Harley sent GPT's 10 banners: "pick just one of these to replace the duplicate banner")
+- Picked the black banner with the crowned helm (a dark "guard" look, and no other card uses black). The old blue lion banner + its pole
+  were cut out of the City Guard card, the parchment/frame corner rebuilt behind it, the new banner (transparent cut from GPT's sheet,
+  same height as the others) hung in its place, number badge and first hero slot kept on top. Other cards unchanged.
+- Fix: City Guard's "Defends your base · N troops" line was half hidden under the bar cover - now on top.
+- GPT's banner sheet + scripts: art/originals/ui/formations_gpt/ (banners_gpt.png, guard.py, guard2.py). Headless only, not on his phone.
