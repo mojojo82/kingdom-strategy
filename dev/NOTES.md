@@ -3526,3 +3526,13 @@ Harley's 3 points:
 ## v1379 — Hero picker: shield centred in the header badge (Harley's screenshot: it sat top-left)
 - Badge centre measured on the header art (169.5, 68.5 of 492x142) -> icon box centred on it. Dark specks left inside the badge from
   the earlier clean-up smoothed out. Headless only, not on his phone.
+
+## v1380 — Hero picker clean-up (Harley: "parts that need cleaning up and artifacts everywhere")
+- The backpack-concept panel + header cuts were messy (smudged corners, broken inner border, strip under the bar, seams, square
+  boxes behind the buttons). Rebuilt from clean art, same look:
+  - Panel = GPT parts-sheet panel body (its own clean gold frame; top border = its bottom border mirrored), 9-sliced.
+  - Header = GPT's standalone header bar (3-sliced) + the badge octagon cut on its own + GPT's close button, layered.
+  - Card frame = profile card frame rebuilt symmetric from its clean top-left (teal bottom, specks, navy inner line gone; picker only,
+    the profile keeps its own).
+  - Bronze + blue buttons: background removed (flood matte + chamfered corners).
+- Pieces + script: art/originals/ui/kit_gpt/pieces_v1380/. Headless 3x zoom checked; all picker actions still work. Not on his phone.
