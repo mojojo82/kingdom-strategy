@@ -3573,3 +3573,8 @@ Harley's 3 points:
 - GPT's magenta-background picture: background flood-removed from the edges, edge colour un-mixed, small enclosed magenta gaps cleared
   (the pink bracer crystal kept). Card picture cropped to head + upper body like the other heroes. Still "coming soon".
 - Files: art/originals/heroes/caelum/. Headless: hero list + hero card OK. Not on his phone.
+
+## v1388 — Card art for Vesper, Aurek, Seraphine, Halo-7 (Harley: "go ahead")
+- From GPT's version of the hero list (it filled the 4 numbered blank cards). Each picture cut out of its card: card colour removed
+  (flood from the edges), GPT's baked class badge removed (the game draws its own; Vesper's showed the wrong class), Lv text/stars left
+  out. Small source (~240x254) upscaled to the 360x480 card, so a little soft - placeholders. Still "coming soon". Headless only.
