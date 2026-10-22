@@ -3536,3 +3536,10 @@ Harley's 3 points:
     the profile keeps its own).
   - Bronze + blue buttons: background removed (flood matte + chamfered corners).
 - Pieces + script: art/originals/ui/kit_gpt/pieces_v1380/. Headless 3x zoom checked; all picker actions still work. Not on his phone.
+
+## v1381 — New placeholder hero pictures (Harley: "update the hero card art. don't touch lily... these are all superplaceholders")
+- From GPT's 8-hero sheet: Gareth (white/gold helm knight), Lyra (archer), Roran (blonde spearman), Kessa (blonde, white robe),
+  Sera (old wizard, purple staff), Torvald (young knight in blue), Hanzo (tan shield knight). Ninja girl = rejected Iron Lily, not used.
+- Cut with transparency (stray specks dropped, edge fringe cleaned), fitted bottom-aligned on 360x480 (3:4). HERO_CARD_ART2 shown first
+  everywhere a hero picture is used (hero list, picker, Formations slots, getHeroArt). Iron Lily keeps her video frame; Mira unchanged.
+  The full hero card still plays the Gareth / Kessa / Iron Lily videos. ~221 KB. Headless: hero list, picker, Formations OK, no errors.
