@@ -3499,3 +3499,7 @@ Harley's 3 points:
   red/purple ones (difference mask, base badge kept on top). Same size, pole and position as the other banners. Replaces v1374's
   rebuilt card (that one's scripts guard.py/guard2.py stay in the folder for reference). File: formations_concept_black_banner.png, guard3.py.
 - Headless only, not on his phone.
+
+## v1376 — Formations: GPT's footer bar back, buttons do nothing (Harley: "add them there with no function... just to remind me that the gfx exists")
+- "Add Formation" and "Manage Presets" bar (GPT's art, text wiped, live labels) under the last card. Not clickable - no feature behind
+  them yet. Headless only, not on his phone.
