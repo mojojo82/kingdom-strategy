@@ -3480,3 +3480,9 @@ Harley's 3 points:
 ## v1372 — Formations slider sized like GPT's (Harley: "Match the slider button size")
 - Measured GPT's concept: knob ~36 px across with its outline, blue track ~14 px tall (in the 1024 px art). Ours was 52 / 26.
   Now knob 32 + 2 px outline, track 13 + 2 px outline (scales with the screen). Headless crop vs the concept: same size. Not on his phone.
+
+## v1373 — Formations slider uses GPT's own knob + track art (Harley: "do that emboss effect like the original or tell me why you didn't use the original button")
+- v1371 wiped GPT's slider and drew a CSS one (the knob has to move, so it can't stay baked in the card). Now the moving parts ARE GPT's
+  art: knob cut out of the concept with transparency (its bevel/emboss + shadow), track = GPT's right end cap, a 1 px middle slice
+  stretched, and the cap mirrored for the left end. Same size as the concept. Script: art/originals/ui/formations_gpt/slcut.py.
+- Headless: matches the concept crop; knob moves along the track with troops set. Not on his phone.
