@@ -3568,3 +3568,8 @@ Harley's 3 points:
 - Mira (the only governor hero, "Overlord": +3% all resource production per level) removed from HERO_DEFS and the hero lore.
   A save with Mira owned / appointed now loads without her (governorHero cleared, no bonus, no errors). The governor code itself is left in
   (unused) in case a new governor hero comes later. Headless: hero list (13 cards), profile, old save with Mira as Overlord - no errors.
+
+## v1387 — Caelum Vex card art (Harley: "clear his background colour and use this as his card art")
+- GPT's magenta-background picture: background flood-removed from the edges, edge colour un-mixed, small enclosed magenta gaps cleared
+  (the pink bracer crystal kept). Card picture cropped to head + upper body like the other heroes. Still "coming soon".
+- Files: art/originals/heroes/caelum/. Headless: hero list + hero card OK. Not on his phone.
