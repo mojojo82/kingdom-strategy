@@ -3503,3 +3503,14 @@ Harley's 3 points:
 ## v1376 — Formations: GPT's footer bar back, buttons do nothing (Harley: "add them there with no function... just to remind me that the gfx exists")
 - "Add Formation" and "Manage Presets" bar (GPT's art, text wiped, live labels) under the last card. Not clickable - no feature behind
   them yet. Headless only, not on his phone.
+
+## v1377 — Hero picker rebuilt in the Overlord style (mockup A) (Harley: "your building A for real right now")
+- Parts from GPT's parts sheet (art/originals/ui/kit_gpt/), each cut with transparency (gold-gradient background fitted per piece):
+  panel with header bar (stretches in height only), red close button, hero card frame with GPT's 5-star bar, class badges (shield =
+  infantry, purple gem = caster, bow = ranged), red + blue buttons, star bar re-used (stars wiped) as the tag pill.
+- Live text: title, formation + slot, hint, hero names, levels, tags ("In here" on blue, "<formation name>" / "Marching" on dark),
+  buttons ("Leave empty" / "Remove X", "Pick X"). Stars = the hero's real stars (heroStars: 5 arms = 1 star). Picked hero glows gold.
+  Marching heroes greyed and can't be tapped. Screen behind dims. Long button labels shrink to fit.
+- Same rules/actions as before. Follows the Formations look switch (Classic look = the old picker).
+- Headless 430x932: pick, remove, move a hero from another formation, X, Leave empty, marching locked, classic switch - all work,
+  no errors. 9 heroes = 3rd row scrolls inside the panel. Not on his phone.
