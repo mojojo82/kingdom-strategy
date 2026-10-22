@@ -3,7 +3,7 @@
 Read this first if you're a new Claude session picking up this project. It's written so you can carry on exactly where the last session stopped.
 Version history (what changed, why, how it was tested) is in **[dev/NOTES.md](dev/NOTES.md)**. Newest entries are at the bottom.
 
-**State at handover (23 Oct 2026, TEST game v1383):** everything below is built and tested; TEST is deployed. **LIVE updated to v1198 on 16 Oct 2026 (Harley: no players yet, it doubles as a backup).** Later versions are TEST only until Harley says. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
+**State at handover (23 Oct 2026, TEST game v1384):** everything below is built and tested; TEST is deployed. **LIVE updated to v1198 on 16 Oct 2026 (Harley: no players yet, it doubles as a backup).** Later versions are TEST only until Harley says. Harley's real save and custom art are still in the claude.ai artifact database (see "Open items").
 
 ---
 

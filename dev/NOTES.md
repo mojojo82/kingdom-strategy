@@ -3551,3 +3551,7 @@ Harley's 3 points:
 ## v1383 — Iron Lily's card picture zoomed in (Harley: "zoom up on lily a little also so she matches better")
 - Same picture (her video frame), cropped ~1.6x around head/upper body so she's sized like the new placeholders. Her video on the full
   hero card is unchanged. Headless only.
+
+## v1384 — Hero screen background: deep navy (Harley: "deep navy. run it")
+- body[data-screen="heroes"] background #0e1a33 (was the page's near-black #0b0f16). Other screens unchanged. Mockups of 6 blues
+  (with and without the blue top bar) shown first. Headless only.
