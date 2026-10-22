@@ -3555,3 +3555,11 @@ Harley's 3 points:
 ## v1384 — Hero screen background: deep navy (Harley: "deep navy. run it")
 - body[data-screen="heroes"] background #0e1a33 (was the page's near-black #0b0f16). Other screens unchanged. Mockups of 6 blues
   (with and without the blue top bar) shown first. Headless only.
+
+## v1385 — 5 new heroes in the hero list, "coming soon" (Harley: "start setting up icons for them in the hero index along with all their skills and stats")
+- From the brainstorm Harley kept: Vesper Quill (Caster, Epic, 📘), Aurek Solmane (Infantry, Legendary, 🛰️), Seraphine Lux (Caster, Epic, 💎),
+  Halo-7 (Infantry, Legendary, 🤖), Caelum Vex "The Twice-Fallen" (Infantry, Legendary, 😈 - the half-angel/half-demon hammer warrior).
+- Placeholders exactly like Iron Lily: comingSoon + vipOnly = shown in the hero list with name, title, class, rarity and 3 skills each
+  (text only, same skill shapes as the existing heroes), "🔒 Coming soon" button, can't be recruited/equipped, not on bots / Arena.
+  Stats = the normal hero stats (no new stats). Caelum's 4th lore skill (Hellfire Dive) left out - heroes have 3 skill slots.
+- No combat change, so no balance run needed. Headless: hero list + detail OK, recruit blocked, not in the Arena pool, no errors.
