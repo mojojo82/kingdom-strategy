@@ -3462,3 +3462,17 @@ Harley's 3 points:
   Bonewake's with the old hull cut out. Same layout/lift/scale as Bonewake. Original Bonewake untouched.
 - Skins list: More > Skins > Fortress > "Bonewake 2". Files: art/originals/bonewake2/ (incl. GPT's no-guns + weapons pictures; the
   weapons were mockup-only). Headless: equips, animates, Conquest + profile draw, no errors. Not on his phone.
+
+## v1371 — Formations screen built from GPT's concept (Harley: "why reinvent gpts work instead of just using it as static images and removing the text?" / "Build it")
+- GPT's Formations concept cut horizontally where the panels separate (header, Reserve, cards), every word wiped off, all text put back as
+  live text (localisation; long words shrink to fit their art box). Icons, banners, frames, buttons = GPT's art untouched.
+- One card layout for all (the active card's: Save / Select / Release, like the game has). Red + purple banners pasted onto it; City Guard
+  uses the blue one with the Equalise/Preset area covered. Inactive = GPT's blue Deploy button art under "Select"; non-active status = GPT's
+  brown pill ("Home", "Marching · back in…", "Guard off"); active = the blue pill. Fortress I/III = GPT's picker art (III state recoloured).
+- Cards only stretch in a plain parchment band under the hero slots: extra troop types (Caster / Ranged rows), refill note, over-cap note.
+- Slider + march bar fill + typed counts + name editing are live (slider art wiped and redrawn in CSS). Header: back / X = City Buildings,
+  ? = the old help text. Reserve: total in the box, troops per type in the sub line, > = Troops tab. GPT's footer (Add Formation /
+  Manage Presets) left out: those don't exist.
+- Classic cards kept: Dev Tools > Old profile buttons > "Formations look" (this device only). Originals + scripts: art/originals/ui/formations_gpt/.
+- Headless 430x932: Save, Select, Release (confirm), Equalise, Preset sheet, hero picker, fortress I/III, rename, help, Guard on/off,
+  classic toggle and back all work; 3 troop types + heroes shown; no errors. Not on his phone.
