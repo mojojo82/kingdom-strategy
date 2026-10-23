@@ -3608,3 +3608,6 @@ Harley's 3 points:
 - Opening Heroes: cards drop in row by row (70 ms per row, 35 ms per column) from 18 px below at 90% size, overshoot to 102.5%, settle
   (.42 s). transform/opacity only; the class comes off when it's done so the 1 s refresh never replays it; off under reduced-motion.
 - Headless screencast: plays once on entry, ~0.9 s for 13 cards, no errors. Not on his phone. Next stages wait for his OK.
+
+## v1395 — Hero cascade: more bounce (Harley: "Try more bounce")
+- Start 26 px down at 85%, overshoot to -9 px / 107%, dip back to 97%, small second bounce to 101.5%, settle. .6 s per card (was .42 s).
