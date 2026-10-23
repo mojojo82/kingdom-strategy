@@ -6030,6 +6030,26 @@ var I18N_HERO = { ru: {
   caelum: ["Кейлум Векс", "Удар Разлома", "Каждые 9 с обрушивает Разрушитель Разлома — розовая молния прокатывается по врагам перед ним."]
 } };
 function t(en) { var d = I18N[KS_LANG]; return (d && d[en] != null) ? d[en] : en; }
+/* v1408: shrink a text element's font until its content fits its own box (any language). room = width available (default: its own box). */
+function ksFit(el, room, minPct) {
+  if (!el) return; el.style.fontSize = ""; el.style.whiteSpace = "nowrap";
+  var fs = parseFloat(getComputedStyle(el).fontSize); if (!fs) return;
+  var w = el.scrollWidth, r = room != null ? room : el.clientWidth; if (!r || w <= r) return;
+  el.style.fontSize = Math.max(fs * (minPct || 0.4), fs * r / w - 0.2).toFixed(2) + "px";
+}
+function ksFitHeroCard() {
+  var ov = document.getElementById("heroDetailOverlay"); if (!ov || ov.style.display === "none") return;
+  [].forEach.call(ov.querySelectorAll(".hd-tab"), function (e) { e.style.minWidth = "0"; e.style.flexBasis = "0"; e.style.overflow = "hidden"; ksFit(e, e.clientWidth - 8); });
+  [].forEach.call(ov.querySelectorAll(".hc-row .hc-t"), function (e) { var sp = e.querySelector("span"), b = e.querySelector("b"); if (sp) { sp.style.display = "inline-block"; sp.style.overflow = "hidden"; ksFit(sp, e.clientWidth - (b ? b.offsetWidth : 0) - 44); sp.style.maxWidth = (e.clientWidth - (b ? b.offsetWidth : 0) - 44) + "px"; } });
+  var mh = ov.querySelector(".hc-msk-h"); if (mh) { var n = mh.querySelector(".hc-msk-n"), tg = mh.querySelector(".hc-msk-t"); if (n) { n.style.minWidth = "0"; n.style.flexShrink = "1"; n.style.overflow = "hidden"; n.style.textOverflow = "ellipsis"; if (tg) tg.style.flexShrink = "0"; n.style.fontSize = ""; var room = mh.clientWidth - (tg ? tg.offsetWidth : 0) - 24; ksFit(n, room); n.style.maxWidth = room + "px"; } }
+  [].forEach.call(ov.querySelectorAll("#hcActions button"), function (b) { var sp = b.querySelector("span"); if (sp) { sp.style.display = "block"; ksFit(sp, b.clientWidth - 16); } else ksFit(b, b.clientWidth - 16); });
+  var rt = document.getElementById("hdRarity"); if (rt) ksFit(rt, 330);
+}
+function ksFitHeroList() {
+  [].forEach.call(document.querySelectorAll("#heroesList .hcard-lv"), function (e) { ksFit(e); });
+  var b = document.getElementById("heroTitleBar"), tt = b && b.querySelector(".htb-t"), g = b && b.querySelector(".htb-gear");
+  if (tt && b.offsetParent) { var room = (g ? g.getBoundingClientRect().left : b.getBoundingClientRect().right) - tt.getBoundingClientRect().left - 12; ksFit(tt, room); }
+}
 function tHero(key, i, en) { var d = I18N_HERO[KS_LANG]; return (d && d[key] && d[key][i]) || en; } /* i: 0 name, 1 main skill name, 2 main skill text */
 function setLang(code) {
   KS_LANG = code === "ru" ? "ru" : "en"; try { localStorage.setItem("kingdom_lang_v1", KS_LANG); } catch (e) {}
@@ -12913,7 +12933,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1407"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1408"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16419,7 +16439,7 @@ function drawHeroCardAnims(now) {
   startHeroCardAnim();
 }
 function startHeroCardAnim() { if (!heroCardAnimRaf) heroCardAnimRaf = requestAnimationFrame(drawHeroCardAnims); }
-function renderHeroes() { return heroShowcaseWrap(renderHeroesReal); }
+function renderHeroes() { var r = heroShowcaseWrap(renderHeroesReal); try { ksFitHeroList(); } catch (e) {} return r; }
 function renderHeroesReal() {
   var el = document.getElementById("heroesList");
   var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
@@ -30165,7 +30185,7 @@ function renderHeroDetailReal() {
   if (!heroDetailKey) return;
   var key = heroDetailKey, def = HERO_DEFS[key], h = game.state.heroes[key];
 
-  document.getElementById("hdName").textContent = (h.owned ? "[" + t("Lv.") + h.level + "] " : "") + tHero(key, 0, def.name).toUpperCase(); (function () { var n = document.getElementById("hdName"), tt = n && n.parentNode; if (!tt) return; tt.style.fontSize = ""; var w = n.offsetWidth; if (w > 680) tt.style.fontSize = Math.floor(80 * 680 / w) + "px"; })(); /* v1407: long names (translations) shrink to fit the title bar */
+  document.getElementById("hdName").textContent = (h.owned ? "[" + t("Lv.") + h.level + "] " : "") + tHero(key, 0, def.name).toUpperCase(); (function () { var n = document.getElementById("hdName"), tt = n && n.parentNode; if (!tt) return; tt.style.fontSize = ""; var w = n.offsetWidth; if (w > 680) tt.style.fontSize = Math.floor(80 * 680 / w) + "px"; })(); /* v1407: long names shrink to fit the title bar (680 px leaves the class badge clear) */
   document.getElementById("hcBadge").innerHTML = HC_CLASS_SVG[def.class] || "";
   document.getElementById("hdBadges").innerHTML = heroDetailBadgesHtml(def);
   var rarityTag = document.getElementById("hdRarity");
@@ -30292,7 +30312,7 @@ function renderHeroDetailReal() {
   } else if (heroDetailTab === "gear") {
     content.innerHTML = '<div class="hc-gear">' + [["⛑️", "Helmet"], ["🥋", "Armour"], ["🗡️", "Weapon"], ["🧤", "Gloves"], ["🎗️", "Belt"], ["🥾", "Boots"]].map(function (g) { return '<div><b>' + g[0] + '</b>' + t(g[1]) + '</div>'; }).join("") + '</div><div class="hc-soon">' + t("🔒 Gear is coming in a future update.") + '</div>'; /* v1140: placeholder slots (not decided) */
   }
-  hcFit();
+  hcFit(); try { ksFitHeroCard(); } catch (e) {} /* v1408 */
 }
 
 function skillValueText(skill, level, heroKey, group, idx) {
@@ -32265,7 +32285,7 @@ var FORTRESS_SKINS = [
     "#heroTitleBar :is(.htb-back,.htb-gear):active{background:rgba(255,255,255,.12);border-radius:12px}}";
   document.head.appendChild(st);
   function fit() { var b = document.getElementById("heroTitleBar"); if (!b) return; var tt = b.querySelector(".htb-t"); if (tt) tt.textContent = t("Heroes"); if (!b.offsetParent) return; b.style.marginLeft = b.style.width = ""; var r = b.getBoundingClientRect(); b.style.marginLeft = (-r.left - 6) + "px"; b.style.width = (window.innerWidth + 12) + "px"; }
-  window.heroTitleBarFit = fit;
+  window.heroTitleBarFit = function () { fit(); try { ksFitHeroList(); } catch (e) {} };
   window.addEventListener("resize", fit);
   var bk = document.querySelector("#heroTitleBar .htb-back"); if (bk) bk.onclick = function () { setScreen("conquest"); };
   try { lilitaLoad(); } catch (e) {}

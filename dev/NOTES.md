@@ -3675,3 +3675,10 @@ Harley's 3 points:
   + licence) is registered as part of the "Lilita One" family with unicode-range, so Lilita text shows Russian with no other changes.
 - Long titles shrink to fit (Кейлум Векс overlapped the class badge). Headless: switch, list, card, gear tab, back to English - no errors.
   Russian wording is Claude's - a native speaker should check before release.
+
+## v1408 — Every translated text on the Heroes screens shrinks to fit (Harley: "Did you set it to auto scale down...?" - "Yes")
+- ksFit(el, room): shrinks an element's font until its text fits (floor 40%). Used for: title bar (up to the gear), hero list level
+  labels, card tabs, stat labels (beside their number), main skill name (beside the ACTIVE tag; worst case clips with …), rarity tag,
+  Level Up / Star Up / Equip buttons, card title (v1407). Runs after every hero list / card draw, so any language works.
+- Tested with normal Russian (nothing shrinks needlessly, no overflow) and a stress copy with every label tripled (all fit down to the
+  40% floor). English unchanged. Not on his phone.
