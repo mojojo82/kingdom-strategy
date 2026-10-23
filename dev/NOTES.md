@@ -3692,3 +3692,10 @@ Harley's 3 points:
 - Existing saves keep their total tickets drawn, so their pool level is re-read on the new curve (e.g. 2,620 drawn = Lv 7). Live has no players yet.
 - Tests: g335 updated (300 tickets = Lv2), new g350 (curve edges, pity fires on the 5,000th pull and resets, no counting below Lv 15).
   Meta check: same pre-existing warning as before (draw economy only, no combat change).
+
+## (no version) — Epic vs Legendary weapons test (Harley: "how high in Sword of Power does an Epic player need to be to beat a Legendary player")
+- Real Arena sim, identical players except 3 Epic vs 3 Legendary weapons (the only 3 of each), same weapon level, Sword of Power raised on the
+  Epic side until 50% wins (64 fights a step). Epic needs +200 SoP levels early (heroes 20 / weapons 10), +700 mid (40/30), +1,200 late
+  (80/50) - ~41 trillion Essence. At equal SoP: 0% wins. Driver: WEAPON_LEVEL_BONUS Legendary 64%/level vs Epic 8%.
+- Harley: "Sword of power was never meant to be something to close huge power gaps." -> KEEP the 64%; Legendary is meant to be a league
+  above. Do not "fix" it. Script: scratchpad only (sop.js), not committed.
