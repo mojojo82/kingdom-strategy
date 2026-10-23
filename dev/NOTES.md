@@ -3660,3 +3660,6 @@ Harley's 3 points:
   stats that went up. The 1 s refresh holds off ~1.25 s so the effects aren't cut. Off under reduced-motion. Only on success.
 - Fix along the way: the hero card forces its own font with !important - the pop text needed a stronger rule to get Lilita.
 - Headless (Roran, valor/fragments given): Lv 1 -> 2 shows +10 HP / +4 ATK / +1 DEF; star 4 -> 5 arms stamps star 1, +1 ATK. No errors.
+
+## v1406 — Level Up / Star Up flashes removed (Harley: "get rid of the flashes")
+- No more gold flash over the card on either. Kept: "Lv 1 → 2" pop, card bump, green "+N" stats, star stamp + ring.
