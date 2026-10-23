@@ -3964,6 +3964,7 @@
                 <div class="dev-tools-row">
                   <span class="dev-tools-hint">Garrison HUD badge:</span>
                   <button class="dev-btn" id="devShowGarrisonBtn">🏰 Show Garrison Icon/Text: On</button>
+                  <button class="dev-btn" id="devTestBadgeBtn">🔥 TEST name badge: Shown</button>
                   <button class="dev-btn" id="devHeroHopBtn">🦘 Gareth back-hop: On</button>
                   <button class="dev-btn" id="devFortLifeBtn">🚀 Fortress life: Off</button>
                   <button class="dev-btn" id="devFortFlashBtn">⚪ Fortress life hit flash: On</button>
@@ -12863,7 +12864,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1388"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1389"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -32189,6 +32190,14 @@ var FORTRESS_SKINS = [
   { id: "serpent", name: "Bonewake", cq: serpentCqImg, gov: serpentCqImg, cqScale: 0.5366, govWidth: 0.9, lift: 12, /* v1171: 20 -> 12 (Harley: a little closer to the ground) */ anim: serpentAnim, defLayout: { c: [0.818, 0.740], w0: [0.689, 0.821], w1: [0.516, 0.851], w2: [0.208, 0.821], h0: [0.606, 0.776], h1: [0.545, 0.776], h2: [0.484, 0.776], h3: [0.423, 0.776], h4: [0.362, 0.776], ko: [0.187, 0.751] } }, /* v1168 test skin; v1170: layered + animated - sails, flags and chain move (MiniMax clip, art/originals/ghost_ship4_sails_hailuo_2k.mp4) behind the heroes, the hull is a still in front of them; stored at ~2.2x (softer, to match the tank boss); 130 pt tall; hovers 20 pt above the ground (lift); default spots for heroes on deck, barrels on the hull side, cannon at the serpent mouth (the layout editor overrides them) */
   { id: "serpent2", name: "Bonewake 2", cq: serpent2CqImg, gov: serpent2CqImg, cqScale: 0.5366, govWidth: 0.9, lift: 12, /* v1171: 20 -> 12 (Harley: a little closer to the ground) */ anim: serpent2Anim, defLayout: { c: [0.818, 0.740], w0: [0.689, 0.821], w1: [0.516, 0.851], w2: [0.208, 0.821], h0: [0.606, 0.776], h1: [0.545, 0.776], h2: [0.484, 0.776], h3: [0.423, 0.776], h4: [0.362, 0.776], ko: [0.187, 0.751] } } /* v1370 test skin: Bonewake with the concept hull */
 ];
+
+/* v1389 (Harley: "i need a dev tool to hide this"): hide the "🔥 TEST · name" badge (Dev Tools > Effects & Sound). This device only. */
+(function () {
+  var K = "kingdom_prototype_hidetestbadge_v1", on = false; try { on = localStorage.getItem(K) === "1"; } catch (e) {}
+  var st = document.createElement("style"); st.textContent = "html.ks-hide-testbadge #ksFbBadge{display:none!important}"; document.head.appendChild(st);
+  function apply() { document.documentElement.classList.toggle("ks-hide-testbadge", on); var b = document.getElementById("devTestBadgeBtn"); if (b) b.textContent = "🔥 TEST name badge: " + (on ? "Hidden" : "Shown"); }
+  apply(); var b = document.getElementById("devTestBadgeBtn"); if (b) b.onclick = function () { on = !on; try { localStorage.setItem(K, on ? "1" : "0"); } catch (e) {} apply(); };
+})();
 /* v1359 (Harley: "make the overlord profile a 1:1 match with gpt's composite UI design"): GPT look - background + parts cut from GPT's
    empty/filled composites (originals: art/originals/ui/profile_gpt/). Live: ship, cards, avatar, name, ID, power, TH, kills, alliance, kingdom,
    chapter. Classic look kept (Dev Tools > Old profile buttons > Overlord Profile look), this device only. */

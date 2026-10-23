@@ -3578,3 +3578,7 @@ Harley's 3 points:
 - From GPT's version of the hero list (it filled the 4 numbered blank cards). Each picture cut out of its card: card colour removed
   (flood from the edges), GPT's baked class badge removed (the game draws its own; Vesper's showed the wrong class), Lv text/stars left
   out. Small source (~240x254) upscaled to the 360x480 card, so a little soft - placeholders. Still "coming soon". Headless only.
+
+## v1389 — Dev tool: hide the "TEST · name" badge (Harley: "i need a dev tool to hide this")
+- Dev Tools > Effects & Sound (Garrison HUD badge row): "🔥 TEST name badge: Shown / Hidden". This device only (localStorage
+  kingdom_prototype_hidetestbadge_v1). Headless: hides and comes back, no errors.
