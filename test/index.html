@@ -12866,7 +12866,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1401"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1402"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16399,7 +16399,7 @@ function renderHeroesReal() {
     var card = document.createElement("div");
     card.className = "hcard r-" + def.rarity + (h.owned ? "" : " unowned");
     card.title = def.name + " — " + def.title;
-    card.onclick = function () { setTimeout(function () { openHeroDetail(key); }, 170); }; /* v1397: let the squash spring show first */
+    card.onclick = function () { setTimeout(function () { hcFromEl = card; openHeroDetail(key); }, 170); }; /* v1397: let the squash spring show first; v1402: grow from this card */
 
     var art = (typeof HERO_CARD_ART2 !== "undefined" && HERO_CARD_ART2 && HERO_CARD_ART2[key]) || HERO_STILL_BUILTIN[key] || getHeroArt(key); /* v1152: the hero list shows a frame of the hero's card video first */
     if (art) { /* v1139 (Harley): the small card is always a still image; the animation is on the full card only */
@@ -29671,7 +29671,7 @@ function render() {
   renderHeroes();
   renderMarches();
   renderLog();
-  if (heroDetailKey) renderHeroDetail();
+  if (heroDetailKey && !(hcIntroUntil > Date.now())) renderHeroDetail(); /* v1402: not mid-intro */
 }
 
 function persist() {
@@ -30105,6 +30105,7 @@ function openHeroDetail(key) {
   heroDetailTab = "stats";
   document.getElementById("heroDetailOverlay").style.display = "flex";
   renderHeroDetail();
+  try { hcIntro(); } catch (e) {} /* v1402 */
 }
 function closeHeroDetail() {
   document.getElementById("heroDetailOverlay").style.display = "none";
@@ -32274,6 +32275,47 @@ function heroListCascade() {
 })();
 
 
+
+/* v1402 juice stage 5: opening a hero - the big card grows out of the card you tapped (from the list; the arrows just pop), the screen
+   dims in, HP / ATK / DEFENSE count up from 0 and the stars pop in one by one. The 1 s refresh holds off for the ~1 s intro.
+   transform/opacity only; off under reduced-motion. */
+var hcFromEl = null, hcIntroUntil = 0;
+(function () {
+  var st = document.createElement("style");
+  st.textContent = "@keyframes hcStarPop{0%{transform:scale(0) rotate(-40deg);opacity:0}60%{transform:scale(1.35) rotate(8deg);opacity:1}100%{transform:none;opacity:1}}" +
+    "@keyframes hcFadeIn{from{opacity:0}to{opacity:1}}" +
+    "#hcCard.hc-intro .hc-stars svg{animation:hcStarPop .38s cubic-bezier(.3,1.4,.5,1) both}" +
+    "#heroDetailOverlay.hc-intro{animation:hcFadeIn .22s ease-out both}" +
+    "#heroDetailOverlay.hc-intro :is(.hc-bar,.hc-actions){animation:hcFadeIn .3s ease-out .18s both}" +
+    "@media (prefers-reduced-motion:reduce){#hcCard.hc-intro .hc-stars svg,#heroDetailOverlay.hc-intro,#heroDetailOverlay.hc-intro :is(.hc-bar,.hc-actions){animation:none}}";
+  document.head.appendChild(st);
+})();
+function hcIntro() {
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var ov = document.getElementById("heroDetailOverlay"), hold = document.getElementById("hcHold"), card = document.getElementById("hcCard"), from = hcFromEl; hcFromEl = null;
+  if (!ov || !hold || reduce) return;
+  hcIntroUntil = Date.now() + 1100;
+  ov.classList.remove("hc-intro"); card.classList.remove("hc-intro"); void ov.offsetWidth; ov.classList.add("hc-intro"); card.classList.add("hc-intro");
+  [].forEach.call(card.querySelectorAll(".hc-stars svg"), function (sv, i) { sv.style.animationDelay = (0.32 + i * 0.09) + "s"; });
+  setTimeout(function () { ov.classList.remove("hc-intro"); card.classList.remove("hc-intro"); }, 1100);
+  /* grow out of the tapped card */
+  var to = hold.getBoundingClientRect();
+  if (from && from.isConnected && to.width && hold.animate) {
+    var fr = from.getBoundingClientRect(), sc = fr.width / to.width;
+    var dx = (fr.left + fr.width / 2) - (to.left + to.width / 2), dy = (fr.top + fr.height / 2) - (to.top + to.height / 2);
+    hold.animate([{ transform: "translate(" + dx + "px," + dy + "px) scale(" + sc + ")", opacity: .6 }, { transform: "translate(0,0) scale(1.03)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }],
+      { duration: 380, easing: "cubic-bezier(.2,.8,.3,1)" });
+  } else if (hold.animate) {
+    hold.animate([{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1.02)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 300, easing: "ease-out" });
+  }
+  /* stats count up */
+  [].forEach.call(document.querySelectorAll("#hdTabContent .hc-row .hc-t b"), function (b) {
+    var txt = (b.textContent || "").trim(); if (!/^[0-9][0-9,]*$/.test(txt)) return;
+    var end = parseInt(txt.replace(/,/g, ""), 10), t0 = performance.now() + 220, dur = 650;
+    b.textContent = "0";
+    (function step(now) { var k = Math.min(1, Math.max(0, (now - t0) / dur)), e = 1 - Math.pow(1 - k, 3); if (b.isConnected) b.textContent = Math.round(end * e).toLocaleString("en-US"); if (k < 1) requestAnimationFrame(step); })(performance.now());
+  });
+}
 /* v1389 (Harley: "i need a dev tool to hide this"): hide the "🔥 TEST · name" badge (Dev Tools > Effects & Sound). This device only. */
 (function () {
   var K = "kingdom_prototype_hidetestbadge_v1", on = false; try { on = localStorage.getItem(K) === "1"; } catch (e) {}

@@ -3636,3 +3636,10 @@ Harley's 3 points:
 
 ## v1401 — Red dot pulse removed (Harley: "turn that effect off. Keep it non animated. Skip locked card wiggle")
 - Dot is static again (v1391 size/position kept). Locked-card wiggle stage skipped.
+
+## v1402 — Hero screen juice, stage 5: opening a hero (Harley: "Go ahead")
+- Tap a card: the big hero card grows out of the tapped card (translate+scale from its spot, small overshoot to 103%, .38 s; Web
+  Animations), screen dims in, top bar + buttons fade in a beat later, HP/ATK/DEFENSE count up from 0 (.65 s ease-out, after .22 s),
+  stars pop in one by one (spin-pop, 90 ms apart). Arrows between heroes: simple pop-in (no source card). The 1 s refresh skips the hero
+  card for 1.1 s so the intro isn't cut. Counts only plain numbers (1.2M-style values just show). Off under reduced-motion.
+- Headless screencast: grows from Roran's card, counts 0 -> 108/4/1, no errors. Not on his phone.
