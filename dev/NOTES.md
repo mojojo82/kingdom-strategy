@@ -3625,3 +3625,8 @@ Harley's 3 points:
   (softer lilac). Each hero has its own offset (from its key) so they don't flash together. Sweep takes ~22% of the cycle (~0.9 s).
   ::before pseudo, transform only, under the badge/level text; not on locked cards; off under reduced-motion.
 - First try (cream at 50%) was invisible on gold cards - band whitened. Headless: caught mid-sweep on Roran, no errors.
+
+## v1399 — Shimmer removed; hero screen juice stage 4: red dot pulse (Harley: "Im not fond of these sweeps. Remove them and lets goto the next stage")
+- v1398 shimmer fully removed (CSS + per-card offset).
+- Red "can level / star up" dot: every 2.4 s a soft red ring grows out (to 2.6x) and fades, and the dot gives a small heartbeat
+  (122% -> 95% -> 100%). Each card offset so they don't pulse in unison. transform/opacity only; off under reduced-motion. Headless only.
