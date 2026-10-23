@@ -12866,7 +12866,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1404"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1405"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30202,7 +30202,7 @@ function renderHeroDetailReal() {
         lvlBtn.className = "hd-actionbtn hc-tile";
         lvlBtn.innerHTML = "<span>Level Up</span><b>" + VALOR_ICON + fmt(cost.valor) + "</b>";
         lvlBtn.disabled = !game.heroCanAffordLevel(key);
-        lvlBtn.onclick = function () { game.levelUpHero(key); persist(); render(); renderHeroDetail(); };
+        lvlBtn.onclick = function () { var b4 = hcFxSnap(key), r = game.levelUpHero(key); persist(); render(); renderHeroDetail(); if (r && r.ok) hcLevelFx(key, b4); }; /* v1405 fx */
         tileRow.appendChild(lvlBtn);
       }
       if (heroArms < STAR_MAX_ARMS) {
@@ -30210,7 +30210,7 @@ function renderHeroDetailReal() {
         starBtn.className = "hd-actionbtn hc-tile";
         starBtn.innerHTML = "<span>Star Up</span><b>" + FRAGMENT_ICON + (h.fragments | 0) + " / " + heroStarCost(heroArms + 1) + "</b>";
         starBtn.disabled = !game.heroCanAffordStar(key);
-        starBtn.onclick = function () { game.starUpHero(key); persist(); render(); renderHeroDetail(); };
+        starBtn.onclick = function () { var b4 = hcFxSnap(key), r = game.starUpHero(key); persist(); render(); renderHeroDetail(); if (r && r.ok) hcStarFx(key, b4); }; /* v1405 fx */
         tileRow.appendChild(starBtn);
       }
       if (tileRow.children.length) btnWrap.appendChild(tileRow);
@@ -32308,6 +32308,55 @@ function hcIntro() {
   } else if (hold.animate) {
     hold.animate([{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1.02)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 300, easing: "ease-out" });
   }
+}
+
+/* v1405 juice stage 6: Level Up / Star Up moments on the hero card.
+   Level Up: card flashes, "Lv 12 → 13" pops over the picture, each stat that went up shows a green "+N" that floats off.
+   Star Up: the star being filled stamps in (big -> slam -> settle) with a gold ring burst; "+1 ★" style pop shows arms gained.
+   All inside the (scaled) card, transform/opacity only; the 1 s refresh holds off ~1.2 s so it isn't cut. Off under reduced-motion. */
+(function () {
+  var st = document.createElement("style");
+  st.textContent = "@keyframes hcFlash{0%{opacity:.9}100%{opacity:0}}" +
+    "@keyframes hcLvPop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}25%{transform:translate(-50%,-50%) scale(1.15);opacity:1}40%{transform:translate(-50%,-50%) scale(1)}80%{transform:translate(-50%,-62%) scale(1);opacity:1}100%{transform:translate(-50%,-75%) scale(.95);opacity:0}}" +
+    "@keyframes hcPlus{0%{transform:translateY(10px);opacity:0}20%{transform:translateY(0);opacity:1}75%{opacity:1}100%{transform:translateY(-50px);opacity:0}}" +
+    "@keyframes hcStamp{0%{transform:scale(2.6);opacity:0}45%{transform:scale(.85);opacity:1}65%{transform:scale(1.12)}100%{transform:none}}" +
+    "@keyframes hcRing{0%{transform:translate(-50%,-50%) scale(.3);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}" +
+    ".hc-fx-flash{position:absolute;inset:0;z-index:30;pointer-events:none;background:radial-gradient(circle at 50% 35%,rgba(255,246,210,.95),rgba(255,214,110,.55) 45%,rgba(255,200,80,0) 75%);animation:hcFlash .7s ease-out forwards}" +
+    ".hc-fx-lv{position:absolute;left:50%;top:30%;z-index:31;pointer-events:none;white-space:nowrap;font-family:'Lilita One',sans-serif!important;font-size:120px;line-height:1;color:#fff6d0;-webkit-text-stroke:12px #5a3208;paint-order:stroke fill;text-shadow:0 8px 0 #2b1607;animation:hcLvPop 1.15s cubic-bezier(.2,.8,.3,1) forwards}" +
+    ".hc-fx-lv .ar{color:#ffd24a;margin:0 22px}" +
+    ".hc-fx-plus{position:absolute;right:60px;top:50%;margin-top:-34px;z-index:5;pointer-events:none;font-family:'Lilita One',sans-serif!important;font-size:60px;line-height:1;color:#7dff6a;-webkit-text-stroke:8px #0f3b08;paint-order:stroke fill;animation:hcPlus 1.1s ease-out forwards}" +
+    "#hcCard .hc-stars svg.hc-stamp{animation:hcStamp .5s cubic-bezier(.3,1.3,.5,1) both;transform-origin:50% 50%}" +
+    ".hc-fx-ring{position:absolute;z-index:31;pointer-events:none;width:120px;height:120px;border-radius:50%;border:10px solid #ffd24a;box-shadow:0 0 30px #ffd24a;animation:hcRing .6s ease-out .18s both}" +
+    "#heroDetailOverlay .hc :is(.hc-fx-lv,.hc-fx-lv *,.hc-fx-plus){font-family:'Lilita One',sans-serif!important}" +
+    "@media (prefers-reduced-motion:reduce){.hc-fx-flash,.hc-fx-lv,.hc-fx-plus,.hc-fx-ring{display:none}#hcCard .hc-stars svg.hc-stamp{animation:none}}";
+  document.head.appendChild(st);
+})();
+function hcFxSnap(key) { var h = game.state.heroes[key]; try { return { lv: h.level, arms: heroStarArms(h), hp: game.idleHeroMaxHp(key), atk: game.idleHeroBaseAtk(key), def: heroDefOfPlayer(h) }; } catch (e) { return { lv: h.level, arms: heroStarArms(h) }; } }
+function hcFxAdd(parent, cls, html, ms) { var d = document.createElement("div"); d.className = cls; if (html != null) d.innerHTML = html; parent.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, ms); return d; }
+function hcStatPlus(b4, key) {
+  var now = hcFxSnap(key), rows = document.querySelectorAll("#hdTabContent .hc-row"), keys = ["hp", "atk", "def"];
+  [].forEach.call(rows, function (row, i) { var k = keys[i]; if (!k || now[k] == null || b4[k] == null) return; var d = Math.round(now[k] - b4[k]); if (d > 0) hcFxAdd(row, "hc-fx-plus", "+" + fmt(d), 1150); });
+}
+function hcLevelFx(key, b4) {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var card = document.getElementById("hcCard"); if (!card) return; hcIntroUntil = Date.now() + 1250;
+  hcFxAdd(card, "hc-fx-flash", null, 800);
+  var h = game.state.heroes[key]; hcFxAdd(card, "hc-fx-lv", "Lv " + b4.lv + '<span class="ar">→</span>' + h.level, 1200);
+  hcStatPlus(b4, key);
+  var hold = document.getElementById("hcHold"); if (hold && hold.animate) hold.animate([{ transform: "scale(1)" }, { transform: "scale(1.025)", offset: .3 }, { transform: "scale(1)" }], { duration: 320, easing: "ease-out" });
+}
+function hcStarFx(key, b4) {
+  if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var card = document.getElementById("hcCard"); if (!card) return; hcIntroUntil = Date.now() + 1250;
+  var arms = heroStarArms(game.state.heroes[key]), idx = Math.max(0, Math.ceil(arms / STAR_ARMS) - 1);
+  var svgs = card.querySelectorAll(".hc-stars svg"), sv = svgs[idx];
+  if (sv) {
+    sv.classList.add("hc-stamp");
+    var cr = card.getBoundingClientRect(), r = sv.getBoundingClientRect(), k = card.offsetWidth ? cr.width / card.offsetWidth : 1;
+    var ring = hcFxAdd(card, "hc-fx-ring", null, 900); ring.style.left = ((r.left + r.width / 2 - cr.left) / k) + "px"; ring.style.top = ((r.top + r.height / 2 - cr.top) / k) + "px";
+  }
+  hcFxAdd(card, "hc-fx-flash", null, 800);
+  hcStatPlus(b4, key);
 }
 /* v1389 (Harley: "i need a dev tool to hide this"): hide the "🔥 TEST · name" badge (Dev Tools > Effects & Sound). This device only. */
 (function () {

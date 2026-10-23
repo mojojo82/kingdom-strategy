@@ -3652,3 +3652,11 @@ Harley's 3 points:
 
 ## v1404 — Hero card stats count-up removed (Harley: "get rid of the stats counting")
 - HP / ATK / DEFENSE show their numbers straight away again. Grow-from-card and star pops stay.
+
+## v1405 — Hero screen juice, stage 6: Level Up / Star Up moments (Harley: "Go ahead")
+- Level Up: gold flash over the card (.7 s), "Lv 1 → 2" pops over the picture and floats away (Lilita), card does a small 2.5% bump,
+  every stat that went up shows a green "+N" that rises and fades.
+- Star Up (each press = 1 star arm): the star being filled stamps in (big -> slam -> settle) with a gold ring burst, flash, and "+N" on
+  stats that went up. The 1 s refresh holds off ~1.25 s so the effects aren't cut. Off under reduced-motion. Only on success.
+- Fix along the way: the hero card forces its own font with !important - the pop text needed a stronger rule to get Lilita.
+- Headless (Roran, valor/fragments given): Lv 1 -> 2 shows +10 HP / +4 ATK / +1 DEF; star 4 -> 5 arms stamps star 1, +1 ATK. No errors.
