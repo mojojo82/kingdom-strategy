@@ -3649,3 +3649,6 @@ Harley's 3 points:
   .hd-overlay rule has its own fade (nativeOverlayIn); v1402's intro class swapped in a different animation, and dropping the class at
   the end of the intro restarted the base fade. Intro now uses the same animation name, so nothing restarts. After: no change in frames
   once the card settles. Not on his phone.
+
+## v1404 — Hero card stats count-up removed (Harley: "get rid of the stats counting")
+- HP / ATK / DEFENSE show their numbers straight away again. Grow-from-card and star pops stay.
