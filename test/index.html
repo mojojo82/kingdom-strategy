@@ -3965,6 +3965,7 @@
                   <span class="dev-tools-hint">Garrison HUD badge:</span>
                   <button class="dev-btn" id="devShowGarrisonBtn">🏰 Show Garrison Icon/Text: On</button>
                   <button class="dev-btn" id="devTestBadgeBtn">🔥 TEST name badge: Shown</button>
+                  <button class="dev-btn" id="devHeroShowcaseBtn">🎭 Hero showcase: Off</button>
                   <button class="dev-btn" id="devHeroHopBtn">🦘 Gareth back-hop: On</button>
                   <button class="dev-btn" id="devFortLifeBtn">🚀 Fortress life: Off</button>
                   <button class="dev-btn" id="devFortFlashBtn">⚪ Fortress life hit flash: On</button>
@@ -12865,7 +12866,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1392"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1393"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16371,7 +16372,8 @@ function drawHeroCardAnims(now) {
   startHeroCardAnim();
 }
 function startHeroCardAnim() { if (!heroCardAnimRaf) heroCardAnimRaf = requestAnimationFrame(drawHeroCardAnims); }
-function renderHeroes() {
+function renderHeroes() { return heroShowcaseWrap(renderHeroesReal); }
+function renderHeroesReal() {
   var el = document.getElementById("heroesList");
   var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
   /* v1318 audit: the whole hero grid (cards + their art) was rebuilt every 1 s tick on EVERY screen (9 nodes/s + re-set img.src).
@@ -30110,7 +30112,8 @@ function closeHeroDetail() {
   var _hv = document.getElementById("hdPortraitVid"); if (_hv) _hv.pause(); /* v1139 */
 }
 
-function renderHeroDetail() {
+function renderHeroDetail() { return heroShowcaseWrap(renderHeroDetailReal); }
+function renderHeroDetailReal() {
   if (!heroDetailKey) return;
   var key = heroDetailKey, def = HERO_DEFS[key], h = game.state.heroes[key];
 
@@ -32215,6 +32218,27 @@ var FORTRESS_SKINS = [
   window.addEventListener("resize", fit);
   var bk = document.querySelector("#heroTitleBar .htb-back"); if (bk) bk.onclick = function () { setScreen("conquest"); };
   try { lilitaLoad(); } catch (e) {}
+})();
+
+/* v1393 (Harley: dev tool - circled heroes get a random level 5-35 and 0-3 stars, the rest show as not recruited; press again = true values).
+   LOOK ONLY: while the hero list / hero card draw, the real hero entries are swapped for showcase copies and put straight back afterwards
+   (same tick), so battles, power, saves never see the fake numbers. New random numbers each time it's switched on. */
+var HERO_SHOWCASE_KEYS = ["gareth", "lyra", "roran", "kessa", "sera", "torvald", "hanzo", "ironlily"], heroShowcase = null;
+function heroShowcaseWrap(fn) {
+  if (!heroShowcase) return fn();
+  var H = game.state.heroes, saved = {};
+  Object.keys(H).forEach(function (k) { saved[k] = H[k]; var o = heroShowcase[k]; H[k] = Object.assign({}, H[k], o ? { owned: true, level: o.level, stars: o.stars, busy: false } : { owned: false }); });
+  try { return fn(); } finally { Object.keys(saved).forEach(function (k) { H[k] = saved[k]; }); }
+}
+(function () {
+  var b = document.getElementById("devHeroShowcaseBtn"); if (!b) return;
+  function paint() { b.textContent = "🎭 Hero showcase: " + (heroShowcase ? "On" : "Off"); }
+  b.onclick = function () {
+    if (heroShowcase) heroShowcase = null;
+    else { heroShowcase = {}; HERO_SHOWCASE_KEYS.forEach(function (k) { if (game.state.heroes[k]) heroShowcase[k] = { level: 5 + Math.floor(Math.random() * 31), stars: Math.floor(Math.random() * 16) }; }); }
+    paint(); try { var el = document.getElementById("heroesList"); if (el) el._sig = ""; renderHeroes(); } catch (e) {} try { var ov = document.getElementById("heroDetailOverlay"); if (ov && ov.style.display !== "none" && heroDetailKey) renderHeroDetail(); } catch (e) {}
+  };
+  paint();
 })();
 /* v1389 (Harley: "i need a dev tool to hide this"): hide the "🔥 TEST · name" badge (Dev Tools > Effects & Sound). This device only. */
 (function () {

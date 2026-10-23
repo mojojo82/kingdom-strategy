@@ -3596,3 +3596,10 @@ Harley's 3 points:
   runs past both screen edges, "Heroes" = live text (Lilita). Back arrow -> Conquest. Gear: no function yet. PC keeps the old heading.
 - Footer bar (blue/gold with centre diamond) NOT used - saved for mockups: art/ui/kit/footer_bar.webp + slices in
   art/originals/ui/kit_gpt/herobar/ (bL | bM1 stretch | bC diamond | bM2 stretch | bR). Headless 430x932: bar fits, back works, no errors.
+
+## v1393 — Dev tool: hero showcase (Harley: circled heroes random Lv 5-35 + 0-3 stars, the rest "Recruit", press again = true values)
+- Dev Tools > Effects & Sound: "🎭 Hero showcase: Off/On". Gareth, Lyra, Roran, Kessa, Sera, Torvald, Hanzo, Iron Lily get a random
+  level 5-35 and 0-15 star arms (0-3 stars, part-stars allowed); every other hero shows as not recruited. New numbers each time.
+- LOOK ONLY (Harley's pick): renderHeroes / renderHeroDetail swap in showcase copies while drawing and put the real entries straight back
+  (same tick), so saves, power, battles never see them. Headless: real heroes identical during and after, power unchanged, no errors.
+  Note: Level Up / Equip buttons on the card still act on the REAL hero.
