@@ -3699,3 +3699,11 @@ Harley's 3 points:
   (80/50) - ~41 trillion Essence. At equal SoP: 0% wins. Driver: WEAPON_LEVEL_BONUS Legendary 64%/level vs Epic 8%.
 - Harley: "Sword of power was never meant to be something to close huge power gaps." -> KEEP the 64%; Legendary is meant to be a league
   above. Do not "fix" it. Script: scratchpad only (sop.js), not committed.
+
+## (no version) — Iron Lily "infinite flurry" proof of concept (Harley: link moves that weren't originally linked)
+- Harley's 2 Hailuo test videos (480p, green, tiny on purpose) -> keyed, each frame's pose fingerprinted (body + sword mask around the feet,
+  plus 2 frames ahead for motion), all-pairs distance, ~70 usable join points incl. cross-video; random walk jumps only at matching poses,
+  2-frame blend, feet re-anchored. 24 s output, 11 joins. Works; repeats after ~12 s with only 2 clips.
+- Plan: centred 1920x1080 start frame (her ~55% height), 4 x 10 s flowing combos (flips, spinning kicks, dodges...), then the same pipeline;
+  in game: flurry while enemies are on screen, ready stance otherwise; damage timing unchanged (impact frames only for hit sparks); 12 fps
+  frames to keep size down. Files: art/originals/heroes/ironlily/motion_test/ (videos, scripts, result). Also 16:9 frames with more room (55% / 40%).
