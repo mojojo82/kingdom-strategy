@@ -3630,3 +3630,6 @@ Harley's 3 points:
 - v1398 shimmer fully removed (CSS + per-card offset).
 - Red "can level / star up" dot: every 2.4 s a soft red ring grows out (to 2.6x) and fades, and the dot gives a small heartbeat
   (122% -> 95% -> 100%). Each card offset so they don't pulse in unison. transform/opacity only; off under reduced-motion. Headless only.
+
+## v1400 — Red dot heartbeat toned down (Harley)
+- Dot beat 122% -> 110%, dip 95% -> 98%. Ring unchanged.
