@@ -3619,3 +3619,9 @@ Harley's 3 points:
 - Press a hero card: squashes to 93% x 91% (slightly flattened) and dims a touch in .07 s. Release: springy pop 92% -> 107% -> 98% ->
   101.5% -> rest (.38 s). Pointer events (iOS :active is unreliable); the hero card now opens 170 ms after the tap so the pop is seen
   first. transform only, off under reduced-motion. Headless: pressed width 98 -> 91 px, overshoot to ~102+ on release, card opens. No errors.
+
+## v1398 — Hero screen juice, stage 3: idle shimmer (Harley: "Onto stage 3")
+- A bright diagonal light band sweeps across owned Legendary cards every 4.2 s (white-gold, 75% core) and Epic cards every 5.6 s
+  (softer lilac). Each hero has its own offset (from its key) so they don't flash together. Sweep takes ~22% of the cycle (~0.9 s).
+  ::before pseudo, transform only, under the badge/level text; not on locked cards; off under reduced-motion.
+- First try (cream at 50%) was invisible on gold cards - band whitened. Headless: caught mid-sweep on Roran, no errors.

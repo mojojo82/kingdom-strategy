@@ -12866,7 +12866,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1397"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1398"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16400,6 +16400,7 @@ function renderHeroesReal() {
     card.className = "hcard r-" + def.rarity + (h.owned ? "" : " unowned");
     card.title = def.name + " — " + def.title;
     card.onclick = function () { setTimeout(function () { openHeroDetail(key); }, 170); }; /* v1397: let the squash spring show first */
+    card.style.setProperty("--shdl", (-((key.charCodeAt(0) * 7 + key.length * 13) % 40) / 10) + "s"); /* v1398: own shimmer offset per hero */
 
     var art = (typeof HERO_CARD_ART2 !== "undefined" && HERO_CARD_ART2 && HERO_CARD_ART2[key]) || HERO_STILL_BUILTIN[key] || getHeroArt(key); /* v1152: the hero list shows a frame of the hero's card video first */
     if (art) { /* v1139 (Harley): the small card is always a still image; the animation is on the full card only */
@@ -32271,6 +32272,19 @@ function heroListCascade() {
   document.addEventListener("pointerdown", function (e) { var c = e.target.closest && e.target.closest("#heroesList .hcard"); if (!c) return; up(false); cur = c; c.classList.remove("hc-pop"); c.classList.add("hc-down"); }, true);
   document.addEventListener("pointerup", function () { up(true); }, true);
   document.addEventListener("pointercancel", function () { up(false); }, true);
+})();
+
+/* v1398 juice stage 3: idle shimmer - a light band sweeps across Legendary cards (gold) and Epic cards (softer, lilac) every few seconds,
+   each card on its own offset so they don't flash together. Owned cards only. transform-only pseudo element; off under reduced-motion. */
+(function () {
+  var st = document.createElement("style");
+  st.textContent = "@keyframes hcShine{0%{transform:translateX(-170%) skewX(-18deg)}22%,100%{transform:translateX(300%) skewX(-18deg)}}" +
+    "#heroesList .hcard:not(.unowned):is(.r-Legendary,.r-Epic)::before{content:'';position:absolute;top:-10%;bottom:-10%;left:0;width:38%;z-index:1;pointer-events:none;" +
+    "background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,250,225,.35) 35%,rgba(255,255,255,.75) 50%,rgba(255,250,225,.35) 65%,rgba(255,255,255,0));transform:translateX(-160%) skewX(-18deg);" +
+    "animation:hcShine var(--shd,4.2s) ease-in-out infinite;animation-delay:var(--shdl,0s)}" +
+    "#heroesList .hcard.r-Epic:not(.unowned)::before{background:linear-gradient(90deg,rgba(225,200,255,0),rgba(240,225,255,.5) 50%,rgba(225,200,255,0));--shd:5.6s}" +
+    "@media (prefers-reduced-motion:reduce){#heroesList .hcard::before{animation:none!important;display:none}}";
+  document.head.appendChild(st);
 })();
 /* v1389 (Harley: "i need a dev tool to hide this"): hide the "🔥 TEST · name" badge (Dev Tools > Effects & Sound). This device only. */
 (function () {
