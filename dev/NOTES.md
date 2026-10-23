@@ -3611,3 +3611,6 @@ Harley's 3 points:
 
 ## v1395 — Hero cascade: more bounce (Harley: "Try more bounce")
 - Start 26 px down at 85%, overshoot to -9 px / 107%, dip back to 97%, small second bounce to 101.5%, settle. .6 s per card (was .42 s).
+
+## v1396 — Hero cascade: bounce pulled back a touch (Harley)
+- Overshoot -9 px / 107% -> -7 px / 105.5%, dip 97% -> 98%, second bounce 101.5% -> 101%, start 26 px / 85% -> 24 px / 87%. Same .6 s.
