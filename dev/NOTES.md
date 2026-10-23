@@ -3590,3 +3590,9 @@ Harley's 3 points:
 ## v1391 — Hero card red dot (Harley: "move it down a little... a bit smaller... white border very slightly thicker")
 - .hcard-dot: top/right -3px -> 3px (inside the rounded corner), 12px -> 9px, border 1.5px -> 2px white. Note: on equipped heroes it now
   sits over the corner of the crossed-swords icon. Headless only.
+
+## v1392 — Heroes screen title bar (Harley picked mockup A) + footer bar saved to the kit bank
+- GPT's title bar replaces the "🦸 Heroes" heading on the phone layout: 3 pieces (arrow end + gear end fixed, plain middle stretches),
+  runs past both screen edges, "Heroes" = live text (Lilita). Back arrow -> Conquest. Gear: no function yet. PC keeps the old heading.
+- Footer bar (blue/gold with centre diamond) NOT used - saved for mockups: art/ui/kit/footer_bar.webp + slices in
+  art/originals/ui/kit_gpt/herobar/ (bL | bM1 stretch | bC diamond | bM2 stretch | bR). Headless 430x932: bar fits, back works, no errors.
