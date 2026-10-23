@@ -3633,3 +3633,6 @@ Harley's 3 points:
 
 ## v1400 — Red dot heartbeat toned down (Harley)
 - Dot beat 122% -> 110%, dip 95% -> 98%. Ring unchanged.
+
+## v1401 — Red dot pulse removed (Harley: "turn that effect off. Keep it non animated. Skip locked card wiggle")
+- Dot is static again (v1391 size/position kept). Locked-card wiggle stage skipped.
