@@ -3614,3 +3614,8 @@ Harley's 3 points:
 
 ## v1396 — Hero cascade: bounce pulled back a touch (Harley)
 - Overshoot -9 px / 107% -> -7 px / 105.5%, dip 97% -> 98%, second bounce 101.5% -> 101%, start 26 px / 85% -> 24 px / 87%. Same .6 s.
+
+## v1397 — Hero screen juice, stage 2: tap squash (Harley: "Its good. Onto stage 2")
+- Press a hero card: squashes to 93% x 91% (slightly flattened) and dims a touch in .07 s. Release: springy pop 92% -> 107% -> 98% ->
+  101.5% -> rest (.38 s). Pointer events (iOS :active is unreliable); the hero card now opens 170 ms after the tap so the pop is seen
+  first. transform only, off under reduced-motion. Headless: pressed width 98 -> 91 px, overshoot to ~102+ on release, card opens. No errors.
