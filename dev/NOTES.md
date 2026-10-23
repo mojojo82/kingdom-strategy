@@ -3663,3 +3663,5 @@ Harley's 3 points:
 
 ## v1406 — Level Up / Star Up flashes removed (Harley: "get rid of the flashes")
 - No more gold flash over the card on either. Kept: "Lv 1 → 2" pop, card bump, green "+N" stats, star stamp + ring.
+- Harley (after v1406 video): "Good enough. I might do something with the flashes in the future." The flash CSS (.hc-fx-flash,
+  hcFlash keyframes) is still in the file, just not called - re-add hcFxAdd(card, "hc-fx-flash", null, 800) in hcLevelFx/hcStarFx.
