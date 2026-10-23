@@ -3586,3 +3586,7 @@ Harley's 3 points:
 ## v1390 — New Hanzo card art (Harley: "hanzo image")
 - The hooded dark rogue with purple eyes and twin daggers (4th figure on GPT's full-body sheet) replaces the tan shield knight.
   Light background flood-removed, cropped to head + upper body like the others. Torvald / Sera / Kessa on that sheet not used.
+
+## v1391 — Hero card red dot (Harley: "move it down a little... a bit smaller... white border very slightly thicker")
+- .hcard-dot: top/right -3px -> 3px (inside the rounded corner), 12px -> 9px, border 1.5px -> 2px white. Note: on equipped heroes it now
+  sits over the corner of the crossed-swords icon. Headless only.
