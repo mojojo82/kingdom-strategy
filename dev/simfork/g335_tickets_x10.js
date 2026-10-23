@@ -54,7 +54,7 @@ const call = call0;
   assert(r.draw15.ok && r.draw15.spent === 15 && r.draw15.draws === 15 && r.draw15.frags === 15, "15 tickets -> 15 pulls -> 15 fragments");
   assert.strictEqual(r.draw5, true, "any number of tickets can draw");
   assert.strictEqual(r.per10atLv1, 10, "10 tickets = 10 fragments");
-  assert.deepStrictEqual(r.drawsMig, [300, 300, 4], "old pool progress x10 once, same pool level (30 old draws = Lv4)");
+  assert.deepStrictEqual(r.drawsMig, [300, 300, 2], "old pool progress x10 once (v1409 curve: 300 tickets = Lv2)");
   assert.deepStrictEqual(r.odds15, ["Elite 74.66", "Super Rare 18", "Epic 7.3", "Legendary 0.04"], "v1228 pool Lv15 odds");
   assert.deepStrictEqual(r.odds1, ["Elite 100"], "pool Lv1 odds (HSH Lv1 = 100% Common)");
   assert.strictEqual(r.mail, 50); assert.strictEqual(r.itemQty, 30);

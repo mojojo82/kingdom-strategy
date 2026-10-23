@@ -3682,3 +3682,13 @@ Harley's 3 points:
   Level Up / Star Up / Equip buttons, card title (v1407). Runs after every hero list / card draw, so any language works.
 - Tested with normal Russian (nothing shrinks needlessly, no overflow) and a stress copy with every label tripled (all fit down to the
   40% floor). English unchanged. Not on his phone.
+
+## v1409 — Weapon Draw: pool levels much slower + Legendary pity (Harley: reached Lv 15 too easily; first Legendary for a free player in 4-8 weeks; tier odds LOCKED)
+- v1235 only matched HSH's odds per level; the tickets-per-level curve was still Claude's old guess (Lv 15 = 2,620 tickets ≈ 6-12 days).
+- Curve x3.4 (10*round(17*(lv-1)^1.5)): Lv2 170, Lv4 (Super Rare) 880, Lv6 (Epic) 1,900, Lv10 4,590, Lv15 (Legendary) 8,910 tickets ≈ day 30 at ~300/day.
+- Pity: state.weaponPity counts pulls at a pool level that has Legendary; 5,000 without one -> that pull is a Legendary fragment, counter resets.
+  The 0.04% roll on every pull is unchanged. Draw panel shows "⭐ Guaranteed Legendary fragment within N tickets" at Lv 15.
+- Expected first Legendary: lucky ~4.5 weeks, average ~5.5 (Lv 15 + ~2,500 tickets), worst ~7 weeks (pity). No ticket source changed.
+- Existing saves keep their total tickets drawn, so their pool level is re-read on the new curve (e.g. 2,620 drawn = Lv 7). Live has no players yet.
+- Tests: g335 updated (300 tickets = Lv2), new g350 (curve edges, pity fires on the 5,000th pull and resets, no counting below Lv 15).
+  Meta check: same pre-existing warning as before (draw economy only, no combat change).

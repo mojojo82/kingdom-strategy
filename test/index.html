@@ -7268,7 +7268,7 @@ function createGame(opts) {
     td: { day: "", runs: 0, best: 0 }, // v797: Fortress Defense daily run counter
     recon: { window: -1, missions: [], nextId: 1, devShift: 0, done: 0, xp: 0 }, // v787: Intel & Recon missions (refresh every 8h of server/UTC time)
     items: {}, /* v1024 backpack items: id -> count (ITEM_DEFS) */
-    weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, lastDraw: null, ticketsX10: true, drawsInTickets: true, /* v1227: new saves are already in x10 tickets */ // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
+    weaponFrags: {}, weaponTickets: 0, weaponDraws: 0, weaponPity: 0, lastDraw: null, ticketsX10: true, drawsInTickets: true, /* v1227: new saves are already in x10 tickets */ // v786: weapon fragments (per weapon), draw tickets, lifetime draws (= draw pool level)
     weaponLevels: {}, // { weaponId: level } — missing/absent means level 1. See WEAPON_DEFS' levelMods comment.
     weaponStatOverrides: {}, // { weaponId: { cooldown?, count?, dmgPct? } } — Dev Tools "Edit Stats" per-weapon raw overrides, layered on TOP of the level-resolved stats below (see weaponLevelStats/weaponCooldownFor); a field left out of a weapon's override object falls through to its normal level-resolved value.
     // Dev-only balance overrides for card effects (see CARD_EFFECTS_BY_NAME
@@ -10182,7 +10182,8 @@ function createGame(opts) {
     "Legendary":  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.04]
   };
   var WEAPON_DRAW_FRAGS = { "Elite": [1, 1], "Super Rare": [1, 1], "Epic": [1, 1], "Legendary": [1, 1] }; // v1228: every pull = 1 fragment (1 ticket = 1 fragment)
-  function weaponDrawsForLevel(lv) { return lv <= 1 ? 0 : 10 * Math.round(5 * Math.pow(lv - 1, 1.5)); } // tickets drawn needed to REACH this level (v1228: counted in tickets; same ticket totals as before)
+  function weaponDrawsForLevel(lv) { return lv <= 1 ? 0 : 10 * Math.round(17 * Math.pow(lv - 1, 1.5)); } /* v1409 (Harley: Lv 15 came too easily; first Legendary for a free player in 4-8 weeks, odds locked): x3.4 -> Lv 15 = 8,910 tickets (~day 30 at ~300/day). Was 5 (2,620). */
+  var WEAPON_LEGEND_PITY = 5000; /* v1409: pulls at a pool level that has Legendary without one -> the next pull is a guaranteed Legendary fragment (odds untouched) */ // tickets drawn needed to REACH this level (v1228: counted in tickets; same ticket totals as before)
   function weaponDrawLevel() { var d = state.weaponDraws || 0, lv = 1; while (lv < WEAPON_DRAW_MAX_LEVEL && d >= weaponDrawsForLevel(lv + 1)) lv++; return lv; }
   function weaponDrawProgress() {
     var lv = weaponDrawLevel(), d = state.weaponDraws || 0;
@@ -10215,6 +10216,8 @@ function createGame(opts) {
       for (var r = 0; r < WEAPON_DRAW_ROLLS_PER_TICKET; r++) {
         var x = Math.random() * tot, tier = odds[odds.length - 1].rarity;
         for (var i = 0; i < odds.length; i++) { if (x < odds[i].weight) { tier = odds[i].rarity; break; } x -= odds[i].weight; }
+        var hasLeg = odds.some(function (o) { return o.rarity === "Legendary"; });
+        if (hasLeg) { if (tier === "Legendary") state.weaponPity = 0; else if ((state.weaponPity || 0) + 1 >= WEAPON_LEGEND_PITY) { tier = "Legendary"; state.weaponPity = 0; } else state.weaponPity = (state.weaponPity || 0) + 1; } /* v1409 pity */
         var cands = WEAPON_DEFS.filter(function (w) { return !w.visualOnly && !w.noDraw && w.rarity === tier; });
         var wd = cands[Math.floor(Math.random() * cands.length)], fr = WEAPON_DRAW_FRAGS[tier], n = fr[0] + Math.floor(Math.random() * (fr[1] - fr[0] + 1));
         if (!got[wd.id]) { got[wd.id] = 0; order.push(wd.id); }
@@ -10585,6 +10588,7 @@ function createGame(opts) {
     if (saved.weaponFrags && typeof saved.weaponFrags === "object") Object.keys(saved.weaponFrags).forEach(function (wid) { var n = saved.weaponFrags[wid]; if (WEAPON_DEFS_BY_ID[wid] && typeof n === "number" && isFinite(n) && n > 0) state.weaponFrags[wid] = Math.floor(n); });
     if (saved.items && typeof saved.items === "object") { state.items = {}; Object.keys(saved.items).forEach(function (k) { var v = Math.floor(+saved.items[k]); if (ITEM_DEFS[k] && isFinite(v) && v > 0) state.items[k] = v; }); } /* v1024 */
     if (typeof saved.weaponTickets === "number" && isFinite(saved.weaponTickets)) state.weaponTickets = Math.max(0, Math.floor(saved.weaponTickets));
+    if (typeof saved.weaponPity === "number" && isFinite(saved.weaponPity)) state.weaponPity = Math.max(0, Math.floor(saved.weaponPity)); /* v1409 */
     if (!saved.ticketsX10) { /* v1227: an older save - its tickets were worth 10 of the new ones */
       state.weaponTickets = (state.weaponTickets || 0) * WEAPON_TICKET_SCALE;
       try { var sb = state.bucket; if (sb && sb.items && sb.items.tickets) sb.items.tickets *= WEAPON_TICKET_SCALE; } catch (e) {} /* bucket + recon were loaded above */
@@ -10845,7 +10849,7 @@ function createGame(opts) {
   return { state: state, tick: tick, useSpeedup: useSpeedup, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
-    protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
+    WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
     healSpeedMult: healSpeedMult, techTimeFor: techTimeFor, researchFinishNow: researchFinishNow, techCostFor: techCostFor, techExtraFor: techExtraFor, techExtraAffordable: techExtraAffordable, meetsTechRequirements: meetsTechRequirements, buildSpeedMult: buildSpeedMult,
     marchSpeedMult: marchSpeedMult, trainSpeedMult: trainSpeedMult, rpProductionMult: rpProductionMult,
     gatherBonusMult: gatherBonusMult, lossReductionAmt: lossReductionAmt, resourceMult: resourceMult,
@@ -12933,7 +12937,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1408"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1409"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -14308,6 +14312,7 @@ function renderWeaponDrawPanel() {
   h += '<div style="height:8px;background:#0006;border-radius:5px;margin:7px 0 3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:#a78bfa;"></div></div>';
   h += '<div class="dev-tools-hint" style="margin-bottom:6px;">' + (maxed ? 'Pool at max level (' + fmt(pr.draws) + ' tickets drawn)' : fmt(pr.draws - pr.from) + ' / ' + fmt(pr.to - pr.from) + ' tickets to Pool Lv. ' + (pr.level + 1) + (pr.level === 3 ? ' — unlocks Super Rare weapons' : pr.level === 5 ? ' — unlocks Epic weapons' : pr.level === 14 ? ' — unlocks Legendary weapons (very rare)' : '')) + '</div>';
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' + odds.map(function (r) { return '<span class="wi-chip" style="background:' + (WEAPON_RARITY_COLOR[r.rarity] || "#888") + ';color:#fff;">' + r.rarity + ' ' + (r.pct < 1 ? r.pct.toFixed(2) : r.pct.toFixed(r.pct < 10 ? 1 : 0)) + '%</span>'; }).join("") + '</div>';
+  if (odds.some(function (r) { return r.rarity === "Legendary"; })) h += '<div class="dev-tools-hint" style="margin-bottom:8px;color:#ffd27a;">⭐ Guaranteed Legendary fragment within ' + fmt(Math.max(1, g.WEAPON_LEGEND_PITY - (g.state.weaponPity || 0))) + ' tickets</div>'; /* v1409 pity */
   var tkUse = tk;
   h += '<div style="display:flex;gap:8px;"><button id="wdraw1" class="dev-btn"' + (tk < 10 ? ' disabled' : '') + '>Draw ×10</button><button id="wdraw10" class="dev-btn"' + (tk < 100 ? ' disabled' : '') + '>Draw ×100</button><button id="wdrawAll" class="dev-btn"' + (tk < 1 ? ' disabled' : '') + '>Use all (' + tkUse + ')</button></div>';
   var ld = g.state.lastDraw;
