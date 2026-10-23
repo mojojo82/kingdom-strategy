@@ -3643,3 +3643,9 @@ Harley's 3 points:
   stars pop in one by one (spin-pop, 90 ms apart). Arrows between heroes: simple pop-in (no source card). The 1 s refresh skips the hero
   card for 1.1 s so the intro isn't cut. Counts only plain numbers (1.2M-style values just show). Off under reduced-motion.
 - Headless screencast: grows from Roran's card, counts 0 -> 108/4/1, no errors. Not on his phone.
+
+## v1403 — Fix: hero card blinked ~1 s after opening (Harley: "some kind of visual glitch after opening a hero card")
+- Reproduced (headless screencast): ~1.1 s after the card opened it vanished for a frame and faded back in. Cause: the base
+  .hd-overlay rule has its own fade (nativeOverlayIn); v1402's intro class swapped in a different animation, and dropping the class at
+  the end of the intro restarted the base fade. Intro now uses the same animation name, so nothing restarts. After: no change in frames
+  once the card settles. Not on his phone.
