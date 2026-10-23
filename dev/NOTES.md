@@ -3603,3 +3603,8 @@ Harley's 3 points:
 - LOOK ONLY (Harley's pick): renderHeroes / renderHeroDetail swap in showcase copies while drawing and put the real entries straight back
   (same tick), so saves, power, battles never see them. Headless: real heroes identical during and after, power unchanged, no errors.
   Note: Level Up / Equip buttons on the card still act on the REAL hero.
+
+## v1394 — Hero screen juice, stage 1: card cascade (Harley: "isolate each of those into stages... one at a time")
+- Opening Heroes: cards drop in row by row (70 ms per row, 35 ms per column) from 18 px below at 90% size, overshoot to 102.5%, settle
+  (.42 s). transform/opacity only; the class comes off when it's done so the 1 s refresh never replays it; off under reduced-motion.
+- Headless screencast: plays once on entry, ~0.9 s for 13 cards, no errors. Not on his phone. Next stages wait for his OK.
