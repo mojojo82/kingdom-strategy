@@ -3665,3 +3665,13 @@ Harley's 3 points:
 - No more gold flash over the card on either. Kept: "Lv 1 → 2" pop, card bump, green "+N" stats, star stamp + ring.
 - Harley (after v1406 video): "Good enough. I might do something with the flashes in the future." The flash CSS (.hc-fx-flash,
   hcFlash keyframes) is still in the file, just not called - re-add hcFxAdd(card, "hc-fx-flash", null, 800) in hcLevelFx/hcStarFx.
+
+## v1407 — Language proof of concept: English + Russian, Heroes screen only (Harley)
+- Options: "🌐 Language: English | Русский" (saved per device, kingdom_lang_v1). t("English") returns the current language's text,
+  falling back to English. tHero(key, 0/1/2) = hero name / main skill name / main skill text.
+- Translated: Heroes title bar, hero list (Ур., МАКС, Нанять), hero card (name, rarity, tabs, ОЗ/АТК/ЗАЩИТА, main skill name + text,
+  АКТИВНЫЙ · N с, buttons, gear tab), level-up pop. NOT yet: the Skills tab details, toasts, every other screen.
+- Font: Lilita One has no Russian letters. A Cyrillic-only subset of Inter Display Black (OFL, 9.5 kB, fonts/InterDisplay-Black-cyrillic.woff
+  + licence) is registered as part of the "Lilita One" family with unicode-range, so Lilita text shows Russian with no other changes.
+- Long titles shrink to fit (Кейлум Векс overlapped the class badge). Headless: switch, list, card, gear tab, back to English - no errors.
+  Russian wording is Claude's - a native speaker should check before release.
