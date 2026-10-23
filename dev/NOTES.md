@@ -3582,3 +3582,7 @@ Harley's 3 points:
 ## v1389 — Dev tool: hide the "TEST · name" badge (Harley: "i need a dev tool to hide this")
 - Dev Tools > Effects & Sound (Garrison HUD badge row): "🔥 TEST name badge: Shown / Hidden". This device only (localStorage
   kingdom_prototype_hidetestbadge_v1). Headless: hides and comes back, no errors.
+
+## v1390 — New Hanzo card art (Harley: "hanzo image")
+- The hooded dark rogue with purple eyes and twin daggers (4th figure on GPT's full-body sheet) replaces the tan shield knight.
+  Light background flood-removed, cropped to head + upper body like the others. Torvald / Sera / Kessa on that sheet not used.
