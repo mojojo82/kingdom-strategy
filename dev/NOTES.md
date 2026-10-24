@@ -3715,3 +3715,5 @@ Harley's 3 points:
   Iron Will (passive): own DEF +8/12/16/20/25% (the weak option on purpose). Crimson Tempest removed. Existing stats only.
 - Skills tab: proper value lines for these, and "coming soon" for placeholder skills with no numbers (Vesper/Aurek/... showed NaN). RU text
   for War Cry added. When she's built: balance check Conquest + Arena (team ATK + bullet block).
+
+## v1411 — Iron Lily main skill renamed War Cry -> Crimson Oath (Harley; RU "Алая клятва")
