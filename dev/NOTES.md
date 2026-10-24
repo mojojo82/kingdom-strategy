@@ -3722,3 +3722,11 @@ Harley's 3 points:
 - Harley: Sera/Roran's card ATK was misleading. The card showed the shared base ATK (level x stars), but fights multiply Sera by x0.4 (all attacks) and Roran by x0.65 (Conquest basic hits).
 - New `idleHeroCardAtk(key)` = base x atkMult x basicMult; used by the hero card ATK row and the level/star +N pop. Display only — no balance change; `idleHeroBaseAtk` untouched.
 - Checked headless at Lv40: Gareth 160, Sera 64, Roran 104.
+
+## v1413 (TEST) — Iron Lily build, step 1: her 3 skills work (she is still comingSoon, so players can't equip her yet)
+- Plan (Harley): 1 skills, 2 frame player (sprite sheets, joins), 3 move choice by enemy position, 4 damage on contact, 5 dev training stage (melee enemies spawn left/right on his button) to record and check her combat.
+- Crimson Oath = new support kind "oath": every 12 s all of that side's heroes +20..40% ATK for 4 s (basic hits and skills). Conquest: state.idle.oathT/oathPct, applied in idleAttackerDamage. Arena: oathTP/TA + oathPP/PA, applied through cardAtkMul/cardSkMul (heroes only). Recast refreshes; bigger pct wins.
+- Iron Will: heroDefNetOwn() raises her DEF STAT (before the DEF_NEUTRAL line). Note: with no DEF bonuses every hero's net DEF is 0, so boosting the net number would have done nothing. Hero card DEF row includes it.
+- Blade Wall: heroBladeWallPct + bladeWallRoll (no dice, own counter bwN) ready, hooked nowhere - nothing fires bullets at heroes yet (Arena cannon only hits the fortress, Conquest cannon is the player's). Harley: "bullets only, I will make changes later if needed".
+- Balance flag for later: in an Arena test fight (Lv40, 10 stars, vs Gareth/Lyra/Roran/Kessa/Sera) she is KO'd before her first Oath at 12 s. Conquest: Lily L1 team reached level 120 vs 113 with Gareth.
+- Test: dev/simfork/g351_ironlily_kit.js. g217 still OK. Meta check: same pre-existing warning, unchanged.

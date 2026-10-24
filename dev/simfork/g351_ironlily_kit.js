@@ -1,0 +1,62 @@
+/* v1413: Iron Lily kit - Iron Will (own DEF), Crimson Oath (team ATK buff), Blade Wall (bullet parry helper, no bullets yet). Same in Conquest and Arena. Run: node dev/simfork/g351_ironlily_kit.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g351@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  const r = await P.evaluate(async () => {
+    const o = {}, BASE = ["gareth", "lyra", "roran", "kessa", "sera"], IL = ["ironlily", "lyra", "roran", "kessa", "sera"];
+    const hL = (L) => ({ owned: true, level: 40, stars: 10, skillLevels: { conquest: [L, L, L], expedition: [1, 1, 1] } });
+    o.def = [1, 3, 5].map((L) => +heroOwnDefMult("ironlily", hL(L)).toFixed(2));
+    o.defOther = heroOwnDefMult("gareth", hL(5));
+    o.bw = [1, 5].map((L) => heroBladeWallPct("ironlily", hL(L)));
+    const ent = {}; let bl = 0; for (let i = 0; i < 100; i++) if (bladeWallRoll(ent, 0.2)) bl++; o.bw20of100 = bl;
+    o.text = skillValueText ? skillValueText(HERO_DEFS.ironlily.conquestSkills[0], 5) : null;
+    const run = async (roster, L) => { let simTime = 1000; const sim = createGame({ now: () => simTime, mapSize: 5, seed: 1, combatSeed: 777 }); const s = sim.state;
+      Object.keys(s.heroes).forEach((k) => { s.heroes[k].owned = false; });
+      roster.forEach((k) => { const h = s.heroes[k]; h.owned = true; h.level = 40; h.stars = 10; h.skillLevels = { conquest: k === "ironlily" ? [L, L, L] : [3, 3, 3], expedition: [3, 3, 3] }; });
+      s.conquestRoster = roster.slice(); s.weaponLevels = { missile_barrage: 30 }; s.equippedWeapons = ["missile_barrage"]; s.tech = {}; s.fortressTech = {}; s.cards = []; s.equippedCards = [];
+      s.idle.fortressCannonEnabled = true; s.idle.fortressCannonTargetMode = "front";
+      let buffTicks = 0, ticks = 0, lyraOn = 0, lyraOff = 0;
+      for (let i = 0; i < 6000; i++) { simTime += 1000; sim.tick(); ticks++; if (s.idle.oathT > 0) { buffTicks++; if (!lyraOn) lyraOn = sim.idleAttackerDamage("lyra"); } else if (!lyraOff) lyraOff = sim.idleAttackerDamage("lyra"); if (i % 1000 === 0) await new Promise((res) => setTimeout(res, 0)); }
+      return { level: (s.idle.chapter - 1) * 20 + s.idle.levelNum, casts: (s.idle.skillFireCounts || {}).ironlily || 0, buffShare: +(buffTicks / ticks).toFixed(2), lyraOn, lyraOff };
+    };
+    o.cqBase = await run(BASE, 3); o.cqL1 = await run(IL, 1); o.cqL5 = await run(IL, 5);
+    const hsAt = (keys, L) => { const hs = {}; keys.forEach((k) => { hs[k] = { owned: true, level: 40, stars: 10, skillLevels: { conquest: k === "ironlily" ? [L, L, L] : [3, 3, 3], expedition: [3, 3, 3] } }; }); return hs; };
+    const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(keys, L), 15, 0, false, null, null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, keys.indexOf(e.id), isP); }); return s2; };
+    const ar = (L) => { const tr = { src: {}, aiSrc: {}, perTick: [] }; const pS = side(IL, L, true), aS = side(BASE, 3, false); pS.maxHp *= 20; aS.maxHp *= 20;
+      (pS.heroHp || []).find((e) => e.id === "ironlily").max *= 100; /* mechanics check only: keep her standing so the Oath gets cast (she is KO'd before 12 s otherwise - balance comes later) */
+      const ilDef = (pS.heroHp || []).find((e) => e.id === "ironlily").def, gDef = (aS.heroHp || []).find((e) => e.id === "gareth").def;
+      const sim = arenaMakeSim(pS, aS, { rng: worldPvpSeededRng("h"), critSeed: "h", trace: tr }); const res = sim.runToEnd();
+      const lyra = Object.keys(tr.src).filter((k) => /lyra/.test(k)).reduce((t, k) => t + tr.src[k], 0);
+      return { ilDef: +(ilDef / heroPowerLevel(hsAt(IL, L).ironlily)).toFixed(2), gDef: gDef, lyra: Math.round(lyra), aiKos: sim.aHH.list.reduce((t, e) => t + e.kos, 0), sup: (pS.supports || []).map((u) => u.kind + ":" + u.pct + ":" + u.sec) };
+    };
+    o.ar1 = ar(1); o.ar5 = ar(5);
+    return o;
+  });
+  console.log(JSON.stringify(r));
+  const A = assert;
+  A.deepStrictEqual(r.def, [1.08, 1.16, 1.25], "Iron Will +8/16/25% DEF"); A.strictEqual(r.defOther, 1, "other heroes unaffected");
+  A.deepStrictEqual(r.bw, [0.2, 0.6], "Blade Wall 20%..60%"); A.strictEqual(r.bw20of100, 20, "Blade Wall at 20% parries exactly 20 of 100, no dice");
+  A.ok(/\+40% ATK for 4s \/ 12s/.test(r.text || ""), "Crimson Oath card text");
+  A.ok(r.cqL5.casts > 20 && r.cqL5.buffShare > 0.2 && r.cqL5.buffShare < 0.45, "Conquest: Crimson Oath fires every 12 s and is up ~1/3 of the time");
+  A.ok(Math.abs(r.cqL5.lyraOn / r.cqL5.lyraOff - 1.4) < 0.02 && Math.abs(r.cqL1.lyraOn / r.cqL1.lyraOff - 1.2) < 0.02, "Conquest: another hero hits +40% (L5) / +20% (L1) while it's up");
+  A.ok(r.ar5.sup.includes("oath:0.4:4"), "Arena: Crimson Oath is a support skill");
+  A.strictEqual(r.ar5.ilDef, 0.25, "Arena: Iron Will lifts her DEF 25% above the neutral line (others sit at 0 with no DEF bonus)"); A.strictEqual(r.ar1.ilDef, 0.08); A.strictEqual(r.ar5.gDef, 0);
+  A.ok(r.ar5.lyra > r.ar1.lyra, "Arena: Lyra deals more with a level 5 Oath");
+  console.log("errs", errs); A.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
+})().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

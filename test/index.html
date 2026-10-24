@@ -6175,7 +6175,7 @@ var HERO_DEFS = {
     /* v1410 (Harley): her kit = a melee fighter that is extremely hard to remove + team ATK leader. Text only until she is built
        (comingSoon). Blade Wall = BULLETS only (fortress cannon now, future bullet enemies/heroes), evenly spread like Shadow Step (no dice). */
     conquestSkills: [
-      { name: "Crimson Oath", icon: "🌺📣", kind: "active", cooldown: 12, buffPctByLevel: [0.20, 0.25, 0.30, 0.35, 0.40], buffSec: 4, desc: "Every 12s, rallies the team: all heroes get +20% ATK for 4s (+40% at Lv 5)." },
+      { name: "Crimson Oath", icon: "🌺📣", kind: "active", support: "oath", cooldown: 12, buffPctByLevel: [0.20, 0.25, 0.30, 0.35, 0.40], buffSec: 4, desc: "Every 12s, rallies the team: all heroes get +20% ATK for 4s (+40% at Lv 5)." },
       { name: "Blade Wall", icon: "🗡️🛡️", kind: "passive", blockPctByLevel: [0.20, 0.30, 0.40, 0.50, 0.60], desc: "Parries bullets fired at her in a flurry of sword blocks: blocks 20% of them (60% at Lv 5), evenly - every 5th bullet at 20%, every 2nd at 50%." },
       { name: "Iron Will", icon: "🛡️", kind: "passive", defPctByLevel: [0.08, 0.12, 0.16, 0.20, 0.25], desc: "Her own DEF +8% (+25% at Lv 5)." }
     ],
@@ -6565,6 +6565,16 @@ function heroDodgePct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSki
   d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.effectType === "dodge") p += sk.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[i]) || 1); });
   return Math.min(0.95, p); }
 function dodgeRoll(ent, p) { if (!(p > 0) || !ent) return false; var n = ent.dgN || 0; ent.dgN = n + 1; if (Math.floor((n + 1) * p + 1e-9) > Math.floor(n * p + 1e-9)) { ent.dodges = (ent.dodges || 0) + 1; return true; } return false; }
+/* v1413: Iron Lily's kit (same numbers in Conquest and Arena). Iron Will = her own DEF x(1+pct). Blade Wall = share of BULLETS aimed at her
+   that she parries, no dice (same even spread as Shadow Step, own counter) - nothing fires bullets at heroes yet (Harley: bullets only, for later).
+   Crimson Oath = support skill: every 12 s all of that side's heroes get +pct ATK for buffSec. */
+function ksSkLvl(h, i) { return (h && h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[i]) || 1; }
+function ksPickL(arr, lvl) { return arr ? (arr[Math.max(1, Math.min(arr.length, lvl || 1)) - 1] || 0) : 0; }
+function heroOwnDefMult(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 1; var p = 0;
+  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.defPctByLevel) p += ksPickL(sk.defPctByLevel, ksSkLvl(h, i)); }); return 1 + p; }
+function heroBladeWallPct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0;
+  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.blockPctByLevel) p += ksPickL(sk.blockPctByLevel, ksSkLvl(h, i)); }); return Math.min(0.95, p); }
+function bladeWallRoll(ent, p) { if (!(p > 0) || !ent) return false; var n = ent.bwN || 0; ent.bwN = n + 1; if (Math.floor((n + 1) * p + 1e-9) > Math.floor(n * p + 1e-9)) { ent.bwBlocks = (ent.bwBlocks || 0) + 1; return true; } return false; } // call this where a BULLET would hit a hero (none exist yet)
 function skillValueAtLevel(heroKey, skillIdx, level, skill, h, basicAtkDmg) {
   var ov = getSkillOverride(heroKey, skillIdx, level);
   return ov != null ? ov : skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg);
@@ -9080,6 +9090,7 @@ function createGame(opts) {
     // for any ranged-class hero whose active skill sets requiresClose (e.g. an electric/chain
     // effect with real range limits despite being archer/cavalry). Everyone else just needs the
     // target to have arrived, any distance.
+    if (state.idle.oathT > 0) { state.idle.oathT -= dt; if (state.idle.oathT <= 0) { state.idle.oathT = 0; state.idle.oathPct = 0; } } /* v1413: Crimson Oath timer */
     state.conquestRoster.forEach(function (key) {
       var def = HERO_DEFS[key], h = state.heroes[key];
       if (!def || !h || !h.owned || !def.conquestSkills) return;
@@ -9108,6 +9119,10 @@ function createGame(opts) {
             if (owS && owS.effectType === "overhealWard" && over > 0) { var capW = maxHpS * owS.perLevel * heroSkillLevel(key, "conquest", 2); state.idle.guardShield = Math.min(capW, (state.idle.guardShield || 0) + over); }
             var raS = def.conquestSkills[1];
             if (raS && raS.effectType === "rally") { var cut = raS.perLevel * heroSkillLevel(key, "conquest", 1); state.conquestRoster.forEach(function (ok) { if (ok !== key && state.heroCooldowns[ok] != null) state.heroCooldowns[ok] -= cut; }); }
+          } else if (skill1.support === "oath") { /* v1413: Crimson Oath - all heroes +pct ATK for buffSec (a recast refreshes, the bigger pct wins) */
+            var oP = ksPickL(skill1.buffPctByLevel, spLvl);
+            if (!(state.idle.oathT > 0) || oP >= (state.idle.oathPct || 0)) state.idle.oathPct = oP;
+            state.idle.oathT = skill1.buffSec || 4;
           } else if (skill1.support === "guard") {
             var gAmt = maxHpS * (skill1.guardPctByLevel[Math.min(skill1.guardPctByLevel.length, spLvl) - 1] || 0) * (1 + (equipBonus.support || 0) / 100);
             state.idle.guardShield = Math.max(state.idle.guardShield || 0, gAmt);
@@ -9878,13 +9893,13 @@ function createGame(opts) {
     var def = HERO_DEFS[aid], h = state.heroes[aid];
     if (!def || !h || !h.owned) return 0; // unequipped/removed mid-combat — this attacker just goes quiet
     if (idleHeroIsKo(aid)) return 0; // v527: KO'd heroes don't attack
-    return Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (def.atkMult || 1) * cardHeroDmgMul(cardModsFrom(state), aid, idleHpFrac(), idleHeroCount()) * cardT1ArmyMul(state)); /* v985: cards; v1072: Cannon Doctrine */
+    return Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (def.atkMult || 1) * cardHeroDmgMul(cardModsFrom(state), aid, idleHpFrac(), idleHeroCount()) * cardT1ArmyMul(state) * (state.idle.oathT > 0 ? 1 + (state.idle.oathPct || 0) : 1)); /* v985: cards; v1072: Cannon Doctrine; v1413: Crimson Oath */
   }
   function idleHpFrac() { var mx = idlePlayerMaxHp(); return mx > 0 && state.idle.playerHp != null ? state.idle.playerHp / mx : 1; }
   function idleHeroCount() { return state.conquestRoster.filter(function (k) { return state.heroes[k] && state.heroes[k].owned; }).length; }
   function idleHeroCardAtk(key) { var d = HERO_DEFS[key] || {}; return Math.round(idleHeroBaseAtk(key) * (d.atkMult || 1) * (d.basicMult || 1)); } /* v1412 (Harley): the ATK the hero card shows = what their basic hits really do (Sera x0.4, Roran x0.65) */
   function idleHeroBaseAtk(key) { var h = state.heroes[key]; return (h && h.owned) ? Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective()) : 0; } // base ATK stat = power level × attack constant (no skill bonuses)
-  function idleHeroDefMult(key, A) { return defReduce(A, heroDefNet(state.heroes[key], heroBonusMult("def"))); }
+  function idleHeroDefMult(key, A) { return defReduce(A, heroDefNetOwn(key, state.heroes[key], heroBonusMult("def"))); } /* v1413: Iron Will */
   /* v954: limit skills (Death Strike) - a bar per hero that fills one step for every hit he takes; a KO empties it. Kept across levels. */
   function idleLimitSkill(key) { var d = HERO_DEFS[key], cs = d && d.conquestSkills; if (!cs) return null; for (var i = 0; i < cs.length; i++) if (cs[i].kind === "limit") return { sk: cs[i], idx: i }; return null; }
   function idleLimitAdd(key, taken) { var L = idleLimitSkill(key); if (!L) return; var lm = state.idle.limit || (state.idle.limit = {}); lm[key] = Math.min(L.sk.hitsToFill, (lm[key] || 0) + (taken ? L.sk.takenPts || 1 : 1)); }
@@ -12874,6 +12889,7 @@ function heroDefOfPlayer(h) { return heroDefOf(h) * heroBonusMult("def"); } // g
 var DEF_NEUTRAL = 1;
 function defNetMult(bnMult) { return Math.max(0, heroBaseDef * bnMult - DEF_NEUTRAL); }
 function heroDefNet(h, bnMult) { return h ? heroPowerLevel(h) * defNetMult(bnMult) : 0; }
+function heroDefNetOwn(key, h, bnMult) { return h ? heroPowerLevel(h) * defNetMult(bnMult * heroOwnDefMult(key, h)) : 0; } /* v1413: Iron Will raises her DEF stat itself (before the neutral line), so it counts even with no DEF bonuses */
 var ZERO_BONUS = { atk: 0, hp: 0, def: 0, skill: 0 };
 var FORTRESS_DEF_POWER = 20; // fortress DEF = Base DEF per power x this (about a level-20 hero) x (1 + DEF Bonus)
 function bonusOf(simLike) { if (!simLike || simLike === game) return heroBonus; return (simLike.state && simLike.state.heroBonus) || ZERO_BONUS; } // real player = Dev Tools bonus; bots / other saves carry their own on state.heroBonus
@@ -12941,7 +12957,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1412"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1413"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30244,7 +30260,7 @@ function renderHeroDetailReal() {
       if (h.owned) {
         html += hcRow("hp", t("HP"), fmt(game.idleHeroMaxHp(key)));
         html += hcRow("atk", t("ATK"), fmt(game.idleHeroCardAtk(key)));
-        html += hcRow("def", t("DEFENSE"), fmt(heroDefOfPlayer(h)));
+        html += hcRow("def", t("DEFENSE"), fmt(heroDefOfPlayer(h) * heroOwnDefMult(key, h))); /* v1413: incl. Iron Will */
       }
       var mainSk = (def.conquestSkills || []).filter(function (sk) { return sk.kind === "active" && sk.cooldown; })[0]; /* v1143 (Harley): the hero's main skill = the one on the timer */
       if (mainSk) html += '<div class="hc-msk"><div class="hc-msk-h"><span class="hc-msk-n">' + tHero(key, 1, mainSk.name).toUpperCase() + '</span><span class="hc-msk-t">' + t("ACTIVE") + ' · ' + mainSk.cooldown + t("s") + '</span></div><p>' + tHero(key, 2, mainSk.cardDesc || mainSk.desc) + '</p></div>';
@@ -30326,6 +30342,7 @@ function renderHeroDetailReal() {
 
 function skillValueText(skill, level, heroKey, group, idx) {
   var ov = (group === "conquest" && heroKey != null && idx != null) ? getSkillOverride(heroKey, idx, level) : null;
+  if (skill.kind === "active" && skill.support && skill.buffPctByLevel) return "All heroes +" + Math.round(ksPickL(skill.buffPctByLevel, level) * 100) + "% ATK for " + skill.buffSec + "s / " + skill.cooldown + "s"; /* v1413: Crimson Oath */
   if (skill.kind === "active" && skill.support) {
     var arrS = skill.healPctByLevel || skill.guardPctByLevel, pS = arrS[Math.max(1, Math.min(arrS.length, level)) - 1] || 0;
     return (skill.support === "heal" ? "Heals " : "Guard shield ") + Math.round(pS * 1000) / 10 + "% max HP / " + skill.cooldown + "s";
@@ -32416,7 +32433,7 @@ function hcIntro() {
     "@media (prefers-reduced-motion:reduce){.hc-fx-flash,.hc-fx-lv,.hc-fx-plus,.hc-fx-ring{display:none}#hcCard .hc-stars svg.hc-stamp{animation:none}}";
   document.head.appendChild(st);
 })();
-function hcFxSnap(key) { var h = game.state.heroes[key]; try { return { lv: h.level, arms: heroStarArms(h), hp: game.idleHeroMaxHp(key), atk: game.idleHeroCardAtk(key), def: heroDefOfPlayer(h) }; } catch (e) { return { lv: h.level, arms: heroStarArms(h) }; } }
+function hcFxSnap(key) { var h = game.state.heroes[key]; try { return { lv: h.level, arms: heroStarArms(h), hp: game.idleHeroMaxHp(key), atk: game.idleHeroCardAtk(key), def: heroDefOfPlayer(h) * heroOwnDefMult(key, h) }; } catch (e) { return { lv: h.level, arms: heroStarArms(h) }; } }
 function hcFxAdd(parent, cls, html, ms) { var d = document.createElement("div"); d.className = cls; if (html != null) d.innerHTML = html; parent.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, ms); return d; }
 function hcStatPlus(b4, key) {
   var now = hcFxSnap(key), rows = document.querySelectorAll("#hdTabContent .hc-row"), keys = ["hp", "atk", "def"];
@@ -33987,12 +34004,12 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1), melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
-    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNet(h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
+    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
       if (skill.kind === "passive" && skill.effectType === "conquestDamageMult") dmgMultSum += lvl * skill.perLevel;
-      if (skill.kind === "active" && skill.support) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel)[Math.min(5, lvl) - 1] || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
+      if (skill.kind === "active" && skill.support) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel || skill.buffPctByLevel)[Math.min(5, lvl) - 1] || 0, sec: skill.buffSec || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
       if (skill.kind === "limit") limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest */
       if (skill.kind === "active" && !skill.support) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skillCdAt(skill, lvl), skill: skill, lvl: lvl, requiresClose: isInfantry && !skill.aoeAll, aoe: !!skill.aoeAll, /* v992: Shuriken Storm needs no reach. Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
     });
@@ -34134,6 +34151,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     return st; }
   var nHeroP = playerStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length, nHeroA = aiStats.attackers.filter(function (a) { return HERO_DEFS[a.id]; }).length;
   var pStats0 = playerStats; playerStats = cardStatic(playerStats, cmP, aiStats, nHeroP); aiStats = cardStatic(aiStats, cmA, pStats0, nHeroA);
+  var oathTP = 0, oathTA = 0, oathPP = 0, oathPA = 0; /* v1413: Crimson Oath timer + pct per side */
   var cardInvP = 0, cardInvA = 0, cardLsP = false, cardLsA = false, cardPfP = false, cardPfA = false;
   playerStats = Object.assign({}, playerStats, { fortDefMult: defReduce(aRefA, playerStats.fortDef || 0), dmgTakenMult: (playerStats.dmgTakenMult || 1) * defReduce(aRefA, playerStats.fortDef || 0) });
   aiStats = Object.assign({}, aiStats, { fortDefMult: defReduce(pRefA, aiStats.fortDef || 0), dmgTakenMult: (aiStats.dmgTakenMult || 1) * defReduce(pRefA, aiStats.fortDef || 0) }); /* v1197: fortDefMult kept apart so piercing drones can skip the fortress DEF */
@@ -34300,12 +34318,14 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function trAdd(k, v) { if (tr) tr.src[k] = (tr.src[k] || 0) + v * (aiStats.dmgTakenMult || 1); }
   function trAddAi(k, v) { if (tr) tr.aiSrc[k] = (tr.aiSrc[k] || 0) + v * (playerStats.dmgTakenMult || 1); }
   function cardHpFrac(sd) { return sd === 'P' ? (playerStats.maxHp > 0 ? playerHp / playerStats.maxHp : 1) : (aiStats.maxHp > 0 ? aiHp / aiStats.maxHp : 1); }
-  function cardAtkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return cm ? cardHeroDmgMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1; }
-  function cardSkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return cm ? cardSkillMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1; }
+  function oathMul(sd, id) { return (HERO_DEFS[id] && (sd === 'P' ? oathTP : oathTA) > 0) ? 1 + (sd === 'P' ? oathPP : oathPA) : 1; } /* v1413: Crimson Oath - heroes only */
+  function cardAtkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return (cm ? cardHeroDmgMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1) * oathMul(sd, id); }
+  function cardSkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return (cm ? cardSkillMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1) * oathMul(sd, id); }
   function cardCdMul(sd) { var cm = sd === 'P' ? cmP : cmA; return cm ? 1 - cardCdBonus(cm, cardHpFrac(sd)) : 1; }
   sim.step = function () {
     tick++;
     cardInvP = Math.max(0, cardInvP - dtS); cardInvA = Math.max(0, cardInvA - dtS); /* v985: card 4 timers */
+    oathTP = Math.max(0, oathTP - dtS); oathTA = Math.max(0, oathTA - dtS); /* v1413: Crimson Oath */
     engaged = tick >= ARENA_ENGAGE_TICKS; // has infantry finished walking over yet (the whole-army fallback when hero positions aren't simulated)
     skTgt = {}; hitTgt = {}; limTgt = {};
     var playerFlash = [], aiFlash = [];
@@ -34410,6 +34430,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           if (getHp() > 0) setHp(getHp() + did);
           if (u.ward > 0 && amt - did > 0) setG(Math.min(maxHp * u.ward, getG() + (amt - did)));
           if (u.rally > 0) Object.keys(actCd).forEach(function (k) { if (k !== u.key) actCd[k] -= u.rally; });
+        } else if (u.kind === "oath") { /* v1413: Crimson Oath - same rule as Conquest */
+          if (hhh === pHH) { if (!(oathTP > 0) || u.pct >= oathPP) oathPP = u.pct; oathTP = u.sec || 4; }
+          else { if (!(oathTA > 0) || u.pct >= oathPA) oathPA = u.pct; oathTA = u.sec || 4; }
         } else setG(Math.max(getG(), maxHp * u.pct));
       });
     }
