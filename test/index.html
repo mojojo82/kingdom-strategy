@@ -9882,6 +9882,7 @@ function createGame(opts) {
   }
   function idleHpFrac() { var mx = idlePlayerMaxHp(); return mx > 0 && state.idle.playerHp != null ? state.idle.playerHp / mx : 1; }
   function idleHeroCount() { return state.conquestRoster.filter(function (k) { return state.heroes[k] && state.heroes[k].owned; }).length; }
+  function idleHeroCardAtk(key) { var d = HERO_DEFS[key] || {}; return Math.round(idleHeroBaseAtk(key) * (d.atkMult || 1) * (d.basicMult || 1)); } /* v1412 (Harley): the ATK the hero card shows = what their basic hits really do (Sera x0.4, Roran x0.65) */
   function idleHeroBaseAtk(key) { var h = state.heroes[key]; return (h && h.owned) ? Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective()) : 0; } // base ATK stat = power level × attack constant (no skill bonuses)
   function idleHeroDefMult(key, A) { return defReduce(A, heroDefNet(state.heroes[key], heroBonusMult("def"))); }
   /* v954: limit skills (Death Strike) - a bar per hero that fills one step for every hit he takes; a KO empties it. Kept across levels. */
@@ -10866,7 +10867,7 @@ function createGame(opts) {
     equipConquestHero: equipConquestHero, unequipConquestHero: unequipConquestHero,
     idlePlayerMaxHp: idlePlayerMaxHp, idleClampPlayerHp: idleClampPlayerHp, heroKoCfg: HERO_KO_CFG, idleHeroMaxHp: idleHeroMaxHp, idleHeroEntry: idleHeroEntry, idleHeroIsKo: idleHeroIsKo, idleKoHero: idleKoHero, idleReviveHero: idleReviveHero, idleResetHeroHp: idleResetHeroHp, idleEnemiesPerLevel: idleEnemiesPerLevel,
     idleRangedPower: idleRangedPower, idleMeleePower: idleMeleePower,
-    heroAttackSecFor: function (k) { return heroAttackSec(k); }, idleAttackerDamage: idleAttackerDamage, idleHeroBaseAtk: idleHeroBaseAtk, idleHeroDefMult: idleHeroDefMult, idleHeroDmgRed: idleHeroDmgRed, idleAttackerHitDamage: idleAttackerHitDamage, idleAttackerIsMelee: idleAttackerIsMelee,
+    heroAttackSecFor: function (k) { return heroAttackSec(k); }, idleAttackerDamage: idleAttackerDamage, idleHeroBaseAtk: idleHeroBaseAtk, idleHeroCardAtk: idleHeroCardAtk, idleHeroDefMult: idleHeroDefMult, idleHeroDmgRed: idleHeroDmgRed, idleAttackerHitDamage: idleAttackerHitDamage, idleAttackerIsMelee: idleAttackerIsMelee,
     idleLevelLabel: function () { return idleStageCh() + "-" + idleStageLv(); }, idleBestLabel: function () { return state.idle.chapter + "-" + state.idle.levelNum; },
     idleFarm: idleFarm, idleSetStage: idleSetStage, idleFarmPayK: idleFarmPayK, idleBestGlobal: idleBestGlobal, idleLevelsPerChapter: IDLE_LEVELS_PER_CHAPTER,
     idleIsBossLevel: idleIsBossLevel, idleStartBossAttempt: idleStartBossAttempt, idleResolveResult: idleResolveResult, idleArriveDelay: IDLE_ARRIVE_DELAY, idleIsChapterBossLevel: idleIsChapterBossLevel, idleBossName: idleBossName, idleEnvironment: idleEnvironment,
@@ -12940,7 +12941,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1411"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1412"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30242,7 +30243,7 @@ function renderHeroDetailReal() {
     if (isCombat) {
       if (h.owned) {
         html += hcRow("hp", t("HP"), fmt(game.idleHeroMaxHp(key)));
-        html += hcRow("atk", t("ATK"), fmt(game.idleHeroBaseAtk(key)));
+        html += hcRow("atk", t("ATK"), fmt(game.idleHeroCardAtk(key)));
         html += hcRow("def", t("DEFENSE"), fmt(heroDefOfPlayer(h)));
       }
       var mainSk = (def.conquestSkills || []).filter(function (sk) { return sk.kind === "active" && sk.cooldown; })[0]; /* v1143 (Harley): the hero's main skill = the one on the timer */
@@ -32415,7 +32416,7 @@ function hcIntro() {
     "@media (prefers-reduced-motion:reduce){.hc-fx-flash,.hc-fx-lv,.hc-fx-plus,.hc-fx-ring{display:none}#hcCard .hc-stars svg.hc-stamp{animation:none}}";
   document.head.appendChild(st);
 })();
-function hcFxSnap(key) { var h = game.state.heroes[key]; try { return { lv: h.level, arms: heroStarArms(h), hp: game.idleHeroMaxHp(key), atk: game.idleHeroBaseAtk(key), def: heroDefOfPlayer(h) }; } catch (e) { return { lv: h.level, arms: heroStarArms(h) }; } }
+function hcFxSnap(key) { var h = game.state.heroes[key]; try { return { lv: h.level, arms: heroStarArms(h), hp: game.idleHeroMaxHp(key), atk: game.idleHeroCardAtk(key), def: heroDefOfPlayer(h) }; } catch (e) { return { lv: h.level, arms: heroStarArms(h) }; } }
 function hcFxAdd(parent, cls, html, ms) { var d = document.createElement("div"); d.className = cls; if (html != null) d.innerHTML = html; parent.appendChild(d); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, ms); return d; }
 function hcStatPlus(b4, key) {
   var now = hcFxSnap(key), rows = document.querySelectorAll("#hdTabContent .hc-row"), keys = ["hp", "atk", "def"];

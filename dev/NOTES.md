@@ -3717,3 +3717,8 @@ Harley's 3 points:
   for War Cry added. When she's built: balance check Conquest + Arena (team ATK + bullet block).
 
 ## v1411 — Iron Lily main skill renamed War Cry -> Crimson Oath (Harley; RU "Алая клятва")
+
+## v1412 (TEST) — hero card ATK shows the real number
+- Harley: Sera/Roran's card ATK was misleading. The card showed the shared base ATK (level x stars), but fights multiply Sera by x0.4 (all attacks) and Roran by x0.65 (Conquest basic hits).
+- New `idleHeroCardAtk(key)` = base x atkMult x basicMult; used by the hero card ATK row and the level/star +N pop. Display only — no balance change; `idleHeroBaseAtk` untouched.
+- Checked headless at Lv40: Gareth 160, Sera 64, Roran 104.
