@@ -3707,3 +3707,11 @@ Harley's 3 points:
 - Plan: centred 1920x1080 start frame (her ~55% height), 4 x 10 s flowing combos (flips, spinning kicks, dodges...), then the same pipeline;
   in game: flurry while enemies are on screen, ready stance otherwise; damage timing unchanged (impact frames only for hit sparks); 12 fps
   frames to keep size down. Files: art/originals/heroes/ironlily/motion_test/ (videos, scripts, result). Also 16:9 frames with more room (55% / 40%).
+
+## v1410 — Iron Lily's kit decided (Harley: Iron Will, Blade Wall, team ATK main skill; Blade Wall = bullets only)
+- Identity: melee fighter, extremely hard to remove + team leader. Still "coming soon" - text only, no battle effect yet.
+  War Cry (active, main): every 12 s all heroes +20/25/30/35/40% ATK for 4 s. Blade Wall (passive): blocks 20/30/40/50/60% of BULLETS aimed
+  at her (fortress cannon now; future bullet enemies/heroes), evenly spread like Shadow Step (no dice) - a deliberate Fortress I counter.
+  Iron Will (passive): own DEF +8/12/16/20/25% (the weak option on purpose). Crimson Tempest removed. Existing stats only.
+- Skills tab: proper value lines for these, and "coming soon" for placeholder skills with no numbers (Vesper/Aurek/... showed NaN). RU text
+  for War Cry added. When she's built: balance check Conquest + Arena (team ATK + bullet block).

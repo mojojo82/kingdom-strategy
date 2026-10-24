@@ -6022,7 +6022,7 @@ var I18N_HERO = { ru: {
   sera: ["Сера", "Целительный свет", "Каждые 12 с лечит крепость на 8% макс. ОЗ (16% на ур. 5)."],
   torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 12 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
-  ironlily: ["Железная Лили", "Багровая буря", "Каждые 9 с посылает сквозь врага волну алой энергии клинка с доп. уроном."],
+  ironlily: ["Железная Лили", "Боевой клич", "Каждые 12 с воодушевляет отряд: все герои получают +20% АТК на 4 с (+40% на ур. 5)."],
   vesper: ["Веспер Квилл", "Перезапись", "Каждые 10 с обнуляет щит сильнейшего врага и бьёт его с доп. уроном."],
   aurek: ["Аурек Солмейн", "Купол твёрдого света", "Каждые 12 с возводит купол из твёрдого света, защищающий союзников рядом."],
   seraphine: ["Серафина Люкс", "Кристальное копьё", "Каждые 8 с выпускает кристальное копьё, пронзающее линию врагов."],
@@ -6172,9 +6172,12 @@ var HERO_DEFS = {
   // v1149 (Harley): Iron Lily - placeholder hero (card only). comingSoon: can't be recruited or equipped, never on bots / Arena (vipOnly keeps her out of those pools). Skills are placeholder text.
   ironlily: { name: "Iron Lily", title: "The Crimson Blade", class: "infantry", icon: "🌺", rarity: "Legendary", vipOnly: true, comingSoon: true,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
+    /* v1410 (Harley): her kit = a melee fighter that is extremely hard to remove + team ATK leader. Text only until she is built
+       (comingSoon). Blade Wall = BULLETS only (fortress cannon now, future bullet enemies/heroes), evenly spread like Shadow Step (no dice). */
     conquestSkills: [
-      { name: "Crimson Tempest", icon: "🌺⚔️", kind: "active", cooldown: 9, pctByLevel: [0.70, 0.80, 0.90, 1.00, 1.10], desc: "Every 9s, sends a wave of red blade energy through the enemy for bonus damage." },
-      { name: "Iron Will", icon: "🛡️", kind: "passive", desc: "Takes less damage as her HP drops." }
+      { name: "War Cry", icon: "🌺📣", kind: "active", cooldown: 12, buffPctByLevel: [0.20, 0.25, 0.30, 0.35, 0.40], buffSec: 4, desc: "Every 12s, rallies the team: all heroes get +20% ATK for 4s (+40% at Lv 5)." },
+      { name: "Blade Wall", icon: "🗡️🛡️", kind: "passive", blockPctByLevel: [0.20, 0.30, 0.40, 0.50, 0.60], desc: "Parries bullets fired at her in a flurry of sword blocks: blocks 20% of them (60% at Lv 5), evenly - every 5th bullet at 20%, every 2nd at 50%." },
+      { name: "Iron Will", icon: "🛡️", kind: "passive", defPctByLevel: [0.08, 0.12, 0.16, 0.20, 0.25], desc: "Her own DEF +8% (+25% at Lv 5)." }
     ],
     expeditionSkills: [] },
   // v1385 (Harley: "start setting up icons for them in the hero index along with all their skills and stats"): 5 new heroes from Claude's
@@ -12937,7 +12940,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1409"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1410"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -30326,6 +30329,12 @@ function skillValueText(skill, level, heroKey, group, idx) {
     var arrS = skill.healPctByLevel || skill.guardPctByLevel, pS = arrS[Math.max(1, Math.min(arrS.length, level)) - 1] || 0;
     return (skill.support === "heal" ? "Heals " : "Guard shield ") + Math.round(pS * 1000) / 10 + "% max HP / " + skill.cooldown + "s";
   }
+  var pickL = function (arr) { return arr[Math.max(1, Math.min(arr.length, level)) - 1] || 0; }; /* v1410: Iron Lily's kit + placeholder skills */
+  if (skill.buffPctByLevel) return "All heroes +" + Math.round(pickL(skill.buffPctByLevel) * 100) + "% ATK for " + skill.buffSec + "s / " + skill.cooldown + "s";
+  if (skill.blockPctByLevel) return "Blocks " + Math.round(pickL(skill.blockPctByLevel) * 100) + "% of bullets aimed at her";
+  if (skill.defPctByLevel) return "+" + Math.round(pickL(skill.defPctByLevel) * 100) + "% own DEF";
+  if (skill.kind === "active" && !skill.pctByLevel && skill.burstBase == null && ov == null) return "Every " + skill.cooldown + "s · coming soon";
+  if (skill.kind === "passive" && skill.perLevel == null && ov == null) return "Coming soon";
   if (skill.kind === "limit") { /* v954: Death Strike style */
     var pL = skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0, nL = skill.targetsByLevel[Math.max(1, Math.min(skill.targetsByLevel.length, level)) - 1];
     var dmgL = ov != null ? ov : skillDamageBaseFor(heroKey, game.state.heroes[heroKey], game.idleAttackerDamage(heroKey)) * pL;
