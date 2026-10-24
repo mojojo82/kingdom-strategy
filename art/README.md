@@ -108,3 +108,5 @@ Still missing originals: Gareth idle (8 frames) and attack (11 frames).
 | art/originals/heroes/ironlily/ | Harley 23 Oct 2026: Iron Lily full-body (for his own animation, not in the game): source, cutout (lily_cut.png, lily_full_alpha.png), solid green #00FF00 version, and 3840x2160 16:9 frames (green + transparent) with her lower-left. |
 | art/originals/heroes/hanzo/ | Harley 23 Oct 2026: GPT full-body sheet (Torvald, Sera, Kessa, Hanzo). Hanzo used (v1390): hanzo_cut.png = background removed, card_hanzo.png = card picture. The other three not used yet. |
 | art/originals/heroes/new4_v1388/ | Harley 23 Oct 2026: GPT filled the 4 numbered blank cards in a hero-list screenshot - Vesper, Aurek, Seraphine, Halo-7. cut_* = picture cut from each card (card colour + baked class badge removed), card_* = 360x480 card picture (small source, upscaled ~1.9x: placeholders). |
+
+**Hero animation frames rule (24 Oct 2026, Harley):** keep a keyed, cropped LARGE frame set (>= 3x on-screen size, >= ~510 px tall) in art/originals/heroes/<hero>/large/ alongside the source video and the in-game copy, so all heroes can be sized up later without re-generating.
