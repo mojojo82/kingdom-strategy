@@ -3819,3 +3819,8 @@ Harley's 3 points:
 ## v1428 (TEST) — Iron Lily: no left/right flicker (Harley's recording)
 - Up against an enemy, her facing came from which side of her middle the enemy's middle was - overlapping, that flipped every frame: 125 turns in 32 s of the stage (spawning 7 times on alternating sides + 2 each side). Now she turns only when her target is > 12 px on the other side: 22 turns, same hits (61 -> 60).
 - Conquest had a related snap: in contact (|dx| <= 8) she was forced to face right even when fighting an enemy on her left - she now keeps her facing there.
+
+## v1429 (TEST) — Iron Lily: no running on top of an enemy (Harley: "why is she attempting to run next to an enemy, l r l r on top of it")
+- Measured in the stage: 22% of frames (436 / 1961) she was playing part of the run (take-off / stride / the 2.8-height stop) with an enemy within 1.5 of her heights, though the fight had already switched her out of run mode - the run played as one unbroken piece, its travel clamped so she ran on the spot.
+- Now: in any run frame, if her target is within 2 of her heights and she's not mid-air, she cuts out at once (2-frame blend into her ready stance) and fights; the full stop only plays when there's room. Running is only ever for closing distance. 436 -> 6 frames (the 6 = mid-air take-off frames finishing). Turns 34 -> 7 in the same run.
+- Test: dev/simfork/g356_lily_close_quarters.js (stage exposes S.player for it).

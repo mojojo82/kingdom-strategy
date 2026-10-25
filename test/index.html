@@ -12972,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1428"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1429"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25190,6 +25190,9 @@ function lilyRunNext(p) { /* v1425: her run. Mode "run" (target far away): get i
      stop (which ends in her stance and joins on from there). The run clip is one continuous video, so its pieces play straight on - no crossfade. */
   var m = LILY.man, r = m.run, i = p.i, nx = -1;
   if (!r) return false;
+  if (lilyInRun(i) && p.mode !== "run" && p.mode !== "idle" && (p.gap || 0) < 2 * m.stand && !m.nojSet[i]) { /* v1429: an enemy is right there - cut out of the run now (no running on top of it) into her ready stance and fight */
+    p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[m.ready][7]; p.i = m.ready; p.run = 0; p.joins++; p.lastJoin = [i, m.ready]; p.swOn = false; return true;
+  }
   if (i === r.in[1]) nx = r.loop[0];                                         // take-off -> stride
   else if (i === r.loop[1]) nx = p.mode === "run" ? r.loop[0] : r.out[0];     // stride: loop while running, else into the stop
   else if (p.mode === "run" && !lilyInRun(i) && !m.nojSet[i] && p.run >= 6 && !(m.sw && (m.sw[i] || m.sw[i + 1]))) { // fighting -> start running: blend into the take-off (v1427: never mid-swing - the 2-frame blend showed the sword swoosh over her first running steps)
@@ -25284,6 +25287,7 @@ function lilyTrainOpen() {
   $("ltReach").onclick = function () { S.reach = !S.reach; this.textContent = "Hit lines: " + (S.reach ? "on" : "off"); };
   $("ltHp").onclick = function () { S.hpHits = S.hpHits === 6 ? 20 : S.hpHits === 20 ? 1000 : 6; this.textContent = "Enemy HP: " + (S.hpHits >= 1000 ? "unkillable" : S.hpHits + " hits"); };
   window.__lilyTrain = S; // tests read it
+  Object.defineProperty(S, "player", { get: function () { return store.lily && store.lily.p; } });
   function step(dt) {
     var L = S.lily, hs = hS(), W = S.W, live = S.en.filter(function (e) { return !e.dying; });
     // target: nearest live enemy (either side)
