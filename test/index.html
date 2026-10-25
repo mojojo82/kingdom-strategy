@@ -8346,6 +8346,7 @@ function createGame(opts) {
   }
   function idleSlotMult(aid, slot) { var cfg = COMBAT_TIMING.heroAttackSlots[aid], s = cfg && cfg.slots && cfg.slots[slot]; return s && s.secMult > 0 ? s.secMult : 1; }
   function idleMeleeStrike(aid, tgt, dmg, useMark, slot) { /* returns true when the HP came off now, false when the hit is owed to the sword */
+    if (aid === "ironlily" && idleMeleeDefers(aid)) return false; /* v1420: while she is drawn her damage comes from her blade/kick hit frames (idleLilyImpact), not this timer */
     if (idleMeleeDefers(aid)) { idleMeleeOwed.push({ aid: aid, id: tgt.id, dmg: dmg, at: Date.now(), slot: slot || 1 }); return false; }
     tgt.hp -= dmg * (useMark ? idleMarkMult(tgt, aid) : 1) * idleEnemyDefTake(tgt, dmg); return true;
   }
@@ -8363,6 +8364,18 @@ function createGame(opts) {
       idleMeleeKillCheck(e);
     });
     return out;
+  }
+  /* v1420: Iron Lily - one hit frame of her flurry (blade tip / foot at full reach) landing on the enemy at it. Per hit = her basic hit scaled so that
+     her average damage per second while fighting matches her basic-attack rate (LILY_IMPACT_RATE hits a second, measured from her moves);
+     when the scene isn't drawn (sims, locked phone, Arena) her normal basic attack timer stands in at that same average. */
+  function idleLilyImpact(bladeId) {
+    if (state.idle.pending || bladeId == null || idleHeroIsKo("ironlily")) return [];
+    var e = idleFindEnemy(bladeId); if (!e || e.hp <= 0) return [];
+    var dmg = idleAttackerHitDamage("ironlily") / (heroAttackSec("ironlily") * LILY_IMPACT_RATE);
+    idleMeleeLast.ironlily = { id: e.id, at: Date.now() };
+    e.hp -= dmg * idleMarkMult(e, "ironlily") * idleEnemyDefTake(e, dmg); state.idle.lilyHits = (state.idle.lilyHits || 0) + 1;
+    idleMeleeKillCheck(e);
+    return [{ id: e.id, dmg: Math.round(dmg) }];
   }
   function idleMeleeSettle() { /* engine side, every combat slice: not drawn any more -> owed hits land the old way on their target; drawn -> a hit the sword never delivered expires (a miss) */
     if (!idleMeleeOwed.length) return;
@@ -10889,7 +10902,7 @@ function createGame(opts) {
     idleIsBossLevel: idleIsBossLevel, idleStartBossAttempt: idleStartBossAttempt, idleResolveResult: idleResolveResult, idleArriveDelay: IDLE_ARRIVE_DELAY, idleIsChapterBossLevel: idleIsChapterBossLevel, idleBossName: idleBossName, idleEnvironment: idleEnvironment,
     setIdleMeleeTargets: function (map) { idleMeleeReach.map = map; idleMeleeReach.t = Date.now(); idleMeleeFirstStrikes(); },
     idleMeleeVisPing: function (heroes) { idleMeleeVis.t = Date.now(); idleMeleeVis.heroes = heroes || {}; }, /* v917: the scene was really drawn this frame */
-    idleMeleeLand: idleMeleeLand, idleConfirmDeath: idleConfirmDeath, idleDyingCount: function () { return idleDying.length; }, idleMeleeOwedCount: function (aid) { return idleMeleeOwed.filter(function (o) { return o.aid === aid; }).length; },
+    idleMeleeLand: idleMeleeLand, idleLilyImpact: idleLilyImpact, idleConfirmDeath: idleConfirmDeath, idleDyingCount: function () { return idleDying.length; }, idleMeleeOwedCount: function (aid) { return idleMeleeOwed.filter(function (o) { return o.aid === aid; }).length; },
     setIdleFrontOnScreen: function (ok, id) { idleFrontScreen.ok = !!ok; idleFrontScreen.id = (id == null ? null : id); idleFrontScreen.t = Date.now(); },
     resetConquestProgress: resetConquestProgress,
     devJumpChapter: devJumpChapter, idleEnvForChapter: function (ch) { return idleEnvironmentFor(ch); },
@@ -12958,7 +12971,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1419"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1420"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23673,6 +23686,7 @@ function stepIdleAnim(dtSec, w, h) {
     var bhVis = idleAnim.enemyById[bhl.id], bhDef = HERO_DEFS[bhl.aid];
     if (!bhVis || !bhDef || game.state.conquestRoster.indexOf(bhl.aid) === -1) continue; // target never drawn / hero gone — nothing honest to draw
     if (bhDef.class === "infantry") { // v713: the swing starts now, but the hit (damage number, bar drop, flash) lands only when the sword reaches its impact frame; the body stays on screen until then
+      if (bhl.aid === "ironlily" && bhl.owed) continue; /* v1420: her hits come from her hit frames */
       if (!HERO_ANIMS[bhl.aid]) { meleeVisualHit(bhl.aid, bhl.dmg, bhVis, bhl.id, h); continue; }
       (idleAnim.lastMeleeHitAt || (idleAnim.lastMeleeHitAt = {}))[bhl.aid] = performance.now();
       var mq = (idleAnim.meleeQ || (idleAnim.meleeQ = {}))[bhl.aid] || (idleAnim.meleeQ[bhl.aid] = []);
@@ -25184,6 +25198,7 @@ function lilyNext(p) { // advance one video frame along the move graph
     else if (n < 0 || nearEnd) j = (m.forced[i] != null && lilyFresh(p, m.forced[i])) ? m.forced[i] : lilyNearest(i, p);
   } else if (n < 0 || (nearEnd && m.forced[i] != null)) j = (m.forced[i] != null && lilyFresh(p, m.forced[i])) ? m.forced[i] : lilyNearest(i, p);
   p.t++; p.seen[i] = p.t; // every frame she plays counts, so a join can't land on something she just did
+  var nx = j >= 0 ? j : n; if (nx >= 0 && m.imp && m.imp[nx] != null) (p.hitQ || (p.hitQ = [])).push(m.imp[nx]); // v1420: a hit frame - the battle checks what is at her blade
   if (j >= 0) { p.used[j] = (p.used[j] || 0) + 1; p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[j][7]; p.i = j; p.run = 0; p.joins++; p.lastJoin = [i, j]; return; }
   if (p.fade && --p.fade.n <= 0) p.fade = null;
   p.i = n; p.run++;
@@ -25250,6 +25265,7 @@ function lilyPreviewOpen() {
    by what the fight needs - far enemy: moves that carry her forward; enemy in reach: moves that stay put; nothing on screen: ready stance.
    Faces whoever she is fighting (flank-back / running home = left). Damage timing is unchanged (step 4 ties hits to her blade). */
 var LILY_STAND_CSS = 28; // standing height in CSS px at 100% hero scale
+var LILY_IMPACT_RATE = 2.3; // v1420: her hit frames per second while fighting on the spot (measured: dev/simfork/g354) - sets the damage of each hit
 function heroMoves(k) { return !!HERO_ANIMS[k] || (k === "ironlily" && lilyReady()); }
 function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
   lilyLoad(); if (!lilyReady()) return false;
@@ -25859,7 +25875,16 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
     var anyL = false; for (var eL in idleAnim.enemyById) { if (idleAnim.enemyById[eL].x <= w) { anyL = true; break; } }
     var faceL = (vis.flank && vis.flank.mode === "back") ? true : (movL ? mdxL < 0 : false);
     var modeL = !anyL ? "idle" : (vis.chasing || movL) ? "close" : "fight";
-    if (lilyBattleDraw(ctx, idleAnim.lilyP || (idleAnim.lilyP = {}), key, vis.x, vis.y + 12 * hScale, hScale, modeL, faceL)) return;
+    var lpS = idleAnim.lilyP || (idleAnim.lilyP = {});
+    if (lilyBattleDraw(ctx, lpS, key, vis.x, vis.y + 12 * hScale, hScale, modeL, faceL)) {
+      var lq = lpS[key].p.hitQ; /* v1420: each hit frame lands on the enemy at her blade / foot (nearest in front within that frame's reach); nothing there = a miss */
+      while (lq && lq.length) {
+        var reachL = lq.shift() * (LILY_STAND_CSS * hScale) / LILY.man.stand + 6, dirL = faceL ? -1 : 1, bestL = null, bdL = 1e9;
+        for (var eh in idleAnim.enemyById) { var evh = idleAnim.enemyById[eh]; if (evh.dying) continue; var dh = (evh.x - vis.x) * dirL, rch = evh.type === "boss" ? reachL + 30 : reachL; if (dh >= -8 && dh <= rch && dh < bdL) { bdL = dh; bestL = eh; } }
+        if (bestL != null) game.idleLilyImpact(Number(bestL)).forEach(function (r) { var evR = idleAnim.enemyById[r.id]; if (evR) meleeVisualHit(key, r.dmg, evR, r.id, h); });
+      }
+      return;
+    }
   }
   if (HERO_ANIMS[key] && heroAnimImg(key)) {
     var hp = idleAnim.heroPrevX || (idleAnim.heroPrevX = {});
@@ -29290,7 +29315,7 @@ function startIdleAnim() {
         if (cqSky > 0) { ctx.clearRect(0, 0, w, h + cqSky); ctx.translate(0, cqSky); }
         drawIdleAnim(ctx, w, h);
         ctx.restore();
-        if (!document.hidden) { var mvH = {}; game.state.conquestRoster.forEach(function (k) { var an = HERO_ANIMS[k]; if (HERO_DEFS[k] && HERO_DEFS[k].class === "infantry" && an && an.impact && !(an.once && an.once.attack)) mvH[k] = true; }); game.idleMeleeVisPing(mvH); } /* v917: drawn this frame -> melee hits wait for the sword */
+        if (!document.hidden) { var mvH = {}; game.state.conquestRoster.forEach(function (k) { var an = HERO_ANIMS[k]; if (HERO_DEFS[k] && HERO_DEFS[k].class === "infantry" && an && an.impact && !(an.once && an.once.attack)) mvH[k] = true; if (k === "ironlily" && lilyReady()) mvH[k] = true; /* v1420 */ }); game.idleMeleeVisPing(mvH); } /* v917: drawn this frame -> melee hits wait for the sword */
         renderIdleHeader();
         updateIdleSkillbarDom();
       } catch (err) {

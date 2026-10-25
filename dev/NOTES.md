@@ -3770,3 +3770,10 @@ Harley's 3 points:
 - Size: LILY_STAND_CSS = 28 CSS px standing at 100% hero scale (x heroSpriteVisualScale) - looks about Gareth's size in the test fight.
 - Conquest: drawIdleHeroSprite branch; Arena: drawOneHero branch. Damage timing unchanged (step 4).
 - Test: dev/simfork/g353_lily_battle.js (Lily + Gareth + Lyra in a real Conquest fight: she loads, animates, closes in AND fights on the spot, moves ~300 px). Still comingSoon, so players can't equip her (step 5 dev stage).
+
+## v1420 (TEST) — Iron Lily build, step 4: her damage lands when her blade / kick connects
+- Hit frames (dev/lily/impacts.py -> manifest 'imp'): the front-most point of her (blade tip or foot) at a local peak, >= 0.4 x her height in front of her feet, after moving out >= 10 px over 4 frames; one per peak. 48 hit frames, reach median 121 sheet px (~0.7 of her height).
+- Conquest, scene drawn: her basic-attack timer deals nothing (idleMeleeStrike returns early for her, nothing owed); each hit frame she plays checks the enemy nearest in front within that frame's reach (+6 px, +30 vs the boss) and calls game.idleLilyImpact(id) - real HP loss / kill / reward, damage number. Nothing there = a miss.
+- Per hit = her basic hit / (attack sec x LILY_IMPACT_RATE). LILY_IMPACT_RATE = 2.3 = her measured hit frames per second (fight 2.29, close 2.34 over 5 seeds x 2 min). Not drawn (sims, locked phone, background) and Arena (fought out before playback): her normal timer at that same average - so balance runs still cover her.
+- Measured, rendered Conquest solo, Lv30 5 stars, 40 s x2: Lily 32 / 28 enemies defeated, Gareth 23 / 21 (she connects more often than his fixed swing cycle). Balance pass later, with the dev stage.
+- Tests: dev/simfork/g354_lily_hits.js (rate matches the code, hits land in a real fight, no owed pile-up); g352/g353 still OK.
