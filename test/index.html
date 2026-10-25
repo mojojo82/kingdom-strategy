@@ -12972,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1427"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1428"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24012,7 +24012,7 @@ function stepIdleAnim(dtSec, w, h) {
       var swLk = idleAnim.swingRun && idleAnim.swingRun[key], slamLock = swLk && swLk.slam && performance.now() < swLk.until; /* v1345 (Harley: in his crouch he "physically moves forward at running speed" - movement locked until he stands back up) */
       var swingLock = isMeleeHero && heroMoves(key) && ((swLk && performance.now() < swLk.until) || idleAnim.skillFlash[key] > 0); /* v1357 (Harley: "no run, no move") - while a swing / skill pose is playing he can't slide either way; the ground drift back toward the fortress still applies */
       if (key === "ironlily" && lilyReady()) { /* v1422 (Harley: no running speed unless she gets a run animation): she only moves as far as her own move carries her (feet travel in the video) - never past where she is heading */
-        vis.lilyFaceLeft = (vis.flank && vis.flank.mode === "back") ? true : (Math.abs(dx) > 8 ? dx < 0 : false);
+        vis.lilyFaceLeft = (vis.flank && vis.flank.mode === "back") ? true : (Math.abs(dx) > 12 ? dx < 0 : !!vis.lilyFaceLeft); /* v1428: in contact she keeps facing whoever she was fighting (it snapped her to the right) */
         vis.chasing = Math.abs(dx) > 10; vis.lilyGap = Math.abs(dx); // she can't run, so 'closing in' just means the gap is bigger than a step - the enemy may well walk the rest
         var lpR = idleAnim.lilyP && idleAnim.lilyP.ironlily;
         if (lpR) { var rdc = lilyTakeRoot(lpR.p, LILY_STAND_CSS * (heroSpriteVisualScale / 100) / LILY.man.stand) * (vis.lilyFaceLeft ? -1 : 1); if (rdc * dx > 0 && Math.abs(rdc) > Math.abs(dx)) rdc = dx; vis.x += rdc; }
@@ -25290,11 +25290,12 @@ function lilyTrainOpen() {
     var tgt = null; live.forEach(function (e) { if (!tgt || Math.abs(e.x - L.x) < Math.abs(tgt.x - L.x)) tgt = e; });
     var moving = false;
     if (tgt) {
-      var dir = tgt.x < L.x ? -1 : 1, want = tgt.x - dir * (GAP + 2) * hs, dx = want - L.x;
+      if (tgt.x < L.x - 12) L.face = true; else if (tgt.x > L.x + 12) L.face = false; /* v1428: turn only when her target is clearly on the other side - it flipped her 125 times in 30 s when they overlapped */
+      var dir = L.face ? -1 : 1, want = tgt.x - dir * (GAP + 2) * hs, dx = want - L.x;
       if (L.chasing) { if (Math.abs(dx) < 1.5) L.chasing = false; } else if (Math.abs(dx) > 8 * hs) L.chasing = true;
-      moving = L.chasing; L.face = dir < 0;
+      moving = L.chasing;
     }
-    S.wantX = tgt ? tgt.x - (tgt.x < L.x ? -1 : 1) * (GAP + 2) * hs : null;
+    S.wantX = tgt ? tgt.x - (L.face ? -1 : 1) * (GAP + 2) * hs : null;
     // enemies walk to her and stop at contact; swing every 1.5 s (she has unlimited health - swings are just counted)
     live.forEach(function (e) { var d = L.x - e.x, sgn = Math.sign(d) || 1, stopAt = L.x - sgn * (GAP * hs);
       if (Math.abs(d) > GAP * hs + 1) { var ws = 38 * hs * dt; e.x += Math.abs(stopAt - e.x) <= ws ? stopAt - e.x : Math.sign(stopAt - e.x) * ws; e.atkT = Math.max(e.atkT, 0.6); }

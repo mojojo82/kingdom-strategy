@@ -3815,3 +3815,7 @@ Harley's 3 points:
 
 ## v1427 (TEST) — Iron Lily: no sword swoosh over her first running steps (Harley: "what is this swipe she does when running left")
 - Going from fighting into the run blends 2 frames into the take-off; if she was mid-swing, the swoosh frame ghosted over her first running steps. Measured over 120 fight->run switches: 65 blended a swoosh (v1426) -> 0. She now starts the run only from a frame that isn't sweeping (same for settling into idle). g352 checks it.
+
+## v1428 (TEST) — Iron Lily: no left/right flicker (Harley's recording)
+- Up against an enemy, her facing came from which side of her middle the enemy's middle was - overlapping, that flipped every frame: 125 turns in 32 s of the stage (spawning 7 times on alternating sides + 2 each side). Now she turns only when her target is > 12 px on the other side: 22 turns, same hits (61 -> 60).
+- Conquest had a related snap: in contact (|dx| <= 8) she was forced to face right even when fighting an enemy on her left - she now keeps her facing there.
