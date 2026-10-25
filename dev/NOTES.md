@@ -3809,3 +3809,6 @@ Harley's 3 points:
 - Player: mode "run" (gap > 4 x her height; stops under 3 - her stop is ~2.8 heights long) blends into the take-off, loops the stride, and on any other mode runs on into the stop (one continuous video - no crossfade inside the run). No strikes while running. Training stage + Conquest use it.
 - Sheets rebuilt as tag v3 (7 sheets, 654 frames, 5.6 MB); v2 removed. rejoin + strikes rerun; LILY_IMPACT_RATE 2.7 -> 3.0 (2.96 measured).
 - Measured: Conquest solo hits in 25 s 8 -> 20 (she can reach the archers / lancers that hang back now).
+
+## v1426 (TEST) — training stage: enemy glitch fixed (Harley's screen recording)
+- When Lily stood in an enemy's middle the stage flipped the enemy's facing every frame (its long attack tentacle swapped sides). Enemies now keep their facing until she is > 12 px clearly on the other side. Also removed the stand-in pale hit circle drawn over enemies on each hit (Conquest has its hit flash off).
