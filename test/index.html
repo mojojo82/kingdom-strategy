@@ -12975,7 +12975,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1438"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1439"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24015,7 +24015,8 @@ function stepIdleAnim(dtSec, w, h) {
     } else {
       var swLk = idleAnim.swingRun && idleAnim.swingRun[key], slamLock = swLk && swLk.slam && performance.now() < swLk.until; /* v1345 (Harley: in his crouch he "physically moves forward at running speed" - movement locked until he stands back up) */
       var swingLock = isMeleeHero && heroMoves(key) && ((swLk && performance.now() < swLk.until) || idleAnim.skillFlash[key] > 0); /* v1357 (Harley: "no run, no move") - while a swing / skill pose is playing he can't slide either way; the ground drift back toward the fortress still applies */
-      if (key === "ironlily" && lilyReady()) { /* v1422 (Harley: no running speed unless she gets a run animation): she only moves as far as her own move carries her (feet travel in the video) - never past where she is heading */
+      if (key === "ironlily" && !lilyReady()) { /* v1439: sheets still loading - she holds her spot (no sliding token) */
+      } else if (key === "ironlily") { /* v1422 (Harley: no running speed unless she gets a run animation): she only moves as far as her own move carries her (feet travel in the video) - never past where she is heading */
         vis.lilyFaceLeft = (vis.flank && vis.flank.mode === "back") ? true : (Math.abs(dx) > 12 ? dx < 0 : !!vis.lilyFaceLeft); /* v1428: in contact she keeps facing whoever she was fighting (it snapped her to the right) */
         vis.chasing = Math.abs(dx) > 10; vis.lilyGap = Math.abs(dx); // she can't run, so 'closing in' just means the gap is bigger than a step - the enemy may well walk the rest
         var lpR = idleAnim.lilyP && idleAnim.lilyP.ironlily;
@@ -26097,6 +26098,7 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
   var flashing = idleAnim.skillFlash[key] && idleAnim.skillFlash[key] > 0;
   var img = getCombatSpriteImg(key);
   var hScale = heroSpriteVisualScale / 100;
+  if (key === "ironlily" && !lilyReady()) { lilyLoad(); return; } // v1439: draw nothing until her sheets are in (was a round token sliding forward)
   if (key === "ironlily") { // v1419
     var hpL = idleAnim.heroPrevX || (idleAnim.heroPrevX = {}), mdxL = hpL[key] != null ? vis.x - hpL[key] + (vis.driftStep || 0) : 0, movL = Math.abs(mdxL) > 0.12; hpL[key] = vis.x;
     var anyL = false; for (var eL in idleAnim.enemyById) { if (idleAnim.enemyById[eL].x <= w) { anyL = true; break; } }
@@ -30115,6 +30117,7 @@ function render() {
      scene was being DRAWN, so on any other screen nothing downloaded. This 1 s tick runs on every screen, so the current level's art (and the next
      chapter's) is fetched the moment the game knows about it - by the time the player taps Conquest it is already in. Costs nothing once loaded. */
   try { ensureLevelArtAround(game.idleEnvironment()); } catch (e) {}
+  try { if ((game.state.conquestRoster || []).indexOf("ironlily") !== -1) lilyLoad(); } catch (e) {} /* v1439 (Harley: Lily showed as a sliding round token for her first ~2 s): fetch her sheets on any screen as soon as she's equipped, same as the level art */
   renderPower();
   renderStats();
   renderResources();

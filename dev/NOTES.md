@@ -3876,3 +3876,8 @@ Harley's 3 points:
 ## v1438 — Readable power on the monster attack buttons
 - Harley (phone screenshot): the "555,230 · Win" text on the cyan Formation buttons in the monster popup was dark green under the buttons' dark outline, so it was unreadable.
 - `.mon-fm .win` is now white like the button label, and `.lose` ("Too weak") is pale red, both keeping the outline. Checked in a headless render.
+
+## v1439 — Lily's sheets load before Conquest opens
+- Harley (phone recording): for her first ~2 s in Conquest Lily was a round portrait token sliding forward, because her 8.3 MB sheets only started downloading when Conquest first drew her.
+- Now `render()` (runs on every screen) starts `lilyLoad()` as soon as she's in the Conquest roster, the same way level art is fetched. While the sheets are still loading she isn't drawn and holds her spot, instead of a token running at normal speed.
+- Measured with sheets delayed 2.5 s (phone-like), sitting on the World map 3 s and then opening Conquest. Before: ready after 2754 ms and slid 340 px as a token. After: ready at 0 ms and moved 0 px. g351–g356 OK.
