@@ -3967,6 +3967,7 @@
                   <button class="dev-btn" id="devTestBadgeBtn">🔥 TEST name badge: Shown</button>
                   <button class="dev-btn" id="devHeroShowcaseBtn">🎭 Hero showcase: Off</button>
                   <button class="dev-btn" id="devLilyPrevBtn" onclick="lilyPreviewOpen()">🌺 Iron Lily frame player (preview)</button>
+                  <button class="dev-btn" id="devLilyTrainBtn" onclick="lilyTrainOpen()">🌺⚔️ Iron Lily training stage</button>
                   <button class="dev-btn" id="devHeroHopBtn">🦘 Gareth back-hop: On</button>
                   <button class="dev-btn" id="devFortLifeBtn">🚀 Fortress life: Off</button>
                   <button class="dev-btn" id="devFortFlashBtn">⚪ Fortress life hit flash: On</button>
@@ -12971,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1420"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1421"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25226,6 +25227,109 @@ function lilyDraw(ctx, p, x, feetY, standH, flip, hold) {
   ctx.restore(); return true;
 }
 /* Dev Tools > Heroes look: a small stage that plays her move graph at in-game size (no combat yet). */
+/* v1421: Iron Lily training stage (build step 5, Dev Tools). Lily alone on a strip of road; Harley spawns melee enemies on her left / right.
+   Uses her real battle pieces - the move player with close / fight / idle, facing, hit frames + reach, per-hit damage rule - with a small
+   stand-in for the battlefield: enemies walk up, stop at her and swing; she chases the nearest, holds in contact, turns to whoever she is
+   fighting. She has unlimited health (Harley). Nothing here touches the save - it's a sandbox. */
+function lilyTrainOpen() {
+  var old = document.getElementById("lilyTrain"); if (old) { old.remove(); return; }
+  lilyLoad();
+  var ov = document.createElement("div"); ov.id = "lilyTrain";
+  ov.style.cssText = "position:fixed;left:0;right:0;bottom:0;top:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;font:13px sans-serif;color:#fff";
+  var B = function (id, t) { return '<button id="' + id + '" class="dev-btn" style="width:auto;flex:1 1 auto;padding:8px 6px">' + t + '</button>'; };
+  ov.innerHTML = '<div style="background:#1b2236;border-top:2px solid #c9a24a;width:100%;max-width:640px;padding:8px 8px calc(8px + env(safe-area-inset-bottom))">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>🌺 Iron Lily - training stage</b><button id="ltX" class="dev-btn" style="width:auto;padding:6px 12px">✕</button></div>' +
+    '<canvas id="ltC" style="width:100%;height:300px;display:block;border-radius:6px;touch-action:manipulation"></canvas>' +
+    '<div id="ltInfo" style="font-size:12px;opacity:.9;margin:6px 0;min-height:16px">loading her frames...</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' + B("ltL", "⬅️ Spawn left") + B("ltR", "Spawn right ➡️") + B("ltB", "+2 each side") + B("ltClr", "Clear") + '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + B("ltPause", "⏸ Pause") + B("ltSlow", "Speed: 1x") + B("ltZoom", "Zoom: in-game") + B("ltReach", "Hit lines: off") + B("ltHp", "Enemy HP: 6 hits") + '</div></div>';
+  document.body.appendChild(ov);
+  var cv = document.getElementById("ltC"), ctx = cv.getContext("2d");
+  var S = { lily: { x: 0, face: false, chasing: false, hits: 0, miss: 0, taken: 0 }, en: [], nid: 0, paused: false, spd: 1, zoom: 1, reach: false, hpHits: 6, fx: [], lastReach: null, t: performance.now(), raf: 0, W: 300 };
+  var store = {}, GAP = IDLE_BLOCK_GAP, REACH_X = (typeof meleeReachExtra !== "undefined" ? meleeReachExtra : 12);
+  function hS() { return heroSpriteVisualScale / 100; } // zoom scales the whole stage instead (enemies too)
+  function spawn(side) { var W = S.W; S.en.push({ id: ++S.nid, side: side, x: side < 0 ? 12 : W - 12, hp: S.hpHits, max: S.hpHits, vis: { x: 0 }, atkT: 1 + Math.random() * 0.5, flash: 0, dying: 0 }); }
+  var $ = function (id) { return document.getElementById(id); };
+  $("ltX").onclick = function () { cancelAnimationFrame(S.raf); ov.remove(); };
+  $("ltL").onclick = function () { spawn(-1); }; $("ltR").onclick = function () { spawn(1); };
+  $("ltB").onclick = function () { spawn(-1); spawn(-1); spawn(1); spawn(1); };
+  $("ltClr").onclick = function () { S.en = []; };
+  $("ltPause").onclick = function () { S.paused = !S.paused; this.textContent = S.paused ? "▶ Play" : "⏸ Pause"; };
+  $("ltSlow").onclick = function () { S.spd = S.spd === 1 ? 0.25 : 1; this.textContent = "Speed: " + (S.spd === 1 ? "1x" : "slow"); };
+  $("ltZoom").onclick = function () { S.zoom = S.zoom === 1 ? 2 : 1; this.textContent = "Zoom: " + (S.zoom === 1 ? "in-game" : "2x"); };
+  $("ltReach").onclick = function () { S.reach = !S.reach; this.textContent = "Hit lines: " + (S.reach ? "on" : "off"); };
+  $("ltHp").onclick = function () { S.hpHits = S.hpHits === 6 ? 20 : S.hpHits === 20 ? 1000 : 6; this.textContent = "Enemy HP: " + (S.hpHits >= 1000 ? "unkillable" : S.hpHits + " hits"); };
+  window.__lilyTrain = S; // tests read it
+  function step(dt) {
+    var L = S.lily, hs = hS(), W = S.W, live = S.en.filter(function (e) { return !e.dying; });
+    // target: nearest live enemy (either side)
+    var tgt = null; live.forEach(function (e) { if (!tgt || Math.abs(e.x - L.x) < Math.abs(tgt.x - L.x)) tgt = e; });
+    var moving = false;
+    if (tgt) {
+      var dir = tgt.x < L.x ? -1 : 1, want = tgt.x - dir * (GAP + 2) * hs, dx = want - L.x;
+      if (L.chasing) { if (Math.abs(dx) < 1.5) L.chasing = false; } else if (Math.abs(dx) > 8 * hs) L.chasing = true;
+      if (L.chasing) { var st = HERO_RUN_PX_PER_SEC * hs * dt; L.x += Math.abs(dx) <= st ? dx : Math.sign(dx) * st; moving = true; }
+      L.face = dir < 0;
+    }
+    // enemies walk to her and stop at contact; swing every 1.5 s (she has unlimited health - swings are just counted)
+    live.forEach(function (e) { var d = L.x - e.x, sgn = Math.sign(d) || 1, stopAt = L.x - sgn * (GAP * hs);
+      if (Math.abs(d) > GAP * hs + 1) { var ws = 38 * hs * dt; e.x += Math.abs(stopAt - e.x) <= ws ? stopAt - e.x : Math.sign(stopAt - e.x) * ws; e.atkT = Math.max(e.atkT, 0.6); }
+      else { e.atkT -= dt; if (e.atkT <= 0) { e.atkT = 1.5; e.vis.atkStart = performance.now(); L.taken++; } } });
+    var mode = !live.length ? "idle" : moving ? "close" : "fight";
+    var stD = store.lily || (store.lily = { p: lilyPlayer(7), t: 0 }); stD.p.mode = mode; lilyStep(stD.p, dt);
+    // hit frames: the nearest enemy in front within that frame's reach takes a hit; none = a miss
+    var q = stD.p.hitQ; while (q && q.length) {
+      var r = q.shift() * (LILY_STAND_CSS * hs) / LILY.man.stand + 6, fdir = L.face ? -1 : 1, best = null, bd = 1e9;
+      live.forEach(function (e) { var de = (e.x - L.x) * fdir; if (de >= -8 && de <= r && de < bd) { bd = de; best = e; } });
+      S.lastReach = { r: r, dir: fdir, t: 0.35, hit: !!best };
+      if (best) { L.hits++; best.hp--; best.flash = 0.25; best.vis.kbStart = performance.now(); S.fx.push({ x: best.x, y: 0, t: 0.6, n: "-1" }); if (best.hp <= 0) best.dying = 0.5; } else L.miss++;
+    }
+    S.en.forEach(function (e) { if (e.flash > 0) e.flash -= dt; if (e.dying) e.dying -= dt; });
+    S.en = S.en.filter(function (e) { return !(e.dying < 0); });
+    S.fx.forEach(function (f) { f.t -= dt; }); S.fx = S.fx.filter(function (f) { return f.t > 0; });
+    if (S.lastReach) { S.lastReach.t -= dt; if (S.lastReach.t <= 0) S.lastReach = null; }
+    L.x = Math.max(20, Math.min(W - 20, L.x));
+    S.mode = mode;
+  }
+  function draw(W, H) {
+    var hs = hS(), floor = H - 40, L = S.lily, now = performance.now();
+    var g = ctx.createLinearGradient(0, 0, 0, floor); g.addColorStop(0, "#1a2340"); g.addColorStop(1, "#2d3a5c"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, floor);
+    ctx.fillStyle = "#3a3328"; ctx.fillRect(0, floor, W, H - floor); ctx.fillStyle = "#4a4134"; ctx.fillRect(0, floor, W, 3);
+    S.en.forEach(function (e) {
+      ctx.save(); ctx.globalAlpha = e.dying ? Math.max(0, e.dying / 0.5) : 1; e.vis.x = e.x;
+      var faceRight = e.x < L.x; ctx.translate(e.x, 0); if (faceRight) ctx.scale(-1, 1); ctx.translate(-e.x, 0);
+      var drawn = false; try { drawn = drawEnemyOrc(ctx, e.vis, e.x, floor, now); } catch (er) {}
+      if (!drawn) { ctx.fillStyle = "#7a2f2f"; ctx.beginPath(); ctx.arc(e.x, floor - 10 * hs, 9 * hs, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+      if (e.flash > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, e.flash * 3); ctx.fillStyle = "#fff6c8"; ctx.beginPath(); ctx.arc(e.x, floor - 12 * hs, 7 * hs, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      var bw = 22 * hs, fr = Math.max(0, e.hp / e.max); ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(e.x - bw / 2, floor - 34 * hs, bw, 3 * hs); ctx.fillStyle = "#e05454"; ctx.fillRect(e.x - bw / 2, floor - 34 * hs, bw * fr, 3 * hs);
+    });
+    var st = store.lily; if (st) lilyDraw(ctx, st.p, L.x, floor, LILY_STAND_CSS * hs, L.face, true);
+    if (S.reach) {
+      ctx.save(); ctx.strokeStyle = "rgba(160,170,220,.7)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(L.x, floor - 60 * hs); ctx.lineTo(L.x, floor); ctx.stroke(); ctx.setLineDash([]);
+      if (S.lastReach) { var rx = L.x + S.lastReach.dir * S.lastReach.r; ctx.strokeStyle = S.lastReach.hit ? "#ffd34d" : "#ff6a6a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x, floor - 18 * hs); ctx.lineTo(rx, floor - 18 * hs); ctx.lineTo(rx, floor - 30 * hs); ctx.stroke(); }
+      ctx.restore();
+    }
+    S.fx.forEach(function (f) { ctx.save(); ctx.globalAlpha = Math.min(1, f.t * 2); ctx.fillStyle = "#ffe08a"; ctx.font = "bold " + Math.round(11 * hs) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText("hit", f.x, floor - (40 + (0.6 - f.t) * 30) * hs); ctx.restore(); });
+  }
+  function frame(t) {
+    S.raf = requestAnimationFrame(frame); if (!document.getElementById("ltC")) return cancelAnimationFrame(S.raf);
+    var dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    var z = S.zoom; ctx.setTransform(dpr * z, 0, 0, dpr * z, 0, (1 - z) * H * dpr); W = W / z; S.W = W; // zoomed: a narrower strip of road, drawn bigger (floor kept at the bottom)
+    var dt = Math.min(0.1, (t - S.t) / 1000) * S.spd; S.t = t;
+    var info = $("ltInfo");
+    if (LILY.err) { info.textContent = "Couldn't load her art: " + LILY.err; return; }
+    if (!lilyReady()) { ctx.fillStyle = "#1b2236"; ctx.fillRect(0, 0, W, H); return; }
+    if (S.lily.x > W - 20) S.lily.x = W / 2; S.en.forEach(function (e) { if (e.x > W) e.x = W - 12; });
+    if (!S.lily.x) S.lily.x = W / 2;
+    if (!S.paused) step(dt);
+    draw(W, H);
+    var p = store.lily && store.lily.p, m = LILY.man, sg = p ? m.segs[m.segOf[p.i]] : null;
+    info.textContent = (S.mode || "idle") + " · facing " + (S.lily.face ? "left" : "right") + " · hits " + S.lily.hits + " · misses " + S.lily.miss + " · swings at her " + S.lily.taken + " (unlimited HP)" + (sg ? " · clip " + sg[0] + " f" + (p.i - sg[1]) : "");
+  }
+  S.raf = requestAnimationFrame(frame);
+}
 function lilyPreviewOpen() {
   var ov = document.getElementById("lilyPrev"); if (ov) { ov.remove(); return; }
   lilyLoad();

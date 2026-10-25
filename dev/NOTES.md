@@ -3777,3 +3777,9 @@ Harley's 3 points:
 - Per hit = her basic hit / (attack sec x LILY_IMPACT_RATE). LILY_IMPACT_RATE = 2.3 = her measured hit frames per second (fight 2.29, close 2.34 over 5 seeds x 2 min). Not drawn (sims, locked phone, background) and Arena (fought out before playback): her normal timer at that same average - so balance runs still cover her.
 - Measured, rendered Conquest solo, Lv30 5 stars, 40 s x2: Lily 32 / 28 enemies defeated, Gareth 23 / 21 (she connects more often than his fixed swing cycle). Balance pass later, with the dev stage.
 - Tests: dev/simfork/g354_lily_hits.js (rate matches the code, hits land in a real fight, no owed pile-up); g352/g353 still OK.
+
+## v1421 (TEST) — Iron Lily build, step 5: training stage (Dev Tools > hero look buttons > "Iron Lily training stage")
+- A sandbox strip of road: Lily alone, buttons spawn melee enemies on her left / right / 2 each side, Clear, Pause, Speed slow, Zoom (in-game / 2x, whole stage), Hit lines (her feet + the last hit frame's reach, gold = hit, red = miss), Enemy HP (6 / 20 hits / unkillable).
+- Uses her real pieces: move player with close / fight / idle, facing, hit frames + reach. Stand-in battlefield: enemies (current orc skin, mirrored when they face right) walk up, stop at IDLE_BLOCK_GAP and swing every 1.5 s; she chases the nearest at HERO_RUN_PX_PER_SEC, holds in contact, turns to whoever she fights. Unlimited health (Harley) - swings at her are only counted. One hit frame = 1 enemy hit point here.
+- Doesn't touch the save (roster / level unchanged - checked). window.__lilyTrain exposes the stage for tests.
+- Test: dev/simfork/g355_lily_train.js (hits land, both facings, close/fight/idle all happen, enemies swing, save untouched).
