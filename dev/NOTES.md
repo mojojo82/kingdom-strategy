@@ -3824,3 +3824,11 @@ Harley's 3 points:
 - Measured in the stage: 22% of frames (436 / 1961) she was playing part of the run (take-off / stride / the 2.8-height stop) with an enemy within 1.5 of her heights, though the fight had already switched her out of run mode - the run played as one unbroken piece, its travel clamped so she ran on the spot.
 - Now: in any run frame, if her target is within 2 of her heights and she's not mid-air, she cuts out at once (2-frame blend into her ready stance) and fights; the full stop only plays when there's room. Running is only ever for closing distance. 436 -> 6 frames (the 6 = mid-air take-off frames finishing). Turns 34 -> 7 in the same run.
 - Test: dev/simfork/g356_lily_close_quarters.js (stage exposes S.player for it).
+
+## v1430 (TEST) — Iron Lily: idle loop + heavy blade + closing-in moves added (Harley: idle "better than a frozen frame" for now)
+- New clips (HD 1344x768): heavy blade (rising slash, jumping overhead cleave, long thrust; kept 1.0-4.2 s), closing in (leaping strike, lunge, forward roll into rising slash, low slide; kept 0.75-4.2 s), idle (step-back turn trick, side profile, sword low tip down; loop 49 -> 82 = 1.4 s, the cleanest loop yet). Originals in motion_test/, large set clip6-8.
+- dev/lily/keyclip.py: keys any clip into the shared 2K working space - resize to 2560x1440, and a 55%-frame clip (the idle) is scaled x0.727 about her feet point so she stands the same size as the 40% clips.
+- Idle: mode "idle" blends into the idle loop from a calm frame and loops it; any other mode blends straight out into her ready stance. She starts in it (not clip A's front-facing first frame). Free play (no mode) doesn't idle.
+- Fixed: run and idle frames were being used as random join targets (free play / fights could start running or idling for no reason) - rejoin NOTARGET = Rin / Rrun / Rout / Idle; entered only by the fight's mode.
+- Sheets v4: 9 sheets, 848 frames, 7.6 MB (v3 removed). LILY_IMPACT_RATE 3.0 -> 3.3 (measured 3.29).
+- Joins: 22 exit moments, 13 with one option. In the training stage she now uses B / H / K / A / C2 + run + idle; clip C (acro 0-7.3 s) gets no joins under the strict rules any more - its poses don't match the others well enough. More clips (spins / aerial) should reconnect it.

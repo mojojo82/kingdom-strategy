@@ -45,7 +45,8 @@ def score(i, j):  # pose now (body counts most, sword too) and where both are he
 cons = [min(0.65 * IB[i, i + 1] + 0.35 * IR[i, i + 1], 0.65 * IB[nxt2[i], nxt2[i + 1]] + 0.35 * IR[nxt2[i], nxt2[i + 1]]) for i in range(N - 1) if segOf[i] == segOf[i + 1] and i not in noj]
 import os; PCT = float(os.environ.get('PCT', 25)); THR = float(np.percentile(cons, PCT)); print('next-frame overlap: %dth pct %.2f (join must be >= this)' % (PCT, THR))
 INTRO = 36; tail = M['tailIn']
-def fno_ok(j): s = M['segs'][segOf[j]]; return (j - s[1]) <= (s[2] - s[1] + 1) - tail[segOf[j]] and j not in noj and not (M['segs'][segOf[j]][0] in ('A', 'B', 'C') and j - s[1] < INTRO)
+NOTARGET = ('Rin', 'Rrun', 'Rout', 'Idle')  # v1430: run / idle are entered only on purpose (by the fight's mode), never joined into at random
+def fno_ok(j): s = M['segs'][segOf[j]]; return s[0] not in NOTARGET and (j - s[1]) <= (s[2] - s[1] + 1) - tail[segOf[j]] and j not in noj and not (M['segs'][segOf[j]][0] in ('A', 'B', 'C') and j - s[1] < INTRO)
 jumps = {}; forced = {}
 for i in range(N):
     if i in noj or i > safeLast[segOf[i]]: continue

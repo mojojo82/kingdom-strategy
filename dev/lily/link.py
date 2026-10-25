@@ -12,6 +12,9 @@ SEGS = [            # name, small-frame dir, big-frame dir, first frame, end fra
   ('Rin', 'f5', 'big5', 38, 66, 15),   # run clip (v1425): stance -> take-off -> first strides (0-1.6 s turn/pauses cut)
   ('Rrun', 'f5', 'big5', 66, 79, 13),  # one clean stride, loops 78 -> 66 (camera tracking her)
   ('Rout', 'f5', 'big5', 79, 100, 15), # last strides -> stops into her stance (frozen end cut)
+  ('H',   'f6', 'big6', 24, 101, 15),  # v1430 heavy blade (HD): rising slash, jumping overhead cleave, long thrust (turn + front-on end pose cut)
+  ('K',   'f7', 'big7', 18, 101, 15),  # v1430 closing in (HD): leaping strike, lunge, forward roll into rising slash, low slide (3/4 end pose cut)
+  ('Idle','f8', 'big8', 49, 83, 12),   # v1430 idle (HD, 55% frame scaled to match): one clean breathing loop, 49 -> 82
 ]
 TAIL_IN, TAIL_OUT = 40, 30  # don't jump into the last 40 frames of a segment; leave in the last 30
 F = []
