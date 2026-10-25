@@ -3849,3 +3849,7 @@ Harley's 3 points:
 - The block clip was made from the 55% start frame and keyed at scale 1 (the idle had been scaled by hand). First-frame standing height in the working space: every clip 190-193, blocks 265. In the block test she stood ~27% taller than Gareth even crouched.
 - dev/lily/keyclip.py now defaults to 'auto': measures her standing height in the clip's first frame (the start frame) and scales the clip to 573 2K px - a 55% clip can't come in at the wrong size again. Blocks re-keyed (x0.719); sheets v6 (8.3 MB), joins: 35 exit moments, 293 frames with a join.
 - g356 threshold for run frames near an enemy 20 -> 40 (they are mid-air take-off frames that must finish; was 436 before v1429).
+
+## v1434 (TEST) — training stage: "Bullet parry test" (Harley: she moves through her blocks as fast as each bullet needs)
+- Cannon fire from the right with a repeating gap pattern (0.9 s down to 0.12 s bursts); each bullet aims at the blade point of the neighbouring block she'll move to; she starts moving as soon as she's free and plays the clip's arm move at exactly the speed that gets her there ~30 ms before it lands (min 1.5x). Each landing in the right block = deflect (flash + sparks). 16 s run: 42 deflected, 0 missed.
+- The block test vs Gareth now also uses the per-move speed (fixed 3x there).
