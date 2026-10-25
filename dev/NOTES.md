@@ -3812,3 +3812,6 @@ Harley's 3 points:
 
 ## v1426 (TEST) — training stage: enemy glitch fixed (Harley's screen recording)
 - When Lily stood in an enemy's middle the stage flipped the enemy's facing every frame (its long attack tentacle swapped sides). Enemies now keep their facing until she is > 12 px clearly on the other side. Also removed the stand-in pale hit circle drawn over enemies on each hit (Conquest has its hit flash off).
+
+## v1427 (TEST) — Iron Lily: no sword swoosh over her first running steps (Harley: "what is this swipe she does when running left")
+- Going from fighting into the run blends 2 frames into the take-off; if she was mid-swing, the swoosh frame ghosted over her first running steps. Measured over 120 fight->run switches: 65 blended a swoosh (v1426) -> 0. She now starts the run only from a frame that isn't sweeping (same for settling into idle). g352 checks it.
