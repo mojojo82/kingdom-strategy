@@ -3793,3 +3793,10 @@ Harley's 3 points:
 - Tests: g352 / g353 / g355 OK.
 
 ## v1423 (TEST) — Iron Lily training stage: light background (Harley) - she is dark navy and the enemies are black; hit lines / labels recoloured to read on it.
+
+## v1424 (TEST) — Iron Lily: contact hits (cartwheels hit too) + gap-aware movement choice
+- dev/lily/strikes.py -> manifest 'sw': a frame STRIKES when part of her (blade, foot, leg) outside her torso column (+-0.22 x height) sweeps > 9 sheet px a frame, below her own height; stores the span (feet-relative, facing right). Consecutive strike frames = one sweep; an enemy whose body (+-10 CSS px, boss +-30) is inside the span takes ONE hit per sweep - any number of enemies per sweep. 347 strike frames, ~2.6 sweeps per second of footage.
+- LILY_IMPACT_RATE 2.3 -> 2.7 (sweeps/s while fighting, g354) so a sweep's damage keeps her single-target average the same. The 'imp' full-stretch data is unused now.
+- Close mode: the battle passes the gap (p.gap, sheet px); joins rank moves by ground covered up to the gap.
+- Training stage: span drawn under her (gold = hit something, red = hit nothing); info counts "sweeps that hit nothing".
+- Found: with no running (v1422) she can't reach enemies that stand off - Conquest archers / lancers stay 40-50 px away, so solo she lands few hits (8 in 25 s vs 21 before). Needs a run / dash clip (Harley's rule: no run speed without a run animation).
