@@ -3867,3 +3867,8 @@ Harley's 3 points:
 - VIP pack mail unlocks still work as before. Starters Gareth and Lyra are still owned from the start.
 - The economy sims (economy_daily / boss_time / f2p_timeline) auto-recruit with recruitHero, so they'll no longer recruit anyone until fragments have a source.
 - Tests: g303 updated (needs a fragment, gold unchanged, fragment kept) and g217 (Hanzo → need_fragment). Both pass, plus g351.
+
+## v1437 — Hero size slider keeps infantry feet on the floor
+- Harley: at 120% hero size, Lily and Gareth stood lower than the enemies. Cause: infantry are drawn with feet at slot y + 12 × size, so their feet sank 2.4 px at 120% and 6 px at 150%. Ranged heroes already took this back off in their skin slot.
+- Fix in `idleSquadSlotPos` (infantry branch): subtract 12 × (size − 1). Measured feet below the ground line at 100/120/150: before 8/10.4/14, after 8/8/8. Gareth's and Lily's own frames keep their feet at the anchor at any size (±1 px).
+- g353 / g354 / g356 OK.

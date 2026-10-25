@@ -12975,7 +12975,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1436"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1437"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -22279,7 +22279,8 @@ function idleSquadSlotPos(w, h, index, key) {
   }
   var pos = IDLE_SQUAD_POSITIONS[index] || [0, 0];
   var off = key ? getHeroPosOffset(key) : { x: 0, y: 0 };
-  return { x: w * 0.16 + pos[0] + off.x, y: groundYFor(h) - 4 + off.y };
+  /* v1437 (Harley): heroes are drawn with feet at vis.y + 12 * size, so take that back off here - feet stay on the enemies' floor at any size slider value */
+  return { x: w * 0.16 + pos[0] + off.x, y: groundYFor(h) - 4 + 12 * (1 - heroSpriteVisualScale / 100) + off.y };
 }
 var IDLE_CAV_ARC_LIFT = 30; // px — shared between the arc motion update and the javelin's rotation-angle calc
 var IDLE_WEAPON_MISSILE_ARC_LIFT = 70; // px — higher than the javelin's arc so a lobbed missile visibly clears the fortress before diving down onto its target; this is the CENTER of the per-missile random range below, not a fixed height every missile uses
