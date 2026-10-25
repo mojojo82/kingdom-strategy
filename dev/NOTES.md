@@ -3762,3 +3762,11 @@ Harley's 3 points:
 - rejoin.py: FACE = share of skin on her head (top 30% of body) per frame - ~0.065 facing the camera, ~0.008 side/back. A join (now and 2 frames on) needs |FACE diff| <= 0.045 (0.03 cut the acro clip off entirely). Forced exits rank facing first. Manifest carries 'face'; the game's fallback exit (lilyNearest) also refuses facing flips.
 - 2 forced exits still flip (frames 359, 541 have no same-facing match anywhere) - only used if no join was taken in a clip's last 2 s.
 - Exact 40 s render: 16 joins, 0 facing flips; clip share over 3 seeds: B ~50%, C ~31%, A/C2 ~8-11% each.
+
+## v1419 (TEST) — Iron Lily build, step 3: she fights in Conquest and Arena, moves picked by what the fight needs
+- Movement: the same melee rules as Gareth (chase the nearest enemy in front, flank one behind, hold in contact, idle/jog when the screen is empty) - the 5 HERO_ANIMS checks in stepIdleAnim now use heroMoves(key) (true for Lily once her frames are loaded).
+- Moves: player mode set by the battle each frame - "close" (chasing / moving): prefers joins whose next 1 s carries her forward (m.trav >= 90 sheet px); "fight" (holding in contact): prefers moves that stay put (|trav| <= 50); a wrong-kind move playing raises the join chance 35% -> 80%. "idle" (nothing on screen / Arena battle over): settles into a ready stance (combo frame 68, side-on, blade out front) - placeholder until she has an idle clip.
+- Facing: left while running back home or flanking an enemy from behind (Conquest); Arena: AI side faces left, retreat runs face their way.
+- Size: LILY_STAND_CSS = 28 CSS px standing at 100% hero scale (x heroSpriteVisualScale) - looks about Gareth's size in the test fight.
+- Conquest: drawIdleHeroSprite branch; Arena: drawOneHero branch. Damage timing unchanged (step 4).
+- Test: dev/simfork/g353_lily_battle.js (Lily + Gareth + Lyra in a real Conquest fight: she loads, animates, closes in AND fights on the spot, moves ~300 px). Still comingSoon, so players can't equip her (step 5 dev stage).

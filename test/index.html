@@ -12958,7 +12958,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1418"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1419"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -23902,7 +23902,7 @@ function stepIdleAnim(dtSec, w, h) {
     var targetX = isMeleeHero ? getFortressNoseX(w) : slot.x;
     // v499: aim at the enemy that is physically nearest in front of him (not just the engine's first one), so he never runs through anyone
     var tgtVis = frontVis;
-    if (isMeleeHero && HERO_ANIMS[key]) {
+    if (isMeleeHero && heroMoves(key)) {
       var nearX = null, nearV = null;
       real.forEach(function (re2) { var ev = idleAnim.enemyById[re2.id]; if (ev && ev.x >= vis.x - 8 && (nearX == null || ev.x < nearX)) { nearX = ev.x; nearV = ev; } });
       if (nearV) { tgtVis = nearV; vis.flank = null; }
@@ -23934,7 +23934,7 @@ function stepIdleAnim(dtSec, w, h) {
       targetX = (vis.flank && vis.flank.mode === "back" && String(vis.flank.id) === String(frontVis.id)) ? frontVis.x + meleeGap + meleeStagger(key) : frontVis.x - meleeGap - meleeStagger(key); /* v843: stagger counts melee heroes only (was every roster slot, which parked Gareth in slot 3 outside his own reach) */ // advance toward the enemy (or, flanking one that got behind him, stand at its back); small stagger so multiple melee heroes don't overlap
       if (targetX < vis.x && frontVis.x >= vis.x - 2) targetX = vis.x; // v494: enemy still ahead of him -> hold ground, never dragged backwards (he only turns back to chase one that got behind him)
     }
-    if (isMeleeHero && HERO_ANIMS[key]) {
+    if (isMeleeHero && heroMoves(key)) {
       // v500: an enemy queued within a short band in front of him counts as "in contact" — hold. (Otherwise the ranged enemies that
       // stop behind him at a slightly larger gap read as "still ahead", he steps up, they get pushed on, and he creeps off screen.)
       // v505: never chase an enemy that is still off/at the edge of the screen (that made him sprint to an invisible wall while the
@@ -23945,7 +23945,7 @@ function stepIdleAnim(dtSec, w, h) {
     // v581: nothing on screen -> he is free: each empty-screen spell he either stays put idling or actually runs off ahead (away from the
     // fortress) and then idles. On normal levels the fortress closes in on him at the ground's scroll speed while he stands; once it has
     // reached him he jogs slowly on the spot at the nose. Boss level: the ground is still, so nothing pushes him.
-    if (isMeleeHero && HERO_ANIMS[key]) {
+    if (isMeleeHero && heroMoves(key)) {
       var anyOn = false;
       for (var eidL in idleAnim.enemyById) { if (idleAnim.enemyById[eidL].x <= w) { anyOn = true; break; } }
       var bossLv = game.idleIsBossLevel(), nzL = getFortressNoseX(w);
@@ -23974,7 +23974,7 @@ function stepIdleAnim(dtSec, w, h) {
     // v506: hysteresis so he doesn't flicker between a 1-frame step and a drift: once he has closed to his sword's reach he STANDS
     // (drifting with the ground) until the gap opens past 8px, then runs the gap shut again in one go.
     var contact = false;
-    if (HERO_ANIMS[key] && isMeleeHero && frontVis && frontVis.type !== "boss") {
+    if (heroMoves(key) && isMeleeHero && frontVis && frontVis.type !== "boss") {
       if (vis.chasing) { if (Math.abs(dx) < 1.5) vis.chasing = false; }
       else if (Math.abs(dx) > 8) vis.chasing = true;
       contact = !vis.chasing;
@@ -23995,7 +23995,7 @@ function stepIdleAnim(dtSec, w, h) {
       }
     } else {
       var swLk = idleAnim.swingRun && idleAnim.swingRun[key], slamLock = swLk && swLk.slam && performance.now() < swLk.until; /* v1345 (Harley: in his crouch he "physically moves forward at running speed" - movement locked until he stands back up) */
-      var swingLock = isMeleeHero && HERO_ANIMS[key] && ((swLk && performance.now() < swLk.until) || idleAnim.skillFlash[key] > 0); /* v1357 (Harley: "no run, no move") - while a swing / skill pose is playing he can't slide either way; the ground drift back toward the fortress still applies */
+      var swingLock = isMeleeHero && heroMoves(key) && ((swLk && performance.now() < swLk.until) || idleAnim.skillFlash[key] > 0); /* v1357 (Harley: "no run, no move") - while a swing / skill pose is playing he can't slide either way; the ground drift back toward the fortress still applies */
       if (!slamLock && !swingLock) vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
     }
   });
@@ -25155,6 +25155,8 @@ function lilyLoad() {
   fetch(LILY_BASE + "lily_" + LILY_TAG + ".json?b=" + (typeof KS_BUILD !== "undefined" ? KS_BUILD : "")).then(function (r) { if (!r.ok) throw new Error("manifest " + r.status); return r.json(); }).then(function (m) {
     LILY.man = m; m.nojSet = {}; (m.noj || []).forEach(function (i) { m.nojSet[i] = 1; });
     m.segOf = []; m.segs.forEach(function (s, si) { for (var i = s[1]; i <= s[2]; i++) m.segOf[i] = si; });
+    m.trav = m.f.map(function (f, i) { var e = Math.min(m.segs[m.segOf[i]][2], i + 24); return m.f[e][7] - f[7]; }); // v1419: how far she travels forward over the next 1 s (sheet px; she is ~170 tall)
+    m.ready = m.segs[1] ? m.segs[1][1] + 68 : m.segs[0][1]; // ready stance (planted, side-on, blade out front) - held when nothing is on screen, until she has an idle clip
     m.safeLast = m.segs.map(function (s) { var e = s[2]; while (e > s[1] && m.nojSet[e]) e--; return e; }); // a clip that ends mid-air: treat the frame before take-off as its end
     LILY.imgs = m.sheets.map(function (fn) { var im = new Image(); im.decoding = "async"; im.src = LILY_BASE + fn; return im; });
   }).catch(function (e) { LILY.err = String(e && e.message || e); LILY.loading = false; });
@@ -25168,9 +25170,14 @@ function lilyNext(p) { // advance one video frame along the move graph
   var nearEnd = (i - seg[1]) > (seg[2] - seg[1] + 1) - (tailIn - 10) && !m.nojSet[i];
   var opts = m.jumps[i] || [], n = i < last ? i + 1 : -1, j = -1;
   var late = (last - i) < 48; // v1415: in a clip's last 2 s take any good join rather than be forced out at the end
-  if (p.run >= 18 && opts.length && (p.rng() < 0.35 || nearEnd || late || n < 0)) {
+  /* v1419: what the fight needs from her right now (set by the battle each frame): "close" = an enemy is far - moves that carry her forward;
+     "fight" = an enemy is in reach - moves that stay put. Wrong kind of move playing -> she takes the next good join far more readily. */
+  var wantMv = p.mode === "close" ? function (x) { return m.trav[x] >= 90; } : p.mode === "fight" ? function (x) { return Math.abs(m.trav[x]) <= 50; } : null;
+  var mis = wantMv && !wantMv(i);
+  if (p.run >= 18 && opts.length && (p.rng() < (mis ? 0.8 : 0.35) || nearEnd || late || n < 0)) {
     /* v1416: no short loops - skip a join that lands where she was in the last 6 s (she got stuck replaying a 2 s cartwheel) */
     var fresh = opts.filter(function (x) { return lilyFresh(p, x); });
+    var fit = wantMv ? fresh.filter(wantMv) : []; if (fit.length) fresh = fit.concat(fresh.filter(function (x) { return fit.indexOf(x) < 0; })).slice(0, Math.max(fit.length, 1)); // right kind of move first
     var cand = fresh.slice(0, 6).sort(function (a, b) { return (p.used[a] || 0) - (p.used[b] || 0); }).slice(0, 4), other = cand.filter(function (x) { return m.segOf[x] !== si; });
     var pool = other.length ? other : cand;
     if (pool.length) j = pool[Math.floor(p.rng() * pool.length)];
@@ -25183,7 +25190,12 @@ function lilyNext(p) { // advance one video frame along the move graph
 }
 function lilyFresh(p, x) { var m = LILY.man, e = Math.min(m.segs[m.segOf[x]][2], x + 48); for (var y = x; y <= e; y++) if (p.seen[y] > p.t - 144) return false; return true; } // landing at x would not replay anything from the last 6 s (next 2 s checked)
 function lilyNearest(i, p) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.jumps).forEach(function (k) { m.jumps[k].forEach(function (j) { var d = (p && !lilyFresh(p, j)) ? 1e5 - (p.t - (p.seen[j] || -1e4)) : 0; d += Math.abs(m.f[j][6] - m.f[i][6]) + Math.abs(m.f[j][4] - m.f[i][4]) + (m.segOf[j] === m.segOf[i] ? 40 : 0) + (m.face ? 4000 * Math.max(0, Math.abs(m.face[j] - m.face[i]) - 0.045) : 0); /* v1418: never flip which way she faces */ if (d < bd) { bd = d; best = j; } }); }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
-function lilyStep(p, dt) { var m = LILY.man; if (!m) return; p.acc += dt * m.fps; var guard = 0; while (p.acc >= 1 && guard++ < 8) { p.acc -= 1; lilyNext(p); } }
+function lilyStep(p, dt) { var m = LILY.man; if (!m) return;
+  if (p.mode === "idle") { // v1419: nothing to fight - settle into the ready stance (only from the ground; a flip finishes first)
+    if (p.i === m.ready) { p.acc = 0; if (p.fade) { p.fadeT = (p.fadeT || 0) + dt * m.fps; if (p.fadeT >= 1) { p.fadeT = 0; if (--p.fade.n <= 0) p.fade = null; } } return; }
+    if (!m.nojSet[p.i] && p.run >= 6) { p.fade = { i: p.i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[p.i][7] - m.f[m.ready][7]; p.i = m.ready; p.run = 0; p.acc = 0; return; }
+  }
+  p.acc += dt * m.fps; var guard = 0; while (p.acc >= 1 && guard++ < 8) { p.acc -= 1; lilyNext(p); } }
 /* draw her with her feet at (x, feetY), standH CSS px tall when standing; flip = face left. hold: keep her root near x (the preview; battles will use her own travel). */
 function lilyDraw(ctx, p, x, feetY, standH, flip, hold) {
   var m = LILY.man; if (!m || !lilyReady()) return false;
@@ -25233,6 +25245,17 @@ function lilyPreviewOpen() {
     info.textContent = "clip " + sg[0] + " · frame " + (p.i - sg[1]) + " · joins " + p.joins + (p.lastJoin ? " (last " + p.lastJoin[0] + "→" + p.lastJoin[1] + ")" : "") + " · seed " + seed;
   }
   raf = requestAnimationFrame(frame);
+}
+/* v1419: Iron Lily in battle (build step 3). She runs/holds/chases with the same melee rules as Gareth (heroMoves); her MOVES are picked
+   by what the fight needs - far enemy: moves that carry her forward; enemy in reach: moves that stay put; nothing on screen: ready stance.
+   Faces whoever she is fighting (flank-back / running home = left). Damage timing is unchanged (step 4 ties hits to her blade). */
+var LILY_STAND_CSS = 28; // standing height in CSS px at 100% hero scale
+function heroMoves(k) { return !!HERO_ANIMS[k] || (k === "ironlily" && lilyReady()); }
+function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
+  lilyLoad(); if (!lilyReady()) return false;
+  var now = performance.now(), st = store[id] || (store[id] = { p: lilyPlayer(7), t: now }), dt = Math.min(0.1, (now - st.t) / 1000); st.t = now;
+  st.p.mode = mode; lilyStep(st.p, dt);
+  return lilyDraw(ctx, st.p, x, feetY, LILY_STAND_CSS * hScale, faceLeft, true);
 }
 var heroAnimImgCache = {};
 function heroAnimImg(key) {
@@ -25831,6 +25854,13 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
   var flashing = idleAnim.skillFlash[key] && idleAnim.skillFlash[key] > 0;
   var img = getCombatSpriteImg(key);
   var hScale = heroSpriteVisualScale / 100;
+  if (key === "ironlily") { // v1419
+    var hpL = idleAnim.heroPrevX || (idleAnim.heroPrevX = {}), mdxL = hpL[key] != null ? vis.x - hpL[key] + (vis.driftStep || 0) : 0, movL = Math.abs(mdxL) > 0.12; hpL[key] = vis.x;
+    var anyL = false; for (var eL in idleAnim.enemyById) { if (idleAnim.enemyById[eL].x <= w) { anyL = true; break; } }
+    var faceL = (vis.flank && vis.flank.mode === "back") ? true : (movL ? mdxL < 0 : false);
+    var modeL = !anyL ? "idle" : (vis.chasing || movL) ? "close" : "fight";
+    if (lilyBattleDraw(ctx, idleAnim.lilyP || (idleAnim.lilyP = {}), key, vis.x, vis.y + 12 * hScale, hScale, modeL, faceL)) return;
+  }
   if (HERO_ANIMS[key] && heroAnimImg(key)) {
     var hp = idleAnim.heroPrevX || (idleAnim.heroPrevX = {});
     var mdx = hp[key] != null ? vis.x - hp[key] + (vis.driftStep || 0) : 0, moving = Math.abs(mdx) > 0.12; hp[key] = vis.x;
@@ -35406,6 +35436,8 @@ function drawArenaFrame(ctx, w, h) {
         ctx.fill(); ctx.restore();
       }
       var size = 24;
+      if (key === "ironlily" && lilyBattleDraw(ctx, arenaAnim.lilyP || (arenaAnim.lilyP = {}), flashKey, slot.x, slot.y + 13, heroSpriteVisualScale / 100,
+          arenaAnim.battleEnded ? "idle" : (infRunning ? "close" : ((typeof koE !== "undefined" && koE && koE.reach) ? "fight" : "close")), infRunning ? infRunFlip : !isPlayerSide)) return; /* v1419: Iron Lily */
       if (HERO_ANIMS[key] && heroAnimImg(key)) {
         var retRun = false, retFlip = null;
         if (HERO_CHARGE[key]) {
