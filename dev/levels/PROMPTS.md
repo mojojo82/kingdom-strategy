@@ -11,6 +11,8 @@ Order:
 
 From step 2 on, each prompt starts "Using the last full scene, ..." so nothing needs re-attaching. Then `dev/levels/build_<level>.py` keys, seams and places the layers (see HANDOVER "Level art workflow").
 
+**Camera (Harley, 26 Oct):** the player's viewpoint is a little ABOVE the characters, looking slightly down - they stand on a band of ground with real depth, NOT on a thin strip like a 2D platformer ledge. Never ask GPT to make the road's top surface thinner; ask it to keep the full scene's depth. The build script sets the final depth to the village eye level.
+
 ## 1. Full scene (snow pass version; attach the village picture)
 ```
 Create a side-scrolling 2D game level background, in the same art style as the attached image: detailed hand-painted pixel-art look, rich colours.
