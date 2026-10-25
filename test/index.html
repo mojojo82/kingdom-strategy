@@ -12975,7 +12975,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1439"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1440"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -32609,6 +32609,40 @@ var blueFpsOff = {};
 })();
 setTimeout(function () { var b = document.getElementById("devSkyDrift"); if (b) b.textContent = skyDriftOn() ? "On" : "Off"; }, 1500);
 window.addEventListener("resize", function () { uiSkinKey = ""; });
+/* v1440 (Harley: "this effect is everywhere in game" - a glassy bubble pops wherever you tap): tap feedback on every screen, Options toggle (on by default).
+   One fixed overlay canvas that never takes taps; it only animates while a bubble is alive, so it costs nothing at rest. */
+var TAP_FX_KEY = "kingdom_tap_fx_v1", tapFxOn = (function () { try { return localStorage.getItem(TAP_FX_KEY) !== "0"; } catch (e) { return true; } })();
+function setTapFx(on) { tapFxOn = !!on; try { localStorage.setItem(TAP_FX_KEY, on ? "1" : "0"); } catch (e) {} }
+(function () {
+  var cv = null, cx = null, taps = [], raf = 0, DUR = 340;
+  function ensure() {
+    if (cv) return true; cv = document.createElement("canvas"); cv.id = "tapFxCanvas";
+    cv.style.cssText = "position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483000";
+    document.body.appendChild(cv); cx = cv.getContext("2d"); return true;
+  }
+  function fit() { var d = Math.min(3, window.devicePixelRatio || 1), w = Math.round(window.innerWidth * d), h = Math.round(window.innerHeight * d); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } cx.setTransform(d, 0, 0, d, 0, 0); }
+  function frame(now) {
+    raf = 0; fit(); cx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    taps = taps.filter(function (t) { return now - t.t0 < DUR; });
+    taps.forEach(function (t) {
+      var k = Math.max(0, (now - t.t0) / DUR), e = 1 - Math.pow(1 - k, 3), R = 13 + 7 * e, a = 1 - k * k;
+      var g = cx.createRadialGradient(t.x, t.y, R * 0.55, t.x, t.y, R); /* glassy bubble: clear middle, cyan rim */
+      g.addColorStop(0, "rgba(160,235,255,0)"); g.addColorStop(0.8, "rgba(150,230,255," + (0.32 * a) + ")"); g.addColorStop(1, "rgba(220,250,255," + (0.85 * a) + ")");
+      cx.fillStyle = g; cx.beginPath(); cx.arc(t.x, t.y, R, 0, Math.PI * 2); cx.fill();
+      cx.strokeStyle = "rgba(190,240,255," + (0.75 * a) + ")"; cx.lineWidth = 1.2; cx.beginPath(); cx.arc(t.x, t.y, R, 0, Math.PI * 2); cx.stroke(); /* crisp rim */
+      cx.strokeStyle = "rgba(255,255,255," + (0.9 * a) + ")"; cx.lineWidth = 1.6; cx.beginPath(); cx.arc(t.x, t.y, R - 1, Math.PI * 1.05, Math.PI * 1.45); cx.stroke(); /* highlight on the top-left of the bubble */
+      if (k < 0.45) { var c = 1 - k / 0.45, cg = cx.createRadialGradient(t.x, t.y, 0, t.x, t.y, 7); cg.addColorStop(0, "rgba(255,255,255," + c + ")"); cg.addColorStop(1, "rgba(255,255,255,0)"); cx.fillStyle = cg; cx.beginPath(); cx.arc(t.x, t.y, 7, 0, Math.PI * 2); cx.fill(); } /* bright pop in the middle */
+      t.sp.forEach(function (q) { var d = R * (0.8 + 0.7 * e) * q.r, s = 3 * (1 - k); cx.fillStyle = "rgba(225,250,255," + a + ")"; cx.save(); cx.translate(t.x + Math.cos(q.a) * d, t.y + Math.sin(q.a) * d); cx.rotate(q.a + k * 2); cx.fillRect(-s / 2, -s / 2, s, s); cx.restore(); }); /* little square sparkles flying out */
+    });
+    if (taps.length) raf = requestAnimationFrame(frame); else cx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  }
+  document.addEventListener("pointerdown", function (ev) {
+    if (!tapFxOn) return;
+    if (!ensure()) return; var sp = []; for (var i = 0; i < 4; i++) sp.push({ a: Math.random() * Math.PI * 2, r: 0.85 + Math.random() * 0.4 });
+    taps.push({ x: ev.clientX, y: ev.clientY, t0: performance.now(), sp: sp }); if (taps.length > 6) taps.shift();
+    if (!raf) raf = requestAnimationFrame(frame);
+  }, { capture: true, passive: true });
+})();
 function renderOptionsScreen() {
   var el = document.getElementById("optionsPanel"); if (!el) return;
   var pct = Math.round(musicVol * 100);
@@ -32618,6 +32652,8 @@ function renderOptionsScreen() {
     '<div class="op-note" id="opMusicSt">Music status: ' + musicStatusText() + '</div>' +
     '<div class="op-row"><span class="op-l">🔍 Map zoom buttons</span><button type="button" class="op-tg' + (mapZoomBtnsOn ? ' on' : '') + '" id="opZoomBtns">' + (mapZoomBtnsOn ? 'On' : 'Off') + '</button></div>' +
     '<div class="op-note">Shows + and − buttons on the world map, for anyone who can\'t pinch or scroll. PC: scroll wheel or + / − keys also zoom.</div>' +
+    '<div class="op-row"><span class="op-l">✨ Tap effect</span><button type="button" class="op-tg' + (tapFxOn ? ' on' : '') + '" id="opTapFx">' + (tapFxOn ? 'On' : 'Off') + '</button></div>' +
+    '<div class="op-note">A little bubble pops wherever you tap.</div>' +
     '<div class="op-row"><span class="op-l">🎨 UI style</span><button type="button" class="op-tg' + (uiSkin() === "classic" ? ' on' : '') + '" id="opSkinClassic">Classic</button><button type="button" class="op-tg' + (uiSkin() === "blue" ? ' on' : '') + '" id="opSkinBlue">Blue</button></div>' +
     '<div class="op-note">Blue is a work in progress: Conquest only, on phones.</div>' +
     ((window.innerWidth > 900 || window.KS_PHONE_FRAME) ? '<div class="op-row"><span class="op-l">📱 Phone view on PC</span><button type="button" class="op-tg' + (window.KS_PHONE_FRAME ? ' on' : '') + '" id="opPhoneView">' + (window.KS_PHONE_FRAME ? 'On' : 'Off') + '</button></div><div class="op-note">Shows the game in a phone-sized frame on a wide screen (this browser only). Temporary, for testing.</div>' : '') +
@@ -32630,6 +32666,7 @@ function renderOptionsScreen() {
   sl.oninput = function () { setMusicVol(sl.value / 100); document.getElementById("opMusicV").textContent = sl.value + "%"; };
   document.getElementById("opSfx").onclick = function () { setSoundFx(!soundFxEnabled); renderOptionsScreen(); };
   document.getElementById("opZoomBtns").onclick = function () { setMapZoomBtns(!mapZoomBtnsOn); renderOptionsScreen(); };
+  document.getElementById("opTapFx").onclick = function () { setTapFx(!tapFxOn); renderOptionsScreen(); }; /* v1440 */
   var pvb = document.getElementById("opPhoneView"); if (pvb) pvb.onclick = function () { var turnOn = !window.KS_PHONE_FRAME; try { localStorage.setItem("kingdom_phone_view_v1", turnOn ? "1" : "0"); } catch (e) {} if (turnOn) (window.top || window).location.href = "phone.html"; else (window.top || window).location.href = (window.top || window).location.pathname.replace(/phone\.html$/, ""); };
   document.getElementById("opSkinClassic").onclick = function () { setUiSkin("classic"); renderOptionsScreen(); };
   document.getElementById("opSkinBlue").onclick = function () { setUiSkin("blue"); renderOptionsScreen(); };

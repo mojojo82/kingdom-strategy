@@ -3881,3 +3881,9 @@ Harley's 3 points:
 - Harley (phone recording): for her first ~2 s in Conquest Lily was a round portrait token sliding forward, because her 8.3 MB sheets only started downloading when Conquest first drew her.
 - Now `render()` (runs on every screen) starts `lilyLoad()` as soon as she's in the Conquest roster, the same way level art is fetched. While the sheets are still loading she isn't drawn and holds her spot, instead of a token running at normal speed.
 - Measured with sheets delayed 2.5 s (phone-like), sitting on the World map 3 s and then opening Conquest. Before: ready after 2754 ms and slid 340 px as a token. After: ready at 0 ms and moved 0 px. g351–g356 OK.
+
+## v1440 — Tap effect (Options toggle)
+- Harley showed another game where every tap pops a glassy bubble. Ours: a cyan-rimmed glass bubble with a white highlight, a bright pop in the middle and 4 small square sparkles. It grows from 13 to 20 px and fades in 0.34 s.
+- One fixed overlay canvas with `pointer-events:none` and a top z-index, listening to `pointerdown` (capture, passive), so it never blocks or eats taps. It only animates while a bubble is alive, at most 6 at once.
+- Options → "✨ Tap effect" On/Off, on by default, saved per device (`kingdom_tap_fx_v1`).
+- Checked headless (mobile touch context): bubble drawn, tap goes through to the page, toggle flips and saves, no errors.
