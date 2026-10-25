@@ -25190,7 +25190,7 @@ function lilyRunNext(p) { /* v1425: her run. Mode "run" (target far away): get i
      stop (which ends in her stance and joins on from there). The run clip is one continuous video, so its pieces play straight on - no crossfade. */
   var m = LILY.man, r = m.run, i = p.i, nx = -1;
   if (!r) return false;
-  if (lilyInRun(i) && p.mode !== "run" && p.mode !== "idle" && (p.gap || 0) < 2 * m.stand && !m.nojSet[i]) { /* v1429: an enemy is right there - cut out of the run now (no running on top of it) into her ready stance and fight */
+  if (lilyInRun(i) && (p.mode === "close" || p.mode === "fight") && (p.gap || 0) < 2 * m.stand && !m.nojSet[i]) { /* v1429: an enemy is right there - cut out of the run now (no running on top of it) into her ready stance and fight */
     p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[m.ready][7]; p.i = m.ready; p.run = 0; p.joins++; p.lastJoin = [i, m.ready]; p.swOn = false; return true;
   }
   if (i === r.in[1]) nx = r.loop[0];                                         // take-off -> stride
