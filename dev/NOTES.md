@@ -3800,3 +3800,5 @@ Harley's 3 points:
 - Close mode: the battle passes the gap (p.gap, sheet px); joins rank moves by ground covered up to the gap.
 - Training stage: span drawn under her (gold = hit something, red = hit nothing); info counts "sweeps that hit nothing".
 - Found: with no running (v1422) she can't reach enemies that stand off - Conquest archers / lancers stay 40-50 px away, so solo she lands few hits (8 in 25 s vs 21 before). Needs a run / dash clip (Harley's rule: no run speed without a run animation).
+
+## (no version) — Harley: Iron Lily stays comingSoon (no Conquest / Arena for players) until ALL her animation is finished. Balance + Arena pass come after that.
