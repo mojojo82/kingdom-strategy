@@ -12958,7 +12958,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1414"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1415"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25152,7 +25152,7 @@ var LILY_TAG = "v1", LILY_BASE = (/\/test\/[^\/]*$/.test(location.pathname) ? ".
 var LILY = { man: null, imgs: [], loading: false, err: null };
 function lilyLoad() {
   if (LILY.man || LILY.loading) return; LILY.loading = true;
-  fetch(LILY_BASE + "lily_" + LILY_TAG + ".json").then(function (r) { if (!r.ok) throw new Error("manifest " + r.status); return r.json(); }).then(function (m) {
+  fetch(LILY_BASE + "lily_" + LILY_TAG + ".json?b=" + (typeof KS_BUILD !== "undefined" ? KS_BUILD : "")).then(function (r) { if (!r.ok) throw new Error("manifest " + r.status); return r.json(); }).then(function (m) {
     LILY.man = m; m.nojSet = {}; (m.noj || []).forEach(function (i) { m.nojSet[i] = 1; });
     m.segOf = []; m.segs.forEach(function (s, si) { for (var i = s[1]; i <= s[2]; i++) m.segOf[i] = si; });
     m.safeLast = m.segs.map(function (s) { var e = s[2]; while (e > s[1] && m.nojSet[e]) e--; return e; }); // a clip that ends mid-air: treat the frame before take-off as its end
@@ -25167,11 +25167,13 @@ function lilyNext(p) { // advance one video frame along the move graph
   var m = LILY.man, i = p.i, si = m.segOf[i], seg = m.segs[si], last = m.safeLast[si], tailIn = m.tailIn[si];
   var nearEnd = (i - seg[1]) > (seg[2] - seg[1] + 1) - (tailIn - 10) && !m.nojSet[i];
   var opts = m.jumps[i] || [], n = i < last ? i + 1 : -1, j = -1;
-  if (p.run >= 18 && opts.length && (p.rng() < 0.35 || nearEnd || n < 0)) {
+  var late = (last - i) < 48; // v1415: in a clip's last 2 s take any good join rather than be forced out at the end
+  if (p.run >= 18 && opts.length && (p.rng() < 0.35 || nearEnd || late || n < 0)) {
     var cand = opts.slice(0, 6).sort(function (a, b) { return (p.used[a] || 0) - (p.used[b] || 0); }).slice(0, 4), other = cand.filter(function (x) { return m.segOf[x] !== si; });
     var pool = other.length ? other : cand; j = pool[Math.floor(p.rng() * pool.length)];
   } else if (n < 0 || (nearEnd && m.forced[i] != null)) j = m.forced[i] != null ? m.forced[i] : lilyNearest(i);
-  if (j >= 0) { p.used[j] = (p.used[j] || 0) + 1; if (p.offX != null) p.offX += m.f[i][7] - m.f[j][7]; p.i = j; p.run = 0; p.joins++; p.lastJoin = [i, j]; return; }
+  if (j >= 0) { p.used[j] = (p.used[j] || 0) + 1; p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[j][7]; p.i = j; p.run = 0; p.joins++; p.lastJoin = [i, j]; return; }
+  if (p.fade && --p.fade.n <= 0) p.fade = null;
   p.i = n; p.run++;
 }
 function lilyNearest(i) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.forced).forEach(function (k) { var j = m.forced[k], d = Math.abs(m.f[j][7] - m.f[i][7]) + Math.abs(m.f[j][6] - m.f[i][6]); if (d < bd) { bd = d; best = j; } }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
@@ -25185,6 +25187,9 @@ function lilyDraw(ctx, p, x, feetY, standH, flip, hold) {
   var left = (f[5] + p.offX) * k, top = f[6] * k;
   ctx.save(); ctx.translate(x, feetY); if (flip) ctx.scale(-1, 1);
   ctx.drawImage(im, f[1], f[2], f[3], f[4], left, top, f[3] * k, f[4] * k);
+  if (p.fade && p.fade.offX != null) { /* v1415: 2-frame crossfade over a join (the old pose fades out on top: 50%, then 25%), like the test videos */
+    var g = m.f[p.fade.i], ga = ctx.globalAlpha; ctx.globalAlpha = ga * (p.fade.n >= 2 ? 0.5 : 0.25);
+    ctx.drawImage(LILY.imgs[g[0]], g[1], g[2], g[3], g[4], (g[5] + p.fade.offX) * k, g[6] * k, g[3] * k, g[4] * k); ctx.globalAlpha = ga; }
   ctx.restore(); return true;
 }
 /* Dev Tools > Heroes look: a small stage that plays her move graph at in-game size (no combat yet). */

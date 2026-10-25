@@ -3738,3 +3738,9 @@ Harley's 3 points:
 - Game: lilyLoad / lilyReady / lilyUnload, lilyPlayer(seed) + lilyNext/lilyStep (seeded = no dice; joins after >= 18 frames, 35% chance per open join, forced exit near a clip's end; a clip ending mid-air ends at the frame before take-off), lilyDraw(ctx, p, x, feetY, standH, flip, hold).
 - Dev Tools > (hero look buttons) "Iron Lily frame player (preview)": plays her at in-game / 2x / 3x size, facing left/right, slow, new seed. Not in battles yet (step 3).
 - Test: dev/simfork/g352_lily_player.js (not loaded before asked, 2 min of play = 78 joins, none mid-air, all 4 clips used, same seed = same flurry).
+
+## v1415 (TEST) — Iron Lily joins: stricter + crossfade (Harley: some joins look like a glitch - end and start poses too far apart)
+- Measured the joins the game actually made: the old pose check (28x29 shape) matched her body but not the sword (sword up -> sword forward, side-on -> front-on). 2/3 of the old joins scored worse than a normal next-frame step.
+- dev/lily/rejoin.py: scores every pair on the in-game sheets by drawn overlap (feet aligned like the game), body 65% + sword 35%, now and 2 frames on; a join must overlap at least as well as the 25th-percentile real next-frame step (0.34). Rewrites jumps/forced in lily_v1.json (sheets unchanged). 23 exit moments, 8 with one option - more clips will fix that.
+- Player: in a clip's last 2 s it takes any good join instead of being forced out at the end (forced exits 5/72 -> 1/95); 2-frame crossfade over each join (old pose 50% then 25%). Manifest fetched with ?b=KS_BUILD so phones pick up a rewritten manifest.
+- Measured on 2 min of play: worst join overlap 0.00 -> 0.38, joins below 0.35: 15 -> 0.
