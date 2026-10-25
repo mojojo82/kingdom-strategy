@@ -3887,3 +3887,8 @@ Harley's 3 points:
 - One fixed overlay canvas with `pointer-events:none` and a top z-index, listening to `pointerdown` (capture, passive), so it never blocks or eats taps. It only animates while a bubble is alive, at most 6 at once.
 - Options → "✨ Tap effect" On/Off, on by default, saved per device (`kingdom_tap_fx_v1`).
 - Checked headless (mobile touch context): bubble drawn, tap goes through to the page, toggle flips and saves, no errors.
+
+## v1441 — Iron Lily size slider (Dev Tools)
+- Harley: give Lily her own slider under the hero sprite size. "🌺 Iron Lily" goes from 50–250% with a Reset button, and stacks on top of the all-heroes size. Saved and synced like the hero size (`kingdom_prototype_lilysize_v1`).
+- `lilyStandCss()` = LILY_STAND_CSS × her %, used everywhere her height was used: drawing, root-motion steps, run/stop gaps, contact sweeps and the training stage. So bigger Lily also steps and reaches proportionally. Her HP bar now sits above her real height.
+- Caught in testing: a blanket replace turned `lilyStandCss` into calling itself, so she stopped drawing. Fixed. Measured at 100/120/150: Lily 24/28.8/36 px, Gareth unchanged at 1×. g351–g356 OK.
