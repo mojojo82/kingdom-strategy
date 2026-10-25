@@ -3872,3 +3872,7 @@ Harley's 3 points:
 - Harley: at 120% hero size, Lily and Gareth stood lower than the enemies. Cause: infantry are drawn with feet at slot y + 12 × size, so their feet sank 2.4 px at 120% and 6 px at 150%. Ranged heroes already took this back off in their skin slot.
 - Fix in `idleSquadSlotPos` (infantry branch): subtract 12 × (size − 1). Measured feet below the ground line at 100/120/150: before 8/10.4/14, after 8/8/8. Gareth's and Lily's own frames keep their feet at the anchor at any size (±1 px).
 - g353 / g354 / g356 OK.
+
+## v1438 — Readable power on the monster attack buttons
+- Harley (phone screenshot): the "555,230 · Win" text on the cyan Formation buttons in the monster popup was dark green under the buttons' dark outline, so it was unreadable.
+- `.mon-fm .win` is now white like the button label, and `.lose` ("Too weak") is pale red, both keeping the outline. Checked in a headless render.
