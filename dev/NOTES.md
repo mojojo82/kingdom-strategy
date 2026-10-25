@@ -3744,3 +3744,9 @@ Harley's 3 points:
 - dev/lily/rejoin.py: scores every pair on the in-game sheets by drawn overlap (feet aligned like the game), body 65% + sword 35%, now and 2 frames on; a join must overlap at least as well as the 25th-percentile real next-frame step (0.34). Rewrites jumps/forced in lily_v1.json (sheets unchanged). 23 exit moments, 8 with one option - more clips will fix that.
 - Player: in a clip's last 2 s it takes any good join instead of being forced out at the end (forced exits 5/72 -> 1/95); 2-frame crossfade over each join (old pose 50% then 25%). Manifest fetched with ?b=KS_BUILD so phones pick up a rewritten manifest.
 - Measured on 2 min of play: worst join overlap 0.00 -> 0.38, joins below 0.35: 15 -> 0.
+
+## v1416 (TEST) — Iron Lily: no more replay loops (Harley: "why is she flipping non stop")
+- Cause: with the stricter joins the only good exit from the acro clip's last 2 s (C2) led back into C2, so she replayed a 2 s cartwheel bit - 97% of the time (measured).
+- Player: remembers every frame she plays; a join may not land where the next 2 s would replay anything from the last 6 s (lilyFresh); forced/nearest exits follow the same rule and fall back to the least-recent pose, never the standing start.
+- rejoin.py: default bar = 25th percentile next-frame step; forced exits prefer another clip.
+- Measured (2 min, seed 11): time per clip A/B/C/C2 = 14/48/32/5%, 0 frames replayed within 3 s, 74 joins, none mid-air. g352 test asserts both.

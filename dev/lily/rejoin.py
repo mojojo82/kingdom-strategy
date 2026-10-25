@@ -32,7 +32,7 @@ nxt2 = [min(i + 2, safeLast[segOf[i]]) if i <= safeLast[segOf[i]] else i for i i
 def score(i, j):  # pose now (body counts most, sword too) and where both are heading 2 frames on
     return min(0.65 * IB[i, j] + 0.35 * IR[i, j], 0.65 * IB[nxt2[i], nxt2[j]] + 0.35 * IR[nxt2[i], nxt2[j]])
 cons = [score(i, i + 1) for i in range(N - 1) if segOf[i] == segOf[i + 1] and i not in noj]
-import os; PCT = float(os.environ.get('PCT', 50)); THR = float(np.percentile(cons, PCT)); print('next-frame overlap: %dth pct %.2f (join must be >= this)' % (PCT, THR))
+import os; PCT = float(os.environ.get('PCT', 25)); THR = float(np.percentile(cons, PCT)); print('next-frame overlap: %dth pct %.2f (join must be >= this)' % (PCT, THR))
 INTRO = 36; tail = M['tailIn']
 def fno_ok(j): s = M['segs'][segOf[j]]; return (j - s[1]) <= (s[2] - s[1] + 1) - tail[segOf[j]] and j not in noj and not (M['segs'][segOf[j]][0] in ('A', 'B', 'C') and j - s[1] < INTRO)
 jumps = {}; forced = {}
@@ -50,7 +50,7 @@ for i in range(N):
     if c: jumps[str(i)] = [j for _, j in c[:12]]
     seg = M['segs'][segOf[i]]; nearEnd = (i - seg[1]) > (seg[2] - seg[1] + 1) - (tail[segOf[i]] - 10)
     if i == safeLast[segOf[i]] or nearEnd:
-        best = max((j for j in range(N) if fno_ok(j) and (segOf[j] != segOf[i] or abs(j - i) > 30)), key=lambda j: score(i, j))
+        best = max((j for j in range(N) if fno_ok(j) and (segOf[j] != segOf[i] or abs(j - i) > 30)), key=lambda j: score(i, j) - (0.08 if segOf[j] == segOf[i] else 0))  # prefer leaving for another clip
         forced[str(i)] = int(best)
 M['jumps'] = jumps; M['forced'] = forced
 fs = [score(int(i), j) for i, j in forced.items()]; print('forced exits: %d, overlap min %.2f median %.2f' % (len(fs), min(fs), float(np.median(fs))))

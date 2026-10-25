@@ -12958,7 +12958,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1415"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1416"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25162,21 +25162,27 @@ function lilyLoad() {
 function lilyReady() { return !!(LILY.man && LILY.imgs.length && LILY.imgs.every(function (im) { return im.complete && im.naturalWidth > 0; })); }
 function lilyUnload() { LILY.imgs.forEach(function (im) { im.src = ""; }); LILY.imgs = []; LILY.man = null; LILY.loading = false; } // frees the sheets' memory
 function lilyRng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-function lilyPlayer(seed) { var m = LILY.man; return { i: m ? m.segs[0][1] : 0, run: 0, acc: 0, offX: null, rng: lilyRng(seed || 7), used: {}, joins: 0, lastJoin: null }; }
+function lilyPlayer(seed) { var m = LILY.man; return { i: m ? m.segs[0][1] : 0, run: 0, acc: 0, offX: null, rng: lilyRng(seed || 7), used: {}, seen: {}, t: 0, joins: 0, lastJoin: null }; }
 function lilyNext(p) { // advance one video frame along the move graph
   var m = LILY.man, i = p.i, si = m.segOf[i], seg = m.segs[si], last = m.safeLast[si], tailIn = m.tailIn[si];
   var nearEnd = (i - seg[1]) > (seg[2] - seg[1] + 1) - (tailIn - 10) && !m.nojSet[i];
   var opts = m.jumps[i] || [], n = i < last ? i + 1 : -1, j = -1;
   var late = (last - i) < 48; // v1415: in a clip's last 2 s take any good join rather than be forced out at the end
   if (p.run >= 18 && opts.length && (p.rng() < 0.35 || nearEnd || late || n < 0)) {
-    var cand = opts.slice(0, 6).sort(function (a, b) { return (p.used[a] || 0) - (p.used[b] || 0); }).slice(0, 4), other = cand.filter(function (x) { return m.segOf[x] !== si; });
-    var pool = other.length ? other : cand; j = pool[Math.floor(p.rng() * pool.length)];
-  } else if (n < 0 || (nearEnd && m.forced[i] != null)) j = m.forced[i] != null ? m.forced[i] : lilyNearest(i);
+    /* v1416: no short loops - skip a join that lands where she was in the last 6 s (she got stuck replaying a 2 s cartwheel) */
+    var fresh = opts.filter(function (x) { return lilyFresh(p, x); });
+    var cand = fresh.slice(0, 6).sort(function (a, b) { return (p.used[a] || 0) - (p.used[b] || 0); }).slice(0, 4), other = cand.filter(function (x) { return m.segOf[x] !== si; });
+    var pool = other.length ? other : cand;
+    if (pool.length) j = pool[Math.floor(p.rng() * pool.length)];
+    else if (n < 0 || nearEnd) j = (m.forced[i] != null && lilyFresh(p, m.forced[i])) ? m.forced[i] : lilyNearest(i, p);
+  } else if (n < 0 || (nearEnd && m.forced[i] != null)) j = (m.forced[i] != null && lilyFresh(p, m.forced[i])) ? m.forced[i] : lilyNearest(i, p);
+  p.t++; p.seen[i] = p.t; // every frame she plays counts, so a join can't land on something she just did
   if (j >= 0) { p.used[j] = (p.used[j] || 0) + 1; p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[j][7]; p.i = j; p.run = 0; p.joins++; p.lastJoin = [i, j]; return; }
   if (p.fade && --p.fade.n <= 0) p.fade = null;
   p.i = n; p.run++;
 }
-function lilyNearest(i) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.forced).forEach(function (k) { var j = m.forced[k], d = Math.abs(m.f[j][7] - m.f[i][7]) + Math.abs(m.f[j][6] - m.f[i][6]); if (d < bd) { bd = d; best = j; } }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
+function lilyFresh(p, x) { var m = LILY.man, e = Math.min(m.segs[m.segOf[x]][2], x + 48); for (var y = x; y <= e; y++) if (p.seen[y] > p.t - 144) return false; return true; } // landing at x would not replay anything from the last 6 s (next 2 s checked)
+function lilyNearest(i, p) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.jumps).forEach(function (k) { m.jumps[k].forEach(function (j) { var d = (p && !lilyFresh(p, j)) ? 1e5 - (p.t - (p.seen[j] || -1e4)) : 0; d += Math.abs(m.f[j][6] - m.f[i][6]) + Math.abs(m.f[j][4] - m.f[i][4]) + (m.segOf[j] === m.segOf[i] ? 40 : 0); if (d < bd) { bd = d; best = j; } }); }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
 function lilyStep(p, dt) { var m = LILY.man; if (!m) return; p.acc += dt * m.fps; var guard = 0; while (p.acc >= 1 && guard++ < 8) { p.acc -= 1; lilyNext(p); } }
 /* draw her with her feet at (x, feetY), standH CSS px tall when standing; flip = face left. hold: keep her root near x (the preview; battles will use her own travel). */
 function lilyDraw(ctx, p, x, feetY, standH, flip, hold) {
