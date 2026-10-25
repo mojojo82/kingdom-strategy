@@ -3844,3 +3844,8 @@ Harley's 3 points:
 - LILY_STAND_CSS 28 -> 24: measured Gareth helmet-to-feet = 24.1 CSS px at 100% - she was 16% taller than him (Conquest too).
 - rejoin: the join bar now comes from her fighting clips only (still clips - idle, blocks - had raised it): 34 exit moments, 205 frames with a join (v1430: 22 / 150).
 - Sheets v5: 10 sheets, 956 frames, 8.7 MB (v4 removed).
+
+## v1433 (TEST) — Iron Lily: block clip was 39% too big (Harley: "why is she so tall vs Gareth")
+- The block clip was made from the 55% start frame and keyed at scale 1 (the idle had been scaled by hand). First-frame standing height in the working space: every clip 190-193, blocks 265. In the block test she stood ~27% taller than Gareth even crouched.
+- dev/lily/keyclip.py now defaults to 'auto': measures her standing height in the clip's first frame (the start frame) and scales the clip to 573 2K px - a 55% clip can't come in at the wrong size again. Blocks re-keyed (x0.719); sheets v6 (8.3 MB), joins: 35 exit moments, 293 frames with a join.
+- g356 threshold for run frames near an enemy 20 -> 40 (they are mid-air take-off frames that must finish; was 436 before v1429).

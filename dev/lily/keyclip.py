@@ -6,12 +6,18 @@ import numpy as np, cv2, json, subprocess, sys, os
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from keyfn import key4
-src, n, s = sys.argv[1], sys.argv[2], float(sys.argv[3])
+src, n = sys.argv[1], sys.argv[2]
+s = float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] != 'auto' else None  # v1433: 'auto' (default) = measure her standing height in the first frame
 W, H, FLOOR = 2560, 1440, 1354
 big, sm = 'big' + n, 'f' + n; os.makedirs(big, exist_ok=True); os.makedirs(sm, exist_ok=True)
 w0, h0 = [int(v) for v in subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', src], capture_output=True, text=True).stdout.split(',')]
 p = subprocess.Popen(['ffmpeg', '-v', 'error', '-i', src, '-vf', 'scale=%d:%d:flags=lanczos' % (W, H), '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], stdout=subprocess.PIPE)
 meta = json.load(open('bigmeta.json')) if os.path.exists('bigmeta.json') else {}
+STAND_2K = 573  # her standing height (first frame = the start frame) in every clip's 2K working space
+if s is None:  # v1433: measure the first frame so a 55%-frame clip can't come in too big (the block clip did: 265 vs 191 small px)
+    f0 = subprocess.run(['ffmpeg', '-v', 'error', '-i', src, '-vf', 'scale=%d:%d:flags=lanczos,select=eq(n\\,0)' % (W, H), '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], capture_output=True).stdout
+    c0, a0 = key4(np.frombuffer(f0, np.uint8).reshape(H, W, 3)); ys0 = np.nonzero(a0 > 0.5)[0]
+    s = STAND_2K / float(ys0.max() - ys0.min()); print('auto scale: first-frame height %d -> x%.3f' % (ys0.max() - ys0.min(), s))
 k = 0
 while True:
     buf = p.stdout.read(W * H * 3)
