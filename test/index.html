@@ -6012,7 +6012,7 @@ var I18N = { ru: {
   "Stats": "Параметры", "Skills": "Навыки", "Gear": "Снаряжение",
   "HP": "ОЗ", "ATK": "АТК", "DEFENSE": "ЗАЩИТА", "ACTIVE": "АКТИВНЫЙ", "s": " с",
   "Level Up": "Улучшить", "Star Up": "Звезда", "Equip in Conquest": "Взять в Завоевание", "Unequip from Conquest": "Убрать из Завоевания",
-  "Conquest Roster Full (5/5)": "Отряд Завоевания полон (5/5)", "Recruit — ": "Нанять — ", "🔒 Coming soon": "🔒 Скоро",
+  "Conquest Roster Full (5/5)": "Отряд Завоевания полон (5/5)", "Recruit — ": "Нанять — ", "🔒 Coming soon": "🔒 Скоро", "🔒 Needs 1 fragment": "🔒 Нужен 1 фрагмент",
   "💎 VIP pack only": "💎 Только в VIP-наборе", "🔒 Requires Hall of Heroes": "🔒 Нужен Зал героев",
   "Helmet": "Шлем", "Armour": "Броня", "Weapon": "Оружие", "Gloves": "Перчатки", "Belt": "Пояс", "Boots": "Сапоги",
   "🔒 Gear is coming in a future update.": "🔒 Снаряжение появится в будущем обновлении.",
@@ -8027,7 +8027,7 @@ function createGame(opts) {
   }
   function grantFragments(key, n) {
     var h = state.heroes[key];
-    if (!h || !h.owned || heroStarArms(h) >= STAR_MAX_ARMS) return false;
+    if (!h || heroStarArms(h) >= STAR_MAX_ARMS) return false; /* v1436: unowned heroes can hold fragments too - 1 fragment recruits them */
     h.fragments = (h.fragments | 0) + n;
     return true;
   }
@@ -8043,11 +8043,12 @@ function createGame(opts) {
   function recruitHero(key) {
     var def = HERO_DEFS[key];
     if (!def) return { ok: false, reason: "unknown_hero" };
-    if (def.vipOnly) return { ok: false, reason: "vip_only" }; /* v992: Hanzo comes from a VIP pack only */
     var h = state.heroes[key];
     if (h.owned) return { ok: false, reason: "already_owned" };
-    if (!canAfford(def.recruitCost)) return { ok: false, reason: "cannot_afford" };
-    spend(def.recruitCost);
+    if (def.comingSoon && !h.devUnlocked) return { ok: false, reason: "coming_soon" };
+    /* v1436 (Harley): recruiting needs at least 1 fragment of that hero, nothing else (no gold, fragment is kept for stars).
+       recruitCost stays in HERO_DEFS only for the power / value maths. VIP heroes can still also come from a pack. */
+    if ((h.fragments | 0) < 1) return { ok: false, reason: "need_fragment" };
     h.owned = true; h.level = 1;
     if (def.class !== "governor") h.skillLevels = { conquest: [1, 1, 1], expedition: [1, 1, 1] };
     log("Recruited hero " + def.name + ", " + def.title + "!");
@@ -12974,7 +12975,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1435"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1436"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -16492,7 +16493,7 @@ function renderHeroesReal() {
     var def = HERO_DEFS[key], h = game.state.heroes[key];
     var isCombat = def.class !== "governor";
     var art = (typeof HERO_CARD_ART2 !== "undefined" && HERO_CARD_ART2 && HERO_CARD_ART2[key]) || HERO_STILL_BUILTIN[key] || getHeroArt(key);
-    var canAct = !h.owned ? (!def.vipOnly && tavernLevel >= 1 && Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; }))
+    var canAct = !h.owned ? (!def.comingSoon && (h.fragments | 0) >= 1)
       : (game.heroCanAffordLevel(key) || game.heroCanAffordStar(key));
     sig += key + (h.owned ? 1 : 0) + "." + h.level + "." + heroStarArms(h) + "." + (h.busy ? 1 : 0) + (isCombat && game.state.conquestRoster.indexOf(key) !== -1 ? "E" : "") + (!isCombat && game.state.governorHero === key ? "G" : "") + (canAct ? "!" : "") + (art ? art.length : 0) + ";";
   });
@@ -16535,7 +16536,7 @@ function renderHeroesReal() {
     // Red dot: something you can act on right now
     var canAct = false;
     if (!h.owned) {
-      canAct = !def.vipOnly && tavernLevel >= 1 && Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; });
+      canAct = !def.comingSoon && (h.fragments | 0) >= 1;
     } else {
       canAct = game.heroCanAffordLevel(key) || game.heroCanAffordStar(key);
     }
@@ -30663,11 +30664,11 @@ function renderHeroDetailReal() {
   {
     if (!h.owned) {
       var tavernLevel = 1; /* v1183: no Hall of Heroes any more - recruiting is always open */
-      var rcost = Object.keys(def.recruitCost).map(function (r) { return RES_ICON[r] + fmt(def.recruitCost[r]); }).join(" ");
       var recruitBtn = document.createElement("button");
       recruitBtn.className = "hd-actionbtn";
-      recruitBtn.innerHTML = def.comingSoon ? t("🔒 Coming soon") : def.vipOnly ? t("💎 VIP pack only") : tavernLevel < 1 ? t("🔒 Requires Hall of Heroes") : t("Recruit — ") + rcost;
-      recruitBtn.disabled = !!def.vipOnly || tavernLevel < 1 || !Object.keys(def.recruitCost).every(function (r) { return game.state.resources[r] >= def.recruitCost[r]; });
+      var hasFrag = (h.fragments | 0) >= 1; /* v1436: 1 fragment recruits */
+      recruitBtn.innerHTML = def.comingSoon ? t("🔒 Coming soon") : hasFrag ? t("Recruit — ") + FRAGMENT_ICON + "1" : t("🔒 Needs 1 fragment");
+      recruitBtn.disabled = !!def.comingSoon || !hasFrag;
       recruitBtn.onclick = function () { game.recruitHero(key); persist(); render(); renderHeroDetail(); };
       btnWrap.appendChild(recruitBtn);
     } else {

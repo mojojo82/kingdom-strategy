@@ -44,7 +44,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   });
   console.log(JSON.stringify(r));
   const A = assert;
-  A.strictEqual(r.recruit, "vip_only", "Hanzo can't be recruited with resources"); A.strictEqual(r.botPool, false, "no Hanzo on bots for now");
+  A.strictEqual(r.recruit, "need_fragment", "v1436: Hanzo needs a fragment (no resources) to recruit"); A.strictEqual(r.botPool, false, "no Hanzo on bots for now");
   A.deepStrictEqual(r.dodge.map((x) => +x.toFixed(2)), [0.1, 0.2, 0.3, 0.4, 0.5], "Shadow Step 10% per level"); A.deepStrictEqual(r.cd, [8, 5], "Shuriken Storm 8s, 5s at level 5");
   A.ok(r.cqL5.aoe > 0 && r.cqL5.casts > 10, "Conquest: Shuriken Storm fires and hits");
   A.ok(r.cqL5.dgN > 10 && r.cqL5.dodges === Math.floor(r.cqL5.dgN * 0.5), "Conquest: level 5 dodges every 2nd hit"); A.ok(r.cqL1.dodges === Math.floor(r.cqL1.dgN * 0.1 + 1e-9), "Conquest: level 1 dodges 1 hit in 10");

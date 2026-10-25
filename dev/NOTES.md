@@ -3859,3 +3859,11 @@ Harley's 3 points:
 - Two new Dev Tools buttons: "🌺 Unlock Iron Lily (dev)" makes her owned (level 1) and sets `h.devUnlocked`. "🌺 +50 Iron Lily Fragments" gives her fragments for stars, and only works once she's unlocked.
 - `devUnlocked` lets her be equipped in Conquest despite `comingSoon` (in `equipConquestHero` and the hero card). Nothing changes for players who haven't pressed the button, and she stays off bots and Arena pools (vipOnly).
 - Checked headless: unlock → owned, +50 fragments, equip ok, no errors. g351–g356 all OK.
+
+## v1436 — Recruiting = 1 fragment (Harley)
+- Every hero (normal, VIP, governor) now recruits with at least 1 fragment of that hero, with no gold or other resources. The fragment is kept and counts toward stars. Coming-soon heroes stay locked unless dev-unlocked.
+- `grantFragments` now works on heroes you don't own yet. Random fragment drops (`grantRandomFragments`) still only go to owned heroes; how players get fragments for new heroes is still to decide.
+- Recruit button: "Recruit — 🧩1" with a fragment, or "🔒 Needs 1 fragment". The red dot shows when a hero is recruitable. `recruitCost` stays in HERO_DEFS only for the power/value maths.
+- VIP pack mail unlocks still work as before. Starters Gareth and Lyra are still owned from the start.
+- The economy sims (economy_daily / boss_time / f2p_timeline) auto-recruit with recruitHero, so they'll no longer recruit anyone until fragments have a source.
+- Tests: g303 updated (needs a fragment, gold unchanged, fragment kept) and g217 (Hanzo → need_fragment). Both pass, plus g351.

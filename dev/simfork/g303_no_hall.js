@@ -25,8 +25,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     setScreen("city", "buildings"); await new Promise((r) => setTimeout(r, 800));
     out.listed = /Hall of Heroes/.test(document.getElementById("buildingsModeContent").innerText);
     const key = Object.keys(HERO_DEFS).find((k) => !st.heroes[k].owned && !HERO_DEFS[k].vipOnly && !HERO_DEFS[k].comingSoon && HERO_DEFS[k].recruitCost);
-    Object.keys(HERO_DEFS[key].recruitCost).forEach((r) => st.resources[r] = Math.max(st.resources[r] || 0, HERO_DEFS[key].recruitCost[r]));
-    out.th = st.buildings.townhall.level; out.recruit = game.recruitHero(key); out.owned = st.heroes[key].owned;
+    /* v1436: recruiting needs 1 fragment of that hero, no gold */
+    out.noFrag = game.recruitHero(key).reason; const gold0 = st.resources.gold; game.grantFragments(key, 1);
+    out.th = st.buildings.townhall.level; out.recruit = game.recruitHero(key); out.owned = st.heroes[key].owned; out.goldSame = st.resources.gold === gold0; out.fragKept = st.heroes[key].fragments;
     const save = JSON.parse(JSON.stringify(st)); save.buildings.tavern = { level: 5, upgrading: null, queue: [] };
     try { game.loadState ? game.loadState(save) : null; out.loadOk = true; } catch (e) { out.loadOk = String(e); }
     out.after = "tavern" in game.state.buildings;
@@ -39,6 +40,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     assert.deepStrictEqual(errs, []);
     assert(!o.inDefs && !o.inState && !o.listed, "no Hall of Heroes building");
     assert(o.th <= 2 && o.recruit.ok && o.owned, "new account recruits without it");
+    assert(o.noFrag === "need_fragment" && o.goldSame && o.fragKept === 1, "v1436: needs 1 fragment, costs no gold, fragment kept");
     assert(o.loadOk === true && !o.after, "old save with a tavern level loads");
     assert(!locked, "no 'Requires Hall of Heroes' lock anywhere");
     console.log("g303 ok");
