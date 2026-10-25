@@ -3756,3 +3756,9 @@ Harley's 3 points:
 - Cause: build_sheets.py cropped a sheet to the top of the row in progress when a frame didn't fit below it - 10 frames (230-234, 417-418, 507-509) lost their pixels. Fixed + an assert; rebuilt as tag v2 (lily_v2_*), v1 files removed. g352 now checks every frame is inside its sheet.
 - rejoin on the rebuilt sheets: the bar rose a little (the blank frames had dragged the next-frame median down) - 19 exit moments, 11 with one option. More clips needed.
 - Exact 40 s render (seed 7): 0 empty frames, 0 one-frame spikes, 0 replays within 3 s; time per clip A/B/C/C2 = 8/42/40/9%.
+
+## v1418 (TEST) — Iron Lily: no joins that flip which way she faces (Harley: 1.5-3 s, facing forward into facing backwards)
+- The join 47 -> 264 matched her outline but went from facing the camera to back-to-camera; the crossfade showed two people.
+- rejoin.py: FACE = share of skin on her head (top 30% of body) per frame - ~0.065 facing the camera, ~0.008 side/back. A join (now and 2 frames on) needs |FACE diff| <= 0.045 (0.03 cut the acro clip off entirely). Forced exits rank facing first. Manifest carries 'face'; the game's fallback exit (lilyNearest) also refuses facing flips.
+- 2 forced exits still flip (frames 359, 541 have no same-facing match anywhere) - only used if no join was taken in a clip's last 2 s.
+- Exact 40 s render: 16 joins, 0 facing flips; clip share over 3 seeds: B ~50%, C ~31%, A/C2 ~8-11% each.

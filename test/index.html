@@ -12958,7 +12958,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1417"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1418"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25182,7 +25182,7 @@ function lilyNext(p) { // advance one video frame along the move graph
   p.i = n; p.run++;
 }
 function lilyFresh(p, x) { var m = LILY.man, e = Math.min(m.segs[m.segOf[x]][2], x + 48); for (var y = x; y <= e; y++) if (p.seen[y] > p.t - 144) return false; return true; } // landing at x would not replay anything from the last 6 s (next 2 s checked)
-function lilyNearest(i, p) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.jumps).forEach(function (k) { m.jumps[k].forEach(function (j) { var d = (p && !lilyFresh(p, j)) ? 1e5 - (p.t - (p.seen[j] || -1e4)) : 0; d += Math.abs(m.f[j][6] - m.f[i][6]) + Math.abs(m.f[j][4] - m.f[i][4]) + (m.segOf[j] === m.segOf[i] ? 40 : 0); if (d < bd) { bd = d; best = j; } }); }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
+function lilyNearest(i, p) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.jumps).forEach(function (k) { m.jumps[k].forEach(function (j) { var d = (p && !lilyFresh(p, j)) ? 1e5 - (p.t - (p.seen[j] || -1e4)) : 0; d += Math.abs(m.f[j][6] - m.f[i][6]) + Math.abs(m.f[j][4] - m.f[i][4]) + (m.segOf[j] === m.segOf[i] ? 40 : 0) + (m.face ? 4000 * Math.max(0, Math.abs(m.face[j] - m.face[i]) - 0.045) : 0); /* v1418: never flip which way she faces */ if (d < bd) { bd = d; best = j; } }); }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
 function lilyStep(p, dt) { var m = LILY.man; if (!m) return; p.acc += dt * m.fps; var guard = 0; while (p.acc >= 1 && guard++ < 8) { p.acc -= 1; lilyNext(p); } }
 /* draw her with her feet at (x, feetY), standH CSS px tall when standing; flip = face left. hold: keep her root near x (the preview; battles will use her own travel). */
 function lilyDraw(ctx, p, x, feetY, standH, flip, hold) {
