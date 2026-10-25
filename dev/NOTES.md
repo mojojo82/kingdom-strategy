@@ -3853,3 +3853,9 @@ Harley's 3 points:
 ## v1434 (TEST) — training stage: "Bullet parry test" (Harley: she moves through her blocks as fast as each bullet needs)
 - Cannon fire from the right with a repeating gap pattern (0.9 s down to 0.12 s bursts); each bullet aims at the blade point of the neighbouring block she'll move to; she starts moving as soon as she's free and plays the clip's arm move at exactly the speed that gets her there ~30 ms before it lands (min 1.5x). Each landing in the right block = deflect (flash + sparks). 16 s run: 42 deflected, 0 missed.
 - The block test vs Gareth now also uses the per-move speed (fixed 3x there).
+
+## v1435 — Dev: unlock Iron Lily (TEST)
+- Harley asked for fragments to unlock her. Fragments only add stars to heroes you already own, so they can't unlock anyone.
+- Two new Dev Tools buttons: "🌺 Unlock Iron Lily (dev)" makes her owned (level 1) and sets `h.devUnlocked`. "🌺 +50 Iron Lily Fragments" gives her fragments for stars, and only works once she's unlocked.
+- `devUnlocked` lets her be equipped in Conquest despite `comingSoon` (in `equipConquestHero` and the hero card). Nothing changes for players who haven't pressed the button, and she stays off bots and Arena pools (vipOnly).
+- Checked headless: unlock → owned, +50 fragments, equip ok, no errors. g351–g356 all OK.

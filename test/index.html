@@ -3577,6 +3577,8 @@
                   <button class="secondary" id="devAddValor">+5,000 Valor</button>
                   <button class="secondary" id="devZeroRp">Research Points → 0</button>
                   <button class="secondary" id="devAddFragments">+50 Fragments (all owned)</button>
+                  <button class="secondary" id="devUnlockLily">🌺 Unlock Iron Lily (dev)</button>
+                  <button class="secondary" id="devLilyFrags">🌺 +50 Iron Lily Fragments</button>
                 </div>
                 <div class="dev-tools-row">
                   <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
@@ -10377,7 +10379,7 @@ function createGame(opts) {
     var def = HERO_DEFS[key], h = state.heroes[key];
     if (!def || !h) return { ok: false, reason: "unknown_hero" };
     if (!h.owned) return { ok: false, reason: "not_owned" };
-    if (def.comingSoon) return { ok: false, reason: "coming_soon" }; /* v1149: placeholder heroes (Iron Lily) have no battle kit yet */
+    if (def.comingSoon && !h.devUnlocked) return { ok: false, reason: "coming_soon" }; /* v1435: dev unlock lets Harley equip her in TEST. v1149: placeholder heroes (Iron Lily) have no battle kit yet */
     if (def.class === "governor") return { ok: false, reason: "cannot_equip_governor" };
     if (state.conquestRoster.indexOf(key) !== -1) return { ok: false, reason: "already_equipped" };
     if (state.conquestRoster.length >= 5) return { ok: false, reason: "roster_full" };
@@ -12972,7 +12974,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1434"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1435"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -28536,6 +28538,15 @@ document.getElementById("devAddValor").onclick = function () { game.state.idle.v
 document.getElementById("devZeroRp").onclick = function () { /* v1221 (Harley): reset this account's RP */
   if (!confirm("Set Research Points to 0 on this account?")) return;
   game.state.researchPoints = 0; persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} render(); try { miniToast("Research Points set to 0"); } catch (e) {} };
+(function () { /* v1435 (Harley): unlock Iron Lily for testing - fragments only add stars to owned heroes, so this recruits her directly */
+  function lily() { return game.state.heroes.ironlily; }
+  var u = document.getElementById("devUnlockLily"), f = document.getElementById("devLilyFrags");
+  if (u) u.onclick = function () { var h = lily(); if (!h) return;
+    if (!h.owned) { h.owned = true; h.level = h.level || 1; h.skillLevels = h.skillLevels || { conquest: [1, 1, 1], expedition: [1, 1, 1] }; }
+    h.devUnlocked = true; persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} render(); try { miniToast("Iron Lily unlocked (dev)"); } catch (e) {} };
+  if (f) f.onclick = function () { var h = lily(); if (!h || !h.owned) { try { miniToast("Unlock Iron Lily first"); } catch (e) {} return; }
+    game.grantFragments("ironlily", 50); persist(); render(); try { miniToast("+50 Iron Lily fragments"); } catch (e) {} };
+})();
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
@@ -30685,7 +30696,7 @@ function renderHeroDetailReal() {
         govBtn.textContent = isGov ? "Overlord ✓ (tap to remove)" : "Set as Overlord";
         govBtn.onclick = function () { isGov ? game.clearGovernor() : game.setGovernor(key); persist(); render(); renderHeroDetail(); };
         btnWrap.appendChild(govBtn);
-      } else if (def.comingSoon) { /* v1149: no Conquest until she is built */
+      } else if (def.comingSoon && !h.devUnlocked) { /* v1149: no Conquest until she is built (v1435: dev unlock skips this) */
       } else {
         var isEquipped = game.state.conquestRoster.indexOf(key) !== -1;
         var rosterFull = game.state.conquestRoster.length >= 5;
