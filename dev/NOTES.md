@@ -3832,3 +3832,8 @@ Harley's 3 points:
 - Fixed: run and idle frames were being used as random join targets (free play / fights could start running or idling for no reason) - rejoin NOTARGET = Rin / Rrun / Rout / Idle; entered only by the fight's mode.
 - Sheets v4: 9 sheets, 848 frames, 7.6 MB (v3 removed). LILY_IMPACT_RATE 3.0 -> 3.3 (measured 3.29).
 - Joins: 22 exit moments, 13 with one option. In the training stage she now uses B / H / K / A / C2 + run + idle; clip C (acro 0-7.3 s) gets no joins under the strict rules any more - its poses don't match the others well enough. More clips (spins / aerial) should reconnect it.
+
+## v1431 (TEST) — Iron Lily does her cartwheels again (Harley: "link the move before the cartwheels into them on purpose")
+- The acro clip's first 7 s (kicks, cartwheels, handstand) had only 3 joins in from other clips under the strict pose rules, all at one rare spot - she never got there.
+- lilyCartNext: closing in (mode "close", target > 1 body length away), from a calm grounded frame (>= 18 frames into a move, not mid-swing / mid-air), ~1 in 4 chance per second she blends into acro 1.6 s - the high kick that leads into lunge -> cartwheel -> handstand, as filmed. Not again within 6 s.
+- Stage measurement (g356): acro clip 0 -> 330 of 1945 frames; still no running on top of enemies (3 frames), 10 turns. g356 now checks she does the cartwheels.
