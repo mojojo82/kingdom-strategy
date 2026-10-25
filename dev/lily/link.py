@@ -15,6 +15,7 @@ SEGS = [            # name, small-frame dir, big-frame dir, first frame, end fra
   ('H',   'f6', 'big6', 24, 101, 15),  # v1430 heavy blade (HD): rising slash, jumping overhead cleave, long thrust (turn + front-on end pose cut)
   ('K',   'f7', 'big7', 18, 101, 15),  # v1430 closing in (HD): leaping strike, lunge, forward roll into rising slash, low slide (3/4 end pose cut)
   ('Idle','f8', 'big8', 49, 83, 12),   # v1430 idle (HD, 55% frame scaled to match): one clean breathing loop, 49 -> 82
+  ('Blk', 'f9', 'big9', 16, 124, 12),  # v1432 four face-height blocks, feet planted: level 18-40, upright 48-66, slanted 72-90, hanging guard 96-123
 ]
 TAIL_IN, TAIL_OUT = 40, 30  # don't jump into the last 40 frames of a segment; leave in the last 30
 F = []

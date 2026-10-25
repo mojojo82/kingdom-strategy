@@ -3,6 +3,7 @@
 well as a normal next-frame step does (median of real consecutive frames) - so a join never looks worse than the video itself.
 Run: python3 rejoin.py art/heroes/ironlily/lily_v1.json   (rewrites jumps + forced in place; prints the options map)"""
 import json, sys, numpy as np
+NOTARGET = ('Rin', 'Rrun', 'Rout', 'Idle', 'Blk')  # v1430/v1432: run / idle / blocks are entered only on purpose (by the fight's mode), never joined into at random
 from PIL import Image
 P = sys.argv[1]; D = P.rsplit('/', 1)[0] + '/'
 M = json.load(open(P)); sh = [np.array(Image.open(D + f)) for f in M['sheets']]
@@ -42,10 +43,9 @@ def raw(i, j): return min(0.65 * IB[i, j] + 0.35 * IR[i, j], 0.65 * IB[nxt2[i], 
 def score(i, j):  # pose now (body counts most, sword too) and where both are heading 2 frames on
     if abs(FACE[i] - FACE[j]) > FACE_GAP or abs(FACE[nxt2[i]] - FACE[nxt2[j]]) > FACE_GAP: return 0.0
     return min(0.65 * IB[i, j] + 0.35 * IR[i, j], 0.65 * IB[nxt2[i], nxt2[j]] + 0.35 * IR[nxt2[i], nxt2[j]])
-cons = [min(0.65 * IB[i, i + 1] + 0.35 * IR[i, i + 1], 0.65 * IB[nxt2[i], nxt2[i + 1]] + 0.35 * IR[nxt2[i], nxt2[i + 1]]) for i in range(N - 1) if segOf[i] == segOf[i + 1] and i not in noj]
+cons = [min(0.65 * IB[i, i + 1] + 0.35 * IR[i, i + 1], 0.65 * IB[nxt2[i], nxt2[i + 1]] + 0.35 * IR[nxt2[i], nxt2[i + 1]]) for i in range(N - 1) if segOf[i] == segOf[i + 1] and i not in noj and M['segs'][segOf[i]][0] not in NOTARGET]  # v1432: the bar comes from her fighting clips only (still clips - idle, blocks - raised it)
 import os; PCT = float(os.environ.get('PCT', 25)); THR = float(np.percentile(cons, PCT)); print('next-frame overlap: %dth pct %.2f (join must be >= this)' % (PCT, THR))
 INTRO = 36; tail = M['tailIn']
-NOTARGET = ('Rin', 'Rrun', 'Rout', 'Idle')  # v1430: run / idle are entered only on purpose (by the fight's mode), never joined into at random
 def fno_ok(j): s = M['segs'][segOf[j]]; return s[0] not in NOTARGET and (j - s[1]) <= (s[2] - s[1] + 1) - tail[segOf[j]] and j not in noj and not (M['segs'][segOf[j]][0] in ('A', 'B', 'C') and j - s[1] < INTRO)
 jumps = {}; forced = {}
 for i in range(N):

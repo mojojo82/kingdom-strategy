@@ -12972,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1431"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1432"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25168,7 +25168,7 @@ function garethThrustImpact(vis, hScale) {
    Frame f = [sheet, sx, sy, w, h, left, topFromFloor, feetX] in sheet px (she stands ~man.stand px tall). A player walks the move graph:
    it plays a segment forward and, at a join (after >= 18 frames), may jump to a matching pose in another clip; it never cuts mid-air or into
    a standing start. Seeded (no dice): the same seed always plays the same flurry. */
-var LILY_TAG = "v4", LILY_BASE = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/ironlily/";
+var LILY_TAG = "v5", LILY_BASE = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/ironlily/";
 var LILY = { man: null, imgs: [], loading: false, err: null };
 function lilyLoad() {
   if (LILY.man || LILY.loading) return; LILY.loading = true;
@@ -25290,7 +25290,8 @@ function lilyTrainOpen() {
     '<canvas id="ltC" style="width:100%;height:300px;display:block;border-radius:6px;touch-action:manipulation"></canvas>' +
     '<div id="ltInfo" style="font-size:12px;opacity:.9;margin:6px 0;min-height:16px">loading her frames...</div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap">' + B("ltL", "⬅️ Spawn left") + B("ltR", "Spawn right ➡️") + B("ltB", "+2 each side") + B("ltClr", "Clear") + '</div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + B("ltPause", "⏸ Pause") + B("ltSlow", "Speed: 1x") + B("ltZoom", "Zoom: in-game") + B("ltReach", "Hit lines: off") + B("ltHp", "Enemy HP: 6 hits") + '</div></div>';
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + B("ltPause", "⏸ Pause") + B("ltSlow", "Speed: 1x") + B("ltZoom", "Zoom: in-game") + B("ltReach", "Hit lines: off") + B("ltHp", "Enemy HP: 6 hits") + '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + B("ltBlk", "🛡️ Block test vs Gareth: off") + '</div></div>';
   document.body.appendChild(ov);
   var cv = document.getElementById("ltC"), ctx = cv.getContext("2d");
   var S = { lily: { x: 0, face: false, chasing: false, hits: 0, miss: 0, taken: 0 }, en: [], nid: 0, paused: false, spd: 1, zoom: 1, reach: false, hpHits: 6, fx: [], lastReach: null, t: performance.now(), raf: 0, W: 300 };
@@ -25306,6 +25307,7 @@ function lilyTrainOpen() {
   $("ltSlow").onclick = function () { S.spd = S.spd === 1 ? 0.25 : 1; this.textContent = "Speed: " + (S.spd === 1 ? "1x" : "slow"); };
   $("ltZoom").onclick = function () { S.zoom = S.zoom === 1 ? 2 : 1; this.textContent = "Zoom: " + (S.zoom === 1 ? "in-game" : "2x"); };
   $("ltReach").onclick = function () { S.reach = !S.reach; this.textContent = "Hit lines: " + (S.reach ? "on" : "off"); };
+  $("ltBlk").onclick = function () { S.blk = S.blk ? null : { k: 0, i: -1, dir: 0, t: 0, lastImp: -1, clashes: 0, phase: Math.random() }; S.en = []; this.textContent = "🛡️ Block test vs Gareth: " + (S.blk ? "on" : "off"); };
   $("ltHp").onclick = function () { S.hpHits = S.hpHits === 6 ? 20 : S.hpHits === 20 ? 1000 : 6; this.textContent = "Enemy HP: " + (S.hpHits >= 1000 ? "unkillable" : S.hpHits + " hits"); };
   window.__lilyTrain = S; // tests read it
   Object.defineProperty(S, "player", { get: function () { return store.lily && store.lily.p; } });
@@ -25369,6 +25371,43 @@ function lilyTrainOpen() {
     }
     S.fx.forEach(function (f) { ctx.save(); ctx.globalAlpha = Math.min(1, f.t * 2); ctx.fillStyle = "#c46a00"; ctx.font = "bold " + Math.round(11 * hs) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText("hit", f.x, floor - (40 + (0.6 - f.t) * 30) * hs); ctx.restore(); });
   }
+  /* v1432: block test - Gareth right next to her swings non-stop; she moves between her four face-height blocks (the clip's own arm moves, played
+     3x fast, forwards or backwards to a neighbouring block) so she is holding a block each time his sword lands; every clash throws sparks off her blade. */
+  function blkFrame(W, H, dt) {
+    var m = LILY.man, B = m.block, hs = hS(), floor = H - 40, kL = LILY_STAND_CSS * hs / m.stand, L = S.lily, g = S.blk;
+    if (!B) { $("ltInfo").textContent = "no block clip in her art"; return; }
+    L.x = Math.min(W * 0.4, W / 2 - 20 * hs); L.face = false;
+    var gx = L.x + B.pts[0][0] * kL + 14 * hs; // Gareth stands so his slash (reaches ~15 px in front of him) lands on her blade
+    if (g.i < 0) g.i = B.holds[0][0];
+    // her blocks: hold (gently play the hold frames back and forth) or move to the neighbouring block at 3x
+    g.t += dt * m.fps * (g.dir ? 3 : 1);
+    while (g.t >= 1) { g.t -= 1;
+      var h = B.holds[g.k];
+      if (g.dir) { g.i += g.dir; var tgt = B.holds[g.k + g.dir]; if ((g.dir > 0 && g.i >= tgt[0]) || (g.dir < 0 && g.i <= tgt[1])) { g.k += g.dir; g.dir = 0; g.hd = 1; } }
+      else { g.hd = g.hd || 1; g.i += g.hd; if (g.i >= h[1]) { g.i = h[1]; g.hd = -1; } else if (g.i <= h[0]) { g.i = h[0]; g.hd = 1; } }
+    }
+    // draw
+    var gr = ctx.createLinearGradient(0, 0, 0, floor); gr.addColorStop(0, "#e9edf2"); gr.addColorStop(1, "#c9d1db"); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, floor);
+    ctx.fillStyle = "#a89a84"; ctx.fillRect(0, floor, W, H - floor); ctx.fillStyle = "#8c7f6b"; ctx.fillRect(0, floor, W, 3);
+    lilyDraw(ctx, { i: g.i, offX: null, fade: null }, L.x, floor, LILY_STAND_CSS * hs, false, "root");
+    var imp = 0; try { imp = drawHeroAnim(ctx, "gareth", gx, floor, "attack", hs, true, g.phase); } catch (e) {}
+    var now = performance.now();
+    if (imp === 2 && now - (g.lastImp || 0) > 250) { // his sword lands: she is in a block -> clash
+      g.lastImp = now; g.clashes++;
+      var pt = B.pts[g.k], sx = L.x + pt[0] * kL, sy = floor + pt[1] * kL;
+      g.flash = { x: sx, y: sy, t: 0.12 }; for (var q = 0; q < 14; q++) { var an = -Math.PI / 2 + (Math.random() - 0.3) * 2.4, sp = (50 + Math.random() * 110) * hs; S.fx.push({ sp: 1, x: sx, y: sy, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, t: 0.15 + Math.random() * 0.2 }); } // sparks spray up and away from the clash
+      // then move to a neighbouring block for the next swing
+      var opts = []; if (g.k > 0) opts.push(-1); if (g.k < B.holds.length - 1) opts.push(1); g.dir = opts[Math.floor(Math.random() * opts.length)];
+      g.i = g.dir > 0 ? B.holds[g.k][1] : B.holds[g.k][0];
+    }
+    // sparks
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    S.fx = S.fx.filter(function (f) { if (!f.sp) return false; f.t -= dt; f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 260 * hs * dt; if (f.t <= 0) return false;
+      ctx.strokeStyle = "rgba(255," + Math.round(170 + 60 * Math.min(1, f.t * 3)) + ",60," + Math.min(1, f.t * 4) + ")"; ctx.lineWidth = 1.6 * hs; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x - f.vx * 0.03, f.y - f.vy * 0.03); ctx.stroke(); return true; });
+    if (g.flash && g.flash.t > 0) { g.flash.t -= dt; ctx.fillStyle = "rgba(255,245,200," + Math.max(0, g.flash.t / 0.12) + ")"; ctx.beginPath(); ctx.arc(g.flash.x, g.flash.y, 7 * hs, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    $("ltInfo").textContent = "block test · block " + (g.k + 1) + (g.dir ? " -> " + (g.k + 1 + g.dir) : " (holding)") + " · clashes " + g.clashes;
+  }
   function frame(t) {
     S.raf = requestAnimationFrame(frame); if (!document.getElementById("ltC")) return cancelAnimationFrame(S.raf);
     var dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
@@ -25380,6 +25419,7 @@ function lilyTrainOpen() {
     if (!lilyReady()) { ctx.fillStyle = "#dfe4ea"; ctx.fillRect(0, 0, W, H); return; }
     if (S.lily.x > W - 20) S.lily.x = W / 2; S.en.forEach(function (e) { if (e.x > W) e.x = W - 12; });
     if (!S.lily.x) S.lily.x = W / 2;
+    if (S.blk) { blkFrame(W, H, S.paused ? 0 : dt); return; }
     if (!S.paused) step(dt);
     draw(W, H);
     var p = store.lily && store.lily.p, m = LILY.man, sg = p ? m.segs[m.segOf[p.i]] : null;
@@ -25425,7 +25465,7 @@ function lilyPreviewOpen() {
 /* v1419: Iron Lily in battle (build step 3). She runs/holds/chases with the same melee rules as Gareth (heroMoves); her MOVES are picked
    by what the fight needs - far enemy: moves that carry her forward; enemy in reach: moves that stay put; nothing on screen: ready stance.
    Faces whoever she is fighting (flank-back / running home = left). Damage timing is unchanged (step 4 ties hits to her blade). */
-var LILY_STAND_CSS = 28; // standing height in CSS px at 100% hero scale
+var LILY_STAND_CSS = 24; // standing height in CSS px at 100% hero scale (v1432: 28 -> 24 = Gareth's measured helmet-to-feet height, she was 16% taller)
 var LILY_RUN_GAP = 4, LILY_RUN_STOP = 3; // v1425: run when the gap is > 4 x her height; stop running (into her stop, ~2.8 heights long) under 3
 var LILY_ENEMY_HALF_W = 10; // v1424: a normal enemy's half-width (CSS px) - a strike touching its body counts
 var LILY_IMPACT_RATE = 3.3; // v1430: 3.29 measured with heavy blade + closing-in in her set (run / idle no longer joined into at random); v1425: 3.0: 2.96 measured with the run clip in her set; v1424: her contact sweeps per second while fighting (measured: dev/simfork/g354; was 2.3 full-stretch hit frames in v1420) - sets the damage of each hit

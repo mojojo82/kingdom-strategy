@@ -3837,3 +3837,10 @@ Harley's 3 points:
 - The acro clip's first 7 s (kicks, cartwheels, handstand) had only 3 joins in from other clips under the strict pose rules, all at one rare spot - she never got there.
 - lilyCartNext: closing in (mode "close", target > 1 body length away), from a calm grounded frame (>= 18 frames into a move, not mid-swing / mid-air), ~1 in 4 chance per second she blends into acro 1.6 s - the high kick that leads into lunge -> cartwheel -> handstand, as filmed. Not again within 6 s.
 - Stage measurement (g356): acro clip 0 -> 330 of 1945 frames; still no running on top of enemies (3 frames), 10 turns. g356 now checks she does the cartwheels.
+
+## v1432 (TEST) — Iron Lily: four face-height blocks + "Block test vs Gareth" in the training stage
+- Clip (HD, feet planted the whole time): level pointing forward 18-40, upright in front of her face 48-66, slanted up 72-90, hanging guard 96-123 -> segment Blk (16-123), large clip9. Manifest 'block': holds (global) + pts (blade point toward the attacker per hold, feet-relative sheet px - where sparks fly). Blk is never joined into (NOTARGET).
+- Training stage button "Block test vs Gareth": Gareth (real sprite, drawHeroAnim attack, facing left) stands so his slash lands on her blade and swings non-stop (~2 swings/s); each impact frame = a clash (flash + sparks spraying up and away from her blade); after each clash she moves to a neighbouring block by playing the clip's own arm move 3x fast (forwards or backwards), so she's holding a block when the next swing lands. 27 clashes in 12 s.
+- LILY_STAND_CSS 28 -> 24: measured Gareth helmet-to-feet = 24.1 CSS px at 100% - she was 16% taller than him (Conquest too).
+- rejoin: the join bar now comes from her fighting clips only (still clips - idle, blocks - had raised it): 34 exit moments, 205 frames with a join (v1430: 22 / 150).
+- Sheets v5: 10 sheets, 956 frames, 8.7 MB (v4 removed).
