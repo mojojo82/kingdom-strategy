@@ -3892,3 +3892,14 @@ Harley's 3 points:
 - Harley: give Lily her own slider under the hero sprite size. "🌺 Iron Lily" goes from 50–250% with a Reset button, and stacks on top of the all-heroes size. Saved and synced like the hero size (`kingdom_prototype_lilysize_v1`).
 - `lilyStandCss()` = LILY_STAND_CSS × her %, used everywhere her height was used: drawing, root-motion steps, run/stop gaps, contact sweeps and the training stage. So bigger Lily also steps and reaches proportionally. Her HP bar now sits above her real height.
 - Caught in testing: a blanket replace turned `lilyStandCss` into calling itself, so she stopped drawing. Fixed. Measured at 100/120/150: Lily 24/28.8/36 px, Gareth unchanged at 1×. g351–g356 OK.
+
+## v1442 — Desert ruins level (chapter 8)
+- Harley's ChatGPT pipeline (dev/levels/PROMPTS.md): composite desert_v1, road try 2 (try 1 zoomed in ~2x), far try 1, near try 1 and sky.
+  Originals are in art/originals/backgrounds/desert_*.
+- dev/levels/build_desert.py, same recipe as the snow pass:
+  - sky: GPT, made seamless
+  - far: keyed, then colour-matched back to the composite in LAB space. GPT's dunes were ~2x more saturated.
+  - near: cut from the composite's own pixels through GPT's near split, which lined up at 0,0.
+  - road: try 2, with the sand band (rows 734–797) squashed to 33 + 10 like the snow pass so it matches the village eye level, 2x crisp, solid top row 12 → road row 26.
+- TMP_ENV_BG.desert uses the snow pass's placement numbers; the fight isn't touched. Also added: IDLE_ENVIRONMENTS gets "desert" (chapter 8), no lightning, sky colours and a fallback gradient, "Desert ruins" in the name lists, and Dev Tools Jump to chapter 8.
+- Headless 430×932 @3x: env = desert, all 4 layers drawn, feet on the sand band, no errors. Lily reads clearly against the light sand.
