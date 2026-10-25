@@ -27,13 +27,14 @@ for gi, (si, fno) in enumerate(G['frames']):
     w, h = max(1, round(im.width * k)), max(1, round(im.height * k))
     sm = im.resize((w, h), Image.LANCZOS)
     if x + w > SHEET: x = 0; y += rowh + PAD; rowh = 0
-    if y + h > SHEET: used_h[-1] = y; new_sheet(); used_h.append(0)
+    if y + h > SHEET: used_h[-1] = max(used_h[-1], y + rowh); new_sheet(); used_h.append(0)  # v1417 fix: was 'y', which cropped off the row in progress (10 frames drew as nothing)
     cur.paste(sm, (x, y))
     frames.append([len(sheets) - 1, x, y, w, h, round(x0 * k, 2), round((y0 - FLOOR) * k, 2), round(G['anc'][gi][0] * SX * k, 2)])
     x += w + PAD; rowh = max(rowh, h); used_h[-1] = max(used_h[-1], y + rowh)
 files = []
 for i, sh in enumerate(sheets):
     sh = sh.crop((0, 0, SHEET, min(SHEET, used_h[i] + PAD)))
+    assert all(f[2] + f[4] <= sh.height for f in frames if f[0] == i), 'a frame falls outside its sheet'
     fn = 'lily_%s_s%d.webp' % (TAG, i); sh.save(os.path.join(out, fn), 'WEBP', quality=85, method=6); files.append(fn)
 air = sorted(set(G['noj']))
 man = {'tag': TAG, 'fps': G['fps'], 'stand': STAND, 'sheets': files,

@@ -3750,3 +3750,9 @@ Harley's 3 points:
 - Player: remembers every frame she plays; a join may not land where the next 2 s would replay anything from the last 6 s (lilyFresh); forced/nearest exits follow the same rule and fall back to the least-recent pose, never the standing start.
 - rejoin.py: default bar = 25th percentile next-frame step; forced exits prefer another clip.
 - Measured (2 min, seed 11): time per clip A/B/C/C2 = 14/48/32/5%, 0 frames replayed within 3 s, 74 joins, none mid-air. g352 test asserts both.
+
+## v1417 (TEST) — Iron Lily: 10 invisible frames fixed (Harley: "a random kick appears for 1 frame" between 7 and 9 s)
+- Rendered her frame by frame straight from the game code (no screen recorder - its dropped frames had made the preview look frozen): she vanished for 3 frames, then reappeared mid-kick.
+- Cause: build_sheets.py cropped a sheet to the top of the row in progress when a frame didn't fit below it - 10 frames (230-234, 417-418, 507-509) lost their pixels. Fixed + an assert; rebuilt as tag v2 (lily_v2_*), v1 files removed. g352 now checks every frame is inside its sheet.
+- rejoin on the rebuilt sheets: the bar rose a little (the blank frames had dragged the next-frame median down) - 19 exit moments, 11 with one option. More clips needed.
+- Exact 40 s render (seed 7): 0 empty frames, 0 one-frame spikes, 0 replays within 3 s; time per clip A/B/C/C2 = 8/42/40/9%.
