@@ -12972,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1424"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1425"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25168,7 +25168,7 @@ function garethThrustImpact(vis, hScale) {
    Frame f = [sheet, sx, sy, w, h, left, topFromFloor, feetX] in sheet px (she stands ~man.stand px tall). A player walks the move graph:
    it plays a segment forward and, at a join (after >= 18 frames), may jump to a matching pose in another clip; it never cuts mid-air or into
    a standing start. Seeded (no dice): the same seed always plays the same flurry. */
-var LILY_TAG = "v2", LILY_BASE = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/ironlily/";
+var LILY_TAG = "v3", LILY_BASE = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/ironlily/";
 var LILY = { man: null, imgs: [], loading: false, err: null };
 function lilyLoad() {
   if (LILY.man || LILY.loading) return; LILY.loading = true;
@@ -25185,7 +25185,20 @@ function lilyReady() { return !!(LILY.man && LILY.imgs.length && LILY.imgs.every
 function lilyUnload() { LILY.imgs.forEach(function (im) { im.src = ""; }); LILY.imgs = []; LILY.man = null; LILY.loading = false; } // frees the sheets' memory
 function lilyRng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function lilyPlayer(seed) { var m = LILY.man; return { i: m ? m.segs[0][1] : 0, run: 0, acc: 0, offX: null, rng: lilyRng(seed || 7), used: {}, seen: {}, t: 0, joins: 0, lastJoin: null }; }
+function lilyInRun(i) { var r = LILY.man && LILY.man.run; return !!r && i >= r.in[0] && i <= r.out[1]; } // v1425: any frame of her run clip
+function lilyRunNext(p) { /* v1425: her run. Mode "run" (target far away): get into the run (take-off), loop one clean stride; any other mode: run on into the
+     stop (which ends in her stance and joins on from there). The run clip is one continuous video, so its pieces play straight on - no crossfade. */
+  var m = LILY.man, r = m.run, i = p.i, nx = -1;
+  if (!r) return false;
+  if (i === r.in[1]) nx = r.loop[0];                                         // take-off -> stride
+  else if (i === r.loop[1]) nx = p.mode === "run" ? r.loop[0] : r.out[0];     // stride: loop while running, else into the stop
+  else if (p.mode === "run" && !lilyInRun(i) && !m.nojSet[i] && p.run >= 6) { // fighting -> start running: blend into the take-off
+    p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[r.in[0]][7]; p.i = r.in[0]; p.run = 0; p.joins++; p.lastJoin = [i, r.in[0]]; p.swOn = false; return true;
+  } else return false;
+  p.t++; p.seen[i] = p.t; p.rootDx = (p.rootDx || 0) + (m.tv[nx] != null ? m.tv[nx] : 0); p.i = nx; p.run++; p.swOn = false; return true;
+}
 function lilyNext(p) { // advance one video frame along the move graph
+  if (lilyRunNext(p)) return;
   var m = LILY.man, i = p.i, si = m.segOf[i], seg = m.segs[si], last = m.safeLast[si], tailIn = m.tailIn[si];
   var nearEnd = (i - seg[1]) > (seg[2] - seg[1] + 1) - (tailIn - 10) && !m.nojSet[i];
   var opts = m.jumps[i] || [], n = i < last ? i + 1 : -1, j = -1;
@@ -25207,10 +25220,10 @@ function lilyNext(p) { // advance one video frame along the move graph
   } else if (n < 0 || (nearEnd && m.forced[i] != null)) j = (m.forced[i] != null && lilyFresh(p, m.forced[i])) ? m.forced[i] : lilyNearest(i, p);
   p.t++; p.seen[i] = p.t; // every frame she plays counts, so a join can't land on something she just did
   var nx = j >= 0 ? j : n; /* v1424: contact strikes - a frame where some part of her (blade, foot, leg) sweeps fast; consecutive ones = one sweep, an enemy in its span takes one hit per sweep */
-  if (nx >= 0 && m.sw && m.sw[nx]) { if (!(p.swOn && j < 0)) p.swId = (p.swId || 0) + 1; p.swOn = true; (p.swQ || (p.swQ = [])).push({ id: p.swId, x0: m.sw[nx][0], x1: m.sw[nx][1] }); } else p.swOn = false;
+  if (nx >= 0 && m.sw && m.sw[nx] && !lilyInRun(nx)) { if (!(p.swOn && j < 0)) p.swId = (p.swId || 0) + 1; p.swOn = true; (p.swQ || (p.swQ = [])).push({ id: p.swId, x0: m.sw[nx][0], x1: m.sw[nx][1] }); } else p.swOn = false;
   if (j >= 0) { p.used[j] = (p.used[j] || 0) + 1; p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[j][7]; p.i = j; p.run = 0; p.joins++; p.lastJoin = [i, j]; return; }
   if (p.fade && --p.fade.n <= 0) p.fade = null;
-  p.rootDx = (p.rootDx || 0) + (m.f[n][7] - m.f[i][7]); // v1422: how far her feet travel in the video this frame (sheet px, + = the way she faces)
+  p.rootDx = (p.rootDx || 0) + ((m.tv && m.tv[n] != null) ? m.tv[n] : (m.f[n][7] - m.f[i][7])); // v1422: how far her feet travel in the video this frame (sheet px, + = the way she faces); v1425: run frames use the measured ground travel (tracking shot)
   p.i = n; p.run++;
 }
 function lilyFresh(p, x) { var m = LILY.man, e = Math.min(m.segs[m.segOf[x]][2], x + 48); for (var y = x; y <= e; y++) if (p.seen[y] > p.t - 144) return false; return true; } // landing at x would not replay anything from the last 6 s (next 2 s checked)
@@ -25286,7 +25299,9 @@ function lilyTrainOpen() {
     live.forEach(function (e) { var d = L.x - e.x, sgn = Math.sign(d) || 1, stopAt = L.x - sgn * (GAP * hs);
       if (Math.abs(d) > GAP * hs + 1) { var ws = 38 * hs * dt; e.x += Math.abs(stopAt - e.x) <= ws ? stopAt - e.x : Math.sign(stopAt - e.x) * ws; e.atkT = Math.max(e.atkT, 0.6); }
       else { e.atkT -= dt; if (e.atkT <= 0) { e.atkT = 1.5; e.vis.atkStart = performance.now(); L.taken++; } } });
-    var mode = !live.length ? "idle" : moving ? "close" : "fight";
+    var hpx = LILY_STAND_CSS * hs, gapPx = S.wantX != null ? Math.abs(S.wantX - L.x) : 0;
+    if (!live.length) L.running = false; else if (gapPx > LILY_RUN_GAP * hpx) L.running = true; else if (gapPx < LILY_RUN_STOP * hpx) L.running = false; // v1425: far -> run, close -> stop
+    var mode = !live.length ? "idle" : L.running ? "run" : moving ? "close" : "fight";
     var kS = LILY_STAND_CSS * hs / LILY.man.stand;
     var stD = store.lily || (store.lily = { p: lilyPlayer(7), t: 0 }); stD.p.mode = mode; stD.p.gap = S.wantX != null ? Math.abs(S.wantX - L.x) / kS : 0; lilyStep(stD.p, dt);
     /* v1422 (Harley: she slid to the enemy without a step): she only moves as far as her own move carries her (feet travel in the video) - never through the enemy she faces */
@@ -25385,8 +25400,9 @@ function lilyPreviewOpen() {
    by what the fight needs - far enemy: moves that carry her forward; enemy in reach: moves that stay put; nothing on screen: ready stance.
    Faces whoever she is fighting (flank-back / running home = left). Damage timing is unchanged (step 4 ties hits to her blade). */
 var LILY_STAND_CSS = 28; // standing height in CSS px at 100% hero scale
+var LILY_RUN_GAP = 4, LILY_RUN_STOP = 3; // v1425: run when the gap is > 4 x her height; stop running (into her stop, ~2.8 heights long) under 3
 var LILY_ENEMY_HALF_W = 10; // v1424: a normal enemy's half-width (CSS px) - a strike touching its body counts
-var LILY_IMPACT_RATE = 2.7; // v1424: her contact sweeps per second while fighting (measured: dev/simfork/g354; was 2.3 full-stretch hit frames in v1420) - sets the damage of each hit
+var LILY_IMPACT_RATE = 3.0; // v1425: 2.96 measured with the run clip in her set; v1424: her contact sweeps per second while fighting (measured: dev/simfork/g354; was 2.3 full-stretch hit frames in v1420) - sets the damage of each hit
 function heroMoves(k) { return !!HERO_ANIMS[k] || (k === "ironlily" && lilyReady()); }
 function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
   lilyLoad(); if (!lilyReady()) return false;
@@ -25995,7 +26011,8 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
     var hpL = idleAnim.heroPrevX || (idleAnim.heroPrevX = {}), mdxL = hpL[key] != null ? vis.x - hpL[key] + (vis.driftStep || 0) : 0, movL = Math.abs(mdxL) > 0.12; hpL[key] = vis.x;
     var anyL = false; for (var eL in idleAnim.enemyById) { if (idleAnim.enemyById[eL].x <= w) { anyL = true; break; } }
     var faceL = !!vis.lilyFaceLeft; // v1422: set by where she is heading (stepIdleAnim), not by her own steps - a back-step mustn't turn her round
-    var modeL = !anyL ? "idle" : vis.chasing ? "close" : "fight";
+    var hpxL = LILY_STAND_CSS * hScale; if (!anyL) vis.lilyRun = false; else if ((vis.lilyGap || 0) > LILY_RUN_GAP * hpxL) vis.lilyRun = true; else if ((vis.lilyGap || 0) < LILY_RUN_STOP * hpxL) vis.lilyRun = false; // v1425
+    var modeL = !anyL ? "idle" : vis.lilyRun ? "run" : vis.chasing ? "close" : "fight";
     if (idleAnim.lilyP && idleAnim.lilyP[key]) idleAnim.lilyP[key].p.gap = vis.lilyGap > 0 ? vis.lilyGap / (LILY_STAND_CSS * hScale / LILY.man.stand) : 0; // v1424
     var lpS = idleAnim.lilyP || (idleAnim.lilyP = {});
     if (lilyBattleDraw(ctx, lpS, key, vis.x, vis.y + 12 * hScale, hScale, modeL, faceL)) {

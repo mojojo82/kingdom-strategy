@@ -3802,3 +3802,10 @@ Harley's 3 points:
 - Found: with no running (v1422) she can't reach enemies that stand off - Conquest archers / lancers stay 40-50 px away, so solo she lands few hits (8 in 25 s vs 21 before). Needs a run / dash clip (Harley's rule: no run speed without a run animation).
 
 ## (no version) — Harley: Iron Lily stays comingSoon (no Conquest / Arena for players) until ALL her animation is finished. Balance + Arena pass come after that.
+
+## v1425 (TEST) — Iron Lily can run (Harley's run clip: 2K, 5 s, tracking shot)
+- Clip art/originals/heroes/ironlily/motion_test/hailuo_run_2k_5s.mp4 -> segments Rin (frames 38-65: stance -> take-off), Rrun (66-78: one clean stride, loops), Rout (79-99: last strides -> stop into stance). Cut: turn + pauses (0-37), frozen end (100+). Large set: large/clip5.
+- dev/lily/runspeed.py: the camera tracked her, so ground travel per frame = body move - planted-foot move (a planted foot slides back at the camera's speed). Manifest 'tv' (travel per run frame) + 'run' {in, loop, out}. Run speed 27.4 sheet px/frame = 3.9 x her height per second (~109 CSS px/s at 100% hero scale).
+- Player: mode "run" (gap > 4 x her height; stops under 3 - her stop is ~2.8 heights long) blends into the take-off, loops the stride, and on any other mode runs on into the stop (one continuous video - no crossfade inside the run). No strikes while running. Training stage + Conquest use it.
+- Sheets rebuilt as tag v3 (7 sheets, 654 frames, 5.6 MB); v2 removed. rejoin + strikes rerun; LILY_IMPACT_RATE 2.7 -> 3.0 (2.96 measured).
+- Measured: Conquest solo hits in 25 s 8 -> 20 (she can reach the archers / lancers that hang back now).

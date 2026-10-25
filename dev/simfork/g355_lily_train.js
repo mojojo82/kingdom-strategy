@@ -37,7 +37,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   console.log(JSON.stringify({ S, seen }));
   const A = assert;
   A.ok(S.hits > 15, "she lands hits"); A.ok(seen.face.true && seen.face.false, "she turns to fight both sides");
-  A.ok(seen.mode.close && seen.mode.fight && seen.mode.idle, "closes in, fights, settles when cleared"); A.ok(S.taken > 0, "enemies swing at her (unlimited HP)");
+  A.ok(seen.mode.close && seen.mode.fight && seen.mode.idle, "closes in, fights, settles when cleared"); A.ok(seen.mode.run, "runs at a far enemy (v1425)"); A.ok(S.taken > 0, "enemies swing at her (unlimited HP)");
   A.strictEqual(save0, save1, "the sandbox doesn't touch the save");
   console.log("errs", errs); A.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

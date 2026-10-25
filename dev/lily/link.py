@@ -9,6 +9,9 @@ SEGS = [            # name, small-frame dir, big-frame dir, first frame, end fra
   ('B',  'f2', 'big2', 0, 243),
   ('C',  'f3', 'big3', 0, 175, 15),    # acro 0-7.3 s
   ('C2', 'f3', 'big3', 193, 243, 15),  # acro 8.0-10 s (7.3-8.0 s cut: frozen pose + white sword flash)
+  ('Rin', 'f5', 'big5', 38, 66, 15),   # run clip (v1425): stance -> take-off -> first strides (0-1.6 s turn/pauses cut)
+  ('Rrun', 'f5', 'big5', 66, 79, 13),  # one clean stride, loops 78 -> 66 (camera tracking her)
+  ('Rout', 'f5', 'big5', 79, 100, 15), # last strides -> stops into her stance (frozen end cut)
 ]
 TAIL_IN, TAIL_OUT = 40, 30  # don't jump into the last 40 frames of a segment; leave in the last 30
 F = []
