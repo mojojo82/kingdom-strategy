@@ -12972,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1421"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1422"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -24011,7 +24011,12 @@ function stepIdleAnim(dtSec, w, h) {
     } else {
       var swLk = idleAnim.swingRun && idleAnim.swingRun[key], slamLock = swLk && swLk.slam && performance.now() < swLk.until; /* v1345 (Harley: in his crouch he "physically moves forward at running speed" - movement locked until he stands back up) */
       var swingLock = isMeleeHero && heroMoves(key) && ((swLk && performance.now() < swLk.until) || idleAnim.skillFlash[key] > 0); /* v1357 (Harley: "no run, no move") - while a swing / skill pose is playing he can't slide either way; the ground drift back toward the fortress still applies */
-      if (!slamLock && !swingLock) vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
+      if (key === "ironlily" && lilyReady()) { /* v1422 (Harley: no running speed unless she gets a run animation): she only moves as far as her own move carries her (feet travel in the video) - never past where she is heading */
+        vis.lilyFaceLeft = (vis.flank && vis.flank.mode === "back") ? true : (Math.abs(dx) > 8 ? dx < 0 : false);
+        vis.chasing = Math.abs(dx) > 10; // she can't run, so 'closing in' just means the gap is bigger than a step - the enemy may well walk the rest
+        var lpR = idleAnim.lilyP && idleAnim.lilyP.ironlily;
+        if (lpR) { var rdc = lilyTakeRoot(lpR.p, LILY_STAND_CSS * (heroSpriteVisualScale / 100) / LILY.man.stand) * (vis.lilyFaceLeft ? -1 : 1); if (rdc * dx > 0 && Math.abs(rdc) > Math.abs(dx)) rdc = dx; vis.x += rdc; }
+      } else if (!slamLock && !swingLock) vis.x = Math.abs(dx) <= maxStep ? targetX : vis.x + Math.sign(dx) * maxStep;
     }
   });
   Object.keys(idleAnim.heroVis).forEach(function (key) {
@@ -25202,10 +25207,12 @@ function lilyNext(p) { // advance one video frame along the move graph
   var nx = j >= 0 ? j : n; if (nx >= 0 && m.imp && m.imp[nx] != null) (p.hitQ || (p.hitQ = [])).push(m.imp[nx]); // v1420: a hit frame - the battle checks what is at her blade
   if (j >= 0) { p.used[j] = (p.used[j] || 0) + 1; p.fade = { i: i, offX: p.offX, n: 2 }; if (p.offX != null) p.offX += m.f[i][7] - m.f[j][7]; p.i = j; p.run = 0; p.joins++; p.lastJoin = [i, j]; return; }
   if (p.fade && --p.fade.n <= 0) p.fade = null;
+  p.rootDx = (p.rootDx || 0) + (m.f[n][7] - m.f[i][7]); // v1422: how far her feet travel in the video this frame (sheet px, + = the way she faces)
   p.i = n; p.run++;
 }
 function lilyFresh(p, x) { var m = LILY.man, e = Math.min(m.segs[m.segOf[x]][2], x + 48); for (var y = x; y <= e; y++) if (p.seen[y] > p.t - 144) return false; return true; } // landing at x would not replay anything from the last 6 s (next 2 s checked)
 function lilyNearest(i, p) { var m = LILY.man, best = -1, bd = 1e9; Object.keys(m.jumps).forEach(function (k) { m.jumps[k].forEach(function (j) { var d = (p && !lilyFresh(p, j)) ? 1e5 - (p.t - (p.seen[j] || -1e4)) : 0; d += Math.abs(m.f[j][6] - m.f[i][6]) + Math.abs(m.f[j][4] - m.f[i][4]) + (m.segOf[j] === m.segOf[i] ? 40 : 0) + (m.face ? 4000 * Math.max(0, Math.abs(m.face[j] - m.face[i]) - 0.045) : 0); /* v1418: never flip which way she faces */ if (d < bd) { bd = d; best = j; } }); }); return best >= 0 ? best : m.segs[0][1]; } // fallback for an end frame with no planned exit
+function lilyTakeRoot(p, k) { var r = (p.rootDx || 0) * k; p.rootDx = 0; return r; } // v1422: feet travel since last asked, in screen px
 function lilyStep(p, dt) { var m = LILY.man; if (!m) return;
   if (p.mode === "idle") { // v1419: nothing to fight - settle into the ready stance (only from the ground; a flip finishes first)
     if (p.i === m.ready) { p.acc = 0; if (p.fade) { p.fadeT = (p.fadeT || 0) + dt * m.fps; if (p.fadeT >= 1) { p.fadeT = 0; if (--p.fade.n <= 0) p.fade = null; } } return; }
@@ -25217,7 +25224,8 @@ function lilyDraw(ctx, p, x, feetY, standH, flip, hold) {
   var m = LILY.man; if (!m || !lilyReady()) return false;
   var f = m.f[p.i], im = LILY.imgs[f[0]], k = standH / m.stand;
   if (p.offX == null) p.offX = -f[7];
-  if (hold) p.offX += (-f[7] - p.offX) * 0.04;
+  if (hold === "root") { if (p.fade) p.fade.offX = -m.f[p.fade.i][7]; p.offX = -f[7]; } // v1422: battles - feet exactly at x; her travel moves x
+  else if (hold) p.offX += (-f[7] - p.offX) * 0.04;
   var left = (f[5] + p.offX) * k, top = f[6] * k;
   ctx.save(); ctx.translate(x, feetY); if (flip) ctx.scale(-1, 1);
   ctx.drawImage(im, f[1], f[2], f[3], f[4], left, top, f[3] * k, f[4] * k);
@@ -25268,15 +25276,19 @@ function lilyTrainOpen() {
     if (tgt) {
       var dir = tgt.x < L.x ? -1 : 1, want = tgt.x - dir * (GAP + 2) * hs, dx = want - L.x;
       if (L.chasing) { if (Math.abs(dx) < 1.5) L.chasing = false; } else if (Math.abs(dx) > 8 * hs) L.chasing = true;
-      if (L.chasing) { var st = HERO_RUN_PX_PER_SEC * hs * dt; L.x += Math.abs(dx) <= st ? dx : Math.sign(dx) * st; moving = true; }
-      L.face = dir < 0;
+      moving = L.chasing; L.face = dir < 0;
     }
+    S.wantX = tgt ? tgt.x - (tgt.x < L.x ? -1 : 1) * (GAP + 2) * hs : null;
     // enemies walk to her and stop at contact; swing every 1.5 s (she has unlimited health - swings are just counted)
     live.forEach(function (e) { var d = L.x - e.x, sgn = Math.sign(d) || 1, stopAt = L.x - sgn * (GAP * hs);
       if (Math.abs(d) > GAP * hs + 1) { var ws = 38 * hs * dt; e.x += Math.abs(stopAt - e.x) <= ws ? stopAt - e.x : Math.sign(stopAt - e.x) * ws; e.atkT = Math.max(e.atkT, 0.6); }
       else { e.atkT -= dt; if (e.atkT <= 0) { e.atkT = 1.5; e.vis.atkStart = performance.now(); L.taken++; } } });
     var mode = !live.length ? "idle" : moving ? "close" : "fight";
     var stD = store.lily || (store.lily = { p: lilyPlayer(7), t: 0 }); stD.p.mode = mode; lilyStep(stD.p, dt);
+    /* v1422 (Harley: she slid to the enemy without a step): she only moves as far as her own move carries her (feet travel in the video) - never through the enemy she faces */
+    var rd = lilyTakeRoot(stD.p, LILY_STAND_CSS * hs / LILY.man.stand) * (L.face ? -1 : 1);
+    if (S.wantX != null) { var toW = S.wantX - L.x; if (rd * toW > 0 && Math.abs(rd) > Math.abs(toW)) rd = toW; }
+    L.x += rd;
     // hit frames: the nearest enemy in front within that frame's reach takes a hit; none = a miss
     var q = stD.p.hitQ; while (q && q.length) {
       var r = q.shift() * (LILY_STAND_CSS * hs) / LILY.man.stand + 6, fdir = L.face ? -1 : 1, best = null, bd = 1e9;
@@ -25304,7 +25316,7 @@ function lilyTrainOpen() {
       if (e.flash > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, e.flash * 3); ctx.fillStyle = "#fff6c8"; ctx.beginPath(); ctx.arc(e.x, floor - 12 * hs, 7 * hs, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
       var bw = 22 * hs, fr = Math.max(0, e.hp / e.max); ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(e.x - bw / 2, floor - 34 * hs, bw, 3 * hs); ctx.fillStyle = "#e05454"; ctx.fillRect(e.x - bw / 2, floor - 34 * hs, bw * fr, 3 * hs);
     });
-    var st = store.lily; if (st) lilyDraw(ctx, st.p, L.x, floor, LILY_STAND_CSS * hs, L.face, true);
+    var st = store.lily; if (st) lilyDraw(ctx, st.p, L.x, floor, LILY_STAND_CSS * hs, L.face, "root");
     if (S.reach) {
       ctx.save(); ctx.strokeStyle = "rgba(160,170,220,.7)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(L.x, floor - 60 * hs); ctx.lineTo(L.x, floor); ctx.stroke(); ctx.setLineDash([]);
       if (S.lastReach) { var rx = L.x + S.lastReach.dir * S.lastReach.r; ctx.strokeStyle = S.lastReach.hit ? "#ffd34d" : "#ff6a6a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x, floor - 18 * hs); ctx.lineTo(rx, floor - 18 * hs); ctx.lineTo(rx, floor - 30 * hs); ctx.stroke(); }
@@ -25375,7 +25387,7 @@ function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
   lilyLoad(); if (!lilyReady()) return false;
   var now = performance.now(), st = store[id] || (store[id] = { p: lilyPlayer(7), t: now }), dt = Math.min(0.1, (now - st.t) / 1000); st.t = now;
   st.p.mode = mode; lilyStep(st.p, dt);
-  return lilyDraw(ctx, st.p, x, feetY, LILY_STAND_CSS * hScale, faceLeft, true);
+  return lilyDraw(ctx, st.p, x, feetY, LILY_STAND_CSS * hScale, faceLeft, "root");
 }
 var heroAnimImgCache = {};
 function heroAnimImg(key) {
@@ -25977,8 +25989,8 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
   if (key === "ironlily") { // v1419
     var hpL = idleAnim.heroPrevX || (idleAnim.heroPrevX = {}), mdxL = hpL[key] != null ? vis.x - hpL[key] + (vis.driftStep || 0) : 0, movL = Math.abs(mdxL) > 0.12; hpL[key] = vis.x;
     var anyL = false; for (var eL in idleAnim.enemyById) { if (idleAnim.enemyById[eL].x <= w) { anyL = true; break; } }
-    var faceL = (vis.flank && vis.flank.mode === "back") ? true : (movL ? mdxL < 0 : false);
-    var modeL = !anyL ? "idle" : (vis.chasing || movL) ? "close" : "fight";
+    var faceL = !!vis.lilyFaceLeft; // v1422: set by where she is heading (stepIdleAnim), not by her own steps - a back-step mustn't turn her round
+    var modeL = !anyL ? "idle" : vis.chasing ? "close" : "fight";
     var lpS = idleAnim.lilyP || (idleAnim.lilyP = {});
     if (lilyBattleDraw(ctx, lpS, key, vis.x, vis.y + 12 * hScale, hScale, modeL, faceL)) {
       var lq = lpS[key].p.hitQ; /* v1420: each hit frame lands on the enemy at her blade / foot (nearest in front within that frame's reach); nothing there = a miss */

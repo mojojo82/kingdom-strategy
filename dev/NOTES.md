@@ -3783,3 +3783,11 @@ Harley's 3 points:
 - Uses her real pieces: move player with close / fight / idle, facing, hit frames + reach. Stand-in battlefield: enemies (current orc skin, mirrored when they face right) walk up, stop at IDLE_BLOCK_GAP and swing every 1.5 s; she chases the nearest at HERO_RUN_PX_PER_SEC, holds in contact, turns to whoever she fights. Unlimited health (Harley) - swings at her are only counted. One hit frame = 1 enemy hit point here.
 - Doesn't touch the save (roster / level unchanged - checked). window.__lilyTrain exposes the stage for tests.
 - Test: dev/simfork/g355_lily_train.js (hits land, both facings, close/fight/idle all happen, enemies swing, save untouched).
+
+## v1422 (TEST) — Iron Lily: no sliding, she only moves as far as her own move carries her (Harley: "no running speed unless we give her a run animation")
+- Player accumulates root motion (her feet travel in the video, frame to frame; joins line the feet up = no travel): p.rootDx, lilyTakeRoot(p, k). lilyDraw(..., "root") anchors her feet exactly at x.
+- Conquest (stepIdleAnim): for Lily, x += her feet travel (in the way she faces), clamped so she never passes where she is heading; no HERO_RUN_PX_PER_SEC chase. Facing = where she is heading (flank-back = left), not her own steps (a back-step doesn't turn her). chasing = gap > 10 px (the enemy may walk the rest).
+- Training stage: same rule.
+- Arena unchanged for now (positions are decided by the fight sim before playback) - flagged.
+- If she gets a run clip later, that becomes how she covers ground.
+- Tests: g352 / g353 / g355 OK.
