@@ -3791,3 +3791,5 @@ Harley's 3 points:
 - Arena unchanged for now (positions are decided by the fight sim before playback) - flagged.
 - If she gets a run clip later, that becomes how she covers ground.
 - Tests: g352 / g353 / g355 OK.
+
+## v1423 (TEST) — Iron Lily training stage: light background (Harley) - she is dark navy and the enemies are black; hit lines / labels recoloured to read on it.

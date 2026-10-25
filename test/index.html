@@ -12972,7 +12972,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1422"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1423"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25305,8 +25305,8 @@ function lilyTrainOpen() {
   }
   function draw(W, H) {
     var hs = hS(), floor = H - 40, L = S.lily, now = performance.now();
-    var g = ctx.createLinearGradient(0, 0, 0, floor); g.addColorStop(0, "#1a2340"); g.addColorStop(1, "#2d3a5c"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, floor);
-    ctx.fillStyle = "#3a3328"; ctx.fillRect(0, floor, W, H - floor); ctx.fillStyle = "#4a4134"; ctx.fillRect(0, floor, W, 3);
+    var g = ctx.createLinearGradient(0, 0, 0, floor); g.addColorStop(0, "#e9edf2"); g.addColorStop(1, "#c9d1db"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, floor); /* v1423: light - she is dark navy and the enemies are black */
+    ctx.fillStyle = "#a89a84"; ctx.fillRect(0, floor, W, H - floor); ctx.fillStyle = "#8c7f6b"; ctx.fillRect(0, floor, W, 3);
     S.en.forEach(function (e) {
       ctx.save(); ctx.globalAlpha = e.dying ? Math.max(0, e.dying / 0.5) : 1; e.vis.x = e.x;
       var faceRight = e.x < L.x; ctx.translate(e.x, 0); if (faceRight) ctx.scale(-1, 1); ctx.translate(-e.x, 0);
@@ -25318,11 +25318,11 @@ function lilyTrainOpen() {
     });
     var st = store.lily; if (st) lilyDraw(ctx, st.p, L.x, floor, LILY_STAND_CSS * hs, L.face, "root");
     if (S.reach) {
-      ctx.save(); ctx.strokeStyle = "rgba(160,170,220,.7)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(L.x, floor - 60 * hs); ctx.lineTo(L.x, floor); ctx.stroke(); ctx.setLineDash([]);
-      if (S.lastReach) { var rx = L.x + S.lastReach.dir * S.lastReach.r; ctx.strokeStyle = S.lastReach.hit ? "#ffd34d" : "#ff6a6a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x, floor - 18 * hs); ctx.lineTo(rx, floor - 18 * hs); ctx.lineTo(rx, floor - 30 * hs); ctx.stroke(); }
+      ctx.save(); ctx.strokeStyle = "rgba(60,70,110,.7)"; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(L.x, floor - 60 * hs); ctx.lineTo(L.x, floor); ctx.stroke(); ctx.setLineDash([]);
+      if (S.lastReach) { var rx = L.x + S.lastReach.dir * S.lastReach.r; ctx.strokeStyle = S.lastReach.hit ? "#e0a800" : "#e03030"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(L.x, floor - 18 * hs); ctx.lineTo(rx, floor - 18 * hs); ctx.lineTo(rx, floor - 30 * hs); ctx.stroke(); }
       ctx.restore();
     }
-    S.fx.forEach(function (f) { ctx.save(); ctx.globalAlpha = Math.min(1, f.t * 2); ctx.fillStyle = "#ffe08a"; ctx.font = "bold " + Math.round(11 * hs) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText("hit", f.x, floor - (40 + (0.6 - f.t) * 30) * hs); ctx.restore(); });
+    S.fx.forEach(function (f) { ctx.save(); ctx.globalAlpha = Math.min(1, f.t * 2); ctx.fillStyle = "#c46a00"; ctx.font = "bold " + Math.round(11 * hs) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText("hit", f.x, floor - (40 + (0.6 - f.t) * 30) * hs); ctx.restore(); });
   }
   function frame(t) {
     S.raf = requestAnimationFrame(frame); if (!document.getElementById("ltC")) return cancelAnimationFrame(S.raf);
@@ -25332,7 +25332,7 @@ function lilyTrainOpen() {
     var dt = Math.min(0.1, (t - S.t) / 1000) * S.spd; S.t = t;
     var info = $("ltInfo");
     if (LILY.err) { info.textContent = "Couldn't load her art: " + LILY.err; return; }
-    if (!lilyReady()) { ctx.fillStyle = "#1b2236"; ctx.fillRect(0, 0, W, H); return; }
+    if (!lilyReady()) { ctx.fillStyle = "#dfe4ea"; ctx.fillRect(0, 0, W, H); return; }
     if (S.lily.x > W - 20) S.lily.x = W / 2; S.en.forEach(function (e) { if (e.x > W) e.x = W - 12; });
     if (!S.lily.x) S.lily.x = W / 2;
     if (!S.paused) step(dt);
