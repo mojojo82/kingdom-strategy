@@ -1,0 +1,40 @@
+/* v1414: Iron Lily frame player - sheets load from art/heroes/ironlily, the move graph plays (joins happen, never mid-air), the dev preview draws her. Run: node dev/simfork/g352_lily_player.js */
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
+const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await ctx.route(/mojojo82\.github\.io\/kingdom-strategy\/art\//, (r) => { const u = new URL(r.request().url()); const f = path.join(ROOT, decodeURIComponent(u.pathname.replace(/^\/kingdom-strategy\//, ""))); if (fs.existsSync(f)) r.fulfill({ status: 200, body: fs.readFileSync(f), contentType: f.endsWith(".json") ? "application/json" : "image/webp" }); else r.fulfill({ status: 404, body: "" }); });
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "g352@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "Emp"); await P.click("#ksGo"); await P.waitForTimeout(4000);
+  const pre = await P.evaluate(() => ({ loadedBefore: !!LILY.man, base: LILY_BASE }));
+  await P.evaluate(() => lilyPreviewOpen());
+  await P.waitForFunction(() => lilyReady(), null, { timeout: 20000 });
+  await P.waitForTimeout(6000);
+  await P.screenshot({ path: process.env.SHOT || "/tmp/lily_prev.png" });
+  const r = await P.evaluate(() => {
+    const m = LILY.man, p = lilyPlayer(11), seen = new Set(), airJoins = [], segs = new Set(); let maxRun = 0, intro = 0;
+    for (let t = 0; t < 24 * 120; t++) { const before = p.joins, from = p.i; lilyNext(p); if (p.joins > before) { if (m.nojSet[p.lastJoin[0]] || m.nojSet[p.lastJoin[1]]) airJoins.push([p.lastJoin[0], p.lastJoin[1], m.segOf[p.lastJoin[0]], from === m.segs[m.segOf[from]][2]]); } seen.add(p.i); segs.add(m.segOf[p.i]); }
+    const p2 = lilyPlayer(11), p3 = lilyPlayer(11), same = []; for (let t = 0; t < 2000; t++) { lilyNext(p2); lilyNext(p3); if (p2.i !== p3.i) { same.push(t); break; } }
+    return { sheets: m.sheets.length, frames: m.f.length, joins: p.joins, airJoins: airJoins.length, airList: airJoins.slice(0, 5), distinctFrames: seen.size, segs: [...segs].length, deterministic: same.length === 0, info: document.getElementById("lpInfo").textContent };
+  });
+  console.log(JSON.stringify({ pre, r }));
+  const A = assert;
+  A.strictEqual(pre.loadedBefore, false, "her art isn't loaded until asked"); A.strictEqual(pre.base, "../art/heroes/ironlily/");
+  A.ok(r.joins > 60, "2 minutes of flurry joins moves many times"); A.strictEqual(r.airJoins, 0, "never joins mid-air or into a standing start");
+  A.ok(r.segs === 4 && r.distinctFrames > 250, "all clips get used"); A.ok(r.deterministic, "same seed, same flurry");
+  A.ok(/clip .* joins/.test(r.info), "preview is running");
+  console.log("errs", errs); A.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
+})().catch((e) => { console.error("FAIL", e.message); process.exit(1); });

@@ -3730,3 +3730,11 @@ Harley's 3 points:
 - Blade Wall: heroBladeWallPct + bladeWallRoll (no dice, own counter bwN) ready, hooked nowhere - nothing fires bullets at heroes yet (Arena cannon only hits the fortress, Conquest cannon is the player's). Harley: "bullets only, I will make changes later if needed".
 - Balance flag for later: in an Arena test fight (Lv40, 10 stars, vs Gareth/Lyra/Roran/Kessa/Sera) she is KO'd before her first Oath at 12 s. Conquest: Lily L1 team reached level 120 vs 113 with Gareth.
 - Test: dev/simfork/g351_ironlily_kit.js. g217 still OK. Meta check: same pre-existing warning, unchanged.
+
+## v1414 (TEST) — Iron Lily build, step 2: frame player
+- Pipeline (dev/lily/): key2/key3 (keying, red sword trails de-yellowed: keyfn.key4) -> link.py (pose fingerprints, joins, no-join zones = standing start 1.5 s + mid-air, writes graph.json) -> build_sheets.py (in-game sheets + manifest + LARGE set).
+- In-game art = separate files, loaded only when asked (like level art): art/heroes/ironlily/lily_v1_s0..5.webp (6 sheets <= 2048 px, 592 frames at ~170 px standing, 5.0 MB) + lily_v1.json (34 KB: frame rects, feet x, top-from-floor, segments, joins best-first, forced exits). New art = new tag (TEST and LIVE share the files).
+- LARGE keep-set: art/originals/heroes/ironlily/large/clip1..3/NNNN.webp (every keyed 2K frame, WebP q90, 25 MB).
+- Game: lilyLoad / lilyReady / lilyUnload, lilyPlayer(seed) + lilyNext/lilyStep (seeded = no dice; joins after >= 18 frames, 35% chance per open join, forced exit near a clip's end; a clip ending mid-air ends at the frame before take-off), lilyDraw(ctx, p, x, feetY, standH, flip, hold).
+- Dev Tools > (hero look buttons) "Iron Lily frame player (preview)": plays her at in-game / 2x / 3x size, facing left/right, slow, new seed. Not in battles yet (step 3).
+- Test: dev/simfork/g352_lily_player.js (not loaded before asked, 2 min of play = 78 joins, none mid-air, all 4 clips used, same seed = same flurry).
