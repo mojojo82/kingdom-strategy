@@ -3994,3 +3994,6 @@ Harley's 3 points:
 - Now the streaks are drawn normally, then cut to the mask once with destination-in.
 - Also stronger: 3 streaks per 4 px column, and alpha 0.7 on the stream, 0.9 on the foam, 0.8 on the far fall. Measured overlay: 7.6k px with average alpha 41 (v1451: 0).
 - Still fast: 8.3 fps headless with 4× CPU throttle (v1450 was 1.7).
+
+## v1453 — Water animation switched off
+- Harley: turn it off, it needs to be reworked in the future. `WATER_FX_ON = false` skips drawWaterFx. The masks and config stay so it can be reworked later. Noted in HANDOVER.
