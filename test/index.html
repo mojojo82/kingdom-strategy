@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1449"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1450"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -27138,9 +27138,19 @@ function drawWaterFx(ctx, L, x0, top, s, w) {
     var B = W.box, X = x0 + B[0] * s; if (X > w || X + B[2] * s < 0) return;
     var cv = waterFxCv[k] || (waterFxCv[k] = document.createElement("canvas")); if (cv.width !== B[2] || cv.height !== B[3]) { cv.width = B[2]; cv.height = B[3]; }
     var c = cv.getContext("2d"); c.globalCompositeOperation = "copy"; c.drawImage(m, 0, 0); c.globalCompositeOperation = "source-in";
-    var band = waterFxBandFor(W.mode), pat = c.createPattern(band, "repeat"); c.save();
-    if (W.mode === "down") c.translate(0, (t * (W.v || 70)) % band.height); else c.translate((t * (W.v || 18)) % band.width, 0);
-    c.fillStyle = pat; c.fillRect(-band.width, -band.height, B[2] + band.width * 2, B[3] + band.height * 2); c.restore();
+    /* v1450 (Harley: the wavy lines looked "too liney" - do vertical lines like the lava level): short soft vertical streaks, one per narrow column,
+       each on its own phase. "down" = they slide down the falls like the lava blobs; "side" = they glint in place and drift slowly with the stream. */
+    c.fillStyle = "#fff"; var colW = W.col || 5, n = Math.ceil(B[2] / colW), H = B[3];
+    for (var ci = 0; ci < n; ci++) {
+      var hsh = ((ci * 2654435761) >>> 0) / 4294967296, cx = ci * colW + hsh * colW * 0.6;
+      for (var k2 = 0; k2 < 2; k2++) {
+        var ph = (t * (W.mode === "down" ? (0.55 + hsh * 0.35) * (W.v || 70) / 70 : 0.35 + hsh * 0.3) + hsh * 7 + k2 * 0.5) % 1, len, y, al;
+        if (W.mode === "down") { len = Math.max(4, H * 0.12); y = ph * (H + len) - len; al = Math.sin(ph * Math.PI); }
+        else { len = 3 + hsh * 4; y = ((hsh * 9301 + k2 * 0.37) % 1) * H; cx += Math.sin(t * 0.8 + ci) * 0.6 + ((t * (W.v || 16) * 0.3) % colW); al = Math.pow(Math.sin(ph * Math.PI), 3); }
+        c.globalAlpha = al; c.fillRect(cx % B[2], y, Math.max(1, colW * 0.35), len);
+      }
+    }
+    c.globalAlpha = 1;
     ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = (W.a || 0.35) * (0.85 + 0.15 * Math.sin(t * 3 + k));
     ctx.drawImage(cv, X, top + B[1] * s, B[2] * s, B[3] * s); ctx.restore();
   });

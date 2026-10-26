@@ -3971,3 +3971,9 @@ Harley's 3 points:
 - New generic `water` fx on a layer (drawWaterFx). Each mask gets a moving pattern added in "lighter" mode: "down" for falls and foam, "side" for drifting ripples.
 - Also added: IDLE_ENVIRONMENTS "stream", no lightning, sky colours, names, Jump to chapter 11.
 - Headless 430×932 @3x: drawn, no errors, about 31 fps headless.
+
+## v1450 — Stream water: vertical streaks instead of wavy lines
+- Harley: the water looked "too liney"; use vertical lines like the lava level. drawWaterFx now puts short soft vertical streaks in narrow columns inside each water mask, each on its own phase.
+  - "down" (falls, foam, the far waterfall): streaks slide down like the lava blobs.
+  - "side" (the stream): short glints that fade in and out and drift slowly.
+- Recorded headless (Playwright video) to check it.
