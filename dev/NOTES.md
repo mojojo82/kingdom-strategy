@@ -3958,3 +3958,16 @@ Harley's 3 points:
 - New generic `glows` on a layer (drawLayerGlows): warm flicker on painted lanterns, used for the two lanterns here.
 - Also added: IDLE_ENVIRONMENTS "castlegate", no lightning, sky colours, names, Jump to chapter 10.
 - Headless 430×932 @3x: all layers drawn, the valley shows through the gate, no errors.
+
+## v1449 — Rocky stream level (chapter 11), animated water
+- Harley: the 3 castle levels will all be inside the castle, and 2 valley levels come first (rocky stream, then pine forest), taken from the castle gate's far valley.
+- Stream v1 attached the castle gate picture as the reference, and GPT copied its bubbly rock texture and its road. v2 attached the village picture again, with smooth rocks and a sandy bank.
+- dev/levels/build_stream.py:
+  - sky: GPT, made seamless
+  - far: GPT far, drawn ~1.2x big and low, so scaled by 1/1.2 and lifted 21 rows; colour-matched 50%
+  - near: cut from the composite through GPT's near (lines up 0,0)
+  - road: lines up row for row with the composite; band 766–842 squashed to 46, 2x
+  - water masks: stream_water (the stream; rock highlights dropped by blob size), stream_foam (foam/falls that touch the water) and stream_far_foam (the big waterfall)
+- New generic `water` fx on a layer (drawWaterFx). Each mask gets a moving pattern added in "lighter" mode: "down" for falls and foam, "side" for drifting ripples.
+- Also added: IDLE_ENVIRONMENTS "stream", no lightning, sky colours, names, Jump to chapter 11.
+- Headless 430×932 @3x: drawn, no errors, about 31 fps headless.
