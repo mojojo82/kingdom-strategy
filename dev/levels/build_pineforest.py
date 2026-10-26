@@ -36,9 +36,11 @@ s_m, s_s = src_lab[fv].mean(0), src_lab[fv].std(0) + 1e-3; r_m, r_s = ref_lab[vi
 k = 0.5; t_m, t_s = s_m + (r_m - s_m) * k, s_s + (r_s - s_s) * k; print("far LAB", np.round(s_m, 1), "->", np.round(t_m, 1))
 far[..., :3] = cv2.cvtColor(np.clip((src_lab - s_m) / s_s * t_s + t_m, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
 save(seamless_cut(Image.fromarray(far.astype(np.uint8), "RGBA").crop((0, FAR_TOP, 1536, ROAD_TOP + 1))), "pineforest_far")
-# near
-m = cv2.erode(near_mask.astype(np.uint8) * 255, np.ones((3, 3), np.uint8)); m = cv2.GaussianBlur(m, (0, 0), 1.2); m[ROAD_TOP + 8:] = 0
-save(seamless_cut(Image.fromarray(np.dstack([comp.astype(np.uint8), m]), "RGBA").crop((0, 0, 1536, ROAD_TOP + 8))), "pineforest_near")
+# near: Harley's GPT extend-up pass (v1455) - the old near sits 235 rows down in it. Its lower part matches the old near (mean diff ~17) but the
+# trunks above were redrawn a little, so a stitched join would show - the WHOLE extension is used as the near layer (its own trees run to the top).
+EXT = 235
+nx = key(Image.open(os.path.join(SRC, "pineforest_near_ext_gpt_1536x1024.png")))
+save(seamless_cut(nx.crop((0, 0, 1536, EXT + ROAD_TOP + 8))), "pineforest_near")
 # road: path band 700..764 -> 46 rows, 2x
 road = key(Image.open(os.path.join(SRC, "pineforest_layer_road_gpt_try1_1536x1024.png")))
 TOP, CUT, BAND = 698, 766, 46
