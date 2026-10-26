@@ -3988,3 +3988,9 @@ Harley's 3 points:
   - v1450: 1.7 fps
   - v1451: 9.0 fps
   Foundry (ch 9) unchanged at about 7. Headless is much slower than a phone; compare the numbers against each other, not as phone fps.
+
+## v1452 — Fix: the stream water had no animation (v1451)
+- Harley: "I dont see any animation". The v1451 bake used source-in for every streak, which wiped everything but the last one, so every baked frame was empty.
+- Now the streaks are drawn normally, then cut to the mask once with destination-in.
+- Also stronger: 3 streaks per 4 px column, and alpha 0.7 on the stream, 0.9 on the foam, 0.8 on the far fall. Measured overlay: 7.6k px with average alpha 41 (v1451: 0).
+- Still fast: 8.3 fps headless with 4× CPU throttle (v1450 was 1.7).

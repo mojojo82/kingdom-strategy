@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1451"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1452"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26949,9 +26949,9 @@ var TMP_ENV_BG = {
   stream: { flat: "#3f6fa8", shadows: true, floor: { img: levelArt("stream_road.webp", "64931eaa0b"), k: 0.21 / 185.76, road: 28, top: 14, upx: 2, fill: "#4a2f1a" }, layers: [
     { name: "Sky", img: levelArt("stream_sky.webp", "e4e0593c31"), ow: 1446, oh: 1024, baseY: 1099, scale: 0.36 / 185.76, lift: 2.5, speed: 0.1 },
     { name: "Far", img: levelArt("stream_far.webp", "f3ba3d0936"), ow: 1264, oh: 641, baseY: 640, scale: 0.3 / 185.76, lift: 2.5, speed: 0.25,
-      fxImgs: [levelArt("stream_far_foam.webp", "32df2f1dc8")], water: [{ i: 0, box: [955, 174, 125, 316], mode: "down", v: 55, a: 0.4 }] },
+      fxImgs: [levelArt("stream_far_foam.webp", "32df2f1dc8")], water: [{ i: 0, box: [955, 174, 125, 316], mode: "down", a: 0.8, col: 4 }] },
     { name: "Near", img: levelArt("stream_near.webp", "c5653474e9"), ow: 1490, oh: 698, baseY: 690, scale: 0.3 / 185.76, lift: 2.5, speed: 0.5,
-      fxImgs: [levelArt("stream_water.webp", "c099d98f34"), levelArt("stream_foam.webp", "df9ab19afa")], water: [{ i: 0, box: [383, 475, 884, 213], mode: "side", v: 16, a: 0.32 }, { i: 1, box: [413, 487, 775, 169], mode: "down", v: 80, a: 0.45 }] }
+      fxImgs: [levelArt("stream_water.webp", "c099d98f34"), levelArt("stream_foam.webp", "df9ab19afa")], water: [{ i: 0, box: [383, 475, 884, 213], mode: "side", a: 0.7, col: 4 }, { i: 1, box: [413, 487, 775, 169], mode: "down", a: 0.9, col: 4 }] }
   ] },
   // v561: the gloomy grey day level uses the night-village set over its existing sky.
   /* v1262 (Harley): the village gets its own cobblestone road. k = size relative to groundY, road = the image row (in source px) that sits on the ground line */
@@ -27132,17 +27132,19 @@ function waterFxBake(W, m) {
   var colW = (W.col || 5) * WATER_FX_RES, n = Math.ceil(cw / colW), down = W.mode === "down";
   for (var f = 0; f < WATER_FX_NF; f++) {
     var cv = document.createElement("canvas"); cv.width = cw; cv.height = ch; var c = cv.getContext("2d");
-    c.drawImage(m, 0, 0, cw, ch); c.globalCompositeOperation = "source-in"; c.fillStyle = "#fff";
+    c.fillStyle = "#fff"; /* streaks first (normal blending), then cut to the water mask once with destination-in - v1451 used source-in per
+       streak, which wiped everything but the last streak, so the frames came out empty (Harley: "I dont see any animation") */
     var u = f / WATER_FX_NF;
     for (var ci = 0; ci < n; ci++) {
       var hsh = ((ci * 2654435761) >>> 0) / 4294967296, cx = ci * colW + hsh * colW * 0.6;
-      for (var k2 = 0; k2 < 2; k2++) {
-        var ph = (u * (down ? 1 + (hsh > 0.6 ? 1 : 0) : 1) + hsh * 7 + k2 * 0.5) % 1, len, y, al, x = cx;
+      for (var k2 = 0; k2 < 3; k2++) {
+        var ph = (u * (down ? 1 + (hsh > 0.6 ? 1 : 0) : 1) + hsh * 7 + k2 / 3) % 1, len, y, al, x = cx;
         if (down) { len = Math.max(2, ch * 0.12); y = ph * (ch + len) - len; al = Math.sin(ph * Math.PI); }
         else { len = (3 + hsh * 4) * WATER_FX_RES; y = ((hsh * 9301 + k2 * 0.37) % 1) * ch; x = (cx + u * colW) % cw; al = Math.pow(Math.sin(ph * Math.PI), 3); }
         c.globalAlpha = al; c.fillRect(x, y, Math.max(1, colW * 0.4), len);
       }
     }
+    c.globalAlpha = 1; c.globalCompositeOperation = "destination-in"; c.drawImage(m, 0, 0, cw, ch);
     frames.push(cv);
   }
   return frames;
