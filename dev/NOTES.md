@@ -3907,3 +3907,8 @@ Harley's 3 points:
 ## v1443 — Dev Tools: chapter buttons wrap
 - Harley (phone): no button for the desert. The "Jump to chapter" row didn't wrap, so "8 Desert ruins" sat off the right edge of the screen (7 was already cut off).
 - The row now wraps (dev tool only). Measured at 430 px: chapters 1–5 on the first line, 6–8 on the second, all on screen.
+
+## v1444 — Lily's feet raised to the enemies' foot line
+- Harley: Lily stood lower than the red imps. Measured sprite soles against the ground line: the imps, ooze and Gareth sit at about groundY + 6.5, Lily at groundY + 8 (1.5 px lower).
+- `LILY_FEET_LIFT = 2`, × hero size, in lilyBattleDraw (Conquest + Arena). Her standing soles now land at about groundY + 6, level with the others. Visual only; hits, sweeps and positions are unchanged.
+- g353 / g355 / g356 OK.

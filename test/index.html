@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1443"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1444"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -25510,6 +25510,7 @@ function lilyPreviewOpen() {
 /* v1419: Iron Lily in battle (build step 3). She runs/holds/chases with the same melee rules as Gareth (heroMoves); her MOVES are picked
    by what the fight needs - far enemy: moves that carry her forward; enemy in reach: moves that stay put; nothing on screen: ready stance.
    Faces whoever she is fighting (flank-back / running home = left). Damage timing is unchanged (step 4 ties hits to her blade). */
+var LILY_FEET_LIFT = 2; /* v1444 (Harley: her feet sat lower than the red imps'): measured her soles 1.5 px below the imps' and Gareth's - lift 2 px (x hero size). Visual only. */
 var LILY_STAND_CSS = 24; // standing height in CSS px at 100% hero scale (v1432: 28 -> 24 = Gareth's measured helmet-to-feet height, she was 16% taller)
 var LILY_RUN_GAP = 4, LILY_RUN_STOP = 3; // v1425: run when the gap is > 4 x her height; stop running (into her stop, ~2.8 heights long) under 3
 var LILY_ENEMY_HALF_W = 10; // v1424: a normal enemy's half-width (CSS px) - a strike touching its body counts
@@ -25519,7 +25520,7 @@ function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
   lilyLoad(); if (!lilyReady()) return false;
   var now = performance.now(), st = store[id] || (store[id] = { p: lilyPlayer(7), t: now }), dt = Math.min(0.1, (now - st.t) / 1000); st.t = now;
   st.p.mode = mode; lilyStep(st.p, dt);
-  return lilyDraw(ctx, st.p, x, feetY, lilyStandCss() * hScale, faceLeft, "root");
+  return lilyDraw(ctx, st.p, x, feetY - LILY_FEET_LIFT * hScale, lilyStandCss() * hScale, faceLeft, "root"); /* v1444: feet lifted to the enemies' foot line */
 }
 var heroAnimImgCache = {};
 function heroAnimImg(key) {
