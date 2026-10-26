@@ -39,8 +39,16 @@ save(seamless_cut(Image.fromarray(far.astype(np.uint8), "RGBA").crop((0, FAR_TOP
 # near: Harley's GPT extend-up pass (v1455) - the old near sits 235 rows down in it. Its lower part matches the old near (mean diff ~17) but the
 # trunks above were redrawn a little, so a stitched join would show - the WHOLE extension is used as the near layer (its own trees run to the top).
 EXT = 235
-nx = key(Image.open(os.path.join(SRC, "pineforest_near_ext_gpt_1536x1024.png")))
-save(seamless_cut(nx.crop((0, 0, 1536, EXT + ROAD_TOP + 8))), "pineforest_near")
+nx = np.asarray(key(Image.open(os.path.join(SRC, "pineforest_near_ext_gpt_1536x1024.png")))).astype(np.float32)
+# v1456 (Harley: "did you prompt it to make it high contrast?") - GPT's near layers come out more saturated and contrasty than the composite
+# (sat 0.64 vs 0.53). Match the extension's colours to the composite's near pixels (LAB mean/std, full match).
+nv = nx[..., 3] > 200
+e_lab = cv2.cvtColor(nx[..., :3].astype(np.uint8), cv2.COLOR_RGB2LAB).astype(np.float32)
+cm = near_mask.copy(); cm[ROAD_TOP:] = False
+e_m, e_s = e_lab[nv].mean(0), e_lab[nv].std(0) + 1e-3; c_m, c_s = ref_lab[cm].mean(0), ref_lab[cm].std(0)
+print("near LAB", np.round(e_m, 1), np.round(e_s, 1), "->", np.round(c_m, 1), np.round(c_s, 1))
+nx[..., :3] = cv2.cvtColor(np.clip((e_lab - e_m) / e_s * c_s + c_m, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
+save(seamless_cut(Image.fromarray(nx.astype(np.uint8), "RGBA").crop((0, 0, 1536, EXT + ROAD_TOP + 8))), "pineforest_near")
 # road: path band 700..764 -> 46 rows, 2x
 road = key(Image.open(os.path.join(SRC, "pineforest_layer_road_gpt_try1_1536x1024.png")))
 TOP, CUT, BAND = 698, 766, 46

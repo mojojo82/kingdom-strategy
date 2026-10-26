@@ -4006,3 +4006,8 @@ Harley's 3 points:
 ## v1455 — Pine forest trees reach the top
 - Harley's GPT extend-up pass for the near: the old near sits 235 rows down in it. Its lower part matches (mean diff ~17), but the trunks above were redrawn a little, so the whole extension is used as the near layer instead of stitching.
 - Its trees also run off its own top edge, so the near is drawn at 0.37 instead of 0.3 (23% bigger). On 430×932 the art now runs past the screen top, with no flat cut through the trunks.
+
+## v1456 — Pine forest near toned back to the composite
+- Harley asked if it had been prompted for high contrast. It hadn't. GPT's near/extension layers come out punchier than the composite (saturation 0.64 vs 0.53, contrast 45.6 vs 42.1), and v1455 used the extension directly.
+- The build now matches the extension's colours to the composite's near pixels (LAB mean/std). Result: saturation 0.55, contrast 42.6, brightness 59.0 (composite 0.53 / 42.1 / 59.2).
+- Lesson: when a GPT layer has to be used directly (not cut from the composite), colour-match it to the composite.
