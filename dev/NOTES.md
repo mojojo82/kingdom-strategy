@@ -3977,3 +3977,14 @@ Harley's 3 points:
   - "down" (falls, foam, the far waterfall): streaks slide down like the lava blobs.
   - "side" (the stream): short glints that fade in and out and drift slowly.
 - Recorded headless (Playwright video) to check it.
+
+## v1451 — Fix: stream level ran at ~5 fps (v1450)
+- Harley: after v1450 the game ran at 5 fps. Causes:
+  - drawWaterFx redrew ~700 streaks into a full-size scratch canvas every frame.
+  - The far and near layers shared one scratch canvas index, so it was re-allocated (resized) twice per frame.
+- Now each water mask is baked once into a 12-frame loop at half size (waterFxBake). A frame costs 2 drawImage calls (crossfade between frames). Same look.
+- Measured headless 430×932 @3x with 4× CPU throttle, chapter 11:
+  - v1449: 7.0 fps
+  - v1450: 1.7 fps
+  - v1451: 9.0 fps
+  Foundry (ch 9) unchanged at about 7. Headless is much slower than a phone; compare the numbers against each other, not as phone fps.
