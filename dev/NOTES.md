@@ -3950,3 +3950,11 @@ Harley's 3 points:
 - Stacked on top with a 40-row cross-fade (build_foundry.py `stack`). Gear, pour, steam and dust y moved +199.
 - Both layers drawn at 0.37 instead of 0.32 (15% bigger) so 430×932 shows art all the way up: art top at about −175 vs −163 needed.
 - Headless 430×932 @3x: no flat band, gears on their hubs, pour in place, no errors.
+
+## v1448 — Castle gate level (chapter 10), first of the three castle levels
+- Harley: keep the bright sun, make the castle evil. v1 was a friendly castle, and a scene edit turned it into a village, so v2 was made in a fresh chat with the evil castle in the first prompt (it said "copy only the style and road angle from the reference").
+- Layers used: road try 1, far try 1 (GPT redrew the valley and put it ~130 px low, so it's moved up 130 in the build and colour-matched 70% in LAB), near try 1 (lines up 0,0 with the composite; cut from the composite through it, gateway see-through) and sky.
+- dev/levels/build_castlegate.py. TMP_ENV_BG.castlegate uses the snow pass's placement numbers, shadows on.
+- New generic `glows` on a layer (drawLayerGlows): warm flicker on painted lanterns, used for the two lanterns here.
+- Also added: IDLE_ENVIRONMENTS "castlegate", no lightning, sky colours, names, Jump to chapter 10.
+- Headless 430×932 @3x: all layers drawn, the valley shows through the gate, no errors.
