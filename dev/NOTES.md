@@ -3997,3 +3997,8 @@ Harley's 3 points:
 
 ## v1453 — Water animation switched off
 - Harley: turn it off, it needs to be reworked in the future. `WATER_FX_ON = false` skips drawWaterFx. The masks and config stay so it can be reworked later. Noted in HANDOVER.
+
+## v1454 — Pine forest level (chapter 12)
+- Harley's GPT layers: composite v1, road try 1 (new underground on Harley's request: soil, clay and slate layers with fungus threads, not roots and boulders), far try 1 (the keep is ~1.5x the composite; kept because it's closer to the castle; lifted 40), near try 1 (within 2 px of the composite) and sky.
+- dev/levels/build_pineforest.py, TMP_ENV_BG.pineforest uses the snow pass's placement numbers, shadows on, Jump to chapter 12.
+- Known: the near trees end in a straight line at the top of the art. On tall phones (430×932) the sky shows above a flat cut through the trunks, so it needs a GPT extend-up pass for the near (like the foundry).
