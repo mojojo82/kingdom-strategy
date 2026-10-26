@@ -3942,3 +3942,11 @@ Harley's 3 points:
 - Also added: IDLE_ENVIRONMENTS "foundry", no lightning, sky colours, names, Jump to chapter 9.
 - Known: the art is 770 px above the floor, so on tall phones the top ~150 css px is the flat fill colour (430×932). It needs a GPT extend-upward pass for far + near, like the volcano ceiling; no mirroring.
 - Headless 430×932 @3x: drawn, no errors, about 35 fps in headless Chromium. g353 OK.
+
+## v1447 — Foundry reaches the top of tall phones
+- Harley's GPT extend-up passes, both template-matched at scale 1:
+  - far: the old far's row 0 = ext row 184
+  - near: the old near's row 0 = ext row 199. The ext's own lower part lost the molten stream, so only its top 199 rows are used.
+- Stacked on top with a 40-row cross-fade (build_foundry.py `stack`). Gear, pour, steam and dust y moved +199.
+- Both layers drawn at 0.37 instead of 0.32 (15% bigger) so 430×932 shows art all the way up: art top at about −175 vs −163 needed.
+- Headless 430×932 @3x: no flat band, gears on their hubs, pour in place, no errors.

@@ -18,6 +18,13 @@ from build_snowpass import seamless_cut
 ROOT = os.path.join(os.path.dirname(__file__), "..", ".."); SRC = os.path.join(ROOT, "art/originals/backgrounds")
 OUT = os.path.join(ROOT, "art/levels"); FULL = os.path.join(SRC, "foundry_built"); os.makedirs(FULL, exist_ok=True)
 ROAD_TOP = 770
+EXTF, EXTN = 184, 199   # Harley's GPT extend-up passes: far row 0 = far_ext row 184, near row 0 = near_ext row 199 (template match 0.91 / 0.94, scale 1)
+def stack(ext, base, n, ov=40):
+    """put the first n rows of the extension above the layer; cross-fade the next ov rows so there is no seam"""
+    ext = np.asarray(ext).astype(np.float32); base = np.asarray(base).astype(np.float32)
+    out = np.concatenate([ext[:n], base], 0); t = (np.arange(ov, dtype=np.float32) / ov)[:, None, None]
+    out[n:n + ov] = ext[n:n + ov] * (1 - t) + base[:ov] * t
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
 def save(im, name, q=90, lossless=False):
     im.save(os.path.join(FULL, name + ".png"))
     if lossless: im.save(os.path.join(OUT, name + ".webp"), lossless=True, method=6)
@@ -30,11 +37,13 @@ nearsrc = np.asarray(Image.open(os.path.join(SRC, "foundry_layer_near_gpt_try2_1
 
 # ---- far ----
 far = Image.open(os.path.join(SRC, "foundry_layer_far_gpt_try2_1536x1024.png")).convert("RGBA")
-save(seamless_cut(far.crop((0, 0, far.width, ROAD_TOP + 1))), "foundry_far")
+far = stack(Image.open(os.path.join(SRC, "foundry_far_ext_gpt_1536x1024.png")).convert("RGBA"), far, EXTF)
+save(seamless_cut(far.crop((0, 0, far.width, EXTF + ROAD_TOP + 1))), "foundry_far")
 
 # ---- near (keyed) - the wrap width it picks is used for every near-space piece ----
-near = key(Image.open(os.path.join(SRC, "foundry_layer_near_gpt_try2_1536x1024.png")))
-nearc = seamless_cut(near.crop((0, 0, near.width, ROAD_TOP + 8))); W2 = nearc.width
+near0 = key(Image.open(os.path.join(SRC, "foundry_layer_near_gpt_try2_1536x1024.png")))
+near = stack(key(Image.open(os.path.join(SRC, "foundry_near_ext_gpt_1536x1024.png"))), near0, EXTN)   # the extension's own lower half lost the molten stream - only its top rows are used
+nearc = seamless_cut(near.crop((0, 0, near.width, EXTN + ROAD_TOP + 8))); W2 = nearc.width
 save(nearc, "foundry_near")
 
 # ---- gears: (name, sheet blob id, centre x, y, radius in composite px, spin direction) ----
@@ -51,7 +60,7 @@ for nm, bid, cx, cy, r, d in GEARS:
 sheet = np.zeros((H, sum(c[1].shape[1] + 4 for c in cells), 4), np.float32); meta = []
 for nm, spr, cx, cy, r, d in cells:
     D = spr.shape[0]; sheet[:D, xcur:xcur + D] = spr
-    meta.append({"n": nm, "sx": xcur, "sy": 0, "s": D, "x": cx, "y": cy, "r": r, "dir": d}); xcur += D + 4
+    meta.append({"n": nm, "sx": xcur, "sy": 0, "s": D, "x": cx, "y": cy + EXTN, "r": r, "dir": d}); xcur += D + 4
 save(Image.fromarray(np.clip(sheet, 0, 255).astype(np.uint8), "RGBA"), "foundry_gears", lossless=True)
 
 # ---- front: near pixels that cover a gear in the composite (inside each gear disc, composite == near) ----
@@ -65,8 +74,9 @@ fm = nd.binary_opening(fm, iterations=2); lab2, nl = nd.label(fm)
 if nl:
     sizes = nd.sum(fm, lab2, range(1, nl + 1)); fm = np.isin(lab2, [i + 1 for i, s in enumerate(sizes) if s >= 60])
 fa = (cv2.GaussianBlur(fm.astype(np.float32), (0, 0), 0.8) * 255).astype(np.uint8)
-na = np.asarray(near).copy(); front = na.copy(); front[..., 3] = np.minimum(na[..., 3], fa)
-save(Image.fromarray(front[:ROAD_TOP + 8, :W2], "RGBA"), "foundry_front", lossless=True)
+na = np.asarray(near0).copy(); front = na.copy(); front[..., 3] = np.minimum(na[..., 3], fa)
+front = np.concatenate([np.zeros((EXTN, 1536, 4), np.uint8), front], 0)
+save(Image.fromarray(front[:EXTN + ROAD_TOP + 8, :W2], "RGBA"), "foundry_front", lossless=True)
 print("front pixels", int(fm.sum()))
 
 # ---- pour: molten stream mask (bright orange/yellow), from the near layer ----
@@ -77,7 +87,7 @@ mm = nd.binary_closing(mm, iterations=2); ys, xs = np.where(mm); px0, px1, py0, 
 pm = (cv2.GaussianBlur(mm.astype(np.float32), (0, 0), 1.0)[py0:py1, px0:px1] * 255).astype(np.uint8)
 pour = np.dstack([np.full(pm.shape + (3,), 255, np.uint8), pm])
 save(Image.fromarray(pour, "RGBA"), "foundry_pour", lossless=True)
-json.dump({"wrap": W2, "gears": meta, "pour": [int(px0), int(py0), int(px1 - px0), int(py1 - py0)], "sheetH": int(H)}, open(os.path.join(OUT, "foundry_gears.json"), "w"))
+json.dump({"wrap": W2, "gears": meta, "pour": [int(px0), int(py0) + EXTN, int(px1 - px0), int(py1 - py0)], "sheetH": int(H)}, open(os.path.join(OUT, "foundry_gears.json"), "w"))
 print("pour box", px0, py0, px1 - px0, py1 - py0, "wrap", W2)
 
 # ---- road: plate band 698..762 (grate front edge starts 762) squashed to the desert depth, 2x crisp ----

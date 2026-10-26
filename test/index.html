@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1446"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1447"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26924,11 +26924,13 @@ var TMP_ENV_BG = {
      dev/levels/build_foundry.py: far = GPT far (hazy hall), near = GPT near with ALL gears taken out (hubs left), gears = GPT gear sheet cut
      and spun in code (FOUNDRY_FX), front = near pixels that sat in front of a gear (redrawn over the spinning gears), pour = the molten
      stream mask (flowing shimmer + sparks), plus steam puffs and dust in the sunbeams. Road = GPT road, plate band squashed to the village
-     eye level, 2x crisp. Same placement numbers as the caves; the fight is untouched. */
+     eye level, 2x crisp. Same placement numbers as the caves; the fight is untouched.
+     v1447: Harley's GPT extend-up passes stacked on top (far +184 rows, near +199) and drawn at 0.37 (15% bigger than the caves) so tall phones
+     (430x932) see art right to the top, no flat band. */
   foundry: { flat: "#62483b", shadows: true, floor: { img: levelArt("foundry_road.webp", "108bb59628"), k: 0.21 / 185.76, road: 26, top: 12, upx: 2, fill: "#342a2d" }, layers: [
-    { name: "Far", img: levelArt("foundry_far.webp", "a0b232bc29"), ow: 1341, oh: 771, baseY: 770, scale: 0.32 / 185.76, lift: 2.5, speed: 0.25 },
-    { name: "Near", img: levelArt("foundry_near.webp", "9e784bd2a1"), ow: 1412, oh: 778, baseY: 770, scale: 0.32 / 185.76, lift: 2.5, speed: 0.5, foundry: true,
-      fxImgs: [levelArt("foundry_gears.webp", "65590365cd"), levelArt("foundry_front.webp", "92433953fc"), levelArt("foundry_pour.webp", "c251aaae58")] }
+    { name: "Far", img: levelArt("foundry_far.webp", "540d7297fe"), ow: 1520, oh: 955, baseY: 954, scale: 0.37 / 185.76, lift: 2.5, speed: 0.25 },
+    { name: "Near", img: levelArt("foundry_near.webp", "66a169601f"), ow: 1412, oh: 977, baseY: 969, scale: 0.37 / 185.76, lift: 2.5, speed: 0.5, foundry: true,
+      fxImgs: [levelArt("foundry_gears.webp", "65590365cd"), levelArt("foundry_front.webp", "3a5e93235e"), levelArt("foundry_pour.webp", "c251aaae58")] }
   ] },
   // v561: the gloomy grey day level uses the night-village set over its existing sky.
   /* v1262 (Harley): the village gets its own cobblestone road. k = size relative to groundY, road = the image row (in source px) that sits on the ground line */
@@ -27092,8 +27094,8 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
    Gears spin at one shared tooth speed (big = slow, small = fast; neighbours turn opposite ways), then the "front" picture puts back whatever sat
    in front of a gear (rails, rods). The molten stream gets a flowing shimmer, the splash throws sparks, two pipes puff steam, dust drifts in the light. */
 var FOUNDRY_FX = {
-  gears: [{ sx: 0, s: 254, x: 352, y: 282, r: 126, dir: 1 }, { sx: 258, s: 136, x: 516, y: 368, r: 67, dir: -1 }, { sx: 398, s: 98, x: 422, y: 448, r: 48, dir: 1 }, { sx: 500, s: 90, x: 33, y: 567, r: 44, dir: -1 }],
-  toothSpeed: 14, pour: [1240, 360, 160, 320], splash: [1290, 640], steam: [[636, 148], [757, 662]], dust: [620, 40, 640, 470]
+  gears: [{ sx: 0, s: 254, x: 352, y: 481, r: 126, dir: 1 }, { sx: 258, s: 136, x: 516, y: 567, r: 67, dir: -1 }, { sx: 398, s: 98, x: 422, y: 647, r: 48, dir: 1 }, { sx: 500, s: 90, x: 33, y: 766, r: 44, dir: -1 }],
+  toothSpeed: 14, pour: [1240, 559, 160, 320], splash: [1290, 839], steam: [[636, 347], [757, 861]], dust: [620, 239, 640, 470] /* v1447: +199 rows (the extend-up pass sits on top) */
 };
 var foundryPourCv = null, foundryPourBand = null;
 function drawFoundryFx(ctx, L, x0, top, s, w) {
