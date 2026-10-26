@@ -3922,3 +3922,23 @@ Harley's 3 points:
   Bats, the boss and KO'd heroes are skipped. Drawn before the sprites, visual only.
 - Opt-in per level with `shadows: true` in TMP_ENV_BG (desert only for now). Tunables in GROUND_SHADOW.
 - Headless 430×932 @3x on chapter 8: shadows show under the imps and Lily, no errors. g353 OK.
+
+## v1446 — Clockwork foundry level (chapter 9), animated
+- Harley's GPT pipeline: composite foundry_v1, road try 1, far try 2 (try 1 zoomed in and added dark beams), near try 2 (all gears removed, hubs left; try 1 had two gears left in) and a gear sheet. Originals are in art/originals/backgrounds/foundry_*.
+- dev/levels/build_foundry.py:
+  - far: cut at the floor line (770) and made seamless (wrap 1341).
+  - near: keyed and made seamless (wrap 1412).
+  - gears: cut from the sheet and scaled to the composite's gears. big r126, med r67 and small r48 on the left machinery; one r44 at the far left. The right-edge gear is past the near wrap, so it's left out.
+  - front: the near pixels that sat in front of a gear in the composite (composite == near inside the disc).
+  - pour: the molten stream mask.
+  - road: plate band 688–762 squashed to 43, 2x.
+- Game: TMP_ENV_BG.foundry (scale 0.32 like the caves, shadows on). The Near layer has `foundry: true` + fxImgs (gears, front, pour), loaded and released with the level. drawFoundryFx per tile draws:
+  - gears spinning at one tooth speed (14 src px/s, neighbours opposite)
+  - the front pieces over the gears
+  - a flowing shimmer down the stream
+  - a pulsing splash glow with sparks
+  - dust in the sunbeams
+  - two steam puffs
+- Also added: IDLE_ENVIRONMENTS "foundry", no lightning, sky colours, names, Jump to chapter 9.
+- Known: the art is 770 px above the floor, so on tall phones the top ~150 css px is the flat fill colour (430×932). It needs a GPT extend-upward pass for far + near, like the volcano ceiling; no mirroring.
+- Headless 430×932 @3x: drawn, no errors, about 35 fps in headless Chromium. g353 OK.
