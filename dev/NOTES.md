@@ -3912,3 +3912,13 @@ Harley's 3 points:
 - Harley: Lily stood lower than the red imps. Measured sprite soles against the ground line: the imps, ooze and Gareth sit at about groundY + 6.5, Lily at groundY + 8 (1.5 px lower).
 - `LILY_FEET_LIFT = 2`, × hero size, in lilyBattleDraw (Conquest + Arena). Her standing soles now land at about groundY + 6, level with the others. Visual only; hits, sweeps and positions are unchanged.
 - g353 / g355 / g356 OK.
+
+## v1445 — Ground shadows on the desert
+- Harley: the desert "calls for some shadows under the heroes and red enemy. Just small dark circle".
+- `drawGroundShadows`: a soft dark-brown oval (radial fade, alpha 0.5) on the ground line (groundY + 6.4) under:
+  - front-line heroes on the ground (Gareth, Lily; scaled by hero size and Lily's size)
+  - slimes (26 px)
+  - imps (15 px)
+  Bats, the boss and KO'd heroes are skipped. Drawn before the sprites, visual only.
+- Opt-in per level with `shadows: true` in TMP_ENV_BG (desert only for now). Tunables in GROUND_SHADOW.
+- Headless 430×932 @3x on chapter 8: shadows show under the imps and Lily, no errors. g353 OK.

@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1444"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1445"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26914,7 +26914,7 @@ var TMP_ENV_BG = {
      scenes). dev/levels/build_desert.py, same recipe as the snow pass: GPT sky, GPT far colour-matched back to the composite (GPT made the dunes ~2x
      more saturated), near cut straight out of the composite through GPT's near split (lined up 0,0), road = GPT road try 2 with the sand band squashed
      to the snow pass depth, 2x crisp. Same placement numbers as the snow pass; the fight is untouched. */
-  desert: { flat: "#c79a52", floor: { img: levelArt("desert_road.webp", "e9bdeebef8"), k: 0.21 / 185.76, road: 26, top: 12, upx: 2, fill: "#5a3a17" }, layers: [
+  desert: { flat: "#c79a52", shadows: true, floor: { img: levelArt("desert_road.webp", "e9bdeebef8"), k: 0.21 / 185.76, road: 26, top: 12, upx: 2, fill: "#5a3a17" }, layers: [
     { name: "Sky", img: levelArt("desert_sky.webp", "74202eb9fc"), ow: 1446, oh: 1024, baseY: 1099, scale: 0.36 / 185.76, lift: 2.5, speed: 0.1 },
     { name: "Far", img: levelArt("desert_far.webp", "94cfd09d9d"), ow: 1520, oh: 537, baseY: 536, scale: 0.3 / 185.76, lift: 2.5, speed: 0.25 },
     { name: "Near", img: levelArt("desert_near.webp", "36be4ae633"), ow: 1511, oh: 394, baseY: 386, scale: 0.3 / 185.76, lift: 2.5, speed: 0.5 }
@@ -27076,6 +27076,30 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
   });
   ctx.restore();
 }
+/* v1445 (Harley: the desert "calls for some shadows under the heroes and red enemy. Just small dark circle"): a soft dark oval on the ground
+   under every ground unit - front-line heroes (Gareth, Lily...), slimes and imps. Bats and the boss are skipped. Levels opt in with shadows: true
+   in TMP_ENV_BG. Drawn before the sprites, visual only. */
+var GROUND_SHADOW = { a: 0.5, rgb: "55,30,8", hero: 16, slime: 26, imp: 15, h: 3.6, y: 6.4 };
+function drawGroundShadows(ctx, groundY, enemies, roster) {
+  var S = GROUND_SHADOW, hs = heroSpriteVisualScale / 100, gy = groundY + S.y;
+  function oval(x, wd, hh, a) {
+    var g = ctx.createRadialGradient(x, gy, 0, x, gy, wd / 2);
+    g.addColorStop(0, "rgba(" + S.rgb + "," + a + ")"); g.addColorStop(0.65, "rgba(" + S.rgb + "," + (a * 0.75) + ")"); g.addColorStop(1, "rgba(" + S.rgb + ",0)");
+    ctx.save(); ctx.translate(x, gy); ctx.scale(1, hh / wd); ctx.translate(-x, -gy); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, gy, wd / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  (enemies || []).forEach(function (re) {
+    var v = idleAnim.enemyById[re.id]; if (!v || re.type === "boss" || re.type === "archer") return;
+    var fade = v.dying ? 0.5 : 1;
+    if (re.type === "infantry") oval(v.x + getEnemySkin().dx, S.slime, S.h, S.a * fade);
+    else if (re.type === "lancer") oval(v.x, S.imp, S.h * 0.9, S.a * fade);
+  });
+  (roster || []).slice(0, 5).forEach(function (key) {
+    if (!HERO_DEFS[key] || HERO_DEFS[key].class !== "infantry" || game.idleHeroIsKo(key)) return;
+    var hv = idleAnim.heroVis[key]; if (!hv) return;
+    var wd = S.hero * hs * (key === "ironlily" ? lilySizePct / 100 : 1);
+    oval(hv.x, wd, S.h * hs, S.a);
+  });
+}
 function drawIdleAnim(ctx, w, h) {
   ctx.clearRect(0, 0, w, h);
   // scrolling ground — tiled texture (swappable/scalable from Dev Tools), scrolls
@@ -27225,6 +27249,7 @@ function drawIdleAnim(ctx, w, h) {
   var barIdx = -1; for (var bi0 = 0; bi0 < drawEnemies.length; bi0++) { if (!drawEnemies[bi0].lingering && drawEnemies[bi0].type !== "boss") { barIdx = bi0; break; } } // v663: the health bar belongs to the first LIVE enemy — a dying one still fading out used to hold the slot and leave the real front enemy bar-less
   idleAnim.pendingBar = null;
   drawKnightPreview(ctx, w, groundY); /* v1174: Dark Knight look test (no stats, no attacks) */
+  if (tmpRainBg && tmpRainBg.shadows) drawGroundShadows(ctx, groundY, drawEnemies, game.state.conquestRoster); /* v1445: small shadows under ground units on bright levels */
   drawEnemies.forEach(function (re, i) {
     var vis = idleAnim.enemyById[re.id];
     if (!vis) return;
