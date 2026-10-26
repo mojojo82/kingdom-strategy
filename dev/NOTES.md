@@ -3903,3 +3903,7 @@ Harley's 3 points:
   - road: try 2, with the sand band (rows 734–797) squashed to 33 + 10 like the snow pass so it matches the village eye level, 2x crisp, solid top row 12 → road row 26.
 - TMP_ENV_BG.desert uses the snow pass's placement numbers; the fight isn't touched. Also added: IDLE_ENVIRONMENTS gets "desert" (chapter 8), no lightning, sky colours and a fallback gradient, "Desert ruins" in the name lists, and Dev Tools Jump to chapter 8.
 - Headless 430×932 @3x: env = desert, all 4 layers drawn, feet on the sand band, no errors. Lily reads clearly against the light sand.
+
+## v1443 — Dev Tools: chapter buttons wrap
+- Harley (phone): no button for the desert. The "Jump to chapter" row didn't wrap, so "8 Desert ruins" sat off the right edge of the screen (7 was already cut off).
+- The row now wraps (dev tool only). Measured at 430 px: chapters 1–5 on the first line, 6–8 on the second, all on screen.
