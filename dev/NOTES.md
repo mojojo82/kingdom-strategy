@@ -4011,3 +4011,15 @@ Harley's 3 points:
 - Harley asked if it had been prompted for high contrast. It hadn't. GPT's near/extension layers come out punchier than the composite (saturation 0.64 vs 0.53, contrast 45.6 vs 42.1), and v1455 used the extension directly.
 - The build now matches the extension's colours to the composite's near pixels (LAB mean/std). Result: saturation 0.55, contrast 42.6, brightness 59.0 (composite 0.53 / 42.1 / 59.2).
 - Lesson: when a GPT layer has to be used directly (not cut from the composite), colour-match it to the composite.
+
+## v1457 — Pine forest re-done (Harley's second try)
+- New composite pineforest_v2:
+  - complete treetops with sky above, so no extend-up or blow-up is needed
+  - softer colours (saturation 0.52)
+  - the layered-soil underground written into the scene prompt
+- dev/levels/build_pineforest2.py:
+  - far: keep ~1.4x, lifted 30, colour-matched 50%
+  - near: GPT's near was 76 px low at the same scale, so it's used as a stencil shifted up 76 and the composite pixels are cut through it
+  - road: band 714–760 squashed to 46
+- TMP_ENV_BG.pineforest now points at pineforest2_*.webp. The v1 files and build stay in the repo.
+- Headless 430×932 @3x: trees complete, sky above, no errors.
