@@ -4036,3 +4036,10 @@ Harley's 3 points:
   - near: 276 px down but partly redrawn (match 0.56, the arches don't line up with the old top), so it's used whole and colour-matched to the composite in LAB
 - Both drawn at 0.34 (was 0.32). baseY puts the floor line (far row 998, near row 956) on the floor's back edge as before. Torch glows moved +276.
 - Headless 430×932: vaulted ceiling to the top, heroes on the carpet, no errors.
+
+## v1460 — Armoury & forge (chapter 14)
+- Harley's ChatGPT armoury (picked over the Dark Library). Built by `dev/levels/build_armoury.py` from the composite + GPT road/far/near try 1.
+- Every GPT layer colour-matched to the composite in LAB (Harley: GPT's splits come out brighter).
+- far: GPT drew it ~101 px low, shifted up. near: lines up 0,0, its right archway drawn complete, used whole. Floor: full depth, not squashed, walking line on the flagstones (road 68).
+- Racks/forge stand on the floor's back edge (baseY 715 at 0.34). Fight untouched. Lantern + forge glows flicker.
+- Headless 390×700: fills fine. 430×932: plain band above the roof beams -> needs Harley's extend-up passes (FAR_EXT / NEAR_EXT env vars in the build script are ready).
