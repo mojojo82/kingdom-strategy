@@ -4029,3 +4029,10 @@ Harley's 3 points:
 - Harley: don't squash the floor, never move the heroes or enemies. The floor is used at full depth, 2x, with the walking line on the carpet (road 112, top 8). Far and near sit at 0.32 with baseY 740, so the pillar bases meet the floor's back edge. The fight is untouched.
 - The 3 pillar wall torches flicker (glows). Also added: IDLE_ENVIRONMENTS "greathall", no lightning, colours, names, Jump to chapter 13.
 - Known: on 430×932 the art stops about 110 css px below the screen top (plain brown band). Needs GPT extend-up passes for far and near, like the foundry.
+
+## v1459 — Great Hall reaches the top of tall phones
+- Harley's extend-up passes:
+  - far: the old far 318 px down, match 0.98, so it's used whole
+  - near: 276 px down but partly redrawn (match 0.56, the arches don't line up with the old top), so it's used whole and colour-matched to the composite in LAB
+- Both drawn at 0.34 (was 0.32). baseY puts the floor line (far row 998, near row 956) on the floor's back edge as before. Torch glows moved +276.
+- Headless 430×932: vaulted ceiling to the top, heroes on the carpet, no errors.
