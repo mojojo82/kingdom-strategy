@@ -85,3 +85,7 @@ Using the full scene, make ONLY the sky, on its own, with nothing else in it:
 - the left and right edges should continue naturally so it can repeat side by side
 - landscape, 1536x1024
 ```
+
+## Colour matching (Harley, 2 Nov 2026)
+Every GPT layer that is used directly (not cut from the composite) gets colour-matched to the composite in the build - GPT's splits come out
+brighter / more saturated. Applies to road, far and any extend-up pass. Match only where the layer and composite show the same thing.
