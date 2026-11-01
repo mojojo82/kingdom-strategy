@@ -4023,3 +4023,9 @@ Harley's 3 points:
   - road: band 714–760 squashed to 46
 - TMP_ENV_BG.pineforest now points at pineforest2_*.webp. The v1 files and build stay in the repo.
 - Headless 430×932 @3x: trees complete, sky above, no errors.
+
+## v1458 — Great Hall (chapter 13), first castle interior
+- Harley's GPT layers: composite greathall_v1, road try 1 (lines up with the composite: back edge row 680, carpet rows 713–751), far try 1 (fills the wall, bottom fades into magenta, so it's cut at the floor line) and near try 1 (lines up 0,0 with the composite).
+- Harley: don't squash the floor, never move the heroes or enemies. The floor is used at full depth, 2x, with the walking line on the carpet (road 112, top 8). Far and near sit at 0.32 with baseY 740, so the pillar bases meet the floor's back edge. The fight is untouched.
+- The 3 pillar wall torches flicker (glows). Also added: IDLE_ENVIRONMENTS "greathall", no lightning, colours, names, Jump to chapter 13.
+- Known: on 430×932 the art stops about 110 css px below the screen top (plain brown band). Needs GPT extend-up passes for far and near, like the foundry.
