@@ -4084,3 +4084,10 @@ Harley's 3 points:
 - The left wall lantern would have mirrored in half-cut at the right edge, so the wall is continued there instead.
 - The front lantern and its chain are put back on top (iron/glow pixels, plus anything inside the opening).
 - Hall peek re-centred: x 1004, ax 1388. Headless: no errors, ~50 fps, scroll video sent.
+
+## v1467 — Armoury: loop seam softened
+- Harley circled the hard vertical line where the armoury picture loops (right of the mirrored arch pillar, back to the picture's start).
+- Added a 90-px band after the right edge that fades (cosine) from a mirror of the right edge into a mirror of the picture's start, so both ends join without a cut.
+  - Roof rows (above scene row ~460): plain mirror of the start, so the beams meet in a symmetric post/V.
+  - Wall rows: only the first ~27 columns (the edge pillar), stretched, so the banner next to it doesn't ghost in.
+- Scene width 1666. Headless: no errors, ~55 fps, scroll video sent.

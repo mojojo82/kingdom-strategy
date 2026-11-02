@@ -118,6 +118,15 @@ inside = np.zeros(keep.shape, bool); inside[:, :1536] = wide[:, :1536, 3] == 0
 keep &= iron_or_glow | (inside & (orig[..., 3] > 0))
 keep = cv2.morphologyEx(keep.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8)).astype(bool)
 wide[:, :1536][keep] = orig[keep]
+# v1467 (Harley circled the hard line where the picture loops): add SEAM_B columns after the right edge that fade from a mirror of the right
+# edge into a mirror of the picture's start, so both sides of the band join without a cut (mirror joins are continuous, the middle cross-fades).
+SEAM_B = 90
+a_ = wide.astype(np.float32); j = np.arange(SEAM_B); wgt = (0.5 - 0.5 * np.cos(np.pi * (j + 0.5) / SEAM_B))[None, :, None]
+full = a_[:, SEAM_B - 1 - j]; edge = a_[:, ((SEAM_B - 1 - j) * 0.3).astype(int)]
+rw = np.clip((np.arange(a_.shape[0]) - 460) / 20.0, 0, 1)[:, None, None]   # roof (above ~row 460): plain mirror of the start, the beams meet in a V
+left = full * (1 - rw) + edge * rw                                           # wall below: only the edge pillar (no ghost banner)
+band = a_[:, W2 - 1 - j] * (1 - wgt) + left * wgt
+wide = np.concatenate([wide, band.astype(np.uint8)], 1)
 sa = wide; scene = Image.fromarray(sa, "RGBA"); print("scene (symmetrical arch)", scene.size, "lantern px", int(keep.sum()))
 save(scene, "armoury_scene")   # full 1536 wrap: the whole pillar ends the picture, the wall starts the next copy
 HALL_S = 0.5
