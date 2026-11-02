@@ -96,7 +96,29 @@ pil = (nk[..., 3] > 200); pil[:, :1488] = False; pil[:240] = False; pil[FLOOR_TO
 hole &= ~pil
 sa = np.asarray(scene).copy(); sub = sa[N_DY:N_DY + FLOOR_TOP + 2]
 sub[pil[:FLOOR_TOP + 2]] = nk[:FLOOR_TOP + 2][pil[:FLOOR_TOP + 2]]; sub[hole[:FLOOR_TOP + 2], 3] = 0
-scene = Image.fromarray(sa, "RGBA")
+# v1466 (Harley: make the archway symmetrical): mirror the composite's left half of the arch (pillar, capital, stones) onto the right about
+# the keystone (col AX). The picture gets wider (W2) so the mirrored pillar fits; above the arch the old wall/roof stays, and the extra
+# columns past 1536 repeat the last 40 columns of wall/roof. The lantern hanging in front of the arch is put back on top.
+AX, R0 = 1388, 505; W2 = 2 * AX - 1200
+orig = sa.copy()
+wide = np.zeros((sa.shape[0], W2, 4), np.uint8); wide[:, :1536] = sa
+wide[:R0, 1536:] = sa[:R0, 1536 - (W2 - 1536):1536]                 # roof/wall above the arch: continue the last columns
+for x in range(AX, W2):                                              # the arch from R0 down: mirror of the left half
+    wide[R0:, x] = sa[R0:, 2 * AX - x]
+for i in range(10):                                                  # soften the horizontal join at R0 in the wall
+    t = (i + 0.5) / 10; r = R0 + i
+    wide[r, AX:1536, :3] = (sa[r, AX:1536, :3] * (1 - t) + wide[r, AX:1536, :3] * t).astype(np.uint8)
+# the left wall lantern (cols ~1172-1222) would be mirrored in half-cut at the right edge: there, keep continuing the wall instead
+for x in range(2 * AX - 1224, W2): wide[515:645, x] = wide[515:645, x - 26]
+# put the front lantern + its chain back: dark iron or glowing pixels from the original in a strip / box around them
+L_ = cv2.cvtColor(orig[..., :3], cv2.COLOR_RGB2LAB)[..., 0].astype(int); o = orig.astype(int)
+iron_or_glow = (L_ < 75) | ((o[..., 0] > 200) & (o[..., 1] > 140) & (o[..., 2] < 150))
+keep = np.zeros(iron_or_glow.shape, bool); keep[R0:610, 1468:1482] = True; keep[595:690, 1450:1498] = True
+inside = np.zeros(keep.shape, bool); inside[:, :1536] = wide[:, :1536, 3] == 0
+keep &= iron_or_glow | (inside & (orig[..., 3] > 0))
+keep = cv2.morphologyEx(keep.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8)).astype(bool)
+wide[:, :1536][keep] = orig[keep]
+sa = wide; scene = Image.fromarray(sa, "RGBA"); print("scene (symmetrical arch)", scene.size, "lantern px", int(keep.sum()))
 save(scene, "armoury_scene")   # full 1536 wrap: the whole pillar ends the picture, the wall starts the next copy
 HALL_S = 0.5
 hall = Image.open(os.path.join(SRC, "armoury_hall_view_gpt_1536x1024.png")).convert("RGBA")
@@ -104,7 +126,7 @@ hall = hall.resize((round(1536 * HALL_S), round(1024 * HALL_S)), Image.LANCZOS)
 hm = np.zeros(hall.size[::-1], bool); hm[:] = True
 hall = Image.fromarray(match(np.asarray(hall), hm, hole & ~(np.arange(1024)[:, None] > FLOOR_TOP - 2)), "RGBA")
 save(hall, "armoury_hall")
-print("hall placement: x", round((xs.min() + xs.max()) / 2 - hall.width / 2), "y", N_DY + FLOOR_TOP - hall.height, "arch centre x", round((xs.min() + xs.max()) / 2))   # keep the arch + hall on the right whole
+print("hall placement: x", AX - hall.width // 2, "y", N_DY + FLOOR_TOP - hall.height, "arch centre x", AX)   # keep the arch + hall on the right whole
 # ---- road ----
 rk = np.asarray(key(Image.open(os.path.join(SRC, "armoury_layer_road_gpt_try1_1536x1024.png"))))
 rv = rk[..., 3] > 200; rv[:FLOOR_TOP + 6] = False

@@ -4077,3 +4077,10 @@ Harley's 3 points:
 - The hall behind the opening is Harley's new GPT hall view (armoury_hall_view_gpt), at 0.5 scale (768×512) and colour-matched to the composite's hall.
 - New layer option `peek: {img, x, y, w, h, ax, k, max}`: a picture drawn behind the layer, tied to each copy of the opening and slid by (screen middle − opening x)·k (k 0.25, clamped ±260 src px). That way it lines up every time the arch comes round. The peek image is loaded and released with the level.
 - Headless: no errors, ~55–60 fps. Scroll video made from real game frames (bgOffsetFar stepped). Known: a hard vertical join where the right pillar meets the next copy's wall.
+
+## v1466 — Armoury: symmetrical archway
+- Harley: make the archway symmetrical. The composite's left half of the arch (pillar, capital, arch stones) is mirrored onto the right, about the keystone at col 1388 (from scene row 505 down, with a 10-row blend into the wall above).
+- The scene is wider to fit the mirrored pillar: 1576 px, and the columns past 1536 continue the wall/roof.
+- The left wall lantern would have mirrored in half-cut at the right edge, so the wall is continued there instead.
+- The front lantern and its chain are put back on top (iron/glow pixels, plus anything inside the opening).
+- Hall peek re-centred: x 1004, ax 1388. Headless: no errors, ~50 fps, scroll video sent.
