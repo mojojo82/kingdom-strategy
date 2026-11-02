@@ -62,11 +62,18 @@ nv = nk[..., 3] > 200; nv[FLOOR_TOP:] = False
 cm = near_mask.copy(); cm[FLOOR_TOP:] = False; cm[:, 1480:] = False
 nk = match(nk, nv, cm); nk[FLOOR_TOP + 2:, :, 3] = 0
 nearI = Image.fromarray(nk, "RGBA").crop((0, 0, 1536, FLOOR_TOP + 2))
-if NEAR_EXT:
-    ext = np.asarray(key(Image.open(os.path.join(SRC, "armoury_near_ext_gpt_1536x1024.png"))))
-    ev = ext[..., 3] > 200; ev[NEAR_EXT + FLOOR_TOP:] = False
-    ext = match(ext, ev, cm)
-    nearI = Image.fromarray(np.concatenate([ext[:NEAR_EXT], np.asarray(nearI)], 0), "RGBA")
+NEXT_PATH = os.path.join(SRC, "armoury_near_ext2_gpt_1536x1024.png"); N_DY, N_JOIN = 305, 80   # Harley's near extend-up (fresh chat, pre-shifted
+if os.path.exists(NEXT_PATH):                                                                # canvas): copy of the near 32 px up, match 0.89
+    ext = np.asarray(key(Image.open(NEXT_PATH))).copy(); old = np.asarray(nearI).astype(np.float32)
+    lab_e = cv2.cvtColor(ext[..., :3], cv2.COLOR_RGB2LAB).astype(np.float32); lab_o = cv2.cvtColor(old[..., :3].astype(np.uint8), cv2.COLOR_RGB2LAB).astype(np.float32)
+    me, mo = ext[N_DY:N_DY + 300, :, 3] > 200, old[:300, :, 3] > 200
+    ov_e, ov_o = lab_e[N_DY:N_DY + 300][me], lab_o[:300][mo]
+    e_m, e_s, o_m, o_s = ov_e.mean(0), ov_e.std(0) + 1e-3, ov_o.mean(0), ov_o.std(0); print("  near top LAB", np.round(e_m, 1), "->", np.round(o_m, 1))
+    ext[..., :3] = cv2.cvtColor(np.clip((lab_e - e_m) / e_s * o_s + o_m, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
+    top = ext[:N_DY + N_JOIN].astype(np.float32)
+    w = np.clip((np.arange(N_JOIN) - (N_JOIN - 40)) / 40.0, 0, 1)[:, None, None]
+    top[N_DY:] = top[N_DY:] * (1 - w) + old[:N_JOIN] * w
+    nearI = Image.fromarray(np.concatenate([top, old[N_JOIN:]], 0).astype(np.uint8), "RGBA"); print("near with top", nearI.size)
 save(seamless_cut(nearI), "armoury_near")
 # ---- road ----
 rk = np.asarray(key(Image.open(os.path.join(SRC, "armoury_layer_road_gpt_try1_1536x1024.png"))))

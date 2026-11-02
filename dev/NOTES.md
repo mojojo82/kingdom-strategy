@@ -4055,3 +4055,9 @@ Harley's 3 points:
 - It came back as a near-exact copy (match 0.98), just 32 px higher, so the roof lines straight on from the wall. The new top is joined in an 80-row overlap and colour-matched to the old far.
 - far is now 1276×992, baseY 1020. Headless 430×932: the roof fills to the very top. Only the near's top edge is left (near extend-up, same canvas method).
 - **Use this canvas method for extend-ups from now on.** It beats asking GPT to move the layer itself.
+
+## v1463 — Armoury: near extend-up (done)
+- Harley's near extend-up was made with the same pre-shifted canvas method in a fresh chat. It came back as a copy of the near (match 0.89), 32 px up.
+- The new top (chimney, roof beams, lantern chains) is joined over an 80-row overlap and colour-matched to the old near (GPT's came out much more saturated).
+- near is now 1519×992, baseY 1020, lantern/forge glows +305. Headless 430×932: fills to the top with no join lines; 390×700 is fine too.
+- Side-by-side (original vs extended) sent to Harley. The far's windows come out bigger and brighter than the composite's, because GPT's far redrew them that way.
