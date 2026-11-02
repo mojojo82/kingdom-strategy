@@ -4091,3 +4091,8 @@ Harley's 3 points:
   - Roof rows (above scene row ~460): plain mirror of the start, so the beams meet in a symmetric post/V.
   - Wall rows: only the first ~27 columns (the edge pillar), stretched, so the banner next to it doesn't ghost in.
 - Scene width 1666. Headless: no errors, ~55 fps, scroll video sent.
+
+## v1468 — Armoury: loop join as a solid mirror piece
+- Harley: don't blend the wall at the loop, draw it solid as a mirror piece. The wall rows of the 110-px loop band are now a solid mirror of the picture's start.
+- The result is a symmetric pair of banners and weapon racks either side of the stone edge pillar.
+- Roof rows still fade from the right edge into the mirror, so the beams meet in a V. Scene width 1686. Headless: no errors.
