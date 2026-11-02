@@ -4061,3 +4061,11 @@ Harley's 3 points:
 - The new top (chimney, roof beams, lantern chains) is joined over an 80-row overlap and colour-matched to the old near (GPT's came out much more saturated).
 - near is now 1519×992, baseY 1020, lantern/forge glows +305. Headless 430×932: fills to the top with no join lines; 390×700 is fine too.
 - Side-by-side (original vs extended) sent to Harley. The far's windows come out bigger and brighter than the composite's, because GPT's far redrew them that way.
+
+## v1464 — Armoury: the original composite + extended roof
+- Harley: stick with the original art and just add the extended part on top, not replacing the original graphics.
+- The level is now ONE layer, `armoury_scene`: the untouched composite (rows 0–686), with the roof from the far+near extend-ups (305 rows) stacked on top and blended into the composite's top over 40 rows.
+- What this fixes: the arch keeps its view down the hall (the GPT far's seam cut had dropped it, and parallax would have slid it around).
+- Wrap 1512 (search kept short so the arch and hall stay whole), baseY 1020, speed 0.5, same glows. Road unchanged.
+- Trade-offs: no far/near parallax inside the armoury anymore, and there's a soft vertical join where the hall view wraps back into the left pillar.
+- The far/near webps are still built but no longer used by the game.

@@ -75,6 +75,16 @@ if os.path.exists(NEXT_PATH):                                                   
     top[N_DY:] = top[N_DY:] * (1 - w) + old[:N_JOIN] * w
     nearI = Image.fromarray(np.concatenate([top, old[N_JOIN:]], 0).astype(np.uint8), "RGBA"); print("near with top", nearI.size)
 save(seamless_cut(nearI), "armoury_near")
+# ---- scene (v1464, Harley: "stick with the original but add the extended part up top, not replacing the original graphics") ----
+# ONE layer: the untouched composite (rows 0..FLOOR_TOP+1) with the extended roof (far+near extend-ups stacked, 305 rows) on top,
+# blended into the composite's top over 40 rows. One layer = the arch keeps its view down the hall and nothing slides apart.
+roof = Image.new("RGBA", farI.size); roof.alpha_composite(farI); roof.alpha_composite(nearI)
+roof = np.asarray(roof).astype(np.float32)[:N_DY + 40]; roof[..., 3] = 255
+cm4 = np.dstack([comp[:FLOOR_TOP + 2], np.full((FLOOR_TOP + 2, 1536), 255, np.uint8)]).astype(np.float32)
+w = (np.arange(40) / 40.0)[:, None, None]
+roof[N_DY:] = roof[N_DY:] * (1 - w) + cm4[:40] * w
+scene = Image.fromarray(np.concatenate([roof[:N_DY + 40], cm4[40:]], 0).astype(np.uint8), "RGBA"); print("scene", scene.size)
+save(seamless_cut(scene, search=40, band=24), "armoury_scene")   # keep the arch + hall on the right whole
 # ---- road ----
 rk = np.asarray(key(Image.open(os.path.join(SRC, "armoury_layer_road_gpt_try1_1536x1024.png"))))
 rv = rk[..., 3] > 200; rv[:FLOOR_TOP + 6] = False
