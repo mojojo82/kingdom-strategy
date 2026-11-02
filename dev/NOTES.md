@@ -4069,3 +4069,11 @@ Harley's 3 points:
 - Wrap 1512 (search kept short so the arch and hall stay whole), baseY 1020, speed 0.5, same glows. Road unchanged.
 - Trade-offs: no far/near parallax inside the armoury anymore, and there's a soft vertical join where the hall view wraps back into the left pillar.
 - The far/near webps are still built but no longer used by the game.
+
+## v1465 — Armoury: only the hall through the arch moves
+- Harley: the usual far/near split doesn't suit an interior; only the background seen through the arch passageway should move.
+- The scene (composite + extended roof) now has the arch opening cut out. The opening is found from GPT's near stencil: cols 1267–1503, rows 260–686, dilated 1 px.
+- GPT's near drew the arch's right pillar whole (the composite cuts it off at the edge), so that pillar is pasted in. The scene wraps at the full 1536.
+- The hall behind the opening is Harley's new GPT hall view (armoury_hall_view_gpt), at 0.5 scale (768×512) and colour-matched to the composite's hall.
+- New layer option `peek: {img, x, y, w, h, ax, k, max}`: a picture drawn behind the layer, tied to each copy of the opening and slid by (screen middle − opening x)·k (k 0.25, clamped ±260 src px). That way it lines up every time the arch comes round. The peek image is loaded and released with the level.
+- Headless: no errors, ~55–60 fps. Scroll video made from real game frames (bgOffsetFar stepped). Known: a hard vertical join where the right pillar meets the next copy's wall.

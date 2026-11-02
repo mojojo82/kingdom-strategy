@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1464"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1465"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26828,7 +26828,7 @@ function tmpBgImg(d) { var im = new Image(); im.src = d; return im; }
    it right), so a changed picture is re-downloaded and an unchanged one comes from the phone's cache. Until a level's art arrives, its own colours show. */
 var LEVEL_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/levels/" : "art/levels/";
 function levelArt(file, h) { var im = new Image(); im._lazySrc = LEVEL_ART_BASE + file + "?h=" + h; return im; }
-function levelArtImgs(cfg) { var a = []; if (cfg.floor) { a.push(cfg.floor.img); if (cfg.floor.alt) a.push(cfg.floor.alt.img); } (cfg.layers || []).forEach(function (L, i) { a.push(L.img); if (L.alt && layerUsesAlt(cfg._env, i, L)) a.push(L.alt.img); (L.fxImgs || []).forEach(function (im) { a.push(im); }); }); return a; }
+function levelArtImgs(cfg) { var a = []; if (cfg.floor) { a.push(cfg.floor.img); if (cfg.floor.alt) a.push(cfg.floor.alt.img); } (cfg.layers || []).forEach(function (L, i) { a.push(L.img); if (L.alt && layerUsesAlt(cfg._env, i, L)) a.push(L.alt.img); (L.fxImgs || []).forEach(function (im) { a.push(im); }); if (L.peek) a.push(L.peek.img); }); return a; }
 function ensureLevelArt(env) {
   var cfg = TMP_ENV_BG[env]; if (!cfg) return true;
   if (cfg._artReady) return true;
@@ -26974,7 +26974,7 @@ var TMP_ENV_BG = {
      (not squashed), every GPT layer colour-matched to the composite; the walking line sits on the flagstones (road 68) and the racks/forge
      stand on the floor's back edge (baseY 715). The fight is untouched. Lanterns and the forge flicker. */
   armoury: { flat: "#2e2622", shadows: true, floor: { img: levelArt("armoury_road.webp", "9665edc361"), k: 0.21 / 185.76, road: 68, top: 8, upx: 2, fill: "#3a2a24" }, layers: [
-    { name: "Scene", img: levelArt("armoury_scene.webp", "ea650792b9"), ow: 1512, oh: 992, baseY: 1020, scale: 0.34 / 185.76, lift: 2.5, speed: 0.5, glows: [[178, 510, 18], [690, 563, 18], [1196, 587, 18], [1473, 645, 14], [975, 850, 42]] }
+    { name: "Scene", img: levelArt("armoury_scene.webp", "045cd10a20"), ow: 1536, oh: 992, baseY: 1020, scale: 0.34 / 185.76, lift: 2.5, speed: 0.5, peek: { img: levelArt("armoury_hall.webp", "c9d3293824"), x: 1001, y: 478, w: 768, h: 512, ax: 1385, k: 0.25, max: 260 }, glows: [[178, 510, 18], [690, 563, 18], [1196, 587, 18], [1473, 645, 14], [975, 850, 42]] }
   ] },
   // v561: the gloomy grey day level uses the night-village set over its existing sky.
   /* v1262 (Harley): the village gets its own cobblestone road. k = size relative to groundY, road = the image row (in source px) that sits on the ground line */
@@ -27127,6 +27127,11 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
         if (fr > 0.02) { ctx.globalAlpha = fr; ctx.drawImage(im, sx1, sy1, sw, sh, xa, top, tw + 1, th); ctx.globalAlpha = 1; }
       }
       return;
+    }
+    if (L.peek && L.peek.img.complete && L.peek.img.naturalWidth) { /* v1465 (Harley): the view through an opening (the armoury's arch) - drawn behind the
+       layer, tied to the opening so it lines up every time it comes round, and slid by how far the opening is from the screen's middle (k) */
+      var P = L.peek;
+      for (var xp = x0; xp < w; xp += tw) { var ax = xp + P.ax * s, off = Math.max(-P.max * s, Math.min(P.max * s, (w / 2 - ax) * P.k)); ctx.drawImage(P.img, xp + P.x * s + off, top + P.y * s, P.w * s, P.h * s); }
     }
     for (var x = x0; x < w; x += tw) ctx.drawImage(im, x, top, tw + 1, th);
     if (L.falls) for (var xf = x0; xf < w; xf += tw) drawLavaFalls(ctx, xf, top, s, w);

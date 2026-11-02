@@ -84,7 +84,27 @@ cm4 = np.dstack([comp[:FLOOR_TOP + 2], np.full((FLOOR_TOP + 2, 1536), 255, np.ui
 w = (np.arange(40) / 40.0)[:, None, None]
 roof[N_DY:] = roof[N_DY:] * (1 - w) + cm4[:40] * w
 scene = Image.fromarray(np.concatenate([roof[:N_DY + 40], cm4[40:]], 0).astype(np.uint8), "RGBA"); print("scene", scene.size)
-save(seamless_cut(scene, search=40, band=24), "armoury_scene")   # keep the arch + hall on the right whole
+# v1465 (Harley: "only the bg seen through the arch passageway should be moving"): cut the arch opening out of the scene; the hall behind it
+# is its own small picture (GPT hall view, 2 Nov) that the game slides a little relative to the arch.
+mg = is_mag(ng).astype(np.uint8); mg[670:] = 0
+_, lab = cv2.connectedComponents(mg); hole = lab == lab[500, 1400]
+for x in np.where(hole[669])[0]: hole[669:FLOOR_TOP + 2, x] = True      # the opening runs down to the floor
+hole = cv2.dilate(hole.astype(np.uint8), np.ones((3, 3), np.uint8)).astype(bool) & (np.arange(1024)[:, None] < FLOOR_TOP + 2)
+ys, xs = np.where(hole); print("arch opening", xs.min(), xs.max(), ys.min(), ys.max())
+# the composite cuts the arch's right pillar off at the image edge; GPT's near drew it whole (cols ~1495+) -> paste it in (colour-matched near)
+pil = (nk[..., 3] > 200); pil[:, :1488] = False; pil[:240] = False; pil[FLOOR_TOP + 2:] = False
+hole &= ~pil
+sa = np.asarray(scene).copy(); sub = sa[N_DY:N_DY + FLOOR_TOP + 2]
+sub[pil[:FLOOR_TOP + 2]] = nk[:FLOOR_TOP + 2][pil[:FLOOR_TOP + 2]]; sub[hole[:FLOOR_TOP + 2], 3] = 0
+scene = Image.fromarray(sa, "RGBA")
+save(scene, "armoury_scene")   # full 1536 wrap: the whole pillar ends the picture, the wall starts the next copy
+HALL_S = 0.5
+hall = Image.open(os.path.join(SRC, "armoury_hall_view_gpt_1536x1024.png")).convert("RGBA")
+hall = hall.resize((round(1536 * HALL_S), round(1024 * HALL_S)), Image.LANCZOS)
+hm = np.zeros(hall.size[::-1], bool); hm[:] = True
+hall = Image.fromarray(match(np.asarray(hall), hm, hole & ~(np.arange(1024)[:, None] > FLOOR_TOP - 2)), "RGBA")
+save(hall, "armoury_hall")
+print("hall placement: x", round((xs.min() + xs.max()) / 2 - hall.width / 2), "y", N_DY + FLOOR_TOP - hall.height, "arch centre x", round((xs.min() + xs.max()) / 2))   # keep the arch + hall on the right whole
 # ---- road ----
 rk = np.asarray(key(Image.open(os.path.join(SRC, "armoury_layer_road_gpt_try1_1536x1024.png"))))
 rv = rk[..., 3] > 200; rv[:FLOOR_TOP + 6] = False
