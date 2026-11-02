@@ -4049,3 +4049,9 @@ Harley's 3 points:
 - So only its new roof is used (the top 193 + 130 rows), blended over 40 rows into the old far. The wall, shields and the hall through the arch stay as before.
 - The roof is colour-matched to the old far where both show the same thing (matching it to the grey wall made it washed out).
 - far is now 1276×880, baseY 908. Headless 430×932: roof beams fill up to about 37 pt from the top. The near's top edge (cut beams and chimney) still shows, so the near extend-up is next.
+
+## v1462 — Armoury: far extend-up try 2
+- v1461's roof blend wasn't good (Harley). New method: I made a canvas with the far already pushed down and blank white space on top. Harley filled it in a fresh GPT chat.
+- It came back as a near-exact copy (match 0.98), just 32 px higher, so the roof lines straight on from the wall. The new top is joined in an 80-row overlap and colour-matched to the old far.
+- far is now 1276×992, baseY 1020. Headless 430×932: the roof fills to the very top. Only the near's top edge is left (near extend-up, same canvas method).
+- **Use this canvas method for extend-ups from now on.** It beats asking GPT to move the layer itself.

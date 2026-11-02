@@ -39,7 +39,7 @@ ref = ~near_mask; ref[FLOOR_TOP - 5:] = False; ref[:, 1200:] = False          # 
 fsrc = fv.copy(); fsrc[:, 1200:] = False
 far = match(far, fsrc, ref)
 farI = Image.fromarray(far, "RGBA").crop((0, 0, 1536, FLOOR_TOP + 2))
-EXT_PATH = os.path.join(SRC, "armoury_far_ext_gpt_1536x1024.png"); EXT_DY, EXT_DX, JOIN = 193, 22, 130
+EXT_PATH = os.path.join(SRC, "armoury_far_ext2_gpt_1536x1024.png"); EXT_DY, EXT_DX, JOIN = 305, 0, 80   # try 2 (fresh chat, pre-shifted canvas): copy of the far 32 px up, match 0.98
 # Harley's far extend-up (2 Nov): the far moved down 193 / right 22 but partly redrawn (match 0.6: shields and banners moved), so only its
 # new roof on top is used; from row JOIN of the old far down (the wall, the shields behind the racks, the hall through the arch) stays as it was.
 if os.path.exists(EXT_PATH):
