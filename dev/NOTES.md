@@ -4043,3 +4043,9 @@ Harley's 3 points:
 - far: GPT drew it ~101 px low, shifted up. near: lines up 0,0, its right archway drawn complete, used whole. Floor: full depth, not squashed, walking line on the flagstones (road 68).
 - Racks/forge stand on the floor's back edge (baseY 715 at 0.34). Fight untouched. Lantern + forge glows flicker.
 - Headless 390×700: fills fine. 430×932: plain band above the roof beams -> needs Harley's extend-up passes (FAR_EXT / NEAR_EXT env vars in the build script are ready).
+
+## v1461 — Armoury: far extend-up (roof)
+- Harley's far extend-up came back moved down 193 / right 22 but partly redrawn (match 0.6, shields and banners in new spots). Using it whole doubled the shields/banners and lost the hall through the arch.
+- So only its new roof is used (the top 193 + 130 rows), blended over 40 rows into the old far. The wall, shields and the hall through the arch stay as before.
+- The roof is colour-matched to the old far where both show the same thing (matching it to the grey wall made it washed out).
+- far is now 1276×880, baseY 908. Headless 430×932: roof beams fill up to about 37 pt from the top. The near's top edge (cut beams and chimney) still shows, so the near extend-up is next.

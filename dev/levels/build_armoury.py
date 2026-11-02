@@ -39,10 +39,22 @@ ref = ~near_mask; ref[FLOOR_TOP - 5:] = False; ref[:, 1200:] = False          # 
 fsrc = fv.copy(); fsrc[:, 1200:] = False
 far = match(far, fsrc, ref)
 farI = Image.fromarray(far, "RGBA").crop((0, 0, 1536, FLOOR_TOP + 2))
-if FAR_EXT:
-    ext = np.asarray(Image.open(os.path.join(SRC, "armoury_far_ext_gpt_1536x1024.png")).convert("RGBA"))
-    ext = match(ext, np.ones(ext.shape[:2], bool) & (np.arange(1024)[:, None] < FAR_EXT + 300) & (np.arange(1536)[None] < 1200), ref)
-    farI = Image.fromarray(np.concatenate([ext[:FAR_EXT], np.asarray(farI)], 0), "RGBA")
+EXT_PATH = os.path.join(SRC, "armoury_far_ext_gpt_1536x1024.png"); EXT_DY, EXT_DX, JOIN = 193, 22, 130
+# Harley's far extend-up (2 Nov): the far moved down 193 / right 22 but partly redrawn (match 0.6: shields and banners moved), so only its
+# new roof on top is used; from row JOIN of the old far down (the wall, the shields behind the racks, the hall through the arch) stays as it was.
+if os.path.exists(EXT_PATH):
+    ext = np.asarray(key(Image.open(EXT_PATH)))
+    ext = np.concatenate([ext[:, EXT_DX:], np.repeat(ext[:, -1:], EXT_DX, 1)], 1)
+    old = np.asarray(farI).astype(np.float32)
+    # colour: match the roof to the (already matched) old far over the rows both show, not to the grey wall
+    lab_e = cv2.cvtColor(ext[..., :3], cv2.COLOR_RGB2LAB).astype(np.float32); lab_o = cv2.cvtColor(old[..., :3].astype(np.uint8), cv2.COLOR_RGB2LAB).astype(np.float32)
+    ov_e = lab_e[EXT_DY:EXT_DY + 300][ext[EXT_DY:EXT_DY + 300, :, 3] > 200]; ov_o = lab_o[:300][old[:300, :, 3] > 200]
+    e_m, e_s, o_m, o_s = ov_e.mean(0), ov_e.std(0) + 1e-3, ov_o.mean(0), ov_o.std(0); print("  roof LAB", np.round(e_m, 1), "->", np.round(o_m, 1))
+    ext = ext.copy(); ext[..., :3] = cv2.cvtColor(np.clip((lab_e - e_m) / e_s * o_s + o_m, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
+    top = ext[:EXT_DY + JOIN].astype(np.float32)
+    w = np.clip((np.arange(JOIN) - (JOIN - 40)) / 40.0, 0, 1)[:, None, None]       # 40-row blend into the old wall
+    top[EXT_DY:] = top[EXT_DY:] * (1 - w) + old[:JOIN] * w
+    farI = Image.fromarray(np.concatenate([top, old[JOIN:]], 0).astype(np.uint8), "RGBA"); print("far with roof", farI.size)
 save(seamless_cut(farI), "armoury_far")
 # ---- near ----
 nk = np.asarray(key(Image.open(os.path.join(SRC, "armoury_layer_near_gpt_try1_1536x1024.png"))))
