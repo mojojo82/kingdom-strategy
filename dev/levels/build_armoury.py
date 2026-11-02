@@ -126,7 +126,27 @@ full = a_[:, SEAM_B - 1 - j]
 roofband = a_[:, W2 - 1 - j] * (1 - wgt) + full * wgt                      # roof (above ~row 460): fade, the beams meet in a V
 rw = np.clip((np.arange(a_.shape[0]) - 460) / 20.0, 0, 1)[:, None, None]
 band = roofband * (1 - rw) + full * rw                                       # v1468 (Harley): wall below = a SOLID mirror of the picture's start
-wide = np.concatenate([wide, band.astype(np.uint8)], 1)
+WIDEN = os.path.join(SRC, "armoury_widen_gpt_1536x1024.png")
+if os.path.exists(WIDEN):
+    # v1469 (Harley: a horizontal extension for more variation): canvas = the scene's last 400 cols | white | its first 400 cols; GPT filled the
+    # middle (double door, workbench, shield rack, dummy), lining up 0,0 (match 0.91). The middle 736 cols go after the arch, replacing the mirror band.
+    gw = np.asarray(Image.open(WIDEN).convert("RGB"))[:992]; K = 400
+    lab_g = cv2.cvtColor(gw, cv2.COLOR_RGB2LAB).astype(np.float32)
+    sides = np.concatenate([wide[:, W2 - K:W2, :3], wide[:, :K, :3]], 1); gs = np.concatenate([gw[:, :K], gw[:, 1536 - K:]], 1)
+    ok = np.concatenate([wide[:, W2 - K:W2, 3], wide[:, :K, 3]], 1) > 200
+    lo = cv2.cvtColor(sides, cv2.COLOR_RGB2LAB).astype(np.float32)[ok]; lg = cv2.cvtColor(gs, cv2.COLOR_RGB2LAB).astype(np.float32)[ok]
+    gm, gsd, om, osd = lg.mean(0), lg.std(0) + 1e-3, lo.mean(0), lo.std(0); print("  widen LAB", np.round(gm, 1), "->", np.round(om, 1))
+    gw = cv2.cvtColor(np.clip((lab_g - gm) / gsd * osd + om, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
+    mid = np.dstack([gw[:, K:1536 - K], np.full((992, 1536 - 2 * K), 255, np.uint8)]).astype(np.float32)
+    BL = 24; t = ((np.arange(BL) + 0.5) / BL)[None, :, None]
+    left_g = np.dstack([gw[:, K - BL:K], np.full((992, BL), 255, np.uint8)]).astype(np.float32)
+    base = wide[:, :W2].astype(np.float32)
+    base[:, W2 - BL:W2] = np.where(base[:, W2 - BL:W2, 3:] > 200, base[:, W2 - BL:W2] * (1 - t) + left_g * t, base[:, W2 - BL:W2])   # into GPT near the arch
+    right_g = np.dstack([gw[:, 1536 - K:1536 - K + BL], np.full((992, BL), 255, np.uint8)]).astype(np.float32)
+    base[:, :BL] = np.where(base[:, :BL, 3:] > 200, right_g * (1 - t) + base[:, :BL] * t, base[:, :BL])                                 # back to the start
+    wide = np.concatenate([base, mid], 1).astype(np.uint8); print("widened to", wide.shape[1])
+else:
+    wide = np.concatenate([wide, band.astype(np.uint8)], 1)
 sa = wide; scene = Image.fromarray(sa, "RGBA"); print("scene (symmetrical arch)", scene.size, "lantern px", int(keep.sum()))
 save(scene, "armoury_scene")   # full 1536 wrap: the whole pillar ends the picture, the wall starts the next copy
 HALL_S = 0.5

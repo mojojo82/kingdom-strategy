@@ -4096,3 +4096,10 @@ Harley's 3 points:
 - Harley: don't blend the wall at the loop, draw it solid as a mirror piece. The wall rows of the 110-px loop band are now a solid mirror of the picture's start.
 - The result is a symmetric pair of banners and weapon racks either side of the stone edge pillar.
 - Roof rows still fade from the right edge into the mirror, so the beams meet in a V. Scene width 1686. Headless: no errors.
+
+## v1469 — Armoury: horizontal extension (more variation)
+- Harley asked for a horizontal extension. The canvas method again: the scene's last 400 cols | white gap | its first 400 cols. Harley's fresh GPT chat filled the gap with a new section: iron-banded double door, workbench with tools, shield and crossbow rack, training dummy, crates, one lantern.
+- It lines up 0,0 (match 0.91), and its colours are matched to the original sides.
+- The new 736 cols go straight after the arch, replacing the mirror band. There are 24-px blends at both joins.
+- Scene width is now 2312. A new lantern glow sits at [1948, 497]. Headless: no errors, scroll video sent.
+- **Canvas widening works**: it can be used on other levels to cut down repetition.
