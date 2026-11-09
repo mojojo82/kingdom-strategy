@@ -4214,3 +4214,13 @@ Harley's 3 points:
 - Her hero card now uses the GPT portrait, made to Harley's framing standard and zoomed in a bit more at his request (crop 720 px wide from the 1024x1536 keyed original). 360x480 webp, 61 KB. Originals are in art/originals/heroes/juno/card/.
 - Card animation, first try: H3 Max, 8 s, from a wider 1536x1024 start frame made in GPT. Saved as art/originals/heroes/juno/clips/juno_card_h3max_768_8s_v1.mp4. It came back mild (no real heroic pose), so it's not wired in. Waiting on Harley.
 - Headless: the Heroes screen shows her card, no errors.
+
+## v1479 — Juno's card video (TEST)
+- Built to Harley's card standard: she swings the cannon down into both hands and braces in a heroic pose, then the held pose loops. HERO_CARD_VIDEO.juno has loopStart 2.5 s, Epic purple baked in.
+- The clip:
+  - H3 Max 8 s, second try (the first was too tame). Original: art/originals/heroes/juno/clips/juno_card_h3max_768_8s_v2.mp4.
+  - New dev/heroes/build_card_video.py keys the magenta, bakes the rarity gradient, crops to the 5:4 card box and blends the last 24 frames into loopStart. Keyframe at loopStart.
+  - Output: art/heroes/juno/juno_card_v1.mp4, 800x640, 832 KB, kept as a separate file.
+- Card videos can now be files: hcVideoUrl fetches a file video into a blob: URL, so seeking back to loopStart works everywhere. The headless test server can't seek a plain file URL, and the same can happen on some phones or hosts.
+- Headless: the card opens, the video plays and loops 7.4 -> 2.9 s, no errors. Not checked on a phone.
+- Atlas: 2 runs of 8 s at $0.61 each. Balance $13.34.
