@@ -4250,3 +4250,9 @@ Harley's 3 points:
   - g285 / g286 pass. g287 fails on an old skill-name check (Crimson Tempest -> Crimson Oath since v1413), not from this.
   - Not checked on a phone.
 - Lessons are in the handover ("New-hero pipeline, lessons from Bram").
+
+## v1481 — Bram: closer card + card video (TEST)
+- Harley: his card video didn't play. The live site was still deploying v1480, and the video file 404'd until it landed. No code bug: Juno's file on the site plays fine.
+- Harley: both cards were too far out. New rule in the handover: when unsure, go closer, especially for a large character.
+  - Static card: re-cropped (740 px wide from the keyed portrait).
+  - Card video: re-cropped at zoom 1.38 centred on the held pose. build_card_video.py gained a CX argument. The intro's chimney top is trimmed, and the held pose fills the card. 828 KB.
