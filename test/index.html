@@ -12994,10 +12994,12 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1472"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1473"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
+var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
+  try { ksBootLocalSave = savedRaw ? JSON.parse(savedRaw) : null; } catch (e) {}
   if (savedRaw) {
     var saved = JSON.parse(savedRaw);
     game.loadState(saved);
@@ -13236,8 +13238,15 @@ function stateForOwnSave() {
   try { copy.power = game.governorPower(); } catch (e) {} /* v946: events check milestones against this on the server */
   return copy;
 }
-function cloudSyncNow(force) {
-  if (!cloudDb || cloudWriteInFlight || saveLoadFailed || !PLAYER_ID) return;
+/* v1473 (Harley: power dropped between logins on tomhector): a write was skipped while an earlier one was still uploading - including the
+   save when leaving the app - so the last moves before closing (a speed-up, finished troops) never reached the cloud, and the next login
+   loaded the older cloud save. Now: leaving the app (urgent) writes even while another write is uploading (one client's writes land in order),
+   and any other skipped write is redone as soon as the upload finishes. Every write carries _savedAt so a login can tell which save is newer. */
+var cloudWritePending = false;
+function saveStampNow() { return Date.now() + (ksClockSkew || 0); }
+function cloudSyncNow(force, urgent) {
+  if (!cloudDb || saveLoadFailed || !PLAYER_ID) return;
+  if (cloudWriteInFlight && !urgent) { cloudWritePending = true; return; }
   var json;
   try { json = JSON.stringify(stateForOwnSave()); } catch (e) { return; }
   if (!force && json === lastCloudWrittenJson) return; // nothing changed since the last cloud write — skip, per the "only when data changed" guidance
@@ -13251,13 +13260,15 @@ function cloudSyncNow(force) {
     return;
   }
   hideCloudSaveTooLargeWarning(); // fits again (or always did) — clear any stale warning from an earlier oversized cycle
-  cloudWriteInFlight = true;
+  cloudWriteInFlight = true; cloudWritePending = false;
   var body;
   try { body = JSON.parse(json); } catch (e) { cloudWriteInFlight = false; return; }
+  body._savedAt = saveStampNow(); body._owner = PLAYER_ID;
+  var myWrite = (cloudSyncNow._n = (cloudSyncNow._n || 0) + 1);
   cloudDb.doc(cloudSaveDoc()).set(body)
-    .then(function () { lastCloudWrittenJson = json; })
+    .then(function () { if (myWrite === cloudSyncNow._n) lastCloudWrittenJson = json; })
     .catch(function (e) { console.error("Cloud save write failed:", e && e.code, e && e.message); })
-    .then(function () { cloudWriteInFlight = false; });
+    .then(function () { if (myWrite !== cloudSyncNow._n) return; cloudWriteInFlight = false; if (cloudWritePending) { cloudWritePending = false; cloudSyncNow(false); } });
 }
 function showCloudSaveTooLargeWarning(bytes) {
   var el = document.getElementById("cloudSaveTooLargeBanner");
@@ -13294,8 +13305,14 @@ function hideCloudSaveTooLargeWarning() {
         // too, and the game crashes the instant anything tries to mutate
         // them (e.g. state.log.unshift() in log()). Clone breaks that link.
         var cloned = JSON.parse(JSON.stringify(snap.data()));
+        /* v1473: this device's own save wins if it belongs to this account and is newer than the cloud's - its last moves never reached the
+           cloud (the app closed mid-upload). Saves from before v1473 carry no stamp/owner, so they never win (old behaviour). */
+        var localNewer = null;
+        try { var ls = ksBootLocalSave; if (ls && ls._owner === PLAYER_ID && ls._savedAt > (cloned._savedAt || 0)) localNewer = ls; } catch (e) {}
+        if (localNewer) { console.warn("Using this device's newer save (" + Math.round((localNewer._savedAt - (cloned._savedAt || 0)) / 1000) + " s newer than the cloud)"); cloned = localNewer; }
         game.loadState(cloned);
         lastCloudWrittenJson = JSON.stringify(stateForOwnSave()); // matches what the cloud actually has RIGHT NOW, before the merge below — so if the merge changes anything, the next periodic sync correctly sees a diff and pushes it up, instead of mistaking the merge for "nothing changed"
+        if (localNewer) lastCloudWrittenJson = null; /* v1473: push the newer save up on the next sync */
         try { mergeLegacyHeroPosOffsets(); } catch (e) {} // now that cloud state is authoritative, merge in any legacy entry cloud never learned about — see mergeLegacyHeroPosOffsets' comment for the race this closes
         try { render(); } catch (e) {} // render() is defined later in this file but always exists by the time this promise resolves
         try { renderHeroPosOffsetControls(); } catch (e) {} // defined later in this file but always exists by the time this promise resolves — keeps Dev Tools sliders in sync if the panel happens to be open
@@ -30417,7 +30434,8 @@ function persist() {
   // game must not keep writing over that device's progress.
   if (!deviceIsActive) return;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(stateForOwnSave()));
+    var lsv = stateForOwnSave(); lsv._savedAt = saveStampNow(); if (PLAYER_ID) lsv._owner = PLAYER_ID; /* v1473: whose save, and when (see initCloudSave) */
+    localStorage.setItem(SAVE_KEY, JSON.stringify(lsv));
     // Separate tiny key, not part of game.state itself — kept out of the
     // save schema/export so it can't interfere with import/export or the
     // save-diffing tooling elsewhere in this file. Purely for the debug
@@ -37100,8 +37118,8 @@ var ksLastInput = 0, ksCloudSaveT = null;
 ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, function () { ksLastInput = Date.now(); }, true); });
 function cloudSaveSoon() { if (ksCloudSaveT) return; ksCloudSaveT = setTimeout(function () { ksCloudSaveT = null; if (cloudSyncReady) cloudSyncNow(false); }, 1500); }
 (function () { var basePersist = persist; persist = function () { var r = basePersist.apply(this, arguments); if (Date.now() - ksLastInput < 3000) cloudSaveSoon(); return r; }; })();
-document.addEventListener("visibilitychange", function () { if (document.hidden && cloudSyncReady) cloudSyncNow(false); });
-window.addEventListener("pagehide", function () { if (cloudSyncReady) cloudSyncNow(false); });
+document.addEventListener("visibilitychange", function () { if (document.hidden && cloudSyncReady) cloudSyncNow(false, true); }); /* v1473: urgent - never skipped */
+window.addEventListener("pagehide", function () { if (cloudSyncReady) cloudSyncNow(false, true); });
 try { var bootSid = game.state.serverId || (game.state.homeTileId ? LEGACY_SERVER_ID : null); if (bootSid) nearBasesSeed(bootSid); } catch (e) {} /* v1077: remembered nearby bases drawn in the very first frame, from the save on this device, before Firebase has even connected */
 render();
 if (mapMode === "world") startMarchAnim();

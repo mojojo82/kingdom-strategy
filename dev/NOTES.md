@@ -4123,3 +4123,19 @@ Harley's 3 points:
 - build_armoury2.py now tones the roof: colour strength x0.75 and contrast x0.85 around its own mean, fading out over rows 590-612 into the wall.
 - Every bay is rebuilt from the toned base. The module canvas is unchanged, so the modules' colour-match is the same. The wall, modules and floor are untouched.
 - Headless: no errors, 59 fps.
+
+## v1473 — Fix: progress (and power) lost between logins
+- Harley: tomhector's power was lower on login, twice, after sessions of engine-room speed-ups, troops and research.
+- Cause: a cloud save was skipped while an earlier one was still uploading. That included the save made when leaving the app. So the last moves before closing never reached the cloud, and the next login always loaded the cloud save over the newer one on the phone.
+- Reproduced headless with a slow (phone-like) save upload: left the app at 150,000 power, logged back in at 84,000 (lost troops), no error shown.
+- Fix:
+  - Leaving the app now always writes (one client's writes land in order).
+  - Any other skipped write is redone as soon as the upload finishes.
+  - Every save (cloud and phone) carries `_savedAt` and `_owner`. On login, this phone's own save (snapshotted when the page opens, before the 1 s autosave rewrites it) wins if it belongs to the same account and is newer than the cloud's. Then it is pushed up.
+  - Saves from before v1473 have no stamp, so they never win (old behaviour).
+- Headless checks:
+  - The repro now keeps 150,000.
+  - App killed mid-upload (nothing reaches the cloud): the phone's newer save is kept (1500, not 1000).
+  - Another device played later: its save wins (1700).
+  - Switching accounts on one phone: B never gets A's save.
+- Not covered: progress already lost on tomhector can't be brought back. Things that also lower power on purpose: troops being promoted (they count again when done), troops out marching, wounded troops.
