@@ -4113,3 +4113,7 @@ Harley's 3 points:
 - The floor alt can now carry its own road/top (`floorEff`) and follow a layer's alt (`withLayer`), so the modular floor switches with the scene. Walking line road 87: the same share of the flagstone surface as v1469. The floor is not squashed and the heroes are not moved.
 - Dev Tools: Armoury "Scene version" -> Modular (test). Headless: no errors, 60 fps, scrolled through every bay.
 - Open for Harley: scene scale. At 0.34 (same as v1469) the wall band is short and the roof fills the screen. 0.42 / 0.5 make the wall and modules bigger (floor unchanged).
+
+## v1471 — Modular armoury at 0.5 scale
+- Harley picked the 0.5 scale ("looks better because there's less room"). The modular Scene is now scale 0.5, with baseY 978 so the wall still meets the floor's back edge. The floor and the fight are unchanged.
+- Headless: no errors, 59 fps.
