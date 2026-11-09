@@ -6,7 +6,7 @@
 const fs = require("fs"), path = require("path");
 const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
-const SEEDS = +arg("seeds", 20), EXTRA = JSON.parse(arg("cfg", "{}")), HD = arg("hd", null), CD = arg("cd", null), ICD = arg("icd", null), STEPSARG = arg("steps", null), ALL3 = process.argv.includes("--all3"), JSONOUT = arg("json", null), CENTER = arg("center", null), INN = arg("innate", null), SLOPE = +arg("slope", 0.08); /* per-row weight 1 + row x slope (game: 0.08; negative = front-loaded) */ /* --center hp:0.5 = the centre lane becomes that stat with that total; --innate dmgRed:0.1 = extra innate */ /* knobs: tree totals hero dmg / cooldown, innate cooldown */
+const SEEDS = +arg("seeds", 20), EXTRA = JSON.parse(arg("cfg", "{}")), HD = arg("hd", null), CD = arg("cd", null), ICD = arg("icd", null), STEPSARG = arg("steps", null), ALL3 = process.argv.includes("--all3"), JSONOUT = arg("json", null), CENTER = arg("center", null), INN = arg("innate", null), SLOPE = +arg("slope", 0.08), I1C = arg("i1cannon", null); /* --i1cannon 0.25 = Fortress I innate cannon bonus */ /* per-row weight 1 + row x slope (game: 0.08; negative = front-loaded) */ /* --center hp:0.5 = the centre lane becomes that stat with that total; --innate dmgRed:0.1 = extra innate */ /* knobs: tree totals hero dmg / cooldown, innate cooldown */
 worker();
 async function worker() {
   const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -26,7 +26,8 @@ async function worker() {
   await P.fill("#ksE", "bal" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 20000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => setScreen("city"));
-  const res = await P.evaluate(({ SEEDS, HD, CD, ICD, STEPSARG, ALL3, CENTER, INN, SLOPE }) => {
+  const res = await P.evaluate(({ SEEDS, HD, CD, ICD, STEPSARG, ALL3, CENTER, INN, SLOPE, I1C }) => {
+    if (I1C != null) FORTRESS1_INNATE_CANNON = +I1C;
     const tot = { heroDmg: HD != null ? +HD : FORTRESS2_TOTAL.heroDmg, cdr: CD != null ? +CD : FORTRESS2_TOTAL.cdr };
     if (CENTER) { const [cs, ct] = CENTER.split(":"); tot[cs] = +ct; Object.keys(FORTRESS2_TREE).forEach((k) => { const d = FORTRESS2_TREE[k]; if (d.col === 1) d.stat = cs; }); }
     const ws = {}; Object.keys(FORTRESS2_TREE).forEach((k) => { const d = FORTRESS2_TREE[k]; ws[d.stat] = (ws[d.stat] || 0) + d.maxLevel * Math.max(0.1, 1 + d.row * SLOPE); });
@@ -65,7 +66,7 @@ async function worker() {
       out.push(row);
     }
     return { out, sc: SC.map((s) => s[0]) };
-  }, { SEEDS, HD, CD, ICD, STEPSARG, ALL3, CENTER, INN, SLOPE });
+  }, { SEEDS, HD, CD, ICD, STEPSARG, ALL3, CENTER, INN, SLOPE, I1C });
   console.log("\nFORTRESS II vs I and vs III, equal research spent on each tree (" + SEEDS + " seeds x both orders). Numbers = Fortress II win %.");
   console.log("  spent     lv I/II/III | vs I: " + res.sc.map((s, i) => "S" + (i + 1)).join("   ") + " | vs III: " + res.sc.map((s, i) => "S" + (i + 1)).join("   "));
   res.out.forEach((r) => console.log("  " + (r.spend >= 1e6 ? (r.spend / 1e6) + "M" : Math.round(r.spend / 1e3) + "k").padEnd(8) + r.lv.join("/").padStart(12) + " | " + r.vs1.map((x) => (x + "%").padStart(4)).join(" ") + " | " + r.vs3.map((x) => (x + "%").padStart(4)).join(" ") + "   II: " + r.f2));
