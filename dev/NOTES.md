@@ -4103,3 +4103,13 @@ Harley's 3 points:
 - The new 736 cols go straight after the arch, replacing the mirror band. There are 24-px blends at both joins.
 - Scene width is now 2312. A new lantern glow sits at [1948, 497]. Headless: no errors, scroll video sent.
 - **Canvas widening works**: it can be used on other levels to cut down repetition.
+
+## v1470 — Armoury: modular rebuild (test version, v1469 stays the default)
+- Plain base: brightness pass in the same GPT chat (wall L 94, v1469 is 95), GPT road (lines up 0,0), extend-up roof (fresh chat, canvas = base pushed down 305). All banked in art/originals/backgrounds (armoury2_*).
+- Seamless base (dev/levels/build_armoury2.py): one bay = left pillar centre to right pillar centre, 1381 px. The right pillar's left half is a solid copy of the left pillar's, so every join is one whole real pillar (no wall blending). The roof is colour-matched to the base. The road is colour-matched to the base floor and drawn at full depth, 2x.
+- Modules: canvas = one bay with ONLY the plain wall white (dev/levels/make_armoury2_module_canvas.py). One fresh GPT chat each, with the full prompt in PROMPTS.md: forge, weapons and armour, windows, big door, passage. The passage was redone in the same chat because the first arch was cut off flat at the top. Two options were banked for forge and door; A is used for both.
+- dev/levels/build_armoury2_modules.py puts the roof, pillars and edges back from the original bay, so modules snap in any order. It takes only GPT's white area, colour-matched. The passage's magenta becomes the see-through opening. It also finds glow spots (forge coals, door torches).
+- Game: the Scene layer gets an `alt` "Modular (test)" with a new `strip` option: `{ bw, order: [...], mods, peeks, glows }`. The scene is the bays in `order`, repeated. Default order: plain, forge, weapons, plain, windows, door, plain, passage. The passage shows the v1469 hall view behind it via a per-module peek.
+- The floor alt can now carry its own road/top (`floorEff`) and follow a layer's alt (`withLayer`), so the modular floor switches with the scene. Walking line road 87: the same share of the flagstone surface as v1469. The floor is not squashed and the heroes are not moved.
+- Dev Tools: Armoury "Scene version" -> Modular (test). Headless: no errors, 60 fps, scrolled through every bay.
+- Open for Harley: scene scale. At 0.34 (same as v1469) the wall band is short and the roof fills the screen. 0.42 / 0.5 make the wall and modules bigger (floor unchanged).

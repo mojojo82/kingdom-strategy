@@ -64,3 +64,5 @@ for path in sorted(glob.glob(os.path.join(SRC, "armoury2_mod_*_gpt_1536x1024.png
         d["glows"] = [[int(cen[i][0]), int(cen[i][1]), int(max(16, min(52, max(st[i][2], st[i][3]) // 2 + 10)))] for i in range(1, n) if hot[lb == i].sum() > 100]
         info[game] = d; print("  ->", game, d)
 json.dump(info, open(os.path.join(FULL, "armoury2_modules.json"), "w"), indent=1)
+
+# The hall seen through the passage reuses art/levels/armoury_hall.webp (the v1469 view): the new wall is as bright as the old one (L 94 vs 95).

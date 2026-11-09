@@ -131,8 +131,10 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
     Only the hall seen through the arch moves: the new `peek` layer option (see NOTES v1465).
   - **IN PROGRESS: modular armoury rebuild** (Harley, 2 Nov). A plain wall base that loops on its own, plus "modules" made with the widen canvas (plain wall | white gap | plain wall; GPT fills the gap): forge, weapon racks/armour, windows, a big closed door, a passageway with its own peek.
     - Any order snaps together. The code would draw the scene as a strip of modules from a list in the level config (not written yet).
-    - Status: the plain base try 1 is banked as `art/originals/backgrounds/armoury2_base_composite_1536x1024.png`. Its layout and looping edges are perfect, but it is far too dark (wall L 31 vs 95 for the old armoury).
-    - NEXT: the brightness prompt in the same ChatGPT chat (in dev/levels/PROMPTS.md). Then the road, the extend-up canvas, making the base seamless, the module canvases, and the module-strip code.
+    - Status (v1470, 9 Nov): DONE - brightness, road, extend-up, seamless base (build_armoury2.py), module canvas + 5 modules (forge, weapons, windows, door, passage; build_armoury2_modules.py), and the module-strip code (layer `strip`, see NOTES v1470). It is the armoury Scene layer's alt "Modular (test)" in Dev Tools; the floor follows it.
+    - NEXT: Harley checks it on his phone; decide the scene scale (0.34 = v1469's; the wall band looks short, 0.42-0.5 tried headless) and the bay order. Then make it the default (or drop it). After that: chapter 15, the throne room.
+    - New modules: run make_armoury2_module_canvas.py, fresh GPT chat with the canvas + the PROMPTS.md module prompt, bank as armoury2_mod_<name>_gpt_1536x1024.png, add it to USE in build_armoury2_modules.py, run it, stamp, add to strip.mods/order.
+    - Getting GPT images: the built-in browser downloads them to Harley's Downloads (he granted access) - they land as *.tmp files with the right size; stage the .tmp and copy it into the repo. Attach canvases to ChatGPT by loading the committed PNG from raw.githubusercontent.com as an <img crossOrigin> (fetch is blocked by ChatGPT's CSP) and pasting it as a File.
     - Keep v1469 until the modular one is better.
   - **Interior lessons (Harley, Nov):**
     - An interior is ONE plane: walls, racks, forge and beams move together. Only what you see THROUGH an opening (arch, door, passage) moves, via `peek`. Don't split interiors into far/near parallax.

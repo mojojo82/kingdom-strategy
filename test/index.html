@@ -12994,7 +12994,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1469"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1470"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 try {
   var savedRaw = localStorage.getItem(SAVE_KEY);
@@ -26828,7 +26828,8 @@ function tmpBgImg(d) { var im = new Image(); im.src = d; return im; }
    it right), so a changed picture is re-downloaded and an unchanged one comes from the phone's cache. Until a level's art arrives, its own colours show. */
 var LEVEL_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/levels/" : "art/levels/";
 function levelArt(file, h) { var im = new Image(); im._lazySrc = LEVEL_ART_BASE + file + "?h=" + h; return im; }
-function levelArtImgs(cfg) { var a = []; if (cfg.floor) { a.push(cfg.floor.img); if (cfg.floor.alt) a.push(cfg.floor.alt.img); } (cfg.layers || []).forEach(function (L, i) { a.push(L.img); if (L.alt && layerUsesAlt(cfg._env, i, L)) a.push(L.alt.img); (L.fxImgs || []).forEach(function (im) { a.push(im); }); if (L.peek) a.push(L.peek.img); }); return a; }
+function stripImgs(L) { var a = []; if (L && L.strip) { var S = L.strip; Object.keys(S.mods || {}).forEach(function (k) { a.push(S.mods[k]); }); Object.keys(S.peeks || {}).forEach(function (k) { a.push(S.peeks[k].img); }); } return a; } /* v1470 */
+function levelArtImgs(cfg) { var a = []; if (cfg.floor) { a.push(cfg.floor.img); if (cfg.floor.alt) a.push(cfg.floor.alt.img); } (cfg.layers || []).forEach(function (L, i) { a.push(L.img); if (L.alt && layerUsesAlt(cfg._env, i, L)) { a.push(L.alt.img); a = a.concat(stripImgs(L.alt)); } (L.fxImgs || []).forEach(function (im) { a.push(im); }); if (L.peek) a.push(L.peek.img); }); return a; }
 function ensureLevelArt(env) {
   var cfg = TMP_ENV_BG[env]; if (!cfg) return true;
   if (cfg._artReady) return true;
@@ -26850,7 +26851,7 @@ function ensureLevelArt(env) {
 var levelArtPicked = null, levelArtKeepSig = "";
 function releaseLevelArt(env) {
   var cfg = TMP_ENV_BG[env]; if (!cfg) return;
-  levelArtImgs(cfg).concat((cfg.layers || []).filter(function (L) { return L.alt; }).map(function (L) { return L.alt.img; })).forEach(function (im) { if (!im || !im._lazySrc || !im._asked) return; im.onerror = null; im.removeAttribute("src"); im._asked = 0; });
+  levelArtImgs(cfg).concat((cfg.layers || []).filter(function (L) { return L.alt; }).reduce(function (a, L) { return a.concat([L.alt.img], stripImgs(L.alt)); }, [])).forEach(function (im) { if (!im || !im._lazySrc || !im._asked) return; im.onerror = null; im.removeAttribute("src"); im._asked = 0; });
   cfg._artReady = false;
   (cfg.layers || []).concat(cfg.floor ? [cfg.floor] : [], cfg.floor && cfg.floor.alt ? [cfg.floor.alt] : []).forEach(function (L) { L._soft = null; if (L.alt) L.alt._soft = null; });
 }
@@ -26973,8 +26974,19 @@ var TMP_ENV_BG = {
   /* v1460 (Harley, 2 Nov): the armoury & forge (chapter 14) - his ChatGPT composite, built by dev/levels/build_armoury.py. Floor at full depth
      (not squashed), every GPT layer colour-matched to the composite; the walking line sits on the flagstones (road 68) and the racks/forge
      stand on the floor's back edge (baseY 715). The fight is untouched. Lanterns and the forge flicker. */
-  armoury: { flat: "#2e2622", shadows: true, floor: { img: levelArt("armoury_road.webp", "9665edc361"), k: 0.21 / 185.76, road: 68, top: 8, upx: 2, fill: "#3a2a24" }, layers: [
-    { name: "Scene", img: levelArt("armoury_scene.webp", "a7d951725a"), ow: 2312, oh: 992, baseY: 1020, scale: 0.34 / 185.76, lift: 2.5, speed: 0.5, peek: { img: levelArt("armoury_hall.webp", "c9d3293824"), x: 1004, y: 478, w: 768, h: 512, ax: 1388, k: 0.25, max: 260 }, glows: [[178, 510, 18], [690, 563, 18], [1196, 587, 18], [1473, 645, 14], [975, 850, 42], [1948, 497, 18]] }
+  armoury: { flat: "#2e2622", shadows: true, floor: { img: levelArt("armoury_road.webp", "9665edc361"), k: 0.21 / 185.76, road: 68, top: 8, upx: 2, fill: "#3a2a24",
+      /* v1470: the modular armoury's own floor - deeper flagstones (full depth, not squashed), walking line at the same share of the top surface as v1469 */
+      alt: { name: "Modular floor (test)", img: levelArt("armoury2_road.webp", "77e888b580"), road: 87, top: 4, withLayer: 0 } }, layers: [
+    { name: "Scene", img: levelArt("armoury_scene.webp", "a7d951725a"), ow: 2312, oh: 992, baseY: 1020, scale: 0.34 / 185.76, lift: 2.5, speed: 0.5, peek: { img: levelArt("armoury_hall.webp", "c9d3293824"), x: 1004, y: 478, w: 768, h: 512, ax: 1388, k: 0.25, max: 260 }, glows: [[178, 510, 18], [690, 563, 18], [1196, 587, 18], [1473, 645, 14], [975, 850, 42], [1948, 497, 18]],
+      /* v1470 (Harley, 2 Nov / 9 Nov): the MODULAR armoury - test version (Dev Tools "Scene version"; its floor follows). A plain looping bay
+         (pillar to pillar) plus module bays painted into the same bay, so they snap together in any order: the scene is the strip of bays in
+         strip.order. dev/levels/build_armoury2.py + build_armoury2_modules.py. The hall behind the passage slides via the module's peek. */
+      alt: { name: "Modular (test)", img: levelArt("armoury2_bay_plain.webp", "74e663d37c"), ow: 1381, oh: 950, baseY: 992, scale: 0.34 / 185.76, lift: 2.5,
+        strip: { bw: 1381, order: ["plain", "forge", "weapons", "plain", "windows", "door", "plain", "passage"],
+          mods: { forge: levelArt("armoury2_bay_forge.webp", "2a517eef5c"), weapons: levelArt("armoury2_bay_weapons.webp", "5f0047491c"), windows: levelArt("armoury2_bay_windows.webp", "10b5b0b89c"),
+            door: levelArt("armoury2_bay_door.webp", "5f5c3a1ba0"), passage: levelArt("armoury2_bay_passage.webp", "954b833ecd") },
+          peeks: { passage: { img: levelArt("armoury_hall.webp", "c9d3293824"), x: 299, y: 438, w: 768, h: 512, ax: 683, k: 0.25, max: 120 } },
+          glows: { forge: [[655, 825, 42]], door: [[244, 693, 20], [1135, 698, 20]] } } } }
   ] },
   // v561: the gloomy grey day level uses the night-village set over its existing sky.
   /* v1262 (Harley): the village gets its own cobblestone road. k = size relative to groundY, road = the image row (in source px) that sits on the ground line */
@@ -26996,7 +27008,9 @@ function setLayerSoft(env, i, m) { if (m) layerSoftOverride[env + ":" + i] = m; 
 /* v1305 (Harley: "lets make the cave have 2 ground versions"): a floor can carry alt: { name, img } - Dev Tools "Ground version" picks
    Original / the alt (this device; the level's own pick is floor.useAlt). */
 var floorAltPick = (function () { try { return JSON.parse(localStorage.getItem("kingdom_floor_alt_v1") || "{}") || {}; } catch (e) { return {}; } })();
-function floorUsesAlt(env, F) { return !!(F && F.alt) && (floorAltPick[env] != null ? !!floorAltPick[env] : !!F.useAlt); }
+function floorUsesAlt(env, F) { if (!(F && F.alt)) return false; if (F.alt.withLayer != null) { var c = TMP_ENV_BG[env], Lw = c && c.layers[F.alt.withLayer]; return layerUsesAlt(env, F.alt.withLayer, Lw); } return floorAltPick[env] != null ? !!floorAltPick[env] : !!F.useAlt; }
+/* v1470: a floor alt may carry its own road / top / k / fill (the modular armoury's deeper floor), and may follow a layer's alt (withLayer = layer index) */
+function floorEff(env, F) { if (!F || !floorUsesAlt(env, F) || F.alt.road == null || !F.alt.img.naturalWidth) return F; var A = F.alt; return { k: A.k != null ? A.k : F.k, road: A.road, top: A.top != null ? A.top : F.top, fill: A.fill || F.fill }; }
 function setFloorAlt(env, on) { floorAltPick[env] = on ? 1 : 0; try { localStorage.setItem("kingdom_floor_alt_v1", JSON.stringify(floorAltPick)); } catch (e) {} renderDevLayerSoft(true); }
 /* v1339: a scenery LAYER can carry alt: { name, img, ow, oh, baseY, scale, lift } too - Dev Tools "<layer> version" picks Original / alt on this
    device only (default = Original). First use: the graveyard's Leonardo near layer test. */
@@ -27107,7 +27121,7 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
   ctx.save();
   var skyT = -(idleAnim.skyPx || 0); /* v1262: the taller Conquest screen - negative y is the extra sky above the old top edge */
   var bgBot = groundY + 4; /* v1264 (Harley circled the gap): on a level with its own road, the backdrop reaches down to where the road's stones start */
-  if (cfg.floor && cfg.floor.img.naturalWidth && !groundTilesHidden) bgBot = groundY + (cfg.floor.top - cfg.floor.road) * groundY * cfg.floor.k + 1;
+  if (cfg.floor && cfg.floor.img.naturalWidth && !groundTilesHidden) { var FE = floorEff(cfg._env, cfg.floor); bgBot = groundY + (FE.top - FE.road) * groundY * FE.k + 1; }
   ctx.beginPath(); ctx.rect(0, skyT, w, bgBot - skyT); ctx.clip(); // v566: backdrop layers stop at the ground line (reverted from v565)
   if (cfg.flat) { ctx.fillStyle = cfg.flat; ctx.fillRect(0, skyT, w, bgBot - skyT); }
   ctx.imageSmoothingEnabled = true;
@@ -27128,6 +27142,7 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
       }
       return;
     }
+    if (L.strip) { drawModuleStrip(ctx, cfg._env, li, L, im, s, top, w); return; } /* v1470: the modular armoury */
     if (L.peek && L.peek.img.complete && L.peek.img.naturalWidth) { /* v1465 (Harley): the view through an opening (the armoury's arch) - drawn behind the
        layer, tied to the opening so it lines up every time it comes round, and slid by how far the opening is from the screen's middle (k) */
       var P = L.peek;
@@ -27193,6 +27208,22 @@ function drawWaterFx(ctx, L, x0, top, s, w) {
   }
 }
 /* v1448: warm flicker on lanterns painted into a layer - [x, y, radius] in the layer's own source px */
+/* v1470 (Harley): a layer made of bays - strip.order lists them left to right, every bay is strip.bw source px wide (the plain bay is the
+   layer's own img; the rest are strip.mods). The whole strip repeats. A module with a peek shows a picture behind its opening, tied to the
+   opening and slid by how far it is from the screen's middle (same as v1465's peek). Module glows flicker like the lanterns. */
+function drawModuleStrip(ctx, env, li, L, plainIm, s, top, w) {
+  var S = L.strip, bw = S.bw * s, n = S.order.length, tw = bw * n, th = L.oh * s, x0 = -((idleAnim.bgOffsetFar * L.speed) % tw);
+  var Ls = S._L || (S._L = {});
+  for (var xr = x0; xr < w; xr += tw) for (var i = 0; i < n; i++) {
+    var bx = xr + i * bw; if (bx > w || bx + bw < 0) continue;
+    var key = S.order[i], im = plainIm, mod = key !== "plain" && S.mods[key];
+    if (mod) { if (!mod.complete || !mod.naturalWidth) im = plainIm; else { var M = Ls[key] || (Ls[key] = { img: mod, soft: L.soft, upx: L.upx }); im = layerImgFor(env, li, M); } }
+    var P = mod && im !== plainIm && S.peeks && S.peeks[key];
+    if (P && P.img.complete && P.img.naturalWidth) { var ax = bx + P.ax * s, off = Math.max(-P.max * s, Math.min(P.max * s, (w / 2 - ax) * P.k)); ctx.drawImage(P.img, bx + P.x * s + off, top + P.y * s, P.w * s, P.h * s); }
+    ctx.drawImage(im, bx, top, bw + 1, th);
+    if (im !== plainIm && S.glows && S.glows[key]) drawLayerGlows(ctx, S.glows[key], bx, top, s);
+  }
+}
 function drawLayerGlows(ctx, glows, x0, top, s) {
   var t = performance.now() / 1000; ctx.save(); ctx.globalCompositeOperation = "lighter";
   glows.forEach(function (g, i) {
@@ -27297,8 +27328,8 @@ function drawIdleAnim(ctx, w, h) {
   var groundImg = getGroundTileImg(), envFloor = tmpRainBg && tmpRainBg.floor && !groundTilesHidden && tmpRainBg.floor.img.complete && tmpRainBg.floor.img.naturalWidth ? tmpRainBg.floor : null;
   var groundFiltered = !envFloor && !groundTilesHidden && groundImg && groundImg.complete && groundImg.naturalWidth ? getGroundTileFiltered() : null; // v564: Dev Tools can hide both ground layers
   if (envFloor) { /* v1262: the level's own road, scrolling with the near background */
-    var fI = floorImgFor(currentEnv, envFloor) /* v1302 sharpness + v1305 ground version */, fS = groundY * envFloor.k, fW = fI.width * fS, fH = fI.height * fS, fT = groundY - envFloor.road * fS;
-    ctx.fillStyle = envFloor.fill; ctx.fillRect(0, fT + envFloor.top * fS, w, h - fT - envFloor.top * fS); /* v1264: dark fill only under the stones (was from the ground line = the gap) */
+    var FE = floorEff(currentEnv, envFloor) /* v1470: the alt floor's own road/top */, fI = floorImgFor(currentEnv, envFloor) /* v1302 sharpness + v1305 ground version */, fS = groundY * FE.k, fW = fI.width * fS, fH = fI.height * fS, fT = groundY - FE.road * fS;
+    ctx.fillStyle = FE.fill; ctx.fillRect(0, fT + FE.top * fS, w, h - fT - FE.top * fS); /* v1264: dark fill only under the stones (was from the ground line = the gap) */
     for (var fX = -(idleAnim.bgOffsetFar % fW); fX < w; fX += fW) ctx.drawImage(fI, fX, fT, fW + 1, fH);
     if (currentEnv === "rain" && rainSplashOn()) drawRainSplashes(ctx, w, fT + envFloor.top * fS, (envFloor.road - envFloor.top) * fS * 2.4); /* v1303: random little splashes on the wet path */
   } else if (tmpRainBg && tmpRainBg.floor && !groundTilesHidden) { /* v1315: this level's road is still on its way - its dark ground colour, not the village tiles */
