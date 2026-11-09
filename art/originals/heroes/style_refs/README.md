@@ -1,7 +1,7 @@
 # Hero style references (Harley, 10 Nov 2026)
 
 Attach these to ChatGPT when designing a NEW hero. They set the **style**, not the design:
-chunky stylised 3D, big heads / expressive faces, clean readable shapes, gold-trimmed gear, full body, plain light or magenta background.
+2D game art with a slight "3D" rendered look (soft shading and volume, like a stylised 3D render, but it is still 2D character art - Harley), chunky proportions, big heads / expressive faces, clean readable shapes, full body, plain light or magenta background.
 
 Design rules from Harley:
 - Design is free - whatever suits the hero. It's a fantasy game with heavy technology, so heroes don't have to be strictly fantasy / D&D.
