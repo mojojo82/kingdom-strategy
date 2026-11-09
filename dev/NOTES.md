@@ -4172,3 +4172,10 @@ Harley's 3 points:
   - New g255_fortress2: tree, cost, power, bonus, Arena side stats, card 10, Conquest cooldown, pickers, research lane, reload.
   - g242 updated for the 4th Warfare card. g253 / g254 pass.
   - g243 fails the same way on v1473 (formation pick count - the Formations screen changed earlier), not from this.
+
+## v1475 — Formations: painted I / II / III fortress picker
+- Harley picked numerals over icons, with the chosen third lit blue and the numeral staying gold (the same as unselected).
+- The art is built from the old pick1 / pick3 pieces (rim, cyan, dark) by art/originals/ui/formations_gpt/pick3way.py (+ pick3way_base.py). Originals are in pieces/pickR1-3.png, embedded in FMG_ART as pickR1-3 (webp). The old pick1 / pick3 are dropped from FMG_ART.
+- The v1474 plain-button stopgap is removed: the button labels are stripped again and the numerals are in the art.
+- Also removed: the Formations screen's own "I" / "III" text labels, left over from the 2-way picker. They drew on top of the new art as stray white marks.
+- Headless: Formations screenshot clean; formation 3 switched to III by tap (types [2,2,3,2]). g255 / g242 pass.
