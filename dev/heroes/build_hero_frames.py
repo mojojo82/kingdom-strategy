@@ -14,7 +14,11 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 SHEETS = "--sheets" in sys.argv; sys.argv = [a for a in sys.argv if a != "--sheets"]
 HERO = sys.argv[1]; STAND = float(sys.argv[2]) if len(sys.argv) > 2 else 96
 CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "attack": ("juno_attack_h3max_768_5s_v1.mp4", 170, 90)},
-                "stand_src": 580, "feet_y": 681}}[HERO]
+                "stand_src": 580, "feet_y": 681},
+       # v1480 Bram (melee): the attack clip came from a smaller start frame, so every clip is measured on its own (meta.json, see below)
+       "bram": {"clips": {"idle": ("bram_idle_h3max_768_5s_v1.mp4", 0, 0), "run": ("bram_run_h3max_768_5s_v1.mp4", 0, 0), "attack": ("bram_attack_h3max_768_5s_v3.mp4", 0, 0)},
+                "stand_src": 427, "feet_y": 679}}[HERO]
+META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
 os.makedirs(OUT, exist_ok=True)
 def ss(t): t = np.clip(t, 0, 1); return t * t * (3 - 2 * t)
@@ -48,6 +52,9 @@ for clip, (fn, FR, FT) in CFG["clips"].items():
     frames = []
     for i, f in enumerate(sorted(glob.glob(os.path.join(tmp, "*.png")))):
         im = Image.fromarray(key(np.asarray(Image.open(f).convert("RGB")), FR, FT), "RGBA")
+        if i == 0:
+            A = np.asarray(im.getchannel("A")) > 128; rows = np.nonzero(A.sum(1) > 12)[0]; fy = int(rows.max())
+            xs0 = np.nonzero(A[fy - 30:fy].any(0))[0]; META[clip] = {"stand": int(rows.max() - rows.min()), "feet_y": fy, "feet_x": float((xs0.min() + xs0.max()) / 2)}
         if feet_x is None:   # body centre at the feet line in the very first frame (the start frame)
             al = np.asarray(im.getchannel("A"))[CFG["feet_y"] - 40:CFG["feet_y"]] > 128; xs = np.nonzero(al.any(0))[0]; feet_x = (xs.min() + xs.max()) / 2
         im.save(os.path.join(large, "%04d.webp" % i), "WEBP", quality=90, method=4)
@@ -60,7 +67,8 @@ for clip, (fn, FR, FT) in CFG["clips"].items():
         # [sheet, sx, sy, w, h, dx, dy]: draw at (feetX + dx, feetY + dy) in sheet px, facing right
         frames.append([len(sheets) - 1, x, y, w, h, round((bb[0] - feet_x) * k, 2), round((bb[1] - CFG["feet_y"]) * k, 2)])
         x += w + PAD; rowh = max(rowh, h); sheets[-1][1] = max(sheets[-1][1], y + rowh)
-    man["clips"][clip] = frames; print(clip, len(frames), "frames")
+    man["clips"][clip] = frames; print(clip, len(frames), "frames", META.get(clip))
+    json.dump(META, open(os.path.join(HD, "large", "meta.json"), "w"), indent=1)
 if not SHEETS: sys.exit(0)
 files = []
 for i, (sh, uh) in enumerate(sheets):
