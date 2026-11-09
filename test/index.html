@@ -8538,7 +8538,7 @@ function createGame(opts) {
   function idleBossName() { return BOSS_NAMES[(idleDispChapter() - 1) % BOSS_NAMES.length]; }
   // Background environment cycles every chapter (every 10 levels: 1-1..1-10 is one
   // environment, 2-1..2-10 the next, and so on), wrapping back to day after rain.
-  var IDLE_ENVIRONMENTS = ["day", "night", "snow", "rain", "cave", "crystal", "volcano", "desert", "foundry", "castlegate", "stream", "pineforest", "greathall", "armoury"]; /* v1460: + armoury (14);  v1458: + great hall (13);  v1454: + pine forest (12);  v1442: + desert ruins (chapter 8); v1446: + clockwork foundry (9); v1448: + castle gate (10); v1449: + rocky stream (11) */ /* v1304: + the sunlit cavern (journey order comes later) */
+  var IDLE_ENVIRONMENTS = ["day", "night", "snow", "rain", "cave", "crystal", "volcano", "desert", "foundry", "castlegate", "stream", "pineforest", "greathall", "armoury", "swamp"]; /* v1482: + misty swamp (15); v1460: + armoury (14);  v1458: + great hall (13);  v1454: + pine forest (12);  v1442: + desert ruins (chapter 8); v1446: + clockwork foundry (9); v1448: + castle gate (10); v1449: + rocky stream (11) */ /* v1304: + the sunlit cavern (journey order comes later) */
   function idleEnvironmentFor(chapter) { return IDLE_ENVIRONMENTS[(chapter - 1) % IDLE_ENVIRONMENTS.length]; }
   function idleEnvironment() { return idleEnvironmentFor(idleDispChapter()); }
   // v749: a level is several HORDES (groups of weak enemies arriving together) followed by the boss
@@ -13079,7 +13079,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1481"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1482"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23739,7 +23739,7 @@ function stepIdleAnim(dtSec, w, h) {
   // Lightning 1 — random background strikes (Dev Tools toggle). Countdown timer
   // set to a new random gap (5–14s) each time it fires, so strikes feel sporadic
   // rather than metronomic. The bolt shape is regenerated fresh per strike.
-  var LIGHTNING_OFF_ENVS = { day: 1, cave: 1, crystal: 1, volcano: 1, desert: 1, foundry: 1, castlegate: 1, stream: 1, pineforest: 1, greathall: 1, armoury: 1 }; /* v1306 (Harley): no lightning on the village or in the cave */
+  var LIGHTNING_OFF_ENVS = { day: 1, cave: 1, crystal: 1, volcano: 1, desert: 1, foundry: 1, castlegate: 1, stream: 1, pineforest: 1, greathall: 1, armoury: 1, swamp: 1 }; /* v1306 (Harley): no lightning on the village or in the cave */
   if (lightning1Enabled && LIGHTNING_OFF_ENVS[game.idleEnvironment()]) { idleAnim.lightningFlash = 0; idleAnim.lightningBoltPts = null; }
   else if (lightning1Enabled) {
     idleAnim.lightningTimer -= dtSec * Math.max(1, devSpeedMult);
@@ -25091,8 +25091,8 @@ function stepIdleAnim(dtSec, w, h) {
 // stars, scrolling clouds, rain haze) genuinely does need to run every
 // frame, since those depend on continuously-changing time/scroll values.
 var skyGradCache = new Map();
-var IDLE_SKY_TOP = { armoury: "#2e2622", greathall: "#3a2a22", pineforest: "#0a6ee8", stream: "#0a6ee8", castlegate: "#0a6ee8", foundry: "#62483b", desert: "#1078f4", volcano: "#160a09", crystal: "#121424", cave: "#14181e", day: "#7d8fa0", snow: "#a9bccd", rain: "#333b46", night: "#0b1024" }; /* v1262: same as the first stop of each sky gradient below */
-var IDLE_SKY_HIGH = { armoury: "#2e2622", greathall: "#3a2a22", pineforest: "#0a6ee8", stream: "#0a6ee8", castlegate: "#0a6ee8", foundry: "#62483b", desert: "#1078f4", volcano: "#160a09", crystal: "#121424", cave: "#14181e", day: "#52617a", snow: "#8296ab", rain: "#20262f", night: "#060918" }; /* v1262: the top of the taller Conquest screen */
+var IDLE_SKY_TOP = { swamp: "#293078", armoury: "#2e2622", greathall: "#3a2a22", pineforest: "#0a6ee8", stream: "#0a6ee8", castlegate: "#0a6ee8", foundry: "#62483b", desert: "#1078f4", volcano: "#160a09", crystal: "#121424", cave: "#14181e", day: "#7d8fa0", snow: "#a9bccd", rain: "#333b46", night: "#0b1024" }; /* v1262: same as the first stop of each sky gradient below */
+var IDLE_SKY_HIGH = { swamp: "#293078", armoury: "#2e2622", greathall: "#3a2a22", pineforest: "#0a6ee8", stream: "#0a6ee8", castlegate: "#0a6ee8", foundry: "#62483b", desert: "#1078f4", volcano: "#160a09", crystal: "#121424", cave: "#14181e", day: "#52617a", snow: "#8296ab", rain: "#20262f", night: "#060918" }; /* v1262: the top of the taller Conquest screen */
 function drawEnvironmentSky(ctx, w, h, env, groundY) {
   if (ctx.canvas.id === "idleCanvas" && typeof nightSkyOn === "function" && nightSkyOn(env)) { drawNightSky(ctx, w, groundY); return; } /* v1265 */
   var cacheKey = w + "_" + Math.round(groundY) + "_" + env;
@@ -25104,6 +25104,7 @@ function drawEnvironmentSky(ctx, w, h, env, groundY) {
     else if (env === "rain") { grad.addColorStop(0, "#333b46"); grad.addColorStop(1, "#4d5665"); }
     else if (env === "desert") { grad.addColorStop(0, "#1078f4"); grad.addColorStop(1, "#feeec6"); } /* v1442: until the sky art arrives */
     else if (env === "armoury") { grad.addColorStop(0, "#2e2622"); grad.addColorStop(1, "#6a5040"); } /* v1460 */
+    else if (env === "swamp") { grad.addColorStop(0, "#293078"); grad.addColorStop(1, "#f8744a"); } /* v1482: dusk */
     else if (env === "greathall") { grad.addColorStop(0, "#3a2a22"); grad.addColorStop(1, "#8a6a4a"); } /* v1458 */
     else if (env === "foundry") { grad.addColorStop(0, "#62483b"); grad.addColorStop(1, "#9d7352"); } /* v1446 */
     else if (env === "castlegate" || env === "stream" || env === "pineforest") { grad.addColorStop(0, "#0a6ee8"); grad.addColorStop(1, "#9fd2f7"); } /* v1448 / v1449 */
@@ -27107,6 +27108,14 @@ var TMP_ENV_BG = {
     { name: "Far", img: levelArt("greathall_far.webp", "79db64fb22"), ow: 1520, oh: 1000, baseY: 1055, scale: 0.34 / 185.76, lift: 2.5, speed: 0.25 },
     { name: "Near", img: levelArt("greathall_near.webp", "cee2f826bd"), ow: 1520, oh: 958, baseY: 1013, scale: 0.34 / 185.76, lift: 2.5, speed: 0.5, glows: [[133, 696, 20], [787, 696, 20], [1410, 696, 20]] }
   ] },
+  /* v1482 (10 Nov): the misty swamp - chapter 15, made start to finish by Claude (Harley: test the level-background skill). dev/levels/build_swamp.py:
+     GPT sky; GPT far (watchtower hill, mist, still water) colour-matched to the composite; near = composite pixels through GPT's near split
+     (cypress trees, stilt huts, bridges, lanterns); GPT road at FULL depth (no squashing), walking line ~30% into the plank band. The fight is untouched. */
+  swamp: { flat: "#3b3160", shadows: true, floor: { img: levelArt("swamp_road.webp", "3d1c469b17"), k: 0.21 / 185.76, road: 138, top: 114, upx: 2, fill: "#221e18" }, layers: [
+    { name: "Sky", img: levelArt("swamp_sky.webp", "168e6c500f"), ow: 1446, oh: 1024, baseY: 1099, scale: 0.36 / 185.76, lift: 2.5, speed: 0.1 },
+    { name: "Far", img: levelArt("swamp_far.webp", "4753c5686f"), ow: 1382, oh: 619, baseY: 618, scale: 0.3 / 185.76, lift: 2.5, speed: 0.25 },
+    { name: "Near", img: levelArt("swamp_near.webp", "bcd8457cdc"), ow: 1411, oh: 766, baseY: 758, scale: 0.3 / 185.76, lift: 2.5, speed: 0.5, glows: [[302, 513, 16], [390, 505, 16], [717, 509, 14], [1261, 515, 14]] }
+  ] },
   /* v1460 (Harley, 2 Nov): the armoury & forge (chapter 14) - his ChatGPT composite, built by dev/levels/build_armoury.py. Floor at full depth
      (not squashed), every GPT layer colour-matched to the composite; the walking line sits on the flagstones (road 68) and the racks/forge
      stand on the floor's back edge (baseY 715). The fight is untouched. Lanterns and the forge flicker. */
@@ -27167,7 +27176,7 @@ var devLayerSoftEnv = null;
 function renderDevLayerSoft(force) {
   var el = document.getElementById("devLayerSoft"); if (!el || typeof game === "undefined" || !game.idleEnvironment) return;
   var env = game.idleEnvironment(); if (!force && env === devLayerSoftEnv) return; devLayerSoftEnv = env;
-  var cfg = TMP_ENV_BG[env], NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", armoury: "Armoury" };
+  var cfg = TMP_ENV_BG[env], NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", swamp: "Misty swamp", armoury: "Armoury" };
   if (!cfg || !cfg.layers || !cfg.layers.length) { el.innerHTML = '<span class="dev-tools-hint">' + (NAMES[env] || env) + ': no scenery layers on this level</span>'; return; }
   var h = '<div class="dev-tools-hint" style="margin-bottom:4px;">' + (NAMES[env] || env) + ' (this device only - tell Claude to make it the real setting)</div>';
   var rows = cfg.layers.map(function (L, i) { return { L: L, i: i, name: L.name || (cfg.layers.length === 1 ? "Layer" : (i === 0 ? "Far" : i === cfg.layers.length - 1 ? "Near" : "Mid " + i)) }; });
@@ -27195,7 +27204,7 @@ function resetLayerSoftAll() { /* v1316: forget this device's picks - back to th
   Object.keys(TMP_ENV_BG).forEach(function (k) { TMP_ENV_BG[k]._artReady = false; }); renderDevLayerSoft(true);
 }
 function layerSoftSummary() { /* every level, every layer: what this phone shows right now */
-  var NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", armoury: "Armoury" }, out = [];
+  var NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", swamp: "Misty swamp", armoury: "Armoury" }, out = [];
   Object.keys(TMP_ENV_BG).forEach(function (env) { var cfg = TMP_ENV_BG[env], parts = [];
     (cfg.layers || []).forEach(function (L, i) { parts.push((L.name || (i === 0 ? "Far" : "Near")) + " = " + LAYER_SOFT_NAMES[layerSoftMode(env, i, L)]); if (L.alt) parts.push((L.name || "Layer") + " version = " + (layerUsesAlt(env, i, L) ? L.alt.name : "Original")); });
     if (cfg.floor) parts.push("Ground = " + LAYER_SOFT_NAMES[layerSoftMode(env, "floor", cfg.floor)]); if (cfg.floor && cfg.floor.alt) parts.push("Ground version = " + (floorUsesAlt(env, cfg.floor) ? cfg.floor.alt.name : "Original"));
@@ -28693,7 +28702,7 @@ function renderDevSpeedButtons() {
 renderDevSpeedButtons();
 function renderDevChapterButtons() { /* v1295 (Harley): quick way to reach each level type while testing art */
   var el = document.getElementById("devChapterBtns"); if (!el) return;
-  var NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", armoury: "Armoury" }, cur = game.state && game.state.idle ? game.state.idle.chapter : 1;
+  var NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", swamp: "Misty swamp", armoury: "Armoury" }, cur = game.state && game.state.idle ? game.state.idle.chapter : 1;
   el.innerHTML = "";
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].forEach(function (ch) { /* v1442: + 8 Desert ruins; v1446: + 9 Clockwork foundry */
     var env = game.idleEnvForChapter ? game.idleEnvForChapter(ch) : "", btn = document.createElement("div");
@@ -32404,7 +32413,7 @@ attachForgeButton(document.querySelector("#idlePowerSlots + .ps-row2"));
 
 
 // ================= v1317 Level select (Harley: "all players can go back to any previous level they've completed... unlimited hordes", fade + load on pick) =================
-var LEVEL_NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", armoury: "Armoury" };
+var LEVEL_NAMES = { day: "Village", night: "Graveyard", snow: "Snow", rain: "Forest", cave: "Cave", crystal: "Crystal mine", volcano: "Lava cavern", desert: "Desert ruins", foundry: "Clockwork foundry", castlegate: "Castle gate", stream: "Rocky stream", pineforest: "Pine forest", greathall: "Great hall", swamp: "Misty swamp", armoury: "Armoury" };
 function lsHeaderSync() {
   var f = game.idleFarm(), btn = document.getElementById("idleStageBtn"), back = document.getElementById("idleFarmBackBtn");
   if (btn) btn.classList.toggle("farming", !!f);

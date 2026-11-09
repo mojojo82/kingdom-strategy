@@ -143,8 +143,8 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **LEVEL ART STATUS (9 Nov 2026) - read this before any level work:**
   - **Levels so far** (chapter = position in IDLE_ENVIRONMENTS):
     1 village, 2 night, 3 snow, 4 rain, 5 cave, 6 crystal, 7 volcano, 8 desert, 9 clockwork foundry (animated gears),
-    10 castle gate, 11 rocky stream, 12 pine forest (v2), 13 Great Hall, 14 **armoury** (v1460-v1469).
-    **Next: 15 throne room** (the last castle interior).
+    10 castle gate, 11 rocky stream, 12 pine forest (v2), 13 Great Hall, 14 **armoury** (v1460-v1469), 15 **misty swamp** (v1482, made by Claude on its own with the level-background skill - Harley's test of the skill).
+    **Next: 16 throne room** (the last castle interior).
   - **Armoury in TEST (v1469) works**, and is built by `dev/levels/build_armoury.py`. It is ONE scene layer: Harley's original composite, plus a roof from the extend-up passes, plus a symmetrical arch (left half mirrored about col 1388), plus the widened section (door, workbench, shield rack). Width 2312, plus the floor layer.
     Only the hall seen through the arch moves: the new `peek` layer option (see NOTES v1465).
   - **IN PROGRESS: modular armoury rebuild** (Harley, 2 Nov). A plain wall base that loops on its own, plus "modules" made with the widen canvas (plain wall | white gap | plain wall; GPT fills the gap): forge, weapon racks/armour, windows, a big closed door, a passageway with its own peek.

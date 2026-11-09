@@ -4256,3 +4256,18 @@ Harley's 3 points:
 - Harley: both cards were too far out. New rule in the handover: when unsure, go closer, especially for a large character.
   - Static card: re-cropped (740 px wide from the keyed portrait).
   - Card video: re-cropped at zoom 1.38 centred on the held pose. build_card_video.py gained a CX argument. The intro's chimney top is trimmed, and the held pose fills the card. 828 KB.
+
+## v1482 — New level: the misty swamp (chapter 15, TEST)
+- Harley's test of the new level-background skill: setting my choice, not the throne room. Made start to finish on my own.
+- ChatGPT, one chat, village sharp reference attached, PROMPTS.md templates:
+  - Full scene: dusk swamp, cypress trees with hanging moss, stilt huts with lanterns and a steaming brass pipe, rope bridges, and a ruined watchtower in the mist. Plank road over mud with roots and peat underneath.
+  - Then road, far, near and sky. Every split came back usable on the first try; all banked in art/originals/backgrounds/swamp_*.
+- dev/levels/build_swamp.py:
+  - Sky: GPT, made seamless.
+  - Far: GPT, drift 0/-2, colour-matched 70% to the composite.
+  - Near: composite pixels through GPT's near stencil, drift 0/0.
+  - Road: GPT road (lines up within 2 rows) used at FULL depth, no squashing. The plank band is ~38 rows, about the stream / pine forest depth. Walking line ~30% into the band (road 138, top 114 at 2x).
+  - Seams checked by tiling each layer.
+- Wired in: IDLE_ENVIRONMENTS + "swamp" (chapter 15, the end), LIGHTNING_OFF_ENVS, IDLE_SKY_TOP / HIGH, the dusk sky gradient, the 4 level-name tables ("Misty swamp"), TMP_ENV_BG.swamp. The 4 lantern / window lights get the flicker glow. Fingerprints stamped. The fight is untouched.
+- Chapters past 14 used to wrap round to the village; chapter 15 is now the swamp.
+- Headless (430x932 at 2x): chapter 15 shows the swamp with no errors. Fortress, heroes and enemies stand on the planks at the same depth as the pine forest road (chapter 12, compared side by side). Not checked on a phone.
