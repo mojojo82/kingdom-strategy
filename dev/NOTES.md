@@ -4224,3 +4224,29 @@ Harley's 3 points:
 - Card videos can now be files: hcVideoUrl fetches a file video into a blob: URL, so seeking back to loopStart works everywhere. The headless test server can't seek a plain file URL, and the same can happen on some phones or hosts.
 - Headless: the card opens, the video plays and loops 7.4 -> 2.9 s, no errors. Not checked on a phone.
 - Atlas: 2 runs of 8 s at $0.61 each. Balance $13.34.
+
+## v1480 — New hero: Bram Kettleback, "The Pistonfist" (TEST, made start to finish by Claude on its own)
+- Harley's test run (10 Nov): design, art, animations, skills, balance and card done autonomously. He set: class and rarity my choice, no check-ins, no Atlas cap.
+- Choice: Infantry (melee), Epic. Only Gareth and Torvald are non-VIP front-liners, and melee tests the run + attack half of the pipeline.
+- Design: a hulking grey-green half-orc engineer with a riveted boiler on his back driving two oversized piston gauntlets (ChatGPT, style_refs 1, 2, 5). Deliberately unlike the line-up: older, very heavy build, no blade, no cape.
+- Skills (existing mechanics only, no new stats; the same in Conquest, Arena and World PvP):
+  - **Piston Slam** (active, 9 s, 60-92%): hits the enemy at his fists, and the next enemy behind takes 50% (the splash mechanic from Juno). Arena now applies splash for melee skills too (meleeHit branch).
+  - **Boiler Plating** (passive): +4% own DEF per level (defPctByLevel).
+  - atkMult 0.75. Expedition skills: Infantry ATK +4%, losses -3%, march speed +1.5% per level.
+- Balance:
+  - Arena (pool of 7): the team without Bram wins 85 / 88 of 120 fights; without Kessa, 43 / 53 (a front-liner like Gareth / Torvald). That was at full ATK, so it's even lower now.
+  - Conquest, 5th-hero swap: with Bram 6-11 / 10-1 / 10-4 vs with Kessa 6-12 / 10-2 / 10-11 (at 0.85 ATK he was 6-13 at Lv40, still above her).
+  - The meta check gives the same pre-existing warning with identical numbers.
+- Animations (H3 Max, 5 s loops, start = end frame): idle, run (one clean 1 s stride, frames 24-47) and attack.
+  - Attack v1: the steam touched the right edge. v2: the AI zoomed into the punch. v3, with "locked-off wide shot" wording, is clean: a jab, then a piston punch; the hit lands on frame 12.
+  - The scripts now handle per-clip scale (large/meta.json). Sheet art/heroes/bram/bram_anim_v1.webp, 491 KB.
+- Card:
+  - Portrait to Harley's framing standard (46 KB).
+  - Card video: smashes the gauntlets together, then holds a raised fist that loops. v1's steam left the top, so v2 uses a bottom-anchored roomier start frame. build_card_video.py gained ZOOM (1.12). art/heroes/bram/bram_card_v1.mp4, 609 KB.
+- Atlas this hero: 3 + 1 + 1 battle clips (5 s) and 2 card clips (8 s), about $3.10. Balance $10.23.
+- Headless:
+  - Conquest with Bram + Lyra + Juno: he walks out, gets his HP bar, punches, runs, and turns back. No errors.
+  - His card opens and the video loops 7.6 -> 3.4 s. He's in the hero list.
+  - g285 / g286 pass. g287 fails on an old skill-name check (Crimson Tempest -> Crimson Oath since v1413), not from this.
+  - Not checked on a phone.
+- Lessons are in the handover ("New-hero pipeline, lessons from Bram").
