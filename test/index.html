@@ -5778,7 +5778,48 @@ var FORTRESS3_COST_SCALE = 108; // knob for this tree's research cost only. 108 
   });
   Object.keys(FORTRESS1_TREE).forEach(function (k) { FORTRESS1_TREE[k].tree = 1; }); Object.keys(FORTRESS3_TREE).forEach(function (k) { FORTRESS3_TREE[k].tree = 3; });
 })();
-function fortressNode(key) { return FORTRESS1_TREE[key] || FORTRESS3_TREE[key] || null; }
+/* v1474 (Harley, 9 Nov): Fortress type 2 "Command" - the hero fortress. Innate: skill cooldowns -10% (FORTRESS2_INNATE_CDR). Tree: skill cooldown
+   ("cdr", the same stat the cooldown cards use - card 10 Overclock counts it) on the left lane, hero damage ("heroDmg": hero hits and skills, the
+   same place the hero-damage cards act) on the right, the centre alternating. Same shape as Fortress III: 31 nodes / 143 levels, rows 0-20, same
+   cost (100M) and timers. Per-level values are spread from FORTRESS2_TOTAL, weighted 1 + row x 0.08 (deeper nodes give a bit more). No super
+   bursts (like III); the cannon fires at its base damage. Works the same in Conquest, Arena and World PvP. */
+var FORTRESS2_INNATE_CDR = 0.10;
+var FORTRESS2_TOTAL = { cdr: 0.35, heroDmg: 1.0 }; /* tree totals at max (on top of the innate) - balance knobs */
+var FORTRESS2_TREE = {};
+(function () {
+  // [key, name, icon, row, col, maxLevel, stat]  (parents follow the III zig-zag: centre <- both sides of the row below, sides <- centre below)
+  var rows = [
+    ["t2_post", "Command Post", "🚩", 0, 1, 5, "cdr"],
+    ["t2_drums", "Signal Drums", "🥁", 1, 0, 5, "cdr"], ["t2_officers", "Officer Training", "🎖️", 1, 2, 5, "heroDmg"],
+    ["t2_chain", "Chain of Command", "⛓️", 2, 1, 5, "heroDmg"],
+    ["t2_orders", "Battle Orders", "📜", 3, 0, 5, "cdr"], ["t2_banner", "Rallying Banner", "🏳️", 3, 2, 5, "heroDmg"],
+    ["t2_warroom", "War Room", "🗺️", 4, 1, 5, "cdr"],
+    ["t2_horns", "War Horns", "📯", 5, 0, 3, "cdr"], ["t2_resolve", "Heroic Resolve", "💪", 5, 2, 5, "heroDmg"],
+    ["t2_table", "Strategy Table", "♟️", 6, 1, 5, "heroDmg"],
+    ["t2_briefing", "Quick Briefings", "⏱️", 7, 0, 5, "cdr"], ["t2_oath", "Champion's Oath", "🤝", 7, 2, 5, "heroDmg"],
+    ["t2_hall", "Banner Hall", "🏛️", 8, 1, 5, "cdr"],
+    ["t2_drill", "Drill Yard", "🎯", 9, 0, 5, "cdr"], ["t2_veteran", "Veteran Tactics", "🗡️", 9, 2, 5, "heroDmg"],
+    ["t2_staff", "General Staff", "🧭", 10, 1, 5, "heroDmg"],
+    ["t2_muster", "Rapid Muster", "🏃", 11, 0, 5, "cdr"], ["t2_hymns", "Battle Hymns", "🎶", 11, 2, 5, "heroDmg"],
+    ["t2_high", "High Command", "🏰", 12, 1, 5, "cdr"],
+    ["t2_couriers", "Field Couriers", "🐎", 13, 0, 5, "cdr"], ["t2_mettle", "Hero's Mettle", "🛡️", 13, 2, 5, "heroDmg"],
+    ["t2_maproom", "Map Room", "🧾", 14, 1, 3, "heroDmg"],
+    ["t2_towers", "Signal Towers", "🗼", 15, 0, 5, "cdr"], ["t2_edge", "Warlord's Edge", "⚔️", 15, 2, 5, "heroDmg"],
+    ["t2_marshal", "Marshal's Seat", "🪑", 16, 1, 5, "cdr"],
+    ["t2_clockwork", "Clockwork Orders", "⚙️", 17, 0, 5, "cdr"], ["t2_fury", "Legend's Fury", "🔥", 17, 2, 5, "heroDmg"],
+    ["t2_grand", "Grand Strategy", "📐", 18, 1, 3, "heroDmg"],
+    ["t2_lightning", "Lightning Command", "⚡", 19, 0, 3, "cdr"], ["t2_unbroken", "Unbroken Will", "🔱", 19, 2, 3, "heroDmg"],
+    ["t2_supreme", "Supreme Command", "👑", 20, 1, 3, "cdr"]
+  ];
+  var byRow = {}; rows.forEach(function (r) { (byRow[r[3]] = byRow[r[3]] || []).push(r[0]); });
+  var wsum = { cdr: 0, heroDmg: 0 }; rows.forEach(function (r) { wsum[r[6]] += r[5] * (1 + r[3] * 0.08); });
+  rows.forEach(function (r) {
+    var parents = r[3] === 0 ? [] : (byRow[r[3] - 1] || []).filter(function (k) { return true; });
+    FORTRESS2_TREE[r[0]] = { name: r[1], icon: r[2], row: r[3], col: r[4], parents: parents, maxLevel: r[5], perLevel: FORTRESS2_TOTAL[r[6]] * (1 + r[3] * 0.08) / wsum[r[6]], stat: r[6], tree: 2 };
+  });
+})();
+function fortressTreeByType(t) { return t === 3 ? FORTRESS3_TREE : t === 2 ? FORTRESS2_TREE : FORTRESS1_TREE; } /* v1474 */
+function fortressNode(key) { return FORTRESS1_TREE[key] || FORTRESS2_TREE[key] || FORTRESS3_TREE[key] || null; }
 var FORTRESS_UNLOCK_AT = 3; // parent level needed to unlock a child
 /* v1069 (Harley: "as a new player I breezed through 60+ nodes in a minute"): fortress research repriced to the normal research economy (v1015).
    Each level costs FORTRESS_COST_L1 x g^(row + (level-1)/maxLevel), with g solved per tree so a full tree costs FORTRESS_TREE_TARGET (~ the Battle tree).
@@ -5787,17 +5828,17 @@ var FORTRESS_COST_L1 = 1500, FORTRESS_TREE_TARGET = 100e6, fortressCostG = {};
 function fortressCostRaw(d, level, g) { return FORTRESS_COST_L1 * Math.pow(g, d.row + (level - 1) / d.maxLevel); }
 function fortressGrowth(tree) {
   if (fortressCostG[tree]) return fortressCostG[tree];
-  var T = tree === 3 ? FORTRESS3_TREE : FORTRESS1_TREE, lo = 1.0001, hi = 20;
+  var T = fortressTreeByType(tree), lo = 1.0001, hi = 20;
   var total = function (g) { var t = 0; for (var k in T) for (var l = 1; l <= T[k].maxLevel; l++) t += fortressCostRaw(T[k], l, g); return t; };
   for (var i = 0; i < 80; i++) { var mid = (lo + hi) / 2; if (total(mid) > FORTRESS_TREE_TARGET) hi = mid; else lo = mid; }
   return (fortressCostG[tree] = (lo + hi) / 2);
 }
-function fortressNodeCost(key, level) { var d = fortressNode(key), e = fortressShape(d.tree === 3 ? 3 : 1)[key + "|" + Math.max(1, Math.min(d.maxLevel, level))]; var c = (e ? e.c : fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1))) * FORTRESS_COST_SCALE; /* v1090 */ var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
+function fortressNodeCost(key, level) { var d = fortressNode(key), e = fortressShape(d.tree)[key + "|" + Math.max(1, Math.min(d.maxLevel, level))]; var c = (e ? e.c : fortressCostRaw(d, level, fortressGrowth(d.tree))) * FORTRESS_COST_SCALE; /* v1090 */ var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
 /* v1071: power / USD / arena power count fortress research at its OLD (pre-v1069) scale, like normal research uses techLegacyCost: same share of the
    tree, but a full tree is worth what it was (1.917M points), so repricing didn't multiply everyone's power ~50x. */
 var FORTRESS_LEGACY_TOTAL = 1916769;
 function fortressLegacyCost(key, level) { return fortressOldNodeCost(key, level) * FORTRESS_LEGACY_TOTAL / FORTRESS_TREE_TARGET; } /* v1090: power stays on the v1069 curve (the tree's new shape doesn't change anyone's power) */
-function fortressOldNodeCost(key, level) { var d = fortressNode(key); var c = fortressCostRaw(d, level, fortressGrowth(d.tree === 3 ? 3 : 1)) * FORTRESS_COST_SCALE; var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
+function fortressOldNodeCost(key, level) { var d = fortressNode(key); var c = fortressCostRaw(d, level, fortressGrowth(d.tree)) * FORTRESS_COST_SCALE; var p = Math.pow(10, Math.max(0, Math.floor(Math.log10(c)) - 2)); return Math.max(1, Math.round(c / p) * p); }
 /* v1090 (Harley: "an f2p should be on fortress tech for at least 3 months"; half the tree went in under a day): a flatter, longer tree.
    Timers back to back: 25% of the levels ~1 day, 50% ~10 days, 75% ~45 days, all ~105 days (3.5 months). RP cost follows the same shape
    (a level costs RP in proportion to its timer), still FORTRESS_TREE_TARGET in total. Levels are ranked by row + level-within-node, so nodes on
@@ -5805,7 +5846,7 @@ function fortressOldNodeCost(key, level) { var d = fortressNode(key); var c = fo
 var FORTRESS_TIME_MILESTONES = [[0.25, 1], [0.5, 10], [0.75, 45], [1, 105]], FORTRESS_FIRST_LEVEL_SEC = 120, fortressShapeCache = {};
 function fortressShape(tree) {
   if (fortressShapeCache[tree]) return fortressShapeCache[tree];
-  var T = tree === 3 ? FORTRESS3_TREE : FORTRESS1_TREE, L = [];
+  var T = fortressTreeByType(tree), L = [];
   Object.keys(T).forEach(function (k) { for (var l = 1; l <= T[k].maxLevel; l++) L.push({ k: k, l: l, x: T[k].row + (l - 1) / T[k].maxLevel }); });
   L.sort(function (a, b) { return a.x - b.x; });
   var N = L.length, i = 0; while (i < N) { var j = i; while (j + 1 < N && Math.abs(L[j + 1].x - L[i].x) < 1e-9) j++; var p = ((i + j) / 2 + 0.5) / N; for (var q = i; q <= j; q++) L[q].p = p; i = j + 1; } /* same row + level -> same place */
@@ -5821,20 +5862,21 @@ function fortressShape(tree) {
   return (fortressShapeCache[tree] = by);
 }
 /* timers: the same cost -> time curve as normal research (Lv1 ~1.5k = ~2 min, ~10M = ~2 days), fitted to TECH_DEFS */
-function fortressTimeFor(key, level) { var d = fortressNode(key), e = d && fortressShape(d.tree === 3 ? 3 : 1)[key + "|" + level]; return e ? e.t : Math.max(5, Math.round(60 * 0.00476 * Math.pow(fortressNodeCost(key, level), 0.826))); } /* v1090: from the tree's shape */
+function fortressTimeFor(key, level) { var d = fortressNode(key), e = d && fortressShape(d.tree)[key + "|" + level]; return e ? e.t : Math.max(5, Math.round(60 * 0.00476 * Math.pow(fortressNodeCost(key, level), 0.826))); } /* v1090: from the tree's shape */
 function fortressNodeUnlocked(map, key) {
   var d = fortressNode(key); if (!d) return false;
   return d.parents.every(function (p) { return ((map && map[p]) || 0) >= Math.min(FORTRESS_UNLOCK_AT, fortressNode(p).maxLevel); });
 }
 // map = {nodeKey: level}. null = this side has no fortress bonus at all.
-function fortressTypeOf(map) { return (map && map._type === 3) ? 3 : 1; }
-function fortressTreeOf(map) { return fortressTypeOf(map) === 3 ? FORTRESS3_TREE : FORTRESS1_TREE; }
+function fortressTypeOf(map) { return (map && (map._type === 3 || map._type === 2)) ? map._type : 1; }
+function fortressTreeOf(map) { return fortressTreeByType(fortressTypeOf(map)); }
+function fortTypeOk(t) { return t === 1 || t === 2 || t === 3; } /* v1474: Fortress I / II / III */
 /* v1033 (Harley: "the decision is what fortress type they apply to each formation in world pvp, arena and conquest mode"): one research map holds
    BOTH trees; a fight gets a copy with _type set to the type chosen for it. Conquest = map._type (as before); Arena = state.arenaFort;
    World PvP = the formation's .fort (march.fort / def.fort). Unset = falls back to the Conquest type. */
-function fortMapAs(map, t) { var m = Object.assign({}, map || {}); if (t === 3) m._type = 3; else delete m._type; return m; }
-function myArenaFortMap() { var st = game.state; return fortMapAs(st.fortressTech, st.arenaFort === 1 || st.arenaFort === 3 ? st.arenaFort : fortressTypeOf(st.fortressTech)); }
-/* Picker: [💣 I][🛡️ III]. data-fp = "conquest" | "arena" | "f<formation index>" */
+function fortMapAs(map, t) { var m = Object.assign({}, map || {}); if (t === 3 || t === 2) m._type = t; else delete m._type; return m; }
+function myArenaFortMap() { var st = game.state; return fortMapAs(st.fortressTech, fortTypeOk(st.arenaFort) ? st.arenaFort : fortressTypeOf(st.fortressTech)); }
+/* Picker: [💣 I][⚡ II][🛡️ III] (v1474: + II). data-fp = "conquest" | "arena" | "f<formation index>" */
 function fortPickCur(which) {
   var st = game.state;
   if (which === "conquest") return fortressTypeOf(st.fortressTech);
@@ -5843,28 +5885,34 @@ function fortPickCur(which) {
 }
 function fortPickHtml(which) {
   var c = fortPickCur(which);
-  return '<span class="fort-pick" data-fp="' + which + '"><button type="button" data-ft="1"' + (c === 1 ? ' class="on"' : '') + ' title="Fortress I - Heavy Cannon">💣 I</button><button type="button" data-ft="3"' + (c === 3 ? ' class="on"' : '') + ' title="Fortress III - Bulwark">🛡️ III</button></span>';
+  return '<span class="fort-pick" data-fp="' + which + '"><button type="button" data-ft="1"' + (c === 1 ? ' class="on"' : '') + ' title="Fortress I - Heavy Cannon">💣 I</button><button type="button" data-ft="2"' + (c === 2 ? ' class="on"' : '') + ' title="Fortress II - Command">⚡ II</button><button type="button" data-ft="3"' + (c === 3 ? ' class="on"' : '') + ' title="Fortress III - Bulwark">🛡️ III</button></span>';
 }
 function fortPickSync() { document.querySelectorAll(".fort-pick").forEach(function (p) { var c = fortPickCur(p.getAttribute("data-fp")); p.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-ft") === c); }); }); }
 document.addEventListener("click", function (e) {
   var b = e.target && e.target.closest && e.target.closest(".fort-pick button"); if (!b) return;
   e.stopPropagation();
-  var which = b.closest(".fort-pick").getAttribute("data-fp"), t = +b.getAttribute("data-ft") === 3 ? 3 : 1, st = game.state;
+  var which = b.closest(".fort-pick").getAttribute("data-fp"), t = fortTypeOk(+b.getAttribute("data-ft")) ? +b.getAttribute("data-ft") : 1, st = game.state;
   if (which === "conquest") { fortressSetType(t); }
   else if (which === "arena") { st.arenaFort = t; persist(); try { if (mapMode === "arena") renderArena(); } catch (e2) {} }
   else { var f = st.formations[+which.slice(1)]; if (f) { f.fort = t; persist(); } }
   fortPickSync();
 }, true);
-function formationFortType(f, map) { return f && (f.fort === 1 || f.fort === 3) ? f.fort : fortressTypeOf(map); }
+function formationFortType(f, map) { return f && fortTypeOk(f.fort) ? f.fort : fortressTypeOf(map); }
 function fortressBonusFrom(map) {
-  if (!map) return { cannon: 0, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1 };
+  if (!map) return { cannon: 0, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1, cdr: 0, heroDmg: 0 };
+  if (fortressTypeOf(map) === 2) { /* v1474: Command */
+    var b2 = { cannon: 0, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1, cdr: FORTRESS2_INNATE_CDR, heroDmg: 0 };
+    for (var k2 in FORTRESS2_TREE) { var d2 = FORTRESS2_TREE[k2]; b2[d2.stat] += d2.perLevel * Math.min(d2.maxLevel, map[k2] || 0); }
+    b2.cdr = Math.min(0.9, b2.cdr);
+    return b2;
+  }
   if (fortressTypeOf(map) === 3) {
-    var b3 = { cannon: 0, hp: FORTRESS3_INNATE_HP, dmgRed: FORTRESS3_INNATE_DMGRED, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1 };
+    var b3 = { cannon: 0, hp: FORTRESS3_INNATE_HP, dmgRed: FORTRESS3_INNATE_DMGRED, critDmg: 0, haste: 0, burst: 0, critRate: 0, critMult: 1, cdr: 0, heroDmg: 0 };
     for (var k3 in FORTRESS3_TREE) { var d3 = FORTRESS3_TREE[k3]; b3[d3.stat] += d3.perLevel * (d3.stat === "hp" ? FORTRESS_TREE_HP_MULT[3] : 1) * Math.min(d3.maxLevel, map[k3] || 0); }
     b3.dmgRed = Math.min(0.6, b3.dmgRed); // same 60% ceiling as troop armor
     return b3;
   }
-  var b = { cannon: FORTRESS1_INNATE_CANNON, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0 };
+  var b = { cannon: FORTRESS1_INNATE_CANNON, hp: 0, dmgRed: 0, critDmg: 0, haste: 0, burst: 0, cdr: 0, heroDmg: 0 };
   for (var k in FORTRESS1_TREE) { var d = FORTRESS1_TREE[k]; b[d.stat] += d.perLevel * (d.stat === "cannon" ? FORTRESS_CANNON_TREE_MULT : d.stat === "critDmg" ? FORTRESS_CRIT_TREE_MULT : d.stat === "hp" ? FORTRESS_TREE_HP_MULT[1] : 1) * Math.min(d.maxLevel, map[k] || 0); }
   b.haste = Math.min(0.9, b.haste); // cooldown + opening delay can shrink by at most 90%
   b.critRate = FORTRESS1_BASE_CRIT_RATE; b.critMult = FORTRESS1_BASE_CRIT_MULT + b.critDmg;
@@ -5875,7 +5923,7 @@ function fortressBonusFrom(map) {
 function randomFortressMap(strength) {
   var map = {};
   if (Math.random() < 0.2) return map;
-  var T = FORTRESS1_TREE; if (Math.random() < 0.5) { map._type = 3; T = FORTRESS3_TREE; } /* v962: bots research Fortress III too, like players can */
+  var T = FORTRESS1_TREE, rt = Math.random(); if (rt < 1 / 3) { map._type = 3; T = FORTRESS3_TREE; } else if (rt < 2 / 3) { map._type = 2; T = FORTRESS2_TREE; } /* v962: bots research Fortress III too, like players can; v1474: and II */
   var keys = Object.keys(T).sort(function (a, b) { return T[a].row - T[b].row; });
   var st = Math.max(0, Math.min(1, strength));
   keys.forEach(function (k) {
@@ -5887,7 +5935,7 @@ function randomFortressMap(strength) {
   return map;
 }
 function fortressNodePer(d) { return d.perLevel * (d.stat === "cannon" ? FORTRESS_CANNON_TREE_MULT : d.stat === "critDmg" ? FORTRESS_CRIT_TREE_MULT : 1); }
-function fortressMaxMap(type) { var m = {}, T = type === 3 ? FORTRESS3_TREE : FORTRESS1_TREE; for (var k in T) m[k] = T[k].maxLevel; if (type === 3) m._type = 3; return m; }
+function fortressMaxMap(type) { var m = {}, T = fortressTreeByType(type); for (var k in T) m[k] = T[k].maxLevel; if (type === 3 || type === 2) m._type = type; return m; }
 function fortressTreeTotalCost() { var t = 0; for (var k in FORTRESS1_TREE) for (var l = 1; l <= FORTRESS1_TREE[k].maxLevel; l++) t += fortressNodeCost(k, l); return t; }
 // Deterministic "random-looking" number in [0,1) from (seed, side, burst number). A pure function: same battle -> same result, and
 // one side's rolls never depend on anything else in the fight (FNV-1a hash + integer mix).
@@ -6954,8 +7002,13 @@ function cardEffectKeyAt(state, idx) {
   var sk = "#" + (idx + 1); return CARD_EFFECTS_BY_NAME[sk] ? sk : "";
 }
 // v985: every equipped card effect rolled into one set of combat modifiers (same rules in Conquest and Arena)
+function cardModsBlank() { return { infAtk: 0, infHp: 0, allHp: 0, gerbil: null, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, t1Army: 0, any: false }; }
+/* v1474: Fortress II's skill-cooldown bonus joins the card cooldown total (same slot, same 90% cap), so the cooldown maths AND card 10's
+   "more than 25% cooldown bonus" check see one combined number - in Conquest (conqCardMods) and in the Arena / World PvP engine (arenaMakeSim). */
+function cardModsWithFortCdr(m, cdr) { if (!(cdr > 0)) return m; var o = Object.assign(cardModsBlank(), m || {}); o.cdr = (o.cdr || 0) + cdr; o.any = true; return o; }
+function conqCardMods(state) { return cardModsWithFortCdr(cardModsFrom(state), fortressBonusFrom(state.fortressTech || {}).cdr); }
 function cardModsFrom(state) {
-  var m = { infAtk: 0, infHp: 0, allHp: 0, gerbil: null, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, t1Army: 0, any: false };
+  var m = cardModsBlank();
   equippedCardEffects(state).forEach(function (fx) {
     m.any = true;
     if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "cavAtk") m.cavAtk += fx.pct || 0; else if (fx.kind === "infHp") m.infHp += fx.pct || 0; else if (fx.kind === "allHp") m.allHp += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
@@ -7791,7 +7844,7 @@ function createGame(opts) {
     var march = { id: state.nextMarchId++, army: army, tileId: tileId, action: action,
       status: "outbound", heroKeys: heroArr, heroKey: heroArr[0] || null, // heroKey kept as first-hero alias for any older display code
       travelSec: travelSec, arriveAt: now() + travelSec * 1000, actionEnd: null, returnAt: null, result: null };
-    if (fort === 1 || fort === 3) march.fort = fort; /* v1033: the formation's fortress type */
+    if (fortTypeOk(fort)) march.fort = fort; /* v1033: the formation's fortress type */
     if (capped) march.capped = mcap;
     if (fF) march.formIdx = formIdx;
     if (monster) { if (state.monsters.energy >= MONSTER_ENERGY_MAX) state.monsters.energyT = now(); state.monsters.energy -= MONSTER_ENERGY_COST; march.monster = { id: String(monster.id), type: monster.type, level: monster.level | 0, ep: monster.ep || 0 }; } /* v1215 */
@@ -9129,7 +9182,7 @@ function createGame(opts) {
       var skill1 = def.conquestSkills[0];
       if (!skill1 || skill1.kind !== "active") return;
       if (idleHeroIsKo(key)) { state.heroCooldowns[key] = skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)); return; } // v527: KO'd — skill timer sits at full until he revives
-      if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skillCdAt(skill1, heroSkillLevel(key, "conquest", 0))) * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985 */
+      if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skillCdAt(skill1, heroSkillLevel(key, "conquest", 0))) * (1 - cardCdBonus(conqCardMods(state), idleHpFrac())); /* v985 */
       state.heroCooldowns[key] -= dt;
       var manualCast = false; // Manual mode: the skill waits at 0 (ready) until the player taps it
       if (state.idle.skillAuto === false && state.heroCooldowns[key] <= 0) {
@@ -9139,7 +9192,7 @@ function createGame(opts) {
         if (!manualCast) return;
       }
       if (state.heroCooldowns[key] <= 0) {
-        state.heroCooldowns[key] += skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)) * (1 - cardCdBonus(cardModsFrom(state), idleHpFrac())); /* v985: skill cooldown bonus cards */
+        state.heroCooldowns[key] += skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)) * (1 - cardCdBonus(conqCardMods(state), idleHpFrac())); /* v985: skill cooldown bonus cards */
         state.idle.skillFireCounts[key] = (state.idle.skillFireCounts[key] || 0) + 1;
         if (skill1.support) { // support skills (heal / guard shield) act on the fortress, not on an enemy
           var spLvl = heroSkillLevel(key, "conquest", 0), maxHpS = idlePlayerMaxHp();
@@ -9925,7 +9978,7 @@ function createGame(opts) {
     var def = HERO_DEFS[aid], h = state.heroes[aid];
     if (!def || !h || !h.owned) return 0; // unequipped/removed mid-combat — this attacker just goes quiet
     if (idleHeroIsKo(aid)) return 0; // v527: KO'd heroes don't attack
-    return Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (def.atkMult || 1) * cardHeroDmgMul(cardModsFrom(state), aid, idleHpFrac(), idleHeroCount()) * cardT1ArmyMul(state) * (state.idle.oathT > 0 ? 1 + (state.idle.oathPct || 0) : 1)); /* v985: cards; v1072: Cannon Doctrine; v1413: Crimson Oath */
+    return Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective() * idleDamageMult() * heroBonusMult("atk") * (def.atkMult || 1) * cardHeroDmgMul(conqCardMods(state), aid, idleHpFrac(), idleHeroCount()) * (1 + (fortressBonusFrom(state.fortressTech || {}).heroDmg || 0)) /* v1474: Fortress II hero damage */ * cardT1ArmyMul(state) * (state.idle.oathT > 0 ? 1 + (state.idle.oathPct || 0) : 1)); /* v985: cards; v1072: Cannon Doctrine; v1413: Crimson Oath */
   }
   function idleHpFrac() { var mx = idlePlayerMaxHp(); return mx > 0 && state.idle.playerHp != null ? state.idle.playerHp / mx : 1; }
   function idleHeroCount() { return state.conquestRoster.filter(function (k) { return state.heroes[k] && state.heroes[k].owned; }).length; }
@@ -10694,7 +10747,7 @@ function createGame(opts) {
     // tracked production against.
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
-    if (saved.arenaFort === 1 || saved.arenaFort === 3) state.arenaFort = saved.arenaFort; /* v1033: fortress type used in the Arena */
+    if (fortTypeOk(saved.arenaFort)) state.arenaFort = saved.arenaFort; /* v1033: fortress type used in the Arena */
     state.mailApplied = (saved.mailApplied && typeof saved.mailApplied === "object") ? saved.mailApplied : {}; /* v911: mails whose items are already in this save */
     state.mailSaved = (saved.mailSaved && typeof saved.mailSaved === "object") ? saved.mailSaved : {}; /* v914: mails the player starred (Saved tab) */
     if (typeof saved.lastRaidApplied === "number") state.lastRaidApplied = saved.lastRaidApplied;
@@ -10702,7 +10755,7 @@ function createGame(opts) {
       saved.formations.forEach(function (f, idx) {
         if (!state.formations[idx] || !f) return;
         if (typeof f.name === "string") state.formations[idx].name = f.name;
-        if (f.fort === 1 || f.fort === 3) state.formations[idx].fort = f.fort; /* v1033 */
+        if (fortTypeOk(f.fort)) state.formations[idx].fort = f.fort; /* v1033 */
         if (typeof f.marchSkin === "string") state.formations[idx].marchSkin = f.marchSkin; /* v1048 */
         if (f.troops) Object.assign(state.formations[idx].troops, f.troops);
         if (f.held && typeof f.held === "object") { var hd = {}; Object.keys(f.held).forEach(function (k) { var v = Math.floor(+f.held[k]); if (TROOP_DEFS[k] && v > 0) hd[k] = v; }); state.formations[idx].held = hd; } /* v1241 */
@@ -12994,7 +13047,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1473"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1474"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -14005,7 +14058,7 @@ function openPowerDetails() {
   var grp = function (name, rows) { var sum = rows.reduce(function (a, r) { return a + r[1]; }, 0); return '<div class="pd-grp"><div class="pd-head"><span>' + name + '</span><b>' + fmt(Math.round(sum)) + '</b></div>' + rows.map(function (r) { return row(r[0], r[1]); }).join("") + '</div>'; };
   var h = '<div class="wi-card"><div class="wi-top">Power Details<button class="wi-close" id="pdClose" aria-label="Close">✕</button></div>';
   h += '<div class="pd-total">' + POWER_ICON_HTML + ' ' + fmt(tot) + '</div>';
-  h += grp("🏰 City", [["Buildings", b.buildings], ["Research", b.research], ["Fortress research (Type " + (b.fortType === 3 ? "III" : "I") + ")", b.fortress]]);
+  h += grp("🏰 City", [["Buildings", b.buildings], ["Research", b.research], ["Fortress research (Type " + (b.fortType === 3 ? "III" : b.fortType === 2 ? "II" : "I") + ")", b.fortress]]);
   h += grp("⚔️ Army", [["Heroes", b.heroes], ["Troops", b.troops]]);
   h += grp("🛡️ Arsenal", [["Weapons (owned)", b.weapons], ["Equipment (worn)", b.equipment], ["Sword of Power", b.sword]]);
   h += '<div class="pd-note">Wounded troops in the Infirmary count again once healed. Cards and Espers don\'t add power.</div></div>';
@@ -14903,7 +14956,7 @@ function setEquippedEsper(key) {
   renderPowerSlots();
 }
 
-var activeTechCategory = "hub"; /* v1032: "hub" = the card page; growth / economy / battle / fortress1 / fortress3 = a tree */
+var activeTechCategory = "hub"; /* v1032: "hub" = the card page; growth / economy / battle / fortress1 / fortress2 / fortress3 = a tree */
 
 // Formats a tech's bonus at a given level as human-readable text, e.g.
 // "+18% Food Production" or "-9% Army Losses in Battle" or "+900 Storage Capacity".
@@ -14921,12 +14974,12 @@ function techBonusText(def, level) {
    ⏳ when that tree is researching. Tap a card to open its tree; "‹ All research" goes back. The running research shows at the bottom. */
 var RESEARCH_HUB = [
   { banner: "Economy", cls: "eco", cards: [{ key: "growth", name: "Growth", icon: "🌱" }, { key: "economy", name: "Economy", icon: "💰" }] },
-  { banner: "Warfare", cls: "war", cards: [{ key: "battle", name: "Battle", icon: "⚔️" }, { key: "fortress1", name: "Fortress I", icon: "💣" }, { key: "fortress3", name: "Fortress III", icon: "🛡️" }] }
+  { banner: "Warfare", cls: "war", cards: [{ key: "battle", name: "Battle", icon: "⚔️" }, { key: "fortress1", name: "Fortress I", icon: "💣" }, { key: "fortress2", name: "Fortress II", icon: "⚡" }, { key: "fortress3", name: "Fortress III", icon: "🛡️" }] }
 ];
 function researchHubCardInfo(key) {
   var st = game.state, done = 0, total = 0, can = false, run = false;
-  if (key === "fortress1" || key === "fortress3") {
-    var T = key === "fortress3" ? FORTRESS3_TREE : FORTRESS1_TREE, map = st.fortressTech || {};
+  if (key === "fortress1" || key === "fortress2" || key === "fortress3") {
+    var T = fortressTreeByType(+key.slice(8)), map = st.fortressTech || {};
     Object.keys(T).forEach(function (k) { var l = Math.min(T[k].maxLevel, map[k] || 0); done += l; total += T[k].maxLevel; if (l < T[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1)) can = true; });
   } else {
     Object.keys(TECH_DEFS).forEach(function (k) { if (TECH_DEFS[k].category !== key) return; done += Math.min(TECH_DEFS[k].maxLevel, st.tech[k] || 0); total += TECH_DEFS[k].maxLevel; if (techNodeState(k) === "can") can = true; if (st.researchQueue && st.researchQueue.key === k) run = true; });
@@ -14991,12 +15044,12 @@ function fortressBodyHome() { /* put the tree back on the More > Fortress page *
   if (body && fm && body.parentNode !== fm) { fm.appendChild(body); techFortressSig = ""; }
 }
 function renderTechFortress() {
-  fortressViewType = activeTechCategory === "fortress3" ? 3 : 1;
+  fortressViewType = activeTechCategory === "fortress3" ? 3 : activeTechCategory === "fortress2" ? 2 : 1;
   var host = techFortressHost(), body = document.getElementById("fortressBody"), tl = document.getElementById("techList");
   tl.style.display = "none"; host.style.display = "";
   var moved = false;
   if (body.parentNode !== host) { host.innerHTML = '<div class="tf-title" id="tfTitle"></div>'; host.appendChild(body); moved = true; }
-  var st = game.state, map = st.fortressTech || {}, TREE = fortressViewType === 3 ? FORTRESS3_TREE : FORTRESS1_TREE;
+  var st = game.state, map = st.fortressTech || {}, TREE = fortressTreeByType(fortressViewType);
   var sig = [fortressViewType, host.clientWidth, JSON.stringify(map), st.researchQueue ? (st.researchQueue.fort ? "f" : "t") + st.researchQueue.key + st.researchQueue.toLevel : "-"].concat( /* v1069: the lane state changes which nodes can start */ Object.keys(TREE).map(function (k) { var l = map[k] || 0; return l < TREE[k].maxLevel && fortressNodeUnlocked(map, k) && st.researchPoints >= fortressNodeCost(k, l + 1) ? 1 : 0; })).join("|");
   if (moved || sig !== techFortressSig || !body.querySelector(".rt-board")) { techFortressSig = sig; renderFortress(); }
   else { var hd = body.querySelector(".ft-head b"); if (hd) hd.textContent = "🔬 Research: " + fmt(st.researchPoints); }
@@ -15009,7 +15062,7 @@ function renderTechs() {
   tqb.innerHTML = '<span>🔬 Research: <b>' + (rqq ? 1 : 0) + '/1</b>' + (rqq && researchQueueDef(rqq) ? ' · ' + researchQueueDef(rqq).name + ' Lv' + rqq.toLevel : ' · idle') + '</span>' + (rqq ? speedupBtnsHtml("research", null) : "") + '<a href="#" id="devRFin" style="color:#7a6a4a;">dev: finish</a>';
   tqb.querySelector("#devRFin").onclick = function (e) { e.preventDefault(); game.researchFinishNow(); persist(); render(); };
   tqb.style.display = activeTechCategory === "hub" ? "none" : "";
-  if (activeTechCategory === "fortress1" || activeTechCategory === "fortress3") { renderTechFortress(); return; }
+  if (activeTechCategory === "fortress1" || activeTechCategory === "fortress2" || activeTechCategory === "fortress3") { renderTechFortress(); return; }
   fortressViewType = null;
   techFortressHide();
   if (activeTechCategory === "hub") { renderResearchHub(); return; }
@@ -15267,9 +15320,10 @@ function fmgStyle() {
     "#fmg .fg-slot .ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:" + D(54) + "}",
     "#fmg .fg-slot small{position:absolute;left:" + D(9) + ";right:" + D(9) + ";bottom:" + D(9) + ";font-size:" + D(20) + ";text-align:center;background:rgba(0,0,0,.6);color:#fff;border-radius:0 0 " + D(10) + " " + D(10) + "}",
     "#fmg .fg-slot.r-legendary img{box-shadow:0 0 0 " + D(4) + " #f0c95f}#fmg .fg-slot.r-epic img{box-shadow:0 0 0 " + D(4) + " #9a6ff0}#fmg .fg-slot.r-rare img{box-shadow:0 0 0 " + D(4) + " #4f8fd9}#fmg .fg-slot.busy{opacity:.6}",
-    "#fmg .fg-fp{position:absolute!important;display:flex!important;border:0!important;border-radius:0!important;background:var(--fmg-pick1) 0 0/100% 100% no-repeat!important;overflow:visible!important}",
-    "#fmg .fg-fp:has(button[data-ft='3'].on){background-image:var(--fmg-pick3)!important}",
-    "#fmg .fg-fp button{all:unset;width:50%!important;height:100%!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;cursor:pointer;font-size:0!important}",
+    /* v1474: the painted I | III picture can't show a third type - plain I / II / III buttons until a 3-way painted picker is made (mockup first) */
+    "#fmg .fg-fp{position:absolute!important;display:flex!important;border:1px solid #c9a24a!important;border-radius:0!important;background:rgba(8,18,38,.88)!important;overflow:hidden!important}",
+    "#fmg .fg-fp button{all:unset;flex:1 1 0!important;height:100%!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;cursor:pointer;font:600 12px/1 sans-serif!important;color:#d8c38a!important;display:flex!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important}",
+    "#fmg .fg-fp button.on{background:#20b8cc!important;color:#06202a!important}",
     "#fmg .fg-fp button + button{border-left:0!important}",
     "#fmg .fg-blue{position:absolute;border-style:solid;border-color:transparent;border-width:0 " + D(40) + ";border-image:var(--fmg-btn_blue) 0 40 fill/0 " + D(40) + " stretch;pointer-events:none}"
   ].join("\n");
@@ -15346,7 +15400,7 @@ function renderFormationsGpt() {
         var prT = fmgTxt(card, "w", fmgTop(853, 230), 22, 62); fmgSet(prT, "Preset");
         fmgEl(card, "div", "hs", fmgTop(788, 203, 188, 55)).onclick = function () { openPresetSheet(idx, function () { c.setInputsFromSet(); }); };
       }
-      var fp = fmgEl(card, "span", "fort-pick fg-fp", fmgTop(782, 262, 202, 54), fortPickHtml("f" + idx).replace(/^<span[^>]*>|<\/span>$/g, "").replace(/>[^<]*<\/button>/g, "></button>"));
+      var fp = fmgEl(card, "span", "fort-pick fg-fp", fmgTop(782, 262, 202, 54), fortPickHtml("f" + idx).replace(/^<span[^>]*>|<\/span>$/g, "")); /* v1474: labels kept (I / II / III) */
       fp.setAttribute("data-fp", "f" + idx);
       fmgTxt(card, "w tc", fmgTop(830, 289, 40), 22, 0).textContent = "I";
       fmgTxt(card, "w tc", fmgTop(915, 289, 60), 22, 0).textContent = "III";
@@ -15911,31 +15965,34 @@ function fortressDesc(d, lvl) {
   if (d.stat === "haste") return "Cannon cooldown -" + v + "%";
   if (d.stat === "burst") return "Burst length +" + v + "%";
   if (d.stat === "dmgRed") return "Damage taken -" + v + "%";
+  if (d.stat === "cdr") return "Hero skill cooldowns -" + v + "%"; /* v1474: Fortress II */
+  if (d.stat === "heroDmg") return "Hero damage +" + v + "%";
   if (d.stat === "critDmg") return "Super-burst damage +" + (Math.round(fortressNodePer(d) * lvl * 100) / 100) + "x";
   return (d.stat === "cannon" ? "Cannon damage +" : "Total HP +") + v + "%";
 }
 // DEV switch between fortress types. The chosen type is stored inside the fortressTech map (map._type; missing = Type I); each type keeps its own tree.
 function fortressSetType(t) {
   var st = game.state; if (!st.fortressTech) st.fortressTech = {};
-  if (t === 3) st.fortressTech._type = 3; else delete st.fortressTech._type;
+  if (t === 3 || t === 2) st.fortressTech._type = t; else delete st.fortressTech._type;
   if (game.idleClampPlayerHp) game.idleClampPlayerHp();
   persist(); renderFortress(); try { render(); } catch (e) {}
 }
 function fortressTypeRowHtml(cur) {
-  return '<div class="ft-brow"><b>Fortress type (dev)</b><button class="dev-btn' + (cur === 1 ? ' active' : '') + '" id="ftType1">Type I — Heavy Cannon</button><button class="dev-btn' + (cur === 3 ? ' active' : '') + '" id="ftType3">Type III — Bulwark</button></div>';
+  return '<div class="ft-brow"><b>Fortress type (dev)</b><button class="dev-btn' + (cur === 1 ? ' active' : '') + '" id="ftType1">Type I — Heavy Cannon</button><button class="dev-btn' + (cur === 2 ? ' active' : '') + '" id="ftType2">Type II — Command</button><button class="dev-btn' + (cur === 3 ? ' active' : '') + '" id="ftType3">Type III — Bulwark</button></div>';
 }
 function wireFortressTypeRow() {
-  var a = document.getElementById("ftType1"), c = document.getElementById("ftType3");
+  var a = document.getElementById("ftType1"), c = document.getElementById("ftType3"), a2 = document.getElementById("ftType2");
   if (a) a.onclick = function () { fortressSetType(1); };
+  if (a2) a2.onclick = function () { fortressSetType(2); };
   if (c) c.onclick = function () { fortressSetType(3); };
 }
 function renderFortress() {
   var body = document.getElementById("fortressBody"); if (!body) return;
   var st = game.state, map0 = st.fortressTech || {}, fType = fortressViewType || fortressTypeOf(map0);
-  var map = Object.assign({}, map0); if (fType === 3) map._type = 3; else delete map._type; /* v1032: show the tree being viewed (Research > Fortress I / III), not only the active type */
+  var map = Object.assign({}, map0); if (fType === 3 || fType === 2) map._type = fType; else delete map._type; /* v1032: show the tree being viewed (Research > Fortress I / III), not only the active type */
   var b = fortressBonusFrom(map), titleEl = document.getElementById("fortressTitle");
-  if (titleEl) titleEl.textContent = fType === 3 ? "🏰 Fortress III — Bulwark" : "🏰 Fortress I — Heavy Cannon";
-  var TREE = fType === 3 ? FORTRESS3_TREE : FORTRESS1_TREE;
+  if (titleEl) titleEl.textContent = fType === 3 ? "🏰 Fortress III — Bulwark" : fType === 2 ? "🏰 Fortress II — Command" : "🏰 Fortress I — Heavy Cannon";
+  var TREE = fortressTreeByType(fType);
   if (!TREE[fortressSel]) { fortressSel = Object.keys(TREE).filter(function (k) { return TREE[k].row === 0; })[0]; renderFortress.scrolled = false; }
   /* v1011 (Harley): same look as the research tree (bronze board, teal hexes, cyan lines, level pill); here the lines ARE the unlock order */
   var maxRow = 0; Object.keys(TREE).forEach(function (k) { maxRow = Math.max(maxRow, TREE[k].row); });
@@ -15965,6 +16022,15 @@ function renderFortress() {
         '<div class="ft-brow ft-total"><b>Total</b><span>❤️ +' + pc(b.hp) + '%</span><span>🛡️ -' + pc(b.dmgRed) + '% damage taken</span></div>' +
       '</div>';
   }
+  if (fType === 2) { /* v1474 */
+    var rCd = b.cdr - FORTRESS2_INNATE_CDR;
+    h = '<div class="ft-head"><b>🔬 Research: ' + fmt(st.researchPoints) + '</b></div>' +
+      '<div class="ft-boosts">' +
+        '<div class="ft-brow"><b>🏰 Innate (Fortress II)</b><span>⚡ Hero skill cooldowns -' + pc(FORTRESS2_INNATE_CDR) + '%</span></div>' +
+        '<div class="ft-brow"><b>🔬 From research</b><span>⚡ Skill cooldowns -' + pc(rCd) + '%</span><span>⚔️ Hero damage +' + pc(b.heroDmg) + '%</span></div>' +
+        '<div class="ft-brow ft-total"><b>Total</b><span>⚡ -' + pc(b.cdr) + '% cooldowns</span><span>⚔️ +' + pc(b.heroDmg) + '% hero damage</span></div>' +
+      '</div>';
+  }
   h += '<div class="ft-dev"><button class="dev-btn" id="ftDevRp">+500 🔬 (dev)</button> <button class="dev-btn" id="ftDevMax">Max tree (dev)</button> <button class="dev-btn" id="ftDevReset">Reset tree (dev)</button></div>';
   h += '<div class="rt-board" style="height:' + H + 'px"><svg class="rt-lines" width="' + W + '" height="' + H + '">' + lines + '</svg>';
   Object.keys(TREE).forEach(function (k) {
@@ -15977,7 +16043,8 @@ function renderFortress() {
   });
   h += '</div>';
   h += '<div class="ft-boosts" style="margin-top:8px;">' + fortressTypeRowHtml(fType) + '</div>';
-  if (fType === 3) h += '<div class="dev-tools-hint" style="margin-top:8px;">Fortress III is the tank fortress: no cannon damage bonus and no super bursts (the cannon still fires at its base damage). Innate: +25% max HP and -15% damage taken, in every fight. A branch unlocks when every node above it reaches Lv ' + FORTRESS_UNLOCK_AT + '.</div>';
+  if (fType === 2) h += '<div class="dev-tools-hint" style="margin-top:8px;">Fortress II is the hero fortress: no cannon damage bonus and no super bursts (the cannon still fires at its base damage). Innate: hero skill cooldowns -' + pc(FORTRESS2_INNATE_CDR) + '%, in every fight. Its research adds more cooldown and hero damage (hits and skills). Cooldown cards add to the same total (card 10 counts it). A branch unlocks when every node above it reaches Lv ' + FORTRESS_UNLOCK_AT + '.</div>';
+  else if (fType === 3) h += '<div class="dev-tools-hint" style="margin-top:8px;">Fortress III is the tank fortress: no cannon damage bonus and no super bursts (the cannon still fires at its base damage). Innate: +25% max HP and -15% damage taken, in every fight. A branch unlocks when every node above it reaches Lv ' + FORTRESS_UNLOCK_AT + '.</div>';
   else h += '<div class="dev-tools-hint" style="margin-top:8px;">Fortress I innate: +10% cannon bullet damage and a 20% chance that a cannon burst is a super burst (x2.0 damage, raised by the crit nodes). Rolls are a fixed pattern per battle, not real luck. A branch unlocks when every node above it (in the chain below it) reaches Lv ' + FORTRESS_UNLOCK_AT + '.</div>';
   body.innerHTML = h;
   body.querySelectorAll(".rt-node").forEach(function (n) { n.onclick = function () { fortressSel = n.getAttribute("data-k"); fortressOpen(fortressSel); }; });
@@ -34700,7 +34767,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var def = HERO_DEFS[key], h = heroesState[key];
     if (!h || !h.owned) return;
     var isInfantry = def.class === "infantry";
-    attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1), melee: isInfantry });
+    attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */, melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
     if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
@@ -34731,7 +34798,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
   });
   var limits = limitsRaw.map(function (a) { var sk = a.skill, L = Math.max(1, Math.min(sk.pctByLevel.length, a.lvl)); return { key: a.key, fill: sk.hitsToFill, taken: sk.takenPts || 1, n: sk.targetsByLevel[Math.min(sk.targetsByLevel.length, L) - 1], exec: sk.executePct, value: skillDamageBaseFor(a.key, heroesState[a.key], attackerDmgById[a.key], bn.skill || 0) * (sk.pctByLevel[L - 1] || 0) }; });
   var refAtk = 0; Object.keys(attackerDmgById).forEach(function (k) { refAtk = Math.max(refAtk, attackerDmgById[k]); }); if (!(refAtk > 0)) refAtk = game.idleFortressCannonBulletDmgBase() * bnA; // the attacker's own typical hit — what the other side's DEF is measured against
-  return { supports: supportsRaw, bnA: bnA, bnH: bnH, refAtk: refAtk, fortDef: FORTRESS_DEF_POWER * defNetMult(bnD), maxHp: Math.round(hp * (1 + fb.hp) * bnH), heroHp: arenaHeroHp ? heroHpList : null, actives: actives, limits: limits, fortType: fortressTypeOf(fortressMap || {}), attackers: attackers, dmgMult: dmgMult, cannonMult: (1 + fb.cannon) * bnA, fortressHpMult: 1 + fb.hp, dmgTakenMult: 1 - fb.dmgRed, critRate: fb.critRate, critMult: fb.critMult, cannonHaste: fb.haste, cannonBurst: fb.burst };
+  return { supports: supportsRaw, bnA: bnA, bnH: bnH, refAtk: refAtk, fortDef: FORTRESS_DEF_POWER * defNetMult(bnD), maxHp: Math.round(hp * (1 + fb.hp) * bnH), heroHp: arenaHeroHp ? heroHpList : null, actives: actives, limits: limits, fortType: fortressTypeOf(fortressMap || {}), fortCdr: fb.cdr || 0, attackers: attackers, dmgMult: dmgMult, cannonMult: (1 + fb.cannon) * bnA, fortressHpMult: 1 + fb.hp, dmgTakenMult: 1 - fb.dmgRed, critRate: fb.critRate, critMult: fb.critMult, cannonHaste: fb.haste, cannonBurst: fb.burst };
 }
 
 function arenaPlayerRosterAndHeroes() {
@@ -34841,6 +34908,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var pRefA = playerStats.refAtk || 0, aRefA = aiStats.refAtk || 0;
   // v985: card effects (opts.cardMods = the player's, opts.aiCardMods = the opponent's; bots carry none). Static ones are folded in here.
   var cmP = opts.cardMods || null, cmA = opts.aiCardMods || null;
+  cmP = cardModsWithFortCdr(cmP, playerStats.fortCdr); cmA = cardModsWithFortCdr(cmA, aiStats.fortCdr); /* v1474: Fortress II cooldown bonus, per side */
   function cardStatic(st, cm, ost, nH) { if (!cm || !cm.any) return st; st = Object.assign({}, st);
     if (cm.t1Def && st.fortType === 1 && ost.fortType === 1) st.dmgTakenMult = (st.dmgTakenMult || 1) * Math.max(0, 1 - cm.t1Def); /* card 6: 30% less damage taken */
     if (cm.critDmg && st.critRate > 0) st.critMult = (st.critMult || 1) * (1 + cm.critDmg);

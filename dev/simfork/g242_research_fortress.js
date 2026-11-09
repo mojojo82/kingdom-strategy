@@ -46,7 +46,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   o.more = await P.evaluate(() => document.getElementById("fortressBody").parentNode.id + ":" + document.querySelectorAll("#fortressModeContent .rt-node").length);
   console.log(JSON.stringify(o), errs);
   assert.deepStrictEqual(o.hub.banners, ["Economy", "Warfare"]);
-  assert.deepStrictEqual(o.hub.cards.map((c) => c.split(" ").slice(0, c.startsWith("Fortress") ? 2 : 1).join(" ")), ["Growth", "Economy", "Battle", "Fortress I", "Fortress III"]);
+  assert.deepStrictEqual(o.hub.cards.map((c) => c.split(" ").slice(0, c.startsWith("Fortress") ? 2 : 1).join(" ")), ["Growth", "Economy", "Battle", "Fortress I", "Fortress II", "Fortress III"] /* v1474: + Fortress II */);
   assert.ok(o.hub.tabsHidden && o.hub.cards.some((c) => /👍/.test(c)), "hub shows, 👍 where research is possible");
   assert.ok(o.run.badge === "⏳" && /Paved Roads Lv1/.test(o.run.q), "researching tree shows ⏳ and the bottom bar");
   assert.ok(o.f3.nodes > 5 && /III/.test(o.f3.title) && o.f3.back && /Fortress III/.test(o.f3.name), "Fortress III tree opens");

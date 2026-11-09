@@ -4139,3 +4139,36 @@ Harley's 3 points:
   - Another device played later: its save wins (1700).
   - Switching accounts on one phone: B never gets A's save.
 - Not covered: progress already lost on tomhector can't be brought back. Things that also lower power on purpose: troops being promoted (they count again when done), troops out marching, wounded troops.
+
+## v1474 — Fortress II "Command" (first build)
+- Harley: begin Type 2 tech. His picks:
+  - Name: "Command".
+  - Innate: 10% skill cooldown bonus.
+  - Tree: skill cooldown plus something hero related.
+- No new stats:
+  - `cdr` = the card cooldown stat. Card 10 (Overclock) counts it.
+  - `heroDmg` = hero hits and skills, the same places the hero-damage cards act.
+- Tree (FORTRESS2_TREE): 31 nodes / 143 levels, rows 0-20, the same zig-zag as Fortress III.
+  - Left lane cooldown, right lane hero damage, the centre alternating.
+  - Values are spread from FORTRESS2_TOTAL, weighted 1 + row x 0.08.
+  - Start values: cooldown -35% + innate -10% = -45%, hero damage +100%.
+  - No super bursts; the cannon fires at its base damage.
+- Same economy as I / III: ~100M RP, the 3.5-month timer shape, maxed tree ~61.3M power.
+- Fights (the same in Conquest, Arena and World PvP):
+  - The fortress cooldown bonus joins the card cooldown total (one 90% cap, cardModsWithFortCdr / conqCardMods), so the cooldown maths and card 10 see one number.
+  - Hero damage multiplies the hero hit; skills ride on it.
+- UI:
+  - Research hub card "Fortress II" and its tree.
+  - Fortress panel innate / research / total lines and the dev type buttons.
+  - The Conquest / Arena / formation pickers are now I / II / III.
+  - Saves keep type 2 (fortressTech._type, arenaFort, formations[].fort, march.fort). Bots pick I / II / III a third each.
+- The painted I | III picker on the Formations screen (#fmg) can't show three types, so it is plain I / II / III buttons for now. A 3-way painted picker needs a mockup.
+- Balance (new dev/balance/f2_ladder.js: II vs I and vs III, equal research, World PvP engine, 10 seeds x both orders):
+  - Fortress III wins nearly everything at any II strength tried (even +300% hero damage / -65% cooldown only wins late with 5 heroes). Troops do most of the damage and III protects the whole side.
+  - At the start values, II beats I in hero-heavy fights (55-100% with 3-5 heroes at Lv40+), loses with few heroes, and loses to III.
+  - So II sits between I and III, like I it needs Harley's call (cards?) to compete with III.
+- Meta check: the same pre-existing warning, the same numbers (II isn't in those builds).
+- Tests:
+  - New g255_fortress2: tree, cost, power, bonus, Arena side stats, card 10, Conquest cooldown, pickers, research lane, reload.
+  - g242 updated for the 4th Warfare card. g253 / g254 pass.
+  - g243 fails the same way on v1473 (formation pick count - the Formations screen changed earlier), not from this.
