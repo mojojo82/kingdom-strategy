@@ -4179,3 +4179,25 @@ Harley's 3 points:
 - The v1474 plain-button stopgap is removed: the button labels are stripped again and the numerals are in the art.
 - Also removed: the Formations screen's own "I" / "III" text labels, left over from the 2-way picker. They drew on top of the new art as stray white marks.
 - Headless: Formations screenshot clean; formation 3 switched to III by tap (types [2,2,3,2]). g255 / g242 pass.
+
+## v1476 — New hero: Juno Rivet, "The Scrapshot" (TEST)
+- The first hero made with the new animation workflow: ChatGPT design and start frames, then MiniMax H3 Max idle and attack clips on Atlas.
+- Ranged 🏹 (class cavalry), Epic. Recruited like the others (1 fragment). Bots can field her (the same kit as players).
+- Combat (the same in Conquest, Arena and World PvP):
+  - **No range limit (Harley: Juno onwards).** Any enemy on screen is a target, for her basic shots and her skill.
+  - In Arena / World PvP she shoots front-line (ground) enemy heroes at any distance, then the fortress once the front line is down. Heroes on the enemy deck are NOT targets: hitting them made her a must-pick, even at 40% ATK (Harley chose front-line).
+  - **Scrap Cannon** (active, every 10 s, 55-83%): hits that target, and the next 2 enemies take 50% as splash. In Conquest those are the next 2 in the line; in Arena, the nearest front-line heroes.
+  - **Salvage** (passive): each enemy the cannon finishes off (an enemy hero knocked out, in Arena) brings her next shot 0.5 s sooner per level.
+  - atkMult 0.65 (Harley: new heroes must stay well below Kessa / Hanzo).
+  - Expedition skills: Ranged ATK +4%, losses -2.5%, march speed +2% per level.
+- Balance (`node dev/balance/run.js`, new `--heroes` flag):
+  - Arena, Lv40 / Lv80: the team without Juno wins 79 / 80 of 120 fights; without Kessa, 56. Juno at full ATK was 52-64; while she could hit deck heroes, 0.
+  - Conquest, 5-hero team with Juno vs with Kessa as the 5th: stuck 6-9 / 10-1 / 10-5 vs 6-12 / 10-2 / 10-11 (with Roran: 6-9 / 10-1 / 10-6).
+  - The meta check gives the same pre-existing warning with identical numbers before and after.
+- Art:
+  - Frames: dev/heroes/build_hero_frames.py keys the clips into the LARGE keep-set (art/originals/heroes/juno/large/, every frame at 1152x768).
+  - The game sheet: dev/heroes/build_hero_anim.py packs them into a HERO_ANIMS grid sheet, art/heroes/juno/juno_anim_v1.webp (567 KB, loaded as a file). Idle is 41 frames at 8 fps. Attack is the whole 5 s shot at 5x (25 frames at 24 fps), so it fits the 1 s basic rhythm. The shell leaves the muzzle on frame 8.
+  - She fires a new "shell" projectile (dark iron ball, hot core, smoke tail). The splash shows sparks and a number on each enemy it hits.
+  - The hero card portrait is a placeholder cut from her design art (art/originals/heroes/juno/card/). A proper portrait needs a mockup.
+- Fortress spot: HERO_POS_DEFAULTS gives her a default deck offset {0, -20}, so older saves don't put her behind the hull. In the back slot the superstructure hides her lower half, like the other riders there.
+- Headless: Conquest with Juno in slots 2 and 3 runs with no errors, she fires and her skill lands. A splash spark bug (an undefined enemy y) was found and fixed.

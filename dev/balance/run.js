@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, "../..");
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
 const CFG = JSON.parse(arg("cfg", "{}")), ONLY = arg("only", "conquest,swap,arena,meta").split(","), SEEDS = +arg("seeds", 2), SAVE = arg("save", ""), VS = arg("vs", "");
 const SETUPS = { new: "New player (Gareth+Lyra Lv1)", duo20: "Gareth+Lyra Lv20", five40: "5 heroes Lv40 2*", five80: "5 heroes Lv80 5*", maxall: "Max heroes+weapons+buildings" };
-const HEROES = ["gareth", "lyra", "roran", "kessa", "sera", "torvald"];
+const HEROES = arg("heroes", "gareth,lyra,roran,kessa,sera,torvald").split(","); // v1476: --heroes to try a new hero (e.g. swap one for juno)
 const lab = (gl) => gl == null ? "never" : (Math.floor((gl - 1) / 20) + 1) + "-" + (((gl - 1) % 20) + 1);
 
 if (process.env.KS_WORKER) { worker(); } else { main(); }
@@ -83,9 +83,9 @@ async function worker() {
   await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   const P = await ctx.newPage(); P.on("pageerror", (e) => process.stderr.write("PAGEERR " + e.message + "\n"));
-  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/", { timeout: 180000 }); await P.waitForSelector("#ksAuth .box", { timeout: 120000 });
   await P.fill("#ksE", "bal" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
-  await P.waitForSelector("#ksN", { timeout: 20000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   await P.evaluate(() => setScreen("city"));
   const out = [];
   for (const job of JSON.parse(process.env.KS_JOBS)) {

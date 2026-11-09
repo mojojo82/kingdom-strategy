@@ -1,7 +1,8 @@
 """New-hero animation frames (Harley, 10 Nov 2026 workflow; first hero: Juno Rivet).
 Keys MiniMax H3 Max clips (flat magenta background) and writes, per clip:
   - the LARGE keep-set: every keyed frame at full video size (WebP q90) in art/originals/heroes/<hero>/large/<clip>/
-  - the game copy: frames cropped + scaled to STAND px standing, packed into WebP sheets (<= 2048) + a manifest JSON
+  - (only with --sheets) an old-style game copy: cropped frames in WebP sheets + manifest. NOT used: the game copy is made by
+    build_hero_anim.py (HERO_ANIMS grid sheet) from the LARGE set.
 Key: alpha from min(r,b)-g against the per-frame magenta (median of the top 40 rows), magenta un-mixed; semi-transparent
 pixels that aren't fire (smoke) and pink-tinted low-saturation pixels go grey. Optional soft edge fade (right / top px) for
 a clip whose effect touched the frame edge (Juno attack v1 only - Harley 10 Nov: keep the WHOLE animation in frame next time).
@@ -10,6 +11,7 @@ import glob, json, os, subprocess, sys, tempfile
 import numpy as np, cv2
 from PIL import Image
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+SHEETS = "--sheets" in sys.argv; sys.argv = [a for a in sys.argv if a != "--sheets"]
 HERO = sys.argv[1]; STAND = float(sys.argv[2]) if len(sys.argv) > 2 else 96
 CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "attack": ("juno_attack_h3max_768_5s_v1.mp4", 170, 90)},
                 "stand_src": 580, "feet_y": 681}}[HERO]
@@ -59,6 +61,7 @@ for clip, (fn, FR, FT) in CFG["clips"].items():
         frames.append([len(sheets) - 1, x, y, w, h, round((bb[0] - feet_x) * k, 2), round((bb[1] - CFG["feet_y"]) * k, 2)])
         x += w + PAD; rowh = max(rowh, h); sheets[-1][1] = max(sheets[-1][1], y + rowh)
     man["clips"][clip] = frames; print(clip, len(frames), "frames")
+if not SHEETS: sys.exit(0)
 files = []
 for i, (sh, uh) in enumerate(sheets):
     fn = "%s_s%d.webp" % (HERO, i); sh.crop((0, 0, SHEET, min(SHEET, uh + PAD))).save(os.path.join(OUT, fn), "WEBP", quality=85, method=6); files.append(fn)
