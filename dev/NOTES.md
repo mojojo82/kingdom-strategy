@@ -4209,3 +4209,8 @@ Harley's 3 points:
   - Static cards: upper body, room above the head, arms in frame.
   - Card animations: a heroic pose, then the later part loops, on a plain background.
 - Juno's new GPT card portrait is in art/originals/heroes/juno/card/. Waiting for Harley's OK before it replaces the placeholder in the game.
+
+## v1478 — Juno's card portrait (TEST)
+- Her hero card now uses the GPT portrait, made to Harley's framing standard and zoomed in a bit more at his request (crop 720 px wide from the 1024x1536 keyed original). 360x480 webp, 61 KB. Originals are in art/originals/heroes/juno/card/.
+- Card animation, first try: H3 Max, 8 s, from a wider 1536x1024 start frame made in GPT. Saved as art/originals/heroes/juno/clips/juno_card_h3max_768_8s_v1.mp4. It came back mild (no real heroic pose), so it's not wired in. Waiting on Harley.
+- Headless: the Heroes screen shows her card, no errors.
