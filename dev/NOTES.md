@@ -4117,3 +4117,9 @@ Harley's 3 points:
 ## v1471 — Modular armoury at 0.5 scale
 - Harley picked the 0.5 scale ("looks better because there's less room"). The modular Scene is now scale 0.5, with baseY 978 so the wall still meets the floor's back edge. The floor and the fight are unchanged.
 - Headless: no errors, 59 fps.
+
+## v1472 — Modular armoury: softer roof
+- Harley: the roof is "strong compared to the rest of the scene". He picked mockup "A soft" of three.
+- build_armoury2.py now tones the roof: colour strength x0.75 and contrast x0.85 around its own mean, fading out over rows 590-612 into the wall.
+- Every bay is rebuilt from the toned base. The module canvas is unchanged, so the modules' colour-match is the same. The wall, modules and floor are untouched.
+- Headless: no errors, 59 fps.

@@ -39,6 +39,15 @@ w = np.clip((np.arange(JOIN) - (JOIN - 40)) / 40.0, 0, 1)[:, None, None]     # 4
 top[EXT_DY:] = top[EXT_DY:] * (1 - w) + old[:JOIN] * w
 wall = np.concatenate([top, old[JOIN:FLOOR_TOP]], 0)                          # height EXT_DY + FLOOR_TOP
 print("wall", wall.shape)
+# v1472 (Harley: the roof is "strong compared to the rest of the scene"; he picked mockup "A soft"): roof chroma x0.75, contrast x0.85
+# around its own mean lightness, full strength down to ROOF_FULL, fading out by ROOF_END (the wall starts at row 612)
+ROOF_CHROMA, ROOF_CONTRAST, ROOF_FULL, ROOF_END = 0.75, 0.85, 590, 612
+rl = lab(np.clip(wall, 0, 255)); Lm = rl[:ROOF_FULL, :, 0].mean()
+rt = rl.copy(); rt[..., 0] = (rl[..., 0] - Lm) * ROOF_CONTRAST + Lm; rt[..., 1:] = (rl[..., 1:] - 128) * ROOF_CHROMA + 128
+rt = cv2.cvtColor(np.clip(rt, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB).astype(np.float32)
+rw = np.clip((ROOF_END - np.arange(wall.shape[0])) / float(ROOF_END - ROOF_FULL), 0, 1)[:, None, None]
+wall = wall * (1 - rw) + rt * rw
+print("roof toned: chroma", ROOF_CHROMA, "contrast", ROOF_CONTRAST, "mean L", round(float(Lm), 1))
 # ---- loop: PL -> PR, right pillar's left half = solid copy of the left pillar's left half ----
 P = PR - PL
 rep = wall[:, PL:PR].copy()
