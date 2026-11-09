@@ -53,14 +53,14 @@ async function worker() {
       const f1b = fortressBonusFrom(a.m), f3b = fortressBonusFrom(b.m); row.f1 = "cannon +" + Math.round(f1b.cannon * 100) + "%, super burst " + Math.round((f1b.critRate || 0) * 100) + "% x" + (Math.round((f1b.critMult || 1) * 100) / 100); row.f3 = "HP +" + Math.round(f3b.hp * 100) + "%, dmg taken -" + Math.round(f3b.dmgRed * 100) + "%"; const f2b = fortressBonusFrom(c2.m); row.f2 = "cooldowns -" + Math.round(f2b.cdr * 1000) / 10 + "%, hero dmg +" + Math.round(f2b.heroDmg * 1000) / 10 + "%" + (f2b.hp ? ", HP +" + Math.round(f2b.hp * 100) + "%" : "") + (f2b.dmgRed ? ", dmg taken -" + Math.round(f2b.dmgRed * 100) + "%" : "");
       for (const [name, hn, lvl, arms, sk, tr] of SC) {
         for (const [opp, key] of [[a, "vs1"], [b, "vs3"]]) {
-          let w = 0, n = 0;
+          let w = 0, n = 0, tk = 0;
           for (let s = 1; s <= SEEDS; s++) {
-            if (fight(mk(c2.m, hn, lvl, arms, sk, tr), mk(opp.m, hn, lvl, arms, sk, tr), s).win) w++; n++;
-            if (!fight(mk(opp.m, hn, lvl, arms, sk, tr), mk(c2.m, hn, lvl, arms, sk, tr), s).win) w++; n++;
+            let r = fight(mk(c2.m, hn, lvl, arms, sk, tr), mk(opp.m, hn, lvl, arms, sk, tr), s); if (r.win) w++; n++; tk += r.ticks;
+            r = fight(mk(opp.m, hn, lvl, arms, sk, tr), mk(c2.m, hn, lvl, arms, sk, tr), s); if (!r.win) w++; n++; tk += r.ticks;
           }
-          row[key].push(Math.round(100 * w / n));
+          row[key].push(Math.round(100 * w / n)); (row["t" + key] = row["t" + key] || []).push(Math.round(tk / n * ARENA_TICK_MS / 100) / 10); /* v1476: avg fight length in seconds */
         }
-        if (ALL3) { let w = 0, n = 0; for (let s = 1; s <= SEEDS; s++) { if (fight(mk(a.m, hn, lvl, arms, sk, tr), mk(b.m, hn, lvl, arms, sk, tr), s).win) w++; n++; if (!fight(mk(b.m, hn, lvl, arms, sk, tr), mk(a.m, hn, lvl, arms, sk, tr), s).win) w++; n++; } row.i3.push(Math.round(100 * w / n)); }
+        if (ALL3) { let w = 0, n = 0, tk = 0; for (let s = 1; s <= SEEDS; s++) { let r = fight(mk(a.m, hn, lvl, arms, sk, tr), mk(b.m, hn, lvl, arms, sk, tr), s); if (r.win) w++; n++; tk += r.ticks; r = fight(mk(b.m, hn, lvl, arms, sk, tr), mk(a.m, hn, lvl, arms, sk, tr), s); if (!r.win) w++; n++; tk += r.ticks; } row.i3.push(Math.round(100 * w / n)); (row.ti3 = row.ti3 || []).push(Math.round(tk / n * ARENA_TICK_MS / 100) / 10); }
       }
       out.push(row);
     }
