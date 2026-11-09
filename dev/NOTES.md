@@ -4271,3 +4271,15 @@ Harley's 3 points:
 - Wired in: IDLE_ENVIRONMENTS + "swamp" (chapter 15, the end), LIGHTNING_OFF_ENVS, IDLE_SKY_TOP / HIGH, the dusk sky gradient, the 4 level-name tables ("Misty swamp"), TMP_ENV_BG.swamp. The 4 lantern / window lights get the flicker glow. Fingerprints stamped. The fight is untouched.
 - Chapters past 14 used to wrap round to the village; chapter 15 is now the swamp.
 - Headless (430x932 at 2x): chapter 15 shows the swamp with no errors. Fortress, heroes and enemies stand on the planks at the same depth as the pine forest road (chapter 12, compared side by side). Not checked on a phone.
+
+## v1483 — New level: jungle temple ruins (chapter 16 for now, TEST)
+- Harley: giant statues in the near layer, big but NOT with their tops chopped. Made with the level-background skill.
+- Three complete guardian statues (spear, great sword, seated) with turquoise runes, broken columns, stairs and ferns. Behind them: a stepped pyramid with a waterfall over the jungle canopy. Road: mossy stone slabs over earth, roots and buried carved blocks.
+- dev/levels/build_jungle.py (from build_swamp.py):
+  - Near: GPT drew it 62 px LOWER (same scale, found with an edge match). The drift search now takes a range, and the layer is cut from the composite with the stencil shifted back. The statues' tops are at ~row 124 and the layer starts at 90, so nothing is cut.
+  - Far: colour-matched. The repeat join is kept in the plain canopy (seamless_cut search 60; the default cut at the cliff edge made a hard step). Purple-tinted pixels are pulled to green.
+  - Road: full depth, stone surface 772-792, walking line at 778 (road 28, top 16 at 2x).
+- New: layer glows can take a colour (4th value [r,g,b]) = a slow pulse instead of the flame flicker. The 6 rune spots pulse turquoise.
+- Wired in: IDLE_ENVIRONMENTS + "jungle", LIGHTNING_OFF_ENVS, sky colours and gradient, level names ("Jungle temple"), TMP_ENV_BG.jungle. Fingerprints stamped.
+- Headless: chapter 16 shows the jungle with no errors. The fortress and enemies stand on the slabs, and the statues are complete with sky above. Not checked on a phone.
+- Note: the slab surface is shallower than the pine forest's dirt road. Kept as GPT drew it (no squashing / stretching).

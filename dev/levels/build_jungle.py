@@ -62,8 +62,13 @@ s_m, s_s = lab(far)[fv].mean(0), lab(far)[fv].std(0) + 1e-3; r_m, r_s = lab(comp
 k = 0.7; t_m, t_s = s_m + (r_m - s_m) * k, s_s + (r_s - s_s) * k
 print("far LAB", np.round(s_m, 1), "->", np.round(t_m, 1))
 far[..., :3] = cv2.cvtColor(np.clip((lab(far) - s_m) / s_s * t_s + t_m, 0, 255).astype(np.uint8), cv2.COLOR_LAB2RGB)
+# despill: magenta-tinted fringe pixels along the canopy edge (purple specks after the key) -> pulled to green-grey; only near transparency
+edge = cv2.dilate((far[..., 3] < 200).astype(np.uint8), np.ones((7, 7), np.uint8)) > 0
+R, G, Bc = far[..., 0], far[..., 1], far[..., 2]; pink = (R > G + 8) & (Bc > G + 8)   # anywhere: nothing in this layer is really purple (stone is warm, mist is blue) - the specks sit in leaf gaps too
+far[..., 0] = np.where(pink, np.minimum(R, G), R); far[..., 2] = np.where(pink, (Bc + G) / 2, Bc)
+far[..., 3] = np.where(edge & (far[..., 3] < 90), 0, far[..., 3]); print("far despill px", int(pink.sum()))
 farI = Image.fromarray(far.astype(np.uint8), "RGBA").crop((0, FAR_TOP, 1536, ROAD_TOP + 1))
-farC = seamless_cut(farI); save(farC, "jungle_far")
+farC = seamless_cut(farI, search=60); save(farC, "jungle_far")   # search 60: keep the join in the plain canopy right of the waterfall cliff (the default 260 cut at the cliff's edge = a hard step)
 
 # ---- road: full depth, seamless, 2x crisp ----
 road = key(Image.open(os.path.join(SRC, "jungle_layer_road_gpt_try1_1536x1024.png"))).crop((0, ROAD_CROP, 1536, 1024))
