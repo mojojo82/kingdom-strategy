@@ -13067,7 +13067,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1476"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1477"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -22503,6 +22503,11 @@ function heroHandPos(key, feetX, feetY, scale, facingRight) { /* v1123: release 
   var a = HERO_ANIMS[key], k = a.dispH * (a.sizeMul || 1) * scale / a.ch, hp = a.hand || [0, 30];
   return { x: feetX + (facingRight ? 1 : -1) * hp[0] * k, y: feetY - hp[1] * k };
 }
+function drawJunoShell(ctx, shS) { /* v1476: Juno's scrap shell (Conquest + Arena), drawn at the flight point already rotated along the arc - dark iron ball, hot core, short smoke tail */
+  ctx.fillStyle = "rgba(150,140,130,0.35)"; ctx.beginPath(); ctx.arc(-7 * shS, 0, 2.6 * shS, 0, Math.PI * 2); ctx.arc(-12 * shS, 0, 2 * shS, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#3a3330"; ctx.beginPath(); ctx.arc(0, 0, 2.8 * shS, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(255,170,60,0.9)"; ctx.beginPath(); ctx.arc(-0.8 * shS, 0, 1.2 * shS, 0, Math.PI * 2); ctx.fill();
+}
 function heroReleaseSec(key) { var a = HERO_ANIMS[key]; return a && a.release != null ? a.release / a.fps.attack : 0; }
 var heroSpearImgCache = {};
 function heroSpearImg(key) { var a = HERO_ANIMS[key]; if (!a || !a.spear) return null; var c = heroSpearImgCache[key]; if (!c) { c = heroSpearImgCache[key] = new Image(); c.src = a.spear; } return c.complete && c.naturalWidth ? c : null; }
@@ -27825,10 +27830,7 @@ function drawIdleAnim(ctx, w, h) {
       ctx.translate(p.x, p.y); ctx.rotate(angle);
       var spI = p.style === "spear" ? heroSpearImg("roran") : null;
       if (spI) { var spL = 27 * (heroSpriteVisualScale / 100); ctx.drawImage(spI, -spL * 0.62, -spL * 0.1, spL, spL * 0.2); } /* v1123: Roran's lance (tip ahead of the flight point) */
-      else if (p.style === "shell") { var shS = heroSpriteVisualScale / 100; /* v1476: Juno's scrap shell - dark iron ball, hot core, short smoke tail */
-        ctx.fillStyle = "rgba(150,140,130,0.35)"; ctx.beginPath(); ctx.arc(-7 * shS, 0, 2.6 * shS, 0, Math.PI * 2); ctx.arc(-12 * shS, 0, 2 * shS, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#3a3330"; ctx.beginPath(); ctx.arc(0, 0, 2.8 * shS, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "rgba(255,170,60,0.9)"; ctx.beginPath(); ctx.arc(-0.8 * shS, 0, 1.2 * shS, 0, Math.PI * 2); ctx.fill(); }
+      else if (p.style === "shell") drawJunoShell(ctx, heroSpriteVisualScale / 100);
       else { var s = getCavalryArcSprite();
       ctx.drawImage(s.canvas, -s.ox, -s.oy); }
       ctx.restore();
@@ -36283,6 +36285,7 @@ function drawArenaFrame(ctx, w, h) {
       var dy = (p.toY - p.startY) - Math.PI * Math.cos(p.t * Math.PI) * ARENA_CAV_ARC_LIFT;
       var angle = Math.atan2(dy, dx);
       ctx.translate(p.x, p.y); ctx.rotate(angle);
+      if (p.style === "shell") { drawJunoShell(ctx, heroSpriteVisualScale / 100); ctx.restore(); return; }
       ctx.shadowColor = "#ffe27a"; ctx.shadowBlur = 7;
       ctx.strokeStyle = "#c99a5e"; ctx.lineWidth = 2; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(4, 0); ctx.stroke();
@@ -37073,9 +37076,10 @@ function renderArenaBattleScreen() {
         if (!def || def.class === "infantry") return;
         (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["p_" + id] = performance.now();
         var idx = arenaAnim.playerRoster.indexOf(id), slot = arenaSlotPos(w, h, idx, true);
-        var kh = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null;
+        var kh = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? heroHandPos(id, slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null; /* v1476: Juno fires from her muzzle */
         var htP = state.hitTargets && state.hitTargets["p_" + id], hpP = htP && htP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + htP] : null; // a hit on an enemy infantry hero flies at him, not the fortress
-        spawnArenaProjectile(kh ? kh.x : slot.x, kh ? kh.y : slot.y, hpP ? hpP.x : aiCenter.x, hpP ? hpP.y : (kh ? aiCenter.y : slot.y), false, "#8ff0ff", def.class === "cavalry", id === "kessa" ? "orb" : SPELL_COLS[id] ? "spell" : null);
+        spawnArenaProjectile(kh ? kh.x : slot.x, kh ? kh.y : slot.y, hpP ? hpP.x : aiCenter.x, hpP ? hpP.y : (kh ? aiCenter.y : slot.y), false, "#8ff0ff", def.class === "cavalry", id === "kessa" ? "orb" : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? "shell" : SPELL_COLS[id] ? "spell" : null);
+        if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -heroReleaseSec(id) / 0.4; } /* v1476: leaves on her release frame */
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "p_" + id; }
         if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
         if (def.class === "cavalry") playerFiredArc = true; else playerFiredFlat = true;
@@ -37085,9 +37089,10 @@ function renderArenaBattleScreen() {
         if (!def || def.class === "infantry") return;
         (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["a_" + id] = performance.now();
         var idx = arenaAnim.aiRoster.indexOf(id), slot = arenaSlotPos(w, h, idx, false);
-        var kh2 = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null;
+        var kh2 = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? heroHandPos(id, slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null; /* v1476: Juno fires from her muzzle */
         var htA = state.hitTargets && state.hitTargets["a_" + id], hpA = htA && htA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + htA] : null;
-        spawnArenaProjectile(kh2 ? kh2.x : slot.x, kh2 ? kh2.y : slot.y, hpA ? hpA.x : playerCenter.x, hpA ? hpA.y : (kh2 ? playerCenter.y : slot.y), false, "#ff8a8a", def.class === "cavalry", id === "kessa" ? "orb" : SPELL_COLS[id] ? "spell" : null);
+        spawnArenaProjectile(kh2 ? kh2.x : slot.x, kh2 ? kh2.y : slot.y, hpA ? hpA.x : playerCenter.x, hpA ? hpA.y : (kh2 ? playerCenter.y : slot.y), false, "#ff8a8a", def.class === "cavalry", id === "kessa" ? "orb" : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? "shell" : SPELL_COLS[id] ? "spell" : null);
+        if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -heroReleaseSec(id) / 0.4; } /* v1476: leaves on her release frame */
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "a_" + id; }
         if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
         if (def.class === "cavalry") aiFiredArc = true; else aiFiredFlat = true;

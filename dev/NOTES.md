@@ -4201,3 +4201,11 @@ Harley's 3 points:
   - The hero card portrait is a placeholder cut from her design art (art/originals/heroes/juno/card/). A proper portrait needs a mockup.
 - Fortress spot: HERO_POS_DEFAULTS gives her a default deck offset {0, -20}, so older saves don't put her behind the hull. In the back slot the superstructure hides her lower half, like the other riders there.
 - Headless: Conquest with Juno in slots 2 and 3 runs with no errors, she fires and her skill lands. A splash spark bug (an undefined enemy y) was found and fixed.
+
+## v1477 — Juno's Arena shot + hero card standard (TEST)
+- Arena / World PvP: Juno's basic shot now uses her scrap shell from her muzzle, leaving on her release frame (was the plain spear lob). The shell drawing is shared: drawJunoShell.
+- Not yet checked visually in a headless Arena fight. Conquest headless still has no errors.
+- Hero card standard (Harley, 10 Nov) is in the handover:
+  - Static cards: upper body, room above the head, arms in frame.
+  - Card animations: a heroic pose, then the later part loops, on a plain background.
+- Juno's new GPT card portrait is in art/originals/heroes/juno/card/. Waiting for Harley's OK before it replaces the placeholder in the game.
