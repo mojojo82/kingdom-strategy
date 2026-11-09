@@ -20,6 +20,7 @@ def lab(a): return cv2.cvtColor(np.ascontiguousarray(a), cv2.COLOR_RGB2LAB).asty
 for path in sorted(glob.glob(os.path.join(SRC, "armoury2_mod_*_gpt_1536x1024.png"))):
     name = os.path.basename(path)[len("armoury2_mod_"):-len("_gpt_1536x1024.png")]
     g = np.asarray(Image.open(path).convert("RGB"))
+    if g.shape[1] < 1536: g = np.concatenate([g, np.repeat(g[:, -1:], 1536 - g.shape[1], 1)], 1)   # GPT sometimes returns 1535 wide
     tpl = gray(canvas)[60:WALL_TOP - 20, 40:1496]                              # the roof
     res = cv2.matchTemplate(gray(g)[30:WALL_TOP + 10, 10:1526], tpl, cv2.TM_CCOEFF_NORMED); _, mx, _, loc = cv2.minMaxLoc(res)
     dx, dy = loc[0] - 30, loc[1] - 30
