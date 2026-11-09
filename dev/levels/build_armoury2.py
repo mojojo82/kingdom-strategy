@@ -59,6 +59,9 @@ solid = rk[..., 3] > 200; solid[:FLOOR_TOP] = False
 rk[..., :3] = transfer(rk, lab(rk)[solid], lab(base)[solid])
 road = Image.fromarray(rk, "RGBA").crop((0, FLOOR_TOP - 4, 1536, 1024))
 road = seamless(road); road.save(os.path.join(FULL, "armoury2_road.png")); print("armoury2_road", road.size)
+r2 = road.resize((road.width * 2, road.height * 2), Image.NEAREST)               # 2x crisp, like the old armoury road (upx 2)
+r2.save(os.path.join(ROOT, "art/levels/armoury2_road.webp"), quality=90, method=6)
+al = np.asarray(r2.getchannel("A")); tops = sorted(int(np.argmax(al[:, x] > 200)) for x in range(0, r2.width, 40)); print("road solid top (2x row)", tops[len(tops) // 2])
 # ---- preview: wall x3 with the road under it ----
 W3 = P * 3; H = wallI.height + road.height - 4
 pv = Image.new("RGBA", (W3, H), (0, 0, 0, 255))
