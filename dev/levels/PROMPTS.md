@@ -157,3 +157,49 @@ Using the last image, keep EXACTLY the same layout, size and positions of everyt
 - landscape, 1536x1024
 ```
 Then: the road (usual prompt), the extend-up canvas, making the base seamless (me), one widen-style canvas per module (plain | white | plain), and the module-strip code.
+
+Done 9 Nov: brightness (armoury2_base_bright_gpt, wall L 94), road (armoury2_layer_road_gpt, lines up 0,0), extend-up (armoury2_base_ext_gpt,
+fresh chat, canvas armoury2_base_extend_canvas), seamless base (dev/levels/build_armoury2.py: repeat = pillar centre to pillar centre, 1381 px).
+
+**Module canvas** (dev/levels/make_armoury2_module_canvas.py -> armoury2_module_canvas_1536x1024.png): one full bay of the base, pillar to
+pillar, roof / pillars / floor kept, ONLY the plain wall between the pillars white (x 127-1408, y 612-950). One FRESH chat per module,
+attach the canvas, then the full prompt below with that module's lines filled in.
+```
+The attached image is the inside of a castle armoury for a 2D side-scrolling game: a wooden roof, two stone pillars and a flagstone floor, with an empty white area on the back wall between the two pillars.
+
+Fill ONLY the white area with <module>:
+<module lines>
+- the plain stone block wall continues behind everything, with the same stone blocks, colours and even warm lighting as the wall just above the white area and next to the pillars
+- everything stands on the flagstone floor line along the bottom of the white area; nothing sticks out past the pillars, up into the roof beams or onto the floor in front
+- no characters, no text
+- no white left anywhere
+
+Do NOT change anything outside the white area: keep the roof, the two stone pillars and the floor exactly as they are, every pixel in the same place, same size and same colours. Do not redraw, move, shrink or recolour them.
+
+Same detailed hand-painted pixel-art style, same colours and the same warm golden lighting as the existing picture.
+Landscape, 1536x1024.
+```
+Module lines:
+- **Forge:** `a blacksmith's forge` /
+  `- a big stone forge in the middle with glowing orange coals, and a stone hood above it whose chimney goes up to the top of the white area` /
+  `- an iron anvil on a wooden stump beside the forge, a wooden quench barrel of water, and a pile of coal` /
+  `- blacksmith tools (hammers, tongs, files) hanging on the wall` /
+  `- the forge glow stays small, close to the coals; the rest of the wall keeps the same even lighting, no light beams`
+- **Weapons and armour:** `weapon racks and armour` /
+  `- two wooden weapon racks holding swords, spears and axes` /
+  `- two armour stands with full plate armour and helmets, standing between the racks` /
+  `- a few round wooden shields with iron rims hanging on the wall above the racks`
+- **Windows:** `two windows` /
+  `- two tall arched windows set into the stone wall, with carved stone frames and leaded glass panes, the same size and evenly spaced` /
+  `- through the windows, a bright blue daytime sky with a few soft clouds` /
+  `- a long low wooden bench against the wall under the windows` /
+  `- no light beams on the wall or floor`
+- **Big door:** `one big closed door` /
+  `- a big closed double door in the middle: heavy dark wooden planks with iron bands, iron studs and two iron ring handles` /
+  `- a complete round stone arch around the door, symmetrical, its base standing on the floor on both sides` /
+  `- an iron wall torch on each side of the door with a small flame; the glow stays small, no light beams`
+- **Passage:** `one open passageway` /
+  `- a wide open archway in the middle of the wall: a complete, symmetrical round stone arch, its base standing on the floor on both sides` /
+  `- the inside of the opening (where you would see through to the next hall) is solid flat magenta (#FF00FF), filling the whole opening right down to the floor line` /
+  `- nothing else on the wall`
+  (the hall seen through it is a separate image that slides via the `peek` layer, like the v1465 arch)
