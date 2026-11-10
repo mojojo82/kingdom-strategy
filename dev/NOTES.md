@@ -4328,3 +4328,6 @@ Harley's 3 points:
 - Harley: the diamond option should have straight sides, not rounded. The diamond shape (shape 0) used to be a "superellipse" whose Roundness bulged the sides outward; now it's a true diamond with straight sides, and Roundness only rounds the corners (1 = sharp corners, the default 1.6 = slightly rounded, 2.5 = very rounded). Same change in the game (baseWaterBuild) and in dev/labs/base-water-lab.html, so the lab still shows exactly what the game draws.
 - The skins' saved values stay; with the new meaning the Watchtower (1.15) and Royal Castle (1.05) get almost sharp corners, the others (default 1.6) slightly rounded ones.
 - Headless: the lab before/after shows the straight-sided diamond; no errors.
+
+## v1492 — Base water styles renamed (TEST + lab)
+- Harley: "Classic" is really "Trace". The two base water styles are now called Trace (foam follows the base outline; was Classic, and "Game now" in the lab) and Shape (glow + rings round a fitted shape; was New, and "New look" in the lab). Labels only: saved values stay "classic" / "new", nothing looks different.
