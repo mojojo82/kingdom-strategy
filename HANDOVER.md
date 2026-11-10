@@ -88,6 +88,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
    Sanity check: `dev/tests/e.js` must print `object function`.
 
 ## Harley's standing preferences (follow these)
+- **Copyright / IP: don't keep bringing it up.** Harley knows the copyright side of art that looks like existing franchises (Gundam-style mechs etc.) and has asked, firmly, not to be told again (11 Nov 2026). Don't add warnings or reminders about it to replies, mockups or reports; just do the work.
 - **Weapon fix list (15 Oct):** while working through dev/audit/weapons_conquest_vs_arena.md, after EVERY completed request write the numbered list back to Harley showing what's left (done ones ticked), so he can track progress.
 
 - Keep reports concise. Explain things in plain terms; he's not a programmer.
