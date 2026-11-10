@@ -4304,3 +4304,10 @@ Harley's 3 points:
 - Interiors are one plane: ONE scene layer, placed like the Great Hall (scale 0.34) so the wall base sits on the floor's back edge. The floor is at full depth (not squashed); the walking line is in the middle of the red carpet (road 148). The wrap join is a pillar between two banners.
 - Braziers, candelabras and the chandelier flicker (glows). dev/levels/build_throneroom.py.
 - Headless: chapter 17 loads as the throne room, no errors. Line-up beside the Great Hall: heroes and enemies stand on the carpet with marble behind them. The fight is untouched.
+
+## v1488 — Sky docks level, chapter 18 (TEST)
+- Harley: the fight is on board an airship, and leave open sky for flying airships he adds later. No airships are drawn anywhere; the upper sky is open on purpose.
+- ChatGPT composite (village sharp ref): the deck of a big wooden sky-ship - railing with brass posts, three complete masts with crow's nests and flags (tops inside the picture), a brass steam engine, crates, barrels, ropes, a deck cannon and lanterns; a cloud sea with snowy peaks far below.
+- Splits in the same chat: deck + hull (lines up exactly: back edge 722, brass trim 858), far (cloud sea), near (lines up 0,0 - used as a stencil on the composite, without the usual erode so the thin ropes and rope ladders stay), sky.
+- Deck at full depth; the walking line is about half way into the planks (road 144). Near and far stand on the deck's back edge (baseY worked out from the road numbers, like the throne room). Lanterns flicker.
+- Headless: chapter 18 loads as the sky docks, no errors; heroes and enemies stand in the middle of the deck while scrolling. The fight is untouched.
