@@ -4293,3 +4293,7 @@ Harley's 3 points:
 ## v1485 — Dev Tools: chapter jump lists every level (TEST)
 - Harley: 15 Misty swamp and 16 Jungle temple were missing from Dev Tools "Jump to chapter". The buttons were a fixed 1-14 list.
 - Now counted from the level list (chapters until the scenery wraps back to the village), so new levels appear on their own. Headless: 16 buttons, no errors.
+
+## v1486 — Jungle temple: road try 3 (TEST)
+- Harley: the try 2 paving was too wide (deep). Try 3, from the same fresh chat ("two thirds as deep"), has ~48-row paving (708-756), between the stream / pine forest and the Great Hall. The walking line is ~37% in (road 72, top 36 at 2x).
+- Shown to Harley first as a mockup beside try 2, then beside the village, stream, pine forest and Great Hall. He said "put it in".
