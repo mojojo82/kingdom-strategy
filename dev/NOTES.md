@@ -4323,3 +4323,8 @@ Harley's 3 points:
 - The first skin made with the new skin process (Harley, 11 Nov): ChatGPT design (square / diamond footprint, plain white background, for Meshy) -> Meshy 3D model -> Harley renders it at the 35 deg isometric view -> ChatGPT repaints the render in the style of the Mecha + Neptune skins (on flat magenta) -> keyed, trimmed, 600 px WebP.
 - CITY_SKINS.techfort ("Tech Fortress", scale 1.35 - wide and low, so it needs the boost to read at castle size), added to CITY_SKIN_ORDER, foundation point baked into CITY_ART_BAKED (measured headless). Free like the other skins (only Neptune is locked).
 - Originals: art/originals/skins/castle_designs/ (design, Meshy render, restyle, cut-out). Headless: picked as my skin, draws on its tile next to Neptune / castle / Mecha, no errors. Not tried on the phone.
+
+## v1491 — Base water: the diamond has straight sides (TEST + Base Water Lab)
+- Harley: the diamond option should have straight sides, not rounded. The diamond shape (shape 0) used to be a "superellipse" whose Roundness bulged the sides outward; now it's a true diamond with straight sides, and Roundness only rounds the corners (1 = sharp corners, the default 1.6 = slightly rounded, 2.5 = very rounded). Same change in the game (baseWaterBuild) and in dev/labs/base-water-lab.html, so the lab still shows exactly what the game draws.
+- The skins' saved values stay; with the new meaning the Watchtower (1.15) and Royal Castle (1.05) get almost sharp corners, the others (default 1.6) slightly rounded ones.
+- Headless: the lab before/after shows the straight-sided diamond; no errors.

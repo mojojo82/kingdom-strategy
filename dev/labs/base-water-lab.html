@@ -147,7 +147,7 @@ var GROUPS = [
     ["fpX", "Left / right", -0.3, 0.3, 0.005, 0, ""],
     ["fpY", "Up / down", -0.25, 0.25, 0.005, 0, ""],
     ["rot", "Rotation", -60, 60, 0.5, 0, "°"],
-    ["round", "Roundness (diamond / box)", 1, 2.5, 0.05, 1.6, ""],
+    ["round", "Roundness (diamond corners / box)", 1, 2.5, 0.05, 1.6, ""],
     ["taper", "Boat point (− left, + right)", -1, 1, 0.01, 0.6, ""]
   ]],
   ["Glow (shallow water)", "skin", [
@@ -257,8 +257,13 @@ function buildNew(k, im, P) {
   var reach = Math.max(P.glowSize * R * 3.2, P.rimW * R * 3) + 4, ringPad = P.ringW * R * 3 + 4;
   // glow canvas covers the footprint + reach; distances are measured in the map's squashed (iso) space via the normalised footprint
   // shape: 0 diamond (roundness), 1 oval, 2 rounded box, 3 boat (oval, one end pointed by taper); turned by rot, then measured in the footprint's own units
+  var rdia = function (u, v, p) { /* v1491 (Harley): the diamond keeps STRAIGHT sides; Roundness now only rounds its corners (1 = sharp) */
+    var b = Math.SQRT1_2, r = Math.max(0, Math.min(0.6, (p - 1) * 0.4)) * b, a = (u + v) * Math.SQRT1_2, c = Math.abs(u - v) * Math.SQRT1_2;
+    var qx = a - (b - r), qy = c - (b - r), d = Math.sqrt(Math.pow(Math.max(qx, 0), 2) + Math.pow(Math.max(qy, 0), 2)) + Math.min(Math.max(qx, qy), 0) - r;
+    return 1 + d * 2 * Math.SQRT1_2; };
   function norm(dx, dy) {
     var X = dx * rc0 + dy * rs0, Y = -dx * rs0 + dy * rc0, u = Math.abs(X) / hw, v = Math.abs(Y) / hh, q = p;
+    if (shape === 0) return rdia(u, v, p);
     if (shape === 1) q = 2; else if (shape === 2) q = Math.max(4, p * 2.5); else if (shape === 3) q = (X * P.taper > 0) ? 2 - 0.95 * Math.abs(P.taper) : 2;
     return Math.pow(Math.pow(u, q) + Math.pow(v, q), 1 / q);
   }

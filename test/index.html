@@ -13086,7 +13086,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1490"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1491"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17109,8 +17109,13 @@ function baseWaterBuild(m, im) {
   var hw = Math.max(10, (hi[yw] - lo[yw]) / 2) * P.fpW, hh = Math.max(6, maxb - yw) * P.fpD, cx = (lo[yw] + hi[yw]) / 2 + P.fpX * R, cy = yw + P.fpY * R, pexp = P.round, shape = P.shape | 0;
   var ra = P.rot * Math.PI / 180, rc0 = Math.cos(ra), rs0 = Math.sin(ra);
   /* v1065 shape: 0 diamond (round), 1 oval, 2 rounded box, 3 boat (oval with one end pointed by taper, - = left); turned by rot degrees */
+  var rdia = function (u, v, p) { /* v1491 (Harley): the diamond keeps STRAIGHT sides; Roundness now only rounds its corners (1 = sharp) */
+    var b = Math.SQRT1_2, r = Math.max(0, Math.min(0.6, (p - 1) * 0.4)) * b, a = (u + v) * Math.SQRT1_2, c = Math.abs(u - v) * Math.SQRT1_2;
+    var qx = a - (b - r), qy = c - (b - r), d = Math.sqrt(Math.pow(Math.max(qx, 0), 2) + Math.pow(Math.max(qy, 0), 2)) + Math.min(Math.max(qx, qy), 0) - r;
+    return 1 + d * 2 * Math.SQRT1_2; };
   var norm = function (dx, dy) {
     var X = dx * rc0 + dy * rs0, Y = -dx * rs0 + dy * rc0, q = pexp;
+    if (shape === 0) return rdia(Math.abs(X) / hw, Math.abs(Y) / hh, pexp);
     if (shape === 1) q = 2; else if (shape === 2) q = Math.max(4, pexp * 2.5); else if (shape === 3) q = (X * P.taper > 0) ? 2 - 0.95 * Math.abs(P.taper) : 2;
     return Math.pow(Math.pow(Math.abs(X) / hw, q) + Math.pow(Math.abs(Y) / hh, q), 1 / q);
   };
