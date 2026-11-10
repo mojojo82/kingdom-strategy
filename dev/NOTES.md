@@ -4297,3 +4297,10 @@ Harley's 3 points:
 ## v1486 — Jungle temple: road try 3 (TEST)
 - Harley: the try 2 paving was too wide (deep). Try 3, from the same fresh chat ("two thirds as deep"), has ~48-row paving (708-756), between the stream / pine forest and the Great Hall. The walking line is ~37% in (road 72, top 36 at 2x).
 - Shown to Harley first as a mockup beside try 2, then beside the village, stream, pine forest and Great Hall. He said "put it in".
+
+## v1487 — Throne room level, chapter 17 (TEST)
+- The second castle interior (Harley's plan has it at 16; new levels go on the end and the order gets sorted later). ChatGPT composite: a golden throne on a dais, stained glass, blue lion banners, a crystal chandelier, pillars.
+- Two passes in fresh chats: the floor without the dais steps (marble, red carpet, gold-trimmed foundation across the full width), and an extend-up of 280 rows (vaults, round windows, the chandelier chain). The extend-up lined up exactly with the composite.
+- Interiors are one plane: ONE scene layer, placed like the Great Hall (scale 0.34) so the wall base sits on the floor's back edge. The floor is at full depth (not squashed); the walking line is in the middle of the red carpet (road 148). The wrap join is a pillar between two banners.
+- Braziers, candelabras and the chandelier flicker (glows). dev/levels/build_throneroom.py.
+- Headless: chapter 17 loads as the throne room, no errors. Line-up beside the Great Hall: heroes and enemies stand on the carpet with marble behind them. The fight is untouched.

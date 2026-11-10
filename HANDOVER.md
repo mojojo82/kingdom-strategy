@@ -143,8 +143,8 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **LEVEL ART STATUS (9 Nov 2026) - read this before any level work:**
   - **Levels so far** (chapter = position in IDLE_ENVIRONMENTS):
     1 village, 2 night, 3 snow, 4 rain, 5 cave, 6 crystal, 7 volcano, 8 desert, 9 clockwork foundry (animated gears),
-    10 castle gate, 11 rocky stream, 12 pine forest (v2), 13 Great Hall, 14 **armoury** (v1460-v1469), 15 **misty swamp** (v1482, made by Claude on its own with the level-background skill - Harley's test of the skill), 16 **jungle temple ruins** (v1483; Harley's plan has it at 18 - the order gets sorted once every level exists).
-    **Next: 16 throne room** (the last castle interior).
+    10 castle gate, 11 rocky stream, 12 pine forest (v2), 13 Great Hall, 14 **armoury** (v1460-v1469), 15 **misty swamp** (v1482, made by Claude on its own with the level-background skill - Harley's test of the skill), 16 **jungle temple ruins** (v1483; Harley's plan has it at 18 - the order gets sorted once every level exists). 17 **throne room** (v1487; Harley's plan has it at 16) - one scene layer (composite + a 280-row extend-up) on a full-depth floor, built by dev/levels/build_throneroom.py.
+    **Next: sky docks** (then burning battlefield, then the enemy citadel finale).
     **Plan for the last five (Harley picked, 10 Nov; 20 levels total):** 16 throne room, 17 sky docks (airship port on cliffs above the clouds, brass cranes, gas balloons, iron-grating road), 18 jungle temple ruins (vines over stone, waterfalls, glowing runes), 19 burning battlefield (war-torn plain, broken siege engines, smoke, banners), 20 enemy citadel - the finale (dark storm fortress, lightning, red-lit towers).
   - **Armoury in TEST (v1469) works**, and is built by `dev/levels/build_armoury.py`. It is ONE scene layer: Harley's original composite, plus a roof from the extend-up passes, plus a symmetrical arch (left half mirrored about col 1388), plus the widened section (door, workbench, shield rack). Width 2312, plus the floor layer.
     Only the hall seen through the arch moves: the new `peek` layer option (see NOTES v1465).
