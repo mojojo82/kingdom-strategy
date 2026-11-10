@@ -4311,3 +4311,5 @@ Harley's 3 points:
 - Splits in the same chat: deck + hull (lines up exactly: back edge 722, brass trim 858), far (cloud sea), near (lines up 0,0 - used as a stencil on the composite, without the usual erode so the thin ropes and rope ladders stay), sky.
 - Deck at full depth; the walking line is about half way into the planks (road 144). Near and far stand on the deck's back edge (baseY worked out from the road numbers, like the throne room). Lanterns flicker.
 - Headless: chapter 18 loads as the sky docks, no errors; heroes and enemies stand in the middle of the deck while scrolling. The fight is untouched.
+
+- Deploy fix: the Pages site had grown to ~1.46 GB (over the 1 GB limit) and the deploy timed out twice. New _config.yml leaves art/originals (the full-size originals, never loaded by the game) out of the published site; they stay in the repo.
