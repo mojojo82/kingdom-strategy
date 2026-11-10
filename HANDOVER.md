@@ -159,6 +159,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
     - An interior is ONE plane: walls, racks, forge and beams move together. Only what you see THROUGH an opening (arch, door, passage) moves, via `peek`. Don't split interiors into far/near parallax.
     - Archways should be symmetrical and complete.
     - Loop joins: prefer a SOLID mirror piece or a GPT-painted join over blending (blending ghosts).
+  - **Road too side-on = the usual GPT problem (Harley, 10 Nov):** if the road's walkable top surface is thinner than ~40 rows (of 1024), units stand on its back edge. Don't shift the art; regenerate the road in a FRESH chat (full scene + the thin road attached): "viewed from slightly HIGHER, looking a little down, the paved top surface about TWICE as deep (~45 px), the back edge stays where it was, deeper paving extends downwards". Jungle try 1 = 20 rows (bad), try 2 = ~62 rows (good). Then set the walking line ~35-40% into the band. Measure this BEFORE wiring the level in, and check a line-up screenshot with heroes on the ground (put the new backdrop on chapter 1 in the test so the team survives).
   - **Canvas method (works far better than asking GPT to move things):**
     - **Extend-up:** I build a 1536x1024 canvas with the layer already pushed down and white space on top. Harley fills it in a FRESH chat ("fill ONLY the white area... do NOT change anything in the existing part"). It comes back almost pixel-exact.
     - **Widen:** canvas = the scene's end | white | the scene's start. GPT paints a new section that joins both ends.

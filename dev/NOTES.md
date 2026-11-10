@@ -4283,3 +4283,9 @@ Harley's 3 points:
 - Wired in: IDLE_ENVIRONMENTS + "jungle", LIGHTNING_OFF_ENVS, sky colours and gradient, level names ("Jungle temple"), TMP_ENV_BG.jungle. Fingerprints stamped.
 - Headless: chapter 16 shows the jungle with no errors. The fortress and enemies stand on the slabs, and the statues are complete with sky above. Not checked on a phone.
 - Note: the slab surface is shallower than the pine forest's dirt road. Kept as GPT drew it (no squashing / stretching).
+
+## v1484 — Jungle temple: deeper road (TEST)
+- Harley: the enemies stood right on the road's edge - the usual GPT "too side-on" road. Try 1's stone surface was only 20 rows (772-792).
+- Regenerated the road in a fresh chat (the old chat's reply came back empty), with the full scene and try 1 attached: "viewed from slightly higher, the paving about twice as deep". Try 2 has a ~62-row paving band (706-768) over the same earth, roots and carved blocks. The walking line is ~40% into it (road 82, top 34 at 2x).
+- Headless line-up (the jungle backdrop put on chapter 1 in the test, so the team survives): Gareth, Bram and the enemies stand well inside the paving, with stone in front of their feet. The statue bases now sit behind the paving's back edge. The fight is untouched.
+- Handover: a new lesson on measuring the road's surface depth before wiring a level in.

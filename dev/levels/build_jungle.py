@@ -4,7 +4,8 @@ their tops chopped. ChatGPT composite jungle_v1 (village sharp reference), then 
   far   = GPT far split (stepped pyramid, waterfall cliff, distant canopy), drift undone, colour-matched to the composite (GPT's was brighter)
   near  = composite pixels through GPT's near split as a stencil - GPT drew it 62 px LOWER (same scale, found by an edge match), shifted back.
           The three guardian statues are complete: tops at ~row 124, the layer starts at NEAR_TOP 90 so nothing is cut.
-  road  = GPT road try 1 (lines up row for row), FULL depth (no squashing): stone slab surface 772..792. Seamless, 2x crisp.
+  road  = GPT road try 2 (fresh chat, full scene + try 1 attached): try 1 was too side-on (slab surface only 772..792 - Harley: enemies stood
+          right on its edge). Try 2 views the paving a little from above: a ~62-row band 706..768, used at full depth. Seamless, 2x crisp.
 Writes art/levels/jungle_*.webp (+ PNGs in art/originals/backgrounds/jungle_built/), prints numbers for TMP_ENV_BG.jungle.
 Run: python3 dev/levels/build_jungle.py"""
 import os, sys
@@ -16,8 +17,8 @@ from build_snowpass import seamless_cut
 ROOT = os.path.join(os.path.dirname(__file__), "..", ".."); SRC = os.path.join(ROOT, "art/originals/backgrounds")
 OUT = os.path.join(ROOT, "art/levels"); FULL = os.path.join(SRC, "jungle_built"); os.makedirs(FULL, exist_ok=True)
 ROAD_TOP = 772          # composite row where the stone slab surface starts (layers stand on this line)
-ROAD_CROP = 764         # road image starts here
-WALK = 778              # walking line: ~30% into the 772..792 slab band
+ROAD_CROP = 690         # road image starts here (road try 2: fern tips above the paving's back edge at 706)
+WALK = 731              # walking line: ~40% into the 706..768 paving band (road try 2)
 NEAR_TOP, FAR_TOP = 90, 140
 def save(im, name, q=90):
     im.save(os.path.join(FULL, name + ".png")); im.save(os.path.join(OUT, name + ".webp"), quality=q, method=6); print(name, im.size)
@@ -71,7 +72,7 @@ farI = Image.fromarray(far.astype(np.uint8), "RGBA").crop((0, FAR_TOP, 1536, ROA
 farC = seamless_cut(farI, search=60); save(farC, "jungle_far")   # search 60: keep the join in the plain canopy right of the waterfall cliff (the default 260 cut at the cliff's edge = a hard step)
 
 # ---- road: full depth, seamless, 2x crisp ----
-road = key(Image.open(os.path.join(SRC, "jungle_layer_road_gpt_try1_1536x1024.png"))).crop((0, ROAD_CROP, 1536, 1024))
+road = key(Image.open(os.path.join(SRC, "jungle_layer_road_gpt_try2_1536x1024.png"))).crop((0, ROAD_CROP, 1536, 1024))   # try 2 (Harley: try 1 was too side-on, enemies stood on its edge) - fresh chat, viewed a little higher, paving ~62 rows deep
 r2 = seamless(road); r2 = r2.resize((r2.width * 2, r2.height * 2), Image.NEAREST)
 save(r2, "jungle_road")
 al = np.asarray(r2.getchannel("A")); tops = sorted(int(np.argmax(al[:, x] > 200)) for x in range(0, r2.width, 40))
