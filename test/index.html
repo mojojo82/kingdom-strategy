@@ -3595,6 +3595,11 @@
                     <input type="checkbox" id="devMapProfToggle"> 🗺️ Map timing on the FPS readout (screenshot it when the map is slow)
                   </label>
                 </div>
+                <div class="dev-tools-row">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;">
+                    <input type="checkbox" id="devInvasionToggle"> 🛸 Invasion simulation: each time you teleport, 10 bot cities (random skins) teleport in near you over 0-5 s and vanish after 30 s. This phone only, nobody else sees them; switching off removes them at once.
+                  </label>
+                </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
                   <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button>
                   <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
@@ -13079,7 +13084,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1488"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1489"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20261,7 +20266,7 @@ function nearBasesSave() {
   var home = game.state.homeTileId; if (!home) return;
   var hc = home.indexOf(","), hx = +home.slice(0, hc), hy = +home.slice(hc + 1), b = {}, n = 0;
   Object.keys(occupiedTileIds).forEach(function (id) {
-    var o = occupiedTileIds[id]; if (!o || o === "?" || id === home || n >= NEAR_BASES_MAX) return;
+    var o = occupiedTileIds[id]; if (!o || o === "?" || id === home || n >= NEAR_BASES_MAX || o.indexOf(DEV_INV_PREFIX) === 0) return; /* v1489: never remember invasion-sim bots */
     var c = id.indexOf(","), x = +id.slice(0, c), y = +id.slice(c + 1); if (Math.abs(x - hx) > NEAR_BASES_R || Math.abs(y - hy) > NEAR_BASES_R) return;
     var tg = allyIndexLoaded ? (ALLY.index[o] ? [ALLY.index[o].tag || "", ALLY.index[o].aid || ""] : null) : nearBasesTags[o];
     b[id] = tg && tg[0] ? [o, citySkinByTile[id] || "", tg[0], tg[1]] : [o, citySkinByTile[id] || ""]; n++;
@@ -28986,6 +28991,81 @@ document.getElementById("devZeroRp").onclick = function () { /* v1221 (Harley): 
 document.getElementById("devAddFragments").onclick = function () { Object.keys(game.state.heroes).forEach(function (k) { game.grantFragments(k, 50); }); persist(); render(); };
 (function () { var b = document.getElementById("devFindLostArt"); if (b) b.onclick = findLostArt; })();
 document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeSkillLeveling = e.target.checked; };
+/* v1489 (Harley): Dev Tools "Invasion simulation". While it's on, every teleport of mine sends in 10 bot cities with random city skins: each one
+   beams in at a random moment 0-5 s later, on a legal spot near my city (an empty tile whose 3x3 block is clear of the map edge, resources and
+   other bases, and not touching my own block), and is gone 30 s after it landed. Switching the tool off removes them all at once.
+   They exist on this phone only: they live in the normal base lookups (occupiedTileIds / citySkinByTile) so they draw, block placement and can be
+   tapped like any base, but nothing is sent to the server, they're never remembered (nearBasesSave skips them), and a 0.4 s tick puts them
+   back if a base-list refresh from the server wipes them. Not saved: off again after a reload. */
+var DEV_INV_PREFIX = "devinv_", DEV_INV_COUNT = 10, DEV_INV_MAXDELAY = 5000, DEV_INV_LIFE = 30000, DEV_INV_NEAR = 14;
+var devInvasionOn = false, devInvBots = {}, devInvTimers = [], devInvSeq = 0, devInvTick = null; /* devInvBots: tileId -> { owner, sk, until } */
+function devInvSkins() { return Object.keys(CITY_SKINS); }
+function devInvSpotOk(id, hx, hy) {
+  var xy = tileXY(id); if (Math.max(Math.abs(xy[0] - hx), Math.abs(xy[1] - hy)) <= BASE_FP_R * 2) return false; /* not touching my own block */
+  var t = mapTileAt(game.state.map, xy[0], xy[1]); if (!t || t.type !== "empty") return false;
+  for (var pid in devInvBots) { var p = tileXY(pid); if (Math.max(Math.abs(p[0] - xy[0]), Math.abs(p[1] - xy[1])) <= BASE_FP_R * 2) return false; } /* one still beaming in counts as a base already */
+  return !isTileOccupied(id) && !tileBlockReason(id);
+}
+function devInvFindSpot() { /* a random legal spot, nearest rings first (3..DEV_INV_NEAR tiles from my city) */
+  var home = game.state.homeTileId; if (!home) return null;
+  var h = tileXY(home), hx = h[0], hy = h[1], first = null;
+  for (var r = 3; r <= DEV_INV_NEAR; r++) {
+    var ring = [];
+    for (var dx = -r; dx <= r; dx++) for (var dy = -r; dy <= r; dy++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r) ring.push((hx + dx) + "," + (hy + dy));
+    for (var i = ring.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), tmp = ring[i]; ring[i] = ring[j]; ring[j] = tmp; }
+    var ok = ring.filter(function (id) { return devInvSpotOk(id, hx, hy); });
+    if (ok.length && Math.random() < 0.55) return ok[0]; /* sometimes skip a ring so they spread out a little */
+    if (ok.length && !first) first = ok[0];
+  }
+  return first;
+}
+function devInvRedraw() { try { renderVisibleTiles(); } catch (e) {} }
+function devInvRemove(id) {
+  var b = devInvBots[id]; if (!b) return; delete devInvBots[id];
+  if (String(occupiedTileIds[id] || "").indexOf(DEV_INV_PREFIX) === 0) { delete occupiedTileIds[id]; delete citySkinByTile[id]; delete cityHp[id]; }
+  if (selectedTile === id) { selectedTile = null; try { renderTileInfo(); } catch (e) {} }
+}
+function devInvLand() {
+  if (!devInvasionOn) return;
+  var id = devInvFindSpot(); if (!id) return;
+  var owner = DEV_INV_PREFIX + (++devInvSeq), sk = devInvSkins()[Math.floor(Math.random() * devInvSkins().length)];
+  ownerProfileCache[owner] = { name: "Invader " + devInvSeq, avatar: null, bot: true };
+  devInvBots[id] = { owner: owner, sk: sk, until: Date.now() + DEV_INV_LIFE };
+  try { spawnTeleportDropExtras(id); } catch (e) {} /* the same bolt / flash / dust as my own teleport; the base appears on the impact (0.5 s) */
+  try { sfxTeleport(); } catch (e) {}
+  devInvTimers.push(setTimeout(function () { if (!devInvBots[id]) return; occupiedTileIds[id] = owner; citySkinByTile[id] = sk; devInvRedraw(); }, 500));
+  devInvTimers.push(setTimeout(function () { devInvRemove(id); devInvRedraw(); }, DEV_INV_LIFE));
+  devInvStartTick();
+}
+function devInvasionOnTeleport() {
+  if (!devInvasionOn) return;
+  for (var i = 0; i < DEV_INV_COUNT; i++) devInvTimers.push(setTimeout(devInvLand, Math.random() * DEV_INV_MAXDELAY));
+}
+function devInvStartTick() {
+  if (devInvTick) return;
+  devInvTick = setInterval(function () {
+    var ch = false, now = Date.now(), any = false;
+    Object.keys(devInvBots).forEach(function (id) {
+      var b = devInvBots[id]; any = true;
+      if (now >= b.until) { devInvRemove(id); ch = true; return; }
+      if (now < b.until - DEV_INV_LIFE + 500) return; /* still beaming in */
+      var o = occupiedTileIds[id];
+      if (o === b.owner) return;
+      if (o && o !== b.owner) { delete devInvBots[id]; return; } /* a real base took the spot - this one just goes */
+      occupiedTileIds[id] = b.owner; citySkinByTile[id] = b.sk; ch = true; /* a server refresh wiped it - put it back */
+    });
+    if (ch) devInvRedraw();
+    if (!any && !devInvasionOn) { clearInterval(devInvTick); devInvTick = null; }
+  }, 400);
+}
+function devInvasionClear() {
+  devInvTimers.forEach(clearTimeout); devInvTimers = [];
+  Object.keys(devInvBots).forEach(devInvRemove);
+  Object.keys(occupiedTileIds).forEach(function (id) { if (String(occupiedTileIds[id]).indexOf(DEV_INV_PREFIX) === 0) { delete occupiedTileIds[id]; delete citySkinByTile[id]; delete cityHp[id]; } }); /* belt and braces */
+  devInvRedraw();
+}
+(function () { var cb = document.getElementById("devInvasionToggle"); if (!cb) return; cb.checked = false;
+  cb.onchange = function () { devInvasionOn = cb.checked; if (devInvasionOn) devInvStartTick(); else devInvasionClear(); }; })();
 (function () { var b = document.getElementById("devStressLandBtn"), note = document.getElementById("devStressLandNote"); if (!b) return; b.onclick = function () { /* v1160 */
   if (terrainStress) { location.reload(); return; }
   if (!confirm("Draw 4 test continents (~40% land) on this phone only?\n\nNothing is saved or sent. Reload the game to get your real map back.")) return;
@@ -30316,6 +30396,7 @@ function renderEmptyTileInfo(el, tile) {
         armTeleportDropEffect(tile.id);
         selectedTile = null; /* v1207 (Harley): teleporting isn't tapping the base - don't open its card */
         persist(); render();
+        try { devInvasionOnTeleport(); } catch (e) {} /* v1489 */
         spawnTeleportDropExtras(tile.id); // ghost trail / dust / landing shake only — the main sprite's fall is already playing from the render() call above
         sfxTeleport();
       } else {

@@ -4313,3 +4313,8 @@ Harley's 3 points:
 - Headless: chapter 18 loads as the sky docks, no errors; heroes and enemies stand in the middle of the deck while scrolling. The fight is untouched.
 
 - Deploy fix: the Pages site had grown to ~1.46 GB (over the 1 GB limit) and the deploy timed out twice. New _config.yml leaves art/originals (the full-size originals, never loaded by the game) out of the published site; they stay in the repo.
+
+## v1489 — Dev Tools: invasion simulation (TEST)
+- Harley: a Dev Tools on/off toggle. While on, each teleport sends in 10 bot cities with random city skins. Each one beams in at a random moment 0-5 s later, on a legal spot near you (empty tile, clear 3x3 block, not touching your own block or another base, 3-14 tiles away), with the same bolt, flash and sound as a teleport. Each is gone 30 s after it lands. Turning the toggle off removes them all at once.
+- This phone only: nothing goes to the server, they're never remembered in the nearby-bases cache, and a 0.4 s tick puts them back if a server base-list refresh wipes them. The toggle is off again after a reload. Tapping one shows "Invader N" (no real stats).
+- Headless: 10 land between 0.5 and 5.5 s, all on legal spots (no two touching), up to 10 tiles away; none left at 33.5 s; a second wave is cleared instantly by switching off; no errors. The first run found two landing within half a second could pick touching spots, or the same spot - fixed by counting ones still beaming in.
