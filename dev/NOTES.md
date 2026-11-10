@@ -4289,3 +4289,7 @@ Harley's 3 points:
 - Regenerated the road in a fresh chat (the old chat's reply came back empty), with the full scene and try 1 attached: "viewed from slightly higher, the paving about twice as deep". Try 2 has a ~62-row paving band (706-768) over the same earth, roots and carved blocks. The walking line is ~40% into it (road 82, top 34 at 2x).
 - Headless line-up (the jungle backdrop put on chapter 1 in the test, so the team survives): Gareth, Bram and the enemies stand well inside the paving, with stone in front of their feet. The statue bases now sit behind the paving's back edge. The fight is untouched.
 - Handover: a new lesson on measuring the road's surface depth before wiring a level in.
+
+## v1485 — Dev Tools: chapter jump lists every level (TEST)
+- Harley: 15 Misty swamp and 16 Jungle temple were missing from Dev Tools "Jump to chapter". The buttons were a fixed 1-14 list.
+- Now counted from the level list (chapters until the scenery wraps back to the village), so new levels appear on their own. Headless: 16 buttons, no errors.
