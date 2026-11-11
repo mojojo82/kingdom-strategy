@@ -3,6 +3,8 @@
 Attach in this order: 1) the skin (one picture: a 3D render OR a 2D painting, on a plain background), 2) art/originals/skins/mech_test/ref_skin_mecha.png,
 3) art/originals/skins/mech_test/ref_skin_titan.png. Fresh chat. Result comes back on flat magenta; key it (dev/levels/build_graveyard.py `key`) and trim.
 Swap the subject words ("mech on its round platform", "weapon, shield") for whatever the skin is.
+ALSO swap the colour line: the one below is for the white/red/blue mech. For any other skin, say "keep the <skin>'s own <colours>, richer and warmer, with brass/gold instead of dull bronze; no flat dull colours" (olive mech, 11 Nov), and in the clean prompt replace "slightly brighter warm-white armour" with the skin's own colour.
+Harley picks per skin (11 Nov: "case by case... comes down to the skin design"): always show the source as-is AND both restyles on the map, side by side.
 
 ## Base prompt 1 (Harley, 11 Nov: "record this as base prompt 1")
 Gives a weathered, battle-worn look (worn painted metal, chips, dirt). With one picture it leans quite hard into the wear.
