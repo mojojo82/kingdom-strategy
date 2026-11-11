@@ -29,19 +29,21 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        # v1506 Aurek (melee, tall paladin; one start frame for every clip)
        "aurek": {"clips": {"idle": ("aurek_idle_v1.mp4", 0, 0), "run": ("aurek_run_v1.mp4", 0, 0), "attack": ("aurek_attack_v1.mp4", 0, 0), "skill": ("aurek_skill_v2.mp4", 0, 0)},
                  "stand_src": 378, "feet_y": 701}}[HERO]
+GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
 os.makedirs(OUT, exist_ok=True)
 def ss(t): t = np.clip(t, 0, 1); return t * t * (3 - 2 * t)
 def key(a, FR, FT):
     a = a.astype(np.float32); M = np.median(a[:40].reshape(-1, 3), 0)
-    d = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; dm = min(M[0], M[2]) - M[1]
+    if GREEN: d = a[..., 1] - np.maximum(a[..., 0], a[..., 2]); dm = M[1] - max(M[0], M[2])   # v1508: green-screen clips (violet heroes like Seraphine clash with magenta)
+    else: d = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; dm = min(M[0], M[2]) - M[1]
     al = np.clip(1 - (d - 25) / (dm * 0.85 - 25), 0, 1)
     c = np.clip((a - (1 - al[..., None]) * M) / np.maximum(al[..., None], 1e-3), 0, 255)
     r, g, b = c[..., 0], c[..., 1], c[..., 2]
     fire = (r > 190) & (g > 110) & (r - b > 70)
     mx, mn = c.max(-1), c.min(-1); sat = (mx - mn) / (mx + 1)
-    grey = ((al < 0.92) & ~fire) | ((r > g + 10) & (b > g) & (sat < 0.7) & ~fire)
+    grey = ((al < 0.92) & ~fire) | (((g > r + 10) & (g > b)) if GREEN else ((r > g + 10) & (b > g))) & (sat < 0.7) & ~fire
     gv = np.clip(g * 0.9 + r * 0.1, 0, 255); c[grey] = np.stack([gv, gv * 0.98, gv * 0.95], -1)[grey]
     al[al < 0.03] = 0
     h, w = al.shape

@@ -19,7 +19,7 @@ fs = sorted(glob.glob(os.path.join(tmp, "f*.png"))); FPS = 24
 fr = []
 for f in fs:
     a = np.asarray(Image.open(f).convert("RGB")).astype(np.float32); H, W = a.shape[:2]
-    M = np.median(a[:30].reshape(-1, 3), 0); d = np.minimum(a[..., 0], a[..., 2]) - a[..., 1]; dm = min(M[0], M[2]) - M[1]
+    M = np.median(a[:30].reshape(-1, 3), 0); d, dm = ((a[..., 1] - np.maximum(a[..., 0], a[..., 2]), M[1] - max(M[0], M[2])) if os.environ.get("BG") == "green" else (np.minimum(a[..., 0], a[..., 2]) - a[..., 1], min(M[0], M[2]) - M[1]))  # v1508: BG=green for green-screen clips
     al = np.clip(1 - (d - 30) / (dm * 0.8 - 30), 0, 1)[..., None]
     c = np.clip((a - (1 - al) * M) / np.maximum(al, 1e-3), 0, 255)
     g = np.linspace(0, 1, H)[:, None, None]; bg = (TOP * (1 - g) + BOT * g) * np.ones((H, W, 3))
