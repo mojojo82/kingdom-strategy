@@ -4354,3 +4354,9 @@ Harley's 3 points:
 - Harley (phone, home-screen app): white screen, no splash. Cause: the splash was the first thing in <body>, but <head> holds a 1.06 MB style block (1.1 MB in all) - the phone can't paint anything until all of that has arrived, so it sat on a white screen. (The whole TEST file is 29.9 MB.)
 - Fix: the splash (its style, markup and hide script) moved ahead of the big style block - only 25 KB come before it now. The browser starts <body> early at the splash div; the real <body data-screen> tag later just adds its attributes. html background navy so even the first moment isn't white.
 - Headless: splash shows, then the sign-in screen, then the game as before; no new errors. Not tried on the phone.
+
+## v1497 — Splash loading bar really fills (TEST)
+- Harley: make the bar progressively fill. A page can't see how much of its own file has downloaded (87% of the 30 MB is one code block that runs only once it has all arrived), so the bar uses real milestones plus learned timing: it glides toward 85% over the time the last load took on this phone (remembered in localStorage "ksLoadMs", 6 s the first time) as a CSS transform (keeps moving while the phone is busy reading the big code block); page parsed -> 90%, everything loaded -> 95%, server past "connecting" -> 100%, then fades. Never goes backwards.
+- After the art split it can count real files loaded instead.
+- Headless: 0.07 -> 0.34 -> 0.85 -> 0.90 (waiting for the server stub) -> 1.00 -> gone; no errors.
+- Also noted (11 Nov): the "A problem repeatedly occurred" crash on Harley's iPhone was low phone memory (fixed by closing other apps) - the 30 MB file is close to the limit; the splash image adds ~6.5 MB while it shows. The art split is the real fix.

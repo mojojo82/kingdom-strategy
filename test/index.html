@@ -269,18 +269,32 @@
   #ksSplash .t b { display: block; font-weight: 400; font-size: min(15vw, 72px); color: #ffd56a; text-shadow: 0 3px 0 #8a5a12, 0 6px 14px #000c; }
   #ksSplash .t i { display: block; font-style: normal; font-size: min(10.5vw, 50px); color: #fff3d6; text-shadow: 0 3px 0 #6b4a18, 0 6px 14px #000c; margin-top: 4px; }
   #ksSplash .bar { position: absolute; z-index: 1; left: 18%; right: 18%; bottom: 7vh; height: 10px; border-radius: 6px; background: #0008; border: 1px solid #f0c95f88; overflow: hidden; }
-  #ksSplash .bar span { position: absolute; top: 0; bottom: 0; width: 35%; border-radius: 6px; background: linear-gradient(90deg, #c98f1e, #f0c95f, #c98f1e); animation: ksSplashBar 1.3s ease-in-out infinite; }
+  #ksSplash .bar span { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; border-radius: 6px; background: linear-gradient(90deg, #c98f1e, #f0c95f); transform-origin: 0 50%; transform: scaleX(0); }
   #ksSplash .lt { position: absolute; z-index: 1; bottom: calc(7vh + 18px); width: 100%; text-align: center; font: 600 12px system-ui, sans-serif; color: #f6e7c4; letter-spacing: 2px; text-shadow: 0 1px 3px #000; }
-  @keyframes ksSplashBar { 0% { left: -35%; } 100% { left: 100%; } }
 </style>
 <div id="ksSplash"><div class="t"><b>KINGDOM</b><i>STRATEGY</i></div><div class="lt">LOADING</div><div class="bar"><span></span></div></div>
 <script>
+/* v1497 (Harley): the bar really fills. A page can't see how much of its own file has downloaded (87% of it is one big code block that only
+   runs once it has all arrived), so the bar runs on real milestones plus learned timing:
+   - it glides toward 85% over the time the LAST load took on this phone (remembered; 6 s the first time). The glide is a CSS transform, which
+     keeps moving even while the phone is busy reading the big code block;
+   - page parsed (readyState interactive) -> at least 90%; everything loaded (complete) -> 95%; server connection past "connecting" -> 100%, fade.
+   It never goes backwards. After the art split it can count real files instead. */
 (function () {
-  var t0 = Date.now(), done = false;
-  function hide() { if (done) return; done = true; var el = document.getElementById("ksSplash"); if (!el) return; el.classList.add("out"); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 700); }
+  var t0 = Date.now(), done = false, bar = document.querySelector("#ksSplash .bar span"), stage = 0, expect = 6000;
+  try { var v = +localStorage.getItem("ksLoadMs"); if (v > 800 && v < 60000) expect = v; } catch (e) {}
+  function cur() { try { var m = getComputedStyle(bar).transform; var a = m && m.match(/matrix\(([^,]+)/); return a ? +a[1] : 0; } catch (e) { return 0; } }
+  function go(to, ms, ease) { if (!bar) return; var c = cur(); if (to < c) to = c; bar.style.transition = "none"; bar.style.transform = "scaleX(" + c + ")"; void bar.offsetWidth;
+    bar.style.transition = "transform " + ms + "ms " + (ease || "ease-out"); bar.style.transform = "scaleX(" + to + ")"; }
+  requestAnimationFrame(function () { go(0.85, expect, "cubic-bezier(.25,.7,.4,1)"); });
+  function hide() { if (done) return; done = true; var el = document.getElementById("ksSplash"); if (!el) return;
+    try { localStorage.setItem("ksLoadMs", String(Date.now() - t0)); } catch (e) {}
+    go(1, 250); setTimeout(function () { el.classList.add("out"); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 700); }, 280); }
   var iv = setInterval(function () {
-    var el = Date.now() - t0, ks = window.KS_BACKEND;
-    if (el > 15000 || (el > 1500 && document.readyState === "complete" && (!ks || ks.status !== "loading"))) { clearInterval(iv); hide(); }
+    var el = Date.now() - t0, ks = window.KS_BACKEND, rs = document.readyState;
+    if (stage < 1 && rs !== "loading") { stage = 1; go(0.9, 500); }
+    if (stage < 2 && rs === "complete") { stage = 2; go(0.95, 500); }
+    if (el > 15000 || (el > 1500 && rs === "complete" && (!ks || ks.status !== "loading"))) { clearInterval(iv); hide(); }
   }, 150);
   window.ksSplashHide = hide;
 })();
@@ -13129,7 +13143,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1496"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1497"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
