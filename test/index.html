@@ -22626,6 +22626,20 @@ function drawPipFlare(ctx, shS) { /* v1499: Pip's flare round (Conquest + Arena)
   ctx.fillStyle = "#ff7a2a"; ctx.beginPath(); ctx.arc(0, 0, 2.6 * shS, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#fff4d0"; ctx.beginPath(); ctx.arc(0.4 * shS, 0, 1.2 * shS, 0, Math.PI * 2); ctx.fill();
 }
+function drawPipSpotShot(ctx, s, angle, sc) { /* v1499: Spot Shot - a big flare shell with a fiery trail (Conquest skill shot) */
+  s.trail.forEach(function (pt, ti) { var f = (ti + 1) / (s.trail.length + 1); ctx.save(); ctx.globalAlpha = f * 0.55; ctx.fillStyle = ti % 2 ? "#ffb347" : "#ff6a2a"; ctx.beginPath(); ctx.arc(pt.x, pt.y, 4 * f * sc, 0, Math.PI * 2); ctx.fill(); ctx.restore(); });
+  ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angle); ctx.shadowColor = "#ff8a30"; ctx.shadowBlur = 18 * sc; drawPipFlare(ctx, 1.5 * sc); ctx.restore();
+}
+function drawPipSpotBursts(ctx, list, sc) { /* v1499: where Spot Shot lands - an orange flare pop and a target reticle that tightens and fades (the "spotted" mark) */
+  list.forEach(function (b) {
+    var u = Math.min(1, b.age / 0.7), a = 1 - u; ctx.save();
+    ctx.globalAlpha = a * 0.8; ctx.fillStyle = "#ff8a30"; ctx.beginPath(); ctx.arc(b.x, b.y, (3 + 7 * Math.min(1, b.age / 0.15)) * sc * (1 - u * 0.4), 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = a; ctx.fillStyle = "#fff4d0"; ctx.beginPath(); ctx.arc(b.x, b.y, 2.5 * sc * (1 - u), 0, Math.PI * 2); ctx.fill();
+    var r = (13 - 5 * u) * sc; ctx.strokeStyle = "#ff5a3a"; ctx.lineWidth = 1.2 * sc; ctx.beginPath(); ctx.arc(b.x, b.y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { ctx.moveTo(b.x + d[0] * r * 0.55, b.y + d[1] * r * 0.55); ctx.lineTo(b.x + d[0] * r * 1.35, b.y + d[1] * r * 1.35); }); ctx.stroke();
+    ctx.restore();
+  });
+}
 function heroShotStyle(key) { var a = HERO_ANIMS[key]; return (a && a.shellStyle) || "shell"; } /* v1499: Juno's scrap shell or Pip's flare */
 function heroReleaseSec(key) { var a = HERO_ANIMS[key]; return a && a.release != null ? a.release / a.fps.attack : 0; }
 var heroSpearImgCache = {};
@@ -24600,7 +24614,8 @@ function stepIdleAnim(dtSec, w, h) {
         var sp = idleSquadSlotPos(w, h, i, key);
         var isVolley = !!(skillDef && skillDef.name === "Piercing Volley");
         var volleyToY = (isVolley && frontVis.type === "boss") ? (groundYFor(h) + 15 - 29 * bossSpriteScale) : (groundYFor(h) - 16); // v465: a boss's fireball lands mid-body so the orb burst has a body to hit
-        spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : SPELL_COLS[key] ? "spell" : null, landed, frontVis.type === "boss"); if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
+        if (key === "pip" && HERO_ANIMS.pip) { var pv0 = idleAnim.heroVis.pip || sp, ph0 = heroHandPos("pip", pv0.x + (fortLife.active ? fortLife.dx : 0), pv0.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); sp = { x: ph0.x, y: ph0.y }; } /* v1499: Spot Shot leaves his muzzle */
+        spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : key === "pip" ? "spotflare" : SPELL_COLS[key] ? "spell" : null, landed, frontVis.type === "boss"); if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
         sfxSkillShot();
       }
       // the skill just fired and its cooldown reset — snap the smooth timer
@@ -24929,11 +24944,13 @@ function stepIdleAnim(dtSec, w, h) {
     var tt = Math.min(1, s.t);
     s.x = s.startX + (s.toX - s.startX) * tt;
     s.y = s.startY + (s.toY - s.startY) * tt;
+    if (s.style === "spotflare" && s.t >= 1 && !s.burst) { s.burst = true; if (s.landed) (idleAnim.spotBursts || (idleAnim.spotBursts = [])).push({ x: s.toX, y: s.toY, age: 0 }); } /* v1499 */
     if (s.style === "fireball" && s.landed && s.t >= 1 && !s.burst) { s.burst = true; spawnOrbBurst(s.toX, s.toY, s.big, idleAnim.orbBursts); } // v465: real hit only
   });
   idleAnim.skillShots = idleAnim.skillShots.filter(function (s) { return s.t < 1; });
   idleAnim.skillEmbers = stepSkillEmbers(idleAnim.skillEmbers, dtSec * Math.max(1, devSpeedMult));
   idleAnim.orbBursts = stepOrbBursts(idleAnim.orbBursts, dtSec * Math.max(1, devSpeedMult), groundYFor(h));
+  if (idleAnim.spotBursts) { idleAnim.spotBursts.forEach(function (b) { b.age += dtSec * Math.max(1, devSpeedMult); }); idleAnim.spotBursts = idleAnim.spotBursts.filter(function (b) { return b.age < 0.7; }); } /* v1499 */
   idleAnim.shockCrawls.forEach(function (c) {
     var cs = dtSec * Math.max(1, devSpeedMult);
     c.age += cs; c.regen -= cs;
@@ -28051,6 +28068,7 @@ function drawIdleAnim(ctx, w, h) {
   idleAnim.skillShots.forEach(function (s) {
     var angle = Math.atan2(s.toY - s.startY, s.toX - s.startX);
     if (s.style === "fireball" && skillShotFireballReady) { drawFireballShot(ctx, s, angle, sScale); return; }
+    if (s.style === "spotflare") { drawPipSpotShot(ctx, s, angle, sScale); return; } /* v1499 */
     if (s.style === "spell" && s.spellCol) { s.trail.forEach(function (pt, ti) { ctx.save(); ctx.globalAlpha = (ti + 1) / (s.trail.length + 1) * 0.5; drawSpellOrb(ctx, pt.x, pt.y, s.spellCol, 7 * sScale, ti); ctx.restore(); }); drawSpellOrb(ctx, s.x, s.y, s.spellCol, 12 * sScale, s.startX); return; } /* v1185 */
     s.trail.forEach(function (pt, ti) {
       var fade = (ti + 1) / (s.trail.length + 1);
@@ -28074,6 +28092,7 @@ function drawIdleAnim(ctx, w, h) {
   // Piercing Volley embers — tiny additive blue-white sparks shed by the
   // fireball (see the skillShots update in stepIdleAnim).
   drawSkillEmbers(ctx, idleAnim.skillEmbers, sScale);
+  if (idleAnim.spotBursts && idleAnim.spotBursts.length) drawPipSpotBursts(ctx, idleAnim.spotBursts, sScale); /* v1499: Spot Shot hits */
   drawOrbBursts(ctx, idleAnim.orbBursts, groundYFor(h), sScale); // v465 orb burst on a real Piercing Volley hit
 
   // Arc Burst shock crawl (v457, experimental — see spawnShockCrawl).
@@ -36546,6 +36565,7 @@ function drawArenaFrame(ctx, w, h) {
       ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(4, 0); ctx.stroke();
       ctx.fillStyle = "#fff3c4";
       ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(3, -2.2); ctx.lineTo(3, 2.2); ctx.closePath(); ctx.fill();
+    } else if (p.style === "spotflare") { ctx.restore(); drawPipSpotShot(ctx, p, Math.atan2(p.toY - p.startY, p.toX - p.startX), heroSpriteVisualScale / 100); return; /* v1499: Pip's Spot Shot in Arena */
     } else if (p.style === "spell" && p.spellCol) { ctx.restore(); drawSpellOrb(ctx, p.x, p.y, p.spellCol, p.big ? 12 : 7, p.startX); return; /* v1185 */
     } else if (p.style === "orb") {
       var aop = 1 + 0.12 * Math.sin(performance.now() / 60 + p.startX);
@@ -37428,7 +37448,7 @@ function renderArenaBattleScreen() {
         } else {
           var pvHit = (a && a.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, false, arenaHullContactPoint(w, h, false, slot.x, slot.y, aiCenter.y)) : null; // v466: lands deep in the enemy hull, like the laser's aim zone (v465 used the surface contact point)
           var tgtP = state.skillTargets && state.skillTargets["p_" + key], tpP = tgtP && tgtP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + tgtP] : null; // melee skill aims at the hero it actually hits, else the fortress
-          spawnArenaProjectile(slot.x, slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", false, a && a.name === "Piercing Volley" ? "fireball" : SPELL_COLS[key] ? "spell" : null, landed); if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
+          spawnArenaProjectile(slot.x, slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", false, a && a.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : SPELL_COLS[key] ? "spell" : null, landed); if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });
@@ -37452,7 +37472,7 @@ function renderArenaBattleScreen() {
         } else {
           var aiPvHit = (aiA && aiA.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, true, arenaHullContactPoint(w, h, true, slot.x, slot.y, playerCenter.y)) : null;
           var tgtA = state.skillTargets && state.skillTargets["a_" + key], tpA = tgtA && tgtA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + tgtA] : null;
-          spawnArenaProjectile(slot.x, slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", false, aiA && aiA.name === "Piercing Volley" ? "fireball" : SPELL_COLS[key] ? "spell" : null, aiLanded); if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
+          spawnArenaProjectile(slot.x, slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", false, aiA && aiA.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : SPELL_COLS[key] ? "spell" : null, aiLanded); if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });
