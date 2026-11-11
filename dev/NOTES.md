@@ -4473,3 +4473,9 @@ Harley's 3 points:
 - Harley: "does the blue beam reach the top of the screen on tall phones?" It didn't: on taller screens the battle is pushed down to show extra sky (Conquest cqSky / Arena skyPx translate), and the beam started at the old top edge, stopping mid-sky.
 - Fix: drawHeroSkyFx reads the canvas transform and starts the beam at the real screen top (Conquest and Arena).
 - Measured headless (beam's top pixel row) at 360x800 / 390x932 / 440x1100: before 86 / 314 / 630 -> after 0 / 0 / 0. No errors.
+
+## v1511 - Vesper's beams (and Seraphine's crystals) land on the feet line (TEST)
+- Harley: the beam's impact point looked higher than where the heroes' feet touch the ground.
+- Two causes: the impact was aimed at groundYFor(h) (the game's "ground" mark, ~15 above the feet) and the beam sprite's impact ring sits 94% down the picture, not at the bottom.
+- Fix: sky effects now target the feet line - Conquest groundYFor(h) + 7*hs, Arena groundYFor(h) + 10*hs (Arena used to take a fortress rider's deck height) - and the sprite is stretched so its ring lands on that line. Seraphine's crystal impacts use the same line.
+- Checked headless with close-up crops in Conquest (390x932) and Arena (both sides): rings now sit at the heroes' feet. No errors.

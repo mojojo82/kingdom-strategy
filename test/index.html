@@ -13200,7 +13200,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1510"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1511"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26489,7 +26489,7 @@ function drawHeroSkyFx(ctx, hs, M, h) {
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     if (age < 0) { var p = 1 + age / PRE; ctx.globalAlpha = 0.85 * p; ctx.strokeStyle = F.ring || "#7fe8ff"; ctx.lineWidth = 1.6 * hs; ctx.beginPath(); ctx.ellipse(q.x, q.y, 16 * hs * (1.4 - 0.4 * p), 5 * hs * (1.4 - 0.4 * p), now / 300, 0, 7); ctx.stroke(); ctx.restore(); return true; }
     var w2 = age < 60 ? 22 * hs * (age / 60) : 22 * hs * (1 - (age - 60) / (LIFE - 60)) + 4 * hs, top = scrTop - 10, al = age < 60 ? 1 : 1 - (age - 60) / (LIFE - 60);
-    ctx.globalAlpha = Math.max(0, al); if (im2) ctx.drawImage(im2, q.x - w2, top, w2 * 2, q.y - top + 4 * hs); else { var lg = ctx.createLinearGradient(q.x - w2, 0, q.x + w2, 0); lg.addColorStop(0, "rgba(60,200,255,0)"); lg.addColorStop(0.5, "rgba(230,255,255,1)"); lg.addColorStop(1, "rgba(60,200,255,0)"); ctx.fillStyle = lg; ctx.fillRect(q.x - w2, top, w2 * 2, q.y - top); }
+    ctx.globalAlpha = Math.max(0, al); if (im2) ctx.drawImage(im2, q.x - w2, top, w2 * 2, (q.y - top) / 0.94); /* v1511: the sprite's impact ring (94% down the picture) sits on the feet line */ else { var lg = ctx.createLinearGradient(q.x - w2, 0, q.x + w2, 0); lg.addColorStop(0, "rgba(60,200,255,0)"); lg.addColorStop(0.5, "rgba(230,255,255,1)"); lg.addColorStop(1, "rgba(60,200,255,0)"); ctx.fillStyle = lg; ctx.fillRect(q.x - w2, top, w2 * 2, q.y - top); }
     ctx.globalAlpha = Math.max(0, al) * 0.9; var rg = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, 26 * hs); rg.addColorStop(0, "rgba(220,255,255,1)"); rg.addColorStop(0.4, "rgba(80,220,255,.6)"); rg.addColorStop(1, "rgba(40,120,255,0)"); ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(q.x, q.y, 26 * hs * (1 + age / LIFE), 8 * hs * (1 + age / LIFE), 0, 0, 7); ctx.fill();
     ctx.restore(); return true; });
 }
@@ -26545,7 +26545,7 @@ function hanzoFxStep(w, h) {
     SL.thrown = true; var k = A.dispH * hs / A.ch, fy = SL.hand ? SL.hand.y : groundYFor(h), fx = SL.x + 6 * hs, fyy = fy - A.ay * k * 0.72, T = [];
     Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (!e || e.dying || e.x > w + 10) return; T.push({ x: e.x, y: (e.type === "boss" ? bossTopY(h) + 30 : groundYFor(h) - 16) }); });
     if (!T.length) [0.55, 0.68, 0.8, 0.92].forEach(function (fx2) { T.push({ x: w * fx2, y: groundYFor(h) - 16 }); }); /* nothing drawn on the field at that instant (a horde between spawns): the storm still rains across it */
-    heroSkillOnThrow(idleAnim, sk, fx, fyy, T, hs, SL.x, fy, 0, w, 1, groundYFor(h));
+    heroSkillOnThrow(idleAnim, sk, fx, fyy, T, hs, SL.x, fy, 0, w, 1, groundYFor(h) + 7 * hs); /* v1511 (Harley): sky effects land where feet touch the ground */
   });
   var dg = game.state.idle.dodges || 0, last = idleAnim.hzDodges; idleAnim.hzDodges = dg;
   if (last != null && dg > last && game.state.conquestRoster.indexOf("hanzo") >= 0 && HERO_ANIMS.hanzo && idleAnim.heroVis.hanzo && !(L && now - L.t0 < 1000)) {
@@ -36693,7 +36693,7 @@ function drawArenaFrame(ctx, w, h) {
           var nLp = performance.now(), flLp = !isPlayerSide;
           if (nLp - lpA.t0 < SAa.rows.skill[1] / SAa.fps.skill * 1000 && !arenaAnim.battleEnded) {
             if (!lpA.started) { lpA.started = true; heroAnimStartAt(key + "_skill", flLp, lpA.t0); }
-            if (!lpA.thrown && nLp - lpA.t0 >= (SAa.throwFrame || 0) / SAa.fps.skill * 1000) { lpA.thrown = true; heroSkillOnThrow(arenaAnim, key, slot.x + (isPlayerSide ? 6 : -6) * hsA, slot.y + 13 - SAa.ay * (SAa.dispH * hsA / SAa.ch) * 0.72, arenaEnemyTargets(w, h, isPlayerSide), hsA, slot.x, slot.y + 13, 0, w, isPlayerSide ? 1 : -1); } /* v1506: generic effect frame */
+            if (!lpA.thrown && nLp - lpA.t0 >= (SAa.throwFrame || 0) / SAa.fps.skill * 1000) { lpA.thrown = true; heroSkillOnThrow(arenaAnim, key, slot.x + (isPlayerSide ? 6 : -6) * hsA, slot.y + 13 - SAa.ay * (SAa.dispH * hsA / SAa.ch) * 0.72, arenaEnemyTargets(w, h, isPlayerSide), hsA, slot.x, slot.y + 13, 0, w, isPlayerSide ? 1 : -1, groundYFor(h) + 10 * hsA); /* v1511: sky effects land on the infantry feet line, not a rider's deck */ } /* v1506: generic effect frame */
             drawHeroAnim(ctx, key + "_skill", slot.x, slot.y + 13, "skill", hsA, flLp, 0);
             ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, slot.y + size / 2 + 10);
             return;
