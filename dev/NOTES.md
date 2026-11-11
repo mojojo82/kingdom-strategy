@@ -4331,3 +4331,8 @@ Harley's 3 points:
 
 ## v1492 — Base water styles renamed (TEST + lab)
 - Harley: "Classic" is really "Trace". The two base water styles are now called Trace (foam follows the base outline; was Classic, and "Game now" in the lab) and Shape (glow + rings round a fitted shape; was New, and "New look" in the lab). Labels only: saved values stay "classic" / "new", nothing looks different.
+
+## v1493 — Two olive mech city skins (TEST)
+- Harley picked two winners from the olive mech test (11 Nov): **Iron Sentinel** (ironsent) = his Meshy render restyled with base prompt 1 (worn olive armour, brass edges, teal lights); **Field Sentinel** (fieldsent) = his 2D painting used exactly as sent.
+- Both in CITY_SKINS (600 px WebP, scale 1.0), added to CITY_SKIN_ORDER, foundation points baked into CITY_ART_BAKED (measured headless). Free like the other skins. Originals: art/originals/skins/olive_mech/.
+- Headless: Iron Sentinel chosen as my skin, Field Sentinel / Neptune / Tech Fortress around it - all sit on their tiles, no errors. Not tried on the phone.
