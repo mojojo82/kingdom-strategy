@@ -4344,3 +4344,8 @@ Harley's 3 points:
 - Splash = first thing in <body>: the art, "KINGDOM STRATEGY" in Lilita One gold, a gold loading bar. Fades out when the page has loaded and the connection is past "connecting" (sign-in screen or the game); at least 1.5 s, at most 15 s.
 - To get the app version Harley must remove the old home-screen icon and add it again. LIVE gets its own manifest / name when copied over (fonts path differs: ../fonts in TEST).
 - Headless: splash shows, then goes once the sign-in screen is ready; manifest + Apple tags present; no new errors.
+
+## v1495 — Splash art reshaped for tall phones (TEST)
+- Harley: Kessa and Iron Lily should be in frame. The ChatGPT splash was 2:3, so a 9:19.5 phone cut ~15% off each side.
+- Atlas (Seedream v4 Edit, exact size 1152x2496 = phone shape, $0.027 a try): try 1 drew a phone mockup with panels; try 2 still touched the edges; try 3 = the original painting on a tall canvas (white above / below) extended with more sunset sky and deck = the full width now fits, nobody is cut. test/splash.webp (864x1872); background-position center 62%.
+- All tries banked in art/originals/ui/splash/. Lesson: for exact phone-shaped art, extend the approved picture on a canvas of the right size rather than asking for a new composition.
