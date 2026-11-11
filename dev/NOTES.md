@@ -4468,3 +4468,8 @@ Harley's 3 points:
 - Balance (atkMult 0.5): Arena w/o Halo-7 94-13 / 83-23 vs w/o Kessa 55-65 / 53-67 (he matters far less than Kessa). Conquest Halo team 6-9 / 10-1 / 10-4 vs Kessa team 6-12 / 10-2 / 10-11. Meta numbers unchanged.
 - Atlas: 6 x $0.38 + card $0.61 = $2.89.
 - Headless: Conquest (beam fires from his chest to the edge, hits land, no errors), Arena with Halo on both sides (beams both ways, no errors), Halo card (video plays, loops) + Heroes list.
+
+## v1510 - Vesper's sky beams reach the top of the screen on tall phones (TEST)
+- Harley: "does the blue beam reach the top of the screen on tall phones?" It didn't: on taller screens the battle is pushed down to show extra sky (Conquest cqSky / Arena skyPx translate), and the beam started at the old top edge, stopping mid-sky.
+- Fix: drawHeroSkyFx reads the canvas transform and starts the beam at the real screen top (Conquest and Arena).
+- Measured headless (beam's top pixel row) at 360x800 / 390x932 / 440x1100: before 86 / 314 / 630 -> after 0 / 0 / 0. No errors.

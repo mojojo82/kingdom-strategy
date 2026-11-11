@@ -13200,7 +13200,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1509"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1510"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26476,6 +26476,7 @@ function heroSkyFx(M, key, kind, x, gy, xMin, xMax, hs, dir) {
 }
 function drawHeroSkyFx(ctx, hs, M, h) {
   var S = M && M.hzSky; if (!S || !S.length) return; var now = performance.now();
+  var Tm = ctx.getTransform ? ctx.getTransform() : null, scrTop = Tm && Tm.d ? -Tm.f / Tm.d : 0; /* v1510 (Harley): the screen's top edge in drawing units - tall phones show more sky above the battle, the beams start there */
   M.hzSky = S.filter(function (q) { var F = HERO_COMBAT_FX[q.key] || {}, age = now - q.t0;
     if (q.kind === "rain") { var FALL = 260, im = F.rain ? heroFxImg(q.key, F.rain) : null; if (age < -FALL) return true; if (age > 420) return false;
       if (age < 0) { var u = 1 + age / FALL, x0 = q.x - q.dir * 34 * hs, y0 = q.y - 120 * hs, xx = x0 + (q.x - x0) * u, yy = y0 + (q.y - y0) * u, sz = 14 * hs * q.sz, ang = Math.atan2(q.y - y0, q.x - x0) - Math.PI / 2;
@@ -26487,7 +26488,7 @@ function drawHeroSkyFx(ctx, hs, M, h) {
     var PRE = 220, LIFE = 420, im2 = F.skybeam ? heroFxImg(q.key, F.skybeam) : null; if (age < -PRE) return true; if (age > LIFE) return false;
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     if (age < 0) { var p = 1 + age / PRE; ctx.globalAlpha = 0.85 * p; ctx.strokeStyle = F.ring || "#7fe8ff"; ctx.lineWidth = 1.6 * hs; ctx.beginPath(); ctx.ellipse(q.x, q.y, 16 * hs * (1.4 - 0.4 * p), 5 * hs * (1.4 - 0.4 * p), now / 300, 0, 7); ctx.stroke(); ctx.restore(); return true; }
-    var w2 = age < 60 ? 22 * hs * (age / 60) : 22 * hs * (1 - (age - 60) / (LIFE - 60)) + 4 * hs, top = Math.max(0, (h || 0) * 0) - 10, al = age < 60 ? 1 : 1 - (age - 60) / (LIFE - 60);
+    var w2 = age < 60 ? 22 * hs * (age / 60) : 22 * hs * (1 - (age - 60) / (LIFE - 60)) + 4 * hs, top = scrTop - 10, al = age < 60 ? 1 : 1 - (age - 60) / (LIFE - 60);
     ctx.globalAlpha = Math.max(0, al); if (im2) ctx.drawImage(im2, q.x - w2, top, w2 * 2, q.y - top + 4 * hs); else { var lg = ctx.createLinearGradient(q.x - w2, 0, q.x + w2, 0); lg.addColorStop(0, "rgba(60,200,255,0)"); lg.addColorStop(0.5, "rgba(230,255,255,1)"); lg.addColorStop(1, "rgba(60,200,255,0)"); ctx.fillStyle = lg; ctx.fillRect(q.x - w2, top, w2 * 2, q.y - top); }
     ctx.globalAlpha = Math.max(0, al) * 0.9; var rg = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, 26 * hs); rg.addColorStop(0, "rgba(220,255,255,1)"); rg.addColorStop(0.4, "rgba(80,220,255,.6)"); rg.addColorStop(1, "rgba(40,120,255,0)"); ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(q.x, q.y, 26 * hs * (1 + age / LIFE), 8 * hs * (1 + age / LIFE), 0, 0, 7); ctx.fill();
     ctx.restore(); return true; });
