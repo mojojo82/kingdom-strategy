@@ -4406,3 +4406,15 @@ Harley's 3 points:
 - Arena sim's hero info now carries dg (dodge count) - visual only, no balance change. Skill-sheet start is now pinned to the engine time (heroAnimStartAt) in both modes, so the throw on screen matches the shuriken leaving.
 - World PvP, boss and gauntlet fights are worked out instantly (no hero animation screen), so Arena + Conquest are the two places heroes animate.
 - Tests (headless): Arena fight, Hanzo on both sides - leaps + shuriken, alternating attacks, real dodges (after-image + warp), no errors. Meta check unchanged (known warning).
+
+## v1504 - Hanzo's Shadow Step really teleports him BACK (TEST)
+- Harley: "keep it backwards for now (if his back is to our fortress front the teleport may have to just dodge/teleport right on the spot)".
+- Engine (Arena + World PvP sim): every dodge moves him HANZO_PORT_PX = 40 px back towards his own fortress (dodgePort in arenaMakeSim) and he's out of reach until he runs back in; at his fortress front he stays on the spot. Conquest: he blinks 40 px back (never behind his home spot); the Conquest engine already follows where the drawing says he stands, so he loses swings there too.
+- Arena drawing: after-image where he was, warp where the sim put him (snaps, no glide).
+- Balance (dev/balance/hanzo_port.js, before -> after; the "before" reproduces the v994 numbers exactly):
+  - Solo Kessa (cards 11,2,3,4,5) vs maxed Hanzo + Lone Wolf, same weapons: 53 -> 53 (Lv40 and Lv80, Kessa skills 3 or 5).
+  - Same with Projection Wall in Kessa's build: 93 -> 97.
+  - Hanzo team vs normal team Lv40 at +0/+5/+10/+15/+20: 100/100/100/90/55 -> 100/100/100/80/53. Lv80: 100 across the board, unchanged.
+  - Distance hardly matters (80 px and 150 px give the same results) - the cost is the beat he spends out of reach.
+  - Conquest climbs (run.js) don't model positions, so they can't show the change; expect a similarly small effect.
+- Not done: no Storm buff yet (Harley to decide - the loss is small).

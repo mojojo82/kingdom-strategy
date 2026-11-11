@@ -6733,6 +6733,7 @@ function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
 // v992: Shadow Step (Hanzo) - share of incoming attacks dodged (0..0.95). Deterministic, no dice: hit n is dodged when floor((n+1)p) > floor(np).
 // v992: a skill whose cooldown shrinks with level (cdByLevel) - Hanzo's Shuriken Storm. Anything else keeps its flat cooldown.
 var HANZO_LEAP_SEC = 0.45; // v993 (Harley): Shuriken Storm isn't instant - he leaps into the air first, the shuriken land this much later (Conquest and Arena). v994: 1.0 -> 0.45 (one Arena beat): restores his Lv40 tiers while solo Kessa still edges him (53%, 93% with Projection Wall)
+var HANZO_PORT_PX = 40; // v1504 (Harley): Shadow Step teleports him this far BACK (towards his own fortress) on every dodge - out of reach until he runs back in. Already at his fortress front = he dodges on the spot. 0 = old dodge (no move)
 function HANZO_LEAP_TICKS() { return Math.max(1, Math.round(HANZO_LEAP_SEC / (ARENA_TICK_MS / 1000))); }
 function heroSkill1Lvl(key) { var h = game.state.heroes[key]; return (h && h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[0]) || 1; }
 function skillCdAt(skill, lvl) { return (skill && skill.cdByLevel) ? skill.cdByLevel[Math.max(1, Math.min(skill.cdByLevel.length, lvl || 1)) - 1] : skill.cooldown; }
@@ -13170,7 +13171,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1503"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1504"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26425,8 +26426,8 @@ function hanzoFxStep(w, h) {
   var dg = game.state.idle.dodges || 0, last = idleAnim.hzDodges; idleAnim.hzDodges = dg;
   if (last != null && dg > last && game.state.conquestRoster.indexOf("hanzo") >= 0 && HERO_ANIMS.hanzo && idleAnim.heroVis.hanzo && !(L && now - L.t0 < 1000)) {
     var v = idleAnim.heroVis.hanzo;
-    var best = null; Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (!e || e.dying || e.type === "boss") return; if (!best || Math.abs(e.x - v.x) < Math.abs(best.x - v.x)) best = e; });
-    var nx = best && best.x > v.x && best.x + 26 * hs < w - 10 ? best.x + 26 * hs : v.x - 34 * hs;
+    var home = idleSquadSlotPos(w, h, game.state.conquestRoster.indexOf("hanzo"), "hanzo"), hx0 = home ? home.x : 0; /* v1504: teleport BACK towards our fortress; back already at the fortress front = dodge on the spot */
+    var nx = Math.max(Math.min(v.x, hx0), v.x - HANZO_PORT_PX);
     heroDodgeFx(idleAnim, "hanzo", v.x, v.y + 12 * hs, false, hs, nx); v.x = nx;
   }
 }
@@ -35442,14 +35443,18 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function canMelee(hh, id) { if (!posMode) return engaged; var e = hh && hh.by[id]; return !!(e && e.reach); }
   // One melee hit (basic or skill). Returns true if it hits the fortress pool (caller adds it to that side's damage); false if a hero absorbed it.
   // v992: Shuriken Storm - one hit on every standing enemy hero and summon (dodge applies); the caller adds the same hit to the enemy fortress.
-  function aoeHit(oh, oppStats, dmg, wallUp) { var blocked = 0; if (!oh) return 0; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (wallUp && !o.infantry) { blocked += dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } /* v993: Projection Wall shields ranged heroes; v1195: what it blocks is counted for Mirror Wall */ if (dodgeRoll(o, o.dodge)) return;
+  function dodgePort(e) { /* v1504: Shadow Step = dodge + teleport back HANZO_PORT_PX (d units = px / (2 * that half's run length)); at his fortress front it stays on the spot */
+    if (!dodgeRoll(e, e.dodge)) return false;
+    if (posMode && e.infantry && HANZO_PORT_PX > 0 && !e.ko) { var hl = e.runL ? (e.d <= 0.5 ? e.runL[0] : e.runL[1]) : 0, dd = hl > 0 ? HANZO_PORT_PX / (2 * hl) : 0.1; e.d = Math.max(0, e.d - dd); e.reach = false; }
+    return true; }
+  function aoeHit(oh, oppStats, dmg, wallUp) { var blocked = 0; if (!oh) return 0; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (wallUp && !o.infantry) { blocked += dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } /* v993: Projection Wall shields ranged heroes; v1195: what it blocks is counted for Mirror Wall */ if (dodgePort(o)) return;
     o.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
     if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); return blocked; }
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
     var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh); }) : null;
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
-    var e = t.hero; if (dodgeRoll(e, e.dodge)) return false; /* v992: Shadow Step */ e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
+    var e = t.hero; if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
     if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     heroHitTaken(e);
     return false;
@@ -35469,7 +35474,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (rAcc[tag + id] < 1 - 1e-9) return true;
     rAcc[tag + id] -= 1;
     map[tag + id] = best.id;
-    if (dodgeRoll(best, best.dodge)) return false; /* v992: Shadow Step */
+    if (dodgePort(best)) return false; /* v992: Shadow Step */
     var SX = oh === aHH ? FXS.A : FXS.P, fR = 1 - (SX.orbit || 0); SX.inst.forEach(function (i) { if (i.k === 'dome' && i.up > 0) fR *= 1 - (i.red || 0); }); /* v1193 (audit item 14): Orbit + Dome also cut ranged hits on heroes, like Conquest */
     best.hp -= dmg * fR * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
     if (best.hp <= 1e-9) { koMark(best); best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
@@ -35484,7 +35489,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var SX = oh === aHH ? FXS.A : FXS.P, fR = 1 - (SX.orbit || 0); SX.inst.forEach(function (i) { if (i.k === 'dome' && i.up > 0) fR *= 1 - (i.red || 0); });
     var md = main ? main.d : 0;
     oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n).forEach(function (o) {
-      if (dodgeRoll(o, o.dodge)) return;
+      if (dodgePort(o)) return;
       o.hp -= dmg * a.splash.pct * fR * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
       if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; kos++; }
       heroHitTaken(o);
@@ -35592,7 +35597,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         me.lim = 0; limTgt[tagP + L.key] = tg.map(function (o) { return o.id; });
         if (!tg.length) { out += L.value; return; }
         tg.forEach(function (o) {
-          if (dodgeRoll(o, o.dodge)) return; /* v992: Shadow Step */
+          if (dodgePort(o)) return; /* v992: Shadow Step */
           if (o.hp <= o.max * L.exec) o.hp = 0; else o.hp -= L.value * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
           if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; }
           heroHitTaken(o);
@@ -36494,8 +36499,9 @@ function drawArenaFrame(ctx, w, h) {
       var flashing = arenaAnim.flashHero[flashKey] > 0;
       var hsA = heroSpriteVisualScale / 100, dEv = arenaAnim.dodgeEv && arenaAnim.dodgeEv[flashKey], lpA = arenaAnim.heroLeap && arenaAnim.heroLeap[flashKey];
       if (dEv && HERO_ANIMS[key]) { /* v1503: Shadow Step in Arena / World PvP - after-image where he stood, he blinks a step back and slides home, warp behind him */
-        delete arenaAnim.dodgeEv[flashKey]; var bdx = (isPlayerSide ? -1 : 1) * 30 * hsA;
-        if (!lpA) { heroDodgeFx(arenaAnim, key, slot.x, slot.y + 13, !isPlayerSide, hsA, slot.x + bdx); (arenaAnim.blink || (arenaAnim.blink = {}))[flashKey] = { t0: performance.now(), dx: bdx }; }
+        delete arenaAnim.dodgeEv[flashKey]; var oldX = typeof dEv === "object" && dEv.x != null ? dEv.x : slot.x, bdx = (isPlayerSide ? -1 : 1) * 30 * hsA;
+        if (HANZO_PORT_PX > 0) { if (!lpA) heroDodgeFx(arenaAnim, key, oldX, slot.y + 13, !isPlayerSide, hsA, slot.x); } /* v1504: the sim moved him back - after-image where he was, warp where he is */
+        else if (!lpA) { heroDodgeFx(arenaAnim, key, slot.x, slot.y + 13, !isPlayerSide, hsA, slot.x + bdx); (arenaAnim.blink || (arenaAnim.blink = {}))[flashKey] = { t0: performance.now(), dx: bdx }; }
       }
       var bkA = arenaAnim.blink && arenaAnim.blink[flashKey];
       if (bkA) { var bu = (performance.now() - bkA.t0) / 700; if (bu >= 1) delete arenaAnim.blink[flashKey]; else slot = { x: slot.x + bkA.dx * (bu < 0.45 ? 1 : 1 - Math.pow((bu - 0.45) / 0.55, 2) * (3 - 2 * (bu - 0.45) / 0.55) / 1), y: slot.y }; }
@@ -37535,7 +37541,7 @@ function renderArenaBattleScreen() {
         Object.keys(hhm).forEach(function (k) { var r0 = hdm[k]; if (!r0) hdm[k] = { prev: 0, cur: hhm[k].d }; else { r0.prev = r0.cur; r0.cur = hhm[k].d; } });
         arenaAnim.heroTickT = performance.now();
         var prevHH = arenaAnim.heroHp; // HP-loss numbers over heroes that lost HP this tick
-        if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k]; if (pv && hhm[k].dg > (pv.dg || 0) && HERO_COMBAT_FX[hhm[k].id] && HERO_COMBAT_FX[hhm[k].id].ghost) (arenaAnim.dodgeEv || (arenaAnim.dodgeEv = {}))[k] = performance.now(); }); /* v1503: a dodge this tick -> after-image + blink in the drawing */
+        if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k]; if (pv && hhm[k].dg > (pv.dg || 0) && HERO_COMBAT_FX[hhm[k].id] && HERO_COMBAT_FX[hhm[k].id].ghost) (arenaAnim.dodgeEv || (arenaAnim.dodgeEv = {}))[k] = { t: performance.now(), x: arenaAnim.heroScreen && arenaAnim.heroScreen[k] ? arenaAnim.heroScreen[k].x : null }; if (HANZO_PORT_PX > 0 && hdm[k]) hdm[k].prev = hdm[k].cur; });  /* v1504: he really teleported back - snap, no glide */ /* v1503: a dodge this tick -> after-image + blink in the drawing */
         if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k], pos = arenaAnim.heroScreen && arenaAnim.heroScreen[k]; if (pv && pos && hhm[k].hp < pv.hp - 0.5) spawnArenaDmgNum(pos.x, pos.y - 34 * (heroSpriteVisualScale / 100), pv.hp - hhm[k].hp); });
         arenaAnim.heroHp = hhm;
       }
