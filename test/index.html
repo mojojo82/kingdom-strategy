@@ -6370,7 +6370,7 @@ var HERO_DEFS = {
   aurek: { name: "Aurek Solmane", title: "The Haloed Knight", class: "infantry", icon: "🛰️", rarity: "Epic", atkMult: 0.5, /* v1506 (Harley 12 Nov): built - a hit-everything hero (gives Projection Wall a job, F2P option), tall (~7 ft, 1.24x Hanzo), no halo. Epic, kept well below Kessa / Hanzo */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Sunforge Slam", icon: "🗡️🔥", kind: "active", aoeAll: true, aoeDelay: 0.9, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, drives his greatsword into the ground: pillars of holy fire erupt along the ground both ways, hitting every enemy, fortress included. Projection Wall shields ranged heroes from it." },
+      { name: "Sunforge Slam", icon: "🗡️🔥", kind: "active", aoeAll: true, wave: { impact: 0.375 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, drives his greatsword into the ground: pillars of holy fire erupt along the ground both ways, hitting every enemy they reach on the ground, fortress included (a hero in the air at that moment is missed). Projection Wall shields ranged heroes from it." },
       { name: "Faithful", icon: "😇", kind: "passive", defPctByLevel: [0.04, 0.08, 0.12, 0.16, 0.20], desc: "Unshakeable faith: his own DEF +4% per level." }
     ],
     expeditionSkills: [
@@ -6737,6 +6737,7 @@ function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
 // v992: Shadow Step (Hanzo) - share of incoming attacks dodged (0..0.95). Deterministic, no dice: hit n is dodged when floor((n+1)p) > floor(np).
 // v992: a skill whose cooldown shrinks with level (cdByLevel) - Hanzo's Shuriken Storm. Anything else keeps its flat cooldown.
 var HANZO_LEAP_SEC = 0.45; // v993 (Harley): Shuriken Storm isn't instant - he leaps into the air first, the shuriken land this much later (Conquest and Arena). v994: 1.0 -> 0.45 (one Arena beat): restores his Lv40 tiers while solo Kessa still edges him (53%, 93% with Projection Wall)
+var WAVE_SPEED_FR = 0.41, WAVE_GAP_FR = 0.045, WAVE_N = 4; /* v1507 (Harley): Sunforge Slam = a rolling eruption - the fire runs out from the sword at 41% of the screen width per second both ways; a target is only hit when the fire reaches it AND it is on the ground (Conquest + Arena use the same speed: Arena lane px are on a 400-wide screen) */
 var HANZO_PORT_PX = 40; // v1504 (Harley): Shadow Step teleports him this far BACK (towards his own fortress) on every dodge - out of reach until he runs back in. Already at his fortress front = he dodges on the spot. 0 = old dodge (no move)
 function aoeTicks(a) { return a && a.aoeDelay != null ? Math.max(1, Math.round(a.aoeDelay / (ARENA_TICK_MS / 1000))) : HANZO_LEAP_TICKS(); } /* v1506: per-skill wind-up for hit-everything skills (Arena ticks) */
 function HANZO_LEAP_TICKS() { return Math.max(1, Math.round(HANZO_LEAP_SEC / (ARENA_TICK_MS / 1000))); }
@@ -8486,6 +8487,7 @@ function createGame(opts) {
   // canvas drawing, e.g. offline catch-up) counts as on screen so simulation isn't blocked.
   var idleFrontScreen = { ok: true, t: 0 };
   function idleFrontOnScreen(front) { return (Date.now() - idleFrontScreen.t > 1500) || (idleFrontScreen.ok && (!front || idleFrontScreen.id == null || idleFrontScreen.id === front.id)); } // v651: the on-screen report must be about THIS enemy, not whoever was front a moment ago
+  var idleWaveGeo = null; /* v1507 */
   var idleMeleeReach = { map: null, t: 0 }; // v658: UI report — per melee hero, the id of the real enemy standing at his sword (or null)
   function idleFindEnemy(id) { var L = state.idle.enemies; for (var i = 0; i < L.length; i++) if (L[i].id === id) return L[i]; return null; }
   function idleMeleeTargetFor(aid, front) { // a melee hero hits the enemy REALLY at his sword (any queue position); no fresh report = the old rule (the front enemy once it has closed in)
@@ -9281,7 +9283,7 @@ function createGame(opts) {
       }
     });
 
-    idleStormTick(dt); // v993: Shuriken Storms landing after Hanzo's leap (before `front` is read, so a storm kill can't leave a dead front)
+    idleStormTick(dt); idleWaveTick(dt); // v1507: rolling eruption hits. v993: Shuriken Storms landing after Hanzo's leap (before `front` is read, so a storm kill can't leave a dead front)
     var front = state.idle.enemies[0];
     var frontTargetable = front && front.arrived;
     var frontPointBlank = front && front.engaged;
@@ -9334,7 +9336,7 @@ function createGame(opts) {
           if (!state.idle.enemies.some(function (e0) { return e0.hp > 0; })) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
           var aoeDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = aoeDmg;
-          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.aoeDelay != null ? skill1.aoeDelay : HANZO_LEAP_SEC, dmg: aoeDmg }); /* v1506: each hit-everything skill can set its own wind-up (aoeDelay s); Hanzo keeps HANZO_LEAP_SEC */
+          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.wave ? skill1.wave.impact : skill1.aoeDelay != null ? skill1.aoeDelay : HANZO_LEAP_SEC, dmg: aoeDmg, wave: !!skill1.wave }); /* v1506: each hit-everything skill can set its own wind-up (aoeDelay s); Hanzo keeps HANZO_LEAP_SEC */
           return;
         }
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
@@ -9987,11 +9989,23 @@ function createGame(opts) {
   function idleStormTick(dt) {
     var Q = state.idle.stormQ; if (!Q || !Q.length) return; var keep = [];
     Q.forEach(function (q) { q.t -= dt; if (q.t > 1e-9) { keep.push(q); return; } if (idleHeroIsKo(q.key)) return;
+      if (q.wave) { /* v1507: rolling eruption - each enemy is hit when the fire reaches it (distance from the drawing, see setIdleWaveGeo); no drawing = all at once */
+        var G = idleWaveGeo && Date.now() - idleWaveGeo.t < 1500 ? idleWaveGeo : null, hx = G && G.heroX[q.key], spd = G ? G.w * WAVE_SPEED_FR : 0, W2 = state.idle.waveHits || (state.idle.waveHits = []);
+        state.idle.enemies.forEach(function (e0) { if (!(e0.hp > 0)) return; var ex = G && G.enemyX[e0.id]; W2.push({ key: q.key, id: e0.id, dmg: q.dmg, t: G && hx != null && ex != null && spd > 0 ? Math.abs(ex - hx) / spd : 0 }); });
+        state.idle.skillLandCounts[q.key] = (state.idle.skillLandCounts[q.key] || 0) + 1; return; }
       var hit = 0; state.idle.enemies.forEach(function (e0) { if (!(e0.hp > 0)) return; var dd0 = q.dmg * idleMarkMult(e0, q.key) * idleEnemyDefTake(e0, q.dmg); e0.hp -= dd0; hit++; state.idle.aoeDmg = (state.idle.aoeDmg || 0) + dd0;
         (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: q.key, id: e0.id }); });
       if (hit) state.idle.skillLandCounts[q.key] = (state.idle.skillLandCounts[q.key] || 0) + 1;
       for (var ai0 = state.idle.enemies.length - 1; ai0 >= 0; ai0--) if (state.idle.enemies[ai0].hp <= 0) idleRemoveDeadEnemyAt(ai0); });
     state.idle.stormQ = keep;
+  }
+  function idleWaveTick(dt) { /* v1507: Sunforge Slam hits landing as the fire reaches each enemy (all Conquest enemies stand on the ground) */
+    var W2 = state.idle.waveHits; if (!W2 || !W2.length) return; var keep = [], any = false;
+    W2.forEach(function (q) { q.t -= dt; if (q.t > 1e-9) { keep.push(q); return; } var e0 = null; state.idle.enemies.forEach(function (e1) { if (String(e1.id) === String(q.id)) e0 = e1; }); if (!e0 || !(e0.hp > 0)) return;
+      var dd0 = q.dmg * idleMarkMult(e0, q.key) * idleEnemyDefTake(e0, q.dmg); e0.hp -= dd0; any = true; state.idle.aoeDmg = (state.idle.aoeDmg || 0) + dd0;
+      (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: q.key, id: e0.id }); });
+    state.idle.waveHits = keep;
+    if (any) for (var ai0 = state.idle.enemies.length - 1; ai0 >= 0; ai0--) if (state.idle.enemies[ai0].hp <= 0) idleRemoveDeadEnemyAt(ai0);
   }
   function idleGerbilTick(dt) {
     var gb = cardModsFrom(state).gerbil, I = state.idle; if (!gb) return;
@@ -11096,6 +11110,7 @@ function createGame(opts) {
     idleLevelLabel: function () { return idleStageCh() + "-" + idleStageLv(); }, idleBestLabel: function () { return state.idle.chapter + "-" + state.idle.levelNum; },
     idleFarm: idleFarm, idleSetStage: idleSetStage, idleFarmPayK: idleFarmPayK, idleBestGlobal: idleBestGlobal, idleLevelsPerChapter: IDLE_LEVELS_PER_CHAPTER,
     idleIsBossLevel: idleIsBossLevel, idleStartBossAttempt: idleStartBossAttempt, idleResolveResult: idleResolveResult, idleArriveDelay: IDLE_ARRIVE_DELAY, idleIsChapterBossLevel: idleIsChapterBossLevel, idleBossName: idleBossName, idleEnvironment: idleEnvironment,
+    setIdleWaveGeo: function (g) { idleWaveGeo = g; if (g) g.t = Date.now(); }, /* v1507: where the drawing has the heroes and enemies (rolling eruption timing) */
     setIdleMeleeTargets: function (map) { idleMeleeReach.map = map; idleMeleeReach.t = Date.now(); idleMeleeFirstStrikes(); },
     idleMeleeVisPing: function (heroes) { idleMeleeVis.t = Date.now(); idleMeleeVis.heroes = heroes || {}; }, /* v917: the scene was really drawn this frame */
     idleMeleeLand: idleMeleeLand, idleLilyImpact: idleLilyImpact, idleConfirmDeath: idleConfirmDeath, idleDyingCount: function () { return idleDying.length; }, idleMeleeOwedCount: function (aid) { return idleMeleeOwed.filter(function (o) { return o.aid === aid; }).length; },
@@ -13176,7 +13191,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1506"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1507"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24584,7 +24599,7 @@ function stepIdleAnim(dtSec, w, h) {
     var skillDefForCd = HERO_DEFS[key].conquestSkills && HERO_DEFS[key].conquestSkills[0];
     if (count > last && HERO_ANIMS[key + "_skill"]) { /* v1502 Hanzo, v1506 any hero with a skill sheet (Aurek): the skill animation + its effect (the hit itself lands aoeDelay later in the engine) */
       idleAnim.lastSkillFireCounts[key] = count; var hv0 = idleAnim.heroVis[key]; /* no generic gold flash ring - it stayed on the ground under the leap */
-      if (hv0) { var skDl = skillDefForCd && skillDefForCd.aoeDelay != null ? skillDefForCd.aoeDelay : HANZO_LEAP_SEC, hzQ = (game.state.idle.stormQ || []).filter(function (q) { return q.key === key; })[0], hzRem = hzQ ? Math.max(0, Math.min(skDl, hzQ.t)) : skDl * 0.66; /* the engine ticks ahead of the drawing: line the animation up with when the hit really lands */
+      if (hv0) { var skDl = skillDefForCd && skillDefForCd.wave ? skillDefForCd.wave.impact : skillDefForCd && skillDefForCd.aoeDelay != null ? skillDefForCd.aoeDelay : HANZO_LEAP_SEC, hzQ = (game.state.idle.stormQ || []).filter(function (q) { return q.key === key; })[0], hzRem = hzQ ? Math.max(0, Math.min(skDl, hzQ.t)) : skDl * 0.66; /* the engine ticks ahead of the drawing: line the animation up with when the hit really lands */
         var hzT0 = performance.now() - (skDl - hzRem) * 1000; heroAnimStartAt(key + "_skill", false, hzT0); var skRec = { t0: hzT0, x: hv0.x, thrown: false }; (idleAnim.skLeap || (idleAnim.skLeap = {}))[key] = skRec; if (key === "hanzo") idleAnim.hzLeap = skRec; }
       if (skillDefForCd) idleAnim.smoothCooldown[key] = skillDefForCd.cooldown; return;
     }
@@ -26414,28 +26429,32 @@ function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir) 
   if (F.throwImg) heroThrowFx(M, key, x0, y0, targets, hs);
   if (F.pillars) heroFirePillars(M, key, gx + 7 * hs * dir, gy, xMin, xMax, hs);
 }
-function heroFirePillars(M, key, x, gy, xMin, xMax, hs) {
-  var P = M.hzPillars || (M.hzPillars = []), now = performance.now(), gap = 25 * hs, spd = 0.55; /* px per ms the fire runs along the ground */
-  P.push({ key: key, x: x, y: gy, t0: now, big: 1.15, seed: Math.random() * 9 });
-  for (var d = gap; x - d > xMin - gap || x + d < xMax + gap; d += gap) {
-    [x - d, x + d].forEach(function (px) { if (px < xMin - gap || px > xMax + gap) return; var r = Math.random(); P.push({ key: key, x: px + (r - 0.5) * 8 * hs, y: gy, t0: now + d / spd + r * 40, big: 0.72 + 0.5 * Math.random(), seed: Math.random() * 9, flip: r > 0.5 }); });
-  }
-  if (P.length > 160) P.splice(0, P.length - 160);
+function heroFirePillars(M, key, x, gy, xMin, xMax, hs) { /* v1507 (Harley): rolling eruption - fire spots every WAVE_GAP_FR of the screen, both ways from the sword; each erupts as the front
+   reaches it (WAVE_SPEED_FR of the screen width per second, the same speed the engine uses for the hits) then sinks, so WAVE_N pillars stand at once, tallest at the front */
+  var P = M.hzPillars || (M.hzPillars = []), now = performance.now(), span = Math.max(1, xMax - xMin), gap = span * WAVE_GAP_FR, spd = span * WAVE_SPEED_FR / 1000; /* px per ms */
+  for (var d = gap; x - d > xMin - gap || x + d < xMax + gap; d += gap) [-1, 1].forEach(function (dir) { var px = x + dir * d; if (px < xMin - gap || px > xMax + gap) return;
+    P.push({ key: key, x: px, y: gy, t0: now + d / spd, life: gap * WAVE_N / spd, seed: (d * 0.137 + dir * 0.31 + Math.random()) % 1 }); });
+  if (P.length > 200) P.splice(0, P.length - 200);
 }
-function drawHeroPillars(ctx, hs, M) {
-  var P = M && M.hzPillars; if (!P || !P.length) return; var now = performance.now(), LIFE = 620;
-  ctx.save(); ctx.globalCompositeOperation = "lighter";
-  M.hzPillars = P.filter(function (q) { var u = (now - q.t0) / LIFE; if (u >= 1) return false; if (u < 0) return true;
-    var F = HERO_COMBAT_FX[q.key] || {}, im = F.pillars ? heroFxImg(q.key, F.pillars) : null;
-    var rise = u < 0.18 ? 1 - Math.pow(1 - u / 0.18, 3) : 1, fade = u < 0.55 ? 1 : 1 - (u - 0.55) / 0.45, fl = 1 + 0.08 * Math.sin(now / 37 + q.seed * 3);
-    var H = 66 * hs * q.big * rise * fl, W2 = 24 * hs * q.big * (0.85 + 0.15 * fade);
-    var g = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, 16 * hs * q.big); g.addColorStop(0, "rgba(255,230,140," + (0.75 * fade) + ")"); g.addColorStop(1, "rgba(255,120,20,0)");
-    ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(q.x, q.y, 16 * hs * q.big, 5 * hs * q.big, 0, 0, 7); ctx.fill(); /* glowing crack on the ground */
-    ctx.globalAlpha = Math.max(0, fade);
-    if (im) { if (q.flip) { ctx.save(); ctx.translate(q.x, 0); ctx.scale(-1, 1); ctx.drawImage(im, -W2 / 2, q.y - H + 3 * hs, W2, H); ctx.restore(); } else ctx.drawImage(im, q.x - W2 / 2, q.y - H + 3 * hs, W2, H); }
-    else { var lg = ctx.createLinearGradient(q.x, q.y, q.x, q.y - H); lg.addColorStop(0, "rgba(255,250,210,0.95)"); lg.addColorStop(0.5, "rgba(255,170,40,0.7)"); lg.addColorStop(1, "rgba(255,80,0,0)"); ctx.fillStyle = lg; ctx.fillRect(q.x - W2 / 3, q.y - H, W2 / 1.5, H); }
-    return true; });
-  ctx.restore();
+function drawHeroPillars(ctx, hs, M) { /* Flat B2 pillar (white-hot core, yellow, orange, red-orange skin) rising out of the ground, its wispy top waving + small flames breaking off */
+  var P = M && M.hzPillars; if (!P || !P.length) return; var now = performance.now();
+  M.hzPillars = P.filter(function (q) { var age = now - q.t0; if (age > q.life) return false; if (age < 0) return true;
+    var F = HERO_COMBAT_FX[q.key] || {}, im = F.pillars ? heroFxImg(q.key, F.pillars) : null; if (!im) return true;
+    var u = age / q.life, rise = Math.min(1, age / 64), full = 58 * hs, h = full * 1.12 * rise * (1 - u), a = 1 - Math.max(0, u - 0.8) * 5; if (h < 1) return true;
+    heroPillarLive(ctx, im, q.x, q.y, h, full * 1.12, a, q.seed, now, hs); return true; });
+}
+var heroPillarOff = null;
+function heroPillarLive(g, im, x, gy, h, fullH, a, seed, now, hs) {
+  var w = fullH * im.naturalWidth / im.naturalHeight, sw = im.naturalWidth, sh = im.naturalHeight, OW = Math.ceil(w * 1.6), OH = Math.ceil(fullH * 1.1);
+  var oc = heroPillarOff || (heroPillarOff = document.createElement("canvas")); if (oc.width !== OW || oc.height !== OH) { oc.width = OW; oc.height = OH; } var o = oc.getContext("2d"); o.clearRect(0, 0, OW, OH);
+  for (var i = 0, n = 40; i < n; i++) { var v0 = i / n, dx = 0; if (v0 < 0.42) { var k = 1 - v0 / 0.42; dx = Math.sin(now / 95 + seed * 5 + v0 * 18) * w * 0.09 * k * k + Math.sin(now / 57 + seed * 3 + v0 * 31) * w * 0.04 * k; }
+    o.drawImage(im, 0, v0 * sh, sw, sh / n, (OW - w) / 2 + dx, v0 * fullH, w, fullH / n + 1); } /* slices drawn normally off screen (no seams), then the whole pillar is added */
+  var top = gy - h;
+  g.save(); g.globalAlpha = Math.max(0, Math.min(1, a)); g.globalCompositeOperation = "lighter"; g.beginPath(); g.rect(x - w, 0, w * 2, gy + 2); g.clip(); g.drawImage(oc, x - OW / 2, top);
+  var f = 0.5 + 0.5 * Math.sin(now / 140 + seed * 7); g.globalAlpha = Math.max(0, a) * 0.55 * f; g.drawImage(im, 0, 0, sw, sh * 0.25, x - w * 0.35 + Math.sin(now / 120 + seed) * w * 0.12, top - fullH * 0.08 * f, w * 0.7, fullH * 0.25); g.restore();
+  if (h > fullH * 0.4) for (var j = 0; j < 2; j++) { var ph = ((now / 700) + seed * 1.7 + j * 0.5) % 1, ex = x + Math.sin(seed * 9 + j * 4 + ph * 6) * w * 0.25, ey = top + fullH * 0.05 - ph * 18 * hs, r = (1 - ph) * 2.4 * hs;
+    g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Math.max(0, a) * (1 - ph) * 0.8; var rg = g.createRadialGradient(ex, ey, 0, ex, ey, r * 2); rg.addColorStop(0, "rgba(255,230,150,1)"); rg.addColorStop(0.5, "rgba(255,120,30,.6)"); rg.addColorStop(1, "rgba(200,40,0,0)"); g.fillStyle = rg; g.beginPath(); g.ellipse(ex, ey, r, r * 1.6, 0, 0, 7); g.fill(); g.restore(); }
+  g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Math.max(0, a) * 0.6; g.fillStyle = "rgba(255,190,90,.6)"; g.beginPath(); g.ellipse(x, gy, w * 0.55, 2 * hs, 0, 0, 7); g.fill(); g.restore();
 }
 var heroFxCache = {};
 function heroFxImg(key, n) { var id = key + "_" + n, c = heroFxCache[id]; if (!c) { c = heroFxCache[id] = new Image(); c.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/" + key + "/" + id + ".webp"; } return c.complete && c.naturalWidth ? c : null; }
@@ -26454,6 +26473,9 @@ function heroDodgeFx(M, key, x, feetY, flip, hs, nx) { /* after-image where he s
 }
 function hanzoFxStep(w, h) {
   var now = performance.now(), hs = heroSpriteVisualScale / 100, L = idleAnim.hzLeap;
+  try { if (game.state.conquestRoster.some(function (k) { var d = HERO_DEFS[k]; return d && d.conquestSkills && d.conquestSkills[0] && d.conquestSkills[0].wave; })) { /* v1507: tell the engine where everyone stands (rolling eruption timing) */
+    var gx = {}, ex = {}; game.state.conquestRoster.forEach(function (k) { var v = idleAnim.heroVis[k]; if (v) gx[k] = (idleAnim.skLeap && idleAnim.skLeap[k] && now - idleAnim.skLeap[k].t0 < 2000) ? idleAnim.skLeap[k].x : v.x; });
+    Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (e && !e.dying) ex[id] = e.x; }); game.setIdleWaveGeo({ w: w, heroX: gx, enemyX: ex }); } } catch (eWg) {}
   Object.keys(idleAnim.skLeap || {}).forEach(function (sk) { /* v1506: every skill sheet's effect frame (Hanzo's throw, Aurek's sword planted) */
     var SL = idleAnim.skLeap[sk], A = HERO_ANIMS[sk + "_skill"]; if (!SL || !A || SL.thrown || now - SL.t0 < (A.throwFrame || 0) / A.fps.skill * 1000) return;
     SL.thrown = true; var k = A.dispH * hs / A.ch, fy = SL.hand ? SL.hand.y : groundYFor(h), fx = SL.x + 6 * hs, fyy = fy - A.ay * k * 0.72, T = [];
@@ -35232,7 +35254,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
       ? skillDamageBaseFor(a.key, h, attackerDmgById[a.key], bn.skill || 0) * (skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, a.lvl)) - 1] || 0)
       : (skill.burstBase || 0) + (skill.burstPerLevel || 0) * a.lvl; // legacy fallback for any skill not yet converted to pctByLevel
     var svA = (HERO_DEFS[a.key].conquestSkills || []).filter(function (q) { return q.effectType === "salvage"; })[0], svL = svA ? ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0; /* v1476: Juno's Salvage */
-    return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, aoe: a.aoe, aoeDelay: skill.aoeDelay, visualStyle: a.visualStyle, splash: skill.splash || null, salvage: svA ? svA.perLevel * svL : 0 };
+    return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, aoe: a.aoe, aoeDelay: skill.aoeDelay, wave: skill.wave || null, visualStyle: a.visualStyle, splash: skill.splash || null, salvage: svA ? svA.perLevel * svL : 0 };
   });
   var limits = limitsRaw.map(function (a) { var sk = a.skill, L = Math.max(1, Math.min(sk.pctByLevel.length, a.lvl)); return { key: a.key, fill: sk.hitsToFill, taken: sk.takenPts || 1, n: sk.targetsByLevel[Math.min(sk.targetsByLevel.length, L) - 1], exec: sk.executePct, value: skillDamageBaseFor(a.key, heroesState[a.key], attackerDmgById[a.key], bn.skill || 0) * (sk.pctByLevel[L - 1] || 0) }; });
   var refAtk = 0; Object.keys(attackerDmgById).forEach(function (k) { refAtk = Math.max(refAtk, attackerDmgById[k]); }); if (!(refAtk > 0)) refAtk = game.idleFortressCannonBulletDmgBase() * bnA; // the attacker's own typical hit — what the other side's DEF is measured against
@@ -35367,7 +35389,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var playerShield = playerShieldMax, aiShield = aiShieldMax;
   /* v1499: Spotter's Mark - each side's cannon bullets mark the side they hit (up to cap; super bursts lay superMarks each); that side's Pip's next hit spends them */
   var spotOnA = 0, spotOnP = 0; function spotMul(sd, id) { if (id !== 'pip') return 1; var st = sd === 'P' ? playerStats : aiStats; if (!st.spot) return 1; var m = sd === 'P' ? spotOnA : spotOnP; if (!m) return 1; if (sd === 'P') spotOnA = 0; else spotOnP = 0; return 1 + m * st.spot.pct; }
-  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = []; /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
+  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = [], waveQ = []; /* v1507: rolling eruptions on the ground */ /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
   var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {};
   (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first; }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first; });
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
@@ -35604,6 +35626,23 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var blk = q.sd === 'P' ? aoeHit(aHH, aiStats, q.v * (1 - red), wallUp) : aoeHit(pHH, playerStats, q.v * (1 - red), wallUp), mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0; /* v1195 (audit item 9): Mirror Wall (Lv50) reflects that % of what the Wall blocked at the caster's fortress */
       if (q.sd === 'P') { aiDmg += mirr; playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); }
       else { playerDmg += mirr; aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } }); stormQ = stormKeep; }
+    /* v1507: rolling eruptions. Each tick the fire front moves WAVE_SPEED_FR x 400 px/s out from the caster; an enemy hero is hit once, when the front reaches him,
+       unless he is knocked out or IN THE AIR (Hanzo mid-leap: his own Storm still pending). The enemy fortress is hit when the front reaches its nose.
+       Wall / dodge / DEF apply like the Storm. No hero positions (old non-shared mode): everything is in reach on the impact tick. Caster knocked out before the impact = no wave. */
+    if (waveQ.length) { var waveKeep = []; waveQ.forEach(function (q) { if (tick < q.impact) { waveKeep.push(q); return; }
+      var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oSd = q.sd === 'P' ? 'A' : 'P';
+      if (tick === q.impact && isKo(mine, q.key)) return;
+      var me = mine && mine.by[q.key], lane = me && me.runL ? me.runL[0] + me.runL[1] : 0, md = me ? (me.ko ? (me.koD || 0) : me.d) : 0;
+      var front = (tick - q.impact + 1) * dtS * WAVE_SPEED_FR * 400, dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0, left = false, blk = 0;
+      var dist = function (od) { return posMode && lane ? Math.max(0, 1 - md - od) * lane : 0; };
+      if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (dist(o.infantry ? o.d : 0) > front) { left = true; return; } q.hit[o.id] = 1;
+        if (o.ko) return; if (stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; })) return; /* in the air - the pillars pass under him */
+        var dmg = q.v * (1 - red); if (wallUp && !o.infantry) { blk += dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } if (dodgePort(o)) return;
+        o.hp -= dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); });
+      var mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0;
+      if (!q.fort) { if (dist(0) <= front) { q.fort = true; if (q.sd === 'P') { playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } else { aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } } else left = true; }
+      if (q.sd === 'P') aiDmg += mirr; else playerDmg += mirr;
+      if (left) waveKeep.push(q); }); waveQ = waveKeep; }
     playerStats.actives.forEach(function (a) {
       if (isKo(pHH, a.key)) { playerCd[a.key] = a.cooldown; return; } // KO'd: skill timer sits at full until he revives
       playerCd[a.key] -= cdStep;
@@ -35611,6 +35650,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
         playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         var av = a.value * cardSkMul('P', a.key) * spotMul('P', a.key); /* v985: cards */
+        if (a.aoe && a.wave) { waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'P', key: a.key, name: a.name, v: av, hit: {}, fort: false }); return; } /* v1507: Sunforge Slam - hits what the fire reaches */
         if (a.aoe) { stormQ.push({ at: tick + aoeTicks(a), sd: 'P', key: a.key, name: a.name, v: av }); return; } /* v993: Shuriken Storm - he leaps first; lands HANZO_LEAP_SEC later (stormLand) */
         if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; if (a.splash) { var kMp = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kMp && a.salvage) playerCd[a.key] -= kMp * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['p_' + a.key]; } if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } if (a.splash) { if (skTgt['p_' + a.key] == null) skTgt['p_' + a.key] = "fort"; var kP = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kP && a.salvage) playerCd[a.key] -= kP * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
       }
@@ -35622,6 +35662,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
         aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         var avA = a.value * cardSkMul('A', a.key) * spotMul('A', a.key); /* v985: cards */
+        if (a.aoe && a.wave) { waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'A', key: a.key, name: a.name, v: avA, hit: {}, fort: false }); return; } /* v1507 */
         if (a.aoe) { stormQ.push({ at: tick + aoeTicks(a), sd: 'A', key: a.key, name: a.name, v: avA }); return; } /* v993 */
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; if (a.splash) { var kMa = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kMa && a.salvage) aiCd[a.key] -= kMa * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['a_' + a.key]; } if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } if (a.splash) { if (skTgt['a_' + a.key] == null) skTgt['a_' + a.key] = "fort"; var kA = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kA && a.salvage) aiCd[a.key] -= kA * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
       }

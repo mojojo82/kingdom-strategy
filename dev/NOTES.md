@@ -4434,3 +4434,12 @@ Harley's 3 points:
 - Balance: Arena round robin (team minus one hero) w/o Aurek 85-18-17 (Lv40) / 85-19-16 (Lv80) vs w/o Kessa 45-75 / 51-69 - Aurek matters far less than Kessa. Conquest (1 seed): Aurek team 6-10 / 10-1 / 10-4 vs Kessa team 6-12 / 10-2 / 10-11 (atkMult 0.65 -> 0.5; at 0.65 he beat Kessa at Lv40). Meta check unchanged (known warning). Hanzo vs Kessa sims unchanged.
 - Atlas: 5 x $0.38 + card $0.61 = $2.51. Balance now $0.00 - top-up needed before the next hero's animations.
 - Headless: Conquest (slam + pillars across the field, no errors), Arena with Aurek on both sides (pillars from both, no errors), hero card (video plays, loops), Heroes list.
+
+## v1507 - Sunforge Slam = rolling eruption; it only hits what the fire actually reaches (TEST)
+- Harley picked (mockup artifact "Sunforge Slam Pillars"): rolling eruption, Flat B2 pillar (ChatGPT: flat smooth sides, clear heat zones white core / yellow / deep orange / red-orange skin, soft smoky top) with the "lively top" (code: the wispy top waves, a soft extra lick, small flames break off), 4 pillars standing at once, mockup speed 0.7. Pillars rise out of the ground and sink back (never squashed).
+- Harley: "damage only hurts enemies if they touch the pillars... if a hero was in the air at the time the pillars would not apply damage".
+  - Arena / World PvP (waveQ): from the impact (sword planted, 0.375 s -> 1 tick) the fire front runs out at WAVE_SPEED_FR (41% of the screen width per second, on the 400 px lane); each enemy hero is hit once when the front reaches him, the enemy fortress when it reaches the nose. A hero in the air (Hanzo mid-leap: his own Storm still pending) is passed under and NOT hit. Knocked-out caster before the impact = no wave. Wall / dodge / DEF as before.
+  - Conquest: each live enemy is hit when the fire reaches it (distance from the drawing via game.setIdleWaveGeo, like the melee reach report); no drawing (headless sims) = all at the impact. No Conquest enemy flies.
+  - Visual uses the same speed/gap (WAVE_SPEED_FR / WAVE_GAP_FR / WAVE_N), so the hits land as the pillars arrive.
+- Balance: Arena w/o Aurek 92-12-16 / 83-22-15 vs w/o Kessa 55-65 / 51-69 (Aurek still far below Kessa). Conquest Aurek team 6-9 / 10-1 / 10-4 vs Kessa 6-12 / 10-2 / 10-11. Hanzo vs Kessa sims unchanged.
+- Headless: Conquest (eruption rolls both ways, per-enemy hits land, no errors), Arena with Aurek both sides (no errors).
