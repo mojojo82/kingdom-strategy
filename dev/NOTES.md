@@ -4360,3 +4360,13 @@ Harley's 3 points:
 - After the art split it can count real files loaded instead.
 - Headless: 0.07 -> 0.34 -> 0.85 -> 0.90 (waiting for the server stub) -> 1.00 -> gone; no errors.
 - Also noted (11 Nov): the "A problem repeatedly occurred" crash on Harley's iPhone was low phone memory (fixed by closing other apps) - the 30 MB file is close to the limit; the splash image adds ~6.5 MB while it shows. The art split is the real fix.
+
+## v1498 — Art split, batch 1 (TEST)
+- Harley: split the art out of the 30 MB single file; world map + Conquest art must load up front, a longer loading screen is fine (a company-logo splash comes later), TEST must never touch LIVE.
+- tools/split-art.py moves double-quoted base64 "data:" literals (8 KB+) of the named variables into test/assets/<name>-<hash8>.<ext> and replaces them with ksA("assets/...") (start-up) or ksA("assets/...", 1) (lazy). Hash in the name = content, so a changed picture always gets a new name (no stale copies on phones; TEST's test/assets/ never touches LIVE's assets/).
+- ksA (top of the page, splash script) makes one full address per file (needed: baseWater2Cfg compares CITY_SKINS[k].src === img.src, and img.src is always the full address) and lists start-up files in KS_ASSETS.
+- Loading screen: 0-55% the page itself (learned timing), 55-95% start-up art files fetched / total (fetch into the browser cache - not decoded, no memory cost), 100% server ready. Waits for all of them (cap 30 s).
+- Batch 1 moved 19 items: 10 city skins, knight idle sheet, 4 hero anim sheets (Gareth/Roran/Kessa/+1), serpent sheet = start-up; 3 hero card videos (Gareth/Kessa/Iron Lily) = lazy (hcVideoUrl already fetched file videos into a blob). 30.0 MB -> 20.4 MB; test/assets = 6.9 MB (base64 was 9.5 MB).
+- Headless: all 16 start-up files load, hero sheets / knight / serpent ready, tower + castle water settings still apply (round 1.15 / 1.05), world map + Conquest + Gareth's card video (loops) fine, no errors. JS heap 57 -> 40 MB.
+- Left in the page on purpose for now: OWNER_DEFAULTS (owner-uploaded art syncs as data: URLs), sound effects (decoded with atob), music (2.2 MB, atob), CSS url(data:) pictures, small sprites. Next batches.
+- Copy to LIVE now = test/index.html -> index.html AND test/assets/ -> assets/ (paths are relative, so the same file works in both).
