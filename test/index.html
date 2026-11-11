@@ -11217,11 +11217,14 @@ var CITY_SKINS = {
   castle: { id: "castle", label: "Royal Castle", scale: 1.0, src: ksA("assets/city-skins-castle-b6975037.webp") },
   titan: { id: "titan", label: "Titan Fountain", scale: 1.0, src: ksA("assets/city-skins-titan-ada31eda.webp") },
   /* v1493 (Harley, 11 Nov): two olive mech skins from the skin process - "Iron Sentinel" = Harley's Meshy render restyled with base prompt 1 (worn olive + brass, teal lights); "Field Sentinel" = Harley's 2D painting used as-is. Originals in art/originals/skins/olive_mech/. Free like the others. */
+  /* v1501 (Harley, 11 Nov): Frost Gate - Harley's frozen gothic portal castle with dragon wings (as he made it, cut off its white background); Frost Gate II = the same run through base prompt 1 (dev/skins/PROMPTS.md). Originals: art/originals/skins/ice_portal/. Wide, low design -> scale 1.3 (mockup approved). */
+  frostgate: { id: "frostgate", label: "Frost Gate", scale: 1.3, src: ksA("assets/city-skins-frostgate-24181b3a.webp") },
+  frostgate2: { id: "frostgate2", label: "Frost Gate II", scale: 1.3, src: ksA("assets/city-skins-frostgate2-2bcb867a.webp") },
   ironsent: { id: "ironsent", label: "Iron Sentinel", scale: 1.0, src: ksA("assets/city-skins-ironsent-19873242.webp") },
   fieldsent: { id: "fieldsent", label: "Field Sentinel", scale: 1.0, src: ksA("assets/city-skins-fieldsent-184f6dc1.webp") },
   pirate: { id: "pirate", label: "Ghost Galleon", scale: 1.0, waterLine: { x0: 0.29, x1: 0.93 }, src: ksA("assets/city-skins-x-c69375fe.webp") }, /* v1049 (Harley): pirate ship city skin at FULL resolution (only the white background cut out and its empty border trimmed - Harley sizes it with the skin alignment controls); original art/originals/pirate_ship_city.png */
 };
-var CITY_SKIN_ORDER = ["tower", "mecha", "castle", "titan", "pirate", "ironsent", "fieldsent"]; /* v1500 (Harley 11 Nov): Watchtower II, Tech Citadel and Tech Fortress removed (art kept in art/originals); a saved choice of one falls back to "tower" */
+var CITY_SKIN_ORDER = ["tower", "mecha", "castle", "titan", "pirate", "ironsent", "fieldsent", "frostgate", "frostgate2"]; /* v1500 (Harley 11 Nov): Watchtower II, Tech Citadel and Tech Fortress removed (art kept in art/originals); a saved choice of one falls back to "tower" */
 // Per-device choice of which skin renders for THIS PLAYER'S OWN city
 // specifically (isMyCity) - a local display preference, same pattern as
 // mapZoom/mapHideResources above, NOT written to the shared "cities" doc.
@@ -13167,7 +13170,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1500"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1501"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17122,7 +17125,7 @@ var cityArtMetrics = {};
 /* Where the art's foundation sits: centroid (as fractions of the image) of the opaque pixels in its lowest 22%, plus the image aspect. Measured once per image; until it loads a sensible guess is used and the map redraws. */
 /* v1026 (Harley: bases jumped well off their squares "on their own"): where each built-in skin's foundation sits in its picture, measured once
    (headless) and built in, so no phone has to measure it. A phone that failed to measure used to fall back to a rough guess about half a tile off. */
-var CITY_ART_BAKED = { tower: { fx: 0.4916, fy: 0.7181, aspect: 1.0625 }, tower2: { fx: 0.5006, fy: 0.6559, aspect: 0.8321 }, mecha: { fx: 0.5541, fy: 0.7736, aspect: 1.3125 },
+var CITY_ART_BAKED = { frostgate: { fx: 0.4931, fy: 0.7144, aspect: 1.0033 }, frostgate2: { fx: 0.4902, fy: 0.7180, aspect: 1.0150 }, tower: { fx: 0.4916, fy: 0.7181, aspect: 1.0625 }, tower2: { fx: 0.5006, fy: 0.6559, aspect: 0.8321 }, mecha: { fx: 0.5541, fy: 0.7736, aspect: 1.3125 },
   castle: { fx: 0.5256, fy: 0.6981, aspect: 0.9482 }, citadel: { fx: 0.5012, fy: 0.6784, aspect: 0.8929 }, titan: { fx: 0.5176, fy: 0.8112, aspect: 1.4846 },
   pirate: { fx: 0.4465, fy: 0.6750, aspect: 0.8134 }, techfort: { fx: 0.5027, fy: 0.7096, aspect: 0.9867 }, ironsent: { fx: 0.5204, fy: 0.7825, aspect: 1.2850 }, fieldsent: { fx: 0.5143, fy: 0.7861, aspect: 1.3000 } }; /* v1049; v1490 techfort, v1493 ironsent / fieldsent measured headless */
 function cityArtGet(src) {

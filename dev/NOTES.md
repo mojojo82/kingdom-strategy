@@ -4383,3 +4383,8 @@ Harley's 3 points:
 
 ## v1500 — Three city skins removed (TEST)
 - Harley (circled on his phone): remove Watchtower II (tower2), Tech Citadel (citadel) and Tech Fortress (techfort). Taken out of CITY_SKINS and CITY_SKIN_ORDER; their game files moved from test/assets/ to art/originals/skins/removed_v1500/ (originals stay in art/originals). Anyone who had one equipped (or a city / bot saved with one) shows the default Watchtower - every lookup already falls back to "tower". LIVE untouched.
+
+## v1501 — Two new city skins: Frost Gate + Frost Gate II (TEST)
+- Harley's frozen gothic portal castle with dragon wings. Frost Gate = his picture as made (cut off its white background); Frost Gate II = the same picture through base prompt 1 (the clean prompt version and two ChatGPT wing redesigns were not picked; all banked in art/originals/skins/ice_portal/).
+- Separate files (test/assets/city-skins-frostgate-24181b3a.webp, city-skins-frostgate2-2bcb867a.webp, 600 px WebP q90), scale 1.3 (wide, low design - mockup approved), CITY_ART_BAKED measured headless, default Shape water, free. Order: after Field Sentinel.
+- Headless: both show on the world map from their files with their water, no errors.
