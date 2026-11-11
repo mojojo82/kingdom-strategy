@@ -13,7 +13,7 @@ let SLOW = 0; const store = {}, call = require(ROOT + "/dev/tests/fnrunner.js")(
   async function page() { const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
     await ctx.exposeFunction("__fbstore", async (op, k, v) => { if (SLOW) await new Promise((r) => setTimeout(r, SLOW)); if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
     await ctx.exposeFunction("__fbcall", call);
-    await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+    await ctx.route(/mojojo82\.github\.io/, require(require("path").join(__dirname, "../tests/siteroute.js"))(GAME));
     await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
     await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
     await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());

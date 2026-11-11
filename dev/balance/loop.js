@@ -16,7 +16,7 @@ const COND = Object.assign({ lvl: 40, arms: 10, wl: 30, per: 100, base: 0 }, JSO
   const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] }); const ctx = await b.newContext();
   await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); }); await ctx.exposeFunction("__fbcall", call);
-  await ctx.route(/mojojo82\.github\.io/, (r) => r.fulfill({ status: 200, contentType: "text/html", body: GAME }));
+  await ctx.route(/mojojo82\.github\.io/, require(require("path").join(__dirname, "../tests/siteroute.js"))(GAME));
   await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
   await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" })); await ctx.route(/fonts\./, (r) => r.abort());
   const P = await ctx.newPage(); P.on("pageerror", (e) => process.stderr.write("PAGEERR " + e.message + "\n"));

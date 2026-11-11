@@ -17,7 +17,11 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
                 "stand_src": 580, "feet_y": 681},
        # v1480 Bram (melee): the attack clip came from a smaller start frame, so every clip is measured on its own (meta.json, see below)
        "bram": {"clips": {"idle": ("bram_idle_h3max_768_5s_v1.mp4", 0, 0), "run": ("bram_run_h3max_768_5s_v1.mp4", 0, 0), "attack": ("bram_attack_h3max_768_5s_v3.mp4", 0, 0)},
-                "stand_src": 427, "feet_y": 679}}[HERO]
+                "stand_src": 427, "feet_y": 679},
+       # v1499 Pip (ranged, on the fortress deck): idle v1; attack v3 (H3 Max adds a muzzle flash + smoke at video frames 42-57 whatever the prompt says -
+       # build_hero_anim.py skips those frames and the game draws its own flare round)
+       "pip": {"clips": {"idle": ("pip_idle_h3max_768_5s_v1.mp4", 0, 0), "attack": ("pip_attack_h3max_768_5s_v3.mp4", 0, 0)},
+                "stand_src": 561, "feet_y": 725}}[HERO]
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
 os.makedirs(OUT, exist_ok=True)

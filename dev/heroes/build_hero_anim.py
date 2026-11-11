@@ -14,16 +14,21 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
        # v1480 Bram (melee, ground): idle 5 s at 8 fps; run = one clean stride cycle (video frames 24-47, the clip repeats every 24 = 1 s) at
        # every 2nd frame, 12 fps; attack = video frames 10-81 (jab ~21, piston punch ~45, back in stance by ~80; attack v3 - v1 steam hit the edge, v2 zoomed in) at every 3rd frame, 24 fps = 1 s
        "bram": {"tag": "v1", "stand": 110, "disp_stand": 26, "per_clip": True,
-                "idle": {"step": 3, "fps": 8}, "run": {"step": 2, "fps": 12, "from": 24, "to": 48}, "attack": {"step": 3, "fps": 24, "from": 10, "to": 82}}}[HERO]
+                "idle": {"step": 3, "fps": 8}, "run": {"step": 2, "fps": 12, "from": 24, "to": 48}, "attack": {"step": 3, "fps": 24, "from": 10, "to": 82}},
+       # v1499 Pip (ranged rider): idle 5 s at 8 fps; attack = raise + aim (video frames 9-41) then lower (64-87), every 3rd frame, 24 fps = ~0.85 s.
+       # Frames 42-63 (H3 Max's own muzzle flash + smoke cloud, which runs off the frame edge) are left out; the flare round leaves on the jump (release)
+       "pip": {"tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True,
+               "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(9, 42, 3)) + [64, 66, 69, 72, 75, 78, 81, 84, 87]}}}[HERO]
 ROWS = [r for r in ("idle", "run", "attack") if r in CFG]
 L = os.path.join(ROOT, "art/originals/heroes", HERO, "large")
 rows = {}
 META = json.load(open(os.path.join(L, "meta.json"))) if CFG.get("per_clip") else None
 for st in ROWS:
     fs = sorted(glob.glob(os.path.join(L, st, "*.webp")))
-    c = CFG[st]; fs = fs[c.get("from", 0):c.get("to", len(fs))]
-    sel = fs[::c["step"]]
-    if st == "idle" and len(sel) > 1 and "from" not in c: sel = sel[:-1]
+    c = CFG[st]
+    if "frames" in c: sel = [fs[i] for i in c["frames"]]   # v1499: an explicit frame list (skips a stretch of the clip)
+    else: fs = fs[c.get("from", 0):c.get("to", len(fs))]; sel = fs[::c["step"]]
+    if st == "idle" and len(sel) > 1 and "from" not in c and "frames" not in c: sel = sel[:-1]
     ims = [Image.open(f).convert("RGBA") for f in sel]
     if META:   # every clip onto one doubled canvas at the idle clip's scale and feet point, so one cell / anchor fits all rows
         m, m0 = META[st], META["idle"]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
