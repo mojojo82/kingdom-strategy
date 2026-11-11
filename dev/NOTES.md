@@ -4457,3 +4457,14 @@ Harley's 3 points:
   - Meta check numbers identical to before (the known "meta not strongest" warning was already there).
 - Atlas: Seraphine 3 x $0.38 + $0.61, Vesper 3 x $0.38 + $0.61 = $3.50.
 - Headless: Conquest with each (sweep crosses the field, hits land, no errors), Arena with Vesper + Seraphine vs Seraphine (beams and rain both ways, no errors), Vesper card (video plays, loops) + Heroes list.
+
+## v1509 - Halo-7 built: hulking golem with a screen-wide Core Beam (TEST)
+- Harley: Halo large and melee (at least 2x a normal hero's height), a screen-wide beam (Iron Man Proton Cannon idea). Design: an ancient stone-and-bronze war golem with a glowing chest core and one eye. Legendary, no longer coming soon, in the bot pool. Stands 50 on screen (Hanzo 24, Aurek 30).
+  - Core Beam (active, cd 13, 28/36/45/55/66%, `wave: { impact 0.5, ground: true, spd 1.1 }`): he braces and fires a huge horizontal beam from his chest; its head shoots across the field and every enemy it reaches is hit, fortress included. Ground-level beam, so a hero in the air (Hanzo mid-leap) is missed. Projection Wall shields ranged heroes.
+  - Stone Shell (own DEF +5%/level). Old placeholder skills (Wake Protocol / taunt, Stone Shell active, Core Beam passive) replaced - one active per hero.
+  - Expedition: Warden's Wall / Unbreakable / Heavy Tread.
+- New generic FX: HERO_COMBAT_FX `coreBeam` + `core: [forward, up]` -> heroCoreBeam / drawHeroCoreBeams (Conquest + Arena): beam head moves at the engine's wave speed, holds 0.38 s at full length, fades. Sprite art/heroes/halo7/halo7_beam.webp (ChatGPT, on black, additive).
+- Art: ChatGPT design, start frame (shrunk to 80% for room), card portrait v2 (v1 cut his head off), card-video frame. Atlas: idle, walk v1 (turned front/side - not used) + walk v2 (frames 15-47 used), punch x2 (attack + attack2), braced beam pose (skill), card clip (wakes up, runes light gold). LARGE frames in art/originals/heroes/halo7/large. Sheets 1.5 MB + 0.65 MB (he's drawn twice as big).
+- Balance (atkMult 0.5): Arena w/o Halo-7 94-13 / 83-23 vs w/o Kessa 55-65 / 53-67 (he matters far less than Kessa). Conquest Halo team 6-9 / 10-1 / 10-4 vs Kessa team 6-12 / 10-2 / 10-11. Meta numbers unchanged.
+- Atlas: 6 x $0.38 + card $0.61 = $2.89.
+- Headless: Conquest (beam fires from his chest to the edge, hits land, no errors), Arena with Halo on both sides (beams both ways, no errors), Halo card (video plays, loops) + Heroes list.
