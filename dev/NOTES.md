@@ -4399,3 +4399,10 @@ Harley's 3 points:
 - Balance: unchanged (the dodge teleport is visual only so far). When the dodge becomes a real teleport, re-check vs Kessa's strongest build (Harley).
 - Not yet: Arena / World PvP visuals for the 2nd attack, leap, shuriken and dodge (Conquest only for now).
 - Headless: Conquest with Hanzo + Kessa + Lyra - runs, both attacks, leap + shuriken, two dodges (after-image + warp), no errors.
+
+## v1503 - Hanzo's animations in Arena too (automatic for future heroes)
+- Arena now plays everything Conquest does for Hanzo: the two basic attacks alternate, Shuriken Storm plays the leap-and-throw sheet with the ChatGPT shuriken flying at every enemy hero + the enemy fortress (timed to land with the storm, one Arena beat), and each Shadow Step dodge leaves the fading after-image, he blinks a step back and slides home with the teal warp behind him.
+- Made data-driven so the next hero gets it with no Arena-specific code: rows.attack2 -> heroAttackState; HERO_ANIMS[key+"_skill"] -> arenaHeroLeapStart on the skill flash; HERO_COMBAT_FX[key] (throwImg / ghost / warp) -> shared heroThrowFx / heroDodgeFx / drawHeroBackFx / drawHeroThrows (store = idleAnim or arenaAnim). Clones alternate attacks too.
+- Arena sim's hero info now carries dg (dodge count) - visual only, no balance change. Skill-sheet start is now pinned to the engine time (heroAnimStartAt) in both modes, so the throw on screen matches the shuriken leaving.
+- World PvP, boss and gauntlet fights are worked out instantly (no hero animation screen), so Arena + Conquest are the two places heroes animate.
+- Tests (headless): Arena fight, Hanzo on both sides - leaps + shuriken, alternating attacks, real dodges (after-image + warp), no errors. Meta check unchanged (known warning).

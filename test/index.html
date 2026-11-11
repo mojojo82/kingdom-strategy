@@ -13170,7 +13170,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1502"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1503"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24578,7 +24578,7 @@ function stepIdleAnim(dtSec, w, h) {
     if (key === "hanzo" && count > last && HERO_ANIMS.hanzo_skill) { /* v1502: Shuriken Storm - the leap + throw (the storm itself lands HANZO_LEAP_SEC later in the engine) */
       idleAnim.lastSkillFireCounts[key] = count; var hv0 = idleAnim.heroVis.hanzo; /* no generic gold flash ring - it stayed on the ground under the leap */
       if (hv0) { var hzQ = (game.state.idle.stormQ || []).filter(function (q) { return q.key === "hanzo"; })[0], hzRem = hzQ ? Math.max(0, Math.min(HANZO_LEAP_SEC, hzQ.t)) : 0.3; /* the engine ticks ahead of the drawing: line the leap up with when the storm really lands */
-        heroAnimRestart("hanzo_skill"); idleAnim.hzLeap = { t0: performance.now() - (HANZO_LEAP_SEC - hzRem) * 1000, x: hv0.x, thrown: false }; }
+        var hzT0 = performance.now() - (HANZO_LEAP_SEC - hzRem) * 1000; heroAnimStartAt("hanzo_skill", false, hzT0); idleAnim.hzLeap = { t0: hzT0, x: hv0.x, thrown: false }; }
       if (skillDefForCd) idleAnim.smoothCooldown[key] = skillDefForCd.cooldown; return;
     }
     // v586: a melee hero's skill that found nothing to hit (engine fires the timer anyway) plays no charge / flash — he was swinging at thin air
@@ -26156,7 +26156,7 @@ function drawIdleClones(ctx, w, h) {
       var gt = drawGerbilOoze(ctx, x, y + 12 * hScale, true, now < cm.atkUntil, n * 0.37, GERBIL_SCALE * hScale); if (gt == null) return;
       ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - 9, gt - 6, 18, 4.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - 8, gt - 5, 16 * Math.max(0, Math.min(1, cl.hp / cl.max)), 2.5); ctx.restore(); return;
     }
-    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? "attack" : "idle", hScale, false, 0.83 + n * 0.1, 1, CLONE_TINT);
+    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? heroAttackState(cl.tpl, 0.83 + n * 0.1) : "idle", hScale, false, 0.83 + n * 0.1, 1, CLONE_TINT); /* v1503: attack2 alternates for clones too */
     var a = HERO_ANIMS[cl.tpl], top = (y + 12 * hScale) - a.dispH * (a.sizeMul || 1) * hScale - 5, bw = 24, fr = Math.max(0, Math.min(1, cl.hp / cl.max));
     ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
   });
@@ -26392,38 +26392,73 @@ function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) 
    nearest enemy, or a step back), a teal warp opening behind him where he re-appears. Visual only - the engine's dodge rule is unchanged (balance). */
 var hzFxCache = {};
 function hzFxImg(n) { var c = hzFxCache[n]; if (!c) { c = hzFxCache[n] = new Image(); c.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/hanzo/hanzo_" + n + ".webp"; } return c.complete && c.naturalWidth ? c : null; }
+/* v1503: the same hero combat animations in EVERY mode with hero combat (Conquest, Arena, World PvP), data-driven so a new hero gets them automatically:
+   - HERO_ANIMS[key].rows.attack2      -> basic attacks alternate attack / attack2 (Conquest: per swing; Arena: per attack cycle, heroAttackState)
+   - HERO_ANIMS[key + "_skill"].rows.skill -> plays once when the hero's active fires (Arena: arenaHeroLeapStart on the skill flash)
+   - HERO_COMBAT_FX[key].throwImg      -> on the skill sheet's throwFrame that sprite flies from his hand to every enemy (heroThrowFx)
+   - HERO_COMBAT_FX[key].ghost/.warp   -> each dodge leaves a fading after-image and he blinks, a warp opening behind him (heroDodgeFx)
+   M = the mode's animation store (idleAnim for Conquest, arenaAnim for Arena / World PvP). */
+var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5ff0ff", ghost: "rgba(225,248,255,0.85)", warp: "warp" } };
+var heroFxCache = {};
+function heroFxImg(key, n) { var id = key + "_" + n, c = heroFxCache[id]; if (!c) { c = heroFxCache[id] = new Image(); c.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/" + key + "/" + id + ".webp"; } return c.complete && c.naturalWidth ? c : null; }
+function heroAttackState(key, phase) { var a = HERO_ANIMS[key]; if (!a || !a.rows.attack2) return "attack"; return Math.floor((performance.now() / 1000 * a.fps.attack + (phase || 0)) / a.rows.attack[1]) % 2 ? "attack2" : "attack"; }
+function heroAnimStartAt(key, flip, t0, st) { heroAnimRestart(key); heroAnimMem[key + (flip ? "f" : "") + "0"] = { state: st || "skill", prev: null, t: t0 }; } /* a once-sheet started earlier than now (the engine runs ahead of the drawing) */
+function heroThrowFx(M, key, x0, y0, targets, sc) {
+  var S = M.hzStars || (M.hzStars = []), now = performance.now();
+  targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: 220, spin: Math.random() * 6 }); });
+  if (S.length > 40) S.splice(0, S.length - 40);
+}
+function heroDodgeFx(M, key, x, feetY, flip, hs, nx) { /* after-image where he stood + warp where he re-appears (nx) */
+  var F = HERO_COMBAT_FX[key], a = HERO_ANIMS[key]; if (!F || !a) return; var now = performance.now(), kk = a.dispH * hs * (a.sizeMul || 1) / a.ch, cv = document.createElement("canvas"); cv.width = Math.ceil(a.cw * kk) + 2; cv.height = Math.ceil(a.ch * kk) + 2;
+  try { var g = cv.getContext("2d"); if (flip) { g.translate(cv.width, 0); g.scale(-1, 1); } drawHeroAnim(g, key, a.ax * kk + 1, a.ay * kk + 1, "idle", hs, false, 0.99, 1, F.ghost); } catch (e) {}
+  var G = M.hzGhosts || (M.hzGhosts = []); G.push({ cv: cv, x: flip ? x - (cv.width - a.ax * kk - 1) : x - a.ax * kk - 1, y: feetY - a.ay * kk - 1, t0: now }); if (G.length > 8) G.shift();
+  (M.hzWarps || (M.hzWarps = [])).push({ key: key, x: nx, y: feetY, t0: now });
+}
 function hanzoFxStep(w, h) {
   var now = performance.now(), A = HERO_ANIMS.hanzo_skill, L = idleAnim.hzLeap, hs = heroSpriteVisualScale / 100;
   if (L && A && !L.thrown && now - L.t0 >= A.throwFrame / A.fps.skill * 1000) {
-    L.thrown = true; var k = A.dispH * hs / A.ch, fy = L.hand ? L.hand.y : groundYFor(h), fx = L.x + 6 * hs, fyy = fy - A.ay * k * 0.72, land = 220, S = idleAnim.hzStars || (idleAnim.hzStars = []);
-    Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (!e || e.dying || e.x > w + 10) return; S.push({ x0: fx, y0: fyy, x1: e.x, y1: (e.type === "boss" ? bossTopY(h) + 30 : groundYFor(h) - 16), t0: now, dur: land, spin: Math.random() * 6 }); });
-    if (!S.some(function (q) { return q.t0 === now; })) [0.55, 0.68, 0.8, 0.92].forEach(function (fx2) { S.push({ x0: fx, y0: fyy, x1: w * fx2, y1: groundYFor(h) - 16, t0: now, dur: land, spin: Math.random() * 6 }); }); /* nothing drawn on the field at that instant (a horde between spawns): the storm still rains across it */
-    if (S.length > 40) S.splice(0, S.length - 40);
+    L.thrown = true; var k = A.dispH * hs / A.ch, fy = L.hand ? L.hand.y : groundYFor(h), fx = L.x + 6 * hs, fyy = fy - A.ay * k * 0.72, T = [];
+    Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (!e || e.dying || e.x > w + 10) return; T.push({ x: e.x, y: (e.type === "boss" ? bossTopY(h) + 30 : groundYFor(h) - 16) }); });
+    if (!T.length) [0.55, 0.68, 0.8, 0.92].forEach(function (fx2) { T.push({ x: w * fx2, y: groundYFor(h) - 16 }); }); /* nothing drawn on the field at that instant (a horde between spawns): the storm still rains across it */
+    heroThrowFx(idleAnim, "hanzo", fx, fyy, T, hs);
   }
   var dg = game.state.idle.dodges || 0, last = idleAnim.hzDodges; idleAnim.hzDodges = dg;
   if (last != null && dg > last && game.state.conquestRoster.indexOf("hanzo") >= 0 && HERO_ANIMS.hanzo && idleAnim.heroVis.hanzo && !(L && now - L.t0 < 1000)) {
-    var v = idleAnim.heroVis.hanzo, a = HERO_ANIMS.hanzo, kk = a.dispH * hs * (a.sizeMul || 1) / a.ch, cv = document.createElement("canvas"); cv.width = Math.ceil(a.cw * kk) + 2; cv.height = Math.ceil(a.ch * kk) + 2;
-    try { drawHeroAnim(cv.getContext("2d"), "hanzo", a.ax * kk + 1, a.ay * kk + 1, "idle", hs, false, 0.99, 1, "rgba(225,248,255,0.85)"); } catch (e) {}
-    var G = idleAnim.hzGhosts || (idleAnim.hzGhosts = []); G.push({ cv: cv, x: v.x - a.ax * kk - 1, y: v.y + 12 * hs - a.ay * kk - 1, t0: now }); if (G.length > 6) G.shift();
+    var v = idleAnim.heroVis.hanzo;
     var best = null; Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (!e || e.dying || e.type === "boss") return; if (!best || Math.abs(e.x - v.x) < Math.abs(best.x - v.x)) best = e; });
-    var nx = best && best.x > v.x && best.x + 26 * hs < w - 10 ? best.x + 26 * hs : v.x - 34 * hs; v.x = nx;
-    (idleAnim.hzWarps || (idleAnim.hzWarps = [])).push({ x: nx, y: v.y + 12 * hs, t0: now });
+    var nx = best && best.x > v.x && best.x + 26 * hs < w - 10 ? best.x + 26 * hs : v.x - 34 * hs;
+    heroDodgeFx(idleAnim, "hanzo", v.x, v.y + 12 * hs, false, hs, nx); v.x = nx;
   }
 }
-function drawHanzoBackFx(ctx, hs) { /* behind him: fading after-images and the warp where he re-appeared */
-  var now = performance.now(), G = idleAnim.hzGhosts, W = idleAnim.hzWarps, wi = hzFxImg("warp");
-  if (G) { idleAnim.hzGhosts = G.filter(function (g) { var u = (now - g.t0) / 1100; if (u >= 1) return false; ctx.save(); ctx.globalAlpha = 0.65 * (1 - u) * (1 - u); ctx.drawImage(g.cv, g.x, g.y - u * 3); ctx.restore(); return true; }); }
-  if (W) { idleAnim.hzWarps = W.filter(function (q) { var u = (now - q.t0) / 650; if (u >= 1) return false; if (!wi) return true; var sz = (34 + 22 * Math.min(1, u * 2.2)) * hs, al = u < 0.25 ? u / 0.25 : 1 - (u - 0.25) / 0.75;
+function drawHeroBackFx(ctx, hs, M) { /* behind the heroes: fading after-images and the warps where they re-appeared */
+  M = M || idleAnim; var now = performance.now(), G = M.hzGhosts, W = M.hzWarps;
+  if (G) { M.hzGhosts = G.filter(function (g) { var u = (now - g.t0) / 1100; if (u >= 1) return false; ctx.save(); ctx.globalAlpha = 0.65 * (1 - u) * (1 - u); ctx.drawImage(g.cv, g.x, g.y - u * 3); ctx.restore(); return true; }); }
+  if (W) { M.hzWarps = W.filter(function (q) { var u = (now - q.t0) / 650; if (u >= 1) return false; var F = HERO_COMBAT_FX[q.key || "hanzo"], wi = F && F.warp ? heroFxImg(q.key || "hanzo", F.warp) : null; if (!wi) return true; var sz = (34 + 22 * Math.min(1, u * 2.2)) * hs, al = u < 0.25 ? u / 0.25 : 1 - (u - 0.25) / 0.75;
     ctx.save(); ctx.globalAlpha = Math.max(0, al) * 0.95; ctx.translate(q.x, q.y - 15 * hs); ctx.rotate(-u * 2.4); ctx.scale(0.62, 1); ctx.drawImage(wi, -sz / 2, -sz / 2, sz, sz); ctx.restore(); return true; }); }
 }
-function drawHanzoStars(ctx, sc) {
-  var S = idleAnim.hzStars; if (!S || !S.length) return; var now = performance.now(), im = hzFxImg("shuriken");
-  idleAnim.hzStars = S.filter(function (q) { var u = (now - q.t0) / q.dur; if (u >= 1.25) return false;
-    if (u >= 1) { ctx.save(); ctx.globalAlpha = (1.25 - u) * 4 * 0.8; ctx.strokeStyle = "#8ff6ff"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.arc(q.x1, q.y1, (6 + (u - 1) * 60) * sc, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return true; }
+function drawHanzoBackFx(ctx, hs) { drawHeroBackFx(ctx, hs, idleAnim); }
+function drawHeroThrows(ctx, sc, M) {
+  M = M || idleAnim; var S = M.hzStars; if (!S || !S.length) return; var now = performance.now();
+  M.hzStars = S.filter(function (q) { var u = (now - q.t0) / q.dur; if (u >= 1.25) return false; var F = HERO_COMBAT_FX[q.key || "hanzo"] || {}, im = F.throwImg ? heroFxImg(q.key || "hanzo", F.throwImg) : null;
+    if (u >= 1) { ctx.save(); ctx.globalAlpha = (1.25 - u) * 4 * 0.8; ctx.strokeStyle = F.ring || "#fff"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.arc(q.x1, q.y1, (6 + (u - 1) * 60) * sc, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return true; }
     var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u - Math.sin(u * Math.PI) * 10 * sc, sz = 15 * sc;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(q.spin + u * 22); ctx.shadowColor = "#5ff0ff"; ctx.shadowBlur = 8 * sc;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(q.spin + u * 22); ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 8 * sc;
     if (im) ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); else { ctx.fillStyle = "#cfefff"; ctx.fillRect(-sz / 3, -sz / 3, sz / 1.5, sz / 1.5); }
     ctx.restore(); return true; });
+}
+function drawHanzoStars(ctx, sc) { drawHeroThrows(ctx, sc, idleAnim); }
+/* Arena / World PvP side of the above */
+function arenaHeroLeapStart(fk, key) { /* skill flash: start the skill sheet; true = it brings its own projectile (skip the generic skill shot) */
+  var A = HERO_ANIMS[key + "_skill"]; if (!A || !A.rows || !A.rows.skill) return false;
+  var thr = (A.throwFrame || 0) / A.fps.skill * 1000, sk = HERO_DEFS[key] && HERO_DEFS[key].conquestSkills && HERO_DEFS[key].conquestSkills[0], landAt = sk && sk.aoeAll ? HANZO_LEAP_TICKS() * ARENA_TICK_MS : thr + 220;
+  (arenaAnim.heroLeap || (arenaAnim.heroLeap = {}))[fk] = { t0: performance.now() - Math.max(0, thr + 220 - landAt), thrown: false, started: false };
+  return !!(HERO_COMBAT_FX[key] && HERO_COMBAT_FX[key].throwImg);
+}
+function arenaEnemyTargets(w, h, isP) { /* every standing enemy hero on screen + the enemy fortress */
+  var T = [], hh = arenaAnim.heroHp || {}, hsc = arenaAnim.heroScreen || {}, pre = isP ? "a_" : "p_", hs = heroSpriteVisualScale / 100;
+  Object.keys(hsc).forEach(function (k) { if (k.indexOf(pre) !== 0) return; var e = hh[k]; if (e && e.ko) return; T.push({ x: hsc[k].x, y: hsc[k].y - 2 * hs }); });
+  var fc = arenaSlotPos(w, h, 0, !isP); T.push({ x: isP ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, y: fc.y - 6 * hs });
+  return T;
 }
 function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
   if (key === "hanzo") drawHanzoBackFx(ctx, heroSpriteVisualScale / 100);
@@ -35362,7 +35397,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; }
   function withKoPos(me, fn) { if (!me || !(me.ko && me.koTick === tick)) return fn(); var d0 = me.d; me.d = me.koD; try { return fn(); } finally { me.d = d0; } }
   function tickRevive(hh) { if (!hh) return; hh.list.forEach(function (e) { if (e.ko && e.droid) { e.dead = true; return; } if (e.ko) { e.reviveT -= dtS; if (e.reviveT <= 0) { e.ko = false; e.reviveT = 0; e.hp = e.max; } } }); }
-  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null }; }) : null; }
+  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null, dg: e.dodges || 0 }; }) : null; } /* v1503: dg = dodges so far (visual only - Shadow Step after-image) */
   function heroHitTaken(e) { if (e.limMax && !e.ko) e.lim = Math.min(e.limMax, e.lim + e.limTaken); if (e.ko) e.lim = 0; } /* v954: every hit a hero takes fills his limit bar (Death Strike), a KO empties it - same as Conquest */
   // Applies `dmg` (already after armor) to the first standing infantry heroes; returns what is left over for the fortress.
   function hitHeroes(hh, dmg) {
@@ -36457,7 +36492,14 @@ function drawArenaFrame(ctx, w, h) {
       lastSlot = slot; (arenaAnim.lastX || (arenaAnim.lastX = {}))[(isPlayerSide ? "p_" : "a_") + key] = slot.x; (arenaAnim.koT || (arenaAnim.koT = {}))[(isPlayerSide ? "p_" : "a_") + key] = null; (arenaAnim.heroScreen || (arenaAnim.heroScreen = {}))[(isPlayerSide ? "p_" : "a_") + key] = { x: slot.x, y: slot.y };
       var flashKey = (isPlayerSide ? "p_" : "a_") + key;
       var flashing = arenaAnim.flashHero[flashKey] > 0;
-      if (flashing && !(HERO_CHARGE[key] && HERO_ANIMS[key])) {
+      var hsA = heroSpriteVisualScale / 100, dEv = arenaAnim.dodgeEv && arenaAnim.dodgeEv[flashKey], lpA = arenaAnim.heroLeap && arenaAnim.heroLeap[flashKey];
+      if (dEv && HERO_ANIMS[key]) { /* v1503: Shadow Step in Arena / World PvP - after-image where he stood, he blinks a step back and slides home, warp behind him */
+        delete arenaAnim.dodgeEv[flashKey]; var bdx = (isPlayerSide ? -1 : 1) * 30 * hsA;
+        if (!lpA) { heroDodgeFx(arenaAnim, key, slot.x, slot.y + 13, !isPlayerSide, hsA, slot.x + bdx); (arenaAnim.blink || (arenaAnim.blink = {}))[flashKey] = { t0: performance.now(), dx: bdx }; }
+      }
+      var bkA = arenaAnim.blink && arenaAnim.blink[flashKey];
+      if (bkA) { var bu = (performance.now() - bkA.t0) / 700; if (bu >= 1) delete arenaAnim.blink[flashKey]; else slot = { x: slot.x + bkA.dx * (bu < 0.45 ? 1 : 1 - Math.pow((bu - 0.45) / 0.55, 2) * (3 - 2 * (bu - 0.45) / 0.55) / 1), y: slot.y }; }
+      if (flashing && !(HERO_CHARGE[key] && HERO_ANIMS[key]) && !HERO_ANIMS[key + "_skill"]) {
         ctx.save();
         ctx.beginPath(); ctx.arc(slot.x, slot.y, 16, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(240,201,95," + Math.min(0.6, arenaAnim.flashHero[flashKey]) + ")";
@@ -36490,6 +36532,18 @@ function drawArenaFrame(ctx, w, h) {
             return;
           }
         }
+        var SAa = HERO_ANIMS[key + "_skill"];
+        if (lpA && SAa && heroAnimImg(key + "_skill")) { /* v1503: the skill sheet plays where he stands (Hanzo leaps and throws), the throw sends his projectile at every enemy */
+          var nLp = performance.now(), flLp = !isPlayerSide;
+          if (nLp - lpA.t0 < SAa.rows.skill[1] / SAa.fps.skill * 1000 && !arenaAnim.battleEnded) {
+            if (!lpA.started) { lpA.started = true; heroAnimStartAt(key + "_skill", flLp, lpA.t0); }
+            if (!lpA.thrown && nLp - lpA.t0 >= (SAa.throwFrame || 0) / SAa.fps.skill * 1000) { lpA.thrown = true; if (HERO_COMBAT_FX[key] && HERO_COMBAT_FX[key].throwImg) heroThrowFx(arenaAnim, key, slot.x + (isPlayerSide ? 6 : -6) * hsA, slot.y + 13 - SAa.ay * (SAa.dispH * hsA / SAa.ch) * 0.72, arenaEnemyTargets(w, h, isPlayerSide), hsA); }
+            drawHeroAnim(ctx, key + "_skill", slot.x, slot.y + 13, "skill", hsA, flLp, 0);
+            ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, slot.y + size / 2 + 10);
+            return;
+          }
+          delete arenaAnim.heroLeap[flashKey];
+        }
         var stA = "idle", isInf = sprite.def.class === "infantry";
         if (isInf && ipH > 0 && ipH < 1) stA = "run";
         else if (isInf && ipH >= 1 && !arenaAnim.battleEnded) stA = "attack";
@@ -36514,6 +36568,7 @@ function drawArenaFrame(ctx, w, h) {
             if (nA2 < acEnd) { if (!akc.started) { akc.started = true; heroAnimRestart(key); } stA = acst; aSp[flashKey] = acEnd; aUn[flashKey] = 0; } else delete arenaAnim.heroCast[flashKey];
           }
         }
+        if (stA === "attack" && HERO_ANIMS[key].rows.attack2 && !(HERO_ANIMS[key].once && HERO_ANIMS[key].once.attack)) stA = heroAttackState(key, i * 0.37); /* v1503: two basic attacks alternate, same as Conquest */
         var arRes = drawHeroAnim(ctx, key, slot.x, slot.y + 13, stA, heroSpriteVisualScale / 100, retFlip != null ? retFlip : !isPlayerSide, i * 0.37);
         if (arRes === 2 && isInf) spawnWeldSparks(slot.x + (isPlayerSide ? 24 : -24), slot.y + 13 - 22, isPlayerSide ? 1 : -1, 22); // blade contact (enemy hero / fortress)
         ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center";
@@ -36568,6 +36623,7 @@ function drawArenaFrame(ctx, w, h) {
   if (hxBoxB) { hxSetB = hexShieldPrepare("arenaAI", hxBoxB.x, hxBoxB.y, hxBoxB.sw, hxBoxB.sh, hexShieldStatusArenaAI); if (hxSetB) hexShieldDrawPass(ctx, hxSetB, false); }
   drawArenaFortress(ctx, w, h, true, osSetA); drawArenaFortress(ctx, w, h, false);
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165
+  drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
   drawFormation(arenaAnim.playerRoster, true);
   drawFormation(arenaAnim.aiRoster, false);
   (function drawArenaClones() { /* v975: Clone Task's clone - Gareth's sprite, heavy green tint; runs out and fights where the sim puts it */
@@ -36588,12 +36644,14 @@ function drawArenaFrame(ctx, w, h) {
         var gtA = drawGerbilOoze(ctx, x, y + 13, isP, st === "attack", (n[c.side] % 7) * 0.37, GERBIL_SCALE * heroSpriteVisualScale / 100); if (gtA == null) return;
         ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - 9, gtA - 6, 18, 4.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - 8, gtA - 5, 16 * Math.max(0, Math.min(1, c.hp / c.max)), 2.5); ctx.restore(); return;
       }
+      if (st === "attack" && HERO_ANIMS[tk].rows.attack2) st = heroAttackState(tk, 0.83); /* v1503 */
       drawHeroAnim(ctx, tk, x, y + 13, st, heroSpriteVisualScale / 100, !isP, 0.83, 1, CLONE_TINT);
       var a = HERO_ANIMS[tk], top = (y + 13) - a.dispH * (a.sizeMul || 1) * (heroSpriteVisualScale / 100) - 5, bw = 24, fr = Math.max(0, Math.min(1, c.hp / c.max));
       ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
     });
   })();
   drawHeroWarps(ctx);
+  drawHeroThrows(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: Hanzo's shuriken etc. */
   drawWeldSparks(ctx, groundYFor(h) + 4);
   if (osSetA) orbitShieldDrawPass(ctx, osSetA, true);
   if (hxSetA) hexShieldDrawPass(ctx, hxSetA, true);
@@ -37320,6 +37378,7 @@ function renderArenaBattleScreen() {
     arenaAnim.battleStartTime = performance.now();
     arenaAnim.battleEnded = false;
     arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null;
+    arenaAnim.heroLeap = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; /* v1503 */
     var canvas = document.getElementById("arenaCanvas");
     // Logical (CSS-pixel) dimensions, same as the draw loop above — these
     // feed arenaSlotPos() to compute projectile spawn points, which must
@@ -37476,12 +37535,14 @@ function renderArenaBattleScreen() {
         Object.keys(hhm).forEach(function (k) { var r0 = hdm[k]; if (!r0) hdm[k] = { prev: 0, cur: hhm[k].d }; else { r0.prev = r0.cur; r0.cur = hhm[k].d; } });
         arenaAnim.heroTickT = performance.now();
         var prevHH = arenaAnim.heroHp; // HP-loss numbers over heroes that lost HP this tick
+        if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k]; if (pv && hhm[k].dg > (pv.dg || 0) && HERO_COMBAT_FX[hhm[k].id] && HERO_COMBAT_FX[hhm[k].id].ghost) (arenaAnim.dodgeEv || (arenaAnim.dodgeEv = {}))[k] = performance.now(); }); /* v1503: a dodge this tick -> after-image + blink in the drawing */
         if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k], pos = arenaAnim.heroScreen && arenaAnim.heroScreen[k]; if (pv && pos && hhm[k].hp < pv.hp - 0.5) spawnArenaDmgNum(pos.x, pos.y - 34 * (heroSpriteVisualScale / 100), pv.hp - hhm[k].hp); });
         arenaAnim.heroHp = hhm;
       }
       state.playerFlash.forEach(function (key) {
         arenaAnim.flashHero["p_" + key] = 1;
         arenaAnim.playerActiveDefs.forEach(function (a) { if (a.key === key) arenaAnim.smoothCooldown[a.key] = a.cooldown; });
+        if (arenaHeroLeapStart("p_" + key, key)) return; /* v1503: the hero's skill sheet (Hanzo's leap) + its own projectiles, same as Conquest */
         var idx = arenaAnim.playerRoster.indexOf(key), slot = arenaSlotPos(w, h, idx, true);
         var a = arenaAnim.playerActiveDefs.filter(function (x) { return x.key === key; })[0];
         var peL = (state.playerHeroes || []).filter(function (x) { return x.id === key; })[0], landed = !a || !a.requiresClose || (peL ? peL.reach : state.engaged);
@@ -37508,6 +37569,7 @@ function renderArenaBattleScreen() {
       });
       state.aiFlash.forEach(function (key) {
         arenaAnim.flashHero["a_" + key] = 1;
+        if (arenaHeroLeapStart("a_" + key, key)) return; /* v1503 */
         var idx = arenaAnim.aiRoster.indexOf(key), slot = arenaSlotPos(w, h, idx, false);
         var aiA = arenaAnim.aiActiveDefs.filter(function (x) { return x.key === key; })[0];
         var peA = (state.aiHeroes || []).filter(function (x) { return x.id === key; })[0], aiLanded = !aiA || !aiA.requiresClose || (peA ? peA.reach : state.engaged);
