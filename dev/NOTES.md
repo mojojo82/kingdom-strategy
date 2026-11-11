@@ -4336,3 +4336,11 @@ Harley's 3 points:
 - Harley picked two winners from the olive mech test (11 Nov): **Iron Sentinel** (ironsent) = his Meshy render restyled with base prompt 1 (worn olive armour, brass edges, teal lights); **Field Sentinel** (fieldsent) = his 2D painting used exactly as sent.
 - Both in CITY_SKINS (600 px WebP, scale 1.0), added to CITY_SKIN_ORDER, foundation points baked into CITY_ART_BAKED (measured headless). Free like the other skins. Originals: art/originals/skins/olive_mech/.
 - Headless: Iron Sentinel chosen as my skin, Field Sentinel / Neptune / Tech Fortress around it - all sit on their tiles, no errors. Not tried on the phone.
+
+## v1494 — Home-screen app: icon, name, full screen, splash screen (TEST)
+- Harley: proper app icon and name + full screen without the browser bar + a splash/title screen (ChatGPT, heroes and ships, an action scene).
+- Art (ChatGPT, refs: Gareth / Kessa / Iron Lily cards + the fortress ship + the Neptune skin for style): splash = the three heroes leaping off the fortress deck in a sky battle at sunset; icon = Gareth's helmet close up with the fortress behind. Originals in art/originals/ui/splash/.
+- test/: manifest.webmanifest ("Kingdom TEST", standalone, portrait), icon-180/192/512.png, splash.webp (252 KB, a separate file so it shows before the big game file finishes). Head: manifest, icons, Apple full-screen tags, title "Kingdom Strategy". Status bar style "black" = the phone keeps its status bar above the page, so the mobile layout is not touched.
+- Splash = first thing in <body>: the art, "KINGDOM STRATEGY" in Lilita One gold, a gold loading bar. Fades out when the page has loaded and the connection is past "connecting" (sign-in screen or the game); at least 1.5 s, at most 15 s.
+- To get the app version Harley must remove the old home-screen icon and add it again. LIVE gets its own manifest / name when copied over (fonts path differs: ../fonts in TEST).
+- Headless: splash shows, then goes once the sign-in screen is ready; manifest + Apple tags present; no new errors.

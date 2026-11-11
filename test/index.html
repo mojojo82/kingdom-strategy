@@ -3,7 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kingdom Strategy Prototype</title>
+<title>Kingdom Strategy</title>
+<!-- v1494 (Harley): home-screen app - icon, name, full screen without the browser bar (manifest + Apple tags). Status bar style "black" keeps
+     the phone's status bar above the page, so the mobile layout is untouched. TEST has its own name and manifest ("Kingdom TEST"). -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Kingdom TEST">
+<meta name="theme-color" content="#0b0f16">
 <script id="ksPhoneView">
 /* v1285 (Harley, working from his PC: "temporarily switch the PC view to a complete mobile view"): on a wide screen, with the "Phone view" switch on
    (this browser only), the page shows the real game inside a phone-sized frame in the middle - the game inside sees a 430 px wide screen, so it is the
@@ -3152,6 +3162,34 @@
 </style>
 </head>
 <body data-screen="world" data-sub="">
+<!-- v1494 (Harley): splash / title screen. First thing in the page so it shows while the rest of the (big) game file loads; fades out once the
+     page has finished loading and the server connection has got past "connecting" (sign-in screen or game), at least 1.5 s, at most 15 s. -->
+<style>
+  @font-face { font-family: 'KS Title'; src: url(../fonts/LilitaOne-Regular.woff?v=1) format('woff'); font-display: block; }
+  #ksSplash { position: fixed; inset: 0; z-index: 2147483600; background: #0b0f16 url(splash.webp) center / cover no-repeat; transition: opacity .6s ease; display: flex; flex-direction: column; align-items: center; }
+  #ksSplash.out { opacity: 0; pointer-events: none; }
+  #ksSplash::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 34%; background: linear-gradient(#0b0f16cc, #0b0f1600); }
+  #ksSplash::after { content: ""; position: absolute; inset: auto 0 0 0; height: 22%; background: linear-gradient(#0b0f1600, #0b0f16dd); }
+  #ksSplash .t { position: relative; z-index: 1; margin-top: 9vh; text-align: center; font-family: 'KS Title', 'Lilita One', system-ui, sans-serif; line-height: .95; letter-spacing: 1px; }
+  #ksSplash .t b { display: block; font-weight: 400; font-size: min(15vw, 72px); color: #ffd56a; text-shadow: 0 3px 0 #8a5a12, 0 6px 14px #000c; }
+  #ksSplash .t i { display: block; font-style: normal; font-size: min(10.5vw, 50px); color: #fff3d6; text-shadow: 0 3px 0 #6b4a18, 0 6px 14px #000c; margin-top: 4px; }
+  #ksSplash .bar { position: absolute; z-index: 1; left: 18%; right: 18%; bottom: 7vh; height: 10px; border-radius: 6px; background: #0008; border: 1px solid #f0c95f88; overflow: hidden; }
+  #ksSplash .bar span { position: absolute; top: 0; bottom: 0; width: 35%; border-radius: 6px; background: linear-gradient(90deg, #c98f1e, #f0c95f, #c98f1e); animation: ksSplashBar 1.3s ease-in-out infinite; }
+  #ksSplash .lt { position: absolute; z-index: 1; bottom: calc(7vh + 18px); width: 100%; text-align: center; font: 600 12px system-ui, sans-serif; color: #f6e7c4; letter-spacing: 2px; text-shadow: 0 1px 3px #000; }
+  @keyframes ksSplashBar { 0% { left: -35%; } 100% { left: 100%; } }
+</style>
+<div id="ksSplash"><div class="t"><b>KINGDOM</b><i>STRATEGY</i></div><div class="lt">LOADING</div><div class="bar"><span></span></div></div>
+<script>
+(function () {
+  var t0 = Date.now(), done = false;
+  function hide() { if (done) return; done = true; var el = document.getElementById("ksSplash"); if (!el) return; el.classList.add("out"); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 700); }
+  var iv = setInterval(function () {
+    var el = Date.now() - t0, ks = window.KS_BACKEND;
+    if (el > 15000 || (el > 1500 && document.readyState === "complete" && (!ks || ks.status !== "loading"))) { clearInterval(iv); hide(); }
+  }, 150);
+  window.ksSplashHide = hide;
+})();
+</script>
 <div id="bookmarkSheet"></div><div id="miniToast"></div>
 <div id="spritePalette">
   <div class="sp-head">🗿 Sprites</div>
@@ -13089,7 +13127,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1493"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1494"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
