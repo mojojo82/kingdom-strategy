@@ -13,7 +13,7 @@ BLEND = int(sys.argv[4]) if len(sys.argv) > 4 else 24
 OW = int(sys.argv[5]) if len(sys.argv) > 5 else 800
 ZOOM = float(sys.argv[6]) if len(sys.argv) > 6 else 1.0
 CX = float(sys.argv[7]) if len(sys.argv) > 7 else None   # optional crop centre x (video px), e.g. the held pose's centre
-TOP, BOT = (np.array([79, 143, 217.]), np.array([47, 95, 163.])) if os.environ.get("RARITY") == "Rare" else (np.array([155, 89, 214.]), np.array([106, 53, 168.]))   # RARITY=Rare: blue (#4f8fd9 -> #2f5fa3, v1499 Pip); default Epic purple, same as HERO_CARD_VIDEO.gareth bg (#9b59d6 -> #6a35a8)
+TOP, BOT = (np.array([242, 182, 50.]), np.array([217, 144, 42.])) if os.environ.get("RARITY") == "Legendary" else (np.array([79, 143, 217.]), np.array([47, 95, 163.])) if os.environ.get("RARITY") == "Rare" else (np.array([155, 89, 214.]), np.array([106, 53, 168.]))   # RARITY=Rare: blue (#4f8fd9 -> #2f5fa3, v1499 Pip); default Epic purple, same as HERO_CARD_VIDEO.gareth bg (#9b59d6 -> #6a35a8)
 tmp = tempfile.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", src, os.path.join(tmp, "f%04d.png")], check=True)
 fs = sorted(glob.glob(os.path.join(tmp, "f*.png"))); FPS = 24
 fr = []
