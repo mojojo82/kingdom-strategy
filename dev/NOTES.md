@@ -4380,3 +4380,6 @@ Harley's 3 points:
 - Tools: dev/tests/siteroute.js - headless tools serve the split-out art files from the repo (since v1498 they served the 20 MB page for every asset and Chromium crashed); all dev/**/*.js routes switched to it. build_hero_anim.py takes an explicit `frames` list.
 - Headless: Conquest with Pip (flare rounds drawn, attacks + Spot Shot land), Heroes list (blue card), hero card (video plays), no errors.
 - Spot Shot visuals (same version, Harley asked to see it): it used the generic cyan arrow skill shot. Now a big flare shell (drawPipSpotShot) leaves his muzzle with a fiery trail, and where it lands a flare pop + red target reticle tightens and fades over 0.7 s (idleAnim.spotBursts). Arena uses the same flare shell (style "spotflare"). Headless capture checked, no errors.
+
+## v1500 — Three city skins removed (TEST)
+- Harley (circled on his phone): remove Watchtower II (tower2), Tech Citadel (citadel) and Tech Fortress (techfort). Taken out of CITY_SKINS and CITY_SKIN_ORDER; their game files moved from test/assets/ to art/originals/skins/removed_v1500/ (originals stay in art/originals). Anyone who had one equipped (or a city / bot saved with one) shows the default Watchtower - every lookup already falls back to "tower". LIVE untouched.
