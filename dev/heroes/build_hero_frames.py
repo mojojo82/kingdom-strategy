@@ -25,7 +25,10 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        # v1502 Hanzo (melee, icy recolour): idle v1 + run v1 (big start frame), attack v2 + attack2 v2 (smaller attack start frame), skill v2 (small skill start frame)
        "hanzo": {"clips": {"idle": ("hanzo_idle_h3max_768_5s_v1.mp4", 0, 0), "run": ("hanzo_run_h3max_768_5s_v1.mp4", 0, 0), "attack": ("hanzo_attack1_h3max_768_5s_v2.mp4", 0, 0),
                            "attack2": ("hanzo_attack2_h3max_768_5s_v2.mp4", 0, 0), "skill": ("hanzo_skill_h3max_768_5s_v2.mp4", 0, 0)},
-                 "stand_src": 400, "feet_y": 655}}[HERO]
+                 "stand_src": 400, "feet_y": 655},
+       # v1506 Aurek (melee, tall paladin; one start frame for every clip)
+       "aurek": {"clips": {"idle": ("aurek_idle_v1.mp4", 0, 0), "run": ("aurek_run_v1.mp4", 0, 0), "attack": ("aurek_attack_v1.mp4", 0, 0), "skill": ("aurek_skill_v2.mp4", 0, 0)},
+                 "stand_src": 378, "feet_y": 701}}[HERO]
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
 os.makedirs(OUT, exist_ok=True)

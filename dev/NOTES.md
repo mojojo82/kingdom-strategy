@@ -4422,3 +4422,15 @@ Harley's 3 points:
 ## v1505 - only Hanzo is VIP (TEST)
 - Harley: "none of these should be vip yet. only hanzo." Iron Lily, Vesper, Aurek, Seraphine, Halo-7 and Caelum lose vipOnly (no more "VIP pack only" label). They stay comingSoon (can't be recruited/equipped) until each is built.
 - Bot pool (ARENA_COMBAT_HERO_KEYS) now also skips comingSoon heroes, so they still never show up on bots without a battle kit. Checked headless: bots = gareth, lyra, roran, kessa, sera, bram, juno, pip, torvald; recruiting Aurek -> coming_soon; Heroes screen opens with no errors.
+
+## v1506 - Aurek Solmane built: Sunforge Slam, the first new hit-everything hero (TEST)
+- Harley: fill in the placeholder heroes; Aurek slightly taller than Hanzo/Lily/Gareth (~7 ft vs 5'8"), main skill = sword into the ground, pillars of rising fire run both ways along the ground; no halo (animation gaps). Caelum left out (needs a design talk).
+- Kit (existing mechanics only, Epic, no longer coming soon, in the bot pool):
+  - Sunforge Slam (active, aoeAll, cd 12, 28/36/45/55/66%, new per-skill `aoeDelay` 0.9 s): every enemy (Conquest) / every enemy hero incl. fortress heroes + the fortress (Arena). Projection Wall, Dome, Orbit, dodge apply (aoeHit).
+  - Faithful (own DEF +4%/level). Hardlight Dome dropped: the Conquest engine only fires a hero's FIRST skill as an active (Arena fires all) - one active per hero keeps both modes the same.
+  - Expedition: Sunlit Banner / Shepherd / Pilgrim's Road (lead passives).
+- Art: ChatGPT design + start frame (halo removed) + card portrait + card-video frame; Atlas H3 Max: idle, run, attack (2 slashes -> attack + attack2, H3 Max's pale slash trail frames cut), skill v2 (v1 turned to face the camera), card clip. LARGE frames in art/originals/heroes/aurek/large. Sheets art/heroes/aurek/aurek_anim_v1.webp + aurek_skill_anim_v1.webp, dispH 51.3 (disp_stand 30 = 1.24x Hanzo's 24). Fire pillar = ChatGPT painting on black (aurek_pillar.webp), drawn additive, rise/flicker/fade in code, ~25 px apart, racing out from the sword both ways at 0.55 px/ms to both screen edges.
+- Engine/visual plumbing (generic, any future hero): aoeTicks()/aoeDelay; Conquest skill-sheet trigger + draw + effect frame for ANY hero with HERO_ANIMS[key+"_skill"] (was Hanzo-only); heroSkillOnThrow dispatches HERO_COMBAT_FX (throwImg / pillars) in Conquest and Arena; build_hero_anim.py rows can borrow another clip (`clip`).
+- Balance: Arena round robin (team minus one hero) w/o Aurek 85-18-17 (Lv40) / 85-19-16 (Lv80) vs w/o Kessa 45-75 / 51-69 - Aurek matters far less than Kessa. Conquest (1 seed): Aurek team 6-10 / 10-1 / 10-4 vs Kessa team 6-12 / 10-2 / 10-11 (atkMult 0.65 -> 0.5; at 0.65 he beat Kessa at Lv40). Meta check unchanged (known warning). Hanzo vs Kessa sims unchanged.
+- Atlas: 5 x $0.38 + card $0.61 = $2.51. Balance now $0.00 - top-up needed before the next hero's animations.
+- Headless: Conquest (slam + pillars across the field, no errors), Arena with Aurek on both sides (pillars from both, no errors), hero card (video plays, loops), Heroes list.

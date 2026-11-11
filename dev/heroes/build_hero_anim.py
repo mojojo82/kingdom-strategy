@@ -28,20 +28,29 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "attack2": {"fps": 24, "frames": [i for i in range(18, 91, 3) if not 52 <= i <= 57]}},
        # the leap is tall, so it gets its own small sheet (one cell size for a jump would make the main sheet huge); idle = 1 frame (scale reference only)
        "hanzo_skill": {"hero": "hanzo", "tag": "v1", "stand": 90, "disp_stand": 24, "per_clip": True, "canvas": 3, "wrap": 13,
-                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(8, 45, 2)) + list(range(58, 67, 2))}}}[HERO]
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(8, 45, 2)) + list(range(58, 67, 2))}},
+       # v1506 Aurek (tall melee paladin, ~1.24x Hanzo: disp_stand 30 vs 24): idle 5 s at 8 fps; run = one stride (video 42-68, matches 69 at 0.05) at 24 fps;
+       # attack / attack2 = the clip's two slashes (raise 4-20 + follow-through 32-52 / 56-72 + 82-102, every 2nd) - H3 Max's pale slash trail (22-31, 73-81) left out, the cut reads as the fast swing
+       "aurek": {"tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "wrap": 14,
+                 "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 42, "to": 69},
+                 "attack": {"fps": 24, "frames": list(range(4, 21, 2)) + list(range(32, 53, 2))},
+                 "attack2": {"clip": "attack", "fps": 24, "frames": list(range(56, 73, 2)) + list(range(82, 103, 2))}},
+       # Sunforge Slam: raise (4-20), the trail + dust frames (22-38) cut, sword planted (40-70 every 3rd), rising back to guard (72-94 every 2nd)
+       "aurek_skill": {"hero": "aurek", "tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "wrap": 16,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(4, 21, 2)) + list(range(40, 71, 3)) + list(range(72, 95, 2))}}}[HERO]
 ROWS = [r for r in ("idle", "run", "attack", "attack2", "skill") if r in CFG]
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}
 META = json.load(open(os.path.join(L, "meta.json"))) if CFG.get("per_clip") else None
 for st in ROWS:
-    fs = sorted(glob.glob(os.path.join(L, st, "*.webp")))
     c = CFG[st]
+    fs = sorted(glob.glob(os.path.join(L, c.get("clip", st), "*.webp")))   # v1506: a row can take its frames from another clip (Aurek attack2 = 2nd slash of the attack clip)
     if "frames" in c: sel = [fs[i] for i in c["frames"]]   # v1499: an explicit frame list (skips a stretch of the clip)
     else: fs = fs[c.get("from", 0):c.get("to", len(fs))]; sel = fs[::c["step"]]
     if st == "idle" and len(sel) > 1 and "from" not in c and "frames" not in c: sel = sel[:-1]
     ims = [Image.open(f).convert("RGBA") for f in sel]
     if META:   # every clip onto one doubled canvas at the idle clip's scale and feet point, so one cell / anchor fits all rows
-        m, m0 = META[st], META["idle"]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
+        m, m0 = META[c.get("clip", st)], META["idle"]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
         for im in ims:
             big = im.resize((round(W0 * sc), round(H0 * sc)), Image.LANCZOS) if abs(sc - 1) > 1e-3 else im
             CF = CFG.get("canvas", 2); canv = Image.new("RGBA", (round(W0 * CF), round(H0 * CF)), (0, 0, 0, 0))  # v1502: canvas factor (a high jump scaled up needs more room)
