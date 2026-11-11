@@ -4418,3 +4418,7 @@ Harley's 3 points:
   - Distance hardly matters (80 px and 150 px give the same results) - the cost is the beat he spends out of reach.
   - Conquest climbs (run.js) don't model positions, so they can't show the change; expect a similarly small effect.
 - Not done: no Storm buff yet (Harley to decide - the loss is small).
+
+## v1505 - only Hanzo is VIP (TEST)
+- Harley: "none of these should be vip yet. only hanzo." Iron Lily, Vesper, Aurek, Seraphine, Halo-7 and Caelum lose vipOnly (no more "VIP pack only" label). They stay comingSoon (can't be recruited/equipped) until each is built.
+- Bot pool (ARENA_COMBAT_HERO_KEYS) now also skips comingSoon heroes, so they still never show up on bots without a battle kit. Checked headless: bots = gareth, lyra, roran, kessa, sera, bram, juno, pip, torvald; recruiting Aurek -> coming_soon; Heroes screen opens with no errors.
