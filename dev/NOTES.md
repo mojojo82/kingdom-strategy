@@ -4349,3 +4349,8 @@ Harley's 3 points:
 - Harley: Kessa and Iron Lily should be in frame. The ChatGPT splash was 2:3, so a 9:19.5 phone cut ~15% off each side.
 - Atlas (Seedream v4 Edit, exact size 1152x2496 = phone shape, $0.027 a try): try 1 drew a phone mockup with panels; try 2 still touched the edges; try 3 = the original painting on a tall canvas (white above / below) extended with more sunset sky and deck = the full width now fits, nobody is cut. test/splash.webp (864x1872); background-position center 62%.
 - All tries banked in art/originals/ui/splash/. Lesson: for exact phone-shaped art, extend the approved picture on a canvas of the right size rather than asking for a new composition.
+
+## v1496 — Splash shows straight away on the phone (TEST)
+- Harley (phone, home-screen app): white screen, no splash. Cause: the splash was the first thing in <body>, but <head> holds a 1.06 MB style block (1.1 MB in all) - the phone can't paint anything until all of that has arrived, so it sat on a white screen. (The whole TEST file is 29.9 MB.)
+- Fix: the splash (its style, markup and hide script) moved ahead of the big style block - only 25 KB come before it now. The browser starts <body> early at the splash div; the real <body data-screen> tag later just adds its attributes. html background navy so even the first moment isn't white.
+- Headless: splash shows, then the sign-in screen, then the game as before; no new errors. Not tried on the phone.
