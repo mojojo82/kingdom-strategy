@@ -4443,3 +4443,17 @@ Harley's 3 points:
   - Visual uses the same speed/gap (WAVE_SPEED_FR / WAVE_GAP_FR / WAVE_N), so the hits land as the pillars arrive.
 - Balance: Arena w/o Aurek 92-12-16 / 83-22-15 vs w/o Kessa 55-65 / 51-69 (Aurek still far below Kessa). Conquest Aurek team 6-9 / 10-1 / 10-4 vs Kessa 6-12 / 10-2 / 10-11. Hanzo vs Kessa sims unchanged.
 - Headless: Conquest (eruption rolls both ways, per-enemy hits land, no errors), Arena with Aurek both sides (no errors).
+
+## v1508 - Seraphine and Vesper built: two more hit-everything heroes, both on the fortress (TEST)
+- Harley: "do seraphine and vesper now... halo7 last". Both are Epic Casters riding the fortress (idle + attack + skill sheet), no longer coming soon, in the bot pool. One active each + one passive (Conquest fires only the first skill).
+  - Seraphine Lux - Crystal Rain (cd 11, 26/34/42/51/62%): violet crystal shards fall in a sweep across the enemy side; Crystal Focus (+6% damage/level). Expedition: Prism Sight / Crystal Ward / Gliding Step.
+  - Vesper Quill - Orbital Patch (cd 12, 28/36/45/55/66%): a glyph, then cyan code-beams drop from the sky one after another across the enemy side; Clean Code (+5% damage/level). Expedition: Debugger / Backup Plan / Fast Path.
+  - Both use the wave hit rule (v1507): each enemy is hit when the sweep reaches it (`wave: { impact 0.5, ground: false, spd }` - rain 0.6, beams 0.5 of the screen per second). They come from the sky, so (unlike Aurek's pillars) a hero in the air IS hit. Projection Wall blocks them on ranged heroes.
+- New generic FX: HERO_COMBAT_FX `rain` / `skybeam` -> heroSkyFx + drawHeroSkyFx (Conquest + Arena), sweep starting just past the caster's hull, on the ground line. Sprites: art/heroes/seraphine/seraphine_shard.webp, art/heroes/vesper/vesper_beam.webp (ChatGPT, on black, drawn additive).
+- Art: ChatGPT design, start frame, card portrait, card-video frame. Seraphine on a GREEN screen (violet keys badly on magenta; build_hero_frames.py `bg: "green"`, build_card_video.py BG=green). Vesper's static card faces forward (Harley: card portraits don't all need to be 3/4). Atlas H3 Max idle / attack / skill + 8 s card clip each; LARGE frames in art/originals/heroes/<hero>/large.
+- Balance (atkMult 0.6 -> Seraphine 0.35, Vesper 0.4; at 0.6 both mattered MORE than Kessa in Arena):
+  - Arena (team minus one hero, Lv40 / Lv80): w/o Seraphine 72-48 / 68-48 vs w/o Kessa 43-74 / 57-60; w/o Vesper 74-43 / 70-46 vs w/o Kessa 50-68 / 54-62.
+  - Conquest (1 seed, stuck at): Seraphine team 6-9 / 10-1 / 10-6, Vesper team 6-9 / 10-1 / 10-6, Kessa team 6-12 / 10-2 / 10-11 - both below Kessa everywhere.
+  - Meta check numbers identical to before (the known "meta not strongest" warning was already there).
+- Atlas: Seraphine 3 x $0.38 + $0.61, Vesper 3 x $0.38 + $0.61 = $3.50.
+- Headless: Conquest with each (sweep crosses the field, hits land, no errors), Arena with Vesper + Seraphine vs Seraphine (beams and rain both ways, no errors), Vesper card (video plays, loops) + Heroes list.

@@ -28,7 +28,13 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
                  "stand_src": 400, "feet_y": 655},
        # v1506 Aurek (melee, tall paladin; one start frame for every clip)
        "aurek": {"clips": {"idle": ("aurek_idle_v1.mp4", 0, 0), "run": ("aurek_run_v1.mp4", 0, 0), "attack": ("aurek_attack_v1.mp4", 0, 0), "skill": ("aurek_skill_v2.mp4", 0, 0)},
-                 "stand_src": 378, "feet_y": 701}}[HERO]
+                 "stand_src": 378, "feet_y": 701},
+       # v1508 Seraphine (fortress rider, violet outfit -> GREEN screen clips)
+       "seraphine": {"bg": "green", "clips": {"idle": ("seraphine_idle_v1.mp4", 0, 0), "attack": ("seraphine_attack_v1.mp4", 0, 0), "skill": ("seraphine_skill_v1.mp4", 0, 0)},
+                 "stand_src": 411, "feet_y": 697},
+       # v1508 Vesper (fortress rider, navy/gold/cyan -> magenta clips)
+       "vesper": {"clips": {"idle": ("vesper_idle_v1.mp4", 0, 0), "attack": ("vesper_attack_v1.mp4", 0, 0), "skill": ("vesper_skill_v1.mp4", 0, 0)},
+                 "stand_src": 400, "feet_y": 703}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)

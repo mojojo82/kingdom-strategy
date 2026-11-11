@@ -37,7 +37,18 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "attack2": {"clip": "attack", "fps": 24, "frames": list(range(56, 73, 2)) + list(range(82, 103, 2))}},
        # Sunforge Slam: raise (4-20), the trail + dust frames (22-38) cut, sword planted (40-70 every 3rd), rising back to guard (72-94 every 2nd)
        "aurek_skill": {"hero": "aurek", "tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "wrap": 16,
-                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(4, 21, 2)) + list(range(40, 71, 3)) + list(range(72, 95, 2))}}}[HERO]
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(4, 21, 2)) + list(range(40, 71, 3)) + list(range(72, 95, 2))}},
+       # v1508 Seraphine (fortress rider, green-screen clips): idle 5 s at 8 fps; attack = one cast (video 8-44: staff swings forward, points ~16-28, back), every 2nd = 0.8 s;
+       # skill (own sheet) = staff raised high (8-36 every 2nd), held (40-72 every 4th), lowered (76-96 every 2nd); the rain starts with the staff fully raised (frame 12)
+       "seraphine": {"tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 21,
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(8, 45, 2))}},
+       "seraphine_skill": {"hero": "seraphine", "tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 18,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(40, 73, 4)) + list(range(76, 97, 2))}},
+       # v1508 Vesper: attack = first tome-tap + flick (video 8-44, flick ~22); skill = raise (8-28), hold (32-64, thinned), point forward + settle (66-100; the strike is called at 72)
+       "vesper": {"tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 21,
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(8, 45, 2))}},
+       "vesper_skill": {"hero": "vesper", "tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 19,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(8, 29, 2)) + list(range(32, 65, 4)) + list(range(66, 101, 2))}}}[HERO]
 ROWS = [r for r in ("idle", "run", "attack", "attack2", "skill") if r in CFG]
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}
