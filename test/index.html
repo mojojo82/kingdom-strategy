@@ -6158,9 +6158,9 @@ var I18N_HERO = { ru: {
   torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 12 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
   ironlily: ["Железная Лили", "Алая клятва", "Каждые 12 с воодушевляет отряд: все герои получают +20% АТК на 4 с (+40% на ур. 5)."],
-  vesper: ["Веспер Квилл", "Перезапись", "Каждые 10 с обнуляет щит сильнейшего врага и бьёт его с доп. уроном."],
+  vesper: ["Веспер Квилл", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
   aurek: ["Аурек Солмейн", "Удар солнечной кузни", "Каждые 12 с вонзает меч в землю: столбы священного огня бегут по земле в обе стороны и бьют всех врагов, включая крепость. Проекционная стена защищает от них стрелков."],
-  seraphine: ["Серафина Люкс", "Кристальное копьё", "Каждые 8 с выпускает кристальное копьё, пронзающее линию врагов."],
+  seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
   halo7: ["Хейло-7", "Протокол пробуждения", "Каждые 12 с заставляет всех врагов атаковать его несколько секунд."],
   caelum: ["Кейлум Векс", "Удар Разлома", "Каждые 9 с обрушивает Разрушитель Разлома — розовая молния прокатывается по врагам перед ним."]
 } };
@@ -6359,14 +6359,17 @@ var HERO_DEFS = {
   // v1385 (Harley: "start setting up icons for them in the hero index along with all their skills and stats"): 5 new heroes from Claude's
   // list, placeholders like Iron Lily (comingSoon + vipOnly: shown in the hero list with their skills, can't be recruited/equipped, never on
   // bots / Arena). Skills are text only until each one is built and balance-checked. No art yet (emoji icon) - mockup first. No new stats.
-  vesper: { name: "Vesper Quill", title: "The Codeweaver", class: "archer", icon: "📘", rarity: "Epic", comingSoon: true,
+  vesper: { name: "Vesper Quill", title: "The Codeweaver", class: "archer", icon: "📘", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.6, /* v1508: built - hit-everything hero (orbital beams), rides the fortress, kept well below Kessa */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Rewrite", icon: "📘💻", kind: "active", cooldown: 10, pctByLevel: [0.60, 0.70, 0.80, 0.90, 1.00], desc: "Every 10s, rewrites the strongest enemy's shield to nothing and hits it for bonus damage." },
-      { name: "Copy / Paste", icon: "📋", kind: "active", cooldown: 14, desc: "Every 14s, copies a buff on one ally and pastes it onto the whole team." },
-      { name: "Clean Code", icon: "✨", kind: "passive", desc: "Her skills come back faster the longer the fight goes." }
+      { name: "Orbital Patch", icon: "🛰️⚡", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.5 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, codes a strike into the sky: beams of light drop one after another across the whole enemy side, each enemy hit as a beam reaches it, fortress included. Projection Wall shields ranged heroes from it." },
+      { name: "Clean Code", icon: "✨", kind: "passive", effectType: "conquestDamageMult", perLevel: 0.05, desc: "More damage in every battle." }
     ],
-    expeditionSkills: [] },
+    expeditionSkills: [
+      { name: "Debugger", icon: "🧩", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
+      { name: "Backup Plan", icon: "💾", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.025 },
+      { name: "Fast Path", icon: "⚡", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
+    ], comingSoon: true },
   aurek: { name: "Aurek Solmane", title: "The Haloed Knight", class: "infantry", icon: "🛰️", rarity: "Epic", atkMult: 0.5, /* v1506 (Harley 12 Nov): built - a hit-everything hero (gives Projection Wall a job, F2P option), tall (~7 ft, 1.24x Hanzo), no halo. Epic, kept well below Kessa / Hanzo */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
@@ -6378,14 +6381,17 @@ var HERO_DEFS = {
       { name: "Shepherd", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Pilgrim's Road", icon: "🥾", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.015 }
     ] },
-  seraphine: { name: "Seraphine Lux", title: "The Crystal Crown", class: "archer", icon: "💎", rarity: "Epic", comingSoon: true,
+  seraphine: { name: "Seraphine Lux", title: "The Crystal Crown", class: "archer", icon: "💎", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.6, /* v1508: built - hit-everything hero (crystal rain from the sky), rides the fortress, kept well below Kessa */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Crystal Lance", icon: "💎🗡️", kind: "active", cooldown: 8, pctByLevel: [0.60, 0.70, 0.80, 0.90, 1.00], desc: "Every 8s, fires a crystal lance that pierces through a line of enemies." },
-      { name: "Crystal Prison", icon: "🔷", kind: "active", cooldown: 15, desc: "Every 15s, traps the closest enemy in crystal so it can't act for a moment." },
-      { name: "Stored Charge", icon: "🔋", kind: "passive", desc: "Damage she takes charges her crystals, then bursts out as a blast." }
+      { name: "Crystal Rain", icon: "💎🌧️", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.6 }, cooldown: 11, pctByLevel: [0.26, 0.34, 0.42, 0.51, 0.62], desc: "Every 11s, raises her staff and calls a storm of crystal shards that sweeps across the whole enemy side; each enemy is hit as the shards reach it, fortress included. Projection Wall shields ranged heroes from it." },
+      { name: "Crystal Focus", icon: "🔷", kind: "passive", effectType: "conquestDamageMult", perLevel: 0.06, desc: "More damage in every battle." }
     ],
-    expeditionSkills: [] },
+    expeditionSkills: [
+      { name: "Prism Sight", icon: "🔮", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
+      { name: "Crystal Ward", icon: "💠", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.025 },
+      { name: "Gliding Step", icon: "✨", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
+    ], comingSoon: true },
   halo7: { name: "Halo-7", title: "The Sleeping Warden", class: "infantry", icon: "🤖", rarity: "Legendary", comingSoon: true,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
@@ -9336,7 +9342,7 @@ function createGame(opts) {
           if (!state.idle.enemies.some(function (e0) { return e0.hp > 0; })) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
           var aoeDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = aoeDmg;
-          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.wave ? skill1.wave.impact : skill1.aoeDelay != null ? skill1.aoeDelay : HANZO_LEAP_SEC, dmg: aoeDmg, wave: !!skill1.wave }); /* v1506: each hit-everything skill can set its own wind-up (aoeDelay s); Hanzo keeps HANZO_LEAP_SEC */
+          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.wave ? skill1.wave.impact : skill1.aoeDelay != null ? skill1.aoeDelay : HANZO_LEAP_SEC, dmg: aoeDmg, wave: !!skill1.wave, spd: skill1.wave ? (skill1.wave.spd || WAVE_SPEED_FR) : 0 }); /* v1506: each hit-everything skill can set its own wind-up (aoeDelay s); Hanzo keeps HANZO_LEAP_SEC */
           return;
         }
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
@@ -9990,7 +9996,7 @@ function createGame(opts) {
     var Q = state.idle.stormQ; if (!Q || !Q.length) return; var keep = [];
     Q.forEach(function (q) { q.t -= dt; if (q.t > 1e-9) { keep.push(q); return; } if (idleHeroIsKo(q.key)) return;
       if (q.wave) { /* v1507: rolling eruption - each enemy is hit when the fire reaches it (distance from the drawing, see setIdleWaveGeo); no drawing = all at once */
-        var G = idleWaveGeo && Date.now() - idleWaveGeo.t < 1500 ? idleWaveGeo : null, hx = G && G.heroX[q.key], spd = G ? G.w * WAVE_SPEED_FR : 0, W2 = state.idle.waveHits || (state.idle.waveHits = []);
+        var G = idleWaveGeo && Date.now() - idleWaveGeo.t < 1500 ? idleWaveGeo : null, hx = G && G.heroX[q.key], spd = G ? G.w * (q.spd || WAVE_SPEED_FR) : 0, W2 = state.idle.waveHits || (state.idle.waveHits = []);
         state.idle.enemies.forEach(function (e0) { if (!(e0.hp > 0)) return; var ex = G && G.enemyX[e0.id]; W2.push({ key: q.key, id: e0.id, dmg: q.dmg, t: G && hx != null && ex != null && spd > 0 ? Math.abs(ex - hx) / spd : 0 }); });
         state.idle.skillLandCounts[q.key] = (state.idle.skillLandCounts[q.key] || 0) + 1; return; }
       var hit = 0; state.idle.enemies.forEach(function (e0) { if (!(e0.hp > 0)) return; var dd0 = q.dmg * idleMarkMult(e0, q.key) * idleEnemyDefTake(e0, q.dmg); e0.hp -= dd0; hit++; state.idle.aoeDmg = (state.idle.aoeDmg || 0) + dd0;
@@ -22693,7 +22699,7 @@ function drawKessaRings(ctx) {
 var KESSA_RELEASE_SEC = 6 / 16; /* v1120: the 3D Kessa's arm is fully out on attack frame 6 */ // // orb leaves her hand on attack frame 4 of 16fps (the energy ring frame)
 /* v1185 (Harley): Caster heroes' basic attacks (and their plain skill shots) are spell orbs in their own colour - Kessa keeps her blue orb.
    [core, middle, edge] as "r,g,b". */
-var SPELL_COLS = { lyra: ["255,244,200", "255,176,48", "232,110,12"], sera: ["236,255,236", "126,232,150", "56,186,108"] };
+var SPELL_COLS = { lyra: ["255,244,200", "255,176,48", "232,110,12"], sera: ["236,255,236", "126,232,150", "56,186,108"], seraphine: ["248,236,255", "196,140,255", "130,70,220"], vesper: ["236,252,255", "120,220,255", "40,130,230"] }; /* v1508: Seraphine violet crystal bolt, Vesper cyan code bolt */
 function drawSpellOrb(ctx, x, y, cols, r, seed) {
   var op = 1 + 0.12 * Math.sin(performance.now() / 60 + (seed || 0)), R = (r || 7) * op;
   ctx.save(); ctx.translate(x, y);
@@ -26423,11 +26429,41 @@ function hzFxImg(n) { var c = hzFxCache[n]; if (!c) { c = hzFxCache[n] = new Ima
    - HERO_COMBAT_FX[key].ghost/.warp   -> each dodge leaves a fading after-image and he blinks, a warp opening behind him (heroDodgeFx)
    M = the mode's animation store (idleAnim for Conquest, arenaAnim for Arena / World PvP). */
 var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5ff0ff", ghost: "rgba(225,248,255,0.85)", warp: "warp" },
-  aurek: { pillars: "pillar" } }; /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
+  aurek: { pillars: "pillar" },
+  seraphine: { rain: "shard", glow: "#c79bff", ring: "#e3cbff" }, /* v1508: crystal rain (art/heroes/seraphine/seraphine_shard.webp) */
+  vesper: { skybeam: "beam", ring: "#7fe8ff" } }; /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
 function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir) { /* the skill sheet's effect frame, same in every mode */
   var F = HERO_COMBAT_FX[key] || {};
   if (F.throwImg) heroThrowFx(M, key, x0, y0, targets, hs);
   if (F.pillars) heroFirePillars(M, key, gx + 7 * hs * dir, gy, xMin, xMax, hs);
+  if (F.rain || F.skybeam) heroSkyFx(M, key, F.rain ? "rain" : "skybeam", gx, gy, xMin, xMax, hs, dir);
+}
+function heroWaveSpd(key) { var sk = HERO_DEFS[key] && HERO_DEFS[key].conquestSkills && HERO_DEFS[key].conquestSkills[0]; return (sk && sk.wave && sk.wave.spd) || WAVE_SPEED_FR; }
+/* v1508: effects from the sky that sweep across the enemy side (same front speed the engine hits with): Seraphine's crystal rain, Vesper's orbital beams */
+function heroSkyFx(M, key, kind, x, gy, xMin, xMax, hs, dir) {
+  var S = M.hzSky || (M.hzSky = []), now = performance.now(), span = Math.max(1, xMax - xMin), spd = span * heroWaveSpd(key) / 1000, gap = span * (kind === "rain" ? 0.05 : 0.11);
+  for (var d = gap * 0.6; ; d += gap) { var px = x + dir * d; if (px < xMin - gap || px > xMax + gap) break;
+    if (kind === "rain") for (var j = 0; j < 2; j++) S.push({ key: key, kind: kind, x: px + (Math.random() - 0.5) * gap * 0.9, y: gy - Math.random() * 6 * hs, t0: now + d / spd + j * 60 + Math.random() * 50, dir: dir, sz: 0.8 + Math.random() * 0.45, spin: (Math.random() - 0.5) * 0.6 });
+    else S.push({ key: key, kind: kind, x: px, y: gy, t0: now + d / spd, dir: dir, sz: 1 }); }
+  if (S.length > 240) S.splice(0, S.length - 240);
+}
+function drawHeroSkyFx(ctx, hs, M, h) {
+  var S = M && M.hzSky; if (!S || !S.length) return; var now = performance.now();
+  M.hzSky = S.filter(function (q) { var F = HERO_COMBAT_FX[q.key] || {}, age = now - q.t0;
+    if (q.kind === "rain") { var FALL = 260, im = F.rain ? heroFxImg(q.key, F.rain) : null; if (age < -FALL) return true; if (age > 420) return false;
+      if (age < 0) { var u = 1 + age / FALL, x0 = q.x - q.dir * 34 * hs, y0 = q.y - 120 * hs, xx = x0 + (q.x - x0) * u, yy = y0 + (q.y - y0) * u, sz = 14 * hs * q.sz, ang = Math.atan2(q.y - y0, q.x - x0) - Math.PI / 2;
+        ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.35; ctx.strokeStyle = F.glow || "#c79bff"; ctx.lineWidth = 2 * hs; ctx.beginPath(); ctx.moveTo(xx - (q.x - x0) * 0.18, yy - (q.y - y0) * 0.18); ctx.lineTo(xx, yy); ctx.stroke(); ctx.restore();
+        ctx.save(); ctx.translate(xx, yy); ctx.rotate(ang + q.spin); ctx.shadowColor = F.glow || "#c79bff"; ctx.shadowBlur = 8 * hs; if (im) ctx.drawImage(im, -sz * 0.35, -sz, sz * 0.7, sz * 1.4); else { ctx.fillStyle = "#d9c2ff"; ctx.beginPath(); ctx.moveTo(0, sz); ctx.lineTo(sz * 0.3, 0); ctx.lineTo(0, -sz); ctx.lineTo(-sz * 0.3, 0); ctx.closePath(); ctx.fill(); } ctx.restore(); return true; }
+      var v = age / 420; ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = (1 - v) * 0.9; ctx.strokeStyle = F.ring || "#e3cbff"; ctx.lineWidth = 2.2 * hs * (1 - v) + 0.5; ctx.beginPath(); ctx.ellipse(q.x, q.y, (5 + 22 * v) * hs * q.sz, (2 + 7 * v) * hs * q.sz, 0, 0, 7); ctx.stroke();
+      for (var k = 0; k < 5; k++) { var an = k / 5 * 6.28 + q.spin * 3, rr = (3 + 16 * v) * hs * q.sz; ctx.fillStyle = F.glow || "#c79bff"; ctx.fillRect(q.x + Math.cos(an) * rr - 1.2 * hs, q.y - Math.abs(Math.sin(an)) * rr * 0.9 - 1.2 * hs, 2.4 * hs, 2.4 * hs); } ctx.restore(); return true; }
+    /* skybeam: a targeting glyph lights up, then a column of light drops from the top of the screen and flares out */
+    var PRE = 220, LIFE = 420, im2 = F.skybeam ? heroFxImg(q.key, F.skybeam) : null; if (age < -PRE) return true; if (age > LIFE) return false;
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    if (age < 0) { var p = 1 + age / PRE; ctx.globalAlpha = 0.85 * p; ctx.strokeStyle = F.ring || "#7fe8ff"; ctx.lineWidth = 1.6 * hs; ctx.beginPath(); ctx.ellipse(q.x, q.y, 16 * hs * (1.4 - 0.4 * p), 5 * hs * (1.4 - 0.4 * p), now / 300, 0, 7); ctx.stroke(); ctx.restore(); return true; }
+    var w2 = age < 60 ? 22 * hs * (age / 60) : 22 * hs * (1 - (age - 60) / (LIFE - 60)) + 4 * hs, top = Math.max(0, (h || 0) * 0) - 10, al = age < 60 ? 1 : 1 - (age - 60) / (LIFE - 60);
+    ctx.globalAlpha = Math.max(0, al); if (im2) ctx.drawImage(im2, q.x - w2, top, w2 * 2, q.y - top + 4 * hs); else { var lg = ctx.createLinearGradient(q.x - w2, 0, q.x + w2, 0); lg.addColorStop(0, "rgba(60,200,255,0)"); lg.addColorStop(0.5, "rgba(230,255,255,1)"); lg.addColorStop(1, "rgba(60,200,255,0)"); ctx.fillStyle = lg; ctx.fillRect(q.x - w2, top, w2 * 2, q.y - top); }
+    ctx.globalAlpha = Math.max(0, al) * 0.9; var rg = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, 26 * hs); rg.addColorStop(0, "rgba(220,255,255,1)"); rg.addColorStop(0.4, "rgba(80,220,255,.6)"); rg.addColorStop(1, "rgba(40,120,255,0)"); ctx.fillStyle = rg; ctx.beginPath(); ctx.ellipse(q.x, q.y, 26 * hs * (1 + age / LIFE), 8 * hs * (1 + age / LIFE), 0, 0, 7); ctx.fill();
+    ctx.restore(); return true; });
 }
 function heroFirePillars(M, key, x, gy, xMin, xMax, hs) { /* v1507 (Harley): rolling eruption - fire spots every WAVE_GAP_FR of the screen, both ways from the sword; each erupts as the front
    reaches it (WAVE_SPEED_FR of the screen width per second, the same speed the engine uses for the hits) then sinks, so WAVE_N pillars stand at once, tallest at the front */
@@ -26513,7 +26549,7 @@ function arenaHeroLeapStart(fk, key) { /* skill flash: start the skill sheet; tr
   var A = HERO_ANIMS[key + "_skill"]; if (!A || !A.rows || !A.rows.skill) return false;
   var thr = (A.throwFrame || 0) / A.fps.skill * 1000, sk = HERO_DEFS[key] && HERO_DEFS[key].conquestSkills && HERO_DEFS[key].conquestSkills[0], landAt = sk && sk.aoeAll ? aoeTicks(sk) * ARENA_TICK_MS : thr + 220;
   (arenaAnim.heroLeap || (arenaAnim.heroLeap = {}))[fk] = { t0: performance.now() - Math.max(0, thr + 220 - landAt), thrown: false, started: false };
-  return !!(HERO_COMBAT_FX[key] && (HERO_COMBAT_FX[key].throwImg || HERO_COMBAT_FX[key].pillars));
+  return !!(HERO_COMBAT_FX[key] && (HERO_COMBAT_FX[key].throwImg || HERO_COMBAT_FX[key].pillars || HERO_COMBAT_FX[key].rain || HERO_COMBAT_FX[key].skybeam));
 }
 function arenaEnemyTargets(w, h, isP) { /* every standing enemy hero on screen + the enemy fortress */
   var T = [], hh = arenaAnim.heroHp || {}, hsc = arenaAnim.heroScreen || {}, pre = isP ? "a_" : "p_", hs = heroSpriteVisualScale / 100;
@@ -28243,6 +28279,7 @@ function drawIdleAnim(ctx, w, h) {
   drawSkillEmbers(ctx, idleAnim.skillEmbers, sScale);
   drawHanzoStars(ctx, sScale); /* v1502 */
   drawHeroPillars(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1506: Aurek's fire pillars */
+  drawHeroSkyFx(ctx, heroSpriteVisualScale / 100, idleAnim, h); /* v1508: crystal rain / orbital beams */
   if (idleAnim.spotBursts && idleAnim.spotBursts.length) drawPipSpotBursts(ctx, idleAnim.spotBursts, sScale); /* v1499: Spot Shot hits */
   drawOrbBursts(ctx, idleAnim.orbBursts, groundYFor(h), sScale); // v465 orb burst on a real Piercing Volley hit
 
@@ -31324,6 +31361,8 @@ var HERO_FLAVOR = {
   sera: "A field chaplain who followed the army out of the border chapel and kept the wounded breathing. Sera is no fighter, but give her twelve quiet seconds and the line will hold a little longer.",
   torvald: "A gate-warden with forty years of watches behind him. Torvald never wins a fight fast — he just makes sure there is still a fortress standing when the others finish it.",
   hanzo: "Nobody hears Hanzo arrive, and nobody remembers him leaving. One leap, a storm of steel from above, and the field below is never quite the same.",
+  seraphine: "Heir to a crown cut from a single crystal, Seraphine learned that every shard remembers the stone it came from. Raise the staff, and the sky remembers too - and falls.",
+  vesper: "Vesper writes spells the way other mages write letters: quietly, quickly, and with no typos. One line of code to the old satellites overhead, and the field below lights up beam by beam.",
   aurek: "Seven feet of white steel and older vows. When Aurek drives his blade into the earth, the ground itself answers - a road of holy fire that runs to both horizons, and nothing on it walks away unscorched.",
 };
 
@@ -35633,10 +35672,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oSd = q.sd === 'P' ? 'A' : 'P';
       if (tick === q.impact && isKo(mine, q.key)) return;
       var me = mine && mine.by[q.key], lane = me && me.runL ? me.runL[0] + me.runL[1] : 0, md = me ? (me.ko ? (me.koD || 0) : me.d) : 0;
-      var front = (tick - q.impact + 1) * dtS * WAVE_SPEED_FR * 400, dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0, left = false, blk = 0;
+      var front = (tick - q.impact + 1) * dtS * q.spd * 400, dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0, left = false, blk = 0;
       var dist = function (od) { return posMode && lane ? Math.max(0, 1 - md - od) * lane : 0; };
       if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (dist(o.infantry ? o.d : 0) > front) { left = true; return; } q.hit[o.id] = 1;
-        if (o.ko) return; if (stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; })) return; /* in the air - the pillars pass under him */
+        if (o.ko) return; if (q.ground && stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; })) return; /* in the air - ground effects (pillars) pass under him; effects from the sky (ground:false) still hit */
         var dmg = q.v * (1 - red); if (wallUp && !o.infantry) { blk += dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } if (dodgePort(o)) return;
         o.hp -= dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); });
       var mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0;
@@ -35650,7 +35689,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
         playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         var av = a.value * cardSkMul('P', a.key) * spotMul('P', a.key); /* v985: cards */
-        if (a.aoe && a.wave) { waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'P', key: a.key, name: a.name, v: av, hit: {}, fort: false }); return; } /* v1507: Sunforge Slam - hits what the fire reaches */
+        if (a.aoe && a.wave) { waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'P', key: a.key, name: a.name, v: av, hit: {}, fort: false, ground: a.wave.ground !== false, spd: a.wave.spd || WAVE_SPEED_FR }); return; } /* v1507: Sunforge Slam - hits what the fire reaches */
         if (a.aoe) { stormQ.push({ at: tick + aoeTicks(a), sd: 'P', key: a.key, name: a.name, v: av }); return; } /* v993: Shuriken Storm - he leaps first; lands HANZO_LEAP_SEC later (stormLand) */
         if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; if (a.splash) { var kMp = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kMp && a.salvage) playerCd[a.key] -= kMp * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['p_' + a.key]; } if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } if (a.splash) { if (skTgt['p_' + a.key] == null) skTgt['p_' + a.key] = "fort"; var kP = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kP && a.salvage) playerCd[a.key] -= kP * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
       }
@@ -35662,7 +35701,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
         aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         var avA = a.value * cardSkMul('A', a.key) * spotMul('A', a.key); /* v985: cards */
-        if (a.aoe && a.wave) { waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'A', key: a.key, name: a.name, v: avA, hit: {}, fort: false }); return; } /* v1507 */
+        if (a.aoe && a.wave) { waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'A', key: a.key, name: a.name, v: avA, hit: {}, fort: false, ground: a.wave.ground !== false, spd: a.wave.spd || WAVE_SPEED_FR }); return; } /* v1507 */
         if (a.aoe) { stormQ.push({ at: tick + aoeTicks(a), sd: 'A', key: a.key, name: a.name, v: avA }); return; } /* v993 */
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; if (a.splash) { var kMa = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kMa && a.salvage) aiCd[a.key] -= kMa * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['a_' + a.key]; } if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } if (a.splash) { if (skTgt['a_' + a.key] == null) skTgt['a_' + a.key] = "fort"; var kA = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kA && a.salvage) aiCd[a.key] -= kA * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
       }
@@ -36740,6 +36779,7 @@ function drawArenaFrame(ctx, w, h) {
   drawHeroWarps(ctx);
   drawHeroThrows(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: Hanzo's shuriken etc. */
   drawHeroPillars(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1506: Aurek's fire pillars */
+  drawHeroSkyFx(ctx, heroSpriteVisualScale / 100, arenaAnim, h); /* v1508 */
   drawWeldSparks(ctx, groundYFor(h) + 4);
   if (osSetA) orbitShieldDrawPass(ctx, osSetA, true);
   if (hxSetA) hexShieldDrawPass(ctx, hxSetA, true);
@@ -37466,7 +37506,7 @@ function renderArenaBattleScreen() {
     arenaAnim.battleStartTime = performance.now();
     arenaAnim.battleEnded = false;
     arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null;
-    arenaAnim.heroLeap = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; arenaAnim.hzPillars = null; /* v1503 */
+    arenaAnim.heroLeap = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; arenaAnim.hzPillars = null; arenaAnim.hzSky = null; /* v1503 */
     var canvas = document.getElementById("arenaCanvas");
     // Logical (CSS-pixel) dimensions, same as the draw loop above — these
     // feed arenaSlotPos() to compute projectile spawn points, which must
