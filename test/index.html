@@ -13219,7 +13219,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1516"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1517"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24317,7 +24317,7 @@ function stepIdleAnim(dtSec, w, h) {
       // idle pose while standing anywhere out in the field (or on a boss level); slow jog only when he is sitting at the nose
       vis.lingering = !anyOn && vis.bossRunX == null && (bossLv || vis.x > nzL + 0.5);
     }
-    var dx = targetX - vis.x, maxStep = moveSpeed * dtSec;
+    var dx = targetX - vis.x, maxStep = moveSpeed * (heroMoveSpeed(key) / HERO_RUN_PX_PER_SEC) * dtSec; /* v1517: Halo walks */
     // v497: a grounded (animated) hero who is standing still is really standing on the scrolling ground, so the fortress
     // slowly closes in on him at the ground's own scroll speed until he runs again. "Standing" = in contact with the
     // enemy he is fighting (he holds; the enemy that is blocked against him drifts with him) — never past the fortress nose.
@@ -25384,7 +25384,7 @@ var HERO_ANIMS = {
   seraphine_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/seraphine/seraphine_skill_anim_v1.webp", wrap: 18, cw: 156, ch: 168, ax: 67.91, ay: 165.31, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 35] }, once: { skill: true }, sizeMul: 1, dispH: 41.24, throwFrame: 12 }, /* Crystal Rain: staff fully raised on frame 12 -> the rain starts */
   vesper: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/vesper/vesper_anim_v1.webp", wrap: 21, cw: 84, ch: 116, ax: 44.3, ay: 113.78, fps: { idle: 8, run: 8, attack: 24 }, rows: { idle: [0, 41], run: [0, 41], attack: [1, 19] }, once: { attack: true }, sizeMul: 1, dispH: 28.47, release: 7 },
   vesper_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/vesper/vesper_skill_anim_v1.webp", wrap: 19, cw: 93, ch: 124, ax: 45.7, ay: 121.58, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 38] }, once: { skill: true }, sizeMul: 1, dispH: 30.44, throwFrame: 23 }, /* v1508 Orbital Patch: hand points forward on frame 23 -> the sky beams start */
-  halo7: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/halo7/halo7_anim_v1.webp", wrap: 14, cw: 204, ch: 153, ax: 97.14, ay: 149.59, fps: { idle: 8, run: 24, attack: 24, attack2: 24 }, rows: { idle: [0, 41], run: [2, 33], attack: [4, 25], attack2: [5, 21] }, sizeMul: 1, dispH: 54.64, impact: 10, impact2: 8 }, /* v1509: hulking golem (over 2x Hanzo), two heavy punches alternate */
+  halo7: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/halo7/halo7_anim_v1.webp", wrap: 14, cw: 204, ch: 153, ax: 97.14, ay: 149.59, fps: { idle: 8, run: 24, attack: 24, attack2: 24 }, rows: { idle: [0, 41], run: [2, 33], attack: [4, 25], attack2: [5, 21] }, sizeMul: 1, walkMul: 0.4, dispH: 54.64, impact: 10, impact2: 8 }, /* v1509: hulking golem (over 2x Hanzo), two heavy punches alternate */
   halo7_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/halo7/halo7_skill_anim_v1.webp", wrap: 14, cw: 211, ch: 151, ax: 100.72, ay: 147.45, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 44] }, once: { skill: true }, sizeMul: 1, dispH: 53.93, throwFrame: 12 }, /* v1509 Core Beam: braced on frame 12 -> the beam fires */
   caelum: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/caelum/caelum_anim_v1.webp", wrap: 16, cw: 231, ch: 143, ax: 90.65, ay: 130.74, fps: { idle: 8, run: 24, attack: 16, attack2: 16 }, rows: { idle: [0, 41], run: [2, 18], attack: [3, 16], attack2: [4, 16] }, sizeMul: 1, dispH: 47.67, impact: 8, impact2: 7 }, /* v1514: winged hammer melee - overhead smash and side sweep alternate */
   caelum_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/caelum/caelum_skill_anim_v1.webp", wrap: 10, cw: 264, ch: 182, ax: 129.92, ay: 166.27, fps: { idle: 8, run: 8, skill: 12 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 75] }, once: { skill: true }, sizeMul: 1, dispH: 60.67, dive: { up: [0, 33], hover: [33, 7], fall: [40, 8], hit: [48, 27], lift: 34 } }, /* v1514: Riftbreaker Slam, drawn by phase (drawHeroDive): take-off, hover, fall (8 frames by progress), impact. lift = hover height in hs units */
@@ -35309,6 +35309,7 @@ function recordArenaResult(winner, opponentPoints) {
 // not leak into the AI's numbers just because it reads the same global
 // game.state.equippedEsper — every call site below passes this explicitly.
 var HERO_RUN_PX_PER_SEC = 150; // universal hero run speed (Conquest chase + Arena crossing)
+function heroMoveSpeed(key) { var a = typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[key]; return HERO_RUN_PX_PER_SEC * (a && a.walkMul || 1); } /* v1517: a hero whose run row is really a walk (Halo-7) moves at walking pace (HERO_ANIMS.<hero>.walkMul) */
 var ARENA_ENGAGE_TICKS = 3; // ticks for infantry to close the distance — mirrors Border Skirmish's "must arrive before it counts" gating
 var ARENA_TICK_MS = 450; // real ms per battle tick (see runArenaBattle's setInterval) — also used to convert the tick-based cooldown countdown into a real-time rate for the smooth cooldown ring
 var ARENA_MAX_DURATION_MS = 60000; // hard time limit shown to the player as a live countdown (arenaTimerSub) — a fight still ending early on a KO
@@ -35638,7 +35639,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var foe = null; oh.list.forEach(function (o) { if (o.infantry && !o.ko && (!foe || o.d > foe.d)) foe = o; });
       var nd = e.d;
       if (!foe || e.d + foe.d < 1 - ARENA_REACH) {
-        var budget = HERO_RUN_PX_PER_SEC * dtS; // px this tick (the same run speed as Conquest), spent across the two halves (home -> meeting line -> enemy nose) so a step that crosses the line keeps full speed
+        var budget = heroMoveSpeed(e.id) * dtS; // v1517: per-hero pace (walkMul); px this tick (the same run speed as Conquest), spent across the two halves (home -> meeting line -> enemy nose) so a step that crosses the line keeps full speed
         if (e.runL) { var dd = e.d; if (dd < 0.5) { var toMid = (0.5 - dd) * 2 * e.runL[0]; if (budget <= toMid) { dd += budget / (2 * e.runL[0]); budget = 0; } else { dd = 0.5; budget -= toMid; } } if (budget > 0) dd += budget / (2 * e.runL[1]); nd = Math.min(1, dd); }
         else nd = Math.min(1, e.d + infStep);
         if (foe) nd = Math.min(nd, e.d + Math.max(0, 1 - e.d - foe.d) / 2); // both closing: meet in the middle instead of running through each other
@@ -36743,7 +36744,7 @@ function drawArenaFrame(ctx, w, h) {
           var frD = Math.min(1, (performance.now() - (arenaAnim.heroTickT || 0)) / ARENA_TICK_MS);
           var ddv = recD ? recD.prev + (recD.cur - recD.prev) * frD : koE.d;
           var mapDx = function (dv) { return dv <= 0.5 ? slot.x + (mX - slot.x) * (dv / 0.5) : mX + (endX - mX) * ((dv - 0.5) / 0.5); }; // piecewise so two heroes always meet at the meeting line
-          var pxStepV = recD ? Math.abs(mapDx(recD.cur) - mapDx(recD.prev)) : 0, pxFullV = HERO_RUN_PX_PER_SEC * ARENA_TICK_MS / 1000;
+          var pxStepV = recD ? Math.abs(mapDx(recD.cur) - mapDx(recD.prev)) : 0, pxFullV = heroMoveSpeed(key) * ARENA_TICK_MS / 1000; /* v1517 */
           frEff = (pxStepV > 0.5 && pxStepV < pxFullV) ? Math.min(1, frD * pxFullV / pxStepV) : frD; // a short final step (the last bit to the fortress / the meeting line) is run at full speed and finished early instead of crawling over a whole tick
           wantX = recD ? mapDx(recD.prev) + (mapDx(recD.cur) - mapDx(recD.prev)) * frEff : mapDx(ddv); // glide in PIXELS between the two tick positions (interpolating in d made a tick that crosses the meeting line speed up then crawl)
           ipH = koE.reach ? 1 : (koE.d > 0 ? 0.5 : 0);

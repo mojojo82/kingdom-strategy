@@ -4522,3 +4522,9 @@ Harley's 3 points:
 - Fix: an infantry hero with a skill sheet holds his spot for the length of that sheet (Halo 1.8 s, Aurek 1.3 s, Hanzo 0.6 s; Caelum's dive already holds), starting from where he stood when the cast began; then he runs on. Same for bots.
 - Measured headless (enemy Halo, per-frame screen x): before - cast pose moved 326 -> 155 px over 1.2 s; after - cast at a fixed spot, then the run (run frames) to the target.
 - Balance: Arena (gareth,lyra,roran,kessa,hanzo,torvald,halo7) before/after within 1-3 fights of 120; meta as before (known warning).
+
+## v1517 - Halo-7 walks at walking pace (TEST)
+- Harley: slow Halo's ground movement down to walking speed to match his animation (his "run" row is a heavy front-facing stomp; a side-view run may come later).
+- New HERO_ANIMS.<hero>.walkMul + heroMoveSpeed(key): used by the Arena sim step, the Arena glide (so a slow step isn't run at full speed and then paused) and the Conquest chase. Halo-7 walkMul 0.4 = 60 px/s (everyone else 150). His feet in the walk cycle slide back only ~15 px/s, so a true foot match would take him ~20 s to cross the Arena - 0.4 is a compromise; easy to change.
+- Measured headless: Halo's screen x moves a steady ~60 px/s with no pauses between ticks.
+- Balance: Arena (gareth,lyra,roran,kessa,hanzo,torvald,halo7) w/o Halo 105-11 / 99-7 (was 103-9 / 92-11) - slightly weaker, still below Kessa/Hanzo. Conquest Halo team 6-9 / 10-1 / 10-4 (unchanged range).
