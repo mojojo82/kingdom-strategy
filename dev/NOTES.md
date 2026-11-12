@@ -4617,3 +4617,7 @@ Harley's 3 points:
 - Layered glass: back = window filled with a deep violet interior, front = glass ~45% see-through (dev/ships/glass_layers.py); riders between, HP bars above the hull (barsAbove).
 - New skin field meleeFront (Arena): melee heroes stop where the hull is low enough to hit (A 0.82, B 0.79 of the picture) instead of in front of the nose spear. Other skins unchanged (default 1).
 - Headless 3x Arena: riders behind the glass on both sides, enemy Hanzo's slash lands on the lower hull; no errors. Balance identical. Patch: dev/ships/patch_void.py.
+
+## v1532 - Old Blackwatch and Ghostwake removed (TEST)
+- Harley (screenshot of the Fortress Skin list, circled): delete the old Blackwatch and Ghostwake. Removed their FORTRESS_SKINS entries and embedded images (~240 KB); art kept in art/originals/ships/retired/. A save using either falls back to the default Ironclad (fortressSkin() already does this); Arena bots pick from the remaining skins.
+- Headless: skin list = Ironclad, Voidspire, Bonewake, Bonewake 2, Ironclad II, Blackwatch II, Voidspire II A, Voidspire II B; a save set to "ghost" shows Ironclad; no errors.
