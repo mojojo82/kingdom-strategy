@@ -37,7 +37,14 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
                  "stand_src": 400, "feet_y": 703},
        # v1509 Halo-7 (melee golem; one start frame for every clip; skill v1 added when it lands)
        "halo7": {"clips": {"idle": ("halo7_idle_v1.mp4", 0, 0), "run": ("halo7_run_v2.mp4", 0, 0), "attack": ("halo7_attack_v1.mp4", 0, 0), "skill": ("halo7_skill_v1.mp4", 0, 0)},
-                 "stand_src": 400, "feet_y": 715}}[HERO]
+                 "stand_src": 400, "feet_y": 715},
+       # v1512 redo of the original heroes on the Atlas pipeline (designs from their existing cards; Kessa untouched - she is on the splash page)
+       "kessa": {"clips": {"idle": ("kessa_idle_v1.mp4", 0, 0), "attack": ("kessa_attack_v1.mp4", 0, 0), "cast": ("kessa_cast_v1.mp4", 0, 0)},
+                 "stand_src": 525, "feet_y": 697},
+       "roran": {"clips": {"idle": ("roran_idle_v1.mp4", 0, 0), "attack": ("roran_attack_v1.mp4", 0, 0)},
+                 "stand_src": 559, "feet_y": 691},
+       "lyra": {"clips": {"idle": ("lyra_idle_v2.mp4", 0, 0), "attack": ("lyra_attack_v1.mp4", 0, 0)},
+                 "stand_src": 505, "feet_y": 699}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)

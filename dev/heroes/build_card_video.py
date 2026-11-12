@@ -9,7 +9,8 @@ v1512 (Harley 12 Nov): LOOP_CLIP=loop.mp4 - the standard from now on. The intro 
 ends on the intro's frame at LOOP_START (make it with: python3 dev/heroes/card_loop_frame.py CLIP LOOP_START frame.png, then Image = End Image =
 frame.png, 5 s) loops forever: no fade, no rollback (Iron Lily style). BLEND then only smooths the loop clip's own end into its start (default 4).
 Without LOOP_CLIP the old cross-fade into the frames before the loop point is used (shows as a fade / rewind when the held pose moves)."""
-import glob, os, subprocess, sys, tempfile
+import atexit, glob, os, shutil, subprocess, sys, tempfile
+_TMP = []; atexit.register(lambda: [shutil.rmtree(t, ignore_errors=True) for t in _TMP])   # frame dumps are big - remove them
 import numpy as np
 from PIL import Image
 src, out, LS = sys.argv[1], sys.argv[2], float(sys.argv[3])
@@ -20,7 +21,7 @@ CX = float(sys.argv[7]) if len(sys.argv) > 7 else None   # optional crop centre 
 TOP, BOT = (np.array([242, 182, 50.]), np.array([217, 144, 42.])) if os.environ.get("RARITY") == "Legendary" else (np.array([79, 143, 217.]), np.array([47, 95, 163.])) if os.environ.get("RARITY") == "Rare" else (np.array([155, 89, 214.]), np.array([106, 53, 168.]))   # RARITY=Rare: blue (#4f8fd9 -> #2f5fa3, v1499 Pip); default Epic purple, same as HERO_CARD_VIDEO.gareth bg (#9b59d6 -> #6a35a8)
 LOOP = os.environ.get("LOOP_CLIP"); FPS = 24
 def frames_of(path):
-    t = tempfile.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-vf", "fps=24", os.path.join(t, "f%04d.png")], check=True)
+    t = tempfile.mkdtemp(); _TMP.append(t); subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", path, "-vf", "fps=24", os.path.join(t, "f%04d.png")], check=True)
     return sorted(glob.glob(os.path.join(t, "f*.png")))
 fs = frames_of(src)
 if LOOP: fs = fs[:round(LS * FPS)] + frames_of(LOOP)[:-1]   # intro up to the loop point, then the loop clip (its last frame = its first, dropped)
@@ -33,19 +34,19 @@ for f in fs:
     g = np.linspace(0, 1, H)[:, None, None]; bg = (TOP * (1 - g) + BOT * g) * np.ones((H, W, 3))
     o = c * al + bg * (1 - al)
     ch = round(H / ZOOM); cw = round(ch * 5 / 4); x0 = (W - cw) // 2 if CX is None else int(min(W - cw, max(0, CX - cw / 2)))
-    fr.append(o[H - ch:, x0:x0 + cw])
+    fr.append(np.clip(o[H - ch:, x0:x0 + cw], 0, 255).astype(np.uint8))   # uint8: a full clip + idle loop is ~300 frames
 L = round(LS * FPS); n = len(fr)
 if LOOP:
     B = int(sys.argv[4]) if len(sys.argv) > 4 else 4
     for k in range(B):   # the loop clip's own last frames ease into its first frames (same pose - invisible)
-        t = (k + 1) / (B + 1); i = n - B + k; fr[i] = fr[i] * (1 - t) + fr[L] * t
+        t = (k + 1) / (B + 1); i = n - B + k; fr[i] = (fr[i] * (1 - t) + fr[L].astype(np.float32) * t).astype(np.uint8)
     for k in range(6):   # entry: the intro's last 6 frames ease into the loop clip's first frame (it plays once; Atlas' loop clip has slightly different colours)
-        t = (k + 1) / 7; i = L - 6 + k; fr[i] = fr[i] * (1 - t) + fr[L] * t
+        t = (k + 1) / 7; i = L - 6 + k; fr[i] = (fr[i] * (1 - t) + fr[L].astype(np.float32) * t).astype(np.uint8)
     BLEND = 0
 assert LOOP or L + BLEND < n - BLEND, "loop too short"
 for k in range(BLEND):   # last BLEND frames fade into frames L-BLEND+k .. so the jump end -> L is seamless
-    t = (k + 1) / (BLEND + 1); i = n - BLEND + k; fr[i] = fr[i] * (1 - t) + fr[L - BLEND + k + 1] * t if L - BLEND + k + 1 >= 0 else fr[i]
-od = tempfile.mkdtemp(); OH = round(OW * 4 / 5 / 2) * 2
+    t = (k + 1) / (BLEND + 1); i = n - BLEND + k; fr[i] = (fr[i] * (1 - t) + fr[L - BLEND + k + 1].astype(np.float32) * t).astype(np.uint8) if L - BLEND + k + 1 >= 0 else fr[i]
+od = tempfile.mkdtemp(); _TMP.append(od); OH = round(OW * 4 / 5 / 2) * 2
 for i, o in enumerate(fr): Image.fromarray(o.astype(np.uint8)).resize((OW, OH), Image.LANCZOS).save(os.path.join(od, "o%04d.png" % i))
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", os.path.join(od, "o%04d.png"), "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
                 "-pix_fmt", "yuv420p", "-movflags", "+faststart", "-force_key_frames", "0,%.4f" % (L / FPS), "-an", out], check=True)

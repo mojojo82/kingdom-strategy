@@ -55,7 +55,18 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 15, "to": 48},
                  "attack": {"fps": 24, "frames": list(range(12, 61, 2))}, "attack2": {"clip": "attack", "fps": 24, "frames": list(range(76, 117, 2))}},
        "halo7_skill": {"hero": "halo7", "tag": "v1", "stand": 140, "disp_stand": 50, "per_clip": True, "wrap": 14,
-                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(12, 37, 2)) + list(range(40, 81, 2)) + list(range(82, 101, 2))}}}[HERO]
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(12, 37, 2)) + list(range(40, 81, 2)) + list(range(82, 101, 2))}},
+       # v1512 Kessa redo (design untouched): attack = palm push (video 3-15, palm out at 15 = sheet frame 6 -> KESSA_RELEASE_SEC 6/16 unchanged) + return (18-39);
+       # "skill" row = Arc Burst cast for HERO_ANIMS rows.cast: wind-up (15-33, 7 frames), hold (45/51/57 = the seq's 7-9 loop), recovery (84-108) - same 15-frame layout as the old cast row
+       "kessa": {"tag": "v2", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 15,
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 16, "frames": list(range(3, 16, 2)) + list(range(18, 40, 3))},
+                 "skill": {"clip": "cast", "fps": 16, "frames": [15, 18, 21, 24, 27, 30, 33, 45, 51, 57, 84, 90, 96, 102, 108]}},
+       # v1512 Roran redo: one spear throw (video 10-60, the spear leaves his hand at video frame 38 = sheet frame 14 at 21 fps = 0.667 s, was 13.5/20 = 0.675 s)
+       "roran": {"tag": "v2", "stand": 120, "disp_stand": 29, "per_clip": True, "wrap": 14,
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 21, "frames": list(range(10, 61, 2))}},
+       # v1512 Lyra (first real animation): draw + release (video 6-60, arrow leaves at 38 = sheet frame 16 at 24 fps = 0.667 s)
+       "lyra": {"tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 15,
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(6, 61, 2))}}}[HERO]
 ROWS = [r for r in ("idle", "run", "attack", "attack2", "skill") if r in CFG]
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}
