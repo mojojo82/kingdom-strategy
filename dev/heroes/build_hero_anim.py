@@ -66,20 +66,39 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "idle": {"step": 3, "fps": 8}, "attack": {"fps": 21, "frames": list(range(10, 61, 2))}},
        # v1512 Lyra (first real animation): draw + release (video 6-60, arrow leaves at 38 = sheet frame 16 at 24 fps = 0.667 s)
        "lyra": {"tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 15,
-                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(6, 61, 2))}}}[HERO]
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(6, 61, 2))}},
+       # v1514 Caelum (winged hammer melee): every clip is already drawn at the same scale / feet point (the approved slam mockup used one anchor), so
+       # "same_space" skips the per-clip rescale. run = one stride (18 video frames, 30-47); attack = overhead smash (raise 8-22, H3 Max's trail + dust 23-35 cut,
+       # hammer down 36-50; impact = sheet frame 8); attack2 = side sweep (raise 50-62, streak 63-71 cut, follow-through 72-88; impact 7)
+       "caelum": {"tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "same_space": True, "wrap": 16,
+                 "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 30, "to": 48},
+                 "attack": {"fps": 16, "frames": list(range(8, 23, 2)) + list(range(36, 51, 2))},
+                 "attack2": {"clip": "attack", "fps": 16, "frames": list(range(50, 63, 2)) + list(range(72, 89, 2))}},
+       # Skybreaker Slam, one row played by phase in the game (all every 2nd video frame = real speed at 12 fps): take-off 0-38 + 63-88 (33 frames; 39-62 repeat
+       # the same wing beats), hover 0-13 (7), fall = slam_down 50-57 (8, every frame, picked by fall progress), impact = cleaned slam_down 58-110 (27)
+       "caelum_skill": {"hero": "caelum", "tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "same_space": True, "canvas": 2, "wrap": 10,
+                 "idle": {"fps": 8, "frames": [0]},
+                 "skill": {"fps": 12, "parts": [["takeoff", list(range(0, 39, 2)) + list(range(63, 89, 2))], ["hover", list(range(0, 14, 2))],
+                                                ["slam_down", list(range(50, 58))], ["slam_clean", list(range(58, 111, 2))]]}}}[HERO]
 ROWS = [r for r in ("idle", "run", "attack", "attack2", "skill") if r in CFG]
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}
 META = json.load(open(os.path.join(L, "meta.json"))) if CFG.get("per_clip") else None
 for st in ROWS:
     c = CFG[st]
-    fs = sorted(glob.glob(os.path.join(L, c.get("clip", st), "*.webp")))   # v1506: a row can take its frames from another clip (Aurek attack2 = 2nd slash of the attack clip)
-    if "frames" in c: sel = [fs[i] for i in c["frames"]]   # v1499: an explicit frame list (skips a stretch of the clip)
+    if "parts" in c:   # v1514: a row stitched from several clips [[clip, frames], ...]
+        sel = []; clips_ = []
+        for cn, fr_ in c["parts"]:
+            ff = sorted(glob.glob(os.path.join(L, cn, "*.webp"))); sel += [ff[i] for i in fr_]
+        fs = sel
+    else: fs = sorted(glob.glob(os.path.join(L, c.get("clip", st), "*.webp")))   # v1506: a row can take its frames from another clip (Aurek attack2 = 2nd slash of the attack clip)
+    if "parts" in c: pass
+    elif "frames" in c: sel = [fs[i] for i in c["frames"]]   # v1499: an explicit frame list (skips a stretch of the clip)
     else: fs = fs[c.get("from", 0):c.get("to", len(fs))]; sel = fs[::c["step"]]
     if st == "idle" and len(sel) > 1 and "from" not in c and "frames" not in c: sel = sel[:-1]
     ims = [Image.open(f).convert("RGBA") for f in sel]
     if META:   # every clip onto one doubled canvas at the idle clip's scale and feet point, so one cell / anchor fits all rows
-        m, m0 = META[c.get("clip", st)], META["idle"]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
+        m0 = META["idle"]; m = m0 if CFG.get("same_space") else META[c.get("clip", st)]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
         for im in ims:
             big = im.resize((round(W0 * sc), round(H0 * sc)), Image.LANCZOS) if abs(sc - 1) > 1e-3 else im
             CF = CFG.get("canvas", 2); canv = Image.new("RGBA", (round(W0 * CF), round(H0 * CF)), (0, 0, 0, 0))  # v1502: canvas factor (a high jump scaled up needs more room)

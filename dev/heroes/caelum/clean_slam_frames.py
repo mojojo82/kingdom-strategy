@@ -4,7 +4,7 @@ import glob, numpy as np, os, shutil
 from PIL import Image
 import scipy.ndimage as nd
 L='/home/claude/kingdom-strategy/art/originals/heroes/caelum/large/slam_down/'
-OUT='/tmp/claude-0/-home-claude/14deb026-a209-5dd6-bb00-0d996b7bcaaa/scratchpad/caemock/clean/'
+OUT=os.path.join(os.path.dirname(L.rstrip('/')),'slam_clean')+'/'
 os.makedirs(OUT,exist_ok=True)
 fs=sorted(glob.glob(L+'*.webp'))
 for i,f in enumerate(fs):
@@ -22,5 +22,5 @@ for i,f in enumerate(fs):
             for k,s_ in enumerate(sz):
                 if s_<400: al2[lab==k+1]=0
         a[...,3]=al2; im=Image.fromarray(a.astype(np.uint8))
-    im.save(OUT+'%04d.png'%i)
+    im.save(OUT+'%04d.webp'%i,'WEBP',quality=92)
 print('done')

@@ -8,6 +8,7 @@ ZOOM > 1 crops tighter, anchored at the bottom centre (the hero's body is cut at
 v1512 (Harley 12 Nov): LOOP_CLIP=loop.mp4 - the standard from now on. The intro plays once up to LOOP_START, then a separate Atlas clip that starts AND
 ends on the intro's frame at LOOP_START (make it with: python3 dev/heroes/card_loop_frame.py CLIP LOOP_START frame.png, then Image = End Image =
 frame.png, 5 s) loops forever: no fade, no rollback (Iron Lily style). BLEND then only smooths the loop clip's own end into its start (default 4).
+KEEP_ISLANDS=px (v1514): magenta-ish pockets inside the hero smaller than px stay opaque (pink gems on a magenta screen).
 Without LOOP_CLIP the old cross-fade into the frames before the loop point is used (shows as a fade / rewind when the held pose moves)."""
 import atexit, glob, os, shutil, subprocess, sys, tempfile
 _TMP = []; atexit.register(lambda: [shutil.rmtree(t, ignore_errors=True) for t in _TMP])   # frame dumps are big - remove them
@@ -19,7 +20,8 @@ OW = int(sys.argv[5]) if len(sys.argv) > 5 else 800
 ZOOM = float(sys.argv[6]) if len(sys.argv) > 6 else 1.0
 CX = float(sys.argv[7]) if len(sys.argv) > 7 else None   # optional crop centre x (video px), e.g. the held pose's centre
 TOP, BOT = (np.array([242, 182, 50.]), np.array([217, 144, 42.])) if os.environ.get("RARITY") == "Legendary" else (np.array([79, 143, 217.]), np.array([47, 95, 163.])) if os.environ.get("RARITY") == "Rare" else (np.array([155, 89, 214.]), np.array([106, 53, 168.]))   # RARITY=Rare: blue (#4f8fd9 -> #2f5fa3, v1499 Pip); default Epic purple, same as HERO_CARD_VIDEO.gareth bg (#9b59d6 -> #6a35a8)
-LOOP = os.environ.get("LOOP_CLIP"); FPS = 24
+LOOP = os.environ.get("LOOP_CLIP"); FPS = 24; KEEP = int(os.environ.get("KEEP_ISLANDS", "0"))
+if KEEP: import scipy.ndimage as ndi
 def frames_of(path):
     t = tempfile.mkdtemp(); _TMP.append(t); subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i", path, "-vf", "fps=24", os.path.join(t, "f%04d.png")], check=True)
     return sorted(glob.glob(os.path.join(t, "f*.png")))
@@ -30,6 +32,13 @@ for f in fs:
     a = np.asarray(Image.open(f).convert("RGB")).astype(np.float32); H, W = a.shape[:2]
     M = np.median(a[:30].reshape(-1, 3), 0); d, dm = ((a[..., 1] - np.maximum(a[..., 0], a[..., 2]), M[1] - max(M[0], M[2])) if os.environ.get("BG") == "green" else (np.minimum(a[..., 0], a[..., 2]) - a[..., 1], min(M[0], M[2]) - M[1]))  # v1508: BG=green for green-screen clips
     al = np.clip(1 - (d - 30) / (dm * 0.8 - 30), 0, 1)[..., None]
+    if KEEP:   # v1514 (Caelum): pink gems / tattoos key out on magenta. Background pockets NOT connected to the frame edge and smaller than KEEP px are part of the hero: keep them opaque
+        bgm = al[..., 0] < 0.5; lab, nl = ndi.label(bgm)
+        if nl:
+            edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))); sz = ndi.sum(bgm, lab, range(1, nl + 1))
+            md = ndi.mean(d, lab, range(1, nl + 1)); small = np.zeros(nl + 1, bool); small[1:] = (sz < KEEP) & (np.asarray(md) < dm * 0.8)   # a pocket of the real screen colour (between arm and body) still keys out; gems are a different pink
+            for e_ in edge: small[e_] = False
+            km = ndi.binary_dilation(small[lab], iterations=2); al[km] = 1.0
     c = np.clip((a - (1 - al) * M) / np.maximum(al, 1e-3), 0, 255)
     g = np.linspace(0, 1, H)[:, None, None]; bg = (TOP * (1 - g) + BOT * g) * np.ones((H, W, 3))
     o = c * al + bg * (1 - al)
