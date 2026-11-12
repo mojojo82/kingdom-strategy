@@ -9,7 +9,7 @@ def b64png(fn):
 sheet = base64.b64encode(open(D + "walker_legs_sheet.webp", "rb").read()).decode()
 img = ('/* v1535 (Harley): Walker - Ironclad walker (his blockout, style B): body from ChatGPT (legs removed), legs = Atlas walk cycle drawn in front of the body (far legs tucked behind it), body bob follows the leg tops (bobTrack). Open window slit, empty cannon bay under the nose. art/originals/ships/walker/ */\n'
        'var walkerCqImg = new Image(); walkerCqImg.src = "data:image/webp;base64,' + b64png("walker_back.png") + '";\n'
-       'var walkerAnim = { back: walkerCqImg, front: new Image(), sheet: new Image(), rx: %s, ry: %s, tw: %d, th: %d, sw: %d, sh: %d, cols: %d, n: %d, fps: %d, bobTrack: %s };\n' % (J["rx"], J["ry"], J["tw"], J["th"], J["sw"], J["sh"], J["cols"], J["n"], J["fps"], json.dumps(J["bobTrack"]))
+       'var walkerAnim = { back: walkerCqImg, front: new Image(), sheet: new Image(), walk: true, over: true, rx: %s, ry: %s, tw: %d, th: %d, sw: %d, sh: %d, cols: %d, n: %d, fps: %d, bobTrack: %s };\n' % (J["rx"], J["ry"], J["tw"], J["th"], J["sw"], J["sh"], J["cols"], J["n"], J["fps"], json.dumps(J["bobTrack"]))
        + 'walkerAnim.front.src = "data:image/webp;base64,' + b64png("walker_front.png") + '";\nwalkerAnim.sheet.src = "data:image/webp;base64,' + sheet + '";\n')
 s = s.replace("var FORTRESS_SKINS = [", img + "var FORTRESS_SKINS = [", 1)
 lay = ", ".join("h%d: [%s, %s]" % (i, x, J["feet"]) for i, x in enumerate(J["spots"]))

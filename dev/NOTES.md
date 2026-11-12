@@ -4639,3 +4639,8 @@ Harley's 3 points:
 - Built: ChatGPT body without legs + legs alone (aligned with the final); Atlas walk cycle of the legs ($0.38); dev/ships/build_walker.py -> body layers, 60-frame leg sheet (12 fps, 5 s loop), body bob track measured from the leg tops; far legs tucked behind the body. New: anim.sw/sh (sheet stored smaller), anim.bobTrack (per-frame body offset); riders' level numbers above their HP bars on barsAbove skins. Patch: dev/ships/patch_walker.py.
 - Skin "Walker": same on-screen length as Bonewake, stands on its feet (lift 0), riders' heads + shoulders in the slit.
 - Headless: Conquest + Arena (vs Crawler C), no errors; Arena balance identical. Clip: art/originals/ships/walker/walker_walk_v1.mp4.
+
+## v1536 - Walker: whole lower half animated, stands still in Arena (TEST)
+- Harley: in the preview the leg tops were covered (the front layer hid them), and his suggestion: animate everything below his line (lower belly + hips + legs) as one piece so nothing has to be stitched at the hips. Cut along walker_cutline.json; lower half = one Atlas walk cycle ($0.38); the upper body follows the lower half's measured rise/fall (bobTrack, up to 5.7% of the ship height) so the seam stays joined. The lower sheet is drawn after the front layer (new anim.over). dev/ships/build_walker2.py.
+- Harley: no walking in Arena. drawSkinPart(..., still) - Arena passes still, so a walker (anim.walk) shows leg frame 0 and no bob there; Arena hull points skip the walk bob too. Conquest keeps walking. (Crawler treads/rumble unchanged.)
+- Headless: Conquest + Arena, no errors. Clip: art/originals/ships/walker/walker_walk_v2.mp4. Atlas today on the walker: 2 runs = $0.76.
