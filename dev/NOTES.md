@@ -4528,3 +4528,9 @@ Harley's 3 points:
 - New HERO_ANIMS.<hero>.walkMul + heroMoveSpeed(key): used by the Arena sim step, the Arena glide (so a slow step isn't run at full speed and then paused) and the Conquest chase. Halo-7 walkMul 0.4 = 60 px/s (everyone else 150). His feet in the walk cycle slide back only ~15 px/s, so a true foot match would take him ~20 s to cross the Arena - 0.4 is a compromise; easy to change.
 - Measured headless: Halo's screen x moves a steady ~60 px/s with no pauses between ticks.
 - Balance: Arena (gareth,lyra,roran,kessa,hanzo,torvald,halo7) w/o Halo 105-11 / 99-7 (was 103-9 / 92-11) - slightly weaker, still below Kessa/Hanzo. Conquest Halo team 6-9 / 10-1 / 10-4 (unchanged range).
+
+## v1518 - Halo-7's walk matched to his feet (TEST)
+- Harley: slow the walk more to match.
+- walkMul 0.4 -> 0.07 = ~10.5 px/s: the planted foot in his walk cycle slides back ~30 sheet px/s x (dispH 54.64 / ch 153) at hero scale 100% = 10.5 px/s, so his feet now stay put on the ground. Measured headless: screen x moves ~10.5 px/s.
+- He now needs ~13 s to reach the meeting line on his own (enemy melee usually come to him first; his Core Beam fires from anywhere).
+- Balance: Arena w/o Halo 101-9 / 101-7 (was 105-11 / 99-7 at 0.4) - no real change; Conquest Halo team 6-9 / 10-1 / 10-4 (same).
