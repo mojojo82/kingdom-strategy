@@ -4565,3 +4565,11 @@ Harley's 3 points:
 - Measured headless (Lv80 5*, Torvald on random teams vs random bots, 60 fights each): unstacked 0.87 shields/fight (none in 36/60), team wins 27; fully stacked (cards + Fortress II maxed) 1.93 (none in 27/60), wins 32; stacked + Sera 1.32 + 4.1 heals, wins 30; unstacked + Sera 0.48 + 1.5 heals, wins 25. (At 12 s: 0.42 shields/fight, none in 45/60.)
 - Balance: Arena (gareth,lyra,roran,kessa,sera,torvald,hanzo) w/o Torvald 110-5 / 110-2 (still the least missed); Conquest Kessa team 6-12 / 10-2 / 10-11 (same as before); meta numbers identical (known warning).
 - Still different between modes: the Support gear stat boosts heal/shield size in Conquest but not in Arena (flagged to Harley).
+
+## v1524 - Torvald redo: shield-only melee animations + Guard Stance aura (TEST)
+- Harley: Torvald fights with his shield only - a forward shove and a shield backhand; Guard Stance = he braces behind the shield while a magic aura plays. Card kept.
+- Art: 5 Atlas H3 Max clips (idle, run, shove, backhand, brace; 6 runs x $0.38 = ~$2.28). LARGE frames in art/originals/heroes/torvald/large/ (shove streaks removed by dev/heroes/torvald/clean_shove_frames.py). Sheets art/heroes/torvald/torvald_anim_v2.webp (idle/run/attack=shove/attack2=backhand) and torvald_skill_anim_v1.webp (brace, plays once).
+- Aura: drawn by the game, not in the video - new drawHeroWards (~1.1 s white-gold glow, ground ring, orbiting sparks, rising runes, light strip on the shield side). HERO_COMBAT_FX.torvald = { ward: true }; heroSkillOnThrow pushes M.wards. Works in Conquest and Arena.
+- Arena: a support cast with a skill sheet now flashes the pose and holds the hero in place for it (castHold), like the other skill sheets. Conquest: support casts start the sheet right away.
+- Balance: Arena (gareth,lyra,roran,kessa,sera,torvald,hanzo) w/o Torvald 110-5 / 110-2 (same as v1523); meta numbers unchanged (known warning).
+- Headless: Arena + Conquest with Torvald, no errors; real-speed mockup approved by Harley. Next: experiment with the stance aura look.
