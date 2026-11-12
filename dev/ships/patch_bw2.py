@@ -20,7 +20,7 @@ assert s.count(old) == 1; s = s.replace(old, img + old)
 old = '  { id: "ironclad2", name: "Ironclad II",'
 i = s.index(old); j = s.index("\n", i) + 1
 sc = round(400 * 0.5366 / W, 4)
-entry = ('  { id: "blackwatch2", name: "Blackwatch II", cq: blackwatch2CqImg, gov: blackwatch2CqImg, cqScale: ' + str(sc) + ', govWidth: 1, lift: 12, anim: blackwatch2Anim, '
+entry = ('  { id: "blackwatch2", name: "Blackwatch II", cq: blackwatch2CqImg, gov: blackwatch2CqImg, cqScale: ' + str(sc) + ', govWidth: 1, lift: 12, anim: blackwatch2Anim, barsAbove: true, '
          'defLayout: { c: [0.555, 0.215], w0: [0.68, 0.80], w1: [0.5, 0.82], w2: [0.3, 0.80], h0: [0.72, 0.875], h1: [0.615, 0.875], h2: [0.51, 0.875], h3: [0.405, 0.875], h4: [0.30, 0.875], ko: [0.12, 0.6] } }, '
          '/* v1530: same on-screen length as Bonewake, aspect kept; hero feet low behind the hull so heads + shoulders fill the opening (y 0.52-0.67 of the picture) */\n')
 s = s[:j] + entry + s[j:]
@@ -43,4 +43,18 @@ old = '  drawArenaFortress(ctx, w, h, true, osSetA); drawArenaFortress(ctx, w, h
 assert s.count(old) == 1; s = s.replace(old, '  drawArenaFortress(ctx, w, h, true, osSetA, "back"); drawArenaFortress(ctx, w, h, false, null, "back");')
 old = '  drawFormation(arenaAnim.aiRoster, false);\n'
 assert s.count(old) == 1; s = s.replace(old, old + '  drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */\n')
+
+# 3) Arena: deck riders on a layered hull - their HP bars are queued and drawn after the front layer (else the hull hides them); barsAbove skins put them over the heads
+old = """      if (hh && lastSlot) { // per-hero HP bar (same system as Conquest)
+        var bw = lastSlot.deck ? 13 : 22, bx = lastSlot.x - bw / 2, by = lastSlot.y + 24;"""
+assert s.count(old) == 1, "bar block"
+new = """      var skDk = isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]);
+      if (hh && lastSlot && lastSlot.deck && skinAnimReady(skDk)) { (arenaAnim.deckBars || (arenaAnim.deckBars = [])).push({ x: lastSlot.x, y: skDk.barsAbove ? lastSlot.y - 24 : lastSlot.y + 24, hh: hh }); hh = null; } /* v1530: drawn after the front hull */
+      if (hh && lastSlot) { // per-hero HP bar (same system as Conquest)
+        var bw = lastSlot.deck ? 13 : 22, bx = lastSlot.x - bw / 2, by = lastSlot.y + 24;"""
+s = s.replace(old, new)
+old = '  drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */\n'
+assert s.count(old) == 1
+s = s.replace(old, old + """  if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */\n""")
+
 open(out, "w").write(s); print("ok", size, sc)
