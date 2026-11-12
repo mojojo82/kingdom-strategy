@@ -88,6 +88,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
    Sanity check: `dev/tests/e.js` must print `object function`.
 
 ## Harley's standing preferences (follow these)
+- **"Test headless" = test and REPORT, don't change the game (Harley, 12 Nov).** Run the tests on copies / runtime overrides, show the numbers, and wait for his go before editing test/index.html.
 - **City skin restyle prompts (11 Nov 2026):** "base prompt 1" and the "clean prompt" in dev/skins/PROMPTS.md are the standard ChatGPT prompts for making a new city skin match the game's style (Harley: "something we use regularly"). Attach the skin picture + the Mecha and Neptune skins, run base prompt 1 in a fresh chat, then the clean prompt as a follow-up. Either a 2D painting or a Meshy 3D render works as the source. First skin made this way: Tech Fortress (v1490).
 - **Copyright / IP: don't keep bringing it up.** Harley knows the copyright side of art that looks like existing franchises (Gundam-style mechs etc.) and has asked, firmly, not to be told again (11 Nov 2026). Don't add warnings or reminders about it to replies, mockups or reports; just do the work.
 - **Weapon fix list (15 Oct):** while working through dev/audit/weapons_conquest_vs_arena.md, after EVERY completed request write the numbered list back to Harley showing what's left (done ones ticked), so he can track progress.
