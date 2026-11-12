@@ -194,7 +194,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - Dive skills (v1514 Caelum): `dive: { impact }` on a conquestSkills active = fly up, hover, crash onto ONE target (Arena: the enemy hero with the most HP, ground first; Conquest: boss, then most HP). A hero in the air (`e.air`) can't be hit from the ground and doesn't swing. Drawing: heroDivePose / heroDiveStep, phases from HERO_ANIMS.<hero>_skill.dive.
 - Pink / violet details on a magenta screen key out: build_card_video.py KEEP_ISLANDS=7000 keeps small pockets of a different pink inside the hero (Caelum's gems). Better still: green screen for such heroes from the start.
 
-- Halo-7 walks slowly ON PURPOSE (Harley 12 Nov, v1518): walkMul 0.07 matches his feet, and the slow pace balances his hit-everyone Core Beam. Don't speed him up or swap in a faster run unless Harley asks.
+- Halo-7 WALKS (never runs) ON PURPOSE (Harley 12 Nov): heroes at different parts of the battlefield make fights more interesting, and his hit-everyone Core Beam needs the trade-off. v1519: new brisk three-quarter walk at 60 px/s (walkMul 0.4, run fps 32 so his planted foot matches; a touch faster than the 55 px/s Conquest scroll). Don't turn it into a run unless Harley asks. An HP or DEF boost for him is pending (Harley to pick).
 
 ## Open items / to-dos
 - **Art split (v1498+, IN PROGRESS):** art moved out of the single file lives in `test/assets/` (TEST) - copying to LIVE must also copy `test/assets/` -> `assets/`. Tool: `python3 tools/split-art.py NAME...` (~NAME = lazy). Batch 1 done (skins, hero sheets, knight, serpent, card videos; 30 -> 20.4 MB). Next: DECOR_SPRITES, HERO_CARD_ART2, RIG_*, enemies, march ships, music (needs atob -> fetch), OWNER_DEFAULTS (needs the owner-art sync changed first).

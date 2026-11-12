@@ -36,7 +36,8 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        "vesper": {"clips": {"idle": ("vesper_idle_v1.mp4", 0, 0), "attack": ("vesper_attack_v1.mp4", 0, 0), "skill": ("vesper_skill_v1.mp4", 0, 0)},
                  "stand_src": 400, "feet_y": 703},
        # v1509 Halo-7 (melee golem; one start frame for every clip; skill v1 added when it lands)
-       "halo7": {"clips": {"idle": ("halo7_idle_v1.mp4", 0, 0), "run": ("halo7_run_v2.mp4", 0, 0), "attack": ("halo7_attack_v1.mp4", 0, 0), "skill": ("halo7_skill_v1.mp4", 0, 0)},
+       "halo7": {"clips": {"idle": ("halo7_idle_v1.mp4", 0, 0), "run": ("halo7_run_v2.mp4", 0, 0), "attack": ("halo7_attack_v1.mp4", 0, 0), "skill": ("halo7_skill_v1.mp4", 0, 0),
+                           "walk": ("halo7_walk_v4.mp4", 0, 0)},   # v1519: new walk from the three-quarter-right start frame (Harley approved)
                  "stand_src": 400, "feet_y": 715},
        # v1512 redo of the original heroes on the Atlas pipeline (designs from their existing cards; Kessa untouched - she is on the splash page)
        "kessa": {"clips": {"idle": ("kessa_idle_v1.mp4", 0, 0), "attack": ("kessa_attack_v1.mp4", 0, 0), "cast": ("kessa_cast_v1.mp4", 0, 0)},

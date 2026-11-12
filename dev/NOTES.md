@@ -4534,3 +4534,10 @@ Harley's 3 points:
 - walkMul 0.4 -> 0.07 = ~10.5 px/s: the planted foot in his walk cycle slides back ~30 sheet px/s x (dispH 54.64 / ch 153) at hero scale 100% = 10.5 px/s, so his feet now stay put on the ground. Measured headless: screen x moves ~10.5 px/s.
 - He now needs ~13 s to reach the meeting line on his own (enemy melee usually come to him first; his Core Beam fires from anywhere).
 - Balance: Arena w/o Halo 101-9 / 101-7 (was 105-11 / 99-7 at 0.4) - no real change; Conquest Halo team 6-9 / 10-1 / 10-4 (same).
+
+## v1519 - Halo-7: new brisk walk (TEST)
+- Harley: his old walk was a front-facing stomp moving sideways (big feet = obvious slide). Wanted a walk (not a run) that looks right at about the fortress's travel speed (55 px/s) or a touch faster.
+- New start frame (ChatGPT, strong three-quarter facing right, mid-stride) -> Atlas walk_v4 (5 s, Image = End = start frame, walk on the spot). Two runs (v3, v4); both swing his shoulders round between steps - Harley saw no problem with that; v4 used. One 2-step cycle = video frames 0-59 (alpha-mask match 0.001), every 2nd frame -> 30 sheet frames; in-place (body x stays put).
+- Speed match: the planted foot slides back 5.2 sheet px per sheet frame x (dispH 55 / ch 154) = 1.86 px/frame; run fps 32 -> 59.6 px/s; walkMul 0.4 -> 60 px/s on screen. Measured headless: Halo's screen x ~60 px/s in Arena.
+- Sheet rebuilt (build_hero_anim CFG halo7 run = clip "walk"); LARGE frames for the new clip in large/walk (old run frames kept).
+- Atlas: 2 x $0.38 = $0.76; balance now ~ $0.41.

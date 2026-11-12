@@ -52,7 +52,7 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
        # v1509 Halo-7 (hulking melee golem, over 2x Hanzo): walk v2 frames 15-47 (the clean stepping stretch before he turns), punch 1 (video 12-60, fist out ~32)
        # + punch 2 (76-116, fist out ~92); skill = wind-up (12-36), braced chest-forward hold (40-80; the beam fires at 36), relax (82-100)
        "halo7": {"tag": "v1", "stand": 140, "disp_stand": 50, "per_clip": True, "wrap": 14,
-                 "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 15, "to": 48},
+                 "idle": {"step": 3, "fps": 8}, "run": {"clip": "walk", "step": 2, "fps": 12, "from": 0, "to": 60},   # v1519: new brisk walk (walk_v4: one 2-step cycle = video 0-59)
                  "attack": {"fps": 24, "frames": list(range(12, 61, 2))}, "attack2": {"clip": "attack", "fps": 24, "frames": list(range(76, 117, 2))}},
        "halo7_skill": {"hero": "halo7", "tag": "v1", "stand": 140, "disp_stand": 50, "per_clip": True, "wrap": 14,
                  "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(12, 37, 2)) + list(range(40, 81, 2)) + list(range(82, 101, 2))}},
