@@ -4633,3 +4633,9 @@ Harley's 3 points:
 - Harley: the hulls of Crawler B and C should have their own movement, separate from the wheels. New anim.bob (fraction of the ship's height, 0.008 on both crawlers): the hull (back + front layers) bobs with a slow bob + faster shudder (hullBobPx), the tread loop under it stays on the ground. fortHullPoint adds the same offset, so riders, the cannon spot and weapon mounts move with the hull (heads stay in the windows). ~1.4 px on screen at game size.
 - Front cannon platform stays empty for now (Harley: come back later).
 - Headless: rumble clip (art/originals/ships/crawler/crawler_rumble_closeup.mp4), Arena riders stay in the bays, no errors.
+
+## v1535 - Walker: Ironclad walker skin with walking legs (TEST)
+- Harley: walker skin from the Ironclad walker concept and his blockout (wedge body, one open window slit with no glass or pillars, empty cannon bay under the nose for a future rotating cannon), style B, Ironclad detailing; picked the top-left concept without exhausts.
+- Built: ChatGPT body without legs + legs alone (aligned with the final); Atlas walk cycle of the legs ($0.38); dev/ships/build_walker.py -> body layers, 60-frame leg sheet (12 fps, 5 s loop), body bob track measured from the leg tops; far legs tucked behind the body. New: anim.sw/sh (sheet stored smaller), anim.bobTrack (per-frame body offset); riders' level numbers above their HP bars on barsAbove skins. Patch: dev/ships/patch_walker.py.
+- Skin "Walker": same on-screen length as Bonewake, stands on its feet (lift 0), riders' heads + shoulders in the slit.
+- Headless: Conquest + Arena (vs Crawler C), no errors; Arena balance identical. Clip: art/originals/ships/walker/walker_walk_v1.mp4.

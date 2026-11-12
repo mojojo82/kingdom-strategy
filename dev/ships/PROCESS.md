@@ -65,3 +65,9 @@ Becomes a skill once Harley settles the process/look. Notes so far:
 - Game: skin anim with under: true (drawSkinPart draws the sheet BEFORE the hull). back = hull without treads (dark window interior), front = hull minus window openings.
 - Don't animate a strip cut from the finished ship (armour texture shimmers) - split hull and treads instead (Harley).
 - Hull movement: anim.bob (fraction of ship height) rumbles the hull layers while an under-sheet (treads) stays put; fortHullPoint carries riders/cannon/weapons with it (v1534).
+
+## Walker legs (v1535)
+- From an approved final: ask ChatGPT (same chat) for the body WITHOUT legs (keep the hip housings, paint the hidden armour) and separately for ONLY the legs (complete, same positions). Both came back aligned with the final (0 px shift) - check with a shift search anyway.
+- Atlas 5 s, Image = End = the legs on magenta: walk on the spot, diagonal pairs, hip tops fixed ("treadmill"). The leg tops still rise/fall ~9% of the ship's height -> measure them per frame and use that as the body's bobTrack so the body rides the legs.
+- dev/ships/build_walker.py: body layers (window = biggest dark region in the slit box), leg sheet (60 frames, every 2nd, 12 fps, stored at 0.6 size via anim.sw/sh), far legs tucked behind the body (alpha cut where the body is), spots across the window.
+- Game: legs = anim.sheet drawn over the back layer (not under), body bobs via anim.bobTrack (hullBobPx). Riders' level numbers move above their HP bars on barsAbove skins.
