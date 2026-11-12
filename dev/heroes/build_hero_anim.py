@@ -76,6 +76,15 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "attack2": {"clip": "attack", "fps": 16, "frames": list(range(50, 63, 2)) + list(range(72, 89, 2))}},
        # Skybreaker Slam, one row played by phase in the game (all every 2nd video frame = real speed at 12 fps): take-off 0-38 + 63-88 (33 frames; 39-62 repeat
        # the same wing beats), hover 0-13 (7), fall = slam_down 50-57 (8, every frame, picked by fall progress), impact = cleaned slam_down 58-110 (27)
+       # v1524 Torvald redo (shield-only knight): run = one 2-stride cycle (video 34-62); attack = forward shove (cleaned copy without Atlas' white streaks,
+       # video 6-46, shield out at 18 -> impact 6); attack2 = shield backhand (wind-up 6-36, the sweep 37-41, follow-through 44/48, recovery 70-82; impact 12)
+       "torvald": {"tag": "v2", "stand": 100, "disp_stand": 30, "per_clip": True, "same_space": True, "wrap": 14,
+                 "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 34, "to": 63},
+                 "attack": {"clip": "shove_clean", "fps": 24, "frames": list(range(6, 47, 2))},
+                 "attack2": {"clip": "backhand", "fps": 24, "frames": list(range(6, 37, 3)) + [37, 38, 39, 40, 41, 44, 48] + list(range(70, 83, 3))}},
+       # Guard Stance: plants his feet and braces behind the raised shield (the white-gold ward aura is drawn by the game on top)
+       "torvald_skill": {"hero": "torvald", "tag": "v1", "stand": 100, "disp_stand": 30, "per_clip": True, "same_space": True, "wrap": 14,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "brace", "fps": 24, "frames": list(range(12, 61, 2))}},
        "caelum_skill": {"hero": "caelum", "tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "same_space": True, "canvas": 2, "wrap": 10,
                  "idle": {"fps": 8, "frames": [0]},
                  "skill": {"fps": 12, "parts": [["takeoff", list(range(0, 39, 2)) + list(range(63, 89, 2))], ["hover", list(range(0, 14, 2))],
