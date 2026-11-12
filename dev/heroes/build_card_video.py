@@ -39,6 +39,8 @@ if LOOP:
     B = int(sys.argv[4]) if len(sys.argv) > 4 else 4
     for k in range(B):   # the loop clip's own last frames ease into its first frames (same pose - invisible)
         t = (k + 1) / (B + 1); i = n - B + k; fr[i] = fr[i] * (1 - t) + fr[L] * t
+    for k in range(6):   # entry: the intro's last 6 frames ease into the loop clip's first frame (it plays once; Atlas' loop clip has slightly different colours)
+        t = (k + 1) / 7; i = L - 6 + k; fr[i] = fr[i] * (1 - t) + fr[L] * t
     BLEND = 0
 assert LOOP or L + BLEND < n - BLEND, "loop too short"
 for k in range(BLEND):   # last BLEND frames fade into frames L-BLEND+k .. so the jump end -> L is seamless
