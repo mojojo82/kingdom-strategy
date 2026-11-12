@@ -4554,3 +4554,6 @@ Harley's 3 points:
 - Results (Lv80 5*, headless): random bot teams without Hanzo - fortress hits 1.9/fight (was ~1.4; any hit in 7/20 fights), random teams with Hanzo 8.8; the strongest bot teams (Lyra/Kessa/Roran + Hanzo) still stop him (Hanzo's Storm). Duel vs Hanzo: Hanzo wins 4/4 (unchanged).
 - Balance: Arena (pool with Hanzo) w/o Halo 80-38 / 80-40 vs w/o Kessa 49-71 / 49-71, w/o Hanzo 30-88 / 5-115; (pool with Sera) 80-40 / 80-40 vs w/o Kessa 53-67. Conquest Halo team 6-9 / 10-1 / 10-4 (same as before) vs Kessa 6-12 / 10-2 / 10-11. Meta: no Halo in meta teams and every other hero has rt 1 - unchanged.
 - Headless: Arena + Conquest with Halo, no errors.
+
+## v1522 - Sera is a he (TEST)
+- Harley: Sera is an old man. Fixed the in-game text that called him "her/she": Field Medic ("his marches"), Gentle Pace ("when he leads"), lore ("give him twelve quiet seconds"). The Russian line has no gendered words.
