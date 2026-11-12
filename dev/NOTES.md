@@ -4649,3 +4649,7 @@ Harley's 3 points:
 - Harley: don't stitch two parts and don't animate a cut-out with a missing area. Method: take the approved design, cut the hull off cleanly where the panels overhang (walker_hullline.json: along the panel bottoms and the hip housings' tops); for the legs ask ChatGPT on the original composite to "remove the hull" and FILL IN the top with machinery so the piece is complete (walker_legsfill.png, aligned within 1 px). That whole piece is one Atlas walk cycle ($0.38) drawn UNDER the hull (anim.under) - the hull overlaps its finished top, nothing is joined. Body follows the hips' measured rise/fall (bobTrack). dev/ships/build_walker3.py.
 - Harley: crawler treads stop in Arena too (sheet frame 0 when still). Verified headless: every Arena skin draw is in still mode for both sides.
 - Headless: Conquest walk clip art/originals/ships/walker/walker_walk_v3.mp4, Arena no errors. Walker Atlas total: 3 runs = $1.14.
+
+## v1538 - Walker hull from ChatGPT's separation (TEST)
+- Harley: use ChatGPT's hull separation instead of the hand cut. ChatGPT on the approved composite: "remove the legs, hips and belly, keep only the hull with a finished underside" (walker_hull_gpt.png, 0 px shift vs the final). The filled legs piece (v1537) walks under it. build_walker3.py now reads walker_hull_gpt.png.
+- Headless: Conquest walk clip art/originals/ships/walker/walker_walk_v4.mp4; Arena draws still; no errors.
