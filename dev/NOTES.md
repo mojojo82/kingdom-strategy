@@ -4587,3 +4587,8 @@ Harley's 3 points:
 - Deck spot: his animated sprite stood 20 px low (behind the hull front) - HERO_POS_DEFAULTS.sera {x: 0, y: -20} like Juno/Pip (players with their own saved offset keep it).
 - Balance: visual only - Arena (gareth,lyra,roran,kessa,sera,torvald,hanzo) identical to v1525 (w/o Sera 56-63-1 / 44-76-0); meta numbers identical (known warning).
 - Headless: Conquest (Sera in slot 1 and 3) and Arena (Sera on both sides) - he shows on the deck, attacks, casts and the heal effect plays; no errors. Note: the first deck slot of the default fortress sits low for any rider whose offset is 0.
+
+## v1527 - Sera card video (TEST)
+- Harley: "no card animation?" - added. ChatGPT card-video start frame on green (art/originals/heroes/sera/card/sera_cardstart_v1_green.png, framed like his static card). Atlas 8 s clip ($0.61): he lifts and plants his crystal staff with a nod, then settles; idle loop from its last frame (card_loop_frame.py, Atlas 5 s, $0.38, checked - no invented glow). build_card_video.py BG=green LOOP_CLIP=... ZOOM 1.12 CX 527 (bottom-anchored; more zoom cut the hood) -> art/heroes/sera/sera_card_v1.mp4 (800x640, 13.1 s, loopStart 7.9583, Epic purple). Static card unchanged.
+- Headless: the hero card plays the video and loops back to 7.96 s; no errors.
+- Sera Atlas total today: $1.90 battle clips + $0.99 card = $2.89.
