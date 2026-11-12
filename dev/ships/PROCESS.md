@@ -45,3 +45,10 @@ Becomes a skill once Harley settles the process/look. Notes so far:
 - lift 12 = floats a little above the ground. defLayout: h0 (front) .. h4 (back) hero feet, c = cannon (turret muzzle), w0-w2 weapon mounts on the hull side, ko = back of the ship.
 - Arena draws layered skins in two passes (back before the riders, front after) since v1530; riders ride the deck in Arena since v1529.
 - Mockups: ALWAYS capture at deviceScaleFactor 3 (real phone sharpness) and never enlarge crops - 1x/2x captures looked blurry to Harley. Turn off the bot's weapons (o.weapons = [], o.esper = null) and give both sides the same level so riders are still standing.
+
+## Lessons from Voidspire II (13 Nov 2026)
+- Melee reach (Harley): in Arena melee heroes swing at the enemy hull from the ground. Tall ships with long fins/spikes underneath leave them hitting air - keep the underside low and compact. When asked, REDUCE a fin (shorten it), do not delete it.
+- meleeFront (skin field, fraction of the picture from the back): where melee heroes stop - set it to where the hull is low enough to hit (measure the hull's front edge at 76-88% of the picture height). A long nose spear with air under it otherwise makes them stand in front of nothing. Default = the picture's front edge.
+- Glassed windows: dev/ships/glass_layers.py CUT OUT x0 y0 x1 y1 (GLASS_TB / GLASS_TR env loosen the violet test for paler painted glass) - back = deep violet interior, front = glass at ~45% opacity; heroes drawn between.
+- Violet ships: generate on GREEN, key with dev/ships/key_green.py.
+- Tall ships: hero feet must sit so heads fill the window (check in a 3x capture before sending).

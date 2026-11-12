@@ -4610,3 +4610,10 @@ Harley's 3 points:
 - Arena: layered skins (Blackwatch II, Bonewake, Bonewake 2) now draw the back before the deck riders and the front after them (drawArenaFortress part "back"/"front"), like Conquest - before, Arena drew the whole ship behind the riders. Deck riders on a layered hull get their HP bars after the front layer.
 - Two ship style types kept (Harley undecided): A outlined game asset (Ironclad II), B painted render (Blackwatch II) - prompts and lessons in dev/ships/PROCESS.md.
 - Headless: Conquest + Arena with Blackwatch II vs Ironclad II / Bonewake 2 at 3x, no errors. Arena balance identical (visual only).
+
+## v1531 - Voidspire II A and B (enclosed alien ships behind violet glass), melee stop point per skin (TEST)
+- Harley: Voidspire redesign, enclosed (heroes behind a window), 4 concepts in style A + the same 4 in style B ("alien" brief, like the original). Picked top-left in both styles, glassed windows. Both added as test skins "Voidspire II A" (outlined) and "Voidspire II B" (painted) - one will win later.
+- Harley: the big lower fin made the ship sit so high that melee heroes would swing at air - fin REDUCED to about a third (not deleted) and the small spikes halved (ChatGPT edits of the finals), lift 10. Art: art/originals/ships/voidspire/ (*_fin*.png).
+- Layered glass: back = window filled with a deep violet interior, front = glass ~45% see-through (dev/ships/glass_layers.py); riders between, HP bars above the hull (barsAbove).
+- New skin field meleeFront (Arena): melee heroes stop where the hull is low enough to hit (A 0.82, B 0.79 of the picture) instead of in front of the nose spear. Other skins unchanged (default 1).
+- Headless 3x Arena: riders behind the glass on both sides, enemy Hanzo's slash lands on the lower hull; no errors. Balance identical. Patch: dev/ships/patch_void.py.
