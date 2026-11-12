@@ -4509,3 +4509,9 @@ Harley's 3 points:
 - Found while balancing: the Arena 'ranged share' (part of ranged hits goes to the first standing infantry hero, hitHeroes) killed him every time in the air before his first slam - it now skips heroes in the air.
 - Headless: Conquest (rise, hover, dive onto the target, burst, damage lands, no errors), Arena with Caelum on both sides (they cross mid-air, slam onto the other side's heroes, hop down; no errors), card video plays the intro then loops 8 -> 13 s.
 - Atlas spend this version: card clip $0.61 + card loop $0.38 = $0.99 (all of Caelum's hero clips were made before v1514).
+
+## v1515 - Arena melee heroes run again instead of jumping (TEST)
+- Harley: in Arena the melee heroes teleport around on the ground instead of using their run animation.
+- Cause (since v1504, Hanzo's Shadow Step): the "he really teleported - snap, no glide" line ran for EVERY hero on every sim tick, not just for the hero who dodged that tick, so each melee hero jumped to his new spot every 0.45 s (one tick) instead of running there.
+- Fix: the snap only for the hero who dodged that tick.
+- Measured headless (per-frame screen positions, 22 s fight, gareth/torvald/aurek vs a random bot): v1514 - melee heroes jump 47-68 px at every tick while advancing; v1515 - no jumps except real ones (KO back home, Caelum's dive and Hanzo's step).

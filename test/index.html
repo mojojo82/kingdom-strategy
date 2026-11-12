@@ -13219,7 +13219,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1514"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1515"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -37805,7 +37805,7 @@ function renderArenaBattleScreen() {
         Object.keys(hhm).forEach(function (k) { var r0 = hdm[k]; if (!r0) hdm[k] = { prev: 0, cur: hhm[k].d }; else { r0.prev = r0.cur; r0.cur = hhm[k].d; } });
         arenaAnim.heroTickT = performance.now();
         var prevHH = arenaAnim.heroHp; // HP-loss numbers over heroes that lost HP this tick
-        if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k]; if (pv && hhm[k].dg > (pv.dg || 0) && HERO_COMBAT_FX[hhm[k].id] && HERO_COMBAT_FX[hhm[k].id].ghost) (arenaAnim.dodgeEv || (arenaAnim.dodgeEv = {}))[k] = { t: performance.now(), x: arenaAnim.heroScreen && arenaAnim.heroScreen[k] ? arenaAnim.heroScreen[k].x : null }; if (HANZO_PORT_PX > 0 && hdm[k]) hdm[k].prev = hdm[k].cur; });  /* v1504: he really teleported back - snap, no glide */ /* v1503: a dodge this tick -> after-image + blink in the drawing */
+        if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k]; if (pv && hhm[k].dg > (pv.dg || 0) && HERO_COMBAT_FX[hhm[k].id] && HERO_COMBAT_FX[hhm[k].id].ghost) { (arenaAnim.dodgeEv || (arenaAnim.dodgeEv = {}))[k] = { t: performance.now(), x: arenaAnim.heroScreen && arenaAnim.heroScreen[k] ? arenaAnim.heroScreen[k].x : null }; if (HANZO_PORT_PX > 0 && hdm[k]) hdm[k].prev = hdm[k].cur; } });  /* v1515: the snap only for the hero who dodged this tick (it ran for EVERY hero every tick, so all melee heroes jumped tick to tick instead of running) */  /* v1504: he really teleported back - snap, no glide */ /* v1503: a dodge this tick -> after-image + blink in the drawing */
         if (prevHH) Object.keys(hhm).forEach(function (k) { var pv = prevHH[k], pos = arenaAnim.heroScreen && arenaAnim.heroScreen[k]; if (pv && pos && hhm[k].hp < pv.hp - 0.5) spawnArenaDmgNum(pos.x, pos.y - 34 * (heroSpriteVisualScale / 100), pv.hp - hhm[k].hp); });
         arenaAnim.heroHp = hhm;
       }
