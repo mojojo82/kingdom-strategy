@@ -13221,7 +13221,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1528"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1529"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36451,6 +36451,8 @@ function arenaRunDist(w, h, index, isPlayerSide) {
   return [Math.max(30, Math.abs(mX - sx)), Math.max(30, Math.abs(endX - mX))]; // [home -> meeting line, meeting line -> enemy nose] in px
 }
 function arenaSlotPos(w, h, index, isPlayerSide) {
+  var rk = (isPlayerSide ? arenaAnim.playerRoster : arenaAnim.aiRoster) || [], key = rk[index]; /* v1529 (Harley): ranged heroes ride the fortress deck in Arena too (the skin's hero spots h0-h4, mirrored for the enemy) - same as Conquest's idleSquadSlotPos. Ships without spots keep the ground spot. Visual only. */
+  if (key && HERO_DEFS[key] && HERO_DEFS[key].class !== "infantry" && index < 5) { var dp = fortLayoutPoint(w, h, "arena", isPlayerSide, "h" + index, false); if (dp) return { x: dp.x, y: dp.y - 13 * (heroSpriteVisualScale / 100), deck: true }; }
   var pos = IDLE_SQUAD_POSITIONS[index] || [0, 0];
   var centerX = isPlayerSide ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X);
   var xOff = isPlayerSide ? pos[0] : -pos[0];
@@ -36981,7 +36983,7 @@ function drawArenaFrame(ctx, w, h) {
       lastSlot = null;
       drawOneHero(key, i);
       if (hh && lastSlot) { // per-hero HP bar (same system as Conquest)
-        var bw = 22, bx = lastSlot.x - bw / 2, by = lastSlot.y + 24;
+        var bw = lastSlot.deck ? 13 : 22, bx = lastSlot.x - bw / 2, by = lastSlot.y + 24; /* v1529: deck riders stand close together - narrower bars so they don't run into each other */
         ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, by - 1, bw + 2, 5);
         ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3);
         if (hh.lim != null) drawLimitBar(ctx, bx, by + 5, bw, 3, hh.lim, performance.now()); /* v954/v983: Death Strike bar, same as Conquest */
