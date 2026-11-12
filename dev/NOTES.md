@@ -4592,3 +4592,8 @@ Harley's 3 points:
 - Harley: "no card animation?" - added. ChatGPT card-video start frame on green (art/originals/heroes/sera/card/sera_cardstart_v1_green.png, framed like his static card). Atlas 8 s clip ($0.61): he lifts and plants his crystal staff with a nod, then settles; idle loop from its last frame (card_loop_frame.py, Atlas 5 s, $0.38, checked - no invented glow). build_card_video.py BG=green LOOP_CLIP=... ZOOM 1.12 CX 527 (bottom-anchored; more zoom cut the hood) -> art/heroes/sera/sera_card_v1.mp4 (800x640, 13.1 s, loopStart 7.9583, Epic purple). Static card unchanged.
 - Headless: the hero card plays the video and loops back to 7.96 s; no errors.
 - Sera Atlas total today: $1.90 battle clips + $0.99 card = $2.89.
+
+## v1528 - Ironclad II: the redesigned hover Ironclad as a test skin (TEST)
+- Harley (ship designs): new Ironclad = ChatGPT concept B (hover-barge), version A. Heroes stand on/overlap the ship (no rail in front for this design - other ships may need a front rail layer). Never squash a design; regenerate if a smaller ship is needed.
+- Added as a new selectable fortress skin "Ironclad II" (id ironclad2) so Harley can judge the brightness in game before it replaces the default Ironclad. Image: art/originals/ships/ironclad/ironclad2_cq_900.webp (keyed with dev/skins/key_magenta.py, 900 px wide, embedded). cqScale 0.2385 = same on-screen length as Bonewake, aspect kept; lift 12 (hovers); defLayout: hero spots h0-h4 on the deck planks (y 0.568, x 0.72..0.36), cannon at the bridge turret, weapons on the hull side, KO spot at the back.
+- Headless: Conquest (heroes on the deck) and Arena (both sides) draw it; no errors. Process notes for the future ship skill: dev/ships/PROCESS.md.
