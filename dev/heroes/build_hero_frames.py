@@ -44,7 +44,12 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        "roran": {"clips": {"idle": ("roran_idle_v1.mp4", 0, 0), "attack": ("roran_attack_v1.mp4", 0, 0)},
                  "stand_src": 559, "feet_y": 691},
        "lyra": {"clips": {"idle": ("lyra_idle_v2.mp4", 0, 0), "attack": ("lyra_attack_v1.mp4", 0, 0)},
-                 "stand_src": 505, "feet_y": 699}}[HERO]
+                 "stand_src": 505, "feet_y": 699},
+       # v1514 Caelum (melee, two angel wings; every clip shares one scale - airborne clips start in the air, so keep the idle clip's ground point)
+       "caelum": {"clips": {"idle": ("caelum_idle_v1.mp4", 0, 0), "run": ("caelum_run_v1.mp4", 0, 0), "attack": ("caelum_attack_v1.mp4", 0, 0),
+                            "takeoff": ("caelum_takeoff_v1.mp4", 0, 0), "hover": ("caelum_hover_v1.mp4", 0, 0), "fly": ("caelum_fly_v1.mp4", 0, 0),
+                            "slam_down": ("caelum_slam_down_v2.mp4", 0, 0), "slam_short": ("caelum_slam_short_v2.mp4", 0, 0), "slam_long": ("caelum_slam_long_v2.mp4", 0, 0)},
+                 "stand_src": 395, "feet_y": 707}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
