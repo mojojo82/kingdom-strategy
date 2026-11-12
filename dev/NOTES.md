@@ -4492,3 +4492,9 @@ Harley's 3 points:
 - build_card_video.py: LOOP_CLIP mode, frames kept as uint8 (a 13 s clip ran out of memory), temp frame dumps removed on exit.
 - Headless: Conquest + Arena with Lyra / Roran / Kessa (arrows, lance, orb, Arc Burst; no errors); Hanzo card plays the full intro, then loops 7.96 -> 12.9 s indefinitely.
 - Atlas spend this version: hero clips 8 x $0.38 (incl. Lyra idle rerun), card clips 2 x $0.61, card loops 26 x $0.38 (10 at the old loop points + 4 reruns, then 10 from the end frames + 2 reruns) = $14.14. Atlas balance now $6.72 (was $26.86 this morning).
+
+## v1513 - missile smoke trails are much cheaper to draw (Arena lag fix) (TEST)
+- Harley: big slow-down in Arena when both he and the bot fire missiles; he suspected the smoke trail.
+- Cause: in Arena every missile keeps 40 smoke puffs and each puff built a fresh radial gradient (plus save/restore) every frame - two volleys = ~500 gradients per frame. (Conquest already draws a textured exhaust ribbon by default; its old per-puff path, used when the exhaust option is off, had the same cost.)
+- Fix: drawMissileSmokeTrail - the puff is pre-drawn once in 8 warm-to-grey tints and stamped with drawImage + globalAlpha (same stops: centre a, 60% 0.45a, edge 0). Used in Arena and in Conquest's fallback path.
+- Measured headless (one Arena frame, 12 missiles in the air with full trails): missiles' extra cost 1.8 ms -> 0.28 ms per frame (~85% less). Missile explosions were checked too and cost almost nothing. Looks the same (side-by-side capture). Phone speed not measured (headless only).

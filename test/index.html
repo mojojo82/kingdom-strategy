@@ -13200,7 +13200,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1512"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1513"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28409,23 +28409,7 @@ function drawIdleAnim(ctx, w, h) {
       }
       ctx.restore();
     } else
-    m.trail.forEach(function (pt) {
-      var life = Math.max(0, 1 - pt.age / MISSILE_SMOKE_MAX_AGE); // 1 = just born, 0 = fully dissipated
-      if (life <= 0) return;
-      var age = 1 - life;
-      var r = 2.5 + age * 11; // billows outward as it ages
-      var alpha = life * 0.5;
-      var warm = life; // warm near the nozzle, cools toward grey as it drifts back
-      var cR = Math.round(190 + warm * 50), cG = Math.round(182 + warm * 24), cB = Math.round(174 - warm * 34);
-      ctx.save();
-      var grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
-      grad.addColorStop(0, "rgba(" + cR + "," + cG + "," + cB + "," + alpha + ")");
-      grad.addColorStop(0.6, "rgba(" + cR + "," + cG + "," + cB + "," + (alpha * 0.45) + ")");
-      grad.addColorStop(1, "rgba(" + cR + "," + cG + "," + cB + ",0)");
-      ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    });
+    drawMissileSmokeTrail(ctx, m.trail); /* v1513: pre-drawn puffs (exhaust option off) */
     // Once the missile has actually hit (m.t >= 1) it stops being drawn, and
     // the removal filter in stepIdleAnim drops the whole object (trail
     // included) that same frame — per user request, it disappears the
@@ -36290,6 +36274,22 @@ function spawnArenaProjectile(fromX, fromY, toX, toY, big, color, arc, style, or
 // own list instead of idleAnim's, and flying to a FIXED point (the AI side's
 // fortress) rather than re-targeting a moving enemy every frame — Arena has
 // no per-enemy squad to track mid-flight, only the two fortresses.
+/* v1513: missile smoke puffs, pre-drawn once (8 warm-to-grey tints) and stamped with drawImage - same look as the old per-puff radial gradient
+   (centre a, 60% 0.45a, edge 0) but a fraction of the cost: two full missile volleys used to build ~500 gradients every frame (Harley saw lag on his phone). */
+var MISSILE_PUFF_SPRITES = null;
+function missilePuffSprite(warm) {
+  if (!MISSILE_PUFF_SPRITES) { MISSILE_PUFF_SPRITES = [];
+    for (var i = 0; i < 8; i++) { var wv = i / 7, c = document.createElement("canvas"); c.width = c.height = 48; var g = c.getContext("2d"), cR = Math.round(190 + wv * 50), cG = Math.round(182 + wv * 24), cB = Math.round(174 - wv * 34);
+      var gr = g.createRadialGradient(24, 24, 0, 24, 24, 24); gr.addColorStop(0, "rgba(" + cR + "," + cG + "," + cB + ",1)"); gr.addColorStop(0.6, "rgba(" + cR + "," + cG + "," + cB + ",0.45)"); gr.addColorStop(1, "rgba(" + cR + "," + cG + "," + cB + ",0)");
+      g.fillStyle = gr; g.fillRect(0, 0, 48, 48); MISSILE_PUFF_SPRITES.push(c); } }
+  return MISSILE_PUFF_SPRITES[Math.max(0, Math.min(7, Math.round(warm * 7)))];
+}
+function drawMissileSmokeTrail(ctx, trail) {
+  var ga = ctx.globalAlpha;
+  for (var i = 0; i < trail.length; i++) { var pt = trail[i], life = 1 - pt.age / MISSILE_SMOKE_MAX_AGE; if (life <= 0) continue;
+    var r = 2.5 + (1 - life) * 11; ctx.globalAlpha = ga * life * 0.5; ctx.drawImage(missilePuffSprite(life), pt.x - r, pt.y - r, r * 2, r * 2); }
+  ctx.globalAlpha = ga;
+}
 function spawnArenaMissileVolley(fromX, fromY, toX, toY, count) {
   for (var i = 0; i < count; i++) {
     arenaAnim.weaponMissiles.push({
@@ -36900,23 +36900,7 @@ function drawArenaFrame(ctx, w, h) {
   // reading from arenaAnim.weaponMissiles instead of idleAnim's.
   arenaAnim.weaponMissiles.forEach(function (m) {
     if (m.delay > 0) return;
-    m.trail.forEach(function (pt) {
-      var life = Math.max(0, 1 - pt.age / MISSILE_SMOKE_MAX_AGE);
-      if (life <= 0) return;
-      var age = 1 - life;
-      var r = 2.5 + age * 11;
-      var alpha = life * 0.5;
-      var warm = life;
-      var cR = Math.round(190 + warm * 50), cG = Math.round(182 + warm * 24), cB = Math.round(174 - warm * 34);
-      ctx.save();
-      var grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
-      grad.addColorStop(0, "rgba(" + cR + "," + cG + "," + cB + "," + alpha + ")");
-      grad.addColorStop(0.6, "rgba(" + cR + "," + cG + "," + cB + "," + (alpha * 0.45) + ")");
-      grad.addColorStop(1, "rgba(" + cR + "," + cG + "," + cB + ",0)");
-      ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    });
+    drawMissileSmokeTrail(ctx, m.trail); /* v1513 (Harley: lag when both sides fire missiles): pre-drawn puff sprites instead of a new radial gradient per puff per frame */
     if (m.t < 1) {
       var amttForAngle = Math.min(1, m.t);
       var amdx = m.toX - m.startX;
