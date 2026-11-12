@@ -40,6 +40,12 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(4, 21, 2)) + list(range(40, 71, 3)) + list(range(72, 95, 2))}},
        # v1508 Seraphine (fortress rider, green-screen clips): idle 5 s at 8 fps; attack = one cast (video 8-44: staff swings forward, points ~16-28, back), every 2nd = 0.8 s;
        # skill (own sheet) = staff raised high (8-36 every 2nd), held (40-72 every 4th), lowered (76-96 every 2nd); the rain starts with the staff fully raised (frame 12)
+       # v1526 Sera redo (green screen): idle 5 s at 8 fps; attack = staff raised (10-26) and stabbed forward (27, the orb leaves), held (30-72 thinned), back (75-93) ~1.1 s;
+       # skill (own sheet, smaller start frame - per_clip evens the size) = staff raised high (10-32), held (36-72 every 4th), lowered (76-96); heal light at the top (frame 11 = video 32)
+       "sera": {"tag": "v1", "stand": 110, "disp_stand": 25, "per_clip": True, "wrap": 21,
+                 "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(10, 28, 2)) + list(range(30, 73, 7)) + list(range(75, 94, 2))}},
+       "sera_skill": {"hero": "sera", "tag": "v1", "stand": 110, "disp_stand": 25, "per_clip": True, "wrap": 18,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(10, 34, 2)) + list(range(36, 75, 4)) + list(range(76, 97, 2))}},
        "seraphine": {"tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 21,
                  "idle": {"step": 3, "fps": 8}, "attack": {"fps": 24, "frames": list(range(8, 45, 2))}},
        "seraphine_skill": {"hero": "seraphine", "tag": "v1", "stand": 110, "disp_stand": 27, "per_clip": True, "wrap": 18,

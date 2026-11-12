@@ -54,7 +54,10 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        # v1524 Torvald redo (shield-only knight, Harley 12 Nov): one start frame (torvald_start_v1) for every clip
        "torvald": {"clips": {"idle": ("torvald_idle_v1.mp4", 0, 0), "run": ("torvald_run_v1.mp4", 0, 0), "shove": ("torvald_shove_v1.mp4", 0, 0),
                              "backhand": ("torvald_backhand_v1.mp4", 0, 0), "brace": ("torvald_brace_v1.mp4", 0, 0)},
-                 "stand_src": 460, "feet_y": 684}}[HERO]
+                 "stand_src": 460, "feet_y": 684},
+       # v1526 Sera redo (old wizard, purple robe -> GREEN screen): idle v1 + attack v2 (no-glow rerun) from sera_start_v1_green; skill v2 from the 0.72x smaller start frame (staff raised high stays in frame)
+       "sera": {"bg": "green", "clips": {"idle": ("sera_idle_v1.mp4", 0, 0), "attack": ("sera_attack_v2.mp4", 0, 0), "skill": ("sera_skill_v2.mp4", 0, 0)},
+                 "stand_src": 481, "feet_y": 709}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
