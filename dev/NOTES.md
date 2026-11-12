@@ -4628,3 +4628,8 @@ Harley's 3 points:
 - Skins "Crawler B" (painted) and "Crawler C" (gritty): same on-screen length as Bonewake (so the tallest ships yet), lift 6, meleeFront 0.95, HP bars above the hull. Patch: dev/ships/patch_crawler.py. Art: art/originals/ships/crawler/.
 - Headless: Conquest + Arena (B vs C), treads move every frame, hull static, no errors. Visual only.
 - Open: the front cannon platform is empty - no default cannon is drawn on it yet.
+
+## v1534 - Crawler hull rumble (TEST)
+- Harley: the hulls of Crawler B and C should have their own movement, separate from the wheels. New anim.bob (fraction of the ship's height, 0.008 on both crawlers): the hull (back + front layers) bobs with a slow bob + faster shudder (hullBobPx), the tread loop under it stays on the ground. fortHullPoint adds the same offset, so riders, the cannon spot and weapon mounts move with the hull (heads stay in the windows). ~1.4 px on screen at game size.
+- Front cannon platform stays empty for now (Harley: come back later).
+- Headless: rumble clip (art/originals/ships/crawler/crawler_rumble_closeup.mp4), Arena riders stay in the bays, no errors.

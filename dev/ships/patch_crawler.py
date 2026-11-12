@@ -19,7 +19,7 @@ for k in which:
     if os.path.exists(tj):  # v1533: hull without treads + animated tread unit drawn UNDER it (anim.under)
         T = json.load(open(tj)); sh = base64.b64encode(open(D + "crawler" + k + "_treads_sheet.webp", "rb").read()).decode()
         imgs += ('var ' + v + 'CqImg = new Image(); ' + v + 'CqImg.src = "data:image/webp;base64,' + b64("crawler" + k + "h_back.png") + '";\n'
-                 'var ' + v + 'Anim = { back: ' + v + 'CqImg, front: new Image(), sheet: new Image(), under: true, rx: %s, ry: %s, tw: %d, th: %d, cols: %d, n: %d, fps: %d };\n' % (T["rx"], T["ry"], T["tw"], T["th"], T["cols"], T["n"], T["fps"])
+                 'var ' + v + 'Anim = { back: ' + v + 'CqImg, front: new Image(), sheet: new Image(), under: true, bob: 0.008, rx: %s, ry: %s, tw: %d, th: %d, cols: %d, n: %d, fps: %d };\n' % (T["rx"], T["ry"], T["tw"], T["th"], T["cols"], T["n"], T["fps"])
                  + v + 'Anim.front.src = "data:image/webp;base64,' + b64("crawler" + k + "h_front.png") + '";\n'
                  + v + 'Anim.sheet.src = "data:image/webp;base64,' + sh + '";\n')
     else:

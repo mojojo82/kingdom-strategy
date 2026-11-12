@@ -64,3 +64,4 @@ Becomes a skill once Harley settles the process/look. Notes so far:
 - Atlas H3 Max 5 s, Image = End = the tread unit on magenta: tracks roll (top run forward, bottom backward), wheels turn clockwise. Measure the runs' shift per frame; find a loop (best frame pair ~34 frames apart) -> dev/ships/tread_sheet.py (every 2nd frame, 12 fps, 3-frame cross-fade) -> sheet + rx/ry/tw/th.
 - Game: skin anim with under: true (drawSkinPart draws the sheet BEFORE the hull). back = hull without treads (dark window interior), front = hull minus window openings.
 - Don't animate a strip cut from the finished ship (armour texture shimmers) - split hull and treads instead (Harley).
+- Hull movement: anim.bob (fraction of ship height) rumbles the hull layers while an under-sheet (treads) stays put; fortHullPoint carries riders/cannon/weapons with it (v1534).
