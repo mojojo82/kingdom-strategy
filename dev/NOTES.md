@@ -4557,3 +4557,11 @@ Harley's 3 points:
 
 ## v1522 - Sera is a he (TEST)
 - Harley: Sera is an old man. Fixed the in-game text that called him "her/she": Field Medic ("his marches"), Gentle Pace ("when he leads"), lore ("give him twelve quiet seconds"). The Russian line has no gendered words.
+
+## v1523 - Arena support skills get cooldown bonuses; Torvald's Guard Stance 12 s -> 8 s (TEST)
+- Harley: fix the Arena mismatch 100%, and test Torvald at 8 s. Torvald (melee) dies at the front (median life ~1.4 s at Lv80 5*), so his shield almost never fired (0.4 per fight); the aim is ~3-4 s when fully stacked with cooldown bonuses.
+- Bug fixed: in Arena, support skills (Sera's heal, Torvald's shield, Iron Lily's oath) ran on their own timer that ignored the skill cooldown bonus (cards #8/#9, Fortress II innate + tree) and Sera's Rally. Conquest applies all of them. Now Arena does too: stepSupports multiplies the cooldown (and the KO reset and the first cast) by cardCdMul(side); Rally also cuts the other support heroes' timers.
+- Guard Stance cooldown 12 -> 8 s (first cast still 5 s). Fully stacked (-55%): 3.6 s; with Sera's Rally ~3 s.
+- Measured headless (Lv80 5*, Torvald on random teams vs random bots, 60 fights each): unstacked 0.87 shields/fight (none in 36/60), team wins 27; fully stacked (cards + Fortress II maxed) 1.93 (none in 27/60), wins 32; stacked + Sera 1.32 + 4.1 heals, wins 30; unstacked + Sera 0.48 + 1.5 heals, wins 25. (At 12 s: 0.42 shields/fight, none in 45/60.)
+- Balance: Arena (gareth,lyra,roran,kessa,sera,torvald,hanzo) w/o Torvald 110-5 / 110-2 (still the least missed); Conquest Kessa team 6-12 / 10-2 / 10-11 (same as before); meta numbers identical (known warning).
+- Still different between modes: the Support gear stat boosts heal/shield size in Conquest but not in Arena (flagged to Harley).

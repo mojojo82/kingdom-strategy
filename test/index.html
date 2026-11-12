@@ -6155,7 +6155,7 @@ var I18N_HERO = { ru: {
   roran: ["Роран", "Таранный удар", "Каждые 7 с бросается на врага, нанося доп. урон."],
   kessa: ["Кесса", "Дуговой разряд", "Каждые 8 с цепная молния бьёт по врагу, подошедшему вплотную."],
   sera: ["Сера", "Целительный свет", "Каждые 12 с лечит крепость на 8% макс. ОЗ (16% на ур. 5)."],
-  torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 12 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
+  torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 8 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
   ironlily: ["Железная Лили", "Алая клятва", "Каждые 12 с воодушевляет отряд: все герои получают +20% АТК на 4 с (+40% на ур. 5)."],
   vesper: ["Веспер Квилл", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
@@ -6321,7 +6321,7 @@ var HERO_DEFS = {
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 220, stone: 80 }, levelBaseCost: { gold: 60, food: 60, stone: 40 }, levelCostMult: 1.35,
     conquestSkills: [
       // Opening cover: first cast comes at 5s (firstCd) so the fortress has a cushion before a slow support heal lands. Modest on purpose.
-      { name: "Guard Stance", icon: "🏰🛡️", kind: "active", support: "guard", cooldown: 12, firstCd: 5, guardPctByLevel: [0.06, 0.07, 0.08, 0.09, 0.10], desc: "At 5s, then every 12s, shields the fortress for 6% of max HP (10% at Lv 5). Doesn't stack." }
+      { name: "Guard Stance", icon: "🏰🛡️", kind: "active", support: "guard", cooldown: 8, firstCd: 5, guardPctByLevel: [0.06, 0.07, 0.08, 0.09, 0.10], desc: "At 5s, then every 8s, shields the fortress for 6% of max HP (10% at Lv 5). Doesn't stack." }
       // Slots 2 and 3 intentionally blank for now (unique per-hero skills to come).
     ],
     expeditionSkills: [
@@ -13221,7 +13221,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1522"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1523"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -35538,7 +35538,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var spotOnA = 0, spotOnP = 0; function spotMul(sd, id) { if (id !== 'pip') return 1; var st = sd === 'P' ? playerStats : aiStats; if (!st.spot) return 1; var m = sd === 'P' ? spotOnA : spotOnP; if (!m) return 1; if (sd === 'P') spotOnA = 0; else spotOnP = 0; return 1 + m * st.spot.pct; }
   var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = [], waveQ = [], diveQ = []; /* v1514: Caelum's Skybreaker Slam in flight */ /* v1507: rolling eruptions on the ground */ /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
   var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {};
-  (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first; }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first; });
+  (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first * cardCdMul('P'); }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first * cardCdMul('A'); }); /* v1523: first cast gets the cooldown bonus too (Conquest does) */
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
   // COMBAT_TIMING / skill / weapon numbers Conquest uses. When off, the old tick-counted behaviour (skills' seconds read as ticks, 3-tick basic attacks).
   var shared = opts.sharedTiming != null ? !!opts.sharedTiming : arenaSharedTiming;
@@ -35862,16 +35862,17 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     // (fired from the active-skill blocks above)
     // Support skills: heal the fortress / raise a guard shield, on their own cooldown (Sera's Rally trims the other heroes' skill timers).
     function stepSupports(list, cdMap, actCd, getHp, setHp, getG, setG, maxHp, hhh) {
+      var sdS = hhh === pHH ? 'P' : 'A', cdM = cardCdMul(sdS); /* v1523 (Harley): support skills (Sera's heal, Torvald's shield, Iron Lily's oath) get the side's skill cooldown bonus (cards, Fortress II) like every other skill - same as Conquest */
       list.forEach(function (u) {
-        if (isKo(hhh, u.key)) { cdMap[u.key] = u.cooldown; return; }
+        if (isKo(hhh, u.key)) { cdMap[u.key] = u.cooldown * cdM; return; }
         cdMap[u.key] -= cdStep;
         if (cdMap[u.key] > 0) return;
-        cdMap[u.key] += u.cooldown;
+        cdMap[u.key] += u.cooldown * cdM;
         if (u.kind === "heal") {
           var amt = maxHp * u.pct, room = Math.max(0, maxHp - getHp()), did = Math.min(room, amt);
           if (getHp() > 0) setHp(getHp() + did);
           if (u.ward > 0 && amt - did > 0) setG(Math.min(maxHp * u.ward, getG() + (amt - did)));
-          if (u.rally > 0) Object.keys(actCd).forEach(function (k) { if (k !== u.key) actCd[k] -= u.rally; });
+          if (u.rally > 0) { Object.keys(actCd).forEach(function (k) { if (k !== u.key) actCd[k] -= u.rally; }); Object.keys(cdMap).forEach(function (k) { if (k !== u.key) cdMap[k] -= u.rally; }); } /* v1523: Rally also cuts the other support heroes' timers (Torvald), as in Conquest */
         } else if (u.kind === "oath") { /* v1413: Crimson Oath - same rule as Conquest */
           if (hhh === pHH) { if (!(oathTP > 0) || u.pct >= oathPP) oathPP = u.pct; oathTP = u.sec || 4; }
           else { if (!(oathTA > 0) || u.pct >= oathPA) oathPA = u.pct; oathTA = u.sec || 4; }
