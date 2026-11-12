@@ -18,3 +18,30 @@ Becomes a skill once Harley settles the process/look. Notes so far:
 
 ## Download quirk
 - Browser downloads sometimes stay as <uuid>.tmp in Downloads (never renamed) - stage the .tmp (newest.py shows it) and rename on our side.
+
+## TWO STYLE TYPES (Harley, 13 Nov 2026 - keep both until he settles; he will design more ships to decide)
+
+### Style A - "Outlined game asset" (made Ironclad II)
+- Look: dark outlines round every panel, flatter shading, little texture, chunky geometric panels, glowing accent lights. Brighter / more cartoony than Bonewake.
+- Refs to attach: the ship being redesigned (identity) + art/originals/bonewake2/cq_c.png (deck structure) + art/originals/heroes/style_refs/ref1 (hero style).
+- Prompt words: "in the image-3 art style" (hero style), plus the deck/structure brief. ChatGPT turns this into the outlined look by itself.
+- Note: Harley did NOT like the first Blackwatch outputs made with this setup (blackwatch_concepts_v1/v2), even though the setup was the same as Ironclad II.
+
+### Style B - "Painted render" (made Blackwatch II)
+- Look: like Bonewake 2 and the heroes - NO outlines, soft directional light (upper left), gentle gradients, deep shadows in recesses, real material texture and wear (scratches, grime in seams), muted natural colours, small subtle lights (not neon).
+- Ref to attach: art/originals/ships/style_ref_bonewake2.png (Bonewake 2 on grey) as the STYLE guide, plus the chosen concept (design).
+- Prompt words: "change the ART STYLE to match the attached image ('Bonewake 2'): a painted, almost 3D-rendered look - NO dark outlines around shapes; soft directional lighting from the upper left with gentle gradients and deep shadows in the recesses; real material texture and wear ...; muted, natural colours; lights small and subtle, not neon."
+- WATCH OUT: ChatGPT copies Bonewake's brown/bronze palette. Always state the hull colour explicitly ("dark grey / light black gunmetal, cool neutral tones, no brown, no bronze, no copper, no rust colour"), or fix with a follow-up: "keep this exact image ... change the COLOUR of the armour to ...".
+- Typical flow: concepts in style A (fast, readable for picking a design) -> chosen design redrawn in style B -> recolour if needed.
+
+## Deck types (how heroes ride)
+- Open deck (Ironclad II): heroes drawn over the whole ship; one picture (cq). Hero spots h0-h4 on the planks.
+- Gallery / window (Blackwatch II): layered skin. back = full hull, front = hull with the opening cut out; heroes drawn between. Feet sit low behind the hull (h y ~0.875) so heads + shoulders fill the opening. barsAbove: true puts their HP bars over the heads (drawn after the front layer).
+  - Cutting the opening: flood fill from the middle of the opening with a GRADIENT tolerance (neighbour difference <= 3, value < 55) - a plain dark threshold leaks into the dark hull; then close + fill holes; feather 1 px. See dev/ships/patch_bw2.py and the art in art/originals/ships/blackwatch/.
+- Railing in front of heroes (future ships): same layered method, the rail goes in the front picture.
+
+## Putting a ship in the game
+- Store ~900-1000 px wide (sharp on a 3x phone, the ship is ~550 real px on screen). cqScale = 400 * 0.5366 / width -> same on-screen length as Bonewake. Never squash; regenerate if a different shape is needed.
+- lift 12 = floats a little above the ground. defLayout: h0 (front) .. h4 (back) hero feet, c = cannon (turret muzzle), w0-w2 weapon mounts on the hull side, ko = back of the ship.
+- Arena draws layered skins in two passes (back before the riders, front after) since v1530; riders ride the deck in Arena since v1529.
+- Mockups: ALWAYS capture at deviceScaleFactor 3 (real phone sharpness) and never enlarge crops - 1x/2x captures looked blurry to Harley. Turn off the bot's weapons (o.weapons = [], o.esper = null) and give both sides the same level so riders are still standing.

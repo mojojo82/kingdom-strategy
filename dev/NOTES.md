@@ -4603,3 +4603,10 @@ Harley's 3 points:
 - Deck riders get narrower HP bars (13 px instead of 22) so the row under their feet doesn't run together.
 - Visual only: Arena balance identical (w/o Sera 56-63-1 / 44-76-0, w/o Hanzo 34-84-2 / 0-120-0 ...). Headless Arena (Bonewake vs Ironclad II): riders on both decks, no errors.
 - Noted for Harley (not changed): in Arena a melee hero at the enemy fortress hits that fortress's riders before the fortress itself (pickMeleeTarget prefers any hero in reach). Tested "melee only hits the fortress": Lv80 almost unchanged, Lv40 Hanzo matters much less (team without him 34 -> 80 wins) and Sera much more (56 -> 20). Harley: leave as is.
+
+## v1530 - Blackwatch II (painted, armoured gallery) + Arena layered hulls (TEST)
+- Harley: Blackwatch redesign - keep the sleek look, heroes protected behind a window/opening with only heads showing, hovering with nothing underneath, darker hull. Concepts (outlined style) -> picked the clamped-gallery design -> redrawn in Bonewake 2's painted style -> recoloured to dark gunmetal (ChatGPT had copied Bonewake's bronze). Art: art/originals/ships/blackwatch/.
+- New layered skin "Blackwatch II" (id blackwatch2): back = full hull, front = hull with the opening cut out (gradient flood fill), heroes between - only heads and shoulders show. 1000 px wide, cqScale 0.2146 (= Bonewake's on-screen length), lift 12, hero feet at y 0.875, HP bars above the heads (barsAbove). Patch: dev/ships/patch_bw2.py.
+- Arena: layered skins (Blackwatch II, Bonewake, Bonewake 2) now draw the back before the deck riders and the front after them (drawArenaFortress part "back"/"front"), like Conquest - before, Arena drew the whole ship behind the riders. Deck riders on a layered hull get their HP bars after the front layer.
+- Two ship style types kept (Harley undecided): A outlined game asset (Ironclad II), B painted render (Blackwatch II) - prompts and lessons in dev/ships/PROCESS.md.
+- Headless: Conquest + Arena with Blackwatch II vs Ironclad II / Bonewake 2 at 3x, no errors. Arena balance identical (visual only).
