@@ -4515,3 +4515,10 @@ Harley's 3 points:
 - Cause (since v1504, Hanzo's Shadow Step): the "he really teleported - snap, no glide" line ran for EVERY hero on every sim tick, not just for the hero who dodged that tick, so each melee hero jumped to his new spot every 0.45 s (one tick) instead of running there.
 - Fix: the snap only for the hero who dodged that tick.
 - Measured headless (per-frame screen positions, 22 s fight, gareth/torvald/aurek vs a random bot): v1514 - melee heroes jump 47-68 px at every tick while advancing; v1515 - no jumps except real ones (KO back home, Caelum's dive and Hanzo's step).
+
+## v1516 - Arena: infantry heroes stop to cast their skill instead of sliding (TEST)
+- Harley (screen recording): Halo-7 slides along the ground attacking instead of running to his target and then attacking.
+- Cause: an infantry hero's skill can fire while he is still walking (Halo's Core Beam fires from anywhere, at the start of the fight). The game drew his skill sheet (cast pose) while the sim kept walking him, so the cast pose glided across the ground. (His basic attack frames themselves don't move - feet within 3 px.)
+- Fix: an infantry hero with a skill sheet holds his spot for the length of that sheet (Halo 1.8 s, Aurek 1.3 s, Hanzo 0.6 s; Caelum's dive already holds), starting from where he stood when the cast began; then he runs on. Same for bots.
+- Measured headless (enemy Halo, per-frame screen x): before - cast pose moved 326 -> 155 px over 1.2 s; after - cast at a fixed spot, then the run (run frames) to the target.
+- Balance: Arena (gareth,lyra,roran,kessa,hanzo,torvald,halo7) before/after within 1-3 fights of 120; meta as before (known warning).
