@@ -4573,3 +4573,8 @@ Harley's 3 points:
 - Arena: a support cast with a skill sheet now flashes the pose and holds the hero in place for it (castHold), like the other skill sheets. Conquest: support casts start the sheet right away.
 - Balance: Arena (gareth,lyra,roran,kessa,sera,torvald,hanzo) w/o Torvald 110-5 / 110-2 (same as v1523); meta numbers unchanged (known warning).
 - Headless: Arena + Conquest with Torvald, no errors; real-speed mockup approved by Harley. Next: experiment with the stance aura look.
+
+## v1525 - Torvald's Guard Stance: Kung Lao style outline effect (TEST)
+- Harley picked the look in the new Stance FX Lab (dev/labs/stance-fx-lab.template.html, published as a claude.ai artifact): a hard white-blue outline round his sprite (thick 0.85, core #e8f6ff, blue glow #3fa2ff blur 3) + 7 blue outline echoes pushing outwards from his middle (0.1 s apart, each 0.4 s, spread 1.25, thickness 1.3), 1.1 s total (fade in 0.08 s, out 0.3 s).
+- Code: HERO_COMBAT_FX.torvald.outline holds the numbers; heroSkillOnThrow registers the cast in HERO_OUTLINE_FX; drawHeroAnim hands any draw of that hero near that spot to heroOutlineDraw for the effect's length (works for the skill sheet and the normal sheet after it, Conquest + Arena, any canvas scale). Replaces v1524's white-gold ward (drawHeroWards kept, unused).
+- Visual only - no balance change. Headless: Conquest cast shows the effect matching the lab; Arena draws it during the cast; no errors.

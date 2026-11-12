@@ -13221,7 +13221,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1524"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1525"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26395,6 +26395,7 @@ function heroSlashShake() { // a small jolt of the battle canvas on the hit (lig
   (function step() { var e = (performance.now() - t0) / 120; if (e >= 1) { cvs.forEach(function (c) { c.style.transform = ""; }); return; } var am = (1 - e) * HERO_SLASH_SHAKE; cvs.forEach(function (c) { c.style.transform = "translate(" + ((Math.random() - 0.5) * 2 * am).toFixed(1) + "px," + ((Math.random() - 0.5) * 2 * am).toFixed(1) + "px)"; }); requestAnimationFrame(step); })();
 }
 function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) {
+  if (HERO_OUTLINE_FX.length && !heroOutlineBusy) { var oFx = heroOutlineFind(key, x, scale); if (oFx) return heroOutlineDraw(oFx, ctx, key, x, feetY, state, scale, flip, phase, spd, tint); }
   var a = HERO_ANIMS[key], im = heroAnimImg(key); if (!a || !im) return false;
   var now = performance.now(), id = key + (flip ? "f" : "") + Math.round((phase || 0) * 100);
   var mem = heroAnimMem[id] || (heroAnimMem[id] = { state: state, prev: null, t: now });
@@ -26485,13 +26486,14 @@ var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5
   vesper: { skybeam: "beam", ring: "#7fe8ff" },
   halo7: { coreBeam: "beam", core: [4.5, 29], glow: "#ffb347" },
   caelum: { dive: true, glow: "#ff4fd8" },
-  torvald: { ward: true, glow: "#ffe9a8" } }; /* v1524: Guard Stance - white-gold ward runes rise around him as he braces */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
+  torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff" } }; /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
 function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir, ggy) { /* ggy: the battlefield ground line (a fortress rider's feet are up on the deck) */ /* the skill sheet's effect frame, same in every mode */
   var F = HERO_COMBAT_FX[key] || {};
   if (F.throwImg) heroThrowFx(M, key, x0, y0, targets, hs);
   if (F.pillars) heroFirePillars(M, key, gx + 7 * hs * dir, gy, xMin, xMax, hs);
   if (F.rain || F.skybeam) heroSkyFx(M, key, F.rain ? "rain" : "skybeam", gx, ggy != null ? ggy : gy, xMin, xMax, hs, dir);
   if (F.coreBeam) heroCoreBeam(M, key, gx + (F.core ? F.core[0] : 8) * hs * dir, gy - (F.core ? F.core[1] : 30) * hs, xMin, xMax, hs, dir);
+  if (F.outline) { HERO_OUTLINE_FX.push({ key: key, x: gx, t0: performance.now(), O: F.outline }); if (HERO_OUTLINE_FX.length > 8) HERO_OUTLINE_FX.shift(); } /* v1525 */
   if (F.ward) (M.wards || (M.wards = [])).push({ x: gx, y: ggy != null ? ggy : gy, t0: performance.now(), dir: dir || 1, seed: Math.floor(Math.random() * 1e6) }); /* v1524: Torvald's Guard Stance aura */
 }
 /* v1509: Halo-7's Core Beam - the beam's head shoots forward from his chest at the engine's wave speed (each enemy is hit as the head reaches it), holds at full length, then fades */
@@ -26542,6 +26544,39 @@ function drawHeroDiveBursts(ctx, hs, M) { /* pink lightning crater burst (additi
 }
 /* v1524: Torvald's Guard Stance aura (white-gold, ~1.1 s, drawn over him while he braces): a ward ring opens at his feet, a soft pillar of light,
    rune sparks rising, a bright edge on the shield side. Additive, so it reads on any background. */
+/* v1525: Torvald's Guard Stance (numbers from Harley's Stance FX Lab). While a cast is live, the hero is drawn into a buffer, a ring is cut round his silhouette
+   (dilate - silhouette), and drawn as blue outline echoes scaling outwards from his middle, a glowing blue line, the sprite, then a white-blue core line on top. */
+var HERO_OUTLINE_FX = [], heroOutlineBusy = false, heroOutlineBuf = null;
+function heroOutlineFind(key, x, scale) {
+  var base = key.replace(/_skill$/, ""), now = performance.now(), hit = null;
+  for (var i = HERO_OUTLINE_FX.length - 1; i >= 0; i--) { var e = HERO_OUTLINE_FX[i]; if ((now - e.t0) / 1000 > e.O.duration) { HERO_OUTLINE_FX.splice(i, 1); continue; } if (!hit && e.key === base && Math.abs(e.x - x) < 30 * Math.max(1, scale)) hit = e; }
+  return hit;
+}
+function heroOutlineDraw(e, ctx, key, x, feetY, state, scale, flip, phase, spd, tint) {
+  var cv = ctx.canvas, W = cv.width, H = cv.height, O = e.O, age = (performance.now() - e.t0) / 1000;
+  var B = heroOutlineBuf; if (!B || B.W !== W || B.H !== H) { B = heroOutlineBuf = { W: W, H: H }; ["off", "sil", "ring", "ring2", "tnt"].forEach(function (n) { var k = document.createElement("canvas"); k.width = W; k.height = H; B[n] = k; B[n + "C"] = k.getContext("2d"); }); }
+  var T = ctx.getTransform(), oc = B.offC, r;
+  oc.setTransform(1, 0, 0, 1, 0, 0); oc.clearRect(0, 0, W, H); oc.setTransform(T);
+  heroOutlineBusy = true; var res; try { res = drawHeroAnim(oc, key, x, feetY, state, scale, flip, phase, spd, tint); } finally { heroOutlineBusy = false; }
+  oc.setTransform(1, 0, 0, 1, 0, 0);
+  var sc = B.silC; sc.globalCompositeOperation = "source-over"; sc.clearRect(0, 0, W, H); sc.drawImage(B.off, 0, 0); sc.globalCompositeOperation = "source-in"; sc.fillStyle = "#fff"; sc.fillRect(0, 0, W, H); sc.globalCompositeOperation = "source-over";
+  var px = Math.hypot(T.a, T.b) * scale; /* device px per game px at this hero's size */
+  function ring(dst, dc, rad) { dc.globalCompositeOperation = "source-over"; dc.clearRect(0, 0, W, H); var n = rad > 4 ? 20 : 12; for (var i = 0; i < n; i++) { var an = i / n * Math.PI * 2; dc.drawImage(B.sil, Math.cos(an) * rad, Math.sin(an) * rad); } dc.globalCompositeOperation = "destination-out"; dc.drawImage(B.sil, 0, 0); dc.globalCompositeOperation = "source-over"; }
+  function tinted(src, col) { var tc = B.tntC; tc.globalCompositeOperation = "source-over"; tc.clearRect(0, 0, W, H); tc.drawImage(src, 0, 0); tc.globalCompositeOperation = "source-in"; tc.fillStyle = col; tc.fillRect(0, 0, W, H); tc.globalCompositeOperation = "source-over"; return B.tnt; }
+  var D = O.duration, inA = O.fadeIn > 0 ? Math.min(1, age / O.fadeIn) : 1, outA = O.fadeOut > 0 && age > D - O.fadeOut ? Math.max(0, (D - age) / O.fadeOut) : 1, A = inA * outA;
+  var cP = new DOMPoint(x, feetY - 16 * scale).matrixTransform(T), cx = cP.x, cy = cP.y;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter";
+  ring(B.ring2, B.ring2C, Math.max(1, O.echoThick * px)); var t2 = tinted(B.ring2, O.echoColor);
+  for (var k2 = 0; k2 < O.echoCount; k2++) { var ea = age - k2 * O.echoGap; if (ea < 0 || ea > O.echoLife) continue; var p = ea / O.echoLife, s = 1 + O.echoSpread * Math.pow(p, 0.8);
+    ctx.globalAlpha = O.echoAlpha * (1 - p) * outA; ctx.setTransform(s, 0, 0, s, cx - cx * s, cy - cy * s); ctx.drawImage(t2, 0, 0); }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ring(B.ring, B.ringC, Math.max(1, O.thick * px)); var t1 = tinted(B.ring, O.glow);
+  ctx.globalAlpha = A * O.glowAlpha; ctx.shadowColor = O.glow; ctx.shadowBlur = O.glowBlur * px; ctx.drawImage(t1, 0, 0); ctx.shadowBlur = 0;
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.drawImage(B.off, 0, 0);
+  var t3 = tinted(B.ring, O.core); ctx.globalAlpha = A * O.coreAlpha; ctx.drawImage(t3, 0, 0);
+  ctx.restore();
+  return res;
+}
 function drawHeroWards(ctx, hs, M) {
   var W = M && M.wards; if (!W || !W.length) return; var now = performance.now();
   M.wards = W.filter(function (b) { var age = (now - b.t0) / 1000, D = 1.1; if (age > D) return false; var p = age / D, inA = Math.min(1, age / 0.18), outA = p > 0.7 ? 1 - (p - 0.7) / 0.3 : 1, a = inA * outA, x = b.x, y = b.y;
