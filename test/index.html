@@ -8702,7 +8702,7 @@ function createGame(opts) {
     var h = state.heroes[key];
     if (!h || !h.owned) return 0;
     var cmH = cardModsFrom(state), infHpC = (HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") ? (cmH.infHp || 0) : 0; /* v989: card 12 */
-    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC) * (1 + (cmH.allHp || 0)))); /* v990: card 15 (clones/gerbils are built from this) */
+    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * ((HERO_DEFS[key] && HERO_DEFS[key].hpMult) || 1) /* v1520: per-hero base HP (like atkMult) */ * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC) * (1 + (cmH.allHp || 0)))); /* v990: card 15 (clones/gerbils are built from this) */
   }
   function idleHeroEntry(key) {
     if (!state.idle.heroHp) state.idle.heroHp = {};
@@ -13219,7 +13219,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1519"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1520"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -35373,7 +35373,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */, melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
-    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
+    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;

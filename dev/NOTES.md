@@ -4541,3 +4541,8 @@ Harley's 3 points:
 - Speed match: the planted foot slides back 5.2 sheet px per sheet frame x (dispH 55 / ch 154) = 1.86 px/frame; run fps 32 -> 59.6 px/s; walkMul 0.4 -> 60 px/s on screen. Measured headless: Halo's screen x ~60 px/s in Arena.
 - Sheet rebuilt (build_hero_anim CFG halo7 run = clip "walk"); LARGE frames for the new clip in large/walk (old run frames kept).
 - Atlas: 2 x $0.38 = $0.76; balance now ~ $0.41.
+
+## v1520 - per-hero base HP multiplier (code only, nobody uses it yet) (TEST)
+- HERO_DEFS.<hero>.hpMult (default 1), like atkMult: applied in Conquest (idleHeroMaxHp) and Arena (arenaSideStats hero HP). No hero has it set, so nothing changes in play.
+- Tested headless for Halo-7 (not applied): ATK 75% + HP x1.5 passes the below-Kessa/Hanzo rule (Arena w/o Halo 81-32 / 84-23 vs w/o Hanzo 58-60 / 1-119, w/o Kessa 35-85 / 53-67); ATK 75% + HP x2 just fails at Lv40 (69-47 vs w/o Hanzo 71-46); ATK 100% + HP x1.5 / x2 fail (more important than Kessa at Lv40). Damage/fight Lv40 / Lv80: now 650 / 4.0k; ATK 75% HP x2 1.7k / 8.5k; ATK 100% HP x2 3.0k / 12.4k (Kessa ~10.5k / 22.5k, Hanzo ~2.8k / 25k, melee avg 1.7k / 8.3k).
+- Fortress punches per fight even with much more HP (ATK 75%): HP x3 1.2 / 1.2, HP x5 4.1 / 1.7 - he soaks damage from many sources on the way. Waiting on Harley.
