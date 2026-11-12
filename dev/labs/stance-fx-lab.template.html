@@ -1,0 +1,195 @@
+<title>Stance FX Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: game-style lab - preview stage on top, control panels in a wrapping grid below. Single dark look, matches the game (navy + gold, cyan buttons, dashed borders). */
+:root {
+  color-scheme: dark;
+  --bg: #0b1424; --panel: #3a2a1c; --panel-edge: #8a6a3e; --ink: #f2ead8; --muted: #c8b896;
+  --gold: #f0c95f; --cyan: #33c6e6; --cyan-ink: #04202a; --field: #22180f;
+  --display: "Cinzel", Georgia, serif; --body: "Inter", system-ui, sans-serif; --mono: ui-monospace, Menlo, monospace;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--body); }
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: 16px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 14px; }
+h1 { font-family: var(--display); color: var(--gold); font-size: 1.5rem; margin: 0; letter-spacing: .04em; text-wrap: balance; }
+.sub { color: var(--muted); margin: 2px 0 0; font-size: .9rem; }
+.stage { border: 2px dashed var(--panel-edge); border-radius: 6px; overflow: hidden; background: #000; }
+canvas#c { display: block; width: 100%; height: auto; max-width: 100%; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font: 600 .9rem var(--body); background: var(--cyan); color: var(--cyan-ink); border: 0; border-radius: 4px; padding: 8px 14px; cursor: pointer; }
+button.alt { background: transparent; color: var(--cyan); border: 1px dashed var(--cyan); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+fieldset { background: var(--panel); border: 1px dotted var(--panel-edge); border-radius: 6px; margin: 0; padding: 10px 12px 12px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+legend { font-family: var(--display); color: var(--gold); padding: 0 6px; font-size: .95rem; letter-spacing: .05em; }
+.row { display: grid; grid-template-columns: 7.2em 1fr 3.4em; align-items: center; gap: 8px; font-size: .85rem; }
+.row label { color: var(--muted); }
+.row output { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; color: var(--ink); font-size: .8rem; }
+input[type=range] { width: 100%; accent-color: var(--gold); min-width: 0; }
+input[type=color] { width: 100%; height: 26px; border: 1px solid var(--panel-edge); background: var(--field); padding: 0; }
+select { width: 100%; background: var(--field); color: var(--ink); border: 1px solid var(--panel-edge); border-radius: 3px; padding: 4px; font: .85rem var(--body); }
+.chk { display: flex; gap: 8px; align-items: center; font-size: .85rem; color: var(--ink); }
+textarea { width: 100%; box-sizing: border-box; min-height: 90px; background: var(--field); color: var(--ink); border: 1px dashed var(--panel-edge); border-radius: 4px; font: .78rem var(--mono); padding: 8px; }
+.note { color: var(--muted); font-size: .8rem; margin: 0; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400;600&display=swap">
+
+<div class="wrap">
+  <div>
+    <h1>Torvald - Guard Stance FX Lab</h1>
+    <p class="sub">Big copy on the left, game size on the right. Change anything, then tap "Copy settings" and paste the numbers to Claude.</p>
+  </div>
+  <div class="stage"><canvas id="c" width="960" height="528"></canvas></div>
+  <div class="bar">
+    <button id="play">Cast Guard Stance</button>
+    <label class="chk"><input type="checkbox" id="repeat" checked> Repeat</label>
+    <button class="alt" id="reset">Reset to defaults</button>
+    <button class="alt" id="copy">Copy settings</button>
+  </div>
+  <div class="grid" id="panels"></div>
+  <fieldset>
+    <legend>Settings to send</legend>
+    <textarea id="out" readonly></textarea>
+    <p class="note" id="copyMsg">These numbers update as you move the sliders.</p>
+  </fieldset>
+</div>
+
+<script>
+const SHEET = "data:image/webp;base64,__SHEET__";
+const BG = "data:image/jpeg;base64,__BG__";
+/* Torvald's skill sheet, same numbers as HERO_ANIMS.torvald_skill in the game */
+const A = { wrap: 14, cw: 103, ch: 105, ax: 48.33, ay: 102.78, fps: 24, frames: 24, dispH: 31.5 };
+
+const DEF = {
+  speed: 1, bigScale: 4, bg: "arena",
+  outlineOn: true, thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3,
+  echoOn: true, echoCount: 7, echoGap: 0.1, echoLife: 0.45, echoSpread: 0.55, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 0.85, echoFrom: "centre",
+  fadeIn: 0.08, duration: 1.1, fadeOut: 0.3, gap: 0.8
+};
+const SPEC = [
+  ["Playback", [
+    ["speed", "Speed", "range", 0.1, 1, 0.05],
+    ["bigScale", "Big copy size", "range", 2, 6, 0.1],
+    ["bg", "Background", "select", ["arena", "dark", "light"]],
+    ["gap", "Pause between", "range", 0.2, 3, 0.1]]],
+  ["Outline", [
+    ["outlineOn", "Show outline", "check"],
+    ["thick", "Thickness", "range", 0.3, 3, 0.05],
+    ["core", "Line colour", "color"],
+    ["coreAlpha", "Line opacity", "range", 0, 1, 0.05],
+    ["glow", "Glow colour", "color"],
+    ["glowAlpha", "Glow opacity", "range", 0, 1, 0.05],
+    ["glowBlur", "Glow blur", "range", 0, 10, 0.5]]],
+  ["Energy lines", [
+    ["echoOn", "Show lines", "check"],
+    ["echoCount", "How many", "range", 1, 16, 1],
+    ["echoGap", "Time between", "range", 0.03, 0.3, 0.01],
+    ["echoLife", "Each one lasts", "range", 0.15, 1.2, 0.05],
+    ["echoSpread", "Spread outward", "range", 0.1, 1.5, 0.05],
+    ["echoAlpha", "Opacity", "range", 0, 1, 0.05],
+    ["echoColor", "Colour", "color"],
+    ["echoThick", "Thickness", "range", 0.3, 3, 0.05],
+    ["echoFrom", "Grow from", "select", ["centre", "feet"]]]],
+  ["Timing", [
+    ["fadeIn", "Fade in", "range", 0, 0.5, 0.01],
+    ["duration", "Total length", "range", 0.4, 3, 0.05],
+    ["fadeOut", "Fade out", "range", 0, 1, 0.05]]]
+];
+
+let S = Object.assign({}, DEF);
+try { const saved = JSON.parse(localStorage.getItem("stanceFxLab") || "null"); if (saved) S = Object.assign({}, DEF, saved); } catch (e) {}
+
+const panels = document.getElementById("panels"), inputs = {};
+SPEC.forEach(([title, rows]) => {
+  const fs = document.createElement("fieldset"); fs.innerHTML = "<legend>" + title + "</legend>";
+  rows.forEach(([k, label, type, a, b, step]) => {
+    const id = "f_" + k; let el;
+    if (type === "check") {
+      const w = document.createElement("label"); w.className = "chk"; w.innerHTML = '<input type="checkbox" id="' + id + '"> ' + label; fs.appendChild(w); el = w.querySelector("input");
+    } else {
+      const r = document.createElement("div"); r.className = "row";
+      let ctl = type === "range" ? '<input type="range" id="' + id + '" min="' + a + '" max="' + b + '" step="' + step + '">'
+        : type === "color" ? '<input type="color" id="' + id + '">'
+        : '<select id="' + id + '">' + a.map((o) => '<option value="' + o + '">' + o + "</option>").join("") + "</select>";
+      r.innerHTML = '<label for="' + id + '">' + label + "</label>" + ctl + "<output></output>"; fs.appendChild(r); el = r.querySelector("#" + id);
+    }
+    inputs[k] = { el, type };
+    el.addEventListener("input", () => { S[k] = type === "check" ? el.checked : type === "range" ? parseFloat(el.value) : el.value; syncOut(); save(); });
+  });
+  panels.appendChild(fs);
+});
+function syncUI() { for (const k in inputs) { const { el, type } = inputs[k]; if (type === "check") el.checked = !!S[k]; else el.value = S[k]; } syncOut(); }
+function syncOut() {
+  for (const k in inputs) { const { el, type } = inputs[k]; const o = el.parentElement.querySelector("output"); if (o) o.textContent = type === "range" ? (+S[k]).toFixed(2).replace(/\.?0+$/, "") : ""; }
+  document.getElementById("out").value = "Torvald stance FX settings:\n" + JSON.stringify(S);
+}
+function save() { try { localStorage.setItem("stanceFxLab", JSON.stringify(S)); } catch (e) {} }
+syncUI();
+
+document.getElementById("reset").onclick = () => { S = Object.assign({}, DEF); syncUI(); save(); cast(); };
+document.getElementById("copy").onclick = () => {
+  const ta = document.getElementById("out"), msg = document.getElementById("copyMsg");
+  navigator.clipboard.writeText(ta.value).then(() => { msg.textContent = "Copied. Paste it to Claude."; }, () => { ta.select(); msg.textContent = "Selected - copy it with your keyboard or long-press."; });
+};
+document.getElementById("play").onclick = () => cast();
+
+/* drawing */
+const c = document.getElementById("c"), ctx = c.getContext("2d"), W = c.width, H = c.height;
+const mk = () => { const k = document.createElement("canvas"); k.width = W; k.height = H; return [k, k.getContext("2d")]; };
+const [off, oc] = mk(), [sil, sc] = mk(), [ring, rc] = mk(), [ring2, rc2] = mk(), [tnt, tc] = mk();
+const sheet = new Image(), bg = new Image(); sheet.src = SHEET; bg.src = BG;
+
+let simT = 0, castT = -99, last = performance.now();
+function cast() { castT = simT; }
+
+function drawFrame(g, f0, f1, fr, x, y, hs) {
+  const k = A.dispH * hs / A.ch;
+  const sxy = (f, row) => [(f % A.wrap) * A.cw, (row * 2 + Math.floor(f / A.wrap)) * A.ch];
+  const blit = (f, row, alpha) => { const p = sxy(f, row); g.globalAlpha = alpha; g.drawImage(sheet, p[0], p[1], A.cw, A.ch, x - A.ax * k, y - A.ay * k, A.cw * k, A.ch * k); };
+  if (f0 < 0) { blit(0, 0, 1); g.globalAlpha = 1; return; }
+  blit(f0, 1, 1); if (fr > 0.02) blit(f1, 1, fr); g.globalAlpha = 1;
+}
+function makeRing(dst, dctx, r) {
+  dctx.globalCompositeOperation = "source-over"; dctx.clearRect(0, 0, W, H);
+  const n = r > 4 ? 20 : 12; for (let i = 0; i < n; i++) { const an = i / n * Math.PI * 2; dctx.drawImage(sil, Math.cos(an) * r, Math.sin(an) * r); }
+  dctx.globalCompositeOperation = "destination-out"; dctx.drawImage(sil, 0, 0); dctx.globalCompositeOperation = "source-over";
+}
+function tinted(src, col) { tc.globalCompositeOperation = "source-over"; tc.clearRect(0, 0, W, H); tc.drawImage(src, 0, 0); tc.globalCompositeOperation = "source-in"; tc.fillStyle = col; tc.fillRect(0, 0, W, H); tc.globalCompositeOperation = "source-over"; return tnt; }
+
+function drawHero(x, y, hs, age) {
+  const casting = age >= 0 && age < Math.max(S.duration, A.frames / A.fps);
+  let f0 = -1, f1 = -1, fr = 0;
+  if (age >= 0 && age < A.frames / A.fps + 0.4) { const ft = Math.min(age * A.fps, A.frames - 1.001); f0 = Math.floor(ft); f1 = Math.min(f0 + 1, A.frames - 1); fr = ft - f0; fr = fr * fr * (3 - 2 * fr); }
+  if (!casting || age > S.duration) { drawFrame(ctx, f0, f1, fr, x, y, hs); return; }
+  oc.clearRect(0, 0, W, H); drawFrame(oc, f0, f1, fr, x, y, hs);
+  sc.globalCompositeOperation = "source-over"; sc.clearRect(0, 0, W, H); sc.drawImage(off, 0, 0); sc.globalCompositeOperation = "source-in"; sc.fillStyle = "#fff"; sc.fillRect(0, 0, W, H); sc.globalCompositeOperation = "source-over";
+  const D = S.duration, inA = S.fadeIn > 0 ? Math.min(1, age / S.fadeIn) : 1, outA = S.fadeOut > 0 && age > D - S.fadeOut ? Math.max(0, (D - age) / S.fadeOut) : 1, Aall = inA * outA;
+  const cy = S.echoFrom === "feet" ? y : y - 16 * hs;
+  ctx.save(); ctx.globalCompositeOperation = "lighter";
+  if (S.echoOn) {
+    makeRing(ring2, rc2, Math.max(1, S.echoThick * hs)); const t = tinted(ring2, S.echoColor);
+    for (let e = 0; e < S.echoCount; e++) { const ea = age - e * S.echoGap; if (ea < 0 || ea > S.echoLife) continue; const p = ea / S.echoLife, s = 1 + S.echoSpread * Math.pow(p, 0.8);
+      ctx.globalAlpha = S.echoAlpha * (1 - p) * outA; ctx.setTransform(s, 0, 0, s, x - x * s, cy - cy * s); ctx.drawImage(t, 0, 0); }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  if (S.outlineOn) {
+    makeRing(ring, rc, Math.max(1, S.thick * hs)); const t = tinted(ring, S.glow);
+    ctx.globalAlpha = Aall * S.glowAlpha; ctx.shadowColor = S.glow; ctx.shadowBlur = S.glowBlur * hs; ctx.drawImage(t, 0, 0); ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+  ctx.drawImage(off, 0, 0);
+  if (S.outlineOn) { const t = tinted(ring, S.core); ctx.save(); ctx.globalAlpha = Aall * S.coreAlpha; ctx.drawImage(t, 0, 0); ctx.restore(); }
+}
+
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; simT += dt * S.speed;
+  const cycle = Math.max(S.duration, A.frames / A.fps) + S.gap;
+  if (document.getElementById("repeat").checked && simT - castT > cycle) cast();
+  if (S.bg === "arena" && bg.complete) ctx.drawImage(bg, 0, 0, W, H); else { ctx.fillStyle = S.bg === "light" ? "#d9dde4" : "#0d1322"; ctx.fillRect(0, 0, W, H); }
+  if (sheet.complete) { const age = simT - castT; drawHero(330, 470, S.bigScale, age); drawHero(790, 470, 1, age); }
+  ctx.font = "600 15px Inter, system-ui, sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.fillText("game size", 755, 400);
+  if (S.speed < 1) { ctx.fillStyle = "#cfe"; ctx.fillText("speed " + S.speed.toFixed(2) + "x", 16, 28); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
