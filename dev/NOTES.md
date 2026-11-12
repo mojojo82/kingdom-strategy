@@ -4621,3 +4621,10 @@ Harley's 3 points:
 ## v1532 - Old Blackwatch and Ghostwake removed (TEST)
 - Harley (screenshot of the Fortress Skin list, circled): delete the old Blackwatch and Ghostwake. Removed their FORTRESS_SKINS entries and embedded images (~240 KB); art kept in art/originals/ships/retired/. A save using either falls back to the default Ironclad (fortressSkin() already does this); Arena bots pick from the remaining skins.
 - Headless: skin list = Ironclad, Voidspire, Bonewake, Bonewake 2, Ironclad II, Blackwatch II, Voidspire II A, Voidspire II B; a save set to "ghost" shows Ironclad; no errors.
+
+## v1533 - Crawler B and C: tall rusty tracked fortresses with animated treads (TEST)
+- Harley brief: inspired by a desert scrap-crawler, tank treads, brown rust, TALL, open window row (no glass), front platform for the default cannon. Concepts in styles A, B and the new style C (Bonewake 1 look, separate chat); Harley circled one per style, saw them in Arena (3x mockups) and picked: style C is the style for now; B and C go in.
+- Treads animated (Harley's method): the original hull with the treads cut off (dev/ships/split_tracks.py) + a ChatGPT tread unit without covers aligned under it, animated in Atlas (2 runs; plus 2 earlier strip runs not used, 4 x $0.38 = $1.52). Loop sheets 17 frames at 12 fps drawn UNDER the hull (new anim.under in drawSkinPart). Windows: open bays, riders' heads + shoulders show (window_layers.py; COLS mode for B's painted bays).
+- Skins "Crawler B" (painted) and "Crawler C" (gritty): same on-screen length as Bonewake (so the tallest ships yet), lift 6, meleeFront 0.95, HP bars above the hull. Patch: dev/ships/patch_crawler.py. Art: art/originals/ships/crawler/.
+- Headless: Conquest + Arena (B vs C), treads move every frame, hull static, no errors. Visual only.
+- Open: the front cannon platform is empty - no default cannon is drawn on it yet.

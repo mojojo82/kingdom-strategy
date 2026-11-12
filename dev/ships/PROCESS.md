@@ -52,3 +52,15 @@ Becomes a skill once Harley settles the process/look. Notes so far:
 - Glassed windows: dev/ships/glass_layers.py CUT OUT x0 y0 x1 y1 (GLASS_TB / GLASS_TR env loosen the violet test for paler painted glass) - back = deep violet interior, front = glass at ~45% opacity; heroes drawn between.
 - Violet ships: generate on GREEN, key with dev/ships/key_green.py.
 - Tall ships: hero feet must sit so heads fill the window (check in a 3x capture before sending).
+
+## Style C - "Gritty Bonewake 1" (13 Nov 2026; Harley: style C is the one for now)
+- Ref: art/originals/ships/style_ref_bonewake1.png (the full-size Bonewake 1 original on grey). Use a SEPARATE ChatGPT chat with only this ref, so it doesn't mix in styles A/B.
+- Prompt words: "match the attached image exactly - the same rendering style: dark, gritty, heavily detailed and textured, etched / ink-and-paint look with fine linework in the details, desaturated muted colours, weathered and grimy, deep shadows. Use only its STYLE - not its design."
+- Reads as part of the dark Arena/Conquest scenes (Harley asked which looks most normal: C).
+
+## Animated treads / wheels (Crawler B and C, v1533)
+- Keep the original hull and CUT the treads off it: dev/ships/split_tracks.py (horizontal cut under the armour band + polygons to keep armour that hangs over the tracks + holes where sprockets showed through).
+- Ask ChatGPT (same chat as the ship) for ONLY the tread unit, no covers, using the full ship as the reference -> align it under the hull (same length + bottom line, even scale).
+- Atlas H3 Max 5 s, Image = End = the tread unit on magenta: tracks roll (top run forward, bottom backward), wheels turn clockwise. Measure the runs' shift per frame; find a loop (best frame pair ~34 frames apart) -> dev/ships/tread_sheet.py (every 2nd frame, 12 fps, 3-frame cross-fade) -> sheet + rx/ry/tw/th.
+- Game: skin anim with under: true (drawSkinPart draws the sheet BEFORE the hull). back = hull without treads (dark window interior), front = hull minus window openings.
+- Don't animate a strip cut from the finished ship (armour texture shimmers) - split hull and treads instead (Harley).
