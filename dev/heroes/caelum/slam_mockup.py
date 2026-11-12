@@ -57,8 +57,9 @@ def scene(dx, label):
     timg,tfx,tfy=target_img(face_right=flip)   # enemies face him
     seq=[]
     for i in range(0,len(IDLE),3)[:6]: seq.append(('idle',IDLE[i],0))
-    for i in range(0,88,2): seq.append(('take',TAKE[i],min(1,i/80)))
-    for i in range(0,len(HOV),2)[:14]: seq.append(('hov',HOV[i],1))
+    TK=list(range(0,39))+list(range(63,89))   # real-speed wing beats; frames 39-62 (repeat beats) skipped - 38 and 63 have the wings in the same place
+    for j,i in enumerate(TK): seq.append(('take',TAKE[i],min(1,j/(len(TK)-4))))
+    for i in range(0,14): seq.append(('hov',HOV[i],1))   # real speed
     dist=abs(dx); nfall=max(5,int(5+dist/70)); 
     for j in range(nfall): seq.append(('fall',SLAM[50+min(7,int(j*8/nfall))],(j+1)/nfall))
     for i in range(58,112): seq.append(('imp',SLAM[i],0))
