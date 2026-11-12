@@ -6396,7 +6396,7 @@ var HERO_DEFS = {
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       { name: "Core Beam", icon: "🔆", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: true, spd: 1.1 }, cooldown: 13, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 13s, braces and fires a huge beam from his chest core straight across the field; every enemy the beam reaches is hit, fortress included (a hero in the air at that moment is missed). Projection Wall shields ranged heroes from it." },
-      { name: "Stone Shell", icon: "🪨", kind: "passive", defPctByLevel: [0.05, 0.10, 0.15, 0.20, 0.25], desc: "Ancient stone plating: his own DEF +5% per level." }
+      { name: "Stone Shell", icon: "🪨", kind: "passive", rangedRedByLevel: [0.60, 0.65, 0.70, 0.75, 0.80], desc: "Ancient stone plating shrugs off arrows, bolts and shots: he takes 60% less damage from ranged attacks (+5% per level, 80% at max). Melee blows, skills and a boss's blast hit him in full." } /* v1521 (Harley): replaces his own-DEF passive so he survives the slow walk to the enemy fortress, while Hanzo (melee + skills) still destroys him */
     ],
     expeditionSkills: [
       { name: "Warden's Wall", icon: "🧱", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
@@ -6764,6 +6764,8 @@ function dodgeRoll(ent, p) { if (!(p > 0) || !ent) return false; var n = ent.dgN
    Crimson Oath = support skill: every 12 s all of that side's heroes get +pct ATK for buffSec. */
 function ksSkLvl(h, i) { return (h && h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[i]) || 1; }
 function ksPickL(arr, lvl) { return arr ? (arr[Math.max(1, Math.min(arr.length, lvl || 1)) - 1] || 0) : 0; }
+function heroRangedTakeMult(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 1; var p = 0; /* v1521: Halo-7's Stone Shell - share of RANGED damage he still takes */
+  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.rangedRedByLevel) p += ksPickL(sk.rangedRedByLevel, ksSkLvl(h, i)); }); return Math.max(0, 1 - p); }
 function heroOwnDefMult(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 1; var p = 0;
   d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.defPctByLevel) p += ksPickL(sk.defPctByLevel, ksSkLvl(h, i)); }); return 1 + p; }
 function heroBladeWallPct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0;
@@ -9563,7 +9565,7 @@ function createGame(opts) {
       idleEnemyPendingHits = keepEh;
       for (var li = 0; li < landed.length; li++) {
         if (idleWallBlocks(landed[li])) continue; /* v1196: Projection Wall */
-        idleApplyEnemyHit(landed[li].type, landed[li].dmg, landed[li].key);
+        idleApplyEnemyHit(landed[li].type, landed[li].dmg, landed[li].key, true); /* v1521: a ranged shot (Stone Shell) */
         if (state.idle.playerHp <= 0) { idleResetLevel(); break; }
       }
     }
@@ -10186,7 +10188,7 @@ function createGame(opts) {
   // visual shot (0.3s archer / 0.65s lancer / boss orb) has already touched the fortress before the damage is real.
   var IDLE_ENEMY_SHOT_FLIGHT_SEC = {}, IDLE_ENEMY_SHOT_FLIGHT_DEFAULT_SEC = 1.0;
   var idleEnemyPendingHits = [];
-  function idleApplyEnemyHit(type, rawDmg, tgtHeroKey) {
+  function idleApplyEnemyHit(type, rawDmg, tgtHeroKey, ranged) {
     var hitDmg = rawDmg;
     if (tgtHeroKey && String(tgtHeroKey).indexOf("__clone:") === 0) { /* v974: a hit on a Clone Task clone (DEF = its template hero's) */
       var ck0 = tgtHeroKey.slice(8), cl0 = state.idle.clones && state.idle.clones[ck0]; if (!cl0 || cl0.hp <= 0) return;
@@ -10200,7 +10202,7 @@ function createGame(opts) {
       var dgP = heroDodgePct(tgtHeroKey, state.heroes[tgtHeroKey]); if (dgP > 0) state.idle.dodgeTries = (state.idle.dodgeTries || 0) + 1;
       var dgC = state.idle.dodgeN || (state.idle.dodgeN = {}), dgE = dgC[tgtHeroKey] || (dgC[tgtHeroKey] = {}); /* counter kept across level attempts, so short fights still get their share */
       if (dodgeRoll(dgE, dgP)) { state.idle.dodges = (state.idle.dodges || 0) + 1; return; } /* v992: Shadow Step */
-      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type); /* bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
+      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type) * (ranged && type !== "boss" ? heroRangedTakeMult(tgtHeroKey, state.heroes[tgtHeroKey]) : 1); /* v1521: Stone Shell vs ranged shots. bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
       idleLimitAdd(tgtHeroKey, true);
       if (tgtEnt.hp <= 0) idleKoHero(tgtHeroKey);
       return;
@@ -13219,7 +13221,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1520"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1521"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24399,7 +24401,7 @@ function stepIdleAnim(dtSec, w, h) {
       if (inReach) vis.atkStart = performance.now();
     })();
     if (re.heroHitKey && !IDLE_ENEMY_TYPE_MELEE[re.type] && idleAnim.heroVis[re.heroHitKey]) { // ranged hit aimed at a grounded hero: the arrow flies to him
-      if (idleAnim.pendingProjectileLaunches.length < IDLE_PROJECTILE_QUEUE_CAP) idleAnim.pendingProjectileLaunches.push({ id: re.id, isLancer: re.type === "lancer", isBoss: re.type === "boss", dmg: hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)) * game.idleHeroHitMult(re.type), heroKey: re.heroHitKey });
+      if (idleAnim.pendingProjectileLaunches.length < IDLE_PROJECTILE_QUEUE_CAP) idleAnim.pendingProjectileLaunches.push({ id: re.id, isLancer: re.type === "lancer", isBoss: re.type === "boss", dmg: hitDmg * (1 - fortressBonusFrom(game.state.fortressTech || {}).dmgRed) * game.idleHeroDefMult(re.heroHitKey, game.idleEnemyAtk(re.type)) * game.idleHeroHitMult(re.type) * (re.type !== "boss" ? heroRangedTakeMult(re.heroHitKey, game.state.heroes[re.heroHitKey]) : 1) /* v1521: Stone Shell */, heroKey: re.heroHitKey });
       return;
     }
     if (re.heroHitKey) { // v527: this hit landed on a grounded hero, not the fortress — show it on him (no arrow to the fortress, no fortress HP accounting)
@@ -35373,7 +35375,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */, melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
-    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
+    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), rt: heroRangedTakeMult(key, h) /* v1521 */, dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
@@ -35595,7 +35597,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // infantry hero instead of the fortress; ranged damage goes to the fortress (except HERO_KO_CFG.rangedPct); a hero at 0 HP is KO'd (stops attacking,
   // skill timer reset and frozen) and revives after reviveSec. The fortress pool is still the lose condition.
   var koCfg = game.heroKoCfg;
-  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, dodge: h.dodge || 0, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
+  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, dodge: h.dodge || 0, rt: h.rt != null ? h.rt : 1, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
   var pHH = mkHeroHp(playerStats, aRefA), aHH = mkHeroHp(aiStats, pRefA);
   // v969: both sides act at the same moment. A hero knocked out during this tick still makes this tick's attacks / skills (from where he stood,
   // with the limit bar he had) - it no longer matters which side's hits are worked out first. isKo = "was already down when this tick began".
@@ -35612,7 +35614,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (!hh || dmg <= 0) return dmg;
     for (var i = 0; i < hh.list.length && dmg > 0; i++) {
       var e = hh.list[i]; if (!e.infantry || e.ko || e.air) continue; /* v1514: not a hero in the air */
-      var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1), take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
+      var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1) * (e.rt != null ? e.rt : 1) /* v1521: the ranged share is ranged damage - Stone Shell */, take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
       if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; }
       heroHitTaken(e);
     }
@@ -35693,7 +35695,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     map[tag + id] = best.id;
     if (dodgePort(best)) return false; /* v992: Shadow Step */
     var SX = oh === aHH ? FXS.A : FXS.P, fR = 1 - (SX.orbit || 0); SX.inst.forEach(function (i) { if (i.k === 'dome' && i.up > 0) fR *= 1 - (i.red || 0); }); /* v1193 (audit item 14): Orbit + Dome also cut ranged hits on heroes, like Conquest */
-    best.hp -= dmg * fR * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1);
+    best.hp -= dmg * fR * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1) * (best.rt != null ? best.rt : 1); /* v1521: Stone Shell */
     if (best.hp <= 1e-9) { koMark(best); best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
     heroHitTaken(best);
     return false;
@@ -35707,7 +35709,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var md = main ? main.d : 0;
     oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry && !o.air; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n).forEach(function (o) {
       if (dodgePort(o)) return;
-      o.hp -= dmg * a.splash.pct * fR * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
+      o.hp -= dmg * a.splash.pct * fR * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1) * (o.rt != null ? o.rt : 1); /* v1521 */
       if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; kos++; }
       heroHitTaken(o);
     });
