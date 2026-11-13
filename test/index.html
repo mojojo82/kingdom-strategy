@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1566"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1567"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26533,7 +26533,7 @@ var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5
   halo7: { coreBeam: "beam", core: [4.5, 29], glow: "#ffb347" },
   caelum: { dive: true, glow: "#ff4fd8" },
   sera: { heal: true, glow: "#7ee896" }, /* v1526: Mending Light - green blessing over his fortress (drawHeroHeals) */
-  torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff" } }; /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
+  torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff", souls: { n: 5, core: [232, 246, 255], glow: [63, 162, 255] } } }; /* v1567: souls = orbs leave him with the aura and home into his fortress's hull (drawHeroSouls) */ /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
 function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir, ggy) { /* ggy: the battlefield ground line (a fortress rider's feet are up on the deck) */ /* the skill sheet's effect frame, same in every mode */
   var F = HERO_COMBAT_FX[key] || {};
   if (F.throwImg) heroThrowFx(M, key, x0, y0, targets, hs);
@@ -26541,6 +26541,10 @@ function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir, 
   if (F.rain || F.skybeam) heroSkyFx(M, key, F.rain ? "rain" : "skybeam", gx, ggy != null ? ggy : gy, xMin, xMax, hs, dir);
   if (F.coreBeam) heroCoreBeam(M, key, gx + (F.core ? F.core[0] : 8) * hs * dir, gy - (F.core ? F.core[1] : 30) * hs, xMin, xMax, hs, dir);
   if (F.heal) (M.heals || (M.heals = [])).push({ x: gx, y: ggy != null ? ggy : gy, sx: x0, sy: y0, t0: performance.now(), seed: Math.floor(Math.random() * 1e6) }); /* v1526: Sera's Mending Light */
+  if (F.souls) { var SO = F.souls, nowS = performance.now(), orbs = []; /* v1567: Torvald - orbs come out of him and fly into his own fortress */
+    for (var oi = 0; oi < SO.n; oi++) { var an = -Math.PI / 2 + (oi - (SO.n - 1) / 2) * 0.55 + (Math.random() - 0.5) * 0.35, sp = (55 + Math.random() * 35) * hs;
+      orbs.push({ x: x0 + (Math.random() - 0.5) * 6 * hs, y: y0 + (Math.random() - 0.5) * 8 * hs, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, delay: oi * 0.06, curl: (oi % 2 ? 1 : -1) * (0.8 + Math.random() * 0.5), tr: [], done: false, ph: Math.random() * 6.28 }); }
+    (M.souls || (M.souls = [])).push({ t0: nowS, last: nowS, side: dir == null || dir > 0, arena: M === arenaAnim, orbs: orbs, flashes: [], F: SO }); }
   if (F.outline) { HERO_OUTLINE_FX.push({ key: key, x: gx, t0: performance.now(), O: F.outline }); if (HERO_OUTLINE_FX.length > 8) HERO_OUTLINE_FX.shift(); } /* v1525 */
   if (F.ward) (M.wards || (M.wards = [])).push({ x: gx, y: ggy != null ? ggy : gy, t0: performance.now(), dir: dir || 1, seed: Math.floor(Math.random() * 1e6) }); /* v1524: Torvald's Guard Stance aura */
 }
@@ -26627,6 +26631,45 @@ function heroOutlineDraw(e, ctx, key, x, feetY, state, scale, flip, phase, spd, 
 }
 /* v1526: Sera's Mending Light (Conquest + Arena) - a green star flares on his staff, a soft green dome of light settles over the fortress, a ring runs out along the
    ground and green crosses drift up out of the hull. ~1.5 s, drawn on top. Colours = his spell orb green (SPELL_COLS.sera). */
+/* v1567: Torvald's Guard Stance souls (Harley: like the souls in the old Onimusha games) - when his aura appears a few glowing orbs burst out of him, hang
+   for a moment, then curl and accelerate into the centre of his own fortress's hull (the same hull point weapons aim at), each with a small flash as it
+   lands - so it reads as him helping the fortress. Code-drawn, his outline blue, Conquest + Arena. */
+function heroSoulTarget(S, w, h) { var box = fortHullBox(w, h, S.arena ? "arena" : "cq", S.side, true); if (!box) return { x: S.arena ? (S.side ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X)) : w * 0.16, y: groundYFor(h) - 20 };
+  var sk = box.skin, f = SKIN_HULLT[sk.id] || [0.5, 0.6]; if (sk.parts) f = mechaPartPoint(sk, "torso", f); return fortHullPoint(box, f); }
+function drawHeroSouls(ctx, hs, M, w, h) {
+  var L = M && M.souls; if (!L || !L.length) return; var now = performance.now();
+  M.souls = L.filter(function (S) {
+    var dt = Math.min(0.05, (now - S.last) / 1000), age = (now - S.t0) / 1000; S.last = now; if (age > 4) return false;
+    var T = heroSoulTarget(S, w, h), C = S.F.core, G = S.F.glow, live = false;
+    ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+    S.orbs.forEach(function (o) {
+      if (o.done) return; var oa = age - o.delay; live = true; if (oa < 0) return;
+      var dx = T.x - o.x, dy = T.y - o.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      if (oa < 0.4) { var dr = Math.pow(0.04, dt); o.vx *= dr; o.vy *= dr; o.vy -= 6 * hs * dt; } /* burst out and hang */
+      else { var k = Math.min(1, (oa - 0.4) / 0.9), acc = (260 + 1500 * k * k) * hs, curl = o.curl * (1 - k) * 220 * hs; /* home in, faster and faster, curling less as it nears */
+        o.vx += (dx / d * acc - dy / d * curl) * dt; o.vy += (dy / d * acc + dx / d * curl) * dt;
+        var sp = Math.sqrt(o.vx * o.vx + o.vy * o.vy), mx = (120 + 420 * k) * hs; if (sp > mx) { o.vx *= mx / sp; o.vy *= mx / sp; sp = mx; }
+        var damp = Math.pow(0.35, dt); o.vx = o.vx * damp + dx / d * sp * (1 - damp); o.vy = o.vy * damp + dy / d * sp * (1 - damp); }
+      var stepX = o.vx * dt, stepY = o.vy * dt;
+      if (oa >= 0.4 && (d < 5 * hs || stepX * dx + stepY * dy > d * d)) { o.done = true; S.flashes.push({ x: T.x + (Math.random() - 0.5) * 4 * hs, y: T.y + (Math.random() - 0.5) * 4 * hs, t0: now }); return; }
+      o.x += stepX; o.y += stepY; o.tr.push(o.x, o.y); if (o.tr.length > 22) o.tr.splice(0, 2);
+      var fin = Math.min(1, oa / 0.12), n = o.tr.length / 2; /* the wispy tail */
+      for (var j = 1; j < n; j++) { var u = j / n; ctx.strokeStyle = "rgba(" + G[0] + "," + G[1] + "," + G[2] + "," + (0.55 * u * fin).toFixed(3) + ")"; ctx.lineWidth = (0.6 + 3.4 * u) * hs;
+        ctx.beginPath(); ctx.moveTo(o.tr[j * 2 - 2], o.tr[j * 2 - 1]); ctx.lineTo(o.tr[j * 2], o.tr[j * 2 + 1]); ctx.stroke(); }
+      var pr = (1 + 0.15 * Math.sin(now / 70 + o.ph)) * fin, R = 6.5 * hs * pr; /* glow + bright core */
+      var g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, Math.max(0.1, R)); g.addColorStop(0, "rgba(" + C[0] + "," + C[1] + "," + C[2] + "," + (0.95 * fin) + ")"); g.addColorStop(0.3, "rgba(" + G[0] + "," + G[1] + "," + G[2] + "," + (0.7 * fin) + ")"); g.addColorStop(1, "rgba(" + G[0] + "," + G[1] + "," + G[2] + ",0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x, o.y, Math.max(0.1, R), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255," + (0.9 * fin) + ")"; ctx.beginPath(); ctx.arc(o.x, o.y, Math.max(0.1, 1.4 * hs * pr), 0, Math.PI * 2); ctx.fill();
+    });
+    S.flashes = S.flashes.filter(function (f) { var q = (now - f.t0) / 300; if (q >= 1) return false; live = true; /* a small flash on the hull as each soul lands */
+      var r = (3 + 13 * Math.pow(q, 0.5)) * hs, a = 1 - q, g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+      g2.addColorStop(0, "rgba(" + C[0] + "," + C[1] + "," + C[2] + "," + (0.9 * a) + ")"); g2.addColorStop(0.4, "rgba(" + G[0] + "," + G[1] + "," + G[2] + "," + (0.5 * a) + ")"); g2.addColorStop(1, "rgba(" + G[0] + "," + G[1] + "," + G[2] + ",0)");
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "rgba(" + C[0] + "," + C[1] + "," + C[2] + "," + (0.7 * a) + ")"; ctx.lineWidth = 1.2 * hs * a + 0.3; ctx.beginPath(); ctx.arc(f.x, f.y, r * 1.15, 0, Math.PI * 2); ctx.stroke(); return true; });
+    ctx.restore();
+    return live;
+  });
+}
 function drawHeroHeals(ctx, hs, M) {
   var L = M && M.heals; if (!L || !L.length) return; var now = performance.now();
   M.heals = L.filter(function (b) { var age = (now - b.t0) / 1000, D = 1.5; if (age > D) return false; var p = age / D, x = b.x, y = b.y;
@@ -28533,6 +28576,7 @@ function drawIdleAnim(ctx, w, h) {
   drawHeroDiveBursts(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1514: Caelum's slam burst */
   drawHeroWards(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1524: Torvald's Guard Stance aura */
   drawHeroHeals(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1526: Sera's Mending Light */
+  drawHeroSouls(ctx, heroSpriteVisualScale / 100, idleAnim, w, h); /* v1567: Torvald's souls into the hull */
   if (idleAnim.spotBursts && idleAnim.spotBursts.length) drawPipSpotBursts(ctx, idleAnim.spotBursts, sScale); /* v1499: Spot Shot hits */
   drawOrbBursts(ctx, idleAnim.orbBursts, groundYFor(h), sScale); // v465 orb burst on a real Piercing Volley hit
 
@@ -37275,6 +37319,7 @@ function drawArenaFrame(ctx, w, h) {
   drawHeroDiveBursts(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1514 */
   drawHeroWards(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1524 */
   drawHeroHeals(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1526 */
+  drawHeroSouls(ctx, heroSpriteVisualScale / 100, arenaAnim, w, h); /* v1567 */
   drawWeldSparks(ctx, groundYFor(h) + 4);
   if (osSetA) orbitShieldDrawPass(ctx, osSetA, true);
   if (hxSetA) hexShieldDrawPass(ctx, hxSetA, true);
@@ -37987,7 +38032,7 @@ function renderArenaBattleScreen() {
     arenaAnim.battleStartTime = performance.now();
     arenaAnim.battleEnded = false;
     arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null;
-    arenaAnim.heroLeap = null; arenaAnim.dvGlide = null; arenaAnim.dvBursts = null; arenaAnim.wards = null; arenaAnim.heals = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; arenaAnim.hzPillars = null; arenaAnim.hzBeams = null; arenaAnim.hzSky = null; /* v1503 */
+    arenaAnim.heroLeap = null; arenaAnim.dvGlide = null; arenaAnim.dvBursts = null; arenaAnim.wards = null; arenaAnim.heals = null; arenaAnim.souls = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; arenaAnim.hzPillars = null; arenaAnim.hzBeams = null; arenaAnim.hzSky = null; /* v1503 */
     var canvas = document.getElementById("arenaCanvas");
     // Logical (CSS-pixel) dimensions, same as the draw loop above — these
     // feed arenaSlotPos() to compute projectile spawn points, which must
