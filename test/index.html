@@ -13239,7 +13239,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1576"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1577"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20292,6 +20292,22 @@ function mapProfText(elapsed) {
     " · el " + (w ? w.getElementsByTagName("*").length : 0) + " · cv " + cvs.length + "/" + (cpx / 1e6).toFixed(1) + "MP · vp " + (vp ? vp.clientWidth + "x" + vp.clientHeight + "@" + (window.devicePixelRatio || 1) : "") + " · z " + (typeof mapZoom !== "undefined" ? mapZoom.toFixed(2) + " L" + mapLod() : "");
 }
 function mapProfSet(on) { mapProf.on = !!on; mapProf.t = {}; mapProf.n = {}; if (on) ["renderVisibleTiles", "terrainRenderRange", "decorRender", "forestRender", "baseFireRender", "seaFoamTick", "updateMarchMarkers", "updateMapCoords", "updateHomeBubble"].forEach(mapProfWrap); var el = document.getElementById("fpsCounter"); if (el) { el.style.whiteSpace = on ? "normal" : ""; el.style.maxWidth = on ? "92vw" : ""; } }
+/* v1577 (Harley: Conquest drops to ~35-40 FPS after hopping between levels on his phone, not reproducible headless): a second line under the
+   FPS counter - "game Xms" = our own code per frame (step + draw); "levels N pics XMP" = level background pictures the game holds (and which
+   levels); "canvas XMP" = picture copies the game made itself and still holds (softened layers etc.); "heroes N XMP" = hero sheets loaded.
+   If FPS drops but "game" stays the same, the cost is the browser's own drawing / memory, not our code. Only while the FPS counter is on. */
+var perfDiag = { sum: 0, n: 0, at: 0, ms: 0, txt: "" }, perfCanvases = [];
+(function () { try { if (typeof WeakRef === "undefined") return; var oc = document.createElement.bind(document);
+  document.createElement = function (t) { var e = oc.apply(document, arguments); if (typeof t === "string" && t.toLowerCase() === "canvas") { perfCanvases.push(new WeakRef(e)); if (perfCanvases.length > 4000) perfCanvases = perfCanvases.filter(function (r) { return r.deref(); }); } return e; }; } catch (e) {} })();
+function perfDiagAdd(ms) {
+  perfDiag.sum += ms; perfDiag.n++; var now = performance.now(); if (now - perfDiag.at < 1000) return;
+  perfDiag.ms = perfDiag.n ? perfDiag.sum / perfDiag.n : 0; perfDiag.sum = 0; perfDiag.n = 0; perfDiag.at = now;
+  var lv = 0, lpx = 0, envs = [];
+  try { Object.keys(TMP_ENV_BG).forEach(function (k) { var c = TMP_ENV_BG[k], had = false; levelArtImgs(c).forEach(function (im) { if (im && im.getAttribute && im.getAttribute("src") && im.naturalWidth) { lv++; lpx += im.naturalWidth * im.naturalHeight; had = true; } }); if (had) envs.push(k); }); } catch (e) {}
+  var cv = 0, cpx = 0; perfCanvases = perfCanvases.filter(function (r) { var c = r.deref(); if (!c) return false; var a = c.width * c.height; if (a > 1) { cv++; cpx += a; } return true; });
+  var hs = 0, hpx = 0; try { Object.keys(heroAnimImgCache || {}).forEach(function (k) { var im = heroAnimImgCache[k]; if (im && im.naturalWidth) { hs++; hpx += im.naturalWidth * im.naturalHeight; } }); } catch (e) {}
+  perfDiag.txt = "game " + perfDiag.ms.toFixed(1) + "ms · levels " + lv + " pics " + (lpx / 1e6).toFixed(0) + "MP (" + envs.join(",") + ") · canvas " + cv + " " + (cpx / 1e6).toFixed(0) + "MP · heroes " + hs + " " + (hpx / 1e6).toFixed(0) + "MP";
+}
 var fpsCounterState = { frames: 0, lastSampleAt: (typeof performance !== "undefined" ? performance.now() : Date.now()) };
 function fpsCounterTick(now) {
   fpsCounterState.frames++;
@@ -29075,6 +29091,12 @@ function drawIdleAnim(ctx, w, h) {
     ctx.textAlign = "left"; ctx.textBaseline = "middle";
     ctx.fillStyle = idleAnim.fpsSmoothed < 30 ? "#ff8a6a" : (idleAnim.fpsSmoothed < 50 ? "#f0c95f" : "#8fe0a8");
     ctx.fillText(text, boxX + padX, boxY + boxH / 2 + 1);
+    if (perfDiag.txt) { /* v1577: diagnostics line, right-aligned under the counter, wraps onto two short lines */
+      ctx.font = "bold 8.5px monospace"; var pl = perfDiag.txt.split(" · "), ls = [pl[0], pl[1], pl.slice(2).join(" · ")];
+      var dw = Math.max.apply(null, ls.map(function (l) { return ctx.measureText(l).width; })) + 10, dx = w - dw - 6, dy = boxY + boxH + 3;
+      ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(dx, dy, dw, 38); ctx.fillStyle = "#e8e0cc"; ctx.textAlign = "left";
+      ls.forEach(function (l, i) { ctx.fillText(l, dx + 5, dy + 7 + i * 12); });
+    }
     ctx.restore();
   })();
 }
@@ -30734,6 +30756,7 @@ function startIdleAnim() {
         var dpr = canvasDPR();
         var fitNow = performance.now(); if (!idleAnim._fitT || fitNow - idleAnim._fitT > 700) { idleAnim._fitT = fitNow; resizeIdleCanvas(); } /* v1262: re-check the sky height now and then (fonts/panels settle after load) */
         var cqSky = idleAnim.skyPx || 0, w = Math.round(canvas.width / dpr), h = Math.round(canvas.height / dpr) - cqSky;
+        var perfT0 = game.state.idle.fpsCounterEnabled ? performance.now() : 0; /* v1577: game work per frame for the FPS counter's second line */
         stepIdleAnim(dt, w, h);
         var ctx = canvas.getContext("2d");
         ctx.save();
@@ -30741,6 +30764,7 @@ function startIdleAnim() {
         if (cqSky > 0) { ctx.clearRect(0, 0, w, h + cqSky); ctx.translate(0, cqSky); }
         drawIdleAnim(ctx, w, h);
         ctx.restore();
+        if (perfT0) perfDiagAdd(performance.now() - perfT0);
         if (!document.hidden) { var mvH = {}; game.state.conquestRoster.forEach(function (k) { var an = HERO_ANIMS[k]; if (HERO_DEFS[k] && HERO_DEFS[k].class === "infantry" && an && an.impact && !(an.once && an.once.attack)) mvH[k] = true; if (k === "ironlily" && lilyReady()) mvH[k] = true; /* v1420 */ }); game.idleMeleeVisPing(mvH); } /* v917: drawn this frame -> melee hits wait for the sword */
         renderIdleHeader();
         updateIdleSkillbarDom();

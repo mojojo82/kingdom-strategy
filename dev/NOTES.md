@@ -4852,3 +4852,8 @@ Harley's 3 points:
 - The molten pour's flowing shimmer was rebuilt in a scratch canvas every frame (redraw + new texture each frame); now baked once as a 24-frame loop (FOUNDRY_POUR_NF).
 - The level's flat colour was painted under the far layer, which is a solid picture covering the whole backdrop; with `opaque: true` on that layer only a 3 px strip at the soft bottom clip edge is still filled.
 - Checked: full backdrop render at a frozen moment is pixel-identical to v1575 (0 of 3.1 M pixels differ). Whole-backdrop headless timings are too noisy to show the gain (software drawing); judge with the FPS counter on the phone.
+
+## v1577 (14 Nov 2026) - diagnostics under the FPS counter (Conquest)
+- Harley: on his phone the foundry runs 60 FPS until he hops a few levels in the level select, then ~40 FPS at once (every level). Headless: hopping releases level art correctly (same pictures held before/after), drawing work per frame unchanged since yesterday - so it's iPhone-Safari-side (memory / decoding).
+- Second block under the Conquest FPS counter (only while it is on): "game Xms" = our step + draw per frame; "levels N pics XMP (envs)" = level pictures held; "canvas N XMP" = canvases the game made and still holds (tracked with WeakRef from page start); "heroes N XMP" = hero sheets loaded.
+- Headless numbers: game ~10 ms (software), levels 13 pics 13 MP (foundry, castlegate, day built-ins), canvas 44 / 3 MP, heroes 23 sheets / 59 MP (~240 MB unpacked - every hero's sheets are preloaded, not just the roster) - prime suspect if Safari is short of picture memory.
