@@ -4711,3 +4711,6 @@ Harley's 3 points:
 - Harley: centre him in the profile, platforms on both sides. The Mecha's profile picture (gov) is now its own layout: mecha centred, 2 platforms left + 3 right (battle layout unchanged - platforms in front only). govWidth 0.97 so the platforms clear the side slots.
 - Weapon barrels in the profile: new optional skin field govXf {s, x, y} maps battle-picture px to profile-picture px (govShipWithBarrels), so barrels sit on the same mounts as in battle even though the two pictures are laid out differently (before they landed on the staff/platforms).
 - Checked headless (GPT and Classic profile looks), no errors.
+
+## v1551 (13 Nov 2026) - Mecha true size in the Overlord Profile
+- Harley: don't make him small on the profile page. Measured every skin's profile size vs its battle size: all the newer skins use profile = 3.097 x battle width. The Mecha's govWidth is now computed so the mecha itself has that same ratio (build_mecha_skin.py), i.e. the same size relative to the other skins as in Conquest/Arena. At that size the side platforms only fit tucked half behind him and the side slots.
