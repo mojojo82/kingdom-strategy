@@ -1,0 +1,86 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#000}canvas{display:block}</style></head><body>
+<canvas id="c" width="440" height="260"></canvas>
+<script>
+var NOW = 0; performance.now = function () { return NOW; };
+var bg = new Image(); bg.src = "bg.png"; var kn = new Image(); kn.src = "knight.png"; var sp = new Image(); sp.src = "spear.webp";
+function heroSpearImg() { return sp; }
+function drawRoranSpear(ctx, hs, big) { var im = sp, L = 33 * hs * (big ? 1.3 : 1), H = L * im.naturalHeight / im.naturalWidth; ctx.drawImage(im, -L * 0.8, -H / 2, L, H); return true; }
+function drawRoranFire(ctx, hs, big, P, layer) {
+  var L = 33 * hs * (big ? 1.3 : 1), hx = L * 0.12, now = performance.now(), sd = P.fs || (P.fs = Math.random() * 100), t = now / 1000 + sd;
+  var R = (big ? 10.5 : 5.2) * hs, TL = (big ? 46 : 22) * hs;
+  ctx.save(); ctx.globalCompositeOperation = "lighter";
+  function plume(scale, cols, alpha) { /* a flickering teardrop: round at the head, tapering into a wavy tail */
+    var r = R * scale, tl = TL * scale, n = 14, top = [], bot = [];
+    for (var i = 0; i <= n; i++) { var u = i / n, x = hx - u * tl, wv = Math.sin(t * 19 + u * 9 + sd) * 0.18 + Math.sin(t * 31 - u * 13) * 0.1, w = r * Math.pow(1 - u, 0.75) * (1 + wv);
+      top.push([x, -w + Math.sin(t * 11 + u * 6) * r * 0.25 * u]); bot.push([x, w + Math.sin(t * 11 + u * 6) * r * 0.25 * u]); }
+    var g = ctx.createLinearGradient(hx + r, 0, hx - tl, 0); g.addColorStop(0, cols[0]); g.addColorStop(0.35, cols[1]); g.addColorStop(1, cols[2]);
+    ctx.globalAlpha = alpha; ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]); ctx.arc(hx, 0, r, -Math.PI / 2, Math.PI / 2);
+    for (var j = n; j >= 0; j--) ctx.lineTo(bot[j][0], bot[j][1]); ctx.lineTo(top[n][0], top[n][1]); for (j = n - 1; j >= 0; j--) ctx.lineTo(top[j][0], top[j][1]); ctx.closePath(); ctx.fill();
+  }
+  if (layer === "back") {
+    var gl = ctx.createRadialGradient(hx, 0, 0, hx, 0, R * 2.4); gl.addColorStop(0, "rgba(255,150,40,0.45)"); gl.addColorStop(1, "rgba(255,80,10,0)"); /* soft heat glow */
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(hx, 0, R * 2.4, 0, Math.PI * 2); ctx.fill();
+    plume(1.25, ["rgba(255,120,30,0.9)", "rgba(230,60,15,0.55)", "rgba(150,20,5,0)"], 0.75); /* outer red-orange */
+    plume(0.95, ["rgba(255,190,70,1)", "rgba(255,120,25,0.7)", "rgba(220,60,10,0)"], 0.85); /* orange */
+    /* embers: shed from the head, drift back and fade (kept on the projectile, in this frame) */
+    var E = P.emb || (P.emb = []), dtE = Math.min(0.05, (now - (P.embT || now)) / 1000); P.embT = now;
+    if (Math.random() < (big ? 0.9 : 0.45)) E.push({ x: hx - R * 0.5, y: (Math.random() - 0.5) * R * 1.2, vx: -(60 + Math.random() * 90) * hs, vy: (Math.random() - 0.5) * 40 * hs, a: 1, r: (0.7 + Math.random() * (big ? 1.4 : 0.8)) * hs });
+    P.emb = E.filter(function (e) { e.x += e.vx * dtE; e.y += e.vy * dtE; e.a -= dtE * 2.2; if (e.a <= 0) return false;
+      ctx.globalAlpha = e.a; ctx.fillStyle = e.a > 0.6 ? "#ffd27a" : "#ff7a2a"; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill(); return true; });
+  } else {
+    plume(0.6, ["rgba(255,250,215,1)", "rgba(255,210,110,0.8)", "rgba(255,140,40,0)"], 0.9); /* white-hot core over the blade */
+    var cg = ctx.createRadialGradient(hx + R * 0.2, 0, 0, hx + R * 0.2, 0, R * 0.9); cg.addColorStop(0, "rgba(255,255,235,0.95)"); cg.addColorStop(1, "rgba(255,200,90,0)");
+    ctx.globalAlpha = 1; ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(hx + R * 0.2, 0, R * 0.9, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---------- impact effects (CSS px; s = size) ---------- */
+var FX = [];
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function impact(x, y, opts, s) {
+  var t0 = NOW;
+  if (opts.flash) FX.push({ k: "flash", x: x, y: y, t0: t0, s: s });
+  if (opts.splash) for (var i = 0; i < Math.round(14 * Math.sqrt(s)); i++) { var a = Math.PI + rnd(-1.5, 1.5); var spd = rnd(60, 140) * s; FX.push({ k: "lobe", x: x, y: y, vx: Math.cos(a) * spd * 0.8, vy: Math.sin(a) * spd - 10 * s, r0: rnd(3.5, 6) * s, t0: t0 + rnd(0, 50), life: rnd(380, 600) }); }
+  if (opts.embers) for (var j = 0; j < Math.round(10 * s); j++) { var b = Math.PI + rnd(-1.3, 1.1); FX.push({ k: "ember", x: x, y: y, vx: Math.cos(b) * rnd(30, 110) * s, vy: Math.sin(b) * rnd(30, 110) * s - rnd(20, 60), r: rnd(0.6, 1.3) * Math.sqrt(s), t0: t0, life: rnd(700, 1200), tr: [] }); }
+  if (opts.smoke) for (var q = 0; q < Math.round(4 * Math.sqrt(s)); q++) FX.push({ k: "smoke", x: x + rnd(-3, 3) * s, y: y + rnd(-3, 2) * s, vx: rnd(-10, 2), vy: rnd(-22, -12), r0: rnd(4.5, 7) * s, t0: t0 + 120 + q * 70, life: rnd(1200, 1600) });
+  if (opts.linger) for (var m = 0; m < Math.round(4 * Math.sqrt(s)); m++) FX.push({ k: "lick", x: x + rnd(1, 4) * Math.sqrt(s), y: y + (m - 1) * 6 * Math.sqrt(s) + rnd(-2, 2), h: rnd(7, 11) * Math.sqrt(s), t0: t0 + 60 + m * 40, life: rnd(1300, 1700), ph: rnd(0, 6) });
+  if (opts.ring) FX.push({ k: "ring", x: x + 6 * s, y: GROUND, t0: t0 + 30, life: 650, s: s });
+}
+function drawFX(ctx, dt) {
+  FX = FX.filter(function (f) { var a = NOW - f.t0; if (a < 0) return true; var life = f.life || 160, q = a / life; if (q >= 1) return false;
+    ctx.save();
+    if (f.k === "flash") { var r = (6 + 16 * Math.min(1, a / 50)) * f.s, al = 1 - q; ctx.globalCompositeOperation = "lighter"; var g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r); g.addColorStop(0, "rgba(255,255,240," + al + ")"); g.addColorStop(0.35, "rgba(255,220,120," + 0.8 * al + ")"); g.addColorStop(1, "rgba(255,140,40,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(255,250,220," + al + ")"; ctx.lineWidth = 1.2; for (var k = 0; k < 6; k++) { var an = k * Math.PI / 3 + 0.3; ctx.beginPath(); ctx.moveTo(f.x + Math.cos(an) * r * 0.3, f.y + Math.sin(an) * r * 0.3); ctx.lineTo(f.x + Math.cos(an) * r * 1.1, f.y + Math.sin(an) * r * 1.1); ctx.stroke(); } }
+    if (f.k === "lobe") { var dr = Math.pow(0.02, dt); f.vx *= dr; f.vy *= dr; f.vy -= 30 * dt; f.x += f.vx * dt; f.y += f.vy * dt; var rr = f.r0 * (1 + 1.6 * Math.sqrt(q)), al2 = (1 - q) * (1 - q);
+      ctx.globalCompositeOperation = "lighter"; var g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, rr); g2.addColorStop(0, "rgba(255,245,200," + al2 + ")"); g2.addColorStop(0.4, "rgba(255,160,50," + 0.85 * al2 + ")"); g2.addColorStop(1, "rgba(200,50,10,0)"); ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(f.x, f.y, rr, 0, 7); ctx.fill(); }
+    if (f.k === "ember") { f.vx *= Math.pow(0.5, dt); f.vy += 140 * dt; f.x += f.vx * dt; f.y += f.vy * dt; if (f.y > GROUND) { f.y = GROUND; f.vy *= -0.3; f.vx *= 0.5; } f.tr.push(f.x, f.y); if (f.tr.length > 8) f.tr.splice(0, 2);
+      var c = q < 0.35 ? [255, 230, 140] : q < 0.7 ? [255, 140, 40] : [170, 50, 20], al3 = q < 0.8 ? 1 : (1 - q) / 0.2; ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = "rgba(" + c + "," + 0.5 * al3 + ")"; ctx.lineWidth = f.r; ctx.beginPath(); ctx.moveTo(f.tr[0], f.tr[1]); for (var e = 2; e < f.tr.length; e += 2) ctx.lineTo(f.tr[e], f.tr[e + 1]); ctx.stroke();
+      ctx.fillStyle = "rgba(" + c + "," + al3 + ")"; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill(); }
+    if (f.k === "smoke") { f.x += f.vx * dt; f.y += f.vy * dt; f.vy *= Math.pow(0.6, dt); var r3 = f.r0 * (1 + 2.2 * q), al4 = 0.75 * Math.sin(Math.PI * Math.min(1, q * 1.4)) * (1 - q);
+      var g3 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r3); g3.addColorStop(0, "rgba(165,155,145," + al4 + ")"); g3.addColorStop(1, "rgba(90,84,80,0)"); ctx.fillStyle = g3; ctx.beginPath(); ctx.arc(f.x, f.y, r3, 0, 7); ctx.fill(); }
+    if (f.k === "lick") { var hh = f.h * (1 - q * 0.7) * (0.8 + 0.25 * Math.sin(a / 45 + f.ph)), ww = hh * 0.32, al5 = (q < 0.1 ? q / 0.1 : 1 - (q - 0.1) / 0.9) * 0.9; ctx.globalCompositeOperation = "lighter"; ctx.translate(f.x, f.y);
+      var sw = Math.sin(a / 70 + f.ph) * ww * 0.8, g4 = ctx.createLinearGradient(0, ww, 0, -hh); g4.addColorStop(0, "rgba(255,200,90," + al5 + ")"); g4.addColorStop(0.35, "rgba(255,130,30," + 0.85 * al5 + ")"); g4.addColorStop(1, "rgba(190,40,10,0)");
+      ctx.fillStyle = g4; ctx.beginPath(); ctx.moveTo(0, ww); ctx.bezierCurveTo(-ww * 1.2, ww * 0.4, -ww * 0.9, -hh * 0.45, sw, -hh); ctx.bezierCurveTo(ww * 0.9, -hh * 0.45, ww * 1.2, ww * 0.4, 0, ww); ctx.fill(); }
+    if (f.k === "ring") { var R = (4 + 34 * Math.pow(q, 0.6)) * f.s, al6 = (1 - q); ctx.globalCompositeOperation = "lighter";
+      for (var n = 0; n < 22; n++) { var an2 = n / 22 * Math.PI * 2, px = f.x + Math.cos(an2) * R, py = f.y + Math.sin(an2) * R * 0.22, fh = (4 + 3 * Math.sin(n * 2.3 + a / 40)) * f.s * (1 - q * 0.6);
+        var g5 = ctx.createLinearGradient(px, py, px, py - fh); g5.addColorStop(0, "rgba(255,190,80," + al6 + ")"); g5.addColorStop(1, "rgba(220,50,10,0)"); ctx.fillStyle = g5; ctx.beginPath(); ctx.ellipse(px, py - fh / 2, 2 * f.s, fh / 2, 0, 0, 7); ctx.fill(); } }
+    ctx.restore(); return true; });
+}
+/* ---------- scene ---------- */
+var GROUND = 111, TX = 196, HY = 96, START = 6;
+function run(opts, big) { /* returns frames */
+  var c = document.getElementById("c"), ctx = c.getContext("2d"), frames = [], P = {}, s = big ? 1.9 : 1, dur = 2300, hitAt = 520, x0 = START, x1 = TX - 7;
+  FX = []; var hit = false;
+  for (NOW = 0; NOW <= dur; NOW += 1000 / 60) {
+    ctx.setTransform(2, 0, 0, 2, 0, 0); ctx.drawImage(bg, 0, 0, 220, 130);
+    var kh = 40, kw = kh * kn.naturalWidth / kn.naturalHeight; ctx.drawImage(kn, TX - kw * 0.35, GROUND + 2 - kh, kw, kh);
+    if (NOW < hitAt) { var u = NOW / hitAt, x = x0 + (x1 - x0) * u; ctx.save(); ctx.translate(x, HY); drawRoranFire(ctx, 1, big, P, "back"); drawRoranSpear(ctx, 1, big); drawRoranFire(ctx, 1, big, P, "front"); ctx.restore(); }
+    else if (!hit) { hit = true; impact(x1 + 2, HY, opts, s); }
+    drawFX(ctx, 1 / 60);
+    frames.push(c.toDataURL("image/jpeg", 0.92));
+  }
+  return frames;
+}
+</script></body></html>

@@ -4818,3 +4818,8 @@ Harley's 3 points:
 ## v1571 (14 Nov 2026) - Roran's spear burns (fireball)
 - Harley: fireball on both attacks - small on his normal throw, big on Lance Charge. Code-drawn (drawRoranFire), in the spear's rotated frame: soft heat glow + two flickering flame plumes (red-orange outer, orange) behind the spear, a white-hot core over the blade in front, embers shed backwards. Big = radius 10.5 / tail 46 (x hero scale) with more embers; small = 5.2 / 22. Conquest normal + skill, Arena normal + skill (both sides).
 - Checked headless: mid-flight screenshots of both, clips (Conquest real speed + 3x slow, Arena), no errors.
+
+## v1572 (14 Nov 2026) - Lance Charge impact embers
+- Made a fire-impact test page (dev/labs/fire-impact/: lab.html + rec.js record one clip per effect at true game size): flash, flame splash, embers, smoke, lingering flames, ground fire ring, plus combined small/big. Harley picked the embers, only on Lance Charge.
+- spawnRoranEmbers / drawRoranEmbers: ~19 burning bits burst back toward Roran from the hit, arc, fall, bounce once at the target's feet and cool yellow -> orange -> dull red (~0.7-1.2 s). Only on a real hit (Conquest skill shot `landed`, Arena `orbLand`). Normal throws: none. Conquest + Arena (both sides).
+- Checked headless: 19 embers per hit in both modes, screenshots + clip, no errors.

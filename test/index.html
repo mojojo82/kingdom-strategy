@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1571"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1572"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -22770,6 +22770,24 @@ function drawRoranFire(ctx, hs, big, P, layer) {
   }
   ctx.restore();
 }
+/* v1572: Lance Charge impact embers (Harley picked these from the impact tests) - ~19 burning bits burst back toward Roran, arc, fall, bounce once on
+   the ground at the target's feet and cool yellow -> orange -> dull red. Only when the skill really hits. */
+function spawnRoranEmbers(M, x, y, dirBack, hs) {
+  var L = M.roranEmbers || (M.roranEmbers = []), s = 1.9, now = performance.now();
+  for (var j = 0; j < 19; j++) { var b = Math.PI + (Math.random() * 2.4 - 1.3), sp = (30 + Math.random() * 80) * s * hs;
+    L.push({ x: x, y: y, vx: Math.cos(b) * sp * (dirBack < 0 ? 1 : -1), vy: Math.sin(b) * sp - (20 + Math.random() * 40) * hs, r: (0.6 + Math.random() * 0.7) * Math.sqrt(s) * hs, t0: now, life: 700 + Math.random() * 500, floor: y + 16 * hs, tr: [] }); }
+}
+function drawRoranEmbers(ctx, M, hs) {
+  var L = M && M.roranEmbers; if (!L || !L.length) return; var now = performance.now(), dt = Math.min(0.05, (now - (M.roranEmbT || now)) / 1000); M.roranEmbT = now;
+  ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+  M.roranEmbers = L.filter(function (f) { var q = (now - f.t0) / f.life; if (q >= 1) return false;
+    f.vx *= Math.pow(0.5, dt); f.vy += 140 * hs * dt; f.x += f.vx * dt; f.y += f.vy * dt; if (f.y > f.floor) { f.y = f.floor; f.vy *= -0.3; f.vx *= 0.5; }
+    f.tr.push(f.x, f.y); if (f.tr.length > 8) f.tr.splice(0, 2);
+    var c = q < 0.35 ? "255,230,140" : q < 0.7 ? "255,140,40" : "170,50,20", al = q < 0.8 ? 1 : (1 - q) / 0.2;
+    ctx.strokeStyle = "rgba(" + c + "," + 0.5 * al + ")"; ctx.lineWidth = f.r; ctx.beginPath(); ctx.moveTo(f.tr[0], f.tr[1]); for (var e = 2; e < f.tr.length; e += 2) ctx.lineTo(f.tr[e], f.tr[e + 1]); ctx.stroke();
+    ctx.fillStyle = "rgba(" + c + "," + al + ")"; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill(); return true; });
+  ctx.restore();
+}
 function drawRoranSpear(ctx, hs, big) { var im = heroSpearImg("roran"); if (!im) return false; var L = 33 * hs * (big ? 1.3 : 1), H = L * im.naturalHeight / im.naturalWidth; ctx.drawImage(im, -L * 0.8, -H / 2, L, H); return true; }
 function heroSpearImg(key) { var a = HERO_ANIMS[key]; if (!a || !a.spear) return null; var c = heroSpearImgCache[key]; if (!c) { c = heroSpearImgCache[key] = new Image(); c.src = a.spear; } return c.complete && c.naturalWidth ? c : null; }
 function kessaHandPos(feetX, feetY, scale, facingRight, cast) {
@@ -25110,6 +25128,7 @@ function stepIdleAnim(dtSec, w, h) {
     var tt = Math.min(1, s.t);
     s.x = s.startX + (s.toX - s.startX) * tt;
     s.y = s.startY + (s.toY - s.startY) * tt;
+    if (s.style === "spear" && s.t >= 1 && !s.burst) { s.burst = true; if (s.landed) spawnRoranEmbers(idleAnim, s.toX, s.toY, s.toX >= s.startX ? -1 : 1, heroSpriteVisualScale / 100); } /* v1572: Lance Charge embers */
     if (s.style === "spotflare" && s.t >= 1 && !s.burst) { s.burst = true; if (s.landed) (idleAnim.spotBursts || (idleAnim.spotBursts = [])).push({ x: s.toX, y: s.toY, age: 0 }); } /* v1499 */
     if (s.style === "fireball" && s.landed && s.t >= 1 && !s.burst) { s.burst = true; spawnOrbBurst(s.toX, s.toY, s.big, idleAnim.orbBursts); } // v465: real hit only
   });
@@ -28635,6 +28654,7 @@ function drawIdleAnim(ctx, w, h) {
   drawHeroWards(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1524: Torvald's Guard Stance aura */
   drawHeroHeals(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1526: Sera's Mending Light */
   drawHeroSouls(ctx, heroSpriteVisualScale / 100, idleAnim, w, h); /* v1567: Torvald's souls into the hull */
+  drawRoranEmbers(ctx, idleAnim, heroSpriteVisualScale / 100); /* v1572 */
   if (idleAnim.spotBursts && idleAnim.spotBursts.length) drawPipSpotBursts(ctx, idleAnim.spotBursts, sScale); /* v1499: Spot Shot hits */
   drawOrbBursts(ctx, idleAnim.orbBursts, groundYFor(h), sScale); // v465 orb burst on a real Piercing Volley hit
 
@@ -37379,6 +37399,7 @@ function drawArenaFrame(ctx, w, h) {
   drawHeroWards(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1524 */
   drawHeroHeals(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1526 */
   drawHeroSouls(ctx, heroSpriteVisualScale / 100, arenaAnim, w, h); /* v1567 */
+  drawRoranEmbers(ctx, arenaAnim, heroSpriteVisualScale / 100); /* v1572 */
   drawWeldSparks(ctx, groundYFor(h) + 4);
   if (osSetA) orbitShieldDrawPass(ctx, osSetA, true);
   if (hxSetA) hexShieldDrawPass(ctx, hxSetA, true);
@@ -37625,6 +37646,7 @@ function stepArenaAnim(dtSec, w, h) {
   // Piercing Volley fireball (v453): same light glow trail + shed embers as
   // Conquest's skill shot.
   arenaAnim.projectiles.forEach(function (p) {
+    if (p.style === "spear" && p.big && p.t >= 1 && !p.burst) { p.burst = true; if (p.orbLand) spawnRoranEmbers(arenaAnim, p.toX, p.toY, p.toX >= p.startX ? -1 : 1, heroSpriteVisualScale / 100); } /* v1572: Lance Charge embers (real hit only) */
     if (p.style !== "fireball") return;
     p.trail.push({ x: p.x, y: p.y });
     if (p.trail.length > 10) p.trail.shift();
@@ -38092,7 +38114,7 @@ function renderArenaBattleScreen() {
     arenaAnim.battleStartTime = performance.now();
     arenaAnim.battleEnded = false;
     arenaAnim.cloneD = null; arenaAnim.heroHp = null; arenaAnim.heroD = null; arenaAnim.lastX = null; arenaAnim.koT = null;
-    arenaAnim.heroLeap = null; arenaAnim.dvGlide = null; arenaAnim.dvBursts = null; arenaAnim.wards = null; arenaAnim.heals = null; arenaAnim.souls = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; arenaAnim.hzPillars = null; arenaAnim.hzBeams = null; arenaAnim.hzSky = null; /* v1503 */
+    arenaAnim.heroLeap = null; arenaAnim.dvGlide = null; arenaAnim.dvBursts = null; arenaAnim.wards = null; arenaAnim.heals = null; arenaAnim.souls = null; arenaAnim.roranEmbers = null; arenaAnim.dodgeEv = null; arenaAnim.blink = null; arenaAnim.hzStars = null; arenaAnim.hzGhosts = null; arenaAnim.hzWarps = null; arenaAnim.hzPillars = null; arenaAnim.hzBeams = null; arenaAnim.hzSky = null; /* v1503 */
     var canvas = document.getElementById("arenaCanvas");
     // Logical (CSS-pixel) dimensions, same as the draw loop above — these
     // feed arenaSlotPos() to compute projectile spawn points, which must
