@@ -4714,3 +4714,9 @@ Harley's 3 points:
 
 ## v1551 (13 Nov 2026) - Mecha true size in the Overlord Profile
 - Harley: don't make him small on the profile page. Measured every skin's profile size vs its battle size: all the newer skins use profile = 3.097 x battle width. The Mecha's govWidth is now computed so the mecha itself has that same ratio (build_mecha_skin.py), i.e. the same size relative to the other skins as in Conquest/Arena. At that size the side platforms only fit tucked half behind him and the side slots.
+
+## v1552 (13 Nov 2026) - Mecha platforms hover on their own (all modes); profile platforms closer
+- Harley: platforms closer to him in the profile (overlapping the body is fine), and the platforms move independently in every mode, gently hovering near him.
+- The 5 platforms are no longer baked into the front layer: skin field plats {img, w, h, at{h0..h4}, gov[], gw, gh, amp}. drawMechaPlats draws each with its own slow bob (mechaPlatBob: periods 2.8-4.0 s, 1.2% of the picture height); fortLayoutPoint adds the same bob to the riders' spots, so heroes ride them (measured: rider y follows the platform, about +-2 px).
+- Overlord Profile: picture = the mecha only (centred, true size: govWidth 1.165 = profile/battle ratio 3.097 like the other skins); the platforms are separate floating elements (.gp-plat, CSS hover, each its own speed/delay) placed in close, in front of him.
+- Checked headless: profile, Conquest, Arena, no errors.
