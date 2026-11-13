@@ -14,7 +14,7 @@ def key(a):
 S = key(np.asarray(Image.open(D + "mecha_parts_v2.png").convert("RGB")))
 ST = key(np.asarray(Image.open(D + "mecha_staff_v1.png").convert("RGB")))
 SA = key(np.asarray(Image.open(D + "mecha_staffarm_v1.png").convert("RGB")))   # v6: forearm + fist + staff as one piece (staff drawn into the real hand)
-HD = key(np.asarray(Image.open(D + "mecha_heads_v1.png").convert("RGB")))   # v7 head options (single centre crest)
+HD = key(np.asarray(Image.open(D + "mecha_heads_v2.png").convert("RGB")))   # v8 head options: round flat dome, one centre eye (Harley: less humanoid)
 ST2 = key(np.asarray(Image.open(D + "mecha_staff_v2.png").convert("RGB")))   # v5 staff: longer, fist low, 3/4 fist   # staff + fist, far gauntlet (no hand)
 T2 = key(np.asarray(Image.open(D + "mecha_torso_v2.png").convert("RGB")))   # v3 torso (Harley: bigger, huge shoulders like the concept)
 # boxes and anchor points (sheet px)
