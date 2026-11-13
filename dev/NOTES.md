@@ -4665,3 +4665,6 @@ Harley's 3 points:
 - drawWalkerRig (test/index.html): drawn every frame - 4-beat walk (one foot up at a time, 2.6 s cycle), feet flat on the ground, 2-bone IK knees (near legs splay out like the design, far legs darker and knees in), small foot tilt in the air, hull dips 2.5 px as each foot lifts (riders follow via hullBobPx). Arena: still = all feet planted, no bob.
 - The Atlas legs sheet (2.4 MB) + bobTrack are gone: test/index.html ~3 MB smaller.
 - Checked headless: Conquest + Arena screenshots, Arena all walker draws still, no errors, mock clip walker_rig_v1.mp4. Art only - balance untouched.
+
+## v1541 (13 Nov 2026) - Walker undercarriage
+- Harley: the space under the body between the hips looked empty. New ChatGPT part walker_belly_v1.png (belly machinery: plates, pipes, orange light panel, flat top) added to the rig atlas as "bel", drawn behind the hip drums and in front of the far legs (it hides the far hips), bobs with the hull. Checked headless: Conquest + Arena, Arena still, no errors. Clip walker_rig_v2.mp4.

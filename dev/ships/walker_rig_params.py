@@ -17,7 +17,7 @@ legs = [  # far legs first (behind), knees pointing inward; near legs splay outw
     leg((430, 543), 862, "nth", "nsh", "nft", 0.0, 1, 0.93, -1, 1),
     leg((1105, 545), 862, "nth", "nsh", "nft", 0.25, -1, 0.93, 1, 1),
 ]
-rig = dict(parts=meta, legs=legs, T=2.6, duty=0.75, stride=40, lift=20, bob=2.5, hh=497)
+rig = dict(parts=meta, legs=legs, belly=hp(767, 468), T=2.6, duty=0.75, stride=40, lift=20, bob=2.5, hh=497)
 p = "test/index.html"; s = open(p).read()
 s, n = re.subn(r"walkerAnim\.rig = \{.*?\}; walkerAnim\.rig\.img", lambda m: "walkerAnim.rig = " + json.dumps(rig, separators=(",", ":")) + "; walkerAnim.rig.img", s, count=1, flags=re.S)
 open(p, "w").write(s); print(n, [ (l["hip"], l["ax"]) for l in legs])

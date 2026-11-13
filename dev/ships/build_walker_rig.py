@@ -24,6 +24,10 @@ spec = {
   "fft": (P, (1064, 816, 1362, 952), FOOTF, [(1213, 836)], 0.62),
 }
 hy, hx = np.where(HP[..., 3] > 128); spec["hip"] = (HP, (hx.min() - 2, hy.min() - 2, hx.max() + 3, hy.max() + 3), HIP, [(752, 516)], 1.0)
+BP = key(np.asarray(Image.open(D + "walker_belly_v1.png").convert("RGB")))   # v1540b: undercarriage between the hips (Harley: "fill in the undercarriage")
+by, bx = np.where(BP[..., 3] > 128); BX0, BX1, BY0, BY1 = bx.min(), bx.max() + 1, by.min(), by.max() + 1
+BELLY_W = 690                                               # composite px it spans (drum centre to drum centre + a bit, ends tuck behind the drums)
+spec["bel"] = (BP, (BX0 - 2, BY0 - 2, BX1 + 2, BY1 + 2), BELLY_W / (BX1 - BX0), [((BX0 + BX1) / 2, BY0)], 1.0)
 # hip cap: the drum's glowing centre, drawn over the thigh's top hinge (round crop, soft edge)
 cy, cx, R = 516, 752, 128
 cap = HP[cy - R:cy + R, cx - R:cx + R].copy(); yy, xx = np.mgrid[-R:R, -R:R]; rr = np.hypot(yy, xx)
