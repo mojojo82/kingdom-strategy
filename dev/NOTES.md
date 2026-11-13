@@ -4776,3 +4776,7 @@ Harley's 3 points:
 - Since v1543 the server test job (GitHub "firebase") failed on every push: the end-to-end game test showed "Cannot read properties of undefined (reading 'ph')", then world chat broken. Cause: the Walker's profile picture was pre-drawn during page load (waitWalkerGov ran immediately); when its pictures were already decoded it read walkerCar, which was declared ~3000 lines later, so the error stopped the rest of the start-up script (world chat and everything after it) - for any player, any skin, depending on timing. My headless tests never hit the timing.
 - Fix: walkerCar declared before its first use; the pre-draw runs after load (setTimeout 0) and can't throw out of start-up. LIVE (v1198) never had it.
 - While those tests failed, the server deploy step was skipped (functions/rules unchanged since, so nothing missed).
+
+## v1565 (13 Nov 2026) - hero sheet copies reversed
+- Harley's eye picked up a quality difference, so the v1562 pre-shrunk hero sheet copies are removed: drawHeroAnim is byte-for-byte the pre-v1562 version again (big sheet, high-quality shrink every frame). Kept: faster beam hull-hit search, fmt shared formatter, FPS counter in Options, start-up fix.
+- Known cost stays: with ~10 heroes on screen the browser's cache for shrunk images can't hold every sheet and rebuilds one each frame (~12 ms headless). Future idea (Harley): have the game make exact-size copies so no rebuild is needed, if it can match the look exactly.
