@@ -13,7 +13,7 @@ def key(a):
     al[al < 0.04] = 0; return np.dstack([c, al * 255]).astype(np.uint8)
 S = key(np.asarray(Image.open(D + "mecha_parts_v2.png").convert("RGB")))
 ST = key(np.asarray(Image.open(D + "mecha_staff_v1.png").convert("RGB")))
-SA = key(np.asarray(Image.open(D + "mecha_staffarm_v1.png").convert("RGB")))   # v6: forearm + fist + staff as one piece (staff drawn into the real hand)
+SA = key(np.asarray(Image.open(D + "mecha_staffarm_v1_fixed.png").convert("RGB")))   # v6 (straightened: dev/mecha/fix_staff_line.py): forearm + fist + staff as one piece (staff drawn into the real hand)
 HD = key(np.asarray(Image.open(D + "mecha_head_final.png").convert("RGB")))   # v9 head: Harley's pick (round flat dome, one centre eye, no fin)
 ST2 = key(np.asarray(Image.open(D + "mecha_staff_v2.png").convert("RGB")))   # v5 staff: longer, fist low, 3/4 fist   # staff + fist, far gauntlet (no hand)
 T2 = key(np.asarray(Image.open(D + "mecha_torso_v2.png").convert("RGB")))   # v3 torso (Harley: bigger, huge shoulders like the concept)
