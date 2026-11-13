@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1568"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1569"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -22731,6 +22731,8 @@ function drawLyraArrow(ctx, sc) { /* v1512 (Harley: busy, colourful battles): Ly
 function heroShotStyle(key) { var a = HERO_ANIMS[key]; return (a && a.shellStyle) || "shell"; } /* v1499: Juno's scrap shell or Pip's flare */
 function heroReleaseSec(key) { var a = HERO_ANIMS[key]; return a && a.release != null ? a.release / a.fps.attack : 0; }
 var heroSpearImgCache = {};
+/* v1569: Roran's thrown spear - the same spear he holds (ChatGPT copy), at the size it is in his hand (~33 px at hero scale); tip ahead of the flight point. big = Lance Charge. */
+function drawRoranSpear(ctx, hs, big) { var im = heroSpearImg("roran"); if (!im) return false; var L = 33 * hs * (big ? 1.3 : 1), H = L * im.naturalHeight / im.naturalWidth; ctx.drawImage(im, -L * 0.8, -H / 2, L, H); return true; }
 function heroSpearImg(key) { var a = HERO_ANIMS[key]; if (!a || !a.spear) return null; var c = heroSpearImgCache[key]; if (!c) { c = heroSpearImgCache[key] = new Image(); c.src = a.spear; } return c.complete && c.naturalWidth ? c : null; }
 function kessaHandPos(feetX, feetY, scale, facingRight, cast) {
   var a = HERO_ANIMS.kessa, k = a.dispH * (a.sizeMul || 1) * scale / a.ch, hp = (cast && a.castHand) || a.hand || [31.6, 45.3]; /* v1120: palm measured off the Blender frames */
@@ -24731,7 +24733,10 @@ function stepIdleAnim(dtSec, w, h) {
         var isVolley = !!(skillDef && skillDef.name === "Piercing Volley");
         var volleyToY = (isVolley && frontVis.type === "boss") ? (groundYFor(h) + 15 - 29 * bossSpriteScale) : (groundYFor(h) - 16); // v465: a boss's fireball lands mid-body so the orb burst has a body to hit
         if (key === "pip" && HERO_ANIMS.pip) { var pv0 = idleAnim.heroVis.pip || sp, ph0 = heroHandPos("pip", pv0.x + (fortLife.active ? fortLife.dx : 0), pv0.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); sp = { x: ph0.x, y: ph0.y }; } /* v1499: Spot Shot leaves his muzzle */
-        spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : key === "pip" ? "spotflare" : SPELL_COLS[key] ? "spell" : null, landed, frontVis.type === "boss"); if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
+        var lanceSk = key === "roran" && HERO_ANIMS.roran && HERO_ANIMS.roran.spear; /* v1569: Lance Charge - he plays his throw and the (bigger) spear leaves his hand on the release frame, straight at the front enemy */
+        if (lanceSk) { var sqL = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); sqL.roran = (sqL.roran || 0) + 1; var rvL = idleAnim.heroVis.roran || sp, rhL = heroHandPos("roran", rvL.x + (fortLife.active ? fortLife.dx : 0), rvL.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); sp = { x: rhL.x, y: rhL.y }; }
+        spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : key === "pip" ? "spotflare" : lanceSk ? "spear" : SPELL_COLS[key] ? "spell" : null, landed, frontVis.type === "boss");
+        if (lanceSk) idleAnim.skillShots[idleAnim.skillShots.length - 1].delay = heroReleaseSec("roran"); if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
         sfxSkillShot();
       }
       // the skill just fired and its cooldown reset — snap the smooth timer
@@ -24982,7 +24987,7 @@ function stepIdleAnim(dtSec, w, h) {
       p.t += (dtSec * Math.max(1, devSpeedMult) * pBoost) / 0.5;
       var tt = Math.min(1, p.t);
       p.x = p.startX + (p.toX - p.startX) * tt;
-      p.y = p.startY + (p.toY - p.startY) * tt - Math.sin(tt * Math.PI) * IDLE_CAV_ARC_LIFT;
+      p.y = p.startY + (p.toY - p.startY) * tt - (p.style === "spear" ? 0 : Math.sin(tt * Math.PI) * IDLE_CAV_ARC_LIFT); /* v1569: Roran throws his spear straight at the enemy */
     } else if (p.style === "orb") {
       p.x += 260 * dtSec * Math.max(1, devSpeedMult) * pBoost;
       var oSpan = p.toX - p.startX, oFrac = oSpan > 0 ? Math.min(1, Math.max(0, (p.x - p.startX) / oSpan)) : 1;
@@ -25049,6 +25054,7 @@ function stepIdleAnim(dtSec, w, h) {
   idleAnim.damageNumbers = idleAnim.damageNumbers.filter(function (n) { return n.life > 0; });
 
   idleAnim.skillShots.forEach(function (s) {
+    if (s.delay > 0) { s.delay -= dtSec * Math.max(1, devSpeedMult); return; } /* v1569: waits for the throw's release frame */
     var wasDone = s.t >= 1;
     s.trail.push({ x: s.x, y: s.y });
     if (s.trail.length > (s.style === "fireball" ? 10 : 6)) s.trail.shift();
@@ -25414,7 +25420,7 @@ var HERO_ANIMS = {
   // v1100: the 3D knight (Meshy model + Mixamo slash/run/hit, hand-keyed charge + hop; tools dev/knight, originals art/originals). Rows: idle 8, run 16, attack 11 (one 0.5 s swing, hit lands on frame 5), hit 10 (big hits), charge 2 (wind-up: crouch, push-off), hop 9.
   gareth: { src: ksA("assets/hero-anims-gareth-c76a98e8.webp"), cw: 181, ch: 134, ax: 72.85, ay: 129.31, fps: { idle: 8, run: 24, attack: 22, hit: 20 }, rows: { idle: [0, 8], run: [1, 16], attack: [2, 11], hit: [3, 10], charge: [4, 2], hop: [5, 9] }, once: { hit: true }, noBlend: { run: true }, sizeMul: 0.75, impact: 5, slash: { from: 3, to: 6.6, cx: -25.8, cy: -7.8, R: 64.0, w: 22.0, a0: -2.25, a1: 0.26 }, dispH: 35.53, model3d: true, barLift: 9,
     slashFx: { style: "colossal", alpha: 0.6, from: 2.8, to: 6.9, cols: [[255, 255, 255], [160, 215, 255], [70, 130, 255]], arc: { cx: 8, cy: -55, R: 70, inner: 0.62, a0: -2.35, a1: 0.8, from: 2.6, to: 6.4 } } }, // v1102: Colossal steel blue swept as a big crescent over his head (Harley: "colossal steel blue but the overhead slash effect"); arc in sheet px from his feet
-  roran: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/roran/roran_anim_v2.webp", wrap: 14, /* v1512: Atlas redo from his card design (one throw; spear leaves his hand on frame 14 at 21 fps = 0.667 s, was 0.675 s); shell + shellStyle "spear" = Arena throws the lance from his hand too */ cw: 234, ch: 140, ax: 84.78, ay: 137.07, fps: { idle: 8, run: 8, attack: 21 }, rows: { idle: [0, 41], run: [0, 41], attack: [2, 26] }, once: { attack: true }, sizeMul: 1, dispH: 33.83, model3d: true, hand: [62, 77.6], release: 14, shell: true, shellStyle: "spear", spear: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAAYCAYAAAAxkDmIAAAEiElEQVR4nO2aXWxTVRzAf+ec2+6DsZbdXYEBG07l84VIYnzQQALERA2ZGUR98MGIEVHCIhGDL5sKJn4ECcvGcC58aRjgDPhglAfDg6jEmJAZJiiRKCAfbWdbOteuvef4sA/L1iFRZsm4v6TJ7em59/ScX///++9pRVmgHI/xi8z3G/AYWzzB4xxP8C1AJBoSkWhoTFx4gvOMz+czdtDRdtBxOw6FrEg0JLJfH5AvhrffKJ7gPDEorbCwiJoVTzB77nxqa5y0HXR0JBpSg33soGMGHy2tzSoSDVm5PgijIbwqOn8MCNQV06ezfmM9v5z5ib1tO4jH4wghMMZQGgigpCQWi6G1Hn6+soOOHuXygCc4b0RiYUE94ujiellb05QOBAI0frCbyVMq2NnazP69u/H5fOw68AlTKyq4cO4cly9d4szpU4TDITra96G1S8ehg77ampWZ0cYZITgSC4uGRYvUmM/wNqfxxMn0iEYp2bJjD0uWLuPokc/o6YnzyPIaEokEBQUFWJYPZSmUVBz/5hjvbH6drh86kVIS6r6cM5pzRbAZozl5ZFFVVsD6pVX09rlICUIqMpk0E4qKsR/egJw0jVn3VBOPx5FSYky/FmPMUOpOJZO0bW+iraUJIGc0DwnujoVFWaBc+y3JnMmF//N0bx+kEGS0Zs6UCWx8qJretIsUAjAIoSDTyyufh1i1eRfzZlWTSqdRclgtLMB1MyhlEQhO4ssjX/D2pgZ+PXs2q8fAQVmgnO5YWBjgjkmOXja3lCq7iLSrEfyrytzjOghh6MtoKoJFLJ1VRkYbxOAyC4lOJQkveIbp9y8nHrmMUhZmlKRqtEZrTUlpKb2JBB3tH9H+4W4uXPxNAcYOOsYaGhiYLGBiocLVBq0NCC9b32wE9K+vybG2xgCCGTOruZro4fyF3/H5C4bScy7cjIsv8geO4zCjshIlry2fhlL02rqwbNxa7tolFgsrJ2BM/83Yc3yTEZDWmrvLi1n9YCWpjEYMpGiExGcy1B0+z5ot+5hdXUUylUKpkTWv62YAQZltc7qri7feqOfbY19ljTJw4BVZ+eFOu5C6JZUkB4oskCDA9CVJL3gS/9Q5LF70AL3JJMCwIktTUjIRISTte3bSvO09/uzpQSmF67rX3FdHCF5bF5ZdXYh58zzRY0nj1nI3V/uqdS9T99IGTnd10t0d4t6F95FKJfH7/f1fk5RCWRYnOzt5983XOP71MQBaoiFrddAZcU1voyNP9G901AvmzxfOcy9ktDa82rCJx596msMd+9nRuJVI6Apt+z6mYtrfGx0/n/qReCzG4Y6D9PQkUMriSuSitINOzoD0BOeRwa1Kn9/H+o31zKy+i5ZtWzjx/XdDfa63VdnS2mytfnZNzkwwiCc4j6yNhmTr1Er30cdW0JdK8WnHAQCEkLy47nnV0NBgsiOzpbVZOStXisX9T93RojYbT3CeKSouNkoqEomrCCHY/n7TNVGZ/avRjQgdjif4FqElGlK5iqT/ivXPXTzGku5YWBhjsMdALngRPO7x/tExzvkLSjnge2JEUD4AAAAASUVORK5CYII=" }, // v1123: 3D Roran (dev/roran) - Blender Gareth-look frames, idle made from scratch, Mixamo throw
+  roran: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/roran/roran_anim_v2.webp", wrap: 14, /* v1512: Atlas redo from his card design (one throw; spear leaves his hand on frame 14 at 21 fps = 0.667 s, was 0.675 s); shell + shellStyle "spear" = Arena throws the lance from his hand too */ cw: 234, ch: 140, ax: 84.78, ay: 137.07, fps: { idle: 8, run: 8, attack: 21 }, rows: { idle: [0, 41], run: [0, 41], attack: [2, 26] }, once: { attack: true }, sizeMul: 1, dispH: 33.83, model3d: true, hand: [62, 77.6], release: 14, shell: true, shellStyle: "spear", spear: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/roran/roran_spear_v2.webp" /* v1569: ChatGPT copy of the spear he holds */ }, // v1123: 3D Roran (dev/roran) - Blender Gareth-look frames, idle made from scratch, Mixamo throw
   lyra: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/lyra/lyra_anim_v1.webp", wrap: 15, cw: 202, ch: 142, ax: 45.76, ay: 140.19, fps: { idle: 8, run: 8, attack: 24 }, rows: { idle: [0, 41], run: [0, 41], attack: [2, 28] }, once: { attack: true }, sizeMul: 1, dispH: 34.85, hand: [60, 96], release: 16, shell: true, shellStyle: "arrow" }, /* v1512: Lyra's first real animation (Atlas, from her card design): draws and looses an arrow - it leaves the bow on frame 16 (0.667 s) as a rose-crimson arrow (drawLyraArrow) */
   kessa: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/kessa/kessa_anim_v2.webp", cw: 115, ch: 114, ax: 65.89, ay: 111.42, wrap: 15, fps: { idle: 8, run: 8, attack: 16, cast: 16, castMiss: 16 }, rows: { idle: [0, 41], run: [0, 41], attack: [2, 15], cast: [3, 15], castMiss: [3, 15] }, seq: {"cast":[0,1,2,3,4,5,6,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,7,8,9,10,11,12,13,14],"castMiss":[0,1,2,3,4,5,6,7,8,9,7,8,9,7,8,9,10,11,12,13,14]}, once: { attack: true, cast: true, castMiss: true }, sizeMul: 1, dispH: 27.98, model3d: true, hand: [38.4, 89.0], castHand: [45.1, 91.7], bolt: ksA("assets/hero-anims-x-96267376.png") }, /* v1120: 3D Kessa rendered in Harley's Blender (dev/kessa): idle / attack (orb leaves the palm on frame 6) / cast = Arc Burst wind-up, held cast while the bolt lasts, recovery */
   bram: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/bram/bram_anim_v1.webp", wrap: 21, cw: 186, ch: 140, ax: 50.33, ay: 137.79, fps: { idle: 8, run: 12, attack: 24 }, rows: { idle: [0, 41], run: [1, 12], attack: [2, 24] }, sizeMul: 1.4, dispH: 33.09, impact: 12 }, /* v1545 (Harley: "really tiny"): sizeMul 1 -> 1.4, ~90% of Torvald's height. v1480: Bram Kettleback (H3 Max clips; dev/heroes/build_hero_frames.py + build_hero_anim.py, per-clip scale). Run = one 1 s stride; attack = jab + piston punch in 1 s, the hit lands on frame 12 (the punch). 491 KB file. */
@@ -28488,12 +28494,11 @@ function drawIdleAnim(ctx, w, h) {
       // motion in stepIdleAnim) so it visibly noses forward/down like a thrown
       // javelin instead of staying flat while it arcs.
       var dx = p.toX - p.startX;
-      var dy = (p.toY - p.startY) - Math.PI * Math.cos(p.t * Math.PI) * IDLE_CAV_ARC_LIFT;
+      var dy = (p.toY - p.startY) - (p.style === "spear" ? 0 : Math.PI * Math.cos(p.t * Math.PI) * IDLE_CAV_ARC_LIFT); /* v1569: spear flies straight */
       var angle = Math.atan2(dy, dx);
       ctx.save();
       ctx.translate(p.x, p.y); ctx.rotate(angle);
-      var spI = p.style === "spear" ? heroSpearImg("roran") : null;
-      if (spI) { var spL = 27 * (heroSpriteVisualScale / 100); ctx.drawImage(spI, -spL * 0.62, -spL * 0.1, spL, spL * 0.2); } /* v1123: Roran's lance (tip ahead of the flight point) */
+      if (p.style === "spear" && drawRoranSpear(ctx, heroSpriteVisualScale / 100, false)) { } /* v1569: the spear he holds */
       else if (p.style === "shell") drawJunoShell(ctx, heroSpriteVisualScale / 100);
       else if (p.style === "flare") drawPipFlare(ctx, heroSpriteVisualScale / 100);
       else { var s = getCavalryArcSprite();
@@ -28550,7 +28555,9 @@ function drawIdleAnim(ctx, w, h) {
   // nothing here affects the actual damage or targeting math.
   var sScale = skillShotVisualScale / 100;
   idleAnim.skillShots.forEach(function (s) {
+    if (s.delay > 0) return;
     var angle = Math.atan2(s.toY - s.startY, s.toX - s.startX);
+    if (s.style === "spear") { ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angle); drawRoranSpear(ctx, sScale, true); ctx.restore(); return; } /* v1569: Lance Charge (energy around it comes next) */
     if (s.style === "fireball" && skillShotFireballReady) { drawFireballShot(ctx, s, angle, sScale); return; }
     if (s.style === "spotflare") { drawPipSpotShot(ctx, s, angle, sScale); return; } /* v1499 */
     if (s.style === "spell" && s.spellCol) { s.trail.forEach(function (pt, ti) { ctx.save(); ctx.globalAlpha = (ti + 1) / (s.trail.length + 1) * 0.5; drawSpellOrb(ctx, pt.x, pt.y, s.spellCol, 7 * sScale, ti); ctx.restore(); }); drawSpellOrb(ctx, s.x, s.y, s.spellCol, 12 * sScale, s.startX); return; } /* v1185 */
@@ -37342,12 +37349,12 @@ function drawArenaFrame(ctx, w, h) {
       // (derivative of the arc motion above), so it noses forward/down
       // through the lob instead of staying flat.
       var dx = p.toX - p.startX;
-      var dy = (p.toY - p.startY) - Math.PI * Math.cos(p.t * Math.PI) * ARENA_CAV_ARC_LIFT;
+      var dy = (p.toY - p.startY) - (p.style === "spear" ? 0 : Math.PI * Math.cos(p.t * Math.PI) * ARENA_CAV_ARC_LIFT); /* v1569 */
       var angle = Math.atan2(dy, dx);
       ctx.translate(p.x, p.y); ctx.rotate(angle);
       if (p.style === "shell") { drawJunoShell(ctx, heroSpriteVisualScale / 100); ctx.restore(); return; }
       if (p.style === "flare") { drawPipFlare(ctx, heroSpriteVisualScale / 100); ctx.restore(); return; }
-      if (p.style === "spear") { var aspI = heroSpearImg("roran"); if (aspI) { var aspL = 27 * (heroSpriteVisualScale / 100); ctx.drawImage(aspI, -aspL * 0.62, -aspL * 0.1, aspL, aspL * 0.2); ctx.restore(); return; } } /* v1512: Roran throws his lance in Arena too */
+      if (p.style === "spear" && drawRoranSpear(ctx, heroSpriteVisualScale / 100, p.big)) { ctx.restore(); return; } /* v1512: Roran throws his lance in Arena too */
       ctx.shadowColor = "#ffe27a"; ctx.shadowBlur = 7;
       ctx.strokeStyle = "#c99a5e"; ctx.lineWidth = 2; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(4, 0); ctx.stroke();
@@ -37561,7 +37568,7 @@ function stepArenaAnim(dtSec, w, h) {
       }
     });
   }
-  arenaAnim.projectiles.forEach(function (p) { p.t += p.cannon ? (p.durSec > 0 ? dtSec / p.durSec : dtSec * 260 / p.dist) : (dtSec / 0.4); var tt = Math.max(0, Math.min(1, p.t)); p.x = p.startX + (p.toX - p.startX) * tt; p.y = p.startY + (p.toY - p.startY) * tt - (p.arc ? Math.sin(tt * Math.PI) * ARENA_CAV_ARC_LIFT : 0); });
+  arenaAnim.projectiles.forEach(function (p) { p.t += p.cannon ? (p.durSec > 0 ? dtSec / p.durSec : dtSec * 260 / p.dist) : (dtSec / 0.4); var tt = Math.max(0, Math.min(1, p.t)); p.x = p.startX + (p.toX - p.startX) * tt; p.y = p.startY + (p.toY - p.startY) * tt - (p.arc && p.style !== "spear" ? Math.sin(tt * Math.PI) * ARENA_CAV_ARC_LIFT : 0); }); /* v1569: Roran's spear flies straight */
   // Note: the cannon bullet's own HP-bar drop is no longer applied here on visual arrival — it's driven directly,
   // per bullet, by the staggered setTimeout chain in runArenaBattle's onTick (see cIntMs there), using each
   // bullet's real damage (including crit + Critical Mass's dmg ramp), rather than this projectile's flight time.
@@ -38224,7 +38231,10 @@ function renderArenaBattleScreen() {
         } else {
           var pvHit = (a && a.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, false, arenaHullContactPoint(w, h, false, slot.x, slot.y, aiCenter.y)) : null; // v466: lands deep in the enemy hull, like the laser's aim zone (v465 used the surface contact point)
           var tgtP = state.skillTargets && state.skillTargets["p_" + key], tpP = tgtP && tgtP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + tgtP] : null; // melee skill aims at the hero it actually hits, else the fortress
-          spawnArenaProjectile(slot.x, slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", false, a && a.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : SPELL_COLS[key] ? "spell" : null, landed); if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
+          var lanceP = key === "roran" && HERO_ANIMS.roran && HERO_ANIMS.roran.spear, lhP = lanceP ? heroHandPos("roran", slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null; /* v1569: Lance Charge - throw + bigger spear from his hand, straight */
+          if (lanceP) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["p_" + key] = performance.now();
+          spawnArenaProjectile(lhP ? lhP.x : slot.x, lhP ? lhP.y : slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", !!lanceP, a && a.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : lanceP ? "spear" : SPELL_COLS[key] ? "spell" : null, landed);
+          if (lanceP) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].t = -heroReleaseSec("roran") / 0.4; if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });
@@ -38249,7 +38259,10 @@ function renderArenaBattleScreen() {
         } else {
           var aiPvHit = (aiA && aiA.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, true, arenaHullContactPoint(w, h, true, slot.x, slot.y, playerCenter.y)) : null;
           var tgtA = state.skillTargets && state.skillTargets["a_" + key], tpA = tgtA && tgtA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + tgtA] : null;
-          spawnArenaProjectile(slot.x, slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", false, aiA && aiA.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : SPELL_COLS[key] ? "spell" : null, aiLanded); if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
+          var lanceA = key === "roran" && HERO_ANIMS.roran && HERO_ANIMS.roran.spear, lhA = lanceA ? heroHandPos("roran", slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null; /* v1569: Lance Charge (AI side) */
+          if (lanceA) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["a_" + key] = performance.now();
+          spawnArenaProjectile(lhA ? lhA.x : slot.x, lhA ? lhA.y : slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", !!lanceA, aiA && aiA.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : lanceA ? "spear" : SPELL_COLS[key] ? "spell" : null, aiLanded);
+          if (lanceA) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].t = -heroReleaseSec("roran") / 0.4; if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });

@@ -4792,3 +4792,9 @@ Harley's 3 points:
 ## v1568 (13 Nov 2026) - Torvald's souls restyled
 - Harley liked the look of the pale blue comets in another game's recording: Torvald's orbs are now soft pale-cyan comets - a near-white round head with a soft edge and a smooth wide tail (the last 30 px of its path) that tapers and fades, drawn normally instead of as a bright additive glow. Landing puff in the same pale cyan. Flight unchanged (burst out, hang, curl and accelerate into the hull).
 - Clips: art/originals/heroes/torvald/torvald_souls_conquest_v2.mp4, torvald_souls_arena_v2.mp4. Headless, no errors.
+
+## v1569 (14 Nov 2026) - Roran: real spear, thrown straight (normal attack + Lance Charge)
+- New thrown spear = a ChatGPT copy of the spear he holds (silver leaf blade, gold crossguard with side prongs, dark wrapped shaft with gold bands, gold end cap). Originals: art/originals/heroes/roran/spear/ (gpt original + keyed); game file art/heroes/roran/roran_spear_v2.webp (360x38). Drawn by drawRoranSpear at the size it is in his hand (~33 px at hero scale; Lance Charge x1.3), tip ahead of the flight point. Replaces the old tiny placeholder.
+- Trajectory: no more lob - his spear flies in a straight line from his hand to the enemy (Conquest + Arena; same flight time, so damage timing is unchanged).
+- Lance Charge used the generic default skill streak from his slot. Now he plays his throw and the bigger spear leaves his hand on the release frame, straight at the target (Conquest skill shot with a release delay; Arena player + AI side with atkTrig + release delay). Plain spear for now - Harley wants an energy / fireball effect around both next.
+- Checked headless: spear positions logged mid-flight (hand -> target, flat), screenshots, no errors.
