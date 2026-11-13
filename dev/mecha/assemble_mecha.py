@@ -23,13 +23,17 @@ P = {
  "fFo":   ((1271, 514, 1430, 767), {"p0": (1332, 535), "p1": (1356, 743)}),
  "fHa":   ((1299, 792, 1435, 999), {"p0": (1355, 816)}),
 }
-pose = {"head": 0, "nUp": -22, "nFo": 58, "nHa": -12, "fUp": -24, "fFo": 64, "fHa": -18, "dark": 0.78}   # concept pose (Harley: arms like the original composite)
+pose = {"head": 0, "nUp": -22, "nFo": 58, "nHa": -12, "fUp": -24, "fFo": 64, "fHa": -18, "dark": 0.78,
+        "sc": {"nUp": 1.0, "nFo": 1.22, "nHa": 1.12, "fUp": 0.82, "fFo": 0.82 * 1.22, "fHa": 0.82 * 1.12}}   # v2: chunkier forearms/hands like the concept; the far arm smaller (Harley)   # concept pose (Harley: arms like the original composite)
 if len(sys.argv) > 2: pose.update(json.loads(sys.argv[2]))
+SC = pose["sc"]
 def part(n):
     (x0, y0, x1, y1), pv = P[n]; im = Image.fromarray(S[y0:y1, x0:x1].copy())
     lab = np.asarray(im)[..., 3] > 0; l, k = ndimage.label(lab)
     if k > 1: big = l == (np.argmax(ndimage.sum(lab, l, range(1, k + 1))) + 1); a = np.asarray(im).copy(); a[..., 3] = a[..., 3] * ndimage.binary_dilation(big, iterations=3); im = Image.fromarray(a)
-    return im, {k2: (v[0] - x0, v[1] - y0) for k2, v in pv.items()}
+    k = SC.get(n, 1.0)
+    if k != 1.0: im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS)
+    return im, {k2: ((v[0] - x0) * k, (v[1] - y0) * k) for k2, v in pv.items()}
 W, H = 1500, 1300; canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 def put(n, at, ang, dark=1.0):
     im, pv = part(n); p0 = pv.get("p0", (0, 0)); pad = 400
