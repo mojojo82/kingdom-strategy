@@ -4720,3 +4720,6 @@ Harley's 3 points:
 - The 5 platforms are no longer baked into the front layer: skin field plats {img, w, h, at{h0..h4}, gov[], gw, gh, amp}. drawMechaPlats draws each with its own slow bob (mechaPlatBob: periods 2.8-4.0 s, 1.2% of the picture height); fortLayoutPoint adds the same bob to the riders' spots, so heroes ride them (measured: rider y follows the platform, about +-2 px).
 - Overlord Profile: picture = the mecha only (centred, true size: govWidth 1.165 = profile/battle ratio 3.097 like the other skins); the platforms are separate floating elements (.gp-plat, CSS hover, each its own speed/delay) placed in close, in front of him.
 - Checked headless: profile, Conquest, Arena, no errors.
+
+## v1553 (13 Nov 2026) - Fix: blue box over the Mecha
+- v1552 gave the Mecha an "empty" 1x1 front layer, but the pixel used was half-transparent BLUE (0,0,255,127), stretched over the whole fortress -> a blue box. Replaced with a fully transparent pixel. Checked headless: gone, no errors.
