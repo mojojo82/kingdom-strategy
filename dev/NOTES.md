@@ -4732,3 +4732,6 @@ Harley's 3 points:
 - Harley: a suitable weapon slot on every skin (usually the side of the hull); Mecha: the 3 slots on his arm closest to the camera.
 - SKIN_WSLOTS[id] = [w0, w1, w2] per skin (fractions of the battle picture), applied in skinLayoutFor over saved Skin Align spots - guns only (hero spots, cannon etc. unchanged). Ironclad and old Voidspire got real hull-side slots (they had none -> default spots); Bonewake back slot moved onto the hull; crawlers on the lower hull; Mecha w0-w2 stacked down his near forearm (gauntlet).
 - Overview: dev/ships/weapon_slots_v1555.png; Mecha with 3 guns: dev/ships/mecha_arm_guns_v1555.png. No errors.
+
+## v1556 (13 Nov 2026) - Fix: guns hidden in Arena on layered skins
+- Harley: weapons not visible in Arena (Crawler B). Arena drew the barrels between the back and front hull layers, so layered skins (crawlers, walker, Blackwatch II, Voidspire II, Mecha) covered them. Barrels now draw after both front layers. Checked headless (Crawler B vs Walker, guns visible), no errors.
