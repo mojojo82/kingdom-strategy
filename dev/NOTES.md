@@ -4693,3 +4693,10 @@ Harley's 3 points:
 ## v1546 (13 Nov 2026) - Aurek a bit taller
 - Harley: Aurek slightly taller than Bram and Torvald. Lined them up at their game sizes (sheet frame x dispH x sizeMul / ch): Aurek's helmet sat ~12% below Torvald's head. HERO_ANIMS.aurek sizeMul 1 -> 1.2. Drawing size only (Conquest + Arena); balance untouched. Lineup: dev/heroes/aurek_size_v1546.png (Bram, Torvald, Aurek).
 - Note: Gareth is the small white-helmet knight, Torvald the brown-haired shield knight.
+
+## v1547 (13 Nov 2026) - Mecha fortress skin (static for now)
+- New skin "Mecha" (id mecha): a floating mecha upper body - ChatGPT parts (dome head with one centre eye, big-shouldered torso, floating forearms with no ball joints, staff drawn into the rear hand and straightened) assembled by dev/mecha/assemble_mecha2.py -> mecha_float_v13.png.
+- 5 flat 2D hero platforms (mecha_platform_flat.png). Layered skin: back = mecha, front = platforms, riders drawn between (they stand inside the rails); barsAbove. Platforms 2 above the mecha, 3 in front of it (none behind - the back of a fortress is off-screen in Conquest); transparent space behind the mecha so its back is not cut off.
+- dev/mecha/build_mecha_skin.py (layers + layout json), dev/mecha/embed_mecha_skin.py (re-embed). Mecha body ~125 css px wide in Conquest (cqScale 0.2341), lift 12, meleeFront 0.67 (melee heroes stop at the staff).
+- Static for now: the parts are kept separate for the code animation (next). Empty platform when a roster slot is an infantry hero.
+- Checked headless (3x): Conquest + Arena screenshots (art/originals/ships/mecha/ingame_*_v1547.png), no errors. Art only, balance untouched.
