@@ -4823,3 +4823,8 @@ Harley's 3 points:
 - Made a fire-impact test page (dev/labs/fire-impact/: lab.html + rec.js record one clip per effect at true game size): flash, flame splash, embers, smoke, lingering flames, ground fire ring, plus combined small/big. Harley picked the embers, only on Lance Charge.
 - spawnRoranEmbers / drawRoranEmbers: ~19 burning bits burst back toward Roran from the hit, arc, fall, bounce once at the target's feet and cool yellow -> orange -> dull red (~0.7-1.2 s). Only on a real hit (Conquest skill shot `landed`, Arena `orbLand`). Normal throws: none. Conquest + Arena (both sides).
 - Checked headless: 19 embers per hit in both modes, screenshots + clip, no errors.
+
+## v1573 (14 Nov 2026) - Lyra: unlimited range
+- Harley: Lyra needs unlimited range (old limits date from early in the game). Added basicAnyTarget (shoots the front enemy as soon as it is on screen, like Kessa / Roran / Juno / Pip / Vesper / Seraphine). Sera still has the old limit (asked Harley).
+- Balance (run.js --only conquest --seeds 1 --heroes gareth,roran,sera,torvald,lyra): stuck-at before -> after: new 3-6 -> 3-7, Gareth+Lyra Lv20 5-6 -> 5-8, Lv40 6-9 -> 7-1, Lv80 10-1 -> 10-2, max 10-6 -> 10-11. Same setup with Kessa instead of Lyra (unchanged): max 10-1. Meta check identical before/after (the known warning was already there). Arena doesn't use basicAnyTarget.
+- Harley reported no attack animation from Lyra at all: headless she shoots and animates in Conquest (default skin and Mecha, 5-8 shots / 12 s, also before this change); in Arena only 8 attack frames play so she is back in idle when the arrow leaves (the noted future item). Asked Harley for where / a recording.
