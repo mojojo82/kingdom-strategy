@@ -14,14 +14,14 @@ def key(a):
 S = key(np.asarray(Image.open(D + "mecha_parts_v2.png").convert("RGB")))
 ST = key(np.asarray(Image.open(D + "mecha_staff_v1.png").convert("RGB")))
 SA = key(np.asarray(Image.open(D + "mecha_staffarm_v1.png").convert("RGB")))   # v6: forearm + fist + staff as one piece (staff drawn into the real hand)
-HD = key(np.asarray(Image.open(D + "mecha_heads_v2.png").convert("RGB")))   # v8 head options: round flat dome, one centre eye (Harley: less humanoid)
+HD = key(np.asarray(Image.open(D + "mecha_head_final.png").convert("RGB")))   # v9 head: Harley's pick (round flat dome, one centre eye, no fin)
 ST2 = key(np.asarray(Image.open(D + "mecha_staff_v2.png").convert("RGB")))   # v5 staff: longer, fist low, 3/4 fist   # staff + fist, far gauntlet (no hand)
 T2 = key(np.asarray(Image.open(D + "mecha_torso_v2.png").convert("RGB")))   # v3 torso (Harley: bigger, huge shoulders like the concept)
 # boxes and anchor points (sheet px)
 P = {"torso": (401, 254, 1131, 938), "head": (706, 17, 963, 244), "nUp": (47, 262, 339, 617), "nFo": (34, 644, 423, 947), "fUp": (1224, 315, 1428, 616), "fFo": (1225, 655, 1452, 936)}
 A = {"neck": (848, 492), "shN": (612, 636), "shF": (1062, 596), "headB": (838, 236),
      "nUp_sh": (232, 385), "nUp_el": (195, 600), "nFo_el": (98, 690), "fUp_sh": (1318, 400), "fUp_el": (1322, 602), "fFo_el": (1268, 698)}
-C = {"head2": None, "h2W": 205, "h2Dy": 22, "staffArm": 1, "saS": 0.6, "saAnchor": [232, 700], "saDx": 8, "saDy": -6, "staff": 1, "gRot": -70, "gS": 0.78, "stS": 0.82, "stRot": 0, "torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
+C = {"head2": [408, 329, 1124, 721], "h2W": 290, "h2Dy": -22, "staffArm": 1, "saS": 0.6, "saAnchor": [232, 700], "saDx": 8, "saDy": -6, "staff": 1, "gRot": -70, "gS": 0.78, "stS": 0.82, "stRot": 0, "torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
 if len(sys.argv) > 2: C.update(json.loads(sys.argv[2]))
 W, H = 1700, 1400; cv = Image.new("RGBA", (W, H)); O = (450, 300)   # torso offset on the canvas
 def crop(n):
