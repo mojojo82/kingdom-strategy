@@ -4703,3 +4703,6 @@ Harley's 3 points:
 
 ## v1548 (13 Nov 2026) - Mecha bigger
 - Harley: the mecha needs to be a bit bigger. Mecha 20% bigger on screen (cqScale 0.2875), platforms + riders keep their size. The two top platforms moved down (beside the head and in front) so they stay clear of the Arena HP bars. Checked headless Conquest + Arena, no errors.
+
+## v1549 (13 Nov 2026) - Mecha bigger again
+- Harley: make him bigger. Mecha 1.45x its v1547 size (cqScale 0.3238), platforms + riders unchanged; platforms now in two columns in front of the staff (3 + 2) so they stay below the Arena HP bars and clear of the timer. Checked headless Conquest + Arena, no errors.
