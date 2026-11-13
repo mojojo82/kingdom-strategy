@@ -4706,3 +4706,8 @@ Harley's 3 points:
 
 ## v1549 (13 Nov 2026) - Mecha bigger again
 - Harley: make him bigger. Mecha 1.45x its v1547 size (cqScale 0.3238), platforms + riders unchanged; platforms now in two columns in front of the staff (3 + 2) so they stay below the Arena HP bars and clear of the timer. Checked headless Conquest + Arena, no errors.
+
+## v1550 (13 Nov 2026) - Mecha in the Overlord Profile: centred, platforms on both sides
+- Harley: centre him in the profile, platforms on both sides. The Mecha's profile picture (gov) is now its own layout: mecha centred, 2 platforms left + 3 right (battle layout unchanged - platforms in front only). govWidth 0.97 so the platforms clear the side slots.
+- Weapon barrels in the profile: new optional skin field govXf {s, x, y} maps battle-picture px to profile-picture px (govShipWithBarrels), so barrels sit on the same mounts as in battle even though the two pictures are laid out differently (before they landed on the staff/platforms).
+- Checked headless (GPT and Classic profile looks), no errors.

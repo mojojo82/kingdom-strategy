@@ -21,12 +21,21 @@ W, H = int(x1 - x0), int(y1 - y0); ox, oy = -x0, -y0
 back = Image.new("RGBA", (W, H)); back.alpha_composite(mech, (int(ox), int(oy)))
 front = Image.new("RGBA", (W, H))
 for k, (px, py) in pts.items(): front.alpha_composite(plat, (int(ox + px), int(oy + py)))
-gov = back.copy(); gov.alpha_composite(front)
+# v1550 (Harley): Overlord Profile picture - the mecha CENTRED with platforms on both sides (2 left, 3 right; same sizes as in battle)
+GS = {"l1": (-0.04, 0.30), "l2": (-0.07, 0.62), "r1": (1.05, 0.18), "r2": (1.08, 0.46), "r3": (1.05, 0.74)}
+gp = {k: (fx * MW - PW / 2, fy * MH) for k, (fx, fy) in GS.items()}
+ex = max(-min(p[0] for p in gp.values()), max(p[0] + PW for p in gp.values()) - MW) + 8   # same room on both sides -> mecha centred
+gy0 = min(0, min(p[1] for p in gp.values())) - 8; gy1 = max(MH, max(p[1] + PH for p in gp.values())) + 8
+GW, GH = int(MW + 2 * ex), int(gy1 - gy0); gox, goy = ex, -gy0
+gov = Image.new("RGBA", (GW, GH)); gov.alpha_composite(mech, (int(gox), int(goy)))
+for k, (px, py) in gp.items(): gov.alpha_composite(plat, (int(gox + px), int(goy + py)))
+KG = 1000 / GW; GOVXF = {"s": round(KG / (1000 / W), 4), "x": round((int(gox) - int(ox)) * KG, 1), "y": round((int(goy) - int(oy)) * KG, 1)}   # cq px -> gov px (weapon barrels)
 K = 1000 / W; size = (1000, round(H * K))
-for im, n in ((back, "mecha_back.png"), (front, "mecha_front.png"), (gov, "mecha_gov.png")): im.resize(size, Image.LANCZOS).save(D + n)
+for im, n in ((back, "mecha_back.png"), (front, "mecha_front.png")): im.resize(size, Image.LANCZOS).save(D + n)
+gov.resize((1000, round(GH * KG)), Image.LANCZOS).save(D + "mecha_gov.png")
 def f(x, y): return [round((ox + x) / W, 3), round((oy + y) / H, 3)]
 L = {k: f(px + PW / 2, py + PH * FLOOR) for k, (px, py) in pts.items()}
 L.update({"c": f(MW * 0.585, MH * 0.38), "w0": f(MW * 0.66, MH * 0.47), "w1": f(MW * 0.47, MH * 0.58), "w2": f(MW * 0.25, MH * 0.46), "ko": f(MW * 0.12, MH * 0.5)})
 meleeFront = round((ox + MW * 0.86) / W, 3)   # melee heroes stop at the staff / hand
-json.dump({"size": size, "layout": L, "meleeFront": meleeFront, "cqScale": round(125 * MS / 0.85 / (MW * K), 4)}, open(D + "mecha_layout.json", "w"))
+json.dump({"govXf": GOVXF, "govWidth": 0.97, "size": size, "layout": L, "meleeFront": meleeFront, "cqScale": round(125 * MS / 0.85 / (MW * K), 4)}, open(D + "mecha_layout.json", "w"))
 print(size, json.dumps(L), meleeFront)

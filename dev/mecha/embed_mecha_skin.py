@@ -7,6 +7,6 @@ p = "test/index.html"; s = open(p).read()
 for var, f in (('mechaCqImg.src = "data:image/webp;base64,', "mecha_back.png"), ('mechaAnim.front.src = "data:image/webp;base64,', "mecha_front.png"), ('mechaGovImg.src = "data:image/webp;base64,', "mecha_gov.png")):
     s, n = re.subn(re.escape(var) + r'[^"]+', lambda m: var + b64(f), s); assert n == 1, var
 ls = ", ".join("%s: [%s, %s]" % (k, v[0], v[1]) for k, v in L["layout"].items())
-s, n = re.subn(r'cqScale: [\d.]+, govWidth: 1, lift: 12, anim: mechaAnim, barsAbove: true, meleeFront: [\d.]+, defLayout: \{[^}]*\}',
-               'cqScale: %s, govWidth: 1, lift: 12, anim: mechaAnim, barsAbove: true, meleeFront: %s, defLayout: { %s }' % (L["cqScale"], L["meleeFront"], ls), s); assert n == 1
+s, n = re.subn(r'cqScale: [\d.]+, govWidth: [\d.]+, (?:govXf: \{[^}]*\}, )?lift: 12, anim: mechaAnim, barsAbove: true, meleeFront: [\d.]+, defLayout: \{[^}]*\}',
+               'cqScale: %s, govWidth: %s, govXf: %s, lift: 12, anim: mechaAnim, barsAbove: true, meleeFront: %s, defLayout: { %s }' % (L["cqScale"], L["govWidth"], json.dumps(L["govXf"]).replace('"', ''), L["meleeFront"], ls), s); assert n == 1
 open(p, "w").write(s); print("ok", L["cqScale"], L["meleeFront"])
