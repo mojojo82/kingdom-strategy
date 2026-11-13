@@ -4842,3 +4842,7 @@ Harley's 3 points:
 - Eagle Eye: perLevel 0 (was 0.13) + `disabled: true`. Hero card: skill blocks with `disabled` are greyed (.hc-sk.off), tagged DISABLED, no value line, no book cost, can't be upgraded.
 - Ranking with it off (same test): Lv80 Hanzo 98.3% (he becomes the clear outlier), Roran 55.5, Kessa 49.7, Lyra 49.3; Lv40 Roran 63.6, Lyra 62.1, Hanzo 61.2, Kessa 61.1.
 - Conquest: teams with Lyra lose up to +65% damage (her skill level 5) - not re-measured (Harley stopped the checks).
+
+## Arena ranking with Kessa's support cards (14 Nov 2026, no game change)
+- arena_rank.js: `--cards hero:#,#` (a team containing that hero equips those cards; Arena sim cardMods). Kessa's cards = #2 (Arc Burst +30% under 30% health) + #3 (Kessa base ATK +200%, always on). Eagle Eye off (v1575).
+- Results: Lv40 Kessa 98.7% (1st; next Vesper 53.6, Lyra 53.0); Lv80 Hanzo 88.0, Kessa 75.6 (2nd), then Seraphine 52.9. Without cards Kessa was 61.1% (4th) / 49.7% (6th). Card #3 (+200% ATK) is almost certainly most of it.
