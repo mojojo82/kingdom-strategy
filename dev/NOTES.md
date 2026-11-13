@@ -4658,3 +4658,10 @@ Harley's 3 points:
 - Hull = Harley's hand edit (art/originals/ships/walker/walker_hull_harley.png: magenta background, WHITE = the area he cut away over the legs).
 - dev/ships/hull_shadow.py keys magenta + white and BAKES a static soft drop shadow into the hull picture (hull shape moved down 10 px, blurred 14 px, max ~70% black), only inside the cut-away (white) area - so it falls on the legs drawn under the hull. No code change for the shadow. Output walker_hull_harley_shadow.png -> build_walker3.py -> walker3_back/front (re-embedded).
 - Legs sheet / timings unchanged. Checked headless: Conquest walk clip (walker_walk_v5.mp4), Arena still (all walker draws "still"), no page errors. Balance untouched (art only).
+
+## v1540 (13 Nov 2026) - Walker legs: live code rig (Harley: smoother than the Atlas sheet)
+- ChatGPT parts sheet from the approved design (walker_parts_v1.png: near + far thigh, shin, foot, each complete with round hinges) + the hip drum (walker_hip_v1.png).
+- dev/ships/build_walker_rig.py -> packed atlas walker_rig.webp (79 KB, 1.5x hull px) + pivots (walker_rig.json). dev/ships/walker_rig_params.py writes hips, feet, gait into walkerAnim.rig.
+- drawWalkerRig (test/index.html): drawn every frame - 4-beat walk (one foot up at a time, 2.6 s cycle), feet flat on the ground, 2-bone IK knees (near legs splay out like the design, far legs darker and knees in), small foot tilt in the air, hull dips 2.5 px as each foot lifts (riders follow via hullBobPx). Arena: still = all feet planted, no bob.
+- The Atlas legs sheet (2.4 MB) + bobTrack are gone: test/index.html ~3 MB smaller.
+- Checked headless: Conquest + Arena screenshots, Arena all walker draws still, no errors, mock clip walker_rig_v1.mp4. Art only - balance untouched.
