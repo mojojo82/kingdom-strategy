@@ -4689,3 +4689,7 @@ Harley's 3 points:
 
 ## v1545 (13 Nov 2026) - Bram bigger
 - Harley: Bram was really tiny next to Torvald. Measured in an Arena capture: Bram stood ~64% of Torvald's height. HERO_ANIMS.bram sizeMul 1 -> 1.4 (~90% of Torvald - still the stockier, shorter one). Drawing size only (Conquest + Arena use the same sizeMul); balance untouched. Before/after: dev/heroes/bram_size_v1545.png.
+
+## v1546 (13 Nov 2026) - Aurek a bit taller
+- Harley: Aurek slightly taller than Bram and Torvald. Lined them up at their game sizes (sheet frame x dispH x sizeMul / ch): Aurek's helmet sat ~12% below Torvald's head. HERO_ANIMS.aurek sizeMul 1 -> 1.2. Drawing size only (Conquest + Arena); balance untouched. Lineup: dev/heroes/aurek_size_v1546.png (Bram, Torvald, Aurek).
+- Note: Gareth is the small white-helmet knight, Torvald the brown-haired shield knight.
