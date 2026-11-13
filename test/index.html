@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1561"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1562"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -13616,7 +13616,7 @@ function fmt(n) {
   var abs = Math.abs(n);
   function short(v, suf) { var t = Math.round(v * 10) / 10; return (t % 1 === 0 ? t.toFixed(0) : t.toFixed(1)) + suf; }
   // M / B / T / Q. Rounds to 1 decimal; a value that rounds up to 1000 of one unit (e.g. 999.96M) rolls over to the next unit up (1B).
-  var units = [[1e15, "Q"], [1e12, "T"], [1e9, "B"], [1e6, "M"]];
+  var units = FMT_UNITS; /* v1562: built once */
   for (var i = 0; i < units.length; i++) {
     if (abs >= units[i][0]) {
       var v = Math.round(n / units[i][0] * 10) / 10;
@@ -13624,8 +13624,11 @@ function fmt(n) {
       return short(n / units[i][0], units[i][1]);
     }
   }
-  return n.toLocaleString();
+  if (abs < 1000) return String(n); /* v1562: same text, no formatter needed */
+  return FMT_NF ? FMT_NF.format(n) : n.toLocaleString(); /* v1562: one shared formatter - toLocaleString() set one up on every call (damage numbers, labels: many per frame) */
 }
+var FMT_UNITS = [[1e15, "Q"], [1e12, "T"], [1e9, "B"], [1e6, "M"]], FMT_NF = null;
+try { FMT_NF = new Intl.NumberFormat(); } catch (e) {}
 function fmtShort(n) { return fmt(n); }
 function fmtTime(sec) {
   sec = Math.max(0, Math.ceil(sec));
@@ -25927,6 +25930,28 @@ function heroAnimImg(key) {
   var im2 = heroAnimImgCache[key];
   return (im2.complete && im2.naturalWidth > 0) ? im2 : null;
 }
+/* v1562 performance: heroes are drawn SHRUNK from big sheets (Arena ~0.75x). To shrink a picture nicely the browser first builds a shrunk copy
+   of the WHOLE sheet, and its cache for those copies is small - with 10 heroes on screen it kept throwing one away and rebuilding it EVERY frame
+   (~12 ms a frame headless, most of the frame). So each sheet gets one copy made at the size it is actually shown (scale rounded up to 4% steps,
+   same high-quality shrink as before), then drawn ~1:1. Same look. One copy per 80 ms at most (no hitch); copies unused for 20 s are released. */
+var heroScaledCache = {}, heroScaledLastBuild = 0;
+function heroScaledSheet(key, devS) {
+  var im = heroAnimImgCache[key];
+  if (!(devS > 0.05 && devS < 0.94) || !im || !im.naturalWidth) return null;
+  var q = Math.ceil(devS * 25) / 25, id = key + "@" + q, e = heroScaledCache[id], now = performance.now();
+  if (e) { e.t = now; return e; }
+  if (now - heroScaledLastBuild < 80) return null;
+  heroScaledLastBuild = now;
+  var W = Math.max(1, Math.round(im.naturalWidth * q)), H = Math.max(1, Math.round(im.naturalHeight * q));
+  try {
+    var c = document.createElement("canvas"); c.width = W; c.height = H; var x = c.getContext("2d");
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; x.drawImage(im, 0, 0, W, H);
+    e = heroScaledCache[id] = { t: now, bm: c, sx: W / im.naturalWidth, sy: H / im.naturalHeight };
+    if (typeof createImageBitmap === "function") createImageBitmap(c).then(function (b) { if (heroScaledCache[id] === e) { e.bm = b; c.width = c.height = 0; } else b.close(); }).catch(function () {}); /* a fixed bitmap: drawing from a big canvas can make the browser copy it on every use */
+    return e;
+  } catch (er) { return null; }
+}
+setInterval(function () { var now = performance.now(); Object.keys(heroScaledCache).forEach(function (id) { var e = heroScaledCache[id]; if (now - e.t > 20000) { if (e.bm.close) e.bm.close(); else e.bm.width = e.bm.height = 0; delete heroScaledCache[id]; } }); }, 5000);
 // Draws the hero standing with feet at (x, feetY). state: "idle" | "run" | "attack". flip = face left. Returns false if no sheet.
 // ===== v509 welding sparks — where Gareth's sword connects (enemy, boss, Arena fortress/heroes) =====
 var weldSparks = [], weldLastT = 0;
@@ -26452,6 +26477,11 @@ function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) 
     ctx.globalAlpha = alpha;
     var sxy = function (f) { var W = a.wrap; return W ? [(f % W) * a.cw, (row[0] * 2 + Math.floor(f / W)) * a.ch] : [f * a.cw, row[0] * a.ch]; }; /* v1322: a sheet wider than 4096 px is re-folded; wrap = columns per band, each logical row = 2 physical rows */
     var P0 = sxy(f0), P1 = sxy(f1);
+    if (SS) { /* v1562: from the ready-shrunk copy */
+      heroTintBlit(ctx, SS.bm, P0[0] * SS.sx, P0[1] * SS.sy, a.cw * SS.sx, a.ch * SS.sy, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint);
+      if (fr > 0.02) { ctx.globalAlpha = alpha * fr * blend; heroTintBlit(ctx, SS.bm, P1[0] * SS.sx, P1[1] * SS.sy, a.cw * SS.sx, a.ch * SS.sy, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint); }
+      ctx.globalAlpha = 1; return f0;
+    }
     heroTintBlit(ctx, im, P0[0], P0[1], a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint);
     if (fr > 0.02) { ctx.globalAlpha = alpha * fr * blend; heroTintBlit(ctx, im, P1[0], P1[1], a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint); }
     ctx.globalAlpha = 1;
@@ -26463,7 +26493,8 @@ function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) 
   var impactNow = false;
   if ((state === "attack" || state === "attack2") && a.impact != null) { var impF = state === "attack2" && a.impact2 != null ? a.impact2 : a.impact, fIdx = Math.floor(ft) % a.rows[state][1]; if (fIdx === impF && mem.lastFi !== impF) impactNow = true; mem.lastFi = fIdx; } else mem.lastFi = -1; /* v1502: Hanzo's 2nd attack has its own impact frame */
   ctx.save();
-  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  var tmS = ctx.getTransform(), SS = heroScaledSheet(key, Math.sqrt(tmS.a * tmS.a + tmS.b * tmS.b) * k); /* v1562 */
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = SS ? "low" : "high"; /* the copy is already shrunk with high quality; the last ~1:1 step needs no more */
   ctx.translate(x, feetY);
   if (flip) ctx.scale(-1, 1);
   // procedural in-betweens: idle breathing (squash from the feet) and a small run bounce, so motion never sits between frames
@@ -35688,9 +35719,14 @@ function arenaHullContactPoint(w, h, targetIsPlayerSide, fromX, fromY, aimY, aim
   if (len < 1) return { x: g.nose, y: aimY };
   var ux = (endX - fromX) / len, uy = (endY - fromY) / len;
   var run = 0, runStart = 0;
+  /* v1562: the skin's placement is worked out once here instead of on every 1 px step (same test as arenaFortressPixelHit) */
+  var skin = targetIsPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]), mask = fortressSkinAlphaMask(skin.cq);
+  if (!mask || !mask.a) return { x: g.nose, y: aimY };
+  var sc = FORTRESS_SHIP_SCALE * skin.cqScale * (24 / 22), msw = mask.w * sc, msh = mask.h * sc, MW = mask.w, MH = mask.h, MA = mask.a;
+  var mcx = targetIsPlayerSide ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X), mtop = groundYFor(h) - msh + 14 - fortLift(skin), mleft = mcx - msw / 2, mright = mcx + msw / 2;
   for (var d = 0; d <= len; d += 1) {
-    var hit = arenaFortressPixelHit(w, h, targetIsPlayerSide, fromX + ux * d, fromY + uy * d);
-    if (hit === null) return { x: g.nose, y: aimY };
+    var px = fromX + ux * d, py = fromY + uy * d, ix = Math.floor(targetIsPlayerSide ? (px - mleft) / sc : (mright - px) / sc), iy = Math.floor((py - mtop) / sc);
+    var hit = !(ix < 0 || iy < 0 || ix >= MW || iy >= MH) && MA[iy * MW + ix] > 110;
     if (hit) { if (run === 0) runStart = d; run++; } else run = 0;
     // Solid body = at least ARENA_HULL_MIN_THICKNESS px of unbroken hull
     // along the shot's path, so thin spikes/fins/masts at bullet height
