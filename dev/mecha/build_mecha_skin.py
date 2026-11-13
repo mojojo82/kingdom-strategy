@@ -37,9 +37,16 @@ L = {k: f(px + PW / 2, py + PH * FLOOR) for k, (px, py) in pts.items()}
 L.update({"c": f(MW * 0.585, MH * 0.38), "w0": f(MW * 0.66, MH * 0.47), "w1": f(MW * 0.47, MH * 0.58), "w2": f(MW * 0.25, MH * 0.46), "ko": f(MW * 0.12, MH * 0.5)})
 meleeFront = round((ox + MW * 0.86) / W, 3)   # melee heroes stop at the staff / hand
 CQS = round(125 * MS / 0.85 / (MW * K), 4)
+# v1558: each body part on its own (drawn + moved live by the game), in the battle picture's frame: rect + pivots as fractions
+PJ = json.load(open(D + "parts/parts.json")); PARTS = []
+for k in PJ["order"]:
+    lay = Image.new("RGBA", (W, H)); lay.alpha_composite(Image.open(D + "parts/part_" + k + ".png").convert("RGBA"), (int(ox), int(oy)))
+    lay = lay.resize(size, Image.LANCZOS); bb = lay.getbbox(); lay.crop(bb).save(D + "parts/skin_" + k + ".png")
+    PARTS.append({"k": k, "r": [round(bb[0] / size[0], 4), round(bb[1] / size[1], 4), round((bb[2] - bb[0]) / size[0], 4), round((bb[3] - bb[1]) / size[1], 4)]})
+PIVF = {k: [round((int(ox) + v[0]) / W, 4), round((int(oy) + v[1]) / H, 4)] for k, v in PJ["piv"].items()}
 PL = {k: [round((ox + px) / W, 4), round((oy + py) / H, 4)] for k, (px, py) in pts.items()}
 GPL = [[round((gox + fx * MW - PW / 2) / GW, 4), round((goy + fy * MH) / GH, 4)] for k, (fx, fy) in GS.items()]
-json.dump({"plats": {"w": round(PW / W, 4), "h": round(PH / H, 4), "at": PL, "gov": GPL, "gw": round(PW / GW, 4), "gh": round(PH / GH, 4)},
+json.dump({"parts": PARTS, "piv": PIVF, "plats": {"w": round(PW / W, 4), "h": round(PH / H, 4), "at": PL, "gov": GPL, "gw": round(PW / GW, 4), "gh": round(PH / GH, 4)},
                 "govXf": GOVXF, "govWidth": round(MW * K * CQS * 0.85 * 3.097 / 565, 3),   # v1551/v1552: same size vs other skins as in battle (profile/battle ratio 3.097)
                 "size": size, "layout": L, "meleeFront": meleeFront, "cqScale": CQS}, open(D + "mecha_layout.json", "w"))
 print(size, json.dumps(L), meleeFront)

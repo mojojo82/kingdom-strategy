@@ -4739,3 +4739,8 @@ Harley's 3 points:
 ## v1557 (13 Nov 2026) - Mecha: no engine shudder (the jitter Harley saw)
 - Harley's screen recording (60 fps): tracked the staff head, platforms and a rider frame by frame - the whole fortress zig-zagged ~0.3-0.5 px about 6-7 times a second on top of the slow hover. Cause: Conquest's hull "life" effect (fortLifeBegin) adds a fast engine shudder (sin 41 rad/s) and scales all its motion by the skin PICTURE width - the Mecha's wide picture (platforms + space) made it bigger. Platforms and riders ride the hull, so they shook too.
 - New skin flag calm (Mecha): no engine shudder, and the slow sway uses a normal hull size. Measured headless after: hull moves smoothly (steps of 0.01-0.04 px per frame), no zig-zag. No errors.
+
+## v1558 (13 Nov 2026) - Mecha idle animation (code)
+- Harley: give the Mecha life - gentle idle with his arms etc. The mecha is now drawn from his 6 parts (rear upper arm, staff arm, near upper arm, torso, head, near forearm+hand) instead of one picture: dev/mecha/assemble_mecha2.py (PARTS=dir) writes each part layer + pivots (shoulders, elbows, neck), build_mecha_skin.py puts them in the skin frame (skin.parts, skin.piv), embed_mecha_skin.py embeds them.
+- drawMechaParts: torso bobs slowly; head bobs + tilts (~2 deg) on its own; each upper arm swings a little at the shoulder; the forearms (and the staff arm as one piece) follow their upper arm and float + rotate a little at the elbow - all different speeds so nothing moves in step. Guns on his near forearm ride it (fortLayoutPoint -> mechaPartPoint). Platforms keep their own hover. All modes (Conquest, Arena); profile picture stays still.
+- Clip: art/originals/ships/mecha/mecha_idle_v1.mp4 (real speed). Checked headless Conquest + Arena, no errors.

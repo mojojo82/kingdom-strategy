@@ -1,6 +1,6 @@
 """Floating mecha v2 (Harley): limbs float apart with a magic gap - parts sheet mecha_parts_v2.png (head, torso, upper arms, forearm+hand
 as one piece, no ball joints). python3 dev/mecha/assemble_mecha2.py OUT.png [json overrides]"""
-import sys, json, math
+import sys, os, json, math
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -23,7 +23,16 @@ A = {"neck": (848, 492), "shN": (612, 636), "shF": (1062, 596), "headB": (838, 2
      "nUp_sh": (232, 385), "nUp_el": (195, 600), "nFo_el": (98, 690), "fUp_sh": (1318, 400), "fUp_el": (1322, 602), "fFo_el": (1268, 698)}
 C = {"head2": [408, 329, 1124, 721], "h2W": 261, "h2Dy": 18, "staffArm": 1, "saS": 0.6, "saAnchor": [232, 700], "saDx": 8, "saDy": -6, "staff": 1, "gRot": -70, "gS": 0.78, "stS": 0.82, "stRot": 0, "torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.035, "nFoOff": [-28, -26], "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
 if len(sys.argv) > 2: C.update(json.loads(sys.argv[2]))
-W, H = 1700, 1400; cv = Image.new("RGBA", (W, H)); O = (450, 300)   # torso offset on the canvas
+W, H = 1700, 1400; O = (450, 300)   # torso offset on the canvas
+class _Multi:   # v1558: also keeps every part on its own layer (for the in-game code animation)
+    def __init__(s): s.main = Image.new("RGBA", (W, H)); s.layers = {}; s.tag = "misc"
+    def alpha_composite(s, im, pos):
+        s.main.alpha_composite(im, pos); L = s.layers.get(s.tag)
+        if L is None: L = s.layers[s.tag] = Image.new("RGBA", (W, H))
+        L.alpha_composite(im, pos)
+    def getbbox(s): return s.main.getbbox()
+    def crop(s, b): return s.main.crop(b)
+cv = _Multi(); PIV = {}
 def crop(n):
     x0, y0, x1, y1 = P[n]; im = S[y0:y1, x0:x1].copy(); al = im[..., 3] > 0; l, k = ndimage.label(al)
     if k > 1: big = l == (np.argmax(ndimage.sum(al, l, range(1, k + 1))) + 1); im[..., 3] = im[..., 3] * ndimage.binary_dilation(big, iterations=3)
@@ -46,7 +55,8 @@ if C["torso2"]:
     def T2p(p): return (O[0] + (p[0] - TB[0]) * ts, O[1] + (p[1] - TB[1]) * ts)
     # far arm, near upper arm: behind the torso (its huge shoulders cover their tops)
     sh = T2p(A2["shF"]); e = rel("fUp", A["fUp_sh"], A["fUp_el"], f, C["rotFUp"]); el = (sh[0] + e[0] + g[0] * f, sh[1] + e[1] + g[1] * f)
-    put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"])
+    cv.tag = "fUp"; PIV["fSh"] = sh; PIV["fEl"] = el; put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"])
+    cv.tag = "fFo"
     if C["staffArm"]:
         x0, y0, x1, y1 = 186, 13, 868, 1508; im = Image.fromarray(SA[y0:y1, x0:x1].copy()); k = C["saS"]
         im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS); q = np.asarray(im).astype(np.float32); q[..., :3] *= C["farDark"]; im = Image.fromarray(q.astype(np.uint8))
@@ -71,15 +81,20 @@ if C["torso2"]:
     else:
         put("fFo", A["fFo_el"], el, f * C["foScale"], C["rotFFo"], C["farDark"])
     shn = T2p(A2["shN"]); e = rel("nUp", A["nUp_sh"], A["nUp_el"], 1.0, C["rotNUp"]); eln = (shn[0] + e[0] + g[0], shn[1] + e[1] + g[1])
-    put("nUp", A["nUp_sh"], shn, 1.0, C["rotNUp"])
-    tim = Image.fromarray(T2[TB[1]:TB[3], TB[0]:TB[2]]); tim = tim.resize((round(tim.width * ts), round(tim.height * ts)), Image.LANCZOS); cv.alpha_composite(tim, O)
-    nk = T2p(A2["neck"])
+    cv.tag = "nUp"; PIV["nSh"] = shn; put("nUp", A["nUp_sh"], shn, 1.0, C["rotNUp"])
+    cv.tag = "torso"; tim = Image.fromarray(T2[TB[1]:TB[3], TB[0]:TB[2]]); tim = tim.resize((round(tim.width * ts), round(tim.height * ts)), Image.LANCZOS); cv.alpha_composite(tim, O)
+    nk = T2p(A2["neck"]); PIV["neck"] = nk; cv.tag = "head"
     if C["head2"]:
         x0, y0, x1, y1 = C["head2"]; hm = Image.fromarray(HD[y0:y1, x0:x1].copy()); hk = C["h2W"] / hm.width; hm = hm.resize((round(hm.width * hk), round(hm.height * hk)), Image.LANCZOS)
         cv.alpha_composite(hm, (round(nk[0] - hm.width * 0.55), round(nk[1] + C["h2Dy"] - hm.height)))
     else: put("head", A["headB"], (nk[0], nk[1] - C["gapHead2"]), C.get("headS", 0.9))
-    put("nFo", A["nFo_el"], (eln[0] + C["nFoOff"][0], eln[1] + C["nFoOff"][1]), C["foScale"], C["rotNFo"])
-    bb = cv.getbbox(); cv.crop((bb[0] - 10, bb[1] - 10, bb[2] + 10, bb[3] + 10)).save(sys.argv[1]); print("saved", bb); sys.exit()
+    cv.tag = "nFo"; PIV["nEl"] = (eln[0] + C["nFoOff"][0], eln[1] + C["nFoOff"][1]); put("nFo", A["nFo_el"], PIV["nEl"], C["foScale"], C["rotNFo"])
+    bb = cv.getbbox(); box = (bb[0] - 10, bb[1] - 10, bb[2] + 10, bb[3] + 10); cv.crop(box).save(sys.argv[1]); print("saved", bb)
+    if os.environ.get("PARTS"):   # one layer per part, same frame as the saved picture + pivots (px in that picture)
+        import json as _j; order = ["fUp", "fFo", "nUp", "torso", "head", "nFo"]
+        for k in order: cv.layers[k].crop(box).save(os.environ["PARTS"] + "/part_" + k + ".png")
+        _j.dump({"order": order, "size": [box[2] - box[0], box[3] - box[1]], "piv": {k: [round(v[0] - box[0], 1), round(v[1] - box[1], 1)] for k, v in PIV.items()}}, open(os.environ["PARTS"] + "/parts.json", "w"))
+    sys.exit()
 
 # far arm (behind the torso)
 sh = T(A["shF"]); e = rel("fUp", A["fUp_sh"], A["fUp_el"], f, C["rotFUp"]); el = (sh[0] + e[0] + g[0] * f, sh[1] + e[1] + g[1] * f)
