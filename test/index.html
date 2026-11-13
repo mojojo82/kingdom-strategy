@@ -13239,7 +13239,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1575"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1576"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -27746,7 +27746,7 @@ var TMP_ENV_BG = {
      v1447: Harley's GPT extend-up passes stacked on top (far +184 rows, near +199) and drawn at 0.37 (15% bigger than the caves) so tall phones
      (430x932) see art right to the top, no flat band. */
   foundry: { flat: "#62483b", shadows: true, floor: { img: levelArt("foundry_road.webp", "108bb59628"), k: 0.21 / 185.76, road: 26, top: 12, upx: 2, fill: "#342a2d" }, layers: [
-    { name: "Far", img: levelArt("foundry_far.webp", "540d7297fe"), ow: 1520, oh: 955, baseY: 954, scale: 0.37 / 185.76, lift: 2.5, speed: 0.25 },
+    { name: "Far", img: levelArt("foundry_far.webp", "540d7297fe"), ow: 1520, oh: 955, baseY: 954, scale: 0.37 / 185.76, lift: 2.5, speed: 0.25, opaque: true /* v1576: a solid picture that covers the whole backdrop, so the flat colour under it is skipped */ },
     { name: "Near", img: levelArt("foundry_near.webp", "66a169601f"), ow: 1412, oh: 977, baseY: 969, scale: 0.37 / 185.76, lift: 2.5, speed: 0.5, foundry: true,
       fxImgs: [levelArt("foundry_gears.webp", "65590365cd"), levelArt("foundry_front.webp", "3a5e93235e"), levelArt("foundry_pour.webp", "c251aaae58")] }
   ] },
@@ -27973,7 +27973,8 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
   var bgBot = groundY + 4; /* v1264 (Harley circled the gap): on a level with its own road, the backdrop reaches down to where the road's stones start */
   if (cfg.floor && cfg.floor.img.naturalWidth && !groundTilesHidden) { var FE = floorEff(cfg._env, cfg.floor); bgBot = groundY + (FE.top - FE.road) * groundY * FE.k + 1; }
   ctx.beginPath(); ctx.rect(0, skyT, w, bgBot - skyT); ctx.clip(); // v566: backdrop layers stop at the ground line (reverted from v565)
-  if (cfg.flat) { ctx.fillStyle = cfg.flat; ctx.fillRect(0, skyT, w, bgBot - skyT); }
+  var L0 = cfg.layers && cfg.layers[0], coverFirst = L0 && L0.opaque && L0.img.complete && L0.img.naturalWidth && !(L0.alt && layerUsesAlt(cfg._env, 0, L0)) && (bgBot <= groundY - L0.lift + (L0.oh - L0.baseY) * groundY * L0.scale) && (groundY - L0.lift - L0.baseY * groundY * L0.scale <= skyT); /* v1576: covered anyway */
+  if (cfg.flat) { ctx.fillStyle = cfg.flat; if (!coverFirst) ctx.fillRect(0, skyT, w, bgBot - skyT); else ctx.fillRect(0, bgBot - 3, w, 3); } /* covered: only the soft clip edge at the bottom still needs it */
   ctx.imageSmoothingEnabled = true;
   cfg.layers.forEach(function (L, li) {
     if (!L.img.complete || !L.img.naturalWidth) return;
@@ -28011,9 +28012,9 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
    in front of a gear (rails, rods). The molten stream gets a flowing shimmer, the splash throws sparks, two pipes puff steam, dust drifts in the light. */
 var FOUNDRY_FX = {
   gears: [{ sx: 0, s: 254, x: 352, y: 481, r: 126, dir: 1 }, { sx: 258, s: 136, x: 516, y: 567, r: 67, dir: -1 }, { sx: 398, s: 98, x: 422, y: 647, r: 48, dir: 1 }, { sx: 500, s: 90, x: 33, y: 766, r: 44, dir: -1 }],
-  toothSpeed: 14, pour: [1240, 559, 160, 320], splash: [1290, 839], steam: [[636, 347], [757, 861]], dust: [620, 239, 640, 470] /* v1447: +199 rows (the extend-up pass sits on top) */
+  toothSpeed: 14, pour: [1240, 559, 160, 320], frontBox: [220, 395, 338, 283] /* v1576: the painted part of foundry_front (0.5% of the full picture; +2 px margin) */, splash: [1290, 839], steam: [[636, 347], [757, 861]], dust: [620, 239, 640, 470] /* v1447: +199 rows (the extend-up pass sits on top) */
 };
-var foundryPourCv = null, foundryPourBand = null;
+var foundryPourCv = null, foundryPourBand = null, foundryPourFrames = null, FOUNDRY_POUR_NF = 24;
 /* v1449: moving water painted into a layer. Each entry: fxImgs[i] = a white mask of the water, box = where it sits in the layer (source px),
    mode "down" = highlights run downward (falls, foam), "side" = soft ripples drift sideways (the stream). Masked, added on top ("lighter"). */
 /* v1451 (Harley: 5 fps after v1450): the streaks are now BAKED once per mask into a small loop of frames (half size, WATER_FX_NF frames), so a
@@ -28093,15 +28094,19 @@ function drawFoundryFx(ctx, L, x0, top, s, w) {
     var a = g.dir * t * F.toothSpeed / g.r, d = g.s * s;
     ctx.save(); ctx.translate(x0 + g.x * s, top + g.y * s); ctx.rotate(a); ctx.drawImage(gs, g.sx, 0, g.s, g.s, -d / 2, -d / 2, d, d); ctx.restore();
   });
-  if (fr && fr.complete && fr.naturalWidth) ctx.drawImage(fr, x0, top, L.ow * s + 1, L.oh * s);
+  if (fr && fr.complete && fr.naturalWidth) { var FB = F.frontBox, kx = (L.ow * s + 1) / L.ow; ctx.drawImage(fr, FB[0], FB[1], FB[2], FB[3], x0 + FB[0] * kx, top + FB[1] * s, FB[2] * kx, FB[3] * s); } /* v1576 (Harley: this level is slow): only the painted patch - the full-size picture was an extra full-screen layer every frame for 0.5% of painted pixels. Same pixels. */
   ctx.save(); ctx.globalCompositeOperation = "lighter";
-  if (po && po.complete && po.naturalWidth) { /* flowing shimmer down the stream */
-    var P = F.pour, cv = foundryPourCv || (foundryPourCv = document.createElement("canvas")); if (cv.width !== P[2]) { cv.width = P[2]; cv.height = P[3]; }
-    var c2 = cv.getContext("2d"); c2.globalCompositeOperation = "copy"; c2.drawImage(po, 0, 0); c2.globalCompositeOperation = "source-in";
-    if (!foundryPourBand) { foundryPourBand = document.createElement("canvas"); foundryPourBand.width = 2; foundryPourBand.height = 40; var bx = foundryPourBand.getContext("2d"), bg = bx.createLinearGradient(0, 0, 0, 40);
-      bg.addColorStop(0, "rgba(255,240,170,0)"); bg.addColorStop(0.5, "rgba(255,240,170,0.85)"); bg.addColorStop(1, "rgba(255,240,170,0)"); bx.fillStyle = bg; bx.fillRect(0, 0, 2, 40); }
-    var off = (t * 90) % 40; c2.save(); c2.translate(0, off); c2.fillStyle = c2.createPattern(foundryPourBand, "repeat"); c2.fillRect(0, -40, P[2], P[3] + 80); c2.restore();
-    ctx.globalAlpha = 0.45 + 0.1 * Math.sin(t * 7); ctx.drawImage(cv, x0 + P[0] * s, top + P[1] * s, P[2] * s, P[3] * s); ctx.globalAlpha = 1;
+  if (po && po.complete && po.naturalWidth) { /* flowing shimmer down the stream - v1576: made ONCE as a 24-frame loop (was rebuilt in a scratch canvas every frame) */
+    var P = F.pour;
+    if (!foundryPourFrames || foundryPourFrames._po !== po) {
+      var band = document.createElement("canvas"); band.width = 2; band.height = 40; var bx = band.getContext("2d"), bg = bx.createLinearGradient(0, 0, 0, 40);
+      bg.addColorStop(0, "rgba(255,240,170,0)"); bg.addColorStop(0.5, "rgba(255,240,170,0.85)"); bg.addColorStop(1, "rgba(255,240,170,0)"); bx.fillStyle = bg; bx.fillRect(0, 0, 2, 40);
+      foundryPourFrames = []; foundryPourFrames._po = po;
+      for (var fi = 0; fi < FOUNDRY_POUR_NF; fi++) { var fc = document.createElement("canvas"); fc.width = P[2]; fc.height = P[3]; var c2 = fc.getContext("2d");
+        c2.drawImage(po, 0, 0); c2.globalCompositeOperation = "source-in"; c2.translate(0, fi * 40 / FOUNDRY_POUR_NF); c2.fillStyle = c2.createPattern(band, "repeat"); c2.fillRect(0, -40, P[2], P[3] + 80); foundryPourFrames.push(fc); }
+    }
+    var pf = Math.floor(((t * 90) % 40) / 40 * FOUNDRY_POUR_NF) % FOUNDRY_POUR_NF;
+    ctx.globalAlpha = 0.45 + 0.1 * Math.sin(t * 7); ctx.drawImage(foundryPourFrames[pf], x0 + P[0] * s, top + P[1] * s, P[2] * s, P[3] * s); ctx.globalAlpha = 1;
   }
   var sx = x0 + F.splash[0] * s, sy = top + F.splash[1] * s, gl = 0.35 + 0.15 * Math.sin(t * 5.3) + 0.08 * Math.sin(t * 13.1);
   var rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 26 * s); rg.addColorStop(0, "rgba(255,170,60," + gl + ")"); rg.addColorStop(1, "rgba(255,120,30,0)");

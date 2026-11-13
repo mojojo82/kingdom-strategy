@@ -4846,3 +4846,9 @@ Harley's 3 points:
 ## Arena ranking with Kessa's support cards (14 Nov 2026, no game change)
 - arena_rank.js: `--cards hero:#,#` (a team containing that hero equips those cards; Arena sim cardMods). Kessa's cards = #2 (Arc Burst +30% under 30% health) + #3 (Kessa base ATK +200%, always on). Eagle Eye off (v1575).
 - Results: Lv40 Kessa 98.7% (1st; next Vesper 53.6, Lyra 53.0); Lv80 Hanzo 88.0, Kessa 75.6 (2nd), then Seraphine 52.9. Without cards Kessa was 61.1% (4th) / 49.7% (6th). Card #3 (+200% ATK) is almost certainly most of it.
+
+## v1576 (14 Nov 2026) - clockwork foundry (chapter 9) draws less, same picture
+- Harley: this level is slow (32 fps on his phone). Its foundry layer drew foundry_front.webp - a FULL-size 1412x977 overlay that is 0.5% painted (the bits in front of the gears) - over the whole layer every frame = an extra full-screen layer. Now only its painted box (FOUNDRY_FX.frontBox) is drawn. Isolated headless: 6.4 ms -> 1.1 ms per copy.
+- The molten pour's flowing shimmer was rebuilt in a scratch canvas every frame (redraw + new texture each frame); now baked once as a 24-frame loop (FOUNDRY_POUR_NF).
+- The level's flat colour was painted under the far layer, which is a solid picture covering the whole backdrop; with `opaque: true` on that layer only a 3 px strip at the soft bottom clip edge is still filled.
+- Checked: full backdrop render at a frozen moment is pixel-identical to v1575 (0 of 3.1 M pixels differ). Whole-backdrop headless timings are too noisy to show the gain (software drawing); judge with the FPS counter on the phone.
