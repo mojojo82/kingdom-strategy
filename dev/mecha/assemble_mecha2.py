@@ -13,13 +13,14 @@ def key(a):
     al[al < 0.04] = 0; return np.dstack([c, al * 255]).astype(np.uint8)
 S = key(np.asarray(Image.open(D + "mecha_parts_v2.png").convert("RGB")))
 ST = key(np.asarray(Image.open(D + "mecha_staff_v1.png").convert("RGB")))
+SA = key(np.asarray(Image.open(D + "mecha_staffarm_v1.png").convert("RGB")))   # v6: forearm + fist + staff as one piece (staff drawn into the real hand)
 ST2 = key(np.asarray(Image.open(D + "mecha_staff_v2.png").convert("RGB")))   # v5 staff: longer, fist low, 3/4 fist   # staff + fist, far gauntlet (no hand)
 T2 = key(np.asarray(Image.open(D + "mecha_torso_v2.png").convert("RGB")))   # v3 torso (Harley: bigger, huge shoulders like the concept)
 # boxes and anchor points (sheet px)
 P = {"torso": (401, 254, 1131, 938), "head": (706, 17, 963, 244), "nUp": (47, 262, 339, 617), "nFo": (34, 644, 423, 947), "fUp": (1224, 315, 1428, 616), "fFo": (1225, 655, 1452, 936)}
 A = {"neck": (848, 492), "shN": (612, 636), "shF": (1062, 596), "headB": (838, 236),
      "nUp_sh": (232, 385), "nUp_el": (195, 600), "nFo_el": (98, 690), "fUp_sh": (1318, 400), "fUp_el": (1322, 602), "fFo_el": (1268, 698)}
-C = {"staff": 1, "gRot": -70, "gS": 0.78, "stS": 0.82, "stRot": 0, "torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
+C = {"staffArm": 1, "saS": 0.6, "saAnchor": [232, 700], "saDx": 8, "saDy": -6, "staff": 1, "gRot": -70, "gS": 0.78, "stS": 0.82, "stRot": 0, "torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
 if len(sys.argv) > 2: C.update(json.loads(sys.argv[2]))
 W, H = 1700, 1400; cv = Image.new("RGBA", (W, H)); O = (450, 300)   # torso offset on the canvas
 def crop(n):
@@ -45,7 +46,12 @@ if C["torso2"]:
     # far arm, near upper arm: behind the torso (its huge shoulders cover their tops)
     sh = T2p(A2["shF"]); e = rel("fUp", A["fUp_sh"], A["fUp_el"], f, C["rotFUp"]); el = (sh[0] + e[0] + g[0] * f, sh[1] + e[1] + g[1] * f)
     put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"])
-    if C["staff"]:   # v4 (Harley): the rear hand holds a giant staff - gauntlet without hand + staff with a fist fixed on it, flat 2D
+    if C["staffArm"]:
+        x0, y0, x1, y1 = 186, 13, 868, 1508; im = Image.fromarray(SA[y0:y1, x0:x1].copy()); k = C["saS"]
+        im = im.resize((round(im.width * k), round(im.height * k)), Image.LANCZOS); q = np.asarray(im).astype(np.float32); q[..., :3] *= C["farDark"]; im = Image.fromarray(q.astype(np.uint8))
+        ax, ay = (C["saAnchor"][0] - x0) * k, (C["saAnchor"][1] - y0) * k
+        cv.alpha_composite(im, (round(el[0] + C["saDx"] - ax), round(el[1] + C["saDy"] - ay)))
+    elif C["staff"]:   # v4 (Harley): the rear hand holds a giant staff - gauntlet without hand + staff with a fist fixed on it, flat 2D
         def stput(box, anchor, at, sc, rot, dark, cut=None, src=None):
             x0, y0, x1, y1 = box; im = (ST if src is None else src)[y0:y1, x0:x1].copy()
             al = im[..., 3] > 0; l, k = ndimage.label(al)
