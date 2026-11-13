@@ -10626,6 +10626,7 @@ function createGame(opts) {
     if (state.conquestRoster.indexOf(key) !== -1) return { ok: false, reason: "already_equipped" };
     if (state.conquestRoster.length >= 5) return { ok: false, reason: "roster_full" };
     state.conquestRoster.push(key);
+    try { if (typeof heroSheetsWarm === "function") heroSheetsWarm([key]); } catch (e) {} /* v1578: load a newly equipped hero's sheet now */
     state.heroCooldowns[key] = def.conquestSkills[0].cooldown;
     return { ok: true };
   }
@@ -13239,7 +13240,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1577"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1578"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -13559,6 +13560,7 @@ function hideCloudSaveTooLargeWarning() {
         lastCloudWrittenJson = JSON.stringify(stateForOwnSave()); // matches what the cloud actually has RIGHT NOW, before the merge below — so if the merge changes anything, the next periodic sync correctly sees a diff and pushes it up, instead of mistaking the merge for "nothing changed"
         if (localNewer) lastCloudWrittenJson = null; /* v1473: push the newer save up on the next sync */
         try { mergeLegacyHeroPosOffsets(); } catch (e) {} // now that cloud state is authoritative, merge in any legacy entry cloud never learned about — see mergeLegacyHeroPosOffsets' comment for the race this closes
+        try { heroSheetsWarm(game.state.conquestRoster); } catch (e) {} /* v1578: the cloud save's team (may differ from this device's) */
         try { render(); } catch (e) {} // render() is defined later in this file but always exists by the time this promise resolves
         try { renderHeroPosOffsetControls(); } catch (e) {} // defined later in this file but always exists by the time this promise resolves — keeps Dev Tools sliders in sync if the panel happens to be open
       } else {
@@ -13680,7 +13682,7 @@ function renderModeTabs() {
       if (mapMode === "skins") renderSkinsScreen();
       document.getElementById("allianceModeContent").style.display = mapMode === "alliance" ? "" : "none";
       if (mapMode === "alliance") { var alp = document.getElementById("alliancePanel"), alc = document.getElementById("allianceModeContent"); if (alp && alp.parentNode !== alc) alc.appendChild(alp); if (alp) alp.style.display = "block"; ALLY.msg = ""; renderAlliancePanel(); } /* v896: desktop tab */
-      if (mapMode === "conquest") { ensureConquestStarted(); startIdleAnim(); } else stopIdleAnim();
+      if (mapMode === "conquest") { heroSheetsRelease(game.state.conquestRoster); heroSheetsWarm(game.state.conquestRoster); ensureConquestStarted(); startIdleAnim(); } else stopIdleAnim();
       // Freshly entering the Arena tab (not just re-clicking it while
       // already there) always lands on the leaderboard, with a newly
       // rolled set of AI governors — leaving arenaView alone on a same-tab
@@ -26009,6 +26011,11 @@ function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
   return lilyDraw(ctx, st.p, x, feetY - LILY_FEET_LIFT * hScale, lilyStandCss() * hScale, faceLeft, "root"); /* v1444: feet lifted to the enemies' foot line */
 }
 var heroAnimImgCache = {};
+/* v1578 (Harley): only the sheets of heroes in use are loaded - your Conquest team at start (splash / world map), the Arena opponent's when a fight is set up.
+   Was: all 23 animated heroes at login (~59 MP of pictures) whether used or not. Sheets not in use are let go when Conquest opens. Same pictures, same drawing. */
+function heroSheetKeys(keys) { var out = []; (keys || []).forEach(function (k) { [k, k + "_skill"].forEach(function (a) { if (HERO_ANIMS[a] && out.indexOf(a) === -1) out.push(a); }); }); return out; }
+function heroSheetsWarm(keys) { try { heroSheetKeys(keys).forEach(function (a) { var fresh = !heroAnimImgCache[a]; heroAnimImg(a); var im = heroAnimImgCache[a]; if (fresh && im && im.decode) im.decode().catch(function () {}); }); } catch (e) {} }
+function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys); Object.keys(heroAnimImgCache).forEach(function (a) { if (keep.indexOf(a) !== -1) return; var im = heroAnimImgCache[a]; delete heroAnimImgCache[a]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }); } catch (e) {} }
 function heroAnimImg(key) {
   var a = HERO_ANIMS[key]; if (!a) return null;
   if (!heroAnimImgCache[key]) { var im = new Image(); im.src = a.src; heroAnimImgCache[key] = im; }
@@ -32373,7 +32380,7 @@ function preloadConquestAssets() {
   var jobs = [];
   function img(getter) { jobs.push(function () { var im = getter(); if (im && im.decode) return im.decode().catch(function () {}); }); }
   try {
-    Object.keys(HERO_ANIMS).forEach(function (k) { img(function () { heroAnimImg(k); return heroAnimImgCache[k]; }); });
+    heroSheetKeys((game.state && game.state.conquestRoster) || []).forEach(function (k) { img(function () { heroAnimImg(k); return heroAnimImgCache[k]; }); }); /* v1578: your team only */
     Object.keys(HERO_CHARGE).forEach(function (k) { img(function () { heroChargeImg(k); return heroChargeImgCache[k]; }); });
     Object.keys(HERO_HOP).forEach(function (k) { img(function () { heroHopImg(k); return heroHopImgCache[k]; }); });
     Object.keys(GARETH_EXTRA_ANIMS).forEach(function (k) { img(function () { garethExtraImg(k); return garethExtraImgCache[k]; }); });
@@ -38109,6 +38116,7 @@ function renderArenaBattleScreen() {
   var aStats0 = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
   arenaAnim.playerRoster = p.roster; arenaAnim.playerHeroesSnap = p.heroes;
   arenaAnim.aiRoster = arenaOpponent.roster; arenaAnim.aiHeroesSnap = arenaOpponent.heroes;
+  heroSheetsWarm((p.roster || []).concat(arenaOpponent.roster || [])); /* v1578 */
   arenaAnim.opponentName = arenaOpponent.name;
   arenaAnim.aiFortressSkin = arenaOpponentFortressSkin(arenaOpponent); arenaAiWeaponOrder = Object.keys((arenaOpponent && arenaOpponent.weapons) || {}).slice(0, 3); /* v1167: slots known from the start, so the bot's barrels show before its first shot */ // v1109: the bot's slots start fresh each match
   arenaAnim.playerHp = pStats0.maxHp; arenaAnim.playerMaxHp = pStats0.maxHp;
