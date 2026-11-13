@@ -4744,3 +4744,6 @@ Harley's 3 points:
 - Harley: give the Mecha life - gentle idle with his arms etc. The mecha is now drawn from his 6 parts (rear upper arm, staff arm, near upper arm, torso, head, near forearm+hand) instead of one picture: dev/mecha/assemble_mecha2.py (PARTS=dir) writes each part layer + pivots (shoulders, elbows, neck), build_mecha_skin.py puts them in the skin frame (skin.parts, skin.piv), embed_mecha_skin.py embeds them.
 - drawMechaParts: torso bobs slowly; head bobs + tilts (~2 deg) on its own; each upper arm swings a little at the shoulder; the forearms (and the staff arm as one piece) follow their upper arm and float + rotate a little at the elbow - all different speeds so nothing moves in step. Guns on his near forearm ride it (fortLayoutPoint -> mechaPartPoint). Platforms keep their own hover. All modes (Conquest, Arena); profile picture stays still.
 - Clip: art/originals/ships/mecha/mecha_idle_v1.mp4 (real speed). Checked headless Conquest + Arena, no errors.
+
+## v1559 (13 Nov 2026) - Mecha idle 1.6x bigger
+- Harley: slightly bigger movement. All idle amplitudes (body bob, head tilt/bob, shoulder swings, elbow float/turn) x1.6 (G in mechaPartXf); speeds unchanged. Clip art/originals/ships/mecha/mecha_idle_v2.mp4. No gaps at the joints across the cycle.
