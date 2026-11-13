@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1567"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1568"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26533,7 +26533,7 @@ var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5
   halo7: { coreBeam: "beam", core: [4.5, 29], glow: "#ffb347" },
   caelum: { dive: true, glow: "#ff4fd8" },
   sera: { heal: true, glow: "#7ee896" }, /* v1526: Mending Light - green blessing over his fortress (drawHeroHeals) */
-  torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff", souls: { n: 5, core: [232, 246, 255], glow: [63, 162, 255] } } }; /* v1567: souls = orbs leave him with the aura and home into his fortress's hull (drawHeroSouls) */ /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
+  torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff", souls: { n: 5, core: [240, 253, 255], glow: [150, 230, 245] } } }; /* v1567: souls = orbs leave him with the aura and home into his fortress's hull (drawHeroSouls) */ /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
 function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir, ggy) { /* ggy: the battlefield ground line (a fortress rider's feet are up on the deck) */ /* the skill sheet's effect frame, same in every mode */
   var F = HERO_COMBAT_FX[key] || {};
   if (F.throwImg) heroThrowFx(M, key, x0, y0, targets, hs);
@@ -26652,14 +26652,21 @@ function drawHeroSouls(ctx, hs, M, w, h) {
         var damp = Math.pow(0.35, dt); o.vx = o.vx * damp + dx / d * sp * (1 - damp); o.vy = o.vy * damp + dy / d * sp * (1 - damp); }
       var stepX = o.vx * dt, stepY = o.vy * dt;
       if (oa >= 0.4 && (d < 5 * hs || stepX * dx + stepY * dy > d * d)) { o.done = true; S.flashes.push({ x: T.x + (Math.random() - 0.5) * 4 * hs, y: T.y + (Math.random() - 0.5) * 4 * hs, t0: now }); return; }
-      o.x += stepX; o.y += stepY; o.tr.push(o.x, o.y); if (o.tr.length > 22) o.tr.splice(0, 2);
-      var fin = Math.min(1, oa / 0.12), n = o.tr.length / 2; /* the wispy tail */
-      for (var j = 1; j < n; j++) { var u = j / n; ctx.strokeStyle = "rgba(" + G[0] + "," + G[1] + "," + G[2] + "," + (0.55 * u * fin).toFixed(3) + ")"; ctx.lineWidth = (0.6 + 3.4 * u) * hs;
-        ctx.beginPath(); ctx.moveTo(o.tr[j * 2 - 2], o.tr[j * 2 - 1]); ctx.lineTo(o.tr[j * 2], o.tr[j * 2 + 1]); ctx.stroke(); }
-      var pr = (1 + 0.15 * Math.sin(now / 70 + o.ph)) * fin, R = 6.5 * hs * pr; /* glow + bright core */
-      var g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, Math.max(0.1, R)); g.addColorStop(0, "rgba(" + C[0] + "," + C[1] + "," + C[2] + "," + (0.95 * fin) + ")"); g.addColorStop(0.3, "rgba(" + G[0] + "," + G[1] + "," + G[2] + "," + (0.7 * fin) + ")"); g.addColorStop(1, "rgba(" + G[0] + "," + G[1] + "," + G[2] + ",0)");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x, o.y, Math.max(0.1, R), 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255," + (0.9 * fin) + ")"; ctx.beginPath(); ctx.arc(o.x, o.y, Math.max(0.1, 1.4 * hs * pr), 0, Math.PI * 2); ctx.fill();
+      o.x += stepX; o.y += stepY; o.tr.push(o.x, o.y); if (o.tr.length > 60) o.tr.splice(0, 2);
+      var fin = Math.min(1, oa / 0.12); /* v1568 look (Harley's reference): soft pale-cyan comet - near-white round head, smooth wide tail that tapers and fades */
+      var Rh = 3.6 * hs * fin, TL = 30 * hs, pts = [[o.x, o.y]], acc2 = 0; /* tail = the last TL px of his path */
+      for (var j = o.tr.length - 4; j >= 0 && acc2 < TL; j -= 2) { var px0 = pts[pts.length - 1]; var sg = Math.hypot(o.tr[j] - px0[0], o.tr[j + 1] - px0[1]); if (sg < 0.01) continue; acc2 += sg; pts.push([o.tr[j], o.tr[j + 1]]); }
+      if (pts.length > 1) { var Lf = [], Rt = [];
+        for (var q = 0; q < pts.length; q++) { var A0 = pts[Math.max(0, q - 1)], B0 = pts[Math.min(pts.length - 1, q + 1)], tx = B0[0] - A0[0], ty = B0[1] - A0[1], tl = Math.hypot(tx, ty) || 1, u2 = q / (pts.length - 1), wd = Rh * 0.92 * Math.pow(1 - u2, 0.7);
+          Lf.push([pts[q][0] - ty / tl * wd, pts[q][1] + tx / tl * wd]); Rt.push([pts[q][0] + ty / tl * wd, pts[q][1] - tx / tl * wd]); }
+        var E = pts[pts.length - 1], tg = ctx.createLinearGradient(o.x, o.y, E[0], E[1]);
+        tg.addColorStop(0, "rgba(200,244,250," + (0.85 * fin) + ")"); tg.addColorStop(0.5, "rgba(160,232,242," + (0.45 * fin) + ")"); tg.addColorStop(1, "rgba(140,225,240,0)");
+        ctx.globalCompositeOperation = "source-over"; ctx.fillStyle = tg; ctx.beginPath(); ctx.moveTo(Lf[0][0], Lf[0][1]);
+        for (q = 1; q < Lf.length; q++) ctx.lineTo(Lf[q][0], Lf[q][1]); for (q = Rt.length - 1; q >= 0; q--) ctx.lineTo(Rt[q][0], Rt[q][1]); ctx.closePath(); ctx.fill(); }
+      ctx.globalCompositeOperation = "source-over"; /* the head: soft edge, white middle */
+      var hg = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, Math.max(0.1, Rh * 1.35)); hg.addColorStop(0, "rgba(250,255,255," + fin + ")"); hg.addColorStop(0.55, "rgba(222,250,255," + (0.95 * fin) + ")"); hg.addColorStop(0.8, "rgba(170,236,246," + (0.6 * fin) + ")"); hg.addColorStop(1, "rgba(150,230,245,0)");
+      ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(o.x, o.y, Math.max(0.1, Rh * 1.35), 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = "lighter";
     });
     S.flashes = S.flashes.filter(function (f) { var q = (now - f.t0) / 300; if (q >= 1) return false; live = true; /* a small flash on the hull as each soul lands */
       var r = (3 + 13 * Math.pow(q, 0.5)) * hs, a = 1 - q, g2 = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);

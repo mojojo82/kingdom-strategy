@@ -4788,3 +4788,7 @@ Harley's 3 points:
 ## v1567 (13 Nov 2026) - Torvald: souls fly into the fortress (Guard Stance)
 - Harley's idea (souls being absorbed in the old Onimusha games), so Guard Stance reads as helping the fortress: when his blue aura appears, 5 glowing orbs (white core, his outline blue #3fa2ff, wispy tails) burst out of him, hang ~0.4 s, then curl and accelerate into the centre of his own fortress's hull (the same hull point weapons aim at: SKIN_HULLT / Mecha torso), a small flash + ring on the hull as each lands. HERO_COMBAT_FX.torvald.souls, spawned in heroSkillOnThrow, drawn by drawHeroSouls (Conquest + Arena). Visual only.
 - Checked headless (Conquest and Arena with the Mecha), no errors. Clips: art/originals/heroes/torvald/torvald_souls_conquest.mp4, torvald_souls_arena.mp4.
+
+## v1568 (13 Nov 2026) - Torvald's souls restyled
+- Harley liked the look of the pale blue comets in another game's recording: Torvald's orbs are now soft pale-cyan comets - a near-white round head with a soft edge and a smooth wide tail (the last 30 px of its path) that tapers and fades, drawn normally instead of as a bright additive glow. Landing puff in the same pale cyan. Flight unchanged (burst out, hang, curl and accelerate into the hull).
+- Clips: art/originals/heroes/torvald/torvald_souls_conquest_v2.mp4, torvald_souls_arena_v2.mp4. Headless, no errors.
