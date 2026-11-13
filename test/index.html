@@ -13226,7 +13226,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1553"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1554"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23640,6 +23640,10 @@ function barrelPivot(w, h, mode, isPlayerSide, id, withLife) { /* the weapon's s
   var pt = fortHullPoint(box, p); pt.box = box; return pt;
 }
 function barrelKey(mode, isPlayerSide, id) { return (mode === "arena" ? "a" : "c") + (isPlayerSide ? "p" : "b") + id; }
+/* v1554 (Harley): guns are the SAME size on every fortress skin (no longer scaled by the skin picture's width - wide pictures like the
+   Mecha got huge guns), and a bit smaller overall. Reference = the standard skin width (Bonewake / Ironclad II: 400 px x cqScale 0.5366). */
+var BARREL_REF_CQ = 400 * 0.5366, BARREL_UNIFY = 0.8;
+function barrelRefW(box) { var sk = box.skin, nw = sk && sk.cq && sk.cq.naturalWidth; if (!nw || !sk.cqScale) return box.sw * BARREL_UNIFY; return box.sw * BARREL_REF_CQ / (nw * sk.cqScale) * BARREL_UNIFY; }
 function barrelTipFor(mode, isPlayerSide, id) { /* where this weapon's shots start, or null (no barrel drawn lately) */
   var st = barrelState[barrelKey(mode, isPlayerSide, id)]; if (!st || performance.now() - st.t > 400) return null;
   var wd = WEAPON_DEFS_BY_ID[id]; if ((!wd || wd.kind !== "beam") && performance.now() - st.kickT > 120) st.kickT = performance.now(); /* asked for a shot's start = it fired: kick back */
@@ -23699,7 +23703,7 @@ function drawWeaponBarrels(ctx, w, h, mode, isPlayerSide, aimAt) { /* aimAt(px, 
     var id = list[i], b = WEAPON_BARREL[id], im = b && barrelImg(id); if (!im) continue;
     var pv = barrelPivot(w, h, mode, isPlayerSide, id, false); if (!pv) continue; /* v1166: no hover offset here - Conquest draws the barrels inside the hull's own hover/rock transform (fortLifeBegin), so adding it again made them bob on their own */
     var key = barrelKey(mode, isPlayerSide, id), st = barrelState[key] || (barrelState[key] = { ang: 0, kickT: 0, t: now }), dt = Math.min(0.1, (now - st.t) / 1000); st.t = now;
-    var dir = pv.box.dir, s = barrelSize * pv.box.sw * (b.nat / 240) / b.w; /* screen px per sprite px */
+    var dir = pv.box.dir, s = barrelSize * barrelRefW(pv.box) * (b.nat / 240) / b.w; /* screen px per sprite px; v1554: same gun size on every skin */
     var lx = (b.tip[0] - b.pivot[0]) * s, ly = (b.tip[1] - b.pivot[1]) * s, des = 0, tg = aimAt ? aimAt(pv.x, pv.y, id) : null;
     if (tg) { var dx = (tg.x - pv.x) * dir, dy = tg.y - pv.y; if (dx > 4) des = Math.max(-0.6, Math.min(0.5, Math.atan2(dy, dx) - Math.atan2(ly, lx))); }
     st.ang += (des - st.ang) * Math.min(1, dt * 8);
@@ -34119,7 +34123,7 @@ function govShipWithBarrels(gImg) { /* -> { src, px, py } (padding as a fraction
       var p = L["w" + q]; if (!p || p.length < 2) p = [[0.8, 0.45], [0.8, 0.78], [0.12, 0.62]][q]; /* same defaults as barrelPivot */
       var gx = ox + gb.x + (p[0] * cq.naturalWidth - cb.x) * kk, gy = oy + gb.y + (p[1] * cq.naturalHeight - cb.y) * kk;
       if (sk.govXf) { gx = ox + p[0] * cq.naturalWidth * sk.govXf.s + sk.govXf.x; gy = oy + p[1] * cq.naturalHeight * sk.govXf.s + sk.govXf.y; } /* v1550: a profile picture laid out differently from the battle picture (Mecha) */
-      var sc = barrelSize * (cq.naturalWidth * (sk.govXf ? sk.govXf.s : kk)) * (b.nat / 240) / b.w; /* same size vs the hull as in Conquest */
+      var sc = barrelSize * BARREL_UNIFY * (BARREL_REF_CQ / sk.cqScale) * (sk.govXf ? sk.govXf.s : kk) * (b.nat / 240) / b.w; /* v1554: same gun size on every skin, like Conquest */
       cx.save(); cx.translate(gx, gy); cx.scale(sc, sc); cx.drawImage(im, -b.pivot[0], -b.pivot[1], b.w, b.h); cx.restore();
     }
     var val = { src: cv.toDataURL("image/png"), px: PX, py: PY };

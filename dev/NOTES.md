@@ -4723,3 +4723,7 @@ Harley's 3 points:
 
 ## v1553 (13 Nov 2026) - Fix: blue box over the Mecha
 - v1552 gave the Mecha an "empty" 1x1 front layer, but the pixel used was half-transparent BLUE (0,0,255,127), stretched over the whole fortress -> a blue box. Replaced with a fully transparent pixel. Checked headless: gone, no errors.
+
+## v1554 (13 Nov 2026) - Guns the same size on every fortress skin, and smaller
+- Harley: unify gun size across skins (not proportional to the skin picture) and make them a bit smaller. Barrels were scaled by the fortress picture's on-screen width (Mecha's wide picture: +50%, Ironclad / old Voidspire: about -20%). Now barrelRefW(box) uses a fixed reference width (400 x 0.5366, Bonewake / Ironclad II) x the mode's scale, x 0.8 (BARREL_UNIFY) - Conquest, Arena and the Overlord Profile. Measured: identical on all 12 skins (146 Conquest / 159 Arena reference px). The Dev Tools barrel size slider still scales them all.
+- Capture: dev/ships/guns_unified_v1554.png (Mecha vs Ironclad II). No errors.
