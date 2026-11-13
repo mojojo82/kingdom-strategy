@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1565"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1566"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26289,7 +26289,9 @@ function drawIdleClones(ctx, w, h) {
 function drawKoHero(ctx, w, h, key, i) {
   var vis = idleAnim.heroVis[key] || idleSquadSlotPos(w, h, i, key);
   var hScale = heroSpriteVisualScale / 100;
-  var koP = fortLayoutPoint(w, h, "cq", true, "ko", true); if (koP) vis = { x: koP.x + (i - 2) * 9 * hScale, y: koP.y - 12 * hScale }; // v1109: the skin's KO spot (rides with the hull)
+  var koOnPlat = fortressSkin().plats && HERO_DEFS[key] && HERO_DEFS[key].class !== "infantry" && i < 5; /* v1566 (Harley): on a platform skin (Mecha) a KO'd rider stays on his own platform until he revives */
+  if (koOnPlat) vis = idleSquadSlotPos(w, h, i, key);
+  var koP = koOnPlat ? null : fortLayoutPoint(w, h, "cq", true, "ko", true); if (koP) vis = { x: koP.x + (i - 2) * 9 * hScale, y: koP.y - 12 * hScale }; // v1109: the skin's KO spot (rides with the hull)
   var feetY = vis.y + 12 * hScale;
   var ent = game.state.idle.heroHp && game.state.idle.heroHp[key];
   var tot = Math.max(0.1, game.heroKoCfg.reviveSec), left = ent ? Math.max(0, ent.reviveT) : 0;
@@ -37002,7 +37004,9 @@ function drawArenaFrame(ctx, w, h) {
         var sbK = arenaShieldBox(w, h), sideCx = isPlayerSide ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X), halfSw = sbK ? sbK.sw / 2 : 50;
         var rearX = isPlayerSide ? sideCx - halfSw * 0.72 + i * 7 : sideCx + halfSw * 0.72 - i * 7; // the back of his fortress (away from the enemy), spread a little so several ghosts don't stack
         rearX = isPlayerSide ? 26 + i * 7 : w - 26 - i * 7; // every KO'd hero goes to the screen edge on his own side (fully on screen), ghosts offset slightly so they don't stack
-        if (firstKo) { spawnHeroWarp(cxK, slot.y + 13, 1); cxK = rearX; spawnHeroWarp(cxK, slot.y + 13, 0.6); } // poof where he fell, he reappears at the KO spot (same warp puff as Conquest)
+        var skK = isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]);
+        if (skK.plats && HERO_DEFS[key] && HERO_DEFS[key].class !== "infantry") rearX = slot.x; /* v1566 (Harley): on a platform skin (Mecha) a KO'd rider stays on his own platform until he revives */
+        if (firstKo && rearX !== slot.x) { spawnHeroWarp(cxK, slot.y + 13, 1); cxK = rearX; spawnHeroWarp(cxK, slot.y + 13, 0.6); } // poof where he fell, he reappears at the KO spot (same warp puff as Conquest)
         cxK = rearX; lxm[kk] = cxK;
         lastSlot = { x: cxK, y: slot.y }; (arenaAnim.heroScreen || (arenaAnim.heroScreen = {}))[kk] = { x: cxK, y: slot.y };
         drawArenaKoGhost(ctx, key, cxK, slot.y + 13, i, Math.max(0, koE.reviveT || 0), Math.max(0.1, game.heroKoCfg.reviveSec), !isPlayerSide, sprite);
@@ -37118,11 +37122,22 @@ function drawArenaFrame(ctx, w, h) {
           var nDv = performance.now(), opPreD = isPlayerSide ? "a_" : "p_", skD = HERO_DEFS[key].conquestSkills[0];
           if (!lpA.dv) lpA.dv = { t0: lpA.t0, x0: slot.x, y0: slot.y + 13, imp: skD && skD.dive ? skD.dive.impact : 3.6, tgt: koE && koE.dv ? koE.dv.t : null };
           var Rd = lpA.dv;
+          /* v1566: his target can be knocked out while he is in the air (it then reappears at its own fortress) - the fight re-picks the target on landing
+             (alive enemy with the most HP, else the fortress), so the drawing re-picks the same way and bends his fall onto it, instead of landing on an empty spot.
+             Also picks up a target the fight hadn't reported yet on his first frame. */
+          if (!Rd.tgt && koE && koE.dv) Rd.tgt = koE.dv.t;
+          if (Rd.tgt && Rd.tgt !== "fort") { var tE0 = arenaAnim.heroHp && arenaAnim.heroHp[opPreD + Rd.tgt]; if (!tE0 || tE0.ko) { var bD = null, bK = null; Object.keys(arenaAnim.heroHp || {}).forEach(function (k2) { if (k2.indexOf(opPreD) !== 0) return; var e2 = arenaAnim.heroHp[k2]; if (!e2 || e2.ko || e2.droid) return; if (!bD || (!e2.dv && bD.dv) || (!!e2.dv === !!bD.dv && e2.hp > bD.hp)) { bD = e2; bK = k2.slice(opPreD.length); } }); Rd.tgt = bK || "fort"; Rd.retgt = true; } }
+          if (Rd.frozen && Rd.ph === "fall" && Rd.tgt) { /* during the fall: ease the landing spot onto the (re-picked or moving) target */
+            var gx = null, gy = null; if (Rd.tgt === "fort") { gx = isPlayerSide ? w * (1 - ARENA_SIDE_X) - 40 * hsA : w * ARENA_SIDE_X + 40 * hsA; gy = slot.y + 13; }
+            else { var hsT2 = arenaAnim.heroScreen && arenaAnim.heroScreen[opPreD + Rd.tgt]; if (hsT2) { gx = hsT2.x; gy = hsT2.y + 13; } }
+            if (gx != null) { var dirL = gx >= Rd.x0 ? 1 : -1, wantX = Math.abs(gx - Rd.x0) < 4 * hsA ? Rd.x0 : gx - dirL * 20 * hsA, eL = Math.min(1, (nDv - (Rd.lt || nDv)) / 1000 * 6); Rd.landX += (wantX - Rd.landX) * eL; Rd.landY += (gy - Rd.landY) * eL; if (dirL !== Rd.dir && Math.abs(gx - Rd.x0) > 8 * hsA) Rd.dir = dirL; }
+          }
+          Rd.lt = nDv;
           if (!Rd.frozen && Rd.tgt) {
             if (Rd.tgt === "fort") { Rd.tx = isPlayerSide ? w * (1 - ARENA_SIDE_X) - 40 * hsA : w * ARENA_SIDE_X + 40 * hsA; Rd.ty = slot.y + 13; }
             else { var hsT = arenaAnim.heroScreen && arenaAnim.heroScreen[opPreD + Rd.tgt], tEd = arenaAnim.heroHp && arenaAnim.heroHp[opPreD + Rd.tgt]; if (hsT && !(tEd && tEd.ko)) { Rd.tx = hsT.x; Rd.ty = hsT.y + 13; } }
           }
-          var Pd = arenaAnim.battleEnded ? null : heroDiveStep(ctx, arenaAnim, key, Rd, nDv, hsA);
+          var Pd = arenaAnim.battleEnded ? null : heroDiveStep(ctx, arenaAnim, key, Rd, nDv, hsA); Rd.ph = Pd ? Pd.ph : null;
           if (Pd) { arenaAnim.heroScreen[flashKey] = { x: Pd.x, y: Pd.y - 13 }; ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), Pd.x, Pd.y - 13 + size / 2 + 10); return; }
           if (Rd.landX != null) (arenaAnim.dvGlide || (arenaAnim.dvGlide = {}))[flashKey] = { t: nDv, x: Rd.landX, y: (Rd.landY != null ? Rd.landY : slot.y + 13) - 13 }; /* then glide to where the sim has him (deck target: hops down to the fortress nose) */
           delete arenaAnim.heroLeap[flashKey]; lpA = null;
