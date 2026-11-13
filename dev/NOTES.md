@@ -4700,3 +4700,6 @@ Harley's 3 points:
 - dev/mecha/build_mecha_skin.py (layers + layout json), dev/mecha/embed_mecha_skin.py (re-embed). Mecha body ~125 css px wide in Conquest (cqScale 0.2341), lift 12, meleeFront 0.67 (melee heroes stop at the staff).
 - Static for now: the parts are kept separate for the code animation (next). Empty platform when a roster slot is an infantry hero.
 - Checked headless (3x): Conquest + Arena screenshots (art/originals/ships/mecha/ingame_*_v1547.png), no errors. Art only, balance untouched.
+
+## v1548 (13 Nov 2026) - Mecha bigger
+- Harley: the mecha needs to be a bit bigger. Mecha 20% bigger on screen (cqScale 0.2875), platforms + riders keep their size. The two top platforms moved down (beside the head and in front) so they stay clear of the Arena HP bars. Checked headless Conquest + Arena, no errors.
