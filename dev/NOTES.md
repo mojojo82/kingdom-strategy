@@ -4865,3 +4865,9 @@ Harley's 3 points:
 
 ## v1579 - no lightning on the snow level (14 Nov 2026)
 - Harley: snow added to LIGHTNING_OFF_ENVS. Lightning (Dev Tools "Lightning 1", off by default) can now only appear on Night and Rain.
+
+## v1580 - Options > Light backgrounds (14 Nov 2026)
+- Harley: test drawing the Conquest sky + far background layers at 2x instead of 3x, toggle in the regular Options menu (non-dev account). Off by default, per device (localStorage kingdom_light_bg_v1).
+- On: a second canvas (#idleBgCanvas) sits behind #idleCanvas at max 2x sharpness and gets the extra-sky gradient, the code sky, the level's flat fill and its "Sky" / "Far" layers (drawTmpEnvBg part "back"); the battle canvas keeps everything else at full sharpness (part "front", no flat fill) with its CSS background off so the back canvas shows through. Screen shakes copied to both. Does nothing on screens of 2x or less. Off = the old code path untouched.
+- Measured before (headless, phone size 1290 wide): the far layer is 1.34 MP at 3x vs 0.60 MP at 2x (-55%); stretching it inside the same canvas would cost ~5 ms and cancel the gain, hence the separate canvas.
+- Headless full-frame timing (software drawing, median of 40): forest 17.0 -> 13.1-14.2 ms, foundry 8.2-9.1 -> 7.6 ms. Does not include the phone combining the two layers (cheap on its graphics chip, but not free) - needs Harley's phone to judge. Screenshots on/off on forest, foundry, castle gate, night: same scene, far layers slightly softer. Additive glows over sky-only areas blend onto a see-through battle canvas, so they can look a touch less bright there when On.

@@ -13240,7 +13240,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1579"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1580"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -25420,7 +25420,7 @@ var skyGradCache = new Map();
 var IDLE_SKY_TOP = { skydocks: "#2e73db", throneroom: "#3a2a22", jungle: "#2c7bd5", swamp: "#293078", armoury: "#2e2622", greathall: "#3a2a22", pineforest: "#0a6ee8", stream: "#0a6ee8", castlegate: "#0a6ee8", foundry: "#62483b", desert: "#1078f4", volcano: "#160a09", crystal: "#121424", cave: "#14181e", day: "#7d8fa0", snow: "#a9bccd", rain: "#333b46", night: "#0b1024" }; /* v1262: same as the first stop of each sky gradient below */
 var IDLE_SKY_HIGH = { skydocks: "#2e73db", throneroom: "#3a2a22", jungle: "#2c7bd5", swamp: "#293078", armoury: "#2e2622", greathall: "#3a2a22", pineforest: "#0a6ee8", stream: "#0a6ee8", castlegate: "#0a6ee8", foundry: "#62483b", desert: "#1078f4", volcano: "#160a09", crystal: "#121424", cave: "#14181e", day: "#52617a", snow: "#8296ab", rain: "#20262f", night: "#060918" }; /* v1262: the top of the taller Conquest screen */
 function drawEnvironmentSky(ctx, w, h, env, groundY) {
-  if (ctx.canvas.id === "idleCanvas" && typeof nightSkyOn === "function" && nightSkyOn(env)) { drawNightSky(ctx, w, groundY); return; } /* v1265 */
+  if ((ctx.canvas.id === "idleCanvas" || ctx.canvas.id === "idleBgCanvas") && typeof nightSkyOn === "function" && nightSkyOn(env)) { drawNightSky(ctx, w, groundY); return; } /* v1265 */
   var cacheKey = w + "_" + Math.round(groundY) + "_" + env;
   var cache = skyGradCache.get(ctx.canvas);
   if (!cache || cache.key !== cacheKey) {
@@ -27990,17 +27990,18 @@ function drawLavaFalls(ctx, x0, top, s, w) {
   }
   ctx.restore();
 }
-function drawTmpEnvBg(ctx, w, h, groundY, cfg) {
+function drawTmpEnvBg(ctx, w, h, groundY, cfg, part) { /* v1580: part "back" = only the Sky / Far layers (+ flat fill), "front" = the rest; none = all */
   ctx.save();
   var skyT = -(idleAnim.skyPx || 0); /* v1262: the taller Conquest screen - negative y is the extra sky above the old top edge */
   var bgBot = groundY + 4; /* v1264 (Harley circled the gap): on a level with its own road, the backdrop reaches down to where the road's stones start */
   if (cfg.floor && cfg.floor.img.naturalWidth && !groundTilesHidden) { var FE = floorEff(cfg._env, cfg.floor); bgBot = groundY + (FE.top - FE.road) * groundY * FE.k + 1; }
   ctx.beginPath(); ctx.rect(0, skyT, w, bgBot - skyT); ctx.clip(); // v566: backdrop layers stop at the ground line (reverted from v565)
   var L0 = cfg.layers && cfg.layers[0], coverFirst = L0 && L0.opaque && L0.img.complete && L0.img.naturalWidth && !(L0.alt && layerUsesAlt(cfg._env, 0, L0)) && (bgBot <= groundY - L0.lift + (L0.oh - L0.baseY) * groundY * L0.scale) && (groundY - L0.lift - L0.baseY * groundY * L0.scale <= skyT); /* v1576: covered anyway */
-  if (cfg.flat) { ctx.fillStyle = cfg.flat; if (!coverFirst) ctx.fillRect(0, skyT, w, bgBot - skyT); else ctx.fillRect(0, bgBot - 3, w, 3); } /* covered: only the soft clip edge at the bottom still needs it */
+  if (cfg.flat && part !== "front") { ctx.fillStyle = cfg.flat; if (!coverFirst) ctx.fillRect(0, skyT, w, bgBot - skyT); else ctx.fillRect(0, bgBot - 3, w, 3); } /* covered: only the soft clip edge at the bottom still needs it */
   ctx.imageSmoothingEnabled = true;
   cfg.layers.forEach(function (L, li) {
     if (!L.img.complete || !L.img.naturalWidth) return;
+    if (part && (part === "back") !== bgSplitLayer(L)) return; /* v1580 */
     if (L.alt && layerUsesAlt(cfg._env, li, L) && L.alt.img.complete && L.alt.img.naturalWidth) { var LS = L.speed, LF = L.falls; L = L.alt; L.speed = LS; L.falls = LF; } /* v1339: the picked test version */
     var im = layerImgFor(cfg._env, li, L); /* v1298: Sharp / Soft / Village-like per level + layer */
     var s = groundY * L.scale, tw = L.ow * s, th = L.oh * s;
@@ -28184,13 +28185,15 @@ function drawIdleAnim(ctx, w, h) {
   var groundY = groundYFor(h);
   var currentEnv = game.idleEnvironment();
   ensureLevelArtAround(currentEnv); /* v1315: fetch this level's art (then the next one's) */
+  var tmpRainBg = TMP_ENV_BG_ON && TMP_ENV_BG[currentEnv];
+  var bctx = idleBgBegin(ctx, !!tmpRainBg), fctx = ctx; if (bctx) ctx = bctx; /* v1580: Light backgrounds - sky + far layers go to the 2x canvas behind */
   if (idleAnim.skyPx > 0) { /* v1262: extra sky above the old top edge - a bit darker up high, ending in the sky's top colour so it joins seamlessly */
     var skG = ctx.createLinearGradient(0, -idleAnim.skyPx, 0, 0); skG.addColorStop(0, IDLE_SKY_HIGH[currentEnv] || IDLE_SKY_HIGH.night); skG.addColorStop(1, IDLE_SKY_TOP[currentEnv] || IDLE_SKY_TOP.night);
     ctx.fillStyle = skG; ctx.fillRect(0, -idleAnim.skyPx, w, idleAnim.skyPx + 1);
   }
   drawEnvironmentSky(ctx, w, h, currentEnv, groundY);
-  var tmpRainBg = TMP_ENV_BG_ON && TMP_ENV_BG[currentEnv];
-  if (tmpRainBg) drawTmpEnvBg(ctx, w, h, groundY, tmpRainBg);
+  if (bctx) { if (tmpRainBg) drawTmpEnvBg(bctx, w, h, groundY, tmpRainBg, "back"); bctx.restore(); ctx = fctx; if (tmpRainBg) drawTmpEnvBg(ctx, w, h, groundY, tmpRainBg, "front"); }
+  else if (tmpRainBg) drawTmpEnvBg(ctx, w, h, groundY, tmpRainBg);
   // distant parallax hills — kept light/subtle so they read as a faint shadow
   // rather than a solid dark shape sitting behind the heroes' feet
   ctx.save();
@@ -29122,6 +29125,30 @@ function drawIdleAnim(ctx, w, h) {
 // CSS size to give the browser one buffer pixel per real physical pixel
 // instead.
 function canvasDPR() { return window.devicePixelRatio || 1; }
+/* v1580 (Harley: Options > Light backgrounds): the Conquest sky and far background layers are drawn on their own canvas behind the battle at 2x
+   sharpness (max), which the phone stretches for free when it puts the screen together; everything else (near layer, road, heroes, enemies,
+   effects, numbers) stays on the battle canvas at full sharpness. Off = exactly as before. Per device. */
+var BG_SPLIT_KEY = "kingdom_light_bg_v1", bgSplitOn = false;
+try { bgSplitOn = localStorage.getItem(BG_SPLIT_KEY) === "1"; } catch (e) {}
+function setBgSplit(on) { bgSplitOn = !!on; try { localStorage.setItem(BG_SPLIT_KEY, on ? "1" : "0"); } catch (e) {} }
+function bgSplitLayer(L) { return /^(Sky|Far)$/.test(L.name || ""); }
+var IDLE_CANVAS_BG = "linear-gradient(180deg,#1a2438 0%, #131b28 60%, #0d1119 100%)";
+function idleBgBegin(fctx, hasArt) {
+  var fc = fctx.canvas, bc = document.getElementById("idleBgCanvas");
+  if (!bgSplitOn || !hasArt || fc.id !== "idleCanvas" || canvasDPR() <= 2) { /* nothing to save on a 2x (or lower) screen */
+    if (bc && bc.style.display !== "none") { bc.style.display = "none"; fc.style.background = ""; fc.style.position = ""; }
+    return null;
+  }
+  if (!bc) { bc = document.createElement("canvas"); bc.id = "idleBgCanvas"; bc.style.cssText = "position:absolute;left:0;top:0;pointer-events:none;display:block;"; fc.parentNode.insertBefore(bc, fc); }
+  if (bc.style.display === "none" || fc.style.position !== "relative") { bc.style.display = "block"; fc.style.position = "relative"; fc.style.background = "none"; bc.style.background = IDLE_CANVAS_BG; bc._k = ""; }
+  var dpr = canvasDPR(), W = fc.width / dpr, H = fc.height / dpr, d = 2, key = fc.width + "x" + fc.height;
+  if (bc._k !== key) { bc._k = key; bc.width = Math.round(W * d); bc.height = Math.round(H * d); bc.style.width = W + "px"; bc.style.height = H + "px"; bc.style.left = fc.offsetLeft + "px"; bc.style.top = fc.offsetTop + "px"; }
+  if (bc.style.transform !== fc.style.transform) bc.style.transform = fc.style.transform; /* screen shakes move both */
+  var c = bc.getContext("2d"), sky = idleAnim.skyPx || 0;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, bc.width, bc.height);
+  c.save(); c.setTransform(bc.width / W, 0, 0, bc.height / H, 0, sky * bc.height / H);
+  return c;
+}
 /* v1262 (Harley: "move most of everything down to fill that empty space at bottom, leave the blue header where it is"): on phones the Conquest canvas
    grows by the empty space between the brown panel and the bottom nav. The scene keeps its old size and position from the bottom - the extra height
    is sky on top (negative y, see the translate in the loop). Returns true if the canvas size changed. */
@@ -33889,6 +33916,8 @@ function renderOptionsScreen() {
     '<div class="op-note">A little bubble pops wherever you tap.</div>' +
     '<div class="op-row"><span class="op-l">📈 FPS counter</span><button type="button" class="op-tg' + (game.state.idle.fpsCounterEnabled ? ' on' : '') + '" id="opFps">' + (game.state.idle.fpsCounterEnabled ? 'On' : 'Off') + '</button></div>' +
     '<div class="op-note">Shows frames per second in the corner of Conquest and Arena battles.</div>' + /* v1563 */
+    '<div class="op-row"><span class="op-l">🏞️ Light backgrounds</span><button type="button" class="op-tg' + (bgSplitOn ? ' on' : '') + '" id="opLightBg">' + (bgSplitOn ? 'On' : 'Off') + '</button></div>' +
+    '<div class="op-note">Test: draws the sky and far background layers in Conquest a little less sharp (2x) to save battery and heat. Heroes and effects stay full sharpness.</div>' + /* v1580 */
     '<div class="op-row"><span class="op-l">🎨 UI style</span><button type="button" class="op-tg' + (uiSkin() === "classic" ? ' on' : '') + '" id="opSkinClassic">Classic</button><button type="button" class="op-tg' + (uiSkin() === "blue" ? ' on' : '') + '" id="opSkinBlue">Blue</button></div>' +
     '<div class="op-note">Blue is a work in progress: Conquest only, on phones.</div>' +
     ((window.innerWidth > 900 || window.KS_PHONE_FRAME) ? '<div class="op-row"><span class="op-l">📱 Phone view on PC</span><button type="button" class="op-tg' + (window.KS_PHONE_FRAME ? ' on' : '') + '" id="opPhoneView">' + (window.KS_PHONE_FRAME ? 'On' : 'Off') + '</button></div><div class="op-note">Shows the game in a phone-sized frame on a wide screen (this browser only). Temporary, for testing.</div>' : '') +
@@ -33902,6 +33931,7 @@ function renderOptionsScreen() {
   document.getElementById("opSfx").onclick = function () { setSoundFx(!soundFxEnabled); renderOptionsScreen(); };
   document.getElementById("opZoomBtns").onclick = function () { setMapZoomBtns(!mapZoomBtnsOn); renderOptionsScreen(); };
   document.getElementById("opTapFx").onclick = function () { setTapFx(!tapFxOn); renderOptionsScreen(); }; /* v1440 */
+  document.getElementById("opLightBg").onclick = function () { setBgSplit(!bgSplitOn); renderOptionsScreen(); }; /* v1580 */
   document.getElementById("opFps").onclick = function () { game.state.idle.fpsCounterEnabled = !game.state.idle.fpsCounterEnabled; persist(); var dv = document.getElementById("devFpsCounterToggle"); if (dv) dv.checked = game.state.idle.fpsCounterEnabled; renderOptionsScreen(); }; /* v1563: same setting as the Dev Tools checkbox */
   var pvb = document.getElementById("opPhoneView"); if (pvb) pvb.onclick = function () { var turnOn = !window.KS_PHONE_FRAME; try { localStorage.setItem("kingdom_phone_view_v1", turnOn ? "1" : "0"); } catch (e) {} if (turnOn) (window.top || window).location.href = "phone.html"; else (window.top || window).location.href = (window.top || window).location.pathname.replace(/phone\.html$/, ""); };
   document.getElementById("opSkinClassic").onclick = function () { setUiSkin("classic"); renderOptionsScreen(); };
