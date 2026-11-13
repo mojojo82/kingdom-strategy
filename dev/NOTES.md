@@ -4755,3 +4755,8 @@ Harley's 3 points:
 - WEAPON_TRACK (scatter_rounds, flak_burst, missile_barrage): aim point drifts slowly inside a ~28x18 px zone on the hull (weaponAimPoint, two slow sines); the barrel follows and each round of a burst lands where the aim is at that moment.
 - Measured in a headless Arena fight (Walker with Scatter, Laser, Flak vs Mecha), offsets from the Mecha's torso target: volleys dx -11..-1 / dy -8..11, cannon +-6 / +-4, beam dx -10..0 / dy -9..-2 (before: cannon 55 px and beam 70 px short, on the staff). No errors.
 - Conquest unchanged (weapons aim at enemies there).
+
+## v1561 (13 Nov 2026) - Voidspire III (style C)
+- Harley picked the Voidspire II B design restyled in style C (gritty Bonewake 1 look, separate ChatGPT chat with only that ref; II was too bright and cartoony). New skin "Voidspire III" (id void3b), glass window like II (dev/ships/glass_layers.py, GLASS_TB 4 / TR -2 for the muted glass), same hero spots, lift 10, meleeFront 0.79. dev/ships/patch_voidc.py.
+- Weapon slots on the solid armour band below the window (w0 0.66/0.71, w1 0.50/0.73, w2 0.33/0.71) and hull target [0.52, 0.74] there too - not on the glass where the heroes ride. Measured in an Arena fight: cannon +-6 px, beam 11-18 px from the target, volleys inside the tracking zone. Voidspire II A/B stay.
+- Checked headless Conquest + Arena with guns, no errors. art/originals/ships/voidspire/ingame_arena_v1561.png, v3_slots_target.png.
