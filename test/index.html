@@ -1496,6 +1496,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #heroDetailOverlay .hc .hd-actionbtn:disabled { background:#6f6556; color:#cfc6b4; border-color:#4a4236; box-shadow:none; }
   .hc-sk { position:relative; border:3px solid #b7821a; border-radius:22px; background:linear-gradient(180deg,#1e1604,#150f03); padding:20px 26px 22px 128px; min-height:132px; margin-bottom:22px; }
   .hc-sk.clickable { cursor:pointer; }
+  .hc-sk.off { opacity:.45; filter:grayscale(1); } /* v1575: a skill that is switched off (shown, does nothing) */
   .hc-sk .sq { position:absolute; left:12px; top:18px; width:96px; height:96px; border:3px solid #e9b54c; border-radius:18px; display:grid; place-items:center; font-size:50px; background:#1a1204; box-shadow:0 0 12px #e9b54c55; }
   .hc-sk .nm { font-size:44px; font-weight:700; color:#f6e1b8; display:flex; align-items:center; gap:14px; }
   .hc-sk .tg { font-size:21px; font-weight:800; letter-spacing:1.5px; padding:4px 12px; border-radius:8px; border:2px solid #b7821a; color:#e9b54c; }
@@ -6233,7 +6234,7 @@ var HERO_DEFS = {
       { name: "Piercing Volley", icon: "🏹💥", kind: "active", cooldown: 9, desc: "Every 9s, fires a volley for bonus damage.", pctByLevel: [0.50, 0.57, 0.64, 0.71, 0.78] },
       // The team's ONLY damage-multiplier passive (the old per-hero Iron Wall pool of +65% at max, condensed
       // into one hero: 5 levels x 13%). Deliberately on the weakest-rarity hero so there's always a reason to field her.
-      { name: "Eagle Eye", icon: "👁️", kind: "passive", desc: "More damage in every battle.", effectType: "conquestDamageMult", perLevel: 0.13 }
+      { name: "Eagle Eye", icon: "👁️", kind: "passive", desc: "More damage in every battle.", disabled: true, effectType: "conquestDamageMult", perLevel: 0 /* v1575 (Harley): switched OFF but kept on her card - was 0.13 (+13% team damage per level); it made her the top Arena hero (91.6% at Lv40). He decides later. */ }
     ],
     expeditionSkills: [
       { name: "Farsight Aim", icon: "🎯", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.04 },
@@ -13238,7 +13239,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1574"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1575"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -31960,8 +31961,8 @@ function renderHeroSkillsTabCombat(content, key, def, h) {
 
   function skillBlock(skill, group, idx) { /* v1140: new card panels; the book count sits on the name line (have/need) */
     var level = h.owned ? game.heroSkillLevel(key, group, idx) : 0;
-    var maxed = level >= 5, click = h.owned && !maxed;
-    var kindTag = skill.kind === "limit" ? '<span class="tg on">LIMIT</span>' : skill.kind === "active" ? '<span class="tg on">ACTIVE</span>' : '<span class="tg">PASSIVE</span>';
+    var maxed = level >= 5, click = h.owned && !maxed && !skill.disabled; /* v1575: a disabled skill can't be upgraded */
+    var kindTag = skill.disabled ? '<span class="tg">DISABLED</span>' : skill.kind === "limit" ? '<span class="tg on">LIMIT</span>' : skill.kind === "active" ? '<span class="tg on">ACTIVE</span>' : '<span class="tg">PASSIVE</span>';
     var lvlTag = h.owned ? '<span class="tg">Lv ' + level + '/5</span>' : '';
     var cost = "";
     if (h.owned) {
@@ -31969,9 +31970,10 @@ function renderHeroSkillsTabCombat(content, key, def, h) {
       else { var need = game.heroSkillCost(level), have = game.state.idle.conquestBooks | 0; cost = '<span class="cost' + (have >= need ? '' : ' short') + '">' + fmt(have) + '/' + fmt(need) + ' ' + ico("books") + '</span>'; }
     }
     var ic = String(skill.icon || "").match(/^(\p{Extended_Pictographic}\uFE0F?)/u);
-    var b = '<div class="hc-sk' + (click ? ' clickable' : '') + '"' + (click ? (' data-hero="' + key + '" data-group="' + group + '" data-idx="' + idx + '"') : '') + '>';
+    if (skill.disabled) cost = "";
+    var b = '<div class="hc-sk' + (click ? ' clickable' : '') + (skill.disabled ? ' off' : '') + '"' + (click ? (' data-hero="' + key + '" data-group="' + group + '" data-idx="' + idx + '"') : '') + '>';
     b += '<div class="sq">' + (ic ? ic[1] : skill.icon) + '</div><div class="nm"><span>' + skill.name + '</span>' + kindTag + lvlTag + cost + '</div>';
-    if (h.owned) b += '<div class="vl">' + skillValueText(skill, level, key, group, idx) + '</div>';
+    if (h.owned && !skill.disabled) b += '<div class="vl">' + skillValueText(skill, level, key, group, idx) + '</div>';
     b += '<div class="ds">' + (skill.cardDesc || skill.desc) + '</div></div>';
     return b;
   }

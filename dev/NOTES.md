@@ -4836,3 +4836,9 @@ Harley's 3 points:
 ## Arena roster ranking tool (14 Nov 2026, no game change)
 - dev/balance/arena_rank.js: every hero appears equally often in random 5-hero teams; each team pair fights both sides, fixed seeds; score = win rate of the teams a hero was in (draws half). Lv40 2* and Lv80 5*. `node dev/balance/arena_rank.js --rounds 400 --seeds 2` = 4800 fights per level, ~30 s. Results JSON in dev/balance/results/arena_rank_latest.json.
 - First run (v1574): Lv40 - Lyra 91.6%, Roran 57.0, Kessa 55.4, Seraphine 55.3, Hanzo 55.2, Vesper 53.5, Sera 50.6, Pip 49.5, Halo-7 46.5, Juno 44.3, Caelum 43.0, Iron Lily 40.8, Bram 40.4, Aurek 40.3, Gareth 39.6, Torvald 36.7. Lv80 - Hanzo 87.6%, Lyra 72.9, Roran 54.4, Seraphine 52.9, Vesper 51.6, Kessa 50.7, Sera 47.7, Pip 47.5, Juno 46.6, Halo-7 45.6, Iron Lily 41.5, Torvald 41.1, Gareth 41.1, Bram 39.8, Aurek 39.5, Caelum 39.2. Lyra (Epic) is far above everyone at Lv40 and 2nd at Lv80; infantry heroes cluster at the bottom.
+
+## v1575 (14 Nov 2026) - Eagle Eye switched off (still shown, greyed out)
+- Why Lyra tops Arena (arena_rank.js, Eagle Eye on/off): Eagle Eye (+13% damage per level for her whole team, Conquest + Arena) - with it off she drops to 62.1% (Lv40, 2nd) / 49.3% (Lv80, 7th); Piercing Volley off changes ~1%. Harley: keep it on her card but disabled; he decides later.
+- Eagle Eye: perLevel 0 (was 0.13) + `disabled: true`. Hero card: skill blocks with `disabled` are greyed (.hc-sk.off), tagged DISABLED, no value line, no book cost, can't be upgraded.
+- Ranking with it off (same test): Lv80 Hanzo 98.3% (he becomes the clear outlier), Roran 55.5, Kessa 49.7, Lyra 49.3; Lv40 Roran 63.6, Lyra 62.1, Hanzo 61.2, Kessa 61.1.
+- Conquest: teams with Lyra lose up to +65% damage (her skill level 5) - not re-measured (Harley stopped the checks).
