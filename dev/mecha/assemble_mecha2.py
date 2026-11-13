@@ -12,11 +12,12 @@ def key(a):
     sp = (c[..., 0] > c[..., 1] + 12) & (c[..., 2] > c[..., 1] + 12); c[sp] = c[sp] * 0.4 + np.stack([c[..., 1]] * 3, -1)[sp] * 0.6
     al[al < 0.04] = 0; return np.dstack([c, al * 255]).astype(np.uint8)
 S = key(np.asarray(Image.open(D + "mecha_parts_v2.png").convert("RGB")))
+T2 = key(np.asarray(Image.open(D + "mecha_torso_v2.png").convert("RGB")))   # v3 torso (Harley: bigger, huge shoulders like the concept)
 # boxes and anchor points (sheet px)
 P = {"torso": (401, 254, 1131, 938), "head": (706, 17, 963, 244), "nUp": (47, 262, 339, 617), "nFo": (34, 644, 423, 947), "fUp": (1224, 315, 1428, 616), "fFo": (1225, 655, 1452, 936)}
 A = {"neck": (848, 492), "shN": (612, 636), "shF": (1062, 596), "headB": (838, 236),
      "nUp_sh": (232, 385), "nUp_el": (195, 600), "nFo_el": (98, 690), "fUp_sh": (1318, 400), "fUp_el": (1322, 602), "fFo_el": (1268, 698)}
-C = {"gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
+C = {"torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
 if len(sys.argv) > 2: C.update(json.loads(sys.argv[2]))
 W, H = 1700, 1400; cv = Image.new("RGBA", (W, H)); O = (450, 300)   # torso offset on the canvas
 def crop(n):
@@ -35,6 +36,20 @@ def rel(n, a, b, scale=1.0, rot=0.0):   # where sheet point b lands when sheet p
     dx, dy = (b[0] - a[0]) * scale, (b[1] - a[1]) * scale; r = math.radians(rot)
     return dx * math.cos(r) + dy * math.sin(r), -dx * math.sin(r) + dy * math.cos(r)
 f = C["far"]; g = C["gapEl"]
+if C["torso2"]:
+    ts = C["ts"]; TB = (97, 0, 1370, 1000)    # torso v2 box (sheet px)
+    A2 = {"neck": (930, 372), "shN": (455, 590), "shF": (1240, 545)}
+    def T2p(p): return (O[0] + (p[0] - TB[0]) * ts, O[1] + (p[1] - TB[1]) * ts)
+    # far arm, near upper arm: behind the torso (its huge shoulders cover their tops)
+    sh = T2p(A2["shF"]); e = rel("fUp", A["fUp_sh"], A["fUp_el"], f, C["rotFUp"]); el = (sh[0] + e[0] + g[0] * f, sh[1] + e[1] + g[1] * f)
+    put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"]); put("fFo", A["fFo_el"], el, f * C["foScale"], C["rotFFo"], C["farDark"])
+    shn = T2p(A2["shN"]); e = rel("nUp", A["nUp_sh"], A["nUp_el"], 1.0, C["rotNUp"]); eln = (shn[0] + e[0] + g[0], shn[1] + e[1] + g[1])
+    put("nUp", A["nUp_sh"], shn, 1.0, C["rotNUp"])
+    tim = Image.fromarray(T2[TB[1]:TB[3], TB[0]:TB[2]]); tim = tim.resize((round(tim.width * ts), round(tim.height * ts)), Image.LANCZOS); cv.alpha_composite(tim, O)
+    nk = T2p(A2["neck"]); put("head", A["headB"], (nk[0], nk[1] - C["gapHead2"]), C.get("headS", 0.9))
+    put("nFo", A["nFo_el"], eln, C["foScale"], C["rotNFo"])
+    bb = cv.getbbox(); cv.crop((bb[0] - 10, bb[1] - 10, bb[2] + 10, bb[3] + 10)).save(sys.argv[1]); print("saved", bb); sys.exit()
+
 # far arm (behind the torso)
 sh = T(A["shF"]); e = rel("fUp", A["fUp_sh"], A["fUp_el"], f, C["rotFUp"]); el = (sh[0] + e[0] + g[0] * f, sh[1] + e[1] + g[1] * f)
 put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"]); put("fFo", A["fFo_el"], el, f * C["foScale"], C["rotFFo"], C["farDark"])   # forearm in front, covering the upper arm end (Harley)
