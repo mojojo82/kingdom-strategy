@@ -4735,3 +4735,7 @@ Harley's 3 points:
 
 ## v1556 (13 Nov 2026) - Fix: guns hidden in Arena on layered skins
 - Harley: weapons not visible in Arena (Crawler B). Arena drew the barrels between the back and front hull layers, so layered skins (crawlers, walker, Blackwatch II, Voidspire II, Mecha) covered them. Barrels now draw after both front layers. Checked headless (Crawler B vs Walker, guns visible), no errors.
+
+## v1557 (13 Nov 2026) - Mecha: no engine shudder (the jitter Harley saw)
+- Harley's screen recording (60 fps): tracked the staff head, platforms and a rider frame by frame - the whole fortress zig-zagged ~0.3-0.5 px about 6-7 times a second on top of the slow hover. Cause: Conquest's hull "life" effect (fortLifeBegin) adds a fast engine shudder (sin 41 rad/s) and scales all its motion by the skin PICTURE width - the Mecha's wide picture (platforms + space) made it bigger. Platforms and riders ride the hull, so they shook too.
+- New skin flag calm (Mecha): no engine shudder, and the slow sway uses a normal hull size. Measured headless after: hull moves smoothly (steps of 0.01-0.04 px per frame), no zig-zag. No errors.
