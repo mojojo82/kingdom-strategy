@@ -4681,3 +4681,8 @@ Harley's 3 points:
 - Harley: the legs were far too slow for the distance the fortress covers in Conquest. The walk phase is now driven by the distance travelled (walkerCar.ph += ground speed / step length), so planted feet move exactly with the scrolling ground (measured: feet 56.8 px/s vs ground 55 px/s). The legs settle and stop when the march halts (boss, defeat, enemies up close) - walkerCar.mv.
 - To keep it from scuttling at the walker's small on-screen size: stride 40 -> 100 hull px, duty 0.75 -> 0.6, lift 28, near legs a bit less stretched (0.80). One full step cycle = 0.54 s at full march speed.
 - Car mode, Arena (still) and the profile unchanged; checked headless, no errors. Clip walker_walkspeed_v1.mp4.
+
+## v1544 (13 Nov 2026) - Arena: infantry no longer hidden behind ships
+- Harley: some infantry heroes were hidden behind the ships in Arena (bone ship, Walker). Since v1530 both sides' heroes were drawn between a layered hull's back and front layers - right for deck riders, wrong for infantry standing on the ground in front of the hull.
+- drawFormation(roster, side, pass): "deck" (riders) still between the layers, "ground" (infantry, incl. their HP bars) after both front layers.
+- Reproduced headless with the infantry held at their home spots (serpent2 hid them completely, only their levels showed); after the fix they stand in front. dev/ships/arena_infantry_front_v1544.png (rows: before bone ship, before walker, after bone ship, after walker). No errors; draw order only, balance untouched.

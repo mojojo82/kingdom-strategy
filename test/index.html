@@ -13223,7 +13223,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1543"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1544"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36886,7 +36886,7 @@ function drawArenaFrame(ctx, w, h) {
   if (arenaAnim.battleStartTime) {
     infantryProgress = Math.max(0, Math.min(1, (performance.now() - arenaAnim.battleStartTime) / (ARENA_ENGAGE_TICKS * ARENA_TICK_MS)));
   }
-  function drawFormation(roster, isPlayerSide) {
+  function drawFormation(roster, isPlayerSide, pass) { /* v1544: pass "deck" = riders (between the hull layers), "ground" = infantry (after the front layer, so the hull never covers them) */
     var lastSlot = null;
     var drawOneHero = function (key, i) {
       var slot = arenaSlotPos(w, h, i, isPlayerSide);
@@ -37091,6 +37091,7 @@ function drawArenaFrame(ctx, w, h) {
       ctx.fillText(String(sprite.h.level), slot.x, (slot.deck && (isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0])).barsAbove) ? slot.y - 28 : slot.y + size / 2 + 10);
     };
     roster.slice(0, 5).forEach(function (key, i) {
+      if (pass && ((HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") !== (pass === "ground"))) return;
       var hh = arenaAnim.heroHp && arenaAnim.heroHp[(isPlayerSide ? "p_" : "a_") + key];
       lastSlot = null;
       drawOneHero(key, i);
@@ -37122,9 +37123,10 @@ function drawArenaFrame(ctx, w, h) {
   drawArenaFortress(ctx, w, h, true, osSetA, "back"); drawArenaFortress(ctx, w, h, false, null, "back");
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165
   drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
-  drawFormation(arenaAnim.playerRoster, true);
-  drawFormation(arenaAnim.aiRoster, false);
+  drawFormation(arenaAnim.playerRoster, true, "deck");
+  drawFormation(arenaAnim.aiRoster, false, "deck");
   drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
+  drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
   if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */
   (function drawArenaClones() { /* v975: Clone Task's clone - Gareth's sprite, heavy green tint; runs out and fights where the sim puts it */
     var cdm = arenaAnim.cloneD; if (!cdm || !arenaAnim.battleShared) return;
