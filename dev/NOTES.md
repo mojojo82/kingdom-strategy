@@ -4686,3 +4686,6 @@ Harley's 3 points:
 - Harley: some infantry heroes were hidden behind the ships in Arena (bone ship, Walker). Since v1530 both sides' heroes were drawn between a layered hull's back and front layers - right for deck riders, wrong for infantry standing on the ground in front of the hull.
 - drawFormation(roster, side, pass): "deck" (riders) still between the layers, "ground" (infantry, incl. their HP bars) after both front layers.
 - Reproduced headless with the infantry held at their home spots (serpent2 hid them completely, only their levels showed); after the fix they stand in front. dev/ships/arena_infantry_front_v1544.png (rows: before bone ship, before walker, after bone ship, after walker). No errors; draw order only, balance untouched.
+
+## v1545 (13 Nov 2026) - Bram bigger
+- Harley: Bram was really tiny next to Torvald. Measured in an Arena capture: Bram stood ~64% of Torvald's height. HERO_ANIMS.bram sizeMul 1 -> 1.4 (~90% of Torvald - still the stockier, shorter one). Drawing size only (Conquest + Arena use the same sizeMul); balance untouched. Before/after: dev/heroes/bram_size_v1545.png.
