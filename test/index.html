@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1559"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1560"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23421,6 +23421,12 @@ function laserBossZoneOffset() {
 // any skin works. Falls back to the cannon's hull contact point.
 function arenaLaserZonePoint(w, h, fallback, prev, onPlayer) { /* v1164: onPlayer = the bot's beam hitting the player's hull */
   var tp = !!onPlayer, skin = tp ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]), img = skin.cq;
+  if (SKIN_HULLT[skin.id]) { /* v1560: beams sweep a small zone on the hull target (Mecha: his torso), never the staff / sails / platforms in front */
+    var T = arenaHullTarget(w, h, tp), RX = 22, RY = 12;
+    for (var tr = 0; tr < 40; tr++) { var bx = prev && tr < 30 ? prev.x : T.x, by = prev && tr < 30 ? prev.y : T.y, da2 = Math.random() * 6.2832, dd2 = 6 + Math.random() * 12;
+      var qx = bx + Math.cos(da2) * dd2, qy = by + Math.sin(da2) * dd2 * 0.7; if (((qx - T.x) / RX) * ((qx - T.x) / RX) + ((qy - T.y) / RY) * ((qy - T.y) / RY) > 1) continue;
+      var hh = arenaFortressPixelHit(w, h, tp, qx, qy); if (hh === null || hh) return { x: qx, y: qy }; }
+    return T; }
   var mask = fortressSkinAlphaMask(img);
   if (!mask || !mask.a) return fallback;
   var sc = FORTRESS_SHIP_SCALE * skin.cqScale * (24 / 22);
@@ -23668,7 +23674,17 @@ function cqBarrelAim(px, py, id) { /* Conquest: a beam aims where it is hitting;
   Object.keys(idleAnim.enemyById || {}).forEach(function (eid) { var v = idleAnim.enemyById[eid]; if (v && v.x > px && (!best || v.x < best.x)) best = v; });
   return best ? laserBodyPoint(best, idleAnim.lastH || 258) : null;
 }
-function arenaBarrelAim(w, h, isPlayerSide) { var g = arenaFortressGeom(w, h, !isPlayerSide); return function () { return { x: g.cx, y: groundYFor(h) - 26 }; }; }
+/* v1560 (Harley): every weapon fires at the HULL of the target fortress (hand-set per skin - the solid body, not sails, legs or spikes;
+   Mecha: the middle of his torso), and rapid-fire weapons gently track around inside a small zone on the hull (beams already wander). */
+var SKIN_HULLT = { "default": [0.50, 0.55], "void": [0.50, 0.50], serpent: [0.50, 0.80], serpent2: [0.50, 0.80], ironclad2: [0.50, 0.62],
+  blackwatch2: [0.50, 0.72], void2a: [0.50, 0.60], void2b: [0.50, 0.60], mecha: [0.47, 0.50], walker: [0.50, 0.40], crawlerb: [0.50, 0.66], crawlerc: [0.50, 0.66] };
+var WEAPON_TRACK = { scatter_rounds: 1, flak_burst: 1, missile_barrage: 1 };
+function arenaHullTarget(w, h, targetIsPlayerSide) { var box = fortHullBox(w, h, "arena", targetIsPlayerSide, false); if (!box) return { x: w * 0.5, y: groundYFor(h) - 18 };
+  var sk = box.skin, f = SKIN_HULLT[sk.id] || [0.5, 0.6]; if (sk.parts) f = mechaPartPoint(sk, "torso", f); return fortHullPoint(box, f); }
+function weaponAimPoint(w, h, targetIsPlayerSide, wid, tSec) { var T = arenaHullTarget(w, h, targetIsPlayerSide); if (!WEAPON_TRACK[wid]) return T;
+  var t = tSec != null ? tSec : performance.now() / 1000, ph = (String(wid).length * 1.7) + (targetIsPlayerSide ? 2.3 : 0);
+  return { x: T.x + 14 * Math.sin(t * 0.7 + ph) + 5 * Math.sin(t * 1.9 + ph * 2), y: T.y + 9 * Math.sin(t * 0.55 + ph * 1.3) + 3 * Math.sin(t * 2.3 + ph) }; }
+function arenaBarrelAim(w, h, isPlayerSide) { return function (px, py, id) { return weaponAimPoint(w, h, !isPlayerSide, id); }; } /* v1560: aim at the target's hull (rapid-fire guns track) */
 /* v1167 (Harley: how does a player know the Railgun is counting down? -> a timer at the top of the battle scene, the barrel's lights charging,
    and particles drawn into the barrel - the usual "big gun charging" look). railChargeInfo = { left, tot } seconds for the Railgun on that side. */
 function railChargeInfo(mode, isPlayerSide) {
@@ -35660,9 +35676,9 @@ function arenaFortressPixelHit(w, h, isPlayerSide, x, y) {
 // can't be read or the line never meets the hull.
 var ARENA_HULL_HIT_DEPTH = 6;
 var ARENA_HULL_MIN_THICKNESS = 8;
-function arenaHullContactPoint(w, h, targetIsPlayerSide, fromX, fromY, aimY) {
+function arenaHullContactPoint(w, h, targetIsPlayerSide, fromX, fromY, aimY, aimX) {
   var g = arenaFortressGeom(w, h, targetIsPlayerSide);
-  var endX = g.cx, endY = aimY;
+  var endX = aimX != null ? aimX : g.cx, endY = aimY;
   var len = Math.hypot(endX - fromX, endY - fromY);
   if (len < 1) return { x: g.nose, y: aimY };
   var ux = (endX - fromX) / len, uy = (endY - fromY) / len;
@@ -36582,8 +36598,10 @@ function drawMissileSmokeTrail(ctx, trail) {
     var r = 2.5 + (1 - life) * 11; ctx.globalAlpha = ga * life * 0.5; ctx.drawImage(missilePuffSprite(life), pt.x - r, pt.y - r, r * 2, r * 2); }
   ctx.globalAlpha = ga;
 }
-function spawnArenaMissileVolley(fromX, fromY, toX, toY, count) {
+function spawnArenaMissileVolley(fromX, fromY, toX, toY, count, aim) {
+  var now = performance.now() / 1000;
   for (var i = 0; i < count; i++) {
+    if (aim) { var ap = weaponAimPoint(aim.w, aim.h, aim.onPlayer, aim.wid, now + i * 0.16 + 0.5); toX = ap.x + (WEAPON_TRACK[aim.wid] ? 0 : (Math.random() - 0.5) * 10); toY = ap.y + (WEAPON_TRACK[aim.wid] ? 0 : (Math.random() - 0.5) * 6); } /* v1560 */
     arenaAnim.weaponMissiles.push({
       x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: toY,
       t: 0, delay: i * 0.16, trail: [], launched: false,
@@ -37330,14 +37348,14 @@ function drawArenaFrame(ctx, w, h) {
     var bpg = arenaFortressGeom(w, h, true);
     var bWid = (game.state.equippedWeapons || []).filter(function (q) { var qd = WEAPON_DEFS_BY_ID[q]; return qd && qd.kind === "beam"; })[0], bwP = weaponSlotPoint(w, h, "arena", true, bWid); // v1109: beams leave the beam weapon's slot
     if (bwP) bpg = { cx: bpg.cx, nose: bpg.nose, muzzleX: bwP.x, muzzleY: bwP.y, dir: bpg.dir };
-    var bHit = arenaHullContactPoint(w, h, false, bpg.muzzleX, bpg.muzzleY, groundYFor(h) - 18);
+    var bT = arenaHullTarget(w, h, false), bHit = arenaHullContactPoint(w, h, false, bpg.muzzleX, bpg.muzzleY, bT.y, bT.x); /* v1560 */
     var apg = null, aHit = null;
     arenaAnim.beams.forEach(function (bm) {
       var bf = Math.min(1, bm.age / 0.08, Math.max(0, (bm.dur - bm.age) / 0.12));
       if (!bm.zone) bm.zone = {};
       if (bm.side === "a") { /* v1164: the bot's beam - from its weapon slot to a solid spot on the player's hull */
         var awP = weaponSlotPoint(w, h, "arena", false, bm.wid), ag0 = arenaFortressGeom(w, h, false), mx = awP ? awP.x : ag0.muzzleX, my = awP ? awP.y : ag0.muzzleY;
-        var hitA = arenaHullContactPoint(w, h, true, mx, my, groundYFor(h) - 18);
+        var aT = arenaHullTarget(w, h, true), hitA = arenaHullContactPoint(w, h, true, mx, my, aT.y, aT.x);
         var apA = laserWanderPoint(bm.zone, bm.age, function () { return arenaLaserZonePoint(w, h, hitA, arguments[0], true); });
         if (bf > 0) { drawLaserBeamSegment(ctx, mx, my, apA.x, apA.y, bf, true); touchLaserLoop(bm.sid); }
         return;
@@ -38048,11 +38066,11 @@ function renderArenaBattleScreen() {
       var cannonDmgB = arenaCannonTimings().bulletDmg, cInt = arenaCannonTimings().interval * 1000, pg = arenaFortressGeom(w, h, true), ag = arenaFortressGeom(w, h, false);
       for (var cb = 0; cb < (state.playerCannonBullets || 0); cb++) (function (d) { setTimeout(function () {
         if (!arenaBattleRunning && !arenaAnim.running) return;
-        var aHit = arenaHullContactPoint(w, h, false, pg.muzzleX, pg.muzzleY, groundYFor(h) - 18); // v454: land on the enemy hull itself, not its image edge
+        var aT = arenaHullTarget(w, h, false), aHit = { x: aT.x + (Math.random() - 0.5) * 12, y: aT.y + (Math.random() - 0.5) * 8 }; // v1560: on the enemy's hull target (its solid body / the Mecha's torso)
         spawnArenaCannonBullet(pg.muzzleX, pg.muzzleY, aHit.x, aHit.y, false, cannonDmgB, Math.max(0.05, (tickStartMs + ARENA_CANNON_FLIGHT_TICKS * ARENA_TICK_MS - performance.now()) / 1000)); try { sfxFortressCannon(); } catch (e) {} }, d); })(cb * cInt);
       for (var cb2 = 0; cb2 < (state.aiCannonBullets || 0); cb2++) (function (d) { setTimeout(function () {
         if (!arenaBattleRunning && !arenaAnim.running) return;
-        var pHit = arenaHullContactPoint(w, h, true, ag.muzzleX, ag.muzzleY, groundYFor(h) - 18);
+        var pT = arenaHullTarget(w, h, true), pHit = { x: pT.x + (Math.random() - 0.5) * 12, y: pT.y + (Math.random() - 0.5) * 8 };
         spawnArenaCannonBullet(ag.muzzleX, ag.muzzleY, pHit.x, pHit.y, true, cannonDmgB, Math.max(0.05, (tickStartMs + ARENA_CANNON_FLIGHT_TICKS * ARENA_TICK_MS - performance.now()) / 1000)); }, d); })(cb2 * cInt);
       // Equipped weapons (e.g. Missile Barrage) firing this tick — same
       // muzzle-to-fortress geometry as the cannon bullets above (weapons
@@ -38069,11 +38087,11 @@ function renderArenaBattleScreen() {
       });
       (state.playerWeaponFires || []).forEach(function (wf) {
         var pwP = weaponSlotPoint(w, h, "arena", true, wf.id); // v1109
-        spawnArenaMissileVolley(pwP ? pwP.x : pg.muzzleX, pwP ? pwP.y : pg.muzzleY, ag.nose, groundYFor(h) - 18, wf.count);
+        spawnArenaMissileVolley(pwP ? pwP.x : pg.muzzleX, pwP ? pwP.y : pg.muzzleY, null, null, wf.count, { w: w, h: h, onPlayer: false, wid: wf.id }); /* v1560: at the enemy hull (trackers follow their aim) */
       });
       (state.aiWeaponFires || []).forEach(function (wf) { /* v962: the bot's weapons fly the other way. v1164: beams are drawn as beams (aiBeamFires) */
         var awP = weaponSlotPoint(w, h, "arena", false, wf.id); // v1109
-        spawnArenaMissileVolley(awP ? awP.x : ag.muzzleX, awP ? awP.y : ag.muzzleY, pg.nose, groundYFor(h) - 18, Math.min(6, wf.count));
+        spawnArenaMissileVolley(awP ? awP.x : ag.muzzleX, awP ? awP.y : ag.muzzleY, null, null, Math.min(6, wf.count), { w: w, h: h, onPlayer: true, wid: wf.id });
       });
       // Same shoot/arc sfx dedup as Border Skirmish: at most one of each per
       // tick regardless of how many attackers on either side fired that

@@ -4747,3 +4747,11 @@ Harley's 3 points:
 
 ## v1559 (13 Nov 2026) - Mecha idle 1.6x bigger
 - Harley: slightly bigger movement. All idle amplitudes (body bob, head tilt/bob, shoulder swings, elbow float/turn) x1.6 (G in mechaPartXf); speeds unchanged. Clip art/originals/ships/mecha/mecha_idle_v2.mp4. No gaps at the joints across the cycle.
+
+## v1560 (13 Nov 2026) - Weapons fire at the hull; rapid-fire guns track
+- Harley: every weapon should fire roughly at the hull area of every skin (Mecha: the centre of his torso), and rapid-fire weapons should gently track inside a target zone (lasers already wander).
+- SKIN_HULLT[id] = hand-set hull target per skin (fraction of the picture, solid body - not sails, legs, spikes, staff or platforms); Mecha [0.47, 0.50] = chest, following his moving torso. arenaHullTarget() -> screen point.
+- Arena: gun barrels aim at it (arenaBarrelAim); cannon bullets land on it (+-6 px); weapon volleys land on it (+-5 px); beams sweep a small solid zone around it (arenaLaserZonePoint) instead of the first thing in their path (on the Mecha that was the staff / hand). Both sides.
+- WEAPON_TRACK (scatter_rounds, flak_burst, missile_barrage): aim point drifts slowly inside a ~28x18 px zone on the hull (weaponAimPoint, two slow sines); the barrel follows and each round of a burst lands where the aim is at that moment.
+- Measured in a headless Arena fight (Walker with Scatter, Laser, Flak vs Mecha), offsets from the Mecha's torso target: volleys dx -11..-1 / dy -8..11, cannon +-6 / +-4, beam dx -10..0 / dy -9..-2 (before: cannon 55 px and beam 70 px short, on the staff). No errors.
+- Conquest unchanged (weapons aim at enemies there).
