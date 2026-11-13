@@ -13240,7 +13240,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1580"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1581"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26532,6 +26532,38 @@ function heroSlashShake() { // a small jolt of the battle canvas on the hit (lig
   var t0 = performance.now(), cvs = [document.getElementById("idleCanvas"), document.getElementById("arenaCanvas")].filter(Boolean);
   (function step() { var e = (performance.now() - t0) / 120; if (e >= 1) { cvs.forEach(function (c) { c.style.transform = ""; }); return; } var am = (1 - e) * HERO_SLASH_SHAKE; cvs.forEach(function (c) { c.style.transform = "translate(" + ((Math.random() - 0.5) * 2 * am).toFixed(1) + "px," + ((Math.random() - 0.5) * 2 * am).toFixed(1) + "px)"; }); requestAnimationFrame(step); })();
 }
+/* v1581 (Harley: Options test toggle "Exact-size ranged heroes"): in Conquest only, ranged heroes (every class except infantry) are drawn from a copy
+   of their sheet made at exactly the size they appear on screen, placed on whole screen pixels, so the phone draws it 1:1 instead of shrinking the
+   big sheet every frame. The copy is shrunk in halving steps (high quality each), not one big jump - the v1562 copies (one jump, rounded up 4% and
+   shrunk again on screen) looked less sharp. Built one per 150 ms at most; released after 20 s unused or when the toggle goes off. Per device. */
+var EXACT_RANGED_KEY = "kingdom_exact_ranged_v1", exactRangedOn = false;
+try { exactRangedOn = localStorage.getItem(EXACT_RANGED_KEY) === "1"; } catch (e) {}
+var heroExactCache = {}, heroExactLastBuild = 0;
+function setExactRanged(on) { exactRangedOn = !!on; try { localStorage.setItem(EXACT_RANGED_KEY, on ? "1" : "0"); } catch (e) {} if (!on) heroExactRelease(0); }
+function heroExactRelease(age) { var now = performance.now(); Object.keys(heroExactCache).forEach(function (k) { var e = heroExactCache[k]; if (now - e.t >= age) { if (e.c) e.c.width = e.c.height = 0; delete heroExactCache[k]; } }); }
+setInterval(function () { heroExactRelease(20000); }, 5000);
+function heroExactSheet(key, a, im, devS) {
+  var CW = Math.round(a.cw * devS), CH = Math.round(a.ch * devS); if (CW < 4 || CH < 4 || devS >= 1) return null;
+  var e = heroExactCache[key], now = performance.now();
+  if (e && e.CW === CW && e.CH === CH && e.src === im.src) { e.t = now; return e; }
+  if (now - heroExactLastBuild < 150) return e && e.src === im.src ? (e.t = now, e) : null; /* keep the old copy until the new size is built */
+  heroExactLastBuild = now;
+  try {
+    var sx = CW / a.cw, sy = CH / a.ch, W = Math.max(1, Math.round(im.naturalWidth * sx)), H = Math.max(1, Math.round(im.naturalHeight * sy));
+    var cur = im, cw = im.naturalWidth, ch = im.naturalHeight, tmp = [];
+    while (cw / 2 > W * 1.02 && ch / 2 > H * 1.02) { /* halve while still more than 2x too big */
+      var nw = Math.round(cw / 2), nh = Math.round(ch / 2), c1 = document.createElement("canvas"); c1.width = nw; c1.height = nh;
+      var x1 = c1.getContext("2d"); x1.imageSmoothingEnabled = true; x1.imageSmoothingQuality = "high"; x1.drawImage(cur, 0, 0, cw, ch, 0, 0, nw, nh);
+      tmp.push(c1); cur = c1; cw = nw; ch = nh;
+    }
+    var c = document.createElement("canvas"); c.width = W; c.height = H; var x = c.getContext("2d");
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; x.drawImage(cur, 0, 0, cw, ch, 0, 0, W, H);
+    tmp.forEach(function (t) { t.width = t.height = 0; });
+    if (e && e.c) e.c.width = e.c.height = 0;
+    e = heroExactCache[key] = { t: now, c: c, CW: CW, CH: CH, sx: sx, sy: sy, src: im.src };
+    return e;
+  } catch (er) { return null; }
+}
 function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) {
   if (HERO_OUTLINE_FX.length && !heroOutlineBusy) { var oFx = heroOutlineFind(key, x, scale); if (oFx) return heroOutlineDraw(oFx, ctx, key, x, feetY, state, scale, flip, phase, spd, tint); }
   var a = HERO_ANIMS[key], im = heroAnimImg(key); if (!a || !im) return false;
@@ -26539,6 +26571,12 @@ function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) 
   var mem = heroAnimMem[id] || (heroAnimMem[id] = { state: state, prev: null, t: now });
   if (mem.state !== state) { mem.prev = { state: mem.state, ft: now / 1000 * a.fps[mem.state] + (phase || 0) }; mem.state = state; mem.t = now; }
   var k = (a.dispH * scale * (a.sizeMul || 1)) / a.ch; // cell height on screen = dispH * scale (sizeMul = per-hero size test knob)
+  var EX = null, exBr = 1; /* v1581: exact-size copy for a ranged hero in Conquest */
+  if (exactRangedOn && !flip && ctx.canvas.id === "idleCanvas") {
+    var bk = key.replace(/_skill$/, ""), hd = HERO_DEFS[bk];
+    if (hd && hd.class !== "infantry") { var M0 = ctx.getTransform(); if (Math.abs(M0.b) < 1e-6 && Math.abs(M0.c) < 1e-6 && M0.a > 0 && Math.abs(M0.a - M0.d) < 1e-6) { EX = heroExactSheet(key, a, im, M0.a * k); if (EX) { EX.DX = M0.a * x + M0.e; EX.DY = M0.d * feetY + M0.f; } } }
+  }
+  if (EX && state === "idle") exBr = 1 + 0.014 * Math.sin(now / 420 + (phase || 0) * 5);
   function frame(st, ft, alpha) {
     var row = a.rows[st] || a.rows.idle, sq = a.seq && a.seq[st], n = sq ? sq.length : row[1], fi = Math.floor(ft), fr = ft - fi;
     var f0 = ((fi % n) + n) % n, f1 = (f0 + 1) % n;
@@ -26549,6 +26587,13 @@ function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) 
     ctx.globalAlpha = alpha;
     var sxy = function (f) { var W = a.wrap; return W ? [(f % W) * a.cw, (row[0] * 2 + Math.floor(f / W)) * a.ch] : [f * a.cw, row[0] * a.ch]; }; /* v1322: a sheet wider than 4096 px is re-folded; wrap = columns per band, each logical row = 2 physical rows */
     var P0 = sxy(f0), P1 = sxy(f1);
+    if (EX) { /* v1581: 1:1 on whole screen pixels (idle breathing still stretches from the feet) */
+      var dxp = Math.round(EX.DX - a.ax * EX.sx), fy = Math.round(EX.DY), dyp = fy - Math.round(a.ay * EX.sy);
+      ctx.save(); ctx.setTransform(1, 0, 0, exBr, 0, fy * (1 - exBr)); ctx.imageSmoothingEnabled = exBr !== 1;
+      heroTintBlit(ctx, EX.c, Math.round(P0[0] * EX.sx), Math.round(P0[1] * EX.sy), EX.CW, EX.CH, dxp, dyp, EX.CW, EX.CH, tint);
+      if (fr > 0.02) { ctx.globalAlpha = alpha * fr * blend; heroTintBlit(ctx, EX.c, Math.round(P1[0] * EX.sx), Math.round(P1[1] * EX.sy), EX.CW, EX.CH, dxp, dyp, EX.CW, EX.CH, tint); }
+      ctx.restore(); ctx.globalAlpha = 1; return f0;
+    }
     heroTintBlit(ctx, im, P0[0], P0[1], a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint);
     if (fr > 0.02) { ctx.globalAlpha = alpha * fr * blend; heroTintBlit(ctx, im, P1[0], P1[1], a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k, tint); }
     ctx.globalAlpha = 1;
@@ -33918,6 +33963,8 @@ function renderOptionsScreen() {
     '<div class="op-note">Shows frames per second in the corner of Conquest and Arena battles.</div>' + /* v1563 */
     '<div class="op-row"><span class="op-l">🏞️ Light backgrounds</span><button type="button" class="op-tg' + (bgSplitOn ? ' on' : '') + '" id="opLightBg">' + (bgSplitOn ? 'On' : 'Off') + '</button></div>' +
     '<div class="op-note">Test: draws the sky and far background layers in Conquest a little less sharp (2x) to save battery and heat. Heroes and effects stay full sharpness.</div>' + /* v1580 */
+    '<div class="op-row"><span class="op-l">🎯 Exact-size ranged heroes</span><button type="button" class="op-tg' + (exactRangedOn ? ' on' : '') + '" id="opExactRanged">' + (exactRangedOn ? 'On' : 'Off') + '</button></div>' +
+    '<div class="op-note">Test: in Conquest, ranged heroes are drawn from a copy made at exactly their on-screen size instead of shrinking the big picture every frame.</div>' + /* v1581 */
     '<div class="op-row"><span class="op-l">🎨 UI style</span><button type="button" class="op-tg' + (uiSkin() === "classic" ? ' on' : '') + '" id="opSkinClassic">Classic</button><button type="button" class="op-tg' + (uiSkin() === "blue" ? ' on' : '') + '" id="opSkinBlue">Blue</button></div>' +
     '<div class="op-note">Blue is a work in progress: Conquest only, on phones.</div>' +
     ((window.innerWidth > 900 || window.KS_PHONE_FRAME) ? '<div class="op-row"><span class="op-l">📱 Phone view on PC</span><button type="button" class="op-tg' + (window.KS_PHONE_FRAME ? ' on' : '') + '" id="opPhoneView">' + (window.KS_PHONE_FRAME ? 'On' : 'Off') + '</button></div><div class="op-note">Shows the game in a phone-sized frame on a wide screen (this browser only). Temporary, for testing.</div>' : '') +
@@ -33932,6 +33979,7 @@ function renderOptionsScreen() {
   document.getElementById("opZoomBtns").onclick = function () { setMapZoomBtns(!mapZoomBtnsOn); renderOptionsScreen(); };
   document.getElementById("opTapFx").onclick = function () { setTapFx(!tapFxOn); renderOptionsScreen(); }; /* v1440 */
   document.getElementById("opLightBg").onclick = function () { setBgSplit(!bgSplitOn); renderOptionsScreen(); }; /* v1580 */
+  document.getElementById("opExactRanged").onclick = function () { setExactRanged(!exactRangedOn); renderOptionsScreen(); }; /* v1581 */
   document.getElementById("opFps").onclick = function () { game.state.idle.fpsCounterEnabled = !game.state.idle.fpsCounterEnabled; persist(); var dv = document.getElementById("devFpsCounterToggle"); if (dv) dv.checked = game.state.idle.fpsCounterEnabled; renderOptionsScreen(); }; /* v1563: same setting as the Dev Tools checkbox */
   var pvb = document.getElementById("opPhoneView"); if (pvb) pvb.onclick = function () { var turnOn = !window.KS_PHONE_FRAME; try { localStorage.setItem("kingdom_phone_view_v1", turnOn ? "1" : "0"); } catch (e) {} if (turnOn) (window.top || window).location.href = "phone.html"; else (window.top || window).location.href = (window.top || window).location.pathname.replace(/phone\.html$/, ""); };
   document.getElementById("opSkinClassic").onclick = function () { setUiSkin("classic"); renderOptionsScreen(); };
