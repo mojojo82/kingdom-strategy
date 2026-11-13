@@ -12,12 +12,13 @@ def key(a):
     sp = (c[..., 0] > c[..., 1] + 12) & (c[..., 2] > c[..., 1] + 12); c[sp] = c[sp] * 0.4 + np.stack([c[..., 1]] * 3, -1)[sp] * 0.6
     al[al < 0.04] = 0; return np.dstack([c, al * 255]).astype(np.uint8)
 S = key(np.asarray(Image.open(D + "mecha_parts_v2.png").convert("RGB")))
+ST = key(np.asarray(Image.open(D + "mecha_staff_v1.png").convert("RGB")))   # staff + fist, far gauntlet (no hand)
 T2 = key(np.asarray(Image.open(D + "mecha_torso_v2.png").convert("RGB")))   # v3 torso (Harley: bigger, huge shoulders like the concept)
 # boxes and anchor points (sheet px)
 P = {"torso": (401, 254, 1131, 938), "head": (706, 17, 963, 244), "nUp": (47, 262, 339, 617), "nFo": (34, 644, 423, 947), "fUp": (1224, 315, 1428, 616), "fFo": (1225, 655, 1452, 936)}
 A = {"neck": (848, 492), "shN": (612, 636), "shF": (1062, 596), "headB": (838, 236),
      "nUp_sh": (232, 385), "nUp_el": (195, 600), "nFo_el": (98, 690), "fUp_sh": (1318, 400), "fUp_el": (1322, 602), "fFo_el": (1268, 698)}
-C = {"torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
+C = {"staff": 1, "gRot": -70, "gS": 0.78, "stS": 0.92, "stRot": 0, "torso2": 1, "ts": 0.74, "gapHead2": -10, "gapHead": -34, "gapEl": [10, -36], "foScale": 1.15, "far": 0.85, "farDark": 0.8, "rotNUp": 0, "rotNFo": 0, "rotFUp": 0, "rotFFo": 0}
 if len(sys.argv) > 2: C.update(json.loads(sys.argv[2]))
 W, H = 1700, 1400; cv = Image.new("RGBA", (W, H)); O = (450, 300)   # torso offset on the canvas
 def crop(n):
@@ -42,7 +43,25 @@ if C["torso2"]:
     def T2p(p): return (O[0] + (p[0] - TB[0]) * ts, O[1] + (p[1] - TB[1]) * ts)
     # far arm, near upper arm: behind the torso (its huge shoulders cover their tops)
     sh = T2p(A2["shF"]); e = rel("fUp", A["fUp_sh"], A["fUp_el"], f, C["rotFUp"]); el = (sh[0] + e[0] + g[0] * f, sh[1] + e[1] + g[1] * f)
-    put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"]); put("fFo", A["fFo_el"], el, f * C["foScale"], C["rotFFo"], C["farDark"])
+    put("fUp", A["fUp_sh"], sh, f, C["rotFUp"], C["farDark"])
+    if C["staff"]:   # v4 (Harley): the rear hand holds a giant staff - gauntlet without hand + staff with a fist fixed on it, flat 2D
+        def stput(box, anchor, at, sc, rot, dark, cut=None):
+            x0, y0, x1, y1 = box; im = ST[y0:y1, x0:x1].copy()
+            al = im[..., 3] > 0; l, k = ndimage.label(al)
+            if k > 1: big = l == (np.argmax(ndimage.sum(al, l, range(1, k + 1))) + 1); im[..., 3] = im[..., 3] * ndimage.binary_dilation(big, iterations=3)
+            if cut: im[cut[1] - y0:cut[3] - y0, cut[0] - x0:cut[2] - x0, 3] = 0
+            g2 = Image.fromarray(im); ax, ay = (anchor[0] - x0) * sc, (anchor[1] - y0) * sc; g2 = g2.resize((round(g2.width * sc), round(g2.height * sc)), Image.LANCZOS)
+            if dark != 1: q = np.asarray(g2).astype(np.float32); q[..., :3] *= dark; g2 = Image.fromarray(q.astype(np.uint8))
+            pad = 700; bigI = Image.new("RGBA", (g2.width + 2 * pad, g2.height + 2 * pad)); bigI.paste(g2, (pad, pad)); c = (ax + pad, ay + pad)
+            if rot: bigI = bigI.rotate(rot, center=c, resample=Image.BICUBIC)
+            cv.alpha_composite(bigI, (round(at[0] - c[0]), round(at[1] - c[1])))
+        GB, gEl, gWr = (338, 513, 600, 675), (352, 594), (596, 594)
+        gs = C["gS"]; r = math.radians(C["gRot"]); L = (gWr[0] - gEl[0]) * gs; wr = (el[0] + L * math.cos(r), el[1] - L * math.sin(r))
+        # staff behind the gauntlet; its own little cuff (x < 940) is cut away so only the fist + staff remain
+        stput((787, 18, 1210, 1007), (930, 566), (wr[0] - 6, wr[1]), C["stS"], C["stRot"], 0.92, cut=(787, 500, 940, 660))
+        stput(GB, gEl, el, gs, C["gRot"], C["farDark"])
+    else:
+        put("fFo", A["fFo_el"], el, f * C["foScale"], C["rotFFo"], C["farDark"])
     shn = T2p(A2["shN"]); e = rel("nUp", A["nUp_sh"], A["nUp_el"], 1.0, C["rotNUp"]); eln = (shn[0] + e[0] + g[0], shn[1] + e[1] + g[1])
     put("nUp", A["nUp_sh"], shn, 1.0, C["rotNUp"])
     tim = Image.fromarray(T2[TB[1]:TB[3], TB[0]:TB[2]]); tim = tim.resize((round(tim.width * ts), round(tim.height * ts)), Image.LANCZOS); cv.alpha_composite(tim, O)
