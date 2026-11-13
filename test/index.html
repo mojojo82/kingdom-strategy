@@ -13240,7 +13240,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1581"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1582"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -13682,7 +13682,7 @@ function renderModeTabs() {
       if (mapMode === "skins") renderSkinsScreen();
       document.getElementById("allianceModeContent").style.display = mapMode === "alliance" ? "" : "none";
       if (mapMode === "alliance") { var alp = document.getElementById("alliancePanel"), alc = document.getElementById("allianceModeContent"); if (alp && alp.parentNode !== alc) alc.appendChild(alp); if (alp) alp.style.display = "block"; ALLY.msg = ""; renderAlliancePanel(); } /* v896: desktop tab */
-      if (mapMode === "conquest") { heroSheetsRelease(game.state.conquestRoster); heroSheetsWarm(game.state.conquestRoster); ensureConquestStarted(); startIdleAnim(); } else stopIdleAnim();
+      if (mapMode === "conquest") { try { ptMountButton(); } catch (e) {} heroSheetsRelease(game.state.conquestRoster); heroSheetsWarm(game.state.conquestRoster); ensureConquestStarted(); startIdleAnim(); } else stopIdleAnim();
       // Freshly entering the Arena tab (not just re-clicking it while
       // already there) always lands on the leaderboard, with a newly
       // rolled set of AI governors — leaving arenaView alone on a same-tab
@@ -28047,6 +28047,7 @@ function drawTmpEnvBg(ctx, w, h, groundY, cfg, part) { /* v1580: part "back" = o
   cfg.layers.forEach(function (L, li) {
     if (!L.img.complete || !L.img.naturalWidth) return;
     if (part && (part === "back") !== bgSplitLayer(L)) return; /* v1580 */
+    if (PT.far && bgSplitLayer(L)) return; if (PT.near && !bgSplitLayer(L)) return; /* v1582 perf test */
     if (L.alt && layerUsesAlt(cfg._env, li, L) && L.alt.img.complete && L.alt.img.naturalWidth) { var LS = L.speed, LF = L.falls; L = L.alt; L.speed = LS; L.falls = LF; } /* v1339: the picked test version */
     var im = layerImgFor(cfg._env, li, L); /* v1298: Sharp / Soft / Village-like per level + layer */
     var s = groundY * L.scale, tw = L.ow * s, th = L.oh * s;
@@ -28232,13 +28233,16 @@ function drawIdleAnim(ctx, w, h) {
   ensureLevelArtAround(currentEnv); /* v1315: fetch this level's art (then the next one's) */
   var tmpRainBg = TMP_ENV_BG_ON && TMP_ENV_BG[currentEnv];
   var bctx = idleBgBegin(ctx, !!tmpRainBg), fctx = ctx; if (bctx) ctx = bctx; /* v1580: Light backgrounds - sky + far layers go to the 2x canvas behind */
+  var ptReal = fctx; if (PT.far) ctx = ptNull(); /* v1582 perf test: hide the sky */
   if (idleAnim.skyPx > 0) { /* v1262: extra sky above the old top edge - a bit darker up high, ending in the sky's top colour so it joins seamlessly */
     var skG = ctx.createLinearGradient(0, -idleAnim.skyPx, 0, 0); skG.addColorStop(0, IDLE_SKY_HIGH[currentEnv] || IDLE_SKY_HIGH.night); skG.addColorStop(1, IDLE_SKY_TOP[currentEnv] || IDLE_SKY_TOP.night);
     ctx.fillStyle = skG; ctx.fillRect(0, -idleAnim.skyPx, w, idleAnim.skyPx + 1);
   }
   drawEnvironmentSky(ctx, w, h, currentEnv, groundY);
+  if (PT.far) ctx = bctx || ptReal;
   if (bctx) { if (tmpRainBg) drawTmpEnvBg(bctx, w, h, groundY, tmpRainBg, "back"); bctx.restore(); ctx = fctx; if (tmpRainBg) drawTmpEnvBg(ctx, w, h, groundY, tmpRainBg, "front"); }
   else if (tmpRainBg) drawTmpEnvBg(ctx, w, h, groundY, tmpRainBg);
+  ctx = ptCtx("road", ptReal); /* v1582 perf test sections: road / fortress / enemies / numbers / heroes / effects */
   // distant parallax hills — kept light/subtle so they read as a faint shadow
   // rather than a solid dark shape sitting behind the heroes' feet
   ctx.save();
@@ -28295,6 +28299,7 @@ function drawIdleAnim(ctx, w, h) {
   if (!envFloor && !floorPending) { ctx.strokeStyle = "#33445e"; ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke(); } /* v1264: no ground line across the road */
 
   var bob = Math.sin(performance.now() / 260) * 1.3;
+  ctx = ptCtx("fort", ptReal);
 
   // TEMP VISUAL TEST (per user request) — non-Infantry heroes (Lyra/Roran/
   // Kessa) now draw here, BEFORE the ship, so the ship renders in front of
@@ -28354,8 +28359,10 @@ function drawIdleAnim(ctx, w, h) {
     if (ecubeCfg.on) { var ecS = Math.max(7, shipW * 0.06); drawElectricCube(ctx, "cq", shipX + shipW * 0.5, shipY - ecS * 3.7 + Math.sin(performance.now() / 700) * ecS * 0.25, ecS); } // v470
   }
 
+  ctx = ptReal;
   var teamX = w * 0.16, teamY = groundY - 18;
   ctx.font = "20px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx = ptCtx("enemies", ptReal);
   var realEnemies = game.state.idle.enemies || [];
   // Enemies the engine has already removed, but that still have shots
   // visually in flight toward them (pendingArrows > 0), are drawn as
@@ -28515,6 +28522,7 @@ function drawIdleAnim(ctx, w, h) {
   }
 
   drawWeldSparks(ctx, groundY);
+  ctx = ptCtx("numbers", ptReal);
   // Floating "-123" damage numbers — pop up, drift, fade. Regular auto-attack
   // hits render small/white; skill hits (big:true) render larger and gold so
   // a skill burst visibly reads as heavier than a normal tick. `loss` (per
@@ -28539,6 +28547,7 @@ function drawIdleAnim(ctx, w, h) {
     ctx.restore();
   });
 
+  ctx = ptCtx("fx", ptReal);
   // Pop/explode burst for normal enemies that just died — small rotating
   // fragments flying outward plus a quick expanding shockwave ring.
   idleAnim.deathFx.forEach(function (b) {
@@ -28564,6 +28573,7 @@ function drawIdleAnim(ctx, w, h) {
     ctx.restore();
   });
 
+  ctx = ptCtx("heroes", ptReal);
   var roster = game.state.conquestRoster;
   var frontReal = (game.state.idle.enemies || [])[0];
   var frontIsPointBlank = !!(frontReal && frontReal.engaged);
@@ -28623,6 +28633,7 @@ function drawIdleAnim(ctx, w, h) {
     });
     drawIdleClones(ctx, w, h);
   }
+  ctx = ptCtx("fx", ptReal);
   if (idleAnim.pendingBar) { var pb = idleAnim.pendingBar; ctx.fillStyle = "#1a0f0f"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w, 4); ctx.fillStyle = "#c73b4e"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w * pb.frac, 4); idleAnim.pendingBar = null; }
   drawHeroWarps(ctx);
   Object.keys(idleAnim.skillFlash).forEach(function (k) { if (idleAnim.skillFlash[k] > 0) idleAnim.skillFlash[k] -= 0.05; });
@@ -28987,6 +28998,7 @@ function drawIdleAnim(ctx, w, h) {
   }
 
 
+  ctx = ptReal;
   // player HP bar — smaller, and anchored just above the fortress ship
   // (instead of a wide bar centered at the top of the arena) so it reads
   // as the ship's own health rather than a generic screen-top HUD element.
@@ -29169,7 +29181,24 @@ function drawIdleAnim(ctx, w, h) {
 // just text). canvasDPR() is the multiplier the buffer needs on top of the
 // CSS size to give the browser one buffer pixel per real physical pixel
 // instead.
-function canvasDPR() { return window.devicePixelRatio || 1; }
+function canvasDPR() { var d = window.devicePixelRatio || 1; return (typeof PT === "object" && PT && PT.res2) ? Math.min(2, d) : d; } /* v1582 perf test: whole battle at 2x */
+/* v1582 (Harley): TEMPORARY Conquest perf test - a "PERF" button on the battle opens switches that hide one part at a time, to find what costs the
+   frames on a warm phone. A hidden part is drawn into a 1x1 canvas (the game logic still runs). Delete once we have the answer. */
+var PT = {}, ptNullCtx = null;
+function ptNull() { if (!ptNullCtx) { var c = document.createElement("canvas"); c.width = c.height = 1; ptNullCtx = c.getContext("2d"); } return ptNullCtx; }
+function ptCtx(k, real) { return PT[k] ? ptNull() : real; }
+var PT_ITEMS = [["far", "Sky + far"], ["near", "Near layer"], ["road", "Road"], ["fort", "Fortress + riders"], ["enemies", "Enemies"], ["heroes", "Melee heroes"], ["fx", "Shots + effects"], ["numbers", "Damage numbers"], ["dom", "Header numbers"], ["res2", "Whole battle 2x"]];
+function ptMountButton() {
+  var cv = document.getElementById("idleCanvas"); if (!cv || document.getElementById("ptBtn")) return;
+  var host = cv.parentNode, b = document.createElement("button"); b.id = "ptBtn"; b.type = "button"; b.textContent = "PERF";
+  b.style.cssText = "position:absolute;left:6px;top:40%;z-index:6;font:bold 10px sans-serif;padding:4px 6px;background:#3ab7d8;color:#06223a;border:none;border-radius:4px;line-height:1;";
+  var pn = document.createElement("div"); pn.id = "ptPanel";
+  pn.style.cssText = "position:absolute;left:6px;top:calc(40% + 24px);z-index:6;display:none;background:rgba(8,14,26,.92);border:1px dashed #c9a24a;border-radius:6px;padding:6px;width:150px;line-height:1.2;";
+  function draw() { pn.innerHTML = '<div style="color:#f0c95f;font:bold 10px sans-serif;margin-bottom:4px;">Tap to hide (test)</div>' + PT_ITEMS.map(function (it) { var off = !!PT[it[0]]; return '<button type="button" data-pt="' + it[0] + '" style="display:block;width:100%;margin:2px 0;padding:5px 6px;font:bold 11px sans-serif;text-align:left;border:none;border-radius:4px;background:' + (off ? '#c94a3a' : '#3ab7d8') + ';color:' + (off ? '#fff' : '#06223a') + ';">' + (off ? 'OFF · ' : '') + it[1] + '</button>'; }).join(""); }
+  pn.onclick = function (e) { var t = e.target.closest("[data-pt]"); if (!t) return; e.stopPropagation(); var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; if (k === "res2") { try { resizeIdleCanvas(); } catch (er) {} } draw(); };
+  b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
+  host.appendChild(b); host.appendChild(pn);
+}
 /* v1580 (Harley: Options > Light backgrounds): the Conquest sky and far background layers are drawn on their own canvas behind the battle at 2x
    sharpness (max), which the phone stretches for free when it puts the screen together; everything else (near layer, road, heroes, enemies,
    effects, numbers) stays on the battle canvas at full sharpness. Off = exactly as before. Per device. */
@@ -30695,6 +30724,7 @@ function updateIdleSkillbarDom() {
 }
 
 function startIdleAnim() {
+  try { ptMountButton(); } catch (e) {} /* v1582 perf test */
   if (idleAnim.running) return;
   var canvas = document.getElementById("idleCanvas");
   if (!canvas) return;
@@ -30845,8 +30875,7 @@ function startIdleAnim() {
         ctx.restore();
         if (perfT0) perfDiagAdd(performance.now() - perfT0);
         if (!document.hidden) { var mvH = {}; game.state.conquestRoster.forEach(function (k) { var an = HERO_ANIMS[k]; if (HERO_DEFS[k] && HERO_DEFS[k].class === "infantry" && an && an.impact && !(an.once && an.once.attack)) mvH[k] = true; if (k === "ironlily" && lilyReady()) mvH[k] = true; /* v1420 */ }); game.idleMeleeVisPing(mvH); } /* v917: drawn this frame -> melee hits wait for the sword */
-        renderIdleHeader();
-        updateIdleSkillbarDom();
+        if (!PT.dom) { renderIdleHeader(); updateIdleSkillbarDom(); } /* v1582 perf test */
       } catch (err) {
         console.error("Idle Conquest animation frame failed (skipped, loop continues):", err);
       }
