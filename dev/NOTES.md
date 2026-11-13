@@ -4727,3 +4727,8 @@ Harley's 3 points:
 ## v1554 (13 Nov 2026) - Guns the same size on every fortress skin, and smaller
 - Harley: unify gun size across skins (not proportional to the skin picture) and make them a bit smaller. Barrels were scaled by the fortress picture's on-screen width (Mecha's wide picture: +50%, Ironclad / old Voidspire: about -20%). Now barrelRefW(box) uses a fixed reference width (400 x 0.5366, Bonewake / Ironclad II) x the mode's scale, x 0.8 (BARREL_UNIFY) - Conquest, Arena and the Overlord Profile. Measured: identical on all 12 skins (146 Conquest / 159 Arena reference px). The Dev Tools barrel size slider still scales them all.
 - Capture: dev/ships/guns_unified_v1554.png (Mecha vs Ironclad II). No errors.
+
+## v1555 (13 Nov 2026) - Weapon slots on every skin; Mecha guns on his near arm
+- Harley: a suitable weapon slot on every skin (usually the side of the hull); Mecha: the 3 slots on his arm closest to the camera.
+- SKIN_WSLOTS[id] = [w0, w1, w2] per skin (fractions of the battle picture), applied in skinLayoutFor over saved Skin Align spots - guns only (hero spots, cannon etc. unchanged). Ironclad and old Voidspire got real hull-side slots (they had none -> default spots); Bonewake back slot moved onto the hull; crawlers on the lower hull; Mecha w0-w2 stacked down his near forearm (gauntlet).
+- Overview: dev/ships/weapon_slots_v1555.png; Mecha with 3 guns: dev/ships/mecha_arm_guns_v1555.png. No errors.

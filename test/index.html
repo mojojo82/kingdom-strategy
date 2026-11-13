@@ -12756,7 +12756,18 @@ function skinLayoutsLive() { // v1110: the shared admin copy wins - a player's g
   try { var cv = typeof cloudAssetMap !== "undefined" && cloudAssetMap[SKIN_LAYOUT_KEY]; if (cv && cv !== skinLayoutsSrc) { skinLayoutsSrc = cv; skinLayoutApply(cv); } } catch (e) {}
   return skinLayouts;
 }
-function skinLayoutFor(skin) { return (skin && (skinLayoutsLive()[skin.id] || skin.defLayout)) || null; } /* v1170: a skin can ship its own default spots */
+function skinLayoutFor(skin) { var L = (skin && (skinLayoutsLive()[skin.id] || skin.defLayout)) || null; if (!skin || !SKIN_WSLOTS[skin.id]) return L;
+  var c = skin.__wl; if (!c || c.src !== L) { var o = {}; if (L) for (var k in L) o[k] = L[k]; var W = SKIN_WSLOTS[skin.id]; o.w0 = W[0]; o.w1 = W[1]; o.w2 = W[2]; c = skin.__wl = { src: L, out: o }; } return c.out; }
+/* v1555 (Harley): a weapon slot on every skin - the side of the hull (front / middle / back); Mecha: down his near (camera-side) arm.
+   These win over saved Skin Align spots for the guns only (hero spots, cannon etc. still come from the saved layout). Fractions of the battle picture. */
+var SKIN_WSLOTS = {
+  "default": [[0.70, 0.62], [0.50, 0.63], [0.30, 0.62]], "void": [[0.66, 0.52], [0.50, 0.54], [0.33, 0.52]],
+  serpent: [[0.689, 0.80], [0.516, 0.83], [0.30, 0.80]], serpent2: [[0.689, 0.80], [0.516, 0.83], [0.30, 0.80]],
+  ironclad2: [[0.69, 0.67], [0.5, 0.67], [0.3, 0.67]], blackwatch2: [[0.68, 0.80], [0.5, 0.82], [0.3, 0.80]],
+  void2a: [[0.66, 0.62], [0.5, 0.64], [0.3, 0.62]], void2b: [[0.66, 0.62], [0.5, 0.64], [0.3, 0.62]],
+  mecha: [[0.318, 0.665], [0.287, 0.615], [0.256, 0.565]], walker: [[0.70, 0.45], [0.5, 0.47], [0.3, 0.45]],
+  crawlerb: [[0.75, 0.78], [0.55, 0.80], [0.33, 0.78]], crawlerc: [[0.75, 0.78], [0.55, 0.80], [0.33, 0.78]]
+}; /* v1170: a skin can ship its own default spots */
 function fortLift(skin) { return (skin && skin.lift) || 0; } /* v1170: how far a hovering skin floats above the ground */
 // the box the skin's picture is drawn in: Conquest (withLife = include the hull's hover / recoil) or one Arena side (the bot's side faces left)
 function fortHullBox(w, h, mode, isPlayerSide, withLife) {
@@ -13226,7 +13237,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1554"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1555"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
