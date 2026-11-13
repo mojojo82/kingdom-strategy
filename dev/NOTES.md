@@ -4653,3 +4653,8 @@ Harley's 3 points:
 ## v1538 - Walker hull from ChatGPT's separation (TEST)
 - Harley: use ChatGPT's hull separation instead of the hand cut. ChatGPT on the approved composite: "remove the legs, hips and belly, keep only the hull with a finished underside" (walker_hull_gpt.png, 0 px shift vs the final). The filled legs piece (v1537) walks under it. build_walker3.py now reads walker_hull_gpt.png.
 - Headless: Conquest walk clip art/originals/ships/walker/walker_walk_v4.mp4; Arena draws still; no errors.
+
+## v1539 (13 Nov 2026) - Walker: Harley's own hull cut + baked drop shadow
+- Hull = Harley's hand edit (art/originals/ships/walker/walker_hull_harley.png: magenta background, WHITE = the area he cut away over the legs).
+- dev/ships/hull_shadow.py keys magenta + white and BAKES a static soft drop shadow into the hull picture (hull shape moved down 10 px, blurred 14 px, max ~70% black), only inside the cut-away (white) area - so it falls on the legs drawn under the hull. No code change for the shadow. Output walker_hull_harley_shadow.png -> build_walker3.py -> walker3_back/front (re-embedded).
+- Legs sheet / timings unchanged. Checked headless: Conquest walk clip (walker_walk_v5.mp4), Arena still (all walker draws "still"), no page errors. Balance untouched (art only).

@@ -15,7 +15,7 @@ def keyarr(a):
     al[al < 0.04] = 0; return np.dstack([c, al * 255])
 fin = np.asarray(Image.open(D + "walker_final_v1.png").convert("RGB")).astype(int)
 m = ~((fin[..., 0] > 200) & (fin[..., 2] > 200) & (fin[..., 1] < 80)); ys, xs = np.where(m); ox, oy = xs.min(), ys.min(); W, H = xs.max() - ox + 1, ys.max() - oy + 1
-up = keyarr(np.asarray(Image.open(D + "walker_hull_gpt.png").convert("RGB")))[oy:oy + H, ox:ox + W]  # v1538: ChatGPT hull separation (Harley)
+up = np.asarray(Image.open(D + "walker_hull_harley_shadow.png").convert("RGBA")).astype(np.float32)[oy:oy + H, ox:ox + W]  # v1539: Harley's hand-cut hull + baked drop shadow (dev/ships/hull_shadow.py)
 bx0, by0, bx1, by1 = 330 - ox, 255 - oy, 1290 - ox, 370 - oy
 box = np.zeros((H, W), bool); box[by0:by1, bx0:bx1] = True
 dark = box & (up[..., :3].max(-1) < 45) & (up[..., 3] > 200); dark = ndimage.binary_opening(dark, iterations=2)
