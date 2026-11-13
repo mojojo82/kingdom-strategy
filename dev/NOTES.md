@@ -4668,3 +4668,11 @@ Harley's 3 points:
 
 ## v1541 (13 Nov 2026) - Walker undercarriage
 - Harley: the space under the body between the hips looked empty. New ChatGPT part walker_belly_v1.png (belly machinery: plates, pipes, orange light panel, flat top) added to the rig atlas as "bel", drawn behind the hip drums and in front of the far legs (it hides the far hips), bobs with the hull. Checked headless: Conquest + Arena, Arena still, no errors. Clip walker_rig_v2.mp4.
+
+## v1542 (13 Nov 2026) - Walker "car mode" (tap to switch)
+- Harley: tap your Walker (Overlord Profile, Conquest, Arena) and it sits down onto its hip drums ("car mode"); tap again to stand back up. Walker skin only, visual only. Saved in game.state.walkerCar.
+- Car mode: hull drops 146 hull px over 1.4 s (riders, bars, cannon follow via hullBobPx/fortHullPoint), the hip drums touch the ground and roll like wheels ONLY while travelling (Conquest scenery scroll speed / drum radius; stops when the march halts, boss levels, defeat; never in Arena), the folded feet lift 14 px once the drums are down. Legs ease out of the walk into the sit (no snap).
+- Far knees now bend outward (they fold up instead of into the floor).
+- Overlord Profile: the Walker picture is now drawn from the rig (hull + legs - before it showed the hull only), sits/stands with a short animation, no hover for the Walker, tappable. Barrels use the hull's frame.
+- Tap = a click inside the Walker's last drawn box on idleCanvas / arenaCanvas (buttons and links ignored), or on the profile ship.
+- Checked headless: Conquest tap -> car, wheels 3.9 rad/s while scrolling; Arena car mode, no spin, tap -> walker; profile car picture + tap -> walker; no errors. Clip walker_carmode_v1.mp4. Balance untouched.
