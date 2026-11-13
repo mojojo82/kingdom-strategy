@@ -4809,3 +4809,12 @@ Harley's 3 points:
 - Fix (Roran only): spearThrowSync - a spear (normal or Lance Charge) leaves on the release frame of a throw that is really playing; a new throw during a wind-up joins that release instead of restarting it; Lance Charge is a normal full throw; Arena plays his whole throw; release timed on the same clock as the animation (relAt); no x4 rush on the wind-up.
 - Result: spears appear 0.65-0.69 s into his throw (frame 14 = 0.667 s) in Conquest and Arena; a few up to 0.17 s later (hand already empty).
 - Lyra / Juno / Pip use the same Arena 8-frame path - may have the same timing issue; not changed here.
+
+## Future (Harley 14 Nov 2026): projectile release timing for Lyra / Juno / Pip - checked, NOT changed
+- Conquest: their shots appear ~4x too early (Lyra ~0.16 s vs release 0.67 s, Juno ~0.09 vs 0.33, Pip ~0.10 vs 0.46) because the x4 "target already dead" rush also speeds the wind-up hold; second attacks can restart the animation before the first shot leaves.
+- Arena: shots leave on time, but only 8 attack frames play, so Lyra (release frame 16) and Pip (11) are back in idle when the shot appears; Juno (8) is fine.
+- Trade-off Harley cares about: in Conquest an enemy's death shows when the shot lands, so correct release = deaths shown later (Lyra ~0.5 s, Pip ~0.35, Juno ~0.25). Roran already has the correct release since v1570 (his kills show ~0.5 s later than before). Arena fix would be pose-only (no hit-timing change).
+
+## v1571 (14 Nov 2026) - Roran's spear burns (fireball)
+- Harley: fireball on both attacks - small on his normal throw, big on Lance Charge. Code-drawn (drawRoranFire), in the spear's rotated frame: soft heat glow + two flickering flame plumes (red-orange outer, orange) behind the spear, a white-hot core over the blade in front, embers shed backwards. Big = radius 10.5 / tail 46 (x hero scale) with more embers; small = 5.2 / 22. Conquest normal + skill, Arena normal + skill (both sides).
+- Checked headless: mid-flight screenshots of both, clips (Conquest real speed + 3x slow, Arena), no errors.
