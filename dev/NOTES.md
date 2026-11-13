@@ -4676,3 +4676,8 @@ Harley's 3 points:
 - Overlord Profile: the Walker picture is now drawn from the rig (hull + legs - before it showed the hull only), sits/stands with a short animation, no hover for the Walker, tappable. Barrels use the hull's frame.
 - Tap = a click inside the Walker's last drawn box on idleCanvas / arenaCanvas (buttons and links ignored), or on the profile ship.
 - Checked headless: Conquest tap -> car, wheels 3.9 rad/s while scrolling; Arena car mode, no spin, tap -> walker; profile car picture + tap -> walker; no errors. Clip walker_carmode_v1.mp4. Balance untouched.
+
+## v1543 (13 Nov 2026) - Walker legs keep pace with the ground
+- Harley: the legs were far too slow for the distance the fortress covers in Conquest. The walk phase is now driven by the distance travelled (walkerCar.ph += ground speed / step length), so planted feet move exactly with the scrolling ground (measured: feet 56.8 px/s vs ground 55 px/s). The legs settle and stop when the march halts (boss, defeat, enemies up close) - walkerCar.mv.
+- To keep it from scuttling at the walker's small on-screen size: stride 40 -> 100 hull px, duty 0.75 -> 0.6, lift 28, near legs a bit less stretched (0.80). One full step cycle = 0.54 s at full march speed.
+- Car mode, Arena (still) and the profile unchanged; checked headless, no errors. Clip walker_walkspeed_v1.mp4.
