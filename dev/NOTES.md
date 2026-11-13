@@ -4798,3 +4798,14 @@ Harley's 3 points:
 - Trajectory: no more lob - his spear flies in a straight line from his hand to the enemy (Conquest + Arena; same flight time, so damage timing is unchanged).
 - Lance Charge used the generic default skill streak from his slot. Now he plays his throw and the bigger spear leaves his hand on the release frame, straight at the target (Conquest skill shot with a release delay; Arena player + AI side with atkTrig + release delay). Plain spear for now - Harley wants an energy / fireball effect around both next.
 - Checked headless: spear positions logged mid-flight (hand -> target, flat), screenshots, no errors.
+
+## v1570 (14 Nov 2026) - Roran: spear leaves his hand on the release frame
+- Harley: the spear appeared while Roran was still holding it. Causes found (headless timing logs: ms into his throw animation when each spear appears):
+  1. Lance Charge only played 8 frames of his throw (the "skill cast" path) - back to idle, spear in hand, before release frame 14. It also blocked normal throws, so a normal spear thrown then appeared with no throw.
+  2. Arena played only 8 frames for every throw - the spear always appeared in his idle pose.
+  3. Conquest's x4 "target already dead" rush also sped up the wind-up hold, so spears came out 4x too early (~0.16 s).
+  4. The spear's hold used game time (capped when frames are slow) while his animation uses real time, so spears could come out late.
+  5. Two throws close together restarted his animation before the first spear left.
+- Fix (Roran only): spearThrowSync - a spear (normal or Lance Charge) leaves on the release frame of a throw that is really playing; a new throw during a wind-up joins that release instead of restarting it; Lance Charge is a normal full throw; Arena plays his whole throw; release timed on the same clock as the animation (relAt); no x4 rush on the wind-up.
+- Result: spears appear 0.65-0.69 s into his throw (frame 14 = 0.667 s) in Conquest and Arena; a few up to 0.17 s later (hand already empty).
+- Lyra / Juno / Pip use the same Arena 8-frame path - may have the same timing issue; not changed here.

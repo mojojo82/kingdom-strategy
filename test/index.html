@@ -13238,7 +13238,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1569"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1570"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -22732,6 +22732,13 @@ function heroShotStyle(key) { var a = HERO_ANIMS[key]; return (a && a.shellStyle
 function heroReleaseSec(key) { var a = HERO_ANIMS[key]; return a && a.release != null ? a.release / a.fps.attack : 0; }
 var heroSpearImgCache = {};
 /* v1569: Roran's thrown spear - the same spear he holds (ChatGPT copy), at the size it is in his hand (~33 px at hero scale); tip ahead of the flight point. big = Lance Charge. */
+/* v1570: a spear only leaves Roran's hand on the release frame of a throw that is really playing. A new throw (normal or Lance Charge) while he is
+   still winding up the last one does NOT restart his animation - its spear goes with that same release. Returns seconds until release + whether to start a throw. */
+function spearThrowSync(store, sideKey, key) {
+  var T = store.spearThrow || (store.spearThrow = {}), now = performance.now(), relMs = heroReleaseSec(key) * 1000, t0 = T[sideKey];
+  if (t0 != null && now - t0 < relMs - 40) return { delay: Math.max(0, (t0 + relMs - now) / 1000), start: false, at: t0 + relMs };
+  T[sideKey] = now; return { delay: relMs / 1000, start: true, at: now + relMs }; /* at = release time on the same clock as his animation */
+}
 function drawRoranSpear(ctx, hs, big) { var im = heroSpearImg("roran"); if (!im) return false; var L = 33 * hs * (big ? 1.3 : 1), H = L * im.naturalHeight / im.naturalWidth; ctx.drawImage(im, -L * 0.8, -H / 2, L, H); return true; }
 function heroSpearImg(key) { var a = HERO_ANIMS[key]; if (!a || !a.spear) return null; var c = heroSpearImgCache[key]; if (!c) { c = heroSpearImgCache[key] = new Image(); c.src = a.spear; } return c.complete && c.naturalWidth ? c : null; }
 function kessaHandPos(feetX, feetY, scale, facingRight, cast) {
@@ -24734,9 +24741,10 @@ function stepIdleAnim(dtSec, w, h) {
         var volleyToY = (isVolley && frontVis.type === "boss") ? (groundYFor(h) + 15 - 29 * bossSpriteScale) : (groundYFor(h) - 16); // v465: a boss's fireball lands mid-body so the orb burst has a body to hit
         if (key === "pip" && HERO_ANIMS.pip) { var pv0 = idleAnim.heroVis.pip || sp, ph0 = heroHandPos("pip", pv0.x + (fortLife.active ? fortLife.dx : 0), pv0.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); sp = { x: ph0.x, y: ph0.y }; } /* v1499: Spot Shot leaves his muzzle */
         var lanceSk = key === "roran" && HERO_ANIMS.roran && HERO_ANIMS.roran.spear; /* v1569: Lance Charge - he plays his throw and the (bigger) spear leaves his hand on the release frame, straight at the front enemy */
-        if (lanceSk) { var sqL = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); sqL.roran = (sqL.roran || 0) + 1; var rvL = idleAnim.heroVis.roran || sp, rhL = heroHandPos("roran", rvL.x + (fortLife.active ? fortLife.dx : 0), rvL.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); sp = { x: rhL.x, y: rhL.y }; }
+        var lanceSy = lanceSk ? spearThrowSync(idleAnim, "roran", "roran") : null; /* v1570 */
+        if (lanceSk) { var sqL = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); if (lanceSy.start) sqL.roran = (sqL.roran || 0) + 1; var rvL = idleAnim.heroVis.roran || sp, rhL = heroHandPos("roran", rvL.x + (fortLife.active ? fortLife.dx : 0), rvL.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); sp = { x: rhL.x, y: rhL.y }; }
         spawnSkillShot(sp.x, sp.y, frontVis.x, volleyToY, isVolley ? "fireball" : key === "pip" ? "spotflare" : lanceSk ? "spear" : SPELL_COLS[key] ? "spell" : null, landed, frontVis.type === "boss");
-        if (lanceSk) idleAnim.skillShots[idleAnim.skillShots.length - 1].delay = heroReleaseSec("roran"); if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
+        if (lanceSk) { var lsPj = idleAnim.skillShots[idleAnim.skillShots.length - 1]; lsPj.delay = lanceSy.delay; lsPj.relAt = lanceSy.at; } if (!isVolley && SPELL_COLS[key]) idleAnim.skillShots[idleAnim.skillShots.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */ // fireball art is Piercing Volley only; other skill shots keep the arrowhead. `landed` = the engine's real verdict; the orb burst on arrival only fires when it's true
         sfxSkillShot();
       }
       // the skill just fired and its cooldown reset — snap the smooth timer
@@ -24889,9 +24897,11 @@ function stepIdleAnim(dtSec, w, h) {
     var p = idleSquadSlotPos(w, h, idx, aid);
     if (def.class === "cavalry") {
       if (HERO_ANIMS[aid] && HERO_ANIMS[aid].shell) { /* v1476: Juno - her shot plays and the scrap shell leaves the muzzle on the release frame */
-        var sqj = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); sqj[aid] = (sqj[aid] || 0) + 1;
+        var spSy = HERO_ANIMS[aid].spear ? spearThrowSync(idleAnim, aid, aid) : null; /* v1570: Roran - spear only on a real throw's release frame */
+        var sqj = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); if (!spSy || spSy.start) sqj[aid] = (sqj[aid] || 0) + 1;
         var jv = idleAnim.heroVis[aid] || p, jh = heroHandPos(aid, jv.x + (fortLife.active ? fortLife.dx : 0), jv.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true);
         spawnProjectile(w, h, jh.x, jh.y, bsVis.x, groundYFor(h) - 14, true, targetEnemyId, dmg, false, heroShotStyle(aid));
+        if (spSy) { var spPj = idleAnim.projectiles[idleAnim.projectiles.length - 1]; spPj.delay = spSy.delay; spPj.relAt = spSy.at; }
       } else
       if (HERO_ANIMS[aid] && HERO_ANIMS[aid].spear) { /* v1123: 3D Roran - his throw plays and the spear leaves his hand on the release frame */
         var sqr = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); sqr[aid] = (sqr[aid] || 0) + 1;
@@ -24981,7 +24991,8 @@ function stepIdleAnim(dtSec, w, h) {
   var liveEnemyIds = {}; (game.state.idle.enemies || []).forEach(function (le) { liveEnemyIds[le.id] = 1; });
   idleAnim.projectiles.forEach(function (p) {
     var pBoost = (p.targetId != null && !liveEnemyIds[p.targetId]) ? 4 : 1; // v654: a shot still owed to an enemy the engine already killed rushes in (x4) so the body doesn't linger waiting for it
-    if (p.delay > 0) { p.delay -= dtSec * Math.max(1, devSpeedMult) * pBoost; return; } // wind-up: holds at her hand until the release frame
+    if (p.relAt) { if (performance.now() < p.relAt) { p.delay = 1; return; } p.delay = 0; p.relAt = 0; } /* v1570: Roran's spear leaves exactly on his animation's release frame (same clock) */
+    if (p.delay > 0) { p.delay -= dtSec * Math.max(1, devSpeedMult) * (p.style === "spear" ? 1 : pBoost); return; } // wind-up: holds at her hand until the release frame (v1570: Roran's spear never leaves early - the x4 rush only speeds its flight)
     if (p.style === "orb" && p.targetId != null && idleAnim.enemyById[p.targetId]) p.toX = Math.max(p.startX + 1, idleAnim.enemyById[p.targetId].x - 6); // follows its target as it walks in
     if (p.arc) {
       p.t += (dtSec * Math.max(1, devSpeedMult) * pBoost) / 0.5;
@@ -25054,6 +25065,7 @@ function stepIdleAnim(dtSec, w, h) {
   idleAnim.damageNumbers = idleAnim.damageNumbers.filter(function (n) { return n.life > 0; });
 
   idleAnim.skillShots.forEach(function (s) {
+    if (s.relAt) { if (performance.now() < s.relAt) { s.delay = 1; return; } s.delay = 0; s.relAt = 0; } /* v1570: same clock as his animation */
     if (s.delay > 0) { s.delay -= dtSec * Math.max(1, devSpeedMult); return; } /* v1569: waits for the throw's release frame */
     var wasDone = s.t >= 1;
     s.trail.push({ x: s.x, y: s.y });
@@ -26919,6 +26931,7 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
       var shq = (idleAnim.atkShotSeq && idleAnim.atkShotSeq[key]) || 0;
       var skillEdge = fl && !(aS[key] && aS[key].fl), basicEdge = aS[key] && shq > aS[key].sq;
       aS[key] = { hc: hc, fl: fl, sq: shq };
+      if (HERO_ANIMS[key].spear) { skillEdge = false; aSup[key] = 0; } /* v1570: Roran - Lance Charge is a normal full throw (started by the shot counter) */
       if (skillEdge && !HERO_ANIMS[key].seq) { heroAnimRestart(key); aU[key] = nowA + 8 / HERO_ANIMS[key].fps.attack * 1000; aSup[key] = aU[key]; } // a skill cast cuts off whatever basic attack was playing and holds off new ones until its own animation ends
       else if (basicEdge && !(aSup[key] && nowA < aSup[key])) { heroAnimRestart(key); aU[key] = nowA + HERO_ANIMS[key].rows.attack[1] / HERO_ANIMS[key].fps.attack * 1000; }
       st = (aU[key] && nowA < aU[key]) ? "attack" : (movingEff ? "run" : "idle");
@@ -37225,6 +37238,7 @@ function drawArenaFrame(ctx, w, h) {
           var aSp = arenaAnim.atkSuppress || (arenaAnim.atkSuppress = {});
           var skE = flashing && !aFl[flashKey], bsE = aT[flashKey] && aT[flashKey] !== aSn[flashKey];
           aSn[flashKey] = aT[flashKey]; aFl[flashKey] = !!flashing;
+          if (HERO_ANIMS[key].spear) { skE = false; aSp[flashKey] = 0; if (bsE) { heroAnimRestart(key); aUn[flashKey] = nA2 + HERO_ANIMS[key].rows.attack[1] / HERO_ANIMS[key].fps.attack * 1000; bsE = false; } } /* v1570: Roran plays his WHOLE throw (the spear leaves on frame 14; 8 frames ended before it) and Lance Charge is a normal throw */
           if (skE && !HERO_ANIMS[key].seq) { heroAnimRestart(key); aUn[flashKey] = nA2 + 8 / HERO_ANIMS[key].fps.attack * 1000; aSp[flashKey] = aUn[flashKey]; } // skill cast cuts off the basic attack and holds new ones off until it ends
           else if (bsE && !(aSp[flashKey] && nA2 < aSp[flashKey])) { heroAnimRestart(key); aUn[flashKey] = nA2 + 8 / HERO_ANIMS[key].fps.attack * 1000; }
           var irp = arenaAnim.infRunPrev || (arenaAnim.infRunPrev = {});
@@ -37568,7 +37582,8 @@ function stepArenaAnim(dtSec, w, h) {
       }
     });
   }
-  arenaAnim.projectiles.forEach(function (p) { p.t += p.cannon ? (p.durSec > 0 ? dtSec / p.durSec : dtSec * 260 / p.dist) : (dtSec / 0.4); var tt = Math.max(0, Math.min(1, p.t)); p.x = p.startX + (p.toX - p.startX) * tt; p.y = p.startY + (p.toY - p.startY) * tt - (p.arc && p.style !== "spear" ? Math.sin(tt * Math.PI) * ARENA_CAV_ARC_LIFT : 0); }); /* v1569: Roran's spear flies straight */
+  var nowRel = performance.now();
+  arenaAnim.projectiles.forEach(function (p) { if (p.relAt) { if (nowRel < p.relAt) { p.t = -0.001; return; } p.t = 0; p.relAt = 0; } /* v1570: Roran's spear leaves on his release frame (same clock as his animation) */ p.t += p.cannon ? (p.durSec > 0 ? dtSec / p.durSec : dtSec * 260 / p.dist) : (dtSec / 0.4); var tt = Math.max(0, Math.min(1, p.t)); p.x = p.startX + (p.toX - p.startX) * tt; p.y = p.startY + (p.toY - p.startY) * tt - (p.arc && p.style !== "spear" ? Math.sin(tt * Math.PI) * ARENA_CAV_ARC_LIFT : 0); }); /* v1569: Roran's spear flies straight */
   // Note: the cannon bullet's own HP-bar drop is no longer applied here on visual arrival — it's driven directly,
   // per bullet, by the staggered setTimeout chain in runArenaBattle's onTick (see cIntMs there), using each
   // bullet's real damage (including crit + Critical Mass's dmg ramp), rather than this projectile's flight time.
@@ -38130,12 +38145,13 @@ function renderArenaBattleScreen() {
       state.playerHitAttackers.forEach(function (id) {
         var def = HERO_DEFS[id];
         if (!def || def.class === "infantry") return;
-        (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["p_" + id] = performance.now();
+        var spSyX = HERO_ANIMS[id] && HERO_ANIMS[id].spear ? spearThrowSync(arenaAnim, "p_" + id, id) : null; /* v1570 */
+        if (!spSyX || spSyX.start) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["p_" + id] = performance.now();
         var idx = arenaAnim.playerRoster.indexOf(id), slot = arenaSlotPos(w, h, idx, true);
         var kh = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? heroHandPos(id, slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null; /* v1476: Juno fires from her muzzle */
         var htP = state.hitTargets && state.hitTargets["p_" + id], hpP = htP && htP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + htP] : null; // a hit on an enemy infantry hero flies at him, not the fortress
         spawnArenaProjectile(kh ? kh.x : slot.x, kh ? kh.y : slot.y, hpP ? hpP.x : aiCenter.x, hpP ? hpP.y : (kh ? aiCenter.y : slot.y), false, "#8ff0ff", def.class === "cavalry", id === "kessa" ? "orb" : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? heroShotStyle(id) : SPELL_COLS[id] ? "spell" : null);
-        if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -heroReleaseSec(id) / 0.4; } /* v1476: leaves on her release frame */
+        if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -(spSyX ? spSyX.delay : heroReleaseSec(id)) / 0.4; if (spSyX) jpj.relAt = spSyX.at; } /* v1476: leaves on her release frame */
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "p_" + id; }
         if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
         if (def.class === "cavalry") playerFiredArc = true; else playerFiredFlat = true;
@@ -38143,12 +38159,13 @@ function renderArenaBattleScreen() {
       state.aiHitAttackers.forEach(function (id) {
         var def = HERO_DEFS[id];
         if (!def || def.class === "infantry") return;
-        (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["a_" + id] = performance.now();
+        var spSyX = HERO_ANIMS[id] && HERO_ANIMS[id].spear ? spearThrowSync(arenaAnim, "a_" + id, id) : null; /* v1570 */
+        if (!spSyX || spSyX.start) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["a_" + id] = performance.now();
         var idx = arenaAnim.aiRoster.indexOf(id), slot = arenaSlotPos(w, h, idx, false);
         var kh2 = id === "kessa" ? kessaHandPos(slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? heroHandPos(id, slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null; /* v1476: Juno fires from her muzzle */
         var htA = state.hitTargets && state.hitTargets["a_" + id], hpA = htA && htA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + htA] : null;
         spawnArenaProjectile(kh2 ? kh2.x : slot.x, kh2 ? kh2.y : slot.y, hpA ? hpA.x : playerCenter.x, hpA ? hpA.y : (kh2 ? playerCenter.y : slot.y), false, "#ff8a8a", def.class === "cavalry", id === "kessa" ? "orb" : (HERO_ANIMS[id] && HERO_ANIMS[id].shell) ? heroShotStyle(id) : SPELL_COLS[id] ? "spell" : null);
-        if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -heroReleaseSec(id) / 0.4; } /* v1476: leaves on her release frame */
+        if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -(spSyX ? spSyX.delay : heroReleaseSec(id)) / 0.4; if (spSyX) jpj.relAt = spSyX.at; } /* v1476: leaves on her release frame */
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "a_" + id; }
         if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
         if (def.class === "cavalry") aiFiredArc = true; else aiFiredFlat = true;
@@ -38232,9 +38249,10 @@ function renderArenaBattleScreen() {
           var pvHit = (a && a.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, false, arenaHullContactPoint(w, h, false, slot.x, slot.y, aiCenter.y)) : null; // v466: lands deep in the enemy hull, like the laser's aim zone (v465 used the surface contact point)
           var tgtP = state.skillTargets && state.skillTargets["p_" + key], tpP = tgtP && tgtP !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["a_" + tgtP] : null; // melee skill aims at the hero it actually hits, else the fortress
           var lanceP = key === "roran" && HERO_ANIMS.roran && HERO_ANIMS.roran.spear, lhP = lanceP ? heroHandPos("roran", slot.x, slot.y + 13, heroSpriteVisualScale / 100, true) : null; /* v1569: Lance Charge - throw + bigger spear from his hand, straight */
-          if (lanceP) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["p_" + key] = performance.now();
+          var lanceSyP = lanceP ? spearThrowSync(arenaAnim, "p_" + key, "roran") : null; /* v1570 */
+          if (lanceP && lanceSyP.start) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["p_" + key] = performance.now();
           spawnArenaProjectile(lhP ? lhP.x : slot.x, lhP ? lhP.y : slot.y, tpP ? tpP.x : (pvHit ? pvHit.x : aiCenter.x), tpP ? tpP.y : (pvHit ? pvHit.y : aiCenter.y), true, "#f0c95f", !!lanceP, a && a.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : lanceP ? "spear" : SPELL_COLS[key] ? "spell" : null, landed);
-          if (lanceP) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].t = -heroReleaseSec("roran") / 0.4; if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
+          if (lanceP) { var lpjP = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; lpjP.t = -lanceSyP.delay / 0.4; lpjP.relAt = lanceSyP.at; } if (!(a && a.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */; // same fireball art as Conquest for Piercing Volley only
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });
@@ -38260,9 +38278,10 @@ function renderArenaBattleScreen() {
           var aiPvHit = (aiA && aiA.name === "Piercing Volley") ? arenaHullDeepPoint(w, h, true, arenaHullContactPoint(w, h, true, slot.x, slot.y, playerCenter.y)) : null;
           var tgtA = state.skillTargets && state.skillTargets["a_" + key], tpA = tgtA && tgtA !== "fort" && arenaAnim.heroScreen ? arenaAnim.heroScreen["p_" + tgtA] : null;
           var lanceA = key === "roran" && HERO_ANIMS.roran && HERO_ANIMS.roran.spear, lhA = lanceA ? heroHandPos("roran", slot.x, slot.y + 13, heroSpriteVisualScale / 100, false) : null; /* v1569: Lance Charge (AI side) */
-          if (lanceA) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["a_" + key] = performance.now();
+          var lanceSyA = lanceA ? spearThrowSync(arenaAnim, "a_" + key, "roran") : null; /* v1570 */
+          if (lanceA && lanceSyA.start) (arenaAnim.atkTrig || (arenaAnim.atkTrig = {}))["a_" + key] = performance.now();
           spawnArenaProjectile(lhA ? lhA.x : slot.x, lhA ? lhA.y : slot.y, tpA ? tpA.x : (aiPvHit ? aiPvHit.x : playerCenter.x), tpA ? tpA.y : (aiPvHit ? aiPvHit.y : playerCenter.y), true, "#ff5c5c", !!lanceA, aiA && aiA.name === "Piercing Volley" ? "fireball" : key === "pip" ? "spotflare" : lanceA ? "spear" : SPELL_COLS[key] ? "spell" : null, aiLanded);
-          if (lanceA) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].t = -heroReleaseSec("roran") / 0.4; if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
+          if (lanceA) { var lpjA = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; lpjA.t = -lanceSyA.delay / 0.4; lpjA.relAt = lanceSyA.at; } if (!(aiA && aiA.name === "Piercing Volley") && SPELL_COLS[key]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[key]; /* v1185 */;
           if (HERO_DEFS[key].class !== "infantry") sfxSkillShot();
         }
       });
