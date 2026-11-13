@@ -4767,3 +4767,7 @@ Harley's 3 points:
 - Beam hull-hit search: skin placement worked out once instead of on every 1 px step (same result).
 - fmt(): one shared number formatter, and numbers under 1000 skip it (same text).
 - Layer-off test (2x throttle, 2 runs each): heroes / hulls / background / effects / text / blur each ~10-20%, about the noise level - no single layer dominates in headless. The FPS counter in Dev Tools is the way to compare on the phone.
+
+## v1563 (13 Nov 2026) - FPS counter in Options
+- More > Options now has an "FPS counter" On/Off button (same setting as the Dev Tools checkbox, which stays in sync), so a normal account can turn it on. Shows in the corner of Conquest and Arena battles.
+- Checked headless: toggle flips the setting, counter draws in Arena, no errors.
