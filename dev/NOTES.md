@@ -4771,3 +4771,8 @@ Harley's 3 points:
 ## v1563 (13 Nov 2026) - FPS counter in Options
 - More > Options now has an "FPS counter" On/Off button (same setting as the Dev Tools checkbox, which stays in sync), so a normal account can turn it on. Shows in the corner of Conquest and Arena battles.
 - Checked headless: toggle flips the setting, counter draws in Arena, no errors.
+
+## v1564 (13 Nov 2026) - start-up fix (Walker profile picture)
+- Since v1543 the server test job (GitHub "firebase") failed on every push: the end-to-end game test showed "Cannot read properties of undefined (reading 'ph')", then world chat broken. Cause: the Walker's profile picture was pre-drawn during page load (waitWalkerGov ran immediately); when its pictures were already decoded it read walkerCar, which was declared ~3000 lines later, so the error stopped the rest of the start-up script (world chat and everything after it) - for any player, any skin, depending on timing. My headless tests never hit the timing.
+- Fix: walkerCar declared before its first use; the pre-draw runs after load (setTimeout 0) and can't throw out of start-up. LIVE (v1198) never had it.
+- While those tests failed, the server deploy step was skipped (functions/rules unchanged since, so nothing missed).
