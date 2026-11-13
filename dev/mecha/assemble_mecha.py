@@ -23,7 +23,7 @@ P = {
  "fFo":   ((1271, 514, 1430, 767), {"p0": (1332, 535), "p1": (1356, 743)}),
  "fHa":   ((1299, 792, 1435, 999), {"p0": (1355, 816)}),
 }
-pose = {"head": 0, "nUp": 8, "nFo": -18, "nHa": -8, "fUp": 6, "fFo": -16, "fHa": -6, "dark": 0.78}
+pose = {"head": 0, "nUp": -22, "nFo": 58, "nHa": -12, "fUp": -24, "fFo": 64, "fHa": -18, "dark": 0.78}   # concept pose (Harley: arms like the original composite)
 if len(sys.argv) > 2: pose.update(json.loads(sys.argv[2]))
 def part(n):
     (x0, y0, x1, y1), pv = P[n]; im = Image.fromarray(S[y0:y1, x0:x1].copy())
