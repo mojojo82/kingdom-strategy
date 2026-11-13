@@ -4862,3 +4862,6 @@ Harley's 3 points:
 - Harley's phone recording (v1577 readout): game work only 1-2 ms/frame on every level, level pictures released properly when hopping (11-17 pics, no build-up), FPS 37-49 on all levels (warm phone + screen recording). But all 23 animated hero sheets (59 MP) sat in memory from login, used or not - a v806 warm-up from when only a few heroes were animated.
 - Now: at start (splash / world map) only your Conquest team's sheets load (+ their _skill sheets); a newly equipped hero loads on equip; the cloud save's team loads when it arrives; an Arena fight loads both teams when it is set up; opening Conquest lets go of every sheet not in your team.
 - Headless: new account world map 4 sheets / 9 MP (was 23 / 59 MP); Arena 13 sheets incl. opponent's; back in Conquest 4 again. Heroes draw normally in both modes, no console errors. Same pictures, same drawing - no visual change. Not tested on a phone.
+
+## v1579 - no lightning on the snow level (14 Nov 2026)
+- Harley: snow added to LIGHTNING_OFF_ENVS. Lightning (Dev Tools "Lightning 1", off by default) can now only appear on Night and Rain.
