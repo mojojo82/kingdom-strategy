@@ -263,9 +263,9 @@ t("v1596 popup deals in the shop config", () => {
 });
 t("v1599 Boss Rush config", () => {
   const L = C.normalizeLiveops({}); assert.deepStrictEqual(L.br.days, [2, 3, 4]); assert.strictEqual(L.br.tries, 3);
-  const b = C.normalizeLiveops({ br: { days: [4, 2, 9, 2], tries: 99, ptsFull: 50, ms: [{ at: 50, items: { featured_shards: 5 } }], rank: [{ to: 0, items: { event_tokens: 3 } }, { to: 1, items: { featured_shards: 2 } }] } }).br;
-  assert.deepStrictEqual(b.days, [2, 4]); assert.strictEqual(b.tries, 3, "out of range -> default"); assert.strictEqual(b.ptsFull, 50); assert.strictEqual(b.ms[0].items.featured_shards, 5); assert.strictEqual(b.rank[0].to, 1, "rank rows sorted");
-  assert.strictEqual(L.br.rank.length, 6);
+  const b = C.normalizeLiveops({ br: { days: [4, 2, 9, 2], tries: 99, hpGrow: 12, ms: [{ at: 50, items: { featured_shards: 5 } }], rank: [{ to: 0, items: { event_tokens: 3 } }, { to: 1, items: { featured_shards: 2 } }] } }).br;
+  assert.deepStrictEqual(b.days, [2, 4]); assert.strictEqual(b.tries, 3, "out of range -> default"); assert.strictEqual(b.hpGrow, 12); assert.strictEqual(L.br.maxLv, 100); assert.strictEqual(b.ms[0].items.featured_shards, 5); assert.strictEqual(b.rank[0].to, 1, "rank rows sorted");
+  assert.strictEqual(L.br.rank.length, 6); assert.strictEqual(C.normalizeLiveops({ br: { days: [1] } }).br.ms.length, 5, "missing milestones -> default track");
   const day = (y, m, dd) => Date.UTC(y, m - 1, dd, 12), BR = L.br, wk = C.arenaKeys(day(2026, 11, 18)).w; /* 18 Nov 2026 = Wednesday */
   assert.strictEqual(C.bossRunOpen(BR, day(2026, 11, 18)), true); assert.strictEqual(C.bossRunOpen(BR, day(2026, 11, 20)), false);
   assert.strictEqual(C.bossRunOver(BR, wk, day(2026, 11, 19)), false, "Thursday: still running"); assert.strictEqual(C.bossRunOver(BR, wk, day(2026, 11, 20)), true, "Friday: over");

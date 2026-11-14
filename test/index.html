@@ -7500,8 +7500,8 @@ var LIVEOPS_DEFAULT = {
     { id: "su1h", item: "speedup_general_1h", qty: 1, price: 50, limit: 10 }, { id: "stam", item: "item_stamina_50", qty: 1, price: 80, limit: 5 }, { id: "eq3", item: "item_chest_eq_3", qty: 1, price: 300, limit: 1 }] },
   wk: { heroes: ["roran", "kessa", "halo7", "ironlily"], shards: 10, days: 7, act: 60 },
   dailyTok: [2, 3, 4, 5, 6],
-  /* v1599: Boss Rush (functions/core.js LIVE_BR_DEFAULT) - % values are whole numbers */
-  br: {"on": true, "days": [2, 3, 4], "tries": 3, "sec": 60, "blast": 6, "stomp": 5, "stompHero": 35, "blastEvery": 6, "stompEvery": 10, "blastFirst": 4, "stompFirst": 9, "ptsSec": 1, "ptsFull": 40, "ms": [{"at": 100, "items": {"conquest_books": 20}}, {"at": 250, "items": {"event_tokens": 15}}, {"at": 450, "items": {"research": 300}}, {"at": 650, "items": {"event_tokens": 25}}, {"at": 800, "items": {"featured_shards": 10}}], "rank": [{"to": 1, "items": {"featured_shards": 10}}, {"to": 3, "items": {"featured_shards": 5}}, {"to": 10, "items": {"event_tokens": 60}}, {"to": 50, "items": {"event_tokens": 40}}, {"to": 100, "items": {"event_tokens": 25}}, {"to": 0, "items": {"event_tokens": 10}}]},
+  /* v1599/v1604: Boss Rush (functions/core.js LIVE_BR_DEFAULT) - levels: hp1 health at level 1, +hpGrow% health and +dmgGrow% damage a level, unkillable at maxLv; milestones = highest level reached */
+  br: {"on": true, "days": [2, 3, 4], "tries": 3, "sec": 60, "hp1": 1000, "hpGrow": 8, "dmgGrow": 8, "maxLv": 100, "beam": 300, "stomp": 250, "stompHero": 300, "blastEvery": 6, "stompEvery": 10, "blastFirst": 4, "stompFirst": 9, "ms": [{"at": 5, "items": {"conquest_books": 20}}, {"at": 10, "items": {"event_tokens": 15}}, {"at": 20, "items": {"research": 300}}, {"at": 35, "items": {"event_tokens": 25}}, {"at": 50, "items": {"featured_shards": 10}}], "rank": [{"to": 1, "items": {"featured_shards": 10}}, {"to": 3, "items": {"featured_shards": 5}}, {"to": 10, "items": {"event_tokens": 60}}, {"to": 50, "items": {"event_tokens": 40}}, {"to": 100, "items": {"event_tokens": 25}}, {"to": 0, "items": {"event_tokens": 10}}]},
   /* v1597: Forge Frenzy (functions/core.js LIVE_FF_DEFAULT) */
   ff: {"on": true, "parity": 0, "pts": {"ticket": 10, "forge": 1}, "ms": [{"at": 200, "items": {"weapon_tickets": 1}}, {"at": 500, "items": {"event_tokens": 15}}, {"at": 1000, "items": {"weapon_tickets": 2}}, {"at": 2000, "items": {"item_chest_eq_2": 1}}, {"at": 3500, "items": {"item_chest_weapon": 1}}]},
   /* v1594: Arena event (same defaults as functions/core.js LIVE_ARENA_DEFAULT) */
@@ -9307,7 +9307,7 @@ function createGame(opts) {
   function evBRSync() { var E = evSync(), k = evBRKey(); if (k == null) return null; if (!E.br || E.br.k !== k) E.br = { k: k, pts: 0, ms: [], best: 0, d: -1, tries: 0 }; var dd = dailyDayNow(); if (E.br.d !== dd) { E.br.d = dd; E.br.tries = 0; } return E.br; }
   function evBRTriesLeft() { var b = evBRSync(); return b ? Math.max(0, ((LIVEOPS.br || {}).tries || 3) - b.tries) : 0; }
   function evBRStart() { var b = evBRSync(); if (!b) return { ok: false, reason: "closed" }; if (evBRTriesLeft() <= 0) return { ok: false, reason: "tries" }; b.tries++; return { ok: true }; } /* a try is used when the fight starts */
-  function evBRScore(sec, full, dmg) { /* v1600: points for surviving (ptsSec a second + ptsFull for the whole fight); damage only ranks you */ var b = evBRSync(), B = LIVEOPS.br || {}; if (!b) return 0; var p = Math.max(0, Math.floor(sec) * (B.ptsSec || 0) + (full ? (B.ptsFull || 0) : 0)); b.pts += p; dmg = Math.floor(dmg || 0); if (dmg > b.best) b.best = dmg; b.last = dmg; return p; }
+  function evBRScore(lv, dmg) { /* v1604: milestones on the highest level reached this run (b.pts); damage ranks you (b.best) */ var b = evBRSync(); if (!b) return 0; lv = Math.max(1, Math.floor(lv || 1)); if (lv > b.pts) b.pts = lv; dmg = Math.floor(dmg || 0); if (dmg > b.best) b.best = dmg; b.last = dmg; return lv; }
   function evBRClaim(i) { var b = evBRSync(), m = ((LIVEOPS.br || {}).ms || [])[i]; if (!b || !m) return { ok: false, reason: "bad" }; if (b.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (b.pts < m.at) return { ok: false, reason: "not_done" }; b.ms.push(i); return { ok: true, got: grantAll(m.items) }; }
   function evAct(kind, n) {
     var E = evSync(), F = LIVEOPS.fhw; n = n == null ? 1 : n; if (!(n > 0)) return;
@@ -13649,7 +13649,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1603"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1604"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19631,7 +19631,7 @@ function evWinClick(e) {
   if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
   if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
   if (t.closest && evArenaClick(t)) return; /* v1594 */
-  if ((b = t.closest && t.closest("[data-ebrms]"))) { var bi = +b.getAttribute("data-ebrms"), bm = LIVEOPS.br.ms[bi], br = game.evBRClaim(bi); if (br.ok) evDone("Got " + evGotText(br.got)); else EVW.note = br.reason === "claimed" ? "Already claimed." : "At " + bm.at.toLocaleString("en-US") + " points: " + evGotText(bm.items); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-ebrms]"))) { var bi = +b.getAttribute("data-ebrms"), bm = LIVEOPS.br.ms[bi], br = game.evBRClaim(bi); if (br.ok) evDone("Got " + evGotText(br.got)); else EVW.note = br.reason === "claimed" ? "Already claimed." : "Reach Lv " + bm.at + ": " + evGotText(bm.items); evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-ebrsub]"))) { EVB.sub = b.getAttribute("data-ebrsub"); EVW.note = ""; evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-ebrrank]"))) { if (EVB.busy) return; EVB.busy = true; b.textContent = "…";
     KS_BACKEND.call("claimBossRank", { key: +b.getAttribute("data-ebrrank") }).then(function (r) { EVB.prev = Object.assign({}, EVB.prev, { claimed: true, rank: r.rank }); evDone("Rank #" + r.rank + " - your reward is in the mail" + (r.items && Object.keys(r.items).length ? " (" + evGotText(r.items) + ")" : "")); },
@@ -19675,7 +19675,7 @@ function evBRLbLoad() {
   var key = game.evWeekNow(), c = EVB.lb; if (!ksFb() || typeof cloudDb === "undefined" || !cloudDb) return; if (c && c.key === key && (c.loading || Date.now() - c.at < 30000)) return;
   EVB.lb = { key: key, loading: true, at: Date.now(), rows: c && c.key === key ? c.rows : null };
   cloudDb.collection(serverPrefix() + "bosslb/w" + key + "/p").orderBy("dmg", "desc").limit(50).get().then(function (q) {
-    EVB.lb = { key: key, at: Date.now(), rows: q.docs.map(function (d) { var o = d.data() || {}; return { id: d.id, name: o.name || "Governor", tag: o.tag || "", dmg: o.dmg || 0 }; }) }; evWinRender(true);
+    EVB.lb = { key: key, at: Date.now(), rows: q.docs.map(function (d) { var o = d.data() || {}; return { id: d.id, name: o.name || "Governor", tag: o.tag || "", dmg: o.dmg || 0, lv: o.lv || 0 }; }) }; evWinRender(true);
   }, function (e) { EVB.lb = { key: key, at: Date.now(), rows: [], err: (e && e.message) || "error" }; evWinRender(true); });
 }
 function evBRPrevLoad() { /* the last finished run's score, for the rank-reward claim button: this week's once the run days are over, else last week's */
@@ -19695,14 +19695,14 @@ function evBRHtml() { /* v1599/v1600: Boss Rush - a damage ranker against the ka
     if (!ksFb()) return h + '<div class="evw-foot">Leaderboards need the online game.</div>';
     evBRLbLoad(); var L = EVB.lb, rows = (L && L.rows) || null, mine = -1; if (rows) rows.forEach(function (r, i) { if (r.id === PLAYER_ID) mine = i; });
     h += '<div class="evw-lb">' + (!rows ? '<div class="evw-foot">Loading…</div>' : !rows.length ? '<div class="evw-foot">No scores yet this run - fight the Kaiju to be first.</div>'
-      : rows.map(function (r, i) { var rk = i + 1; for (var j = i; j > 0 && rows[j - 1].dmg === r.dmg; j--) rk = j; return '<div class="evw-lr' + (i === mine ? " me" : "") + (rk <= 3 ? " t" + rk : "") + '"><span class="rk">' + (rk <= 3 ? '<img alt="" src="' + evArt("icon_trophy") + '">' : "") + "<b>" + rk + '</b></span><span class="nm">' + (r.tag ? "[" + escapeHtml(r.tag) + "] " : "") + escapeHtml(r.name) + '</span><span class="pt">' + r.dmg.toLocaleString("en-US") + "</span></div>"; }).join(""))
+      : rows.map(function (r, i) { var rk = i + 1; for (var j = i; j > 0 && rows[j - 1].dmg === r.dmg; j--) rk = j; return '<div class="evw-lr' + (i === mine ? " me" : "") + (rk <= 3 ? " t" + rk : "") + '"><span class="rk">' + (rk <= 3 ? '<img alt="" src="' + evArt("icon_trophy") + '">' : "") + "<b>" + rk + '</b></span><span class="nm">' + (r.tag ? "[" + escapeHtml(r.tag) + "] " : "") + escapeHtml(r.name) + '</span><span class="pt">' + (r.lv ? '<small style="opacity:.7">Lv ' + r.lv + " · </small>" : "") + r.dmg.toLocaleString("en-US") + "</span></div>"; }).join(""))
       + (rows && rows.length && mine < 0 && b.best > 0 ? '<div class="evw-lr me"><span class="rk"><b>50+</b></span><span class="nm">You</span><span class="pt">' + b.best.toLocaleString("en-US") + "</span></div>" : "") + "</div>";
     return h + '<div class="evw-foot">Best single fight counts. This kingdom only for now.</div>';
   }
   var fill = (function () { var prev = 0; for (var i = 0; i < ms.length; i++) { if (pts < ms[i].at) return (i + (pts - prev) / (ms[i].at - prev)) / n * 100; prev = ms[i].at; } return 100; })();
-  h += '<div class="evw-act" style="padding-bottom:10px;margin-top:10px"><div class="row1"><b>' + Math.floor(pts).toLocaleString("en-US") + '</b><span>Survival points · best fight ' + (b.best || 0).toLocaleString("en-US") + ' damage</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
-    + ms.map(function (m, i) { var got = b.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-ebrms="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at.toLocaleString("en-US") + "</small></button>"; }).join("") + '</div><div style="height:26px"></div></div>';
-  h += '<div class="evw-list" style="margin-top:12px"><div class="evw-t"><div class="ti"><img alt="" src="' + evArt("icon_boss") + '"></div><div class="tx"><b>Fight the Kaiju</b>He can\'t die - do as much damage as you can in ' + (B.sec || 60) + ' seconds. Stay alive: <em>+' + (B.ptsSec || 0) + " a second, +" + (B.ptsFull || 0) + " for lasting all " + (B.sec || 60) + "s</em> · " + left + " of " + (B.tries || 3) + ' tries left today</div><button type="button" class="go" data-ebrgo="1"' + (left > 0 ? "" : " disabled") + '>Fight</button></div></div>';
+  h += '<div class="evw-act" style="padding-bottom:10px;margin-top:10px"><div class="row1"><b>Lv ' + Math.max(0, Math.floor(pts)) + '</b><span>highest level this run · best fight ' + (b.best || 0).toLocaleString("en-US") + ' damage</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
+    + ms.map(function (m, i) { var got = b.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-ebrms="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>Lv " + m.at + "</small></button>"; }).join("") + '</div><div style="height:26px"></div></div>';
+  h += '<div class="evw-list" style="margin-top:12px"><div class="evw-t"><div class="ti"><img alt="" src="' + evArt("icon_boss") + '"></div><div class="tx"><b>Fight the Kaiju</b>' + (B.sec || 60) + ' seconds. Each health bar you empty takes him up a level - more health, harder hits. <em>Up to Lv ' + (B.maxLv || 100) + "</em>, then he can\'t die · " + left + " of " + (B.tries || 3) + ' tries left today</div><button type="button" class="go" data-ebrgo="1"' + (left > 0 ? "" : " disabled") + '>Fight</button></div></div>';
   return h + '<div class="evw-foot">Your best fight\'s damage ranks you in your kingdom. Tuesday to Thursday (UTC).</div>';
 }
 function evBRTestHtml() { /* v1602: Harley's test fight - only in the TEST game */
@@ -24815,9 +24815,12 @@ function kaijuDrawWater(ctx, w, h) { /* placeholder shallow sea until the boss l
   ctx.restore();
 }
 function kaijuDrawDmg(ctx, w) {
-  var x = w * 0.58, y = 22, bw = w * 0.36, bh = 14, d = kaijuDealt();
-  ctx.save(); ctx.fillStyle = "rgba(10,8,18,0.88)"; ctx.fillRect(x - 1, y - 1, bw + 2, bh + 2); var gr = ctx.createLinearGradient(x, 0, x + bw, 0); gr.addColorStop(0, "#6a2a9c"); gr.addColorStop(1, "#3a1660"); ctx.fillStyle = gr; ctx.fillRect(x, y, bw, bh);
-  ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff"; ctx.fillText("💥 " + d.toLocaleString("en-US") + " damage", x + bw / 2, y + bh / 2 + 0.5);
+  var x = w * 0.58, y = 22, bw = w * 0.36, bh = 14, d = kaijuDealt(), L = kaijuLevel(kaijuBR(), d), fr = L.need === Infinity ? 1 : Math.max(0, 1 - L.into / L.need);
+  if (kaijuState.lvShown && L.lv > kaijuState.lvShown && arenaBattleRunning) { try { arenaAnim.banner = { text: "Kaiju Lv " + L.lv + "!", life: 1.4, maxLife: 1.4, color: "#d78cff", x: w * 0.72, y: 62 }; } catch (e) {} } kaijuState.lvShown = L.lv; /* v1604: a health bar per level */
+  ctx.save(); ctx.fillStyle = "rgba(10,8,18,0.88)"; ctx.fillRect(x - 1, y - 1, bw + 2, bh + 2); ctx.fillStyle = "#2a1030"; ctx.fillRect(x, y, bw, bh);
+  var gr = ctx.createLinearGradient(x, 0, x + bw, 0); gr.addColorStop(0, "#e05a5a"); gr.addColorStop(1, "#8e2bd0"); ctx.fillStyle = gr; ctx.fillRect(x, y, bw * fr, bh);
+  ctx.font = "bold 10px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = "#ffd84a"; ctx.fillText("Lv " + L.lv, x + 4, y + bh / 2 + 0.5);
+  ctx.textAlign = "right"; ctx.fillStyle = "#fff"; ctx.fillText("💥 " + d.toLocaleString("en-US"), x + bw - 4, y + bh / 2 + 0.5);
   if (arenaOpponent && arenaOpponent.kaijuTest) { /* v1603: Boss Test only - frames per second, so Harley can read the speed on his phone */
     var now = performance.now(), F = kaijuState.fps || (kaijuState.fps = { n: 0, t0: now, v: 0 }); F.n++; if (now - F.t0 >= 1000) { F.v = F.n * 1000 / (now - F.t0); F.n = 0; F.t0 = now; }
     ctx.font = "bold 10px sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = F.v >= 50 ? "#7dff8a" : F.v >= 30 ? "#ffd84a" : "#ff6a6a"; ctx.fillText(Math.round(F.v) + " fps · " + (KAIJU.glOn() ? "GPU" : "2D"), x + bw, y + bh + 10);
@@ -24842,16 +24845,21 @@ function kaijuDrawArenaFx(ctx, w, h) { /* over the fighters: the water strip ove
 var KAIJU_INF = 1e15;
 function kaijuBR() { return LIVEOPS.br || LIVEOPS_DEFAULT.br; }
 function kaijuTicks() { return Math.max(10, Math.round((kaijuBR().sec || 60) * 1000 / ARENA_TICK_MS)); }
-function kaijuBossCfg() { var B = kaijuBR(); return { blast: B.blast, stomp: B.stomp, stompHero: B.stompHero, blastEvery: B.blastEvery, stompEvery: B.stompEvery, blastFirst: B.blastFirst, stompFirst: B.stompFirst }; }
+function kaijuBossCfg() { var B = kaijuBR(); return { hp1: B.hp1, hpGrow: B.hpGrow, dmgGrow: B.dmgGrow, maxLv: B.maxLv, beam: B.beam, stomp: B.stomp, stompHero: B.stompHero, blastEvery: B.blastEvery, stompEvery: B.stompEvery, blastFirst: B.blastFirst, stompFirst: B.stompFirst }; }
+function kaijuLevel(B, dealt) { /* v1604: his level from the damage taken this fight. Level L has hp1 x (1 + hpGrow%)^(L-1) health; at maxLv the bar never empties */
+  var g = 1 + (B.hpGrow || 0) / 100, need = Math.max(1, B.hp1 || 1000), lv = 1, max = Math.max(1, B.maxLv || 100); dealt = Math.max(0, dealt || 0);
+  while (lv < max && dealt >= need) { dealt -= need; lv++; need *= g; }
+  return { lv: lv, into: dealt, need: lv >= max ? Infinity : need };
+}
 function kaijuAiStats(hp) { var s = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); s.maxHp = Math.max(1000, Math.round(hp)); return s; }
 function kaijuDealt() { return Math.max(0, Math.floor((arenaAnim.aiMaxHp || KAIJU_INF) - (arenaAnim.aiHp || 0))); }
 function kaijuReport(dmg) {
   if (!ksFb() || !(dmg > 0)) return;
-  KS_BACKEND.call("bossScore", { dmg: Math.floor(dmg), name: (typeof getPlayerName === "function" ? getPlayerName() : "") || "", tag: (ALLY.my && ALLY.my.tag) || "" }).then(function () { EVB.lb = null; try { evWinRender(true); } catch (e) {} }, function (e) { try { console.warn("bossScore", e && e.message); } catch (x) {} });
+  KS_BACKEND.call("bossScore", { dmg: Math.floor(dmg), lv: kaijuLevel(kaijuBR(), dmg).lv, name: (typeof getPlayerName === "function" ? getPlayerName() : "") || "", tag: (ALLY.my && ALLY.my.tag) || "" }).then(function () { EVB.lb = null; try { evWinRender(true); } catch (e) {} }, function (e) { try { console.warn("bossScore", e && e.message); } catch (x) {} });
 }
 function kaijuTestOk() { return /\/test\//.test(location.pathname) || !!(window.KS_BACKEND && KS_BACKEND.env === "test"); } /* v1602: Harley's any-day test fight - TEST game only */
 function kaijuOpponent(test) { kaijuLoad(); return { kaijuTest: !!test, kaiju: true, id: "kaiju", name: "Kaiju", roster: [], heroes: {}, weapons: {}, townhallLevel: 1, points: 0 }; }
-function kaijuFightOpen(test) { /* Events > Boss Rush > Fight; test = Events > Boss Test (any day, nothing saved) */
+function kaijuFightOpen(test) { kaijuState.lvShown = 0; /* Events > Boss Rush > Fight; test = Events > Boss Test (any day, nothing saved) */
   test = !!test && kaijuTestOk(); if (!test && game.evBRKey() == null) return; kaijuLoad();
   try { evWinClose(); } catch (e) {} setScreen("more", "arena"); /* entering the Arena lands on the leaderboard - then switch to the boss fight */
   arenaOpponent = kaijuOpponent(test); arenaView = "battle"; kaijuState.mode = "idle"; kaijuState.quake = null; renderArena();
@@ -24861,15 +24869,15 @@ function kaijuFightUi() { /* buttons and labels for the boss fight */
   if (at) { at.innerHTML = left > 0 ? "⚔️ Fight" : "⚔️ Done"; at.title = left + " tries left today"; at.classList.toggle("active", left > 0); }
   if (nb) { nb.innerHTML = "◀ Back"; nb.title = "Back to Boss Rush"; }
   if (ai) { ai.innerHTML = "🐉 Boss"; ai.onclick = null; ai.classList.remove("arena-power-clickable"); }
-  var lg = document.getElementById("arenaLog"); if (lg && !lg.textContent) lg.textContent = TST ? "Test fight - any day, nothing is saved, no rewards." : left > 0 ? "He can't die - deal as much damage as you can in " + (kaijuBR().sec || 60) + " seconds and stay alive." : "No tries left today - come back tomorrow.";
+  var lg = document.getElementById("arenaLog"); if (lg && !lg.textContent) lg.textContent = TST ? "Test fight - any day, nothing is saved, no rewards." : left > 0 ? "Empty his health bars to push him up the levels - he hits harder each level. " + (kaijuBR().sec || 60) + " seconds." : "No tries left today - come back tomorrow.";
 }
 function kaijuFightDone(w, h) {
-  var B = kaijuBR(), dmg = Math.max(0, Math.floor(KAIJU_INF - arenaAnim.trueAiHp)), alive = arenaAnim.truePlayerHp > 0, sec = alive ? (B.sec || 60) : Math.max(0, (B.sec || 60) - (kaijuState.secLeft || 0));
-  var TST = !!arenaOpponent.kaijuTest, wasBest = TST ? 0 : ((game.evBRSync() || {}).best || 0), pts = TST ? 0 : game.evBRScore(sec, alive, dmg);
+  var B = kaijuBR(), dmg = Math.max(0, Math.floor(KAIJU_INF - arenaAnim.trueAiHp)), alive = arenaAnim.truePlayerHp > 0, sec = alive ? (B.sec || 60) : Math.max(0, (B.sec || 60) - (kaijuState.secLeft || 0)), lv = kaijuLevel(B, dmg).lv;
+  var TST = !!arenaOpponent.kaijuTest, wasBest = TST ? 0 : ((game.evBRSync() || {}).best || 0); if (!TST) game.evBRScore(lv, dmg);
   if (!TST) { persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} kaijuReport(dmg); } /* v1602: the test fight saves nothing */
   var res = document.getElementById("arenaResult");
-  if (res) { res.innerHTML = "💥 " + dmg.toLocaleString("en-US") + " damage" + (!TST && dmg > wasBest ? " - new best!" : "") + " · " + (alive ? "survived" : "lasted " + sec + "s") + (TST ? " (test)" : " +" + pts + " points"); res.className = "arena-result win"; }
-  arenaAnim.banner = { text: "💥 " + dmg.toLocaleString("en-US") + (!TST && dmg > wasBest ? " - new best!" : ""), life: 6, maxLife: 6, color: "#f0c95f", x: w * 0.3, y: groundYFor(h) - 52 }; try { sfxLevelClear(); } catch (e) {}
+  if (res) { res.innerHTML = "💥 " + dmg.toLocaleString("en-US") + " damage" + (!TST && dmg > wasBest ? " - new best!" : "") + " · " + "reached Lv " + lv + " · " + (alive ? "survived" : "lasted " + sec + "s") + (TST ? " (test)" : ""); res.className = "arena-result win"; }
+  arenaAnim.banner = { text: "Lv " + lv + " · 💥 " + dmg.toLocaleString("en-US") + (!TST && dmg > wasBest ? " - new best!" : ""), life: 6, maxLife: 6, color: "#f0c95f", x: w * 0.3, y: groundYFor(h) - 52 }; try { sfxLevelClear(); } catch (e) {}
   var at = document.getElementById("arenaAttackBtn"); if (at) at.disabled = false; var ac = document.getElementById("arenaActions"); if (ac) ac.classList.remove("hide");
   var lg = document.getElementById("arenaLog"); if (lg) lg.textContent = ""; kaijuFightUi();
 }
@@ -37423,7 +37431,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function cardSkMul(sd, id) { var cm = sd === 'P' ? cmP : cmA; return (cm ? cardSkillMul(cm, id, cardHpFrac(sd), sd === 'P' ? nHeroP : nHeroA) : 1) * oathMul(sd, id); }
   function cardCdMul(sd) { var cm = sd === 'P' ? cmP : cmA; return cm ? 1 - cardCdBonus(cm, cardHpFrac(sd)) : 1; }
   /* v1599: Boss Rush kaiju (opts.boss) - his own attacks instead of heroes / cannon / weapons: a mouth beam at your fortress (3 hits while the beam is on)
-     and a stomp whose water surge hits every ground hero, then your fortress. Values are % of your fortress / each hero's max HP; times in seconds.
+     and a stomp whose water surge hits every ground hero, then your fortress. v1604: flat damage (beam total / stomp / stompHero at level 1, x (1 + dmgGrow%) per level); times in seconds.
      The timings match the rig's animation (beam 1.0-1.9 s, foot down at 0.88 s, the surge reaches your hull 1 s later). passive = he never attacks (HP estimate). */
   var BOSS = opts.boss && !opts.boss.passive ? opts.boss : null, bossQ = [], bossT = BOSS ? { blast: BOSS.blastFirst || 4, stomp: BOSS.stompFirst || 9, busy: 0 } : null;
   sim.step = function () {
@@ -37437,14 +37445,15 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var playerDmg = 0, aiDmg = 0, playerMeleeDmg = 0, aiMeleeDmg = 0, playerRangedAtk = 0, aiRangedAtk = 0, projP = 0, projA = 0;
     tickRevive(pHH); tickRevive(aHH);
     var bossAct = null, bossFort = 0;
-    if (BOSS) {
+    if (BOSS) { /* v1604: flat damage that grows with his level (level = how many health bars you've taken off this fight, kaijuLevel) */
+      var bossM = Math.pow(1 + (BOSS.dmgGrow || 0) / 100, kaijuLevel(BOSS, aiStats.maxHp - aiHp).lv - 1);
       bossT.busy -= dtS; bossT.blast -= dtS; bossT.stomp -= dtS;
       if (bossT.busy <= 0) { var bKind = bossT.stomp <= 0 ? "stomp" : bossT.blast <= 0 ? "blast" : null;
-        if (bKind === "blast") { bossAct = bKind; bossT.blast = BOSS.blastEvery || 6; bossT.busy = 2.8; [1.05, 1.45, 1.85].forEach(function (s) { bossQ.push({ at: tick + Math.max(1, Math.round(s / dtS)), fort: (BOSS.blast || 0) / 300 }); }); }
-        else if (bKind === "stomp") { bossAct = bKind; bossT.stomp = BOSS.stompEvery || 10; bossT.busy = 2.1; bossT.blast = Math.max(bossT.blast, 2.4); bossQ.push({ at: tick + Math.max(1, Math.round(1.45 / dtS)), heroes: (BOSS.stompHero || 0) / 100 }); bossQ.push({ at: tick + Math.max(1, Math.round(1.9 / dtS)), fort: (BOSS.stomp || 0) / 100 }); } }
+        if (bKind === "blast") { bossAct = bKind; bossT.blast = BOSS.blastEvery || 6; bossT.busy = 2.8; [1.05, 1.45, 1.85].forEach(function (s) { bossQ.push({ at: tick + Math.max(1, Math.round(s / dtS)), fort: (BOSS.beam || 0) / 3 }); }); }
+        else if (bKind === "stomp") { bossAct = bKind; bossT.stomp = BOSS.stompEvery || 10; bossT.busy = 2.1; bossT.blast = Math.max(bossT.blast, 2.4); bossQ.push({ at: tick + Math.max(1, Math.round(1.45 / dtS)), heroes: BOSS.stompHero || 0 }); bossQ.push({ at: tick + Math.max(1, Math.round(1.9 / dtS)), fort: BOSS.stomp || 0 }); } }
       for (var bqi = bossQ.length - 1; bqi >= 0; bqi--) { if (bossQ[bqi].at > tick) continue; var bq = bossQ.splice(bqi, 1)[0];
-        if (bq.fort) bossFort += bq.fort * playerStats.maxHp;
-        if (bq.heroes && pHH) pHH.list.forEach(function (e) { if (!e.infantry || e.ko || e.air || e.dead) return; e.hp -= e.max * bq.heroes; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; } heroHitTaken(e); }); }
+        if (bq.fort) bossFort += bq.fort * bossM;
+        if (bq.heroes && pHH) pHH.list.forEach(function (e) { if (!e.infantry || e.ko || e.air || e.dead) return; e.hp -= bq.heroes * bossM; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; } heroHitTaken(e); }); }
     }
     if (posMode) {
       var mvP = planMove(pHH, aHH), mvA = planMove(aHH, pHH);
@@ -39487,6 +39496,7 @@ function renderArenaBattleScreen() {
   };
   document.getElementById("arenaAttackBtn").onclick = function () {
     if (arenaBattleRunning || p.roster.length === 0) return;
+    if (KJ) kaijuState.lvShown = 1;
     if (KJ && !arenaOpponent.kaijuTest) { var brS = game.evBRStart(); if (!brS.ok) { document.getElementById("arenaLog").textContent = brS.reason === "tries" ? "No tries left today - come back tomorrow." : "Boss Rush isn't running right now."; return; } persist(); } if (KJ) { kaijuState.mode = "idle"; kaijuState.quake = null; }
     document.getElementById("arenaResult").textContent = "";
     document.getElementById("arenaResult").className = "arena-result";

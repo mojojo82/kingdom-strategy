@@ -5022,3 +5022,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Headless at 6× CPU slowdown: body draw 152 ms → 12 ms. The headless browser has no real GPU (software WebGL), so the copy onto the canvas is far slower there than on a phone - the real test is Harley's phone.
 - Boss Test fights show a small fps counter under the damage bar ("N fps · GPU/2D", green ≥50, yellow ≥30, red below) - TEST tab only.
 - Looks the same as the 2D version (side-by-side capture). Script: dev/bosses/kaiju/gl_speed_test.js.
+
+## v1604 — kaiju levels (Harley)
+- Every Boss Rush fight starts the kaiju at Lv 1. Each health bar you empty takes him up a level: level L has `hp1` × (1 + `hpGrow`%)^(L-1) health and hits for flat numbers × (1 + `dmgGrow`%)^(L-1). At `maxLv` (100) his bar never empties - a straight damage contest. `kaijuLevel(B, dealt)` works it out from the damage taken (the sim still gives him unlimited health underneath).
+- Damage is now flat (not tied to the player's stats): level 1 beam 300 to the fortress (3 hits), stomp 300 to each ground hero + 250 to the fortress. The fortress's own damage reduction, guards and Hex Shield still apply. Placeholder numbers (hp1 1000, +8%/+8%) - Harley wants to discuss what Lv 100 should look like.
+- Bar: "Lv N" + the current level's health + total damage; a "Kaiju Lv N!" banner on each level up. Result: damage + level reached.
+- Milestones are now on the highest level reached this run (default Lv 5 Books 20 · 10 Tokens 15 · 20 Research 300 · 35 Tokens 25 · 50 featured shards 10). Survival points removed. Leaderboard rows also store the level of the best fight and show it.
+- Server: LIVE_BR_DEFAULT / normalizeBR with hp1, hpGrow, dmgGrow, maxLv, flat beam / stomp / stompHero; a missing milestone list now falls back to the default track (an empty one was being saved). bossScore stores `lv`. Admin console Boss Rush card updated.
+- Headless (Lv40 Caelum/Kessa/Lyra): reached Lv 14 with 23,077 damage, fortress at 49%; leaderboard row saved with lv 14; no errors.

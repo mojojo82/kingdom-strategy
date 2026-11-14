@@ -313,18 +313,18 @@ function normalizeFF(f) {
   const P = f.pts || {}; return { on: f.on !== false, parity: num(f.parity, 0, 1, 0), pts: { ticket: num(P.ticket, 0, 1e5, 0), forge: num(P.forge, 0, 1e5, 0) }, ms };
 }
 /* v1599/v1600: Boss Rush - the kaiju, Tue-Thu (days = UTC weekdays, 0 = Sunday). He can't die: a damage ranker - your best single fight's damage ranks you in
-   your kingdom (bosslb, rank rewards after the run). Milestone points come from surviving: ptsSec per second alive + ptsFull for lasting all sec seconds.
-   Blast / stomp hit for a % of your fortress HP (stomp: % of each ground hero's HP too). */
-const LIVE_BR_DEFAULT = { on: true, days: [2, 3, 4], tries: 3, sec: 60, blast: 6, stomp: 5, stompHero: 35, blastEvery: 6, stompEvery: 10, blastFirst: 4, stompFirst: 9, ptsSec: 1, ptsFull: 40,
-  ms: [{ at: 100, items: { conquest_books: 20 } }, { at: 250, items: { event_tokens: 15 } }, { at: 450, items: { research: 300 } }, { at: 650, items: { event_tokens: 25 } }, { at: 800, items: { featured_shards: 10 } }],
+   your kingdom (bosslb, rank rewards after the run). v1604: levels - level L has hp1 x (1 + hpGrow%)^(L-1) health and hits for the flat beam / stomp /
+   stompHero numbers x (1 + dmgGrow%)^(L-1); at maxLv his bar never empties. Milestones (at) = highest level reached this run. */
+const LIVE_BR_DEFAULT = { on: true, days: [2, 3, 4], tries: 3, sec: 60, hp1: 1000, hpGrow: 8, dmgGrow: 8, maxLv: 100, beam: 300, stomp: 250, stompHero: 300, blastEvery: 6, stompEvery: 10, blastFirst: 4, stompFirst: 9,
+  ms: [{ at: 5, items: { conquest_books: 20 } }, { at: 10, items: { event_tokens: 15 } }, { at: 20, items: { research: 300 } }, { at: 35, items: { event_tokens: 25 } }, { at: 50, items: { featured_shards: 10 } }],
   rank: [{ to: 1, items: { featured_shards: 10 } }, { to: 3, items: { featured_shards: 5 } }, { to: 10, items: { event_tokens: 60 } }, { to: 50, items: { event_tokens: 40 } }, { to: 100, items: { event_tokens: 25 } }, { to: 0, items: { event_tokens: 10 } }] };
 function normalizeBR(b) {
   if (!b) return JSON.parse(JSON.stringify(LIVE_BR_DEFAULT));
-  const ms = (Array.isArray(b.ms) ? b.ms : []).slice(0, 12).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "Boss Rush milestone " + (i + 1) + " needs points"); })(), items: liveItems(m && m.items, "Boss Rush milestone " + (i + 1)) })).sort((x, y) => x.at - y.at);
+  const ms = !Array.isArray(b.ms) ? JSON.parse(JSON.stringify(LIVE_BR_DEFAULT.ms)) : b.ms.slice(0, 12).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "Boss Rush milestone " + (i + 1) + " needs a level"); })(), items: liveItems(m && m.items, "Boss Rush milestone " + (i + 1)) })).sort((x, y) => x.at - y.at); /* no list sent = the default track */
   const days = []; (Array.isArray(b.days) ? b.days : []).forEach((d) => { const v = num(d, 0, 6, -1); if (v >= 0 && days.indexOf(v) < 0) days.push(v); }); days.sort();
   const D = LIVE_BR_DEFAULT, g = (k, lo, hi) => num(b[k], lo, hi, D[k]);
-  return { on: b.on !== false, days: days.length ? days : D.days.slice(), tries: g("tries", 1, 20), sec: g("sec", 20, 180), blast: g("blast", 0, 100), stomp: g("stomp", 0, 100), stompHero: g("stompHero", 0, 100),
-    blastEvery: g("blastEvery", 2, 60), stompEvery: g("stompEvery", 3, 60), blastFirst: g("blastFirst", 1, 60), stompFirst: g("stompFirst", 1, 60), ptsSec: g("ptsSec", 0, 1000), ptsFull: g("ptsFull", 0, 100000), ms,
+  return { on: b.on !== false, days: days.length ? days : D.days.slice(), tries: g("tries", 1, 20), sec: g("sec", 20, 180), hp1: g("hp1", 1, 1e12), hpGrow: g("hpGrow", 0, 100), dmgGrow: g("dmgGrow", 0, 100), maxLv: g("maxLv", 1, 1000),
+    beam: g("beam", 0, 1e12), stomp: g("stomp", 0, 1e12), stompHero: g("stompHero", 0, 1e12), blastEvery: g("blastEvery", 2, 60), stompEvery: g("stompEvery", 3, 60), blastFirst: g("blastFirst", 1, 60), stompFirst: g("stompFirst", 1, 60), ms,
     rank: b.rank ? liveRankRows(b.rank, "Boss Rush rank") : JSON.parse(JSON.stringify(D.rank)) };
 }
 /* v1600: is the Boss Rush run of week w over (no run day left that week)? Weeks start Monday (same as arenaKeys). */

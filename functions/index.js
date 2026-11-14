@@ -401,8 +401,8 @@ exports.bossScore = wrap(async (req, uid, R, d) => {
   return db.runTransaction(async (tx) => {
     const s = await tx.get(ref), o = s.data() || {}, today = o.day === k.d ? (o.nd || 0) : 0;
     if (today >= (BR.tries || 3) + 2) throw new C.GameError("resource-exhausted", "daily limit");
-    const best = Math.max(o.dmg || 0, dmg);
-    tx.set(ref, { dmg: best, name, tag, at: now, day: k.d, nd: today + 1, fh: (lo.fhw && lo.fhw.hero) || null }, { merge: true }); /* fh: the run week's featured hero - rank rewards pay that hero even if claimed later */
+    const best = Math.max(o.dmg || 0, dmg), lv = Math.max(1, Math.min(1000, Math.trunc(+d.lv || 1))), bestLv = dmg >= (o.dmg || 0) ? lv : (o.lv || lv);
+    tx.set(ref, { dmg: best, lv: bestLv, name, tag, at: now, day: k.d, nd: today + 1, fh: (lo.fhw && lo.fhw.hero) || null }, { merge: true }); /* fh: the run week's featured hero - rank rewards pay that hero even if claimed later */
     return { w: k.w, best, isBest: dmg >= best };
   });
 });
