@@ -4890,3 +4890,9 @@ Harley's 3 points:
 ## v1584 - Conquest header bottom row no longer shifts (14 Nov 2026)
 - Harley (phone, foundry now at 60 FPS after v1583): the header's bottom row (valor, books, dmg/s, defeated, on screen) kept shifting a few px sideways. Cause: the slots had only a MINIMUM width; with Lilita (digits not all one width) "defeated" and "on screen" outgrew their minimum (11ch / 9.5ch) and, with space-between, pushed the others 1.5-4.5 px as the numbers changed.
 - Now the five slots are a FIXED width (width = their reserve, nowrap); Lilita reserves widened to 13ch / 10.5ch so even "1,234,567 defeated" fits. Headless (Blue + Lilita, and the default Chakra font), numbers changing every frame incl. a 7-digit defeated count: every slot moved 0 px (was up to 4.5 px); row still fits on one line.
+
+## v1585 - new fortress skin: Sanctum (14 Nov 2026)
+- Harley picked the bottom-right white-and-gold airship from the earlier concept sheet (art/originals/ships/mecha/ship_concepts_oldbrief_A.png). ChatGPT redraw on magenta (2 versions, Harley picked v2): two deck levels, no floating platform, no guns or turrets.
+- Layered skin (sanctumAnim): back = whole ship incl. both towers (riders stand in front of them), front = railings + everything below the decks (edge rows: rear deck 376, lower deck 432, prow 402 in the 1706-px original) so the riders' legs are covered. Spots (Harley): h4 rear deck, h1-h3 lower deck, h0 on the prow, lowered so the legs hide (0.540 / 0.600 / 0.576).
+- 1000 x 506 webp; cqScale 0.21464 (Bonewake length), lift 12, calm (floating, no shudder), meleeFront 0.81 (hull front edge at 76-88% height), SKIN_WSLOTS on the hull band under the lower deck, SKIN_HULLT [0.55, 0.68]. Art only, no combat code touched.
+- Headless: Conquest (foundry) and Arena (bot weapons off, same level) - riders on deck, legs behind the railings, guns on the hull, hull target mid-body; no console errors. Originals + mockups: art/originals/ships/holy/.
