@@ -5030,3 +5030,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Milestones are now on the highest level reached this run (default Lv 5 Books 20 · 10 Tokens 15 · 20 Research 300 · 35 Tokens 25 · 50 featured shards 10). Survival points removed. Leaderboard rows also store the level of the best fight and show it.
 - Server: LIVE_BR_DEFAULT / normalizeBR with hp1, hpGrow, dmgGrow, maxLv, flat beam / stomp / stompHero; a missing milestone list now falls back to the default track (an empty one was being saved). bossScore stores `lv`. Admin console Boss Rush card updated.
 - Headless (Lv40 Caelum/Kessa/Lyra): reached Lv 14 with 23,077 damage, fortress at 49%; leaderboard row saved with lv 14; no errors.
+
+## v1605 — kaiju: % of max HP effects fixed + whale damage test
+- Bug: weapon effects that deal a % of the enemy fortress's max HP (weapon `fortPct` hits, `boom`, Polar Flux card) used the kaiju's hidden unlimited health (1e15) - any account with weapons did hundreds of trillions of damage and hit Lv 100 at once. For the kaiju they now use the player's own fortress HP, as if fighting a mirror of yourself (same as an even Arena fight). `kaijuAiStats` marks `s.kaiju`.
+- Whale test (dev/balance/kaiju_whale.js; everything maxed, power ~146-154M, 60 s, average of 3 seeds, kaiju not attacking):
+  - no weapons, no Sword: ~1.0-1.1M · meta weapons Lv10: ~2.9-3.9M · Lv25: ~5.4-8.8M · Lv40: ~7.6-11.8M · Lv50: ~11.7-14.1M
+  - Lv50 weapons + Sword of Power 100 / 200 / 300 per lane: ~16-21M / ~20-24M / ~23-27M (best single fight ~35.5M)
+  - Sword 300 with no weapons: ~9.4-11.3M. Spread between seeds is large (±30%).
+- With the current placeholder curve (1,000 HP, +8% a level) reaching Lv 100 takes ~25.4M damage - about what a fully maxed whale does in an average fight. Placeholder hits are far too weak for whales (Lv 100 beam ~611k vs a 6.6M fortress) - nobody dies.

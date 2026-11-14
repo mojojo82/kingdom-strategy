@@ -13649,7 +13649,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1604"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1605"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24851,7 +24851,7 @@ function kaijuLevel(B, dealt) { /* v1604: his level from the damage taken this f
   while (lv < max && dealt >= need) { dealt -= need; lv++; need *= g; }
   return { lv: lv, into: dealt, need: lv >= max ? Infinity : need };
 }
-function kaijuAiStats(hp) { var s = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); s.maxHp = Math.max(1000, Math.round(hp)); return s; }
+function kaijuAiStats(hp) { var s = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); s.maxHp = Math.max(1000, Math.round(hp)); s.kaiju = true; return s; } /* kaiju: % of max HP effects use the player's own fortress HP instead (arenaMakeSim) */
 function kaijuDealt() { return Math.max(0, Math.floor((arenaAnim.aiMaxHp || KAIJU_INF) - (arenaAnim.aiHp || 0))); }
 function kaijuReport(dmg) {
   if (!ksFb() || !(dmg > 0)) return;
@@ -37654,7 +37654,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     // v968: Railgun shots fly too: fortress damage, hero knockouts, drone switch-off and Clone delay all happen when the shot lands.
     function fxRailLand() {
       var land = railQ.filter(function (q) { return q.at <= tick; }); if (!land.length) return; railQ = railQ.filter(function (q) { return q.at > tick; });
-      land.forEach(function (q) { var c = fxCtx(q.sd), O = c.O, P = q.p, m = q.m, ost = c.ost, fortRaw = ost.maxHp * (P.fortPct || 0) / 100 * m / (ost.dmgTakenMult || 1);
+      land.forEach(function (q) { var c = fxCtx(q.sd), O = c.O, P = q.p, m = q.m, ost = c.ost, fortRaw = (ost.kaiju ? playerStats.maxHp : ost.maxHp) * (P.fortPct || 0) / 100 * m / (ost.dmgTakenMult || 1); /* v1605: the kaiju has unlimited health - % hits count against a mirror of your own fortress */
         if (q.sd === 'P') playerDmg += fortRaw; else aiDmg += fortRaw;
         c.ohh && c.ohh.list.forEach(function (h) { if (h.ko) return; koMark(h); h.hp = 0; h.ko = true; h.reviveT = koCfg.reviveSec; h.kos++; h.d = 0; });
         O.droneOff = Math.max(O.droneOff, (P.droneOff || 0));
@@ -37730,7 +37730,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       // dead droids: Self-destruct, then remove
       c.hh && (c.hh.list = c.hh.list.filter(function (e) {
         if (!e.dead) return true;
-        if (e.boom > 0) { var raw = c.ost.maxHp * e.boom / 100 / (c.ost.dmgTakenMult || 1); if (sd === 'P') playerDmg += raw; else aiDmg += raw; }
+        if (e.boom > 0) { var raw = (c.ost.kaiju ? playerStats.maxHp : c.ost.maxHp) * e.boom / 100 / (c.ost.dmgTakenMult || 1); if (sd === 'P') playerDmg += raw; else aiDmg += raw; }
         delete c.hh.by[e.id]; var ix = c.st.attackers.findIndex(function (a) { return a.id === e.id; }); if (ix >= 0) c.st.attackers.splice(ix, 1); return false;
       }));
     });
@@ -37875,7 +37875,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (sd === 'P') cardPfP = true; else cardPfA = true;
         [pHH, aHH].forEach(function (hh0) { if (hh0) hh0.list.forEach(function (e) { if (e.ko || e.dead) return; e.hp -= e.max * cm.polarFlux.pct; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; } }); });
         if (!(cardInvP > 0)) playerHp = Math.max(0, playerHp - playerStats.maxHp * cm.polarFlux.pct);
-        if (!(cardInvA > 0)) aiHp = Math.max(0, aiHp - aiStats.maxHp * cm.polarFlux.pct);
+        if (!(cardInvA > 0)) aiHp = Math.max(0, aiHp - (aiStats.kaiju ? playerStats.maxHp : aiStats.maxHp) * cm.polarFlux.pct);
         hpS = sd === 'P' ? playerHp : aiHp; sim.cardFlux = (sim.cardFlux || 0) + 1;
       }
       if (cm.lastStand && hpS > 0 && !(sd === 'P' ? cardLsP : cardLsA) && hpS < mxS * cm.lastStand.below) { if (sd === 'P') { cardLsP = true; cardInvP = cm.lastStand.sec || 2; } else { cardLsA = true; cardInvA = cm.lastStand.sec || 2; } }
