@@ -5079,3 +5079,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1612 — Bram's Pressure Build switched off (Harley: "very very strong")
 - `disabled: true, note: "very very strong"`; a switched-off limit skill now does nothing in Conquest (`idleLimitSkill`) or Arena (`limitsRaw`). His card shows it as DISABLED. Bram has Piston Slam only for now.
 - Ranged vs melee, version by version (same test, dev/balance/ranged_vs_melee.js; ranged / melee win %): before v1607 **87/13** · v1607 (Crystal Focus gone) **64/36** · v1608 (Clean Code gone) **27/73** · v1609 (Pressure Build in) **21/79** · v1611 (Wing Guard, Faithful off) 23/77 · v1612 (Pressure Build off) **31/69**. The two team-damage passives were carrying ranged teams - Clean Code alone moved it 37 points. Melee teams with Bram are still the strongest (90-91%) even without his skill.
+
+## v1613 — Vesper's Clean Code back on her card, switched off (Harley: "very very strong")
+- Clean Code added back as her 2nd skill with `disabled: true, note: "very very strong"` and `perLevel: 0` (same pattern as Lyra's Eagle Eye), so it shows on her card but does nothing. Was +5% team damage per level.
+- Why: test with it ON (Vesper only, test only): ranged vs melee went from **31/69 to 67/33**; every 100% ranged team had Vesper.
+- Check on v1613 (dev/balance/ranged_vs_melee.js): ranged 31 / melee 69 - unchanged from v1612, so the skill is really off.
