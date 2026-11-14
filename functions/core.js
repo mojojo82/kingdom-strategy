@@ -312,6 +312,18 @@ function normalizeFF(f) {
   const ms = (Array.isArray(f.ms) ? f.ms : []).slice(0, 12).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "Forge Frenzy milestone " + (i + 1) + " needs points"); })(), items: liveItems(m && m.items, "Forge Frenzy milestone " + (i + 1)) })).sort((x, y) => x.at - y.at);
   const P = f.pts || {}; return { on: f.on !== false, parity: num(f.parity, 0, 1, 0), pts: { ticket: num(P.ticket, 0, 1e5, 0), forge: num(P.forge, 0, 1e5, 0) }, ms };
 }
+/* v1599: Boss Rush - the kaiju, Tue-Thu (days = UTC weekdays, 0 = Sunday). His HP = hp % of the damage your own team would deal him in sec seconds, so it is
+   equally fair for everyone; points = 1000 x the share of his HP you take off; blast / stomp hit for a % of your fortress HP (stomp: % of each ground hero's HP too). */
+const LIVE_BR_DEFAULT = { on: true, days: [2, 3, 4], tries: 3, sec: 60, hp: 120, blast: 6, stomp: 5, stompHero: 35, blastEvery: 6, stompEvery: 10, blastFirst: 4, stompFirst: 9,
+  ms: [{ at: 600, items: { conquest_books: 20 } }, { at: 1500, items: { event_tokens: 15 } }, { at: 2800, items: { research: 300 } }, { at: 4200, items: { event_tokens: 25 } }, { at: 5500, items: { featured_shards: 10 } }] };
+function normalizeBR(b) {
+  if (!b) return JSON.parse(JSON.stringify(LIVE_BR_DEFAULT));
+  const ms = (Array.isArray(b.ms) ? b.ms : []).slice(0, 12).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "Boss Rush milestone " + (i + 1) + " needs points"); })(), items: liveItems(m && m.items, "Boss Rush milestone " + (i + 1)) })).sort((x, y) => x.at - y.at);
+  const days = []; (Array.isArray(b.days) ? b.days : []).forEach((d) => { const v = num(d, 0, 6, -1); if (v >= 0 && days.indexOf(v) < 0) days.push(v); }); days.sort();
+  const D = LIVE_BR_DEFAULT, g = (k, lo, hi) => num(b[k], lo, hi, D[k]);
+  return { on: b.on !== false, days: days.length ? days : D.days.slice(), tries: g("tries", 1, 20), sec: g("sec", 20, 180), hp: g("hp", 10, 1000), blast: g("blast", 0, 100), stomp: g("stomp", 0, 100), stompHero: g("stompHero", 0, 100),
+    blastEvery: g("blastEvery", 2, 60), stompEvery: g("stompEvery", 3, 60), blastFirst: g("blastFirst", 1, 60), stompFirst: g("stompFirst", 1, 60), ms };
+}
 function normalizeLiveops(c) {
   c = c || {}; const f = c.fhw || {}, sh = c.shop || {}, wk = c.wk || {}, pts = {}, P = f.pts || {};
   ["kill", "arena", "camp", "monster", "ticket"].forEach((k) => { pts[k] = num(P[k], 0, 100000, 0); });
@@ -326,7 +338,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {
@@ -590,5 +602,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

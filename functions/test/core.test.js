@@ -261,4 +261,10 @@ t("v1596 popup deals in the shop config", () => {
   const sh = C.normalizeShop({ popups: [{ pack: "starter", hero: "caelum", value: "800%", end: 2e12 }] }, ["starter"]); assert.strictEqual(sh.popups[0].hero, "caelum"); assert.strictEqual(sh.popups[0].pop, true);
   assert.throws(() => C.normalizeShop({ popups: [{ pack: "nope" }] }, ["starter"]), /unknown pack/); assert.deepStrictEqual(C.normalizeShop({}, []).popups, []);
 });
+t("v1599 Boss Rush config", () => {
+  const L = C.normalizeLiveops({}); assert.deepStrictEqual(L.br.days, [2, 3, 4]); assert.strictEqual(L.br.tries, 3);
+  const b = C.normalizeLiveops({ br: { days: [4, 2, 9, 2], tries: 99, hp: 150, ms: [{ at: 50, items: { featured_shards: 5 } }] } }).br;
+  assert.deepStrictEqual(b.days, [2, 4]); assert.strictEqual(b.tries, 3, "out of range -> default"); assert.strictEqual(b.hp, 150); assert.strictEqual(b.ms[0].items.featured_shards, 5);
+  assert.throws(() => C.normalizeLiveops({ br: { ms: [{ at: 10, items: { gems: 5 } }] } }), /gems/);
+});
 console.log(n + " tests passed");
