@@ -257,4 +257,8 @@ t("v1594 arena event: defaults, rank rewards, keys", () => {
   assert.throws(() => C.normalizeLiveops({ arena: { shop: { items: [{ item: "gems" }] } } }), /can't sell gems/);
   assert.ok(C.ITEMS.arena_medals);
 });
+t("v1596 popup deals in the shop config", () => {
+  const sh = C.normalizeShop({ popups: [{ pack: "starter", hero: "caelum", value: "800%", end: 2e12 }] }, ["starter"]); assert.strictEqual(sh.popups[0].hero, "caelum"); assert.strictEqual(sh.popups[0].pop, true);
+  assert.throws(() => C.normalizeShop({ popups: [{ pack: "nope" }] }, ["starter"]), /unknown pack/); assert.deepStrictEqual(C.normalizeShop({}, []).popups, []);
+});
 console.log(n + " tests passed");

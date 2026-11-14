@@ -191,6 +191,16 @@ function normalizeShop(shop, packIds) {
       return { pack, start, end, badge: String(e.badge || "").trim().slice(0, 20) };
     }) });
   });
+  /* v1596: popup deals - a pack shown as its own window (Kingshot style): a map icon while it runs and, if 'pop', it opens by itself once a
+     day. hero = whose portrait sits on the deal (optional), value = the badge ("800%"). Start / end optional. */
+  const pops = Array.isArray(shop.popups) ? shop.popups : []; if (pops.length > 20) throw new GameError("invalid-argument", "max 20 popup deals");
+  out.popups = pops.map((x, i) => {
+    const pack = String((x && x.pack) || ""); if (!pack || (ok && ok.indexOf(pack) < 0)) throw new GameError("invalid-argument", "popup deal " + (i + 1) + ": unknown pack " + pack);
+    const start = +x.start > 0 ? Math.trunc(+x.start) : null, end = +x.end > 0 ? Math.trunc(+x.end) : null;
+    if (start && end && end <= start) throw new GameError("invalid-argument", "popup deal " + (i + 1) + " ends before it starts");
+    const hero = String(x.hero || "").toLowerCase(); if (hero && !/^[a-z0-9_]{1,24}$/.test(hero)) throw new GameError("invalid-argument", "popup deal " + (i + 1) + ": bad hero");
+    return { pack, start, end, hero, value: String(x.value || "").trim().slice(0, 12), title: String(x.title || "").trim().slice(0, 40), pop: x.pop !== false, active: x.active !== false };
+  });
   /* v945: top-up reward ladders. period: daily | weekly | monthly | lifetime | event (event = between start and end). */
   const tops = Array.isArray(shop.topups) ? shop.topups : []; if (tops.length > 10) throw new GameError("invalid-argument", "max 10 top-up ladders");
   const seenL = {}; out.topups = tops.map((l) => {

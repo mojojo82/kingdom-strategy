@@ -456,7 +456,7 @@ exports.adminMaintenance = wrap(async (req, uid, R, d) => {
 });
 async function shopConfig(R, packIds) {
   const s = await db.doc(R + "config/shop").get(); const d = s.exists ? s.data() : {};
-  try { return C.normalizeShop({ tiers: d.tiers, topups: d.topups, tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
+  try { return C.normalizeShop({ tiers: d.tiers, topups: d.topups, popups: (d.popups || []).filter((x) => !packIds || packIds.indexOf(x.pack) >= 0), tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
   catch (e) { return C.normalizeShop({}, null); }
 }
 async function liveopsConfig(R) { const s = await db.doc(R + "config/liveops").get(); if (!s.exists) return null; try { return C.normalizeLiveops(s.data()); } catch (e) { return null; } }
@@ -501,7 +501,7 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
 exports.adminSaveShop = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);
   const packs = await allPacks(R), cur = await shopConfig(R, Object.keys(packs));
-  const shop = C.normalizeShop({ tiers: d.tiers || cur.tiers, tabs: d.tabs || cur.tabs, topups: d.topups || cur.topups }, Object.keys(packs));
+  const shop = C.normalizeShop({ tiers: d.tiers || cur.tiers, tabs: d.tabs || cur.tabs, topups: d.topups || cur.topups, popups: d.popups || cur.popups }, Object.keys(packs));
   shop.updatedAt = Date.now(); shop.updatedBy = uid;
   await db.doc(R + "config/shop").set(shop);
   await db.collection(R + "adminlog").add({ by: uid, shop: { tabs: shop.tabs.map((t) => t.name + ":" + t.items.length), tiers: Object.keys(shop.tiers).length, topups: shop.topups.map((l) => l.name + ":" + l.period) }, at: shop.updatedAt });

@@ -4967,3 +4967,10 @@ Step 2 of the event plan (Harley: Arena every day, every week; maybe 5 days a we
 ## v1595 - Events window touch-ups (14 Nov 2026)
 - Harley: white text on the cyan buttons (shop prices, Go, Fight, Hero details) instead of dark text.
 - Task rows: the "+N Medals / Activity" part never splits across two lines; the Arena "each win +20 · beating a higher-rated governor +10 more" line is one flowing sentence beside the Fight button (it was broken into pieces and overlapped the track labels).
+
+## v1596 - Popup deals (14 Nov 2026)
+Step 3 (part 1). Harley: "for popup deals they often are not on a tab, but its own self contained window"; per-hero fragment packs on rotation will use this.
+- **Popup deal window** (dealOpen): ChatGPT treasure-vault banner (art/originals/events/deals/, art/events/banner_deal.webp) with the chosen hero's portrait (or the pack's own banner when no hero), title, description, timer, round "800% VALUE" badge, the pack's items as Kingshot tiles with names, buy limit, price from the pack's price tier in the player's currency. Payments aren't connected yet: the button says so (same as the shop).
+- Each running deal gets an icon on the World map dock (hero face or the shop icon); deals with "Pops up" open by themselves once a UTC day on the World map, one at a time.
+- **Admin console > Shop > 🪟 Popup deals**: pick a pack from the Pack library, a hero (optional), title, value badge, from / until, Pops up, Active. Saved in config/shop popups (normalizeShop; deleted packs drop out). Unit test added.
+- Headless (dev/shots_deals_v1596.jpg): a Caelum Hero Pack (30 shards, 500 gems, Hero Selector Chest, 5x 1h) popped up by itself; dock shows both deals; buy shows the payments note; a no-hero deal uses the vault banner; no errors.

@@ -135,7 +135,7 @@
   <section class="card" id="shopCard">
     <h2>🛒 Shop &amp; packs</h2>
     <div class="muted">Make each pack once in the library, then place it in shop tabs (Deals, Shop…). Packs ticked 🎁 also appear in the mail boxes' gift picker. Everything here belongs to the selected environment (test or live). Payments aren't connected yet, so players see the shop with a "coming soon" buy button.</div>
-    <div class="tabs" id="shTabs" style="margin-top:10px"><button data-s="lib" class="on">📦 Pack library</button><button data-s="tabs">🗂️ Shop tabs</button><button data-s="tiers">💲 Price tiers</button><button data-s="topups">🏆 Top-up rewards</button></div>
+    <div class="tabs" id="shTabs" style="margin-top:10px"><button data-s="lib" class="on">📦 Pack library</button><button data-s="tabs">🗂️ Shop tabs</button><button data-s="tiers">💲 Price tiers</button><button data-s="topups">🏆 Top-up rewards</button><button data-s="popups">🪟 Popup deals</button></div>
     <div id="shLib">
       <div class="row"><input class="grow" id="pkSearch" placeholder="Search packs…"><select id="pkFilter"><option value="">All packs</option><option value="gift">🎁 Mail gifts</option><option value="shown">Shown in a tab</option><option value="hidden">Not shown anywhere</option><option value="inactive">Inactive</option></select></div>
       <div id="pkGrid" class="pkgrid" style="margin-top:10px"></div>
@@ -162,6 +162,11 @@
       <div class="muted">Every purchase gives top-up points (set per price tier). Each ladder adds them up over its period - daily, weekly, monthly (reset 00:00 UTC; weeks start Monday), lifetime, or an event between two dates - and players claim a reward at each milestone. Gems go straight to the player; other items arrive by mail.</div>
       <div id="topEd" style="margin-top:10px"></div>
       <div class="row" style="margin-top:10px"><button class="b ghost" id="topAdd">+ Add ladder</button><button class="b" id="topSave">Save top-up rewards</button></div>
+    </div>
+    <div id="shPops" class="hide">
+      <div class="muted">A popup deal shows one pack in its own window (like Kingshot): it gets an icon on the World map while it runs, and if "Pops up" is ticked it also opens by itself once a day. Pick a hero to put their portrait on it (e.g. a hero shard pack), and a value badge like "800%". Make the pack itself in the Pack library first.</div>
+      <div id="popEd" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="b ghost" id="popAdd">+ Add popup deal</button><button class="b" id="popSave">Save popup deals</button></div>
     </div>
     <div id="shTiers" class="hide">
       <div class="muted">One row per price tier; each pack picks a tier. Change a row and every pack on that tier changes. Tier 0 = free. The MXN / EUR / TRY numbers were filled in as rough suggestions - check them (Turkish lira prices usually need a refresh every few months).</div>
@@ -555,7 +560,7 @@
   function pkClear() { $("pkId").value = ""; $("pkIcon").value = "📦"; $("pkName").value = ""; $("pkDesc").value = ""; $("pkTier").value = "1"; $("pkLimit").value = "0"; $("pkReset").value = "none"; $("pkMail").checked = false; $("pkActive").checked = true; $("pkFormTitle").textContent = "➕ New pack"; fillRows("pkItems", {}); setBanner(null); }
   $("pkNew").onclick = pkClear; $("pkAdd").onclick = function () { addItemRow("pkItems"); };
   $("pkSearch").oninput = renderLib; $("pkFilter").onchange = renderLib;
-  [].forEach.call($("shTabs").children, function (b) { b.onclick = function () { [].forEach.call($("shTabs").children, function (x) { x.classList.toggle("on", x === b); }); var v = b.getAttribute("data-s"); $("shLib").classList.toggle("hide", v !== "lib"); $("shTabsView").classList.toggle("hide", v !== "tabs"); $("shTiers").classList.toggle("hide", v !== "tiers"); $("shTops").classList.toggle("hide", v !== "topups"); }; });
+  [].forEach.call($("shTabs").children, function (b) { b.onclick = function () { [].forEach.call($("shTabs").children, function (x) { x.classList.toggle("on", x === b); }); var v = b.getAttribute("data-s"); $("shLib").classList.toggle("hide", v !== "lib"); $("shTabsView").classList.toggle("hide", v !== "tabs"); $("shTiers").classList.toggle("hide", v !== "tiers"); $("shTops").classList.toggle("hide", v !== "topups"); $("shPops").classList.toggle("hide", v !== "popups"); if (v === "popups") renderPopEd(); }; });
   $("pkGrid").onclick = function (e) {
     var t = e.target, id;
     if ((id = t.getAttribute("data-pkprev"))) { showPreview(JSON.parse(JSON.stringify(S.catalog.packs[id])), placementOf(id)); return; }
@@ -840,6 +845,24 @@ function ksEvCardHtml(ev, prog, claimed, end, now, esc) {
     call("adminMaintenance", { set: { on: false } }).then(function (m) { mtShow(m); $("mtMsg").value = ""; $("mtUntil").value = ""; toast("Maintenance is OFF"); }, function (e) { toast(errText(e), true); });
   };
 
+
+  // ---- v1596: popup deals (shop config popups) ----
+  function popSync() { var D = S.shopDraft; if (!D || !$("popEd").firstChild) return; D.popups = [].slice.call($("popEd").querySelectorAll("[data-pop]")).map(function (r) { var q = function (f) { return r.querySelector('[data-pf="' + f + '"]'); };
+    return { pack: q("pack").value, hero: q("hero").value, title: q("title").value, value: q("value").value, start: q("start").value ? new Date(q("start").value).getTime() : null, end: q("end").value ? new Date(q("end").value).getTime() : null, pop: q("pop").checked, active: q("active").checked }; }); }
+  function renderPopEd() {
+    var D = S.shopDraft; if (!D) return; D.popups = D.popups || []; var P = S.catalog.packs || {}, ids = packIds(), heroes = Object.keys(S.catalog.items).filter(function (k) { return /^shards_/.test(k); }).map(function (k) { return k.slice(7); });
+    $("popEd").innerHTML = D.popups.map(function (x, i) {
+      return '<div class="tabbox" data-pop="' + i + '"><div class="row"><span class="muted">Pack</span><select data-pf="pack" class="grow">' + ids.map(function (k) { return '<option value="' + esc(k) + '"' + (k === x.pack ? " selected" : "") + ">" + esc((P[k].icon || "") + " " + P[k].name) + "</option>"; }).join("") + "</select>"
+        + '<span class="muted">Hero</span><select data-pf="hero"><option value="">— none (pack banner) —</option>' + heroes.map(function (k) { return '<option value="' + k + '"' + (k === x.hero ? " selected" : "") + ">" + esc(itemLabel("shards_" + k).replace(/ shards$/, "")) + "</option>"; }).join("") + "</select></div>"
+        + '<div class="row" style="margin-top:6px"><input data-pf="title" value="' + esc(x.title || "") + '" placeholder="Title (optional - else the pack name)" maxlength="40" class="grow"><input data-pf="value" value="' + esc(x.value || "") + '" placeholder="Value badge e.g. 800%" maxlength="12" style="width:150px"></div>'
+        + '<div class="row" style="margin-top:6px"><span class="muted">from</span><input type="datetime-local" data-pf="start" value="' + toLocalInput(x.start) + '"><span class="muted">until</span><input type="datetime-local" data-pf="end" value="' + toLocalInput(x.end) + '">'
+        + '<label><input type="checkbox" data-pf="pop"' + (x.pop !== false ? " checked" : "") + '> Pops up (once a day)</label><label><input type="checkbox" data-pf="active"' + (x.active !== false ? " checked" : "") + '> Active</label><button class="b ghost mini" data-popdel="' + i + '">Remove</button></div></div>';
+    }).join("") || '<div class="muted">No popup deals yet.</div>';
+  }
+  $("popEd").onclick = function (e) { var v = e.target.getAttribute("data-popdel"); if (v == null) return; popSync(); S.shopDraft.popups.splice(+v, 1); renderPopEd(); };
+  $("popAdd").onclick = function () { var ids = packIds(); if (!ids.length) { toast("Make a pack in the Pack library first", true); return; } popSync(); S.shopDraft.popups = S.shopDraft.popups || []; S.shopDraft.popups.push({ pack: ids[0], hero: "", title: "", value: "", start: null, end: null, pop: true, active: true }); renderPopEd(); };
+  $("popSave").onclick = function () { popSync(); if (!confirmEnv("Save popup deals? Players see the change straight away.")) return;
+    call("adminSaveShop", { popups: S.shopDraft.popups }).then(function (r) { setShop(r.packs, r.shop); renderPopEd(); toast("Popup deals saved"); }, function (e) { toast(errText(e), true); }); };
   // ---- v1593: live events (config/liveops) - Featured Hero Week, Event Shop, Weekly Chest, Event Tokens on daily chests ----
   var LIVE_DEFAULT = {
   fhw: { hero: "caelum", killsPer: 100, pts: { kill: 5, arena: 20, camp: 15, monster: 15, ticket: 3 },

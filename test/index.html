@@ -2789,6 +2789,33 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-rr { flex:0 0 calc(33.3% - 6px); box-sizing:border-box; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.28); border:1px dashed rgba(201,162,74,.5); border-radius:9px; padding:5px 7px; font-size:11.5px; font-weight:800; color:#f6e2a6; }
   #evWin .evw-rr span { flex:1; min-width:0; } #evWin .evw-rr .evw-tile { width:38px; height:38px; margin:0; flex:none; }
 
+  /* v1596: popup deal window */
+  #dealPop { position:fixed; inset:0; z-index:2147482100; display:none; align-items:center; justify-content:center; background:rgba(3,6,14,.72); padding:12px; font-family:var(--bodyfont,system-ui); color:#f3e9d2; }
+  #dealPop .dp-box { position:relative; width:min(420px,100%); max-height:calc(100vh - 24px); overflow-y:auto; scrollbar-width:none; background:linear-gradient(180deg,#1a2a44,#0f1a2e); border:3px solid #e9c46a; border-radius:16px; box-shadow:0 0 0 2px #5a3d1e, 0 12px 40px rgba(0,0,0,.7); }
+  #dealPop .dp-x { position:absolute; right:8px; top:8px; z-index:5; width:34px; height:34px; border-radius:50%; border:2px solid #e9c46a; background:radial-gradient(circle at 40% 35%,#7a2f1c,#3d140b); color:#fbe7b2; font-size:16px; font-weight:900; cursor:pointer; }
+  #dealPop .dp-ban { position:relative; height:250px; background:center 40%/cover; overflow:hidden; border-radius:13px 13px 0 0; }
+  #dealPop .dp-ban::after { content:""; position:absolute; inset:auto 0 0 0; height:80px; background:linear-gradient(180deg,rgba(15,26,46,0),#0f1a2e); }
+  #dealPop .dp-hero { position:absolute; right:-14px; bottom:-30px; height:280px; z-index:1; filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)); -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22%); mask-image:linear-gradient(90deg,transparent 0,#000 22%); }
+  #dealPop .dp-herocard { position:absolute; right:16px; top:30px; height:180px; z-index:1; border-radius:12px; border:3px solid #f0c95f; box-shadow:0 6px 16px rgba(0,0,0,.6); }
+  #dealPop .dp-tt { position:absolute; left:12px; top:14px; width:58%; z-index:2; }
+  #dealPop .dp-tt .k { display:inline-block; font-size:11px; font-weight:800; letter-spacing:1px; color:#fff; background:linear-gradient(#e2513d,#a8261a); padding:3px 9px; border-radius:20px; }
+  #dealPop .dp-tt h1 { margin:6px 0 4px; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:27px; line-height:1.05; color:#fff; -webkit-text-stroke:2.2px #2a1c08; paint-order:stroke fill; text-shadow:0 3px 0 rgba(0,0,0,.4); }
+  #dealPop .dp-tt .ds { font-size:12px; line-height:1.3; color:#f6e7c4; text-shadow:0 1px 2px #000; }
+  #dealPop .dp-tt .tm { margin-top:8px; display:inline-flex; gap:5px; font-size:12px; font-weight:700; background:rgba(5,10,20,.72); border:1px solid rgba(240,201,95,.6); border-radius:16px; padding:4px 10px; }
+  #dealPop .dp-val { position:absolute; left:12px; bottom:14px; z-index:3; width:74px; height:74px; border-radius:50%; background:radial-gradient(circle at 40% 35%,#ffe28a,#e0901e); border:3px solid #fff3c4; box-shadow:0 3px 8px rgba(0,0,0,.5); display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-10deg); }
+  #dealPop .dp-val b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:21px; color:#fff; -webkit-text-stroke:2px #7a3a08; paint-order:stroke fill; line-height:1; }
+  #dealPop .dp-val small { font-size:10px; font-weight:900; color:#7a3a08; letter-spacing:1px; }
+  #dealPop .dp-items { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:12px 12px 4px; }
+  #dealPop .dp-it { text-align:center; min-width:0; } #dealPop .dp-it .nm { margin-top:4px; font-size:10.5px; font-weight:700; color:#e8d3a6; line-height:1.15; overflow-wrap:anywhere; }
+  #dealPop .evw-tile { position:relative; width:100%; aspect-ratio:1; height:auto; border-radius:10px; border:2px solid rgba(255,255,255,.6); background:linear-gradient(#7d848c,#b9bec4); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 0 rgba(0,0,0,.45); }
+  #dealPop .r1 { background:linear-gradient(#2f9a63,#7fd8a4); } #dealPop .r2 { background:linear-gradient(#2a73c9,#6cc0f5); } #dealPop .r3 { background:linear-gradient(#6a52d6,#b3a3f5); } #dealPop .r4 { background:linear-gradient(#f0861c,#ffc56b); }
+  #dealPop .evw-tile .art { width:86%; height:86%; display:flex; align-items:center; justify-content:center; line-height:0; } #dealPop .evw-tile .art img { width:100%; height:100%; object-fit:contain; }
+  #dealPop .evw-tile img.face { width:100%; height:100%; object-fit:cover; object-position:50% 12%; border-radius:8px; } #dealPop .evw-tile .pz { position:absolute; left:-5px; top:-6px; width:20px; height:20px; }
+  #dealPop .evw-tile > b { position:absolute; right:3px; bottom:0; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:15px; color:#fff; -webkit-text-stroke:2px #3a2f28; paint-order:stroke fill; }
+  #dealPop .evw-tile > i { position:absolute; left:0; right:0; top:1px; font-style:normal; font-family:'KS Title','Lilita One',sans-serif; font-size:10px; color:#fff; -webkit-text-stroke:1.6px #3a2f28; paint-order:stroke fill; }
+  #dealPop .dp-lim { text-align:center; font-size:11.5px; color:#93a2ba; margin-top:4px; }
+  #dealPop .dp-buy { display:block; width:calc(100% - 24px); margin:10px 12px 4px; padding:11px; border:0; border-radius:10px; font-family:'KS Title','Lilita One',sans-serif; font-size:22px; color:#fff; -webkit-text-stroke:1.4px #0a3f52; paint-order:stroke fill; background:#2bb3d9; box-shadow:0 3px 0 #156a85; cursor:pointer; }
+  #dealPop .dp-note { min-height:16px; margin:2px 12px 12px; text-align:center; font-size:12px; color:#ffd27a; }
   #bagPop .bg-got { margin-top:8px; color:#7fe08a; font-weight:800; text-align:center; }
   #bagPop .bg-tg { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; }
   #mapIdleBtn .mmi { font-size:22px; line-height:1; margin-top:-6px; }
@@ -13602,7 +13629,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1595"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1596"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19478,6 +19505,7 @@ function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
   if ((m = /^item_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = GI_DEFS[k]; if (d) return { art: itemArt(d.art), name: d.name, rar: d.rar, top: d.top || "" };
     d = ITEM_DEFS[k]; if (d) return { art: d.kind === "res" ? ico(d.res) : itemArt(d.kind === "choice" ? "chest_res_custom" : "chest_res_supply"), name: d.name, rar: bagRarity(d), top: d.kind === "choice" ? "Lv." + d.lv : itemAmtLabel(d.amt) }; }
   if ((m = /^speedup_([a-z]+)_([0-9]+[mh])$/.exec(id))) { var kind = m[1] + "_" + m[2], z = SU_SIZES.filter(function (x) { return x[0] === m[2]; })[0] || [m[2], 0, 2]; return { art: suArt(m[1]), name: suName(kind), rar: z[2], top: m[2].replace("m", " min") }; }
+  if (id === "gems") return { art: ico("gems"), name: "Gems", rar: 3 }; /* v1596 (deals) */
   if (id === "event_tokens") return { art: '<img alt="" src="' + evArt("icon_token") + '">', name: "Event Tokens", rar: 3 };
   if (id === "arena_medals") return { art: '<img alt="" src="' + evArt("icon_arena_medal") + '">', name: "Arena Medals", rar: 3 }; /* v1594 */
   var R = { weapon_tickets: ["ticket", "Weapon draw tickets", 2], conquest_books: ["books", "Conquest Books", 2], valor: ["valor", "Valor", 1], energon: ["energon", "Energon", 1], research: ["rp", "Research Points", 1], food: ["food", "Food", 1], wood: ["wood", "Wood", 1], stone: ["stone", "Stone", 1], gold: ["gold", "Gold", 2] }[id];
@@ -19667,6 +19695,34 @@ function evArenaClick(t) { var b;
     return true; }
   return false;
 }
+/* ---- v1596: popup deals (Kingshot style): a pack in its own window. Admin console > Shop > Popup deals (config/shop popups). A map icon
+   while it runs; 'pop' deals open by themselves once a UTC day on the World map. Payments aren't connected yet (same note as the shop). ---- */
+function dealLive() { var now = Date.now(), P = KSS.packs || {}; return ((KSS.shop && KSS.shop.popups) || []).map(function (d, i) { return Object.assign({ i: i }, d); }).filter(function (d) {
+  var p = P[d.pack]; return d.active !== false && p && p.active !== false && (!d.start || now >= d.start) && (!d.end || now < d.end); }); }
+function dealOpen(i) {
+  var d = dealLive().filter(function (x) { return x.i === i; })[0]; if (!d) return; var p = KSS.packs[d.pack], ov = document.getElementById("dealPop");
+  if (!ov) { ov = document.createElement("div"); ov.id = "dealPop"; document.body.appendChild(ov);
+    ov.addEventListener("click", function (e) { var t = e.target; if (t === ov || (t.closest && t.closest("[data-dpx]"))) { ov.style.display = "none"; return; }
+      if (t.closest && t.closest("[data-dpbuy]")) { var n = ov.querySelector(".dp-note"); if (n) n.textContent = "💳 Payments aren't connected yet - nothing was charged."; try { game.log("🛒 Deal \"" + t.closest("[data-dpbuy]").getAttribute("data-dpbuy") + "\" - payments coming soon."); } catch (er) {} } }); }
+  if (!KSS.cur) KSS.cur = ksShopCurrency();
+  var hk = d.hero, por = hk ? (EV_HERO_ART[hk] ? '<img class="dp-hero" alt="" src="' + evArt(EV_HERO_ART[hk]) + '">' : evFace(hk) ? '<img class="dp-herocard" alt="" src="' + evFace(hk) + '">' : "") : "";
+  var bg = typeof p.banner === "string" && /^data:image\//.test(p.banner) && !hk ? p.banner : evArt("banner_deal");
+  var items = Object.keys(p.items || {});
+  ov.innerHTML = '<div class="dp-box"><button type="button" class="dp-x" data-dpx="1" aria-label="Close">✕</button>'
+    + '<div class="dp-ban" style="background-image:url(' + bg + ')">' + por + '<div class="dp-tt"><span class="k">LIMITED DEAL</span><h1>' + escapeHtml(d.title || p.name) + "</h1>" + (p.desc ? '<div class="ds">' + escapeHtml(p.desc) + "</div>" : "")
+    + (d.end ? '<span class="tm">⏳ <b data-dpend="' + d.end + '">' + ksShopLeft(d.end - Date.now()) + "</b></span>" : "") + "</div>" + (d.value ? '<div class="dp-val"><b>' + escapeHtml(d.value) + "</b><small>VALUE</small></div>" : "") + "</div>"
+    + '<div class="dp-items">' + items.map(function (k) { var I = evItemInfo(k); return '<div class="dp-it">' + evTile(k, ksItemQty(k, p.items[k])) + '<div class="nm">' + escapeHtml(I.name) + "</div></div>"; }).join("") + "</div>"
+    + (p.limit ? '<div class="dp-lim">Limit ' + p.limit + (p.reset === "daily" ? " a day" : p.reset === "weekly" ? " a week" : p.reset === "monthly" ? " a month" : "") + "</div>" : "")
+    + '<button type="button" class="dp-buy" data-dpbuy="' + escapeHtml(p.name) + '">' + escapeHtml(ksShopPrice(p.tier)) + '</button><div class="dp-note"></div></div>';
+  ov.style.display = "flex";
+  clearInterval(dealOpen.t); dealOpen.t = setInterval(function () { if (ov.style.display === "none") { clearInterval(dealOpen.t); return; } [].forEach.call(ov.querySelectorAll("[data-dpend]"), function (e) { e.textContent = ksShopLeft(+e.getAttribute("data-dpend") - Date.now()); }); }, 1000);
+}
+function dealAutoPop() { /* once a UTC day per deal, on the World map, one at a time */
+  if (typeof appScreen === "undefined" || appScreen !== "world" || document.getElementById("dealPop") && document.getElementById("dealPop").style.display === "flex") return;
+  var day = Math.floor(Date.now() / 86400000), d = dealLive().filter(function (x) { if (x.pop === false) return false; try { return localStorage.getItem("ks_dealpop_" + x.pack + "_" + day) !== "1"; } catch (e) { return false; } })[0];
+  if (!d) return; try { localStorage.setItem("ks_dealpop_" + d.pack + "_" + day, "1"); } catch (e) {} dealOpen(d.i);
+}
+setInterval(function () { try { if (window.KS_BACKEND && KS_BACKEND.call && typeof PLAYER_ID !== "undefined" && PLAYER_ID) { ksShopSubscribe(); dealAutoPop(); } } catch (e) {} }, 6000);
 /* v948: World-map shortcuts for running events + Deals. Red dot when there's a reward ready. */
 function ksEvReady(ev, now) {
   var c = ksEvClaimed(ev), ms = ev.milestones || [];
@@ -19679,6 +19735,7 @@ function ksEvDockUpdate() {
   ksEvSubscribe(); var now = Date.now(), items = [];
   var evr = game.evReady(); items.push({ k: "evw", label: "Events", icon: '<img alt="" src="' + evArt("icon_fhw") + '" style="width:100%;height:100%;object-fit:contain">', has: evr.fhw + evr.daily + evr.arena > 0 || ksEvLive().some(function (ev) { return ev.goal !== "signin" && ksEvReady(ev, now); }) }); /* v1593 */
   ksEvLive().filter(function (ev) { return ev.goal === "signin"; }).forEach(function (ev) { items.push({ k: "ev:" + ev.id, label: ev.goal === "signin" ? "Sign-in" : ev.name, icon: ev.goal === "signin" ? '<span class="cal"><i></i><b>' + Math.min(99, (ev.milestones || []).length) + "</b></span>" : escapeHtml(ev.icon || "🎉"), has: ksEvReady(ev, now) }); });
+  try { dealLive().forEach(function (dl) { var pk = KSS.packs[dl.pack] || {}, fc = dl.hero ? evFace(dl.hero) : ""; items.push({ k: "deal:" + dl.i, label: dl.title || pk.name || "Deal", icon: '<img alt="" src="' + (fc || evArt("icon_shop")) + '" style="width:100%;height:100%;object-fit:' + (fc ? "cover;border-radius:8px" : "contain") + '">', has: false }); }); } catch (e) {} /* v1596 popup deals */
   items.push({ k: "shop", label: "Deals", icon: "🛒", has: false });
   var sig = items.map(function (x) { return x.k + (x.has ? "!" : "") + x.label + x.icon; }).join("|");
   if (d.getAttribute("data-sig") !== sig) {
@@ -19688,7 +19745,7 @@ function ksEvDockUpdate() {
   if (d.className !== "on") d.className = "on";
 }
 (function () { var d = document.getElementById("ksEvDock"); if (!d) return; d.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-ek]"); if (!b) return; e.stopPropagation(); var k = b.getAttribute("data-ek");
-  if (k === "shop") { if (typeof ksShopOpen === "function") ksShopOpen(); return; } if (k === "evw") { evWinOpen("fhw"); return; } KSE.tab = k.slice(3); ksEvOpen(); });
+  if (k === "shop") { if (typeof ksShopOpen === "function") ksShopOpen(); return; } if (k === "evw") { evWinOpen("fhw"); return; } if (k.indexOf("deal:") === 0) { dealOpen(+k.slice(5)); return; } KSE.tab = k.slice(3); ksEvOpen(); });
   ["pointerdown", "mousedown", "touchstart", "wheel"].forEach(function (t) { d.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true }); }); /* don't drag the map */
   setInterval(ksEvDockUpdate, 1000); })();
 function ksMailClaimAll() { /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
