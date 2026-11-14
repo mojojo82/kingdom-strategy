@@ -102,13 +102,13 @@
       var map = drawMesh(ctx, tx, p, T);
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 1; var c = map(P.core[0], P.core[1]); glowAt(ctx, c[0], c[1], 90 * scale, "200,80,255", Math.min(1, p.core) * 0.9);
-      if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1] + 2); glowAt(ctx, m[0], m[1], (40 + 50 * p.mouth) * scale, "230,140,255", p.mouth); glowAt(ctx, m[0], m[1], 22 * scale * p.mouth, "255,255,255", p.mouth); }
+      if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1] + 2); glowAt(ctx, m[0], m[1], (36 + 40 * p.mouth) * scale, "230,140,255", 0.5 * p.mouth); glowAt(ctx, m[0], m[1], 14 * scale * p.mouth, "255,255,255", 0.45 * p.mouth); }
       if (p.beam > 0) { var m2 = map(P.mouth[0], P.mouth[1]), tg = beamToX && beamToX.x != null ? beamToX : { x: beamToX || 0, y: m2[1] }, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
         var dx = tg.x - m2[0], dy = tg.y - m2[1], L = Math.hypot(dx, dy), an = Math.atan2(dy, dx);
         ctx.save(); ctx.translate(m2[0], m2[1]); ctx.rotate(an);
         var gr = ctx.createLinearGradient(0, -th, 0, th); gr.addColorStop(0, "rgba(180,60,255,0)"); gr.addColorStop(0.3, "rgba(200,90,255,0.75)"); gr.addColorStop(0.5, "rgba(255,240,255,1)"); gr.addColorStop(0.7, "rgba(200,90,255,0.75)"); gr.addColorStop(1, "rgba(180,60,255,0)");
         ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, -th * 0.45); ctx.lineTo(L, -th); ctx.lineTo(L, th); ctx.lineTo(0, th * 0.45); ctx.closePath(); ctx.fill(); ctx.restore();
-        glowAt(ctx, tg.x, tg.y, 120 * scale * p.beam, "230,150,255", 0.9 * p.beam); glowAt(ctx, m2[0], m2[1], 70 * scale * p.beam, "255,230,255", p.beam); }
+        glowAt(ctx, tg.x, tg.y, 120 * scale * p.beam, "230,150,255", 0.9 * p.beam); glowAt(ctx, m2[0], m2[1], 44 * scale * p.beam, "255,230,255", 0.45 * p.beam); }
       if (p.impact > 0) { var fq = map(250, 925); glowAt(ctx, fq[0], fq[1], 170 * scale * (1.4 - p.impact * 0.4), "200,90,255", 0.85 * p.impact); glowAt(ctx, fq[0], fq[1], 60 * scale, "255,235,255", p.impact); }
       ctx.restore();
     } };
