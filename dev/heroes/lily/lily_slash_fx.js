@@ -20,6 +20,11 @@
   var SWINGS_C = [
     [5, 8, 149, -4, 330], [9, 12, -52, -216, 330], [14, 17, 167, 371, 340], [21, 25, 19, -191, 345], [31, 36, 177, 394, 345], [37, 38, 116, 165, 300]
   ];
+  /* lily_flurryC2_v1 (faster, more chaotic, no baked trails): 8 swings; chest at clip px 610, 505 */
+  var SWINGS_C2 = [
+    [8, 11, 145, -34, 340], [12, 16, -55, -209, 340], [18, 21, -21, -135, 300], [22, 24, -60, 12, 380],
+    [25, 29, -24, -194, 340], [31, 36, -30, -180, 320], [37, 39, 45, 5, 380], [42, 45, -24, -180, 360]
+  ];
   var SWINGS = SWINGS_A;
   var OVER = 1.18;    /* oversize the measured radius */
   var WIDTH = 0.30;   /* max crescent thickness as a share of its radius */
@@ -33,7 +38,12 @@
   /* thickness profile along the crescent, s = 0 tail .. 1 blade tip */
   function prof(s) { return Math.pow(Math.max(0, s), 0.9) * Math.pow(Math.max(0, 1 - s), 0.22) * 1.55; }
 
-  function slash(ctx, sw, idx, t, ox, oy, k) {
+  /* style: over = size vs her real swing, width = thickness, detach = how far the crescent sits out from her (x its radius),
+     travel = how far it keeps flying outward while it dissolves. ATTACHED = round her (v1), DETACHED = separate flying crescents (A1). */
+  var ATTACHED = { over: 1.18, width: 0.30, detach: 0, travel: 0 };
+  var DETACHED = { over: 1.7, width: 0.34, detach: 0.42, travel: 0.35 };
+  function slash(ctx, sw, idx, t, ox, oy, k, st) {
+    st = st || ATTACHED;
     var f0 = sw[0], f1 = sw[1] + 1, end = f1 + FADE;
     if (t < f0 || t > end) return;
     var p = Math.min(1, (t - f0) / (f1 - f0)), fade = t > f1 ? (t - f1) / FADE : 0;
@@ -41,7 +51,10 @@
     var head = a0 + span * easeOut(p) + (fade > 0 ? dir * 6 * D2R * easeOut(fade) : 0);
     var trail = Math.max(MINTRAIL * D2R, Math.abs(span) * 1.1) * (1 - 0.55 * sm(0, 1, fade)); /* tail catches up as it dissolves */
     var tail = head - dir * trail;
-    var R = sw[4] * OVER * (1 + 0.07 * easeOut(fade)), W = R * WIDTH * (1 - 0.35 * fade);
+    var R = sw[4] * st.over * (1 + 0.07 * easeOut(fade)), W = R * st.width * (1 - 0.35 * fade);
+    var mid = a0 + span * 0.5, off = R * (st.detach + st.travel * (0.35 * p + easeOut(fade)));
+    var dx = -Math.cos(mid) * R + Math.cos(mid) * (R * 0.55 + off), dy = -Math.sin(mid) * R + Math.sin(mid) * (R * 0.55 + off);
+    if (!st.detach) { dx = 0; dy = 0; }   /* detached: the arc's centre moves out along the swing, so the crescent floats free of her */
     var alpha = (t - f0 < 1 ? 0.6 : 1) * (1 - sm(0, 1, fade));
     var sy = 0.86, tilt = (rnd(idx + 3) - 0.5) * 0.25; /* slight ellipse + tilt so they don't look stamped */
     var N = 44, i, s, a, w, cos, sin;
@@ -50,7 +63,7 @@
       s = i / N; a = tail + dir * trail * s; w = W * prof(s);
       outer.push([Math.cos(a) * R, Math.sin(a) * R]); inner.push([Math.cos(a) * (R - w), Math.sin(a) * (R - w)]);
     }
-    ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * sy); ctx.rotate(tilt);
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * sy); ctx.translate(dx, dy); ctx.rotate(tilt);
     ctx.globalCompositeOperation = "lighter";
 
     function band(scaleOut, scaleIn, col, al, from) { /* filled crescent, inflated outwards / inwards */
@@ -107,7 +120,7 @@
     ctx.restore();
     /* 7. wisps: dark-red smoke left behind by the tail as it dissolves (normal blending, drawn after) */
     if (fade > 0) {
-      ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * sy); ctx.rotate(tilt);
+      ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * sy); ctx.translate(dx, dy); ctx.rotate(tilt);
       for (i = 0; i < 6; i++) {
         s = 0.1 + 0.6 * rnd(idx * 41 + i); a = tail + dir * trail * s; var rr2 = R - W * prof(s) * 0.5 + 18 * fade * (R / 330);
         var wx = Math.cos(a) * rr2, wy = Math.sin(a) * rr2, wr = (16 + 22 * rnd(idx + i * 9)) * (R / 330) * (0.6 + fade);
@@ -119,8 +132,8 @@
     }
   }
 
-  function draw(ctx, t, ox, oy, k, swings) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) slash(ctx, swings[i], i, t, ox, oy, k); }
-  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505] };
+  function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) slash(ctx, swings[i], i, t, ox, oy, k, st); }
+  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], ATTACHED: ATTACHED, DETACHED: DETACHED };
   if (typeof window !== "undefined") window.LILY_SLASH = api;
   if (typeof module !== "undefined") module.exports = api;
 })();
