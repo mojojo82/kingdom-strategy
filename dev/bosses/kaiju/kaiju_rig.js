@@ -3,18 +3,22 @@
    kaijuPose(t, mode, mt) -> pose params; kaijuDraw(ctx, imgs, x, feetY, scale, pose). */
 (function () {
   var W = 1415, H = 949, GX = 30, GY = 20;
-  var P = { neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [70, 262], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
+  var P = { hip: [640, 700], neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [70, 262], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
   function sm(e0, e1, x) { var t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); }
   function rot(x, y, cx, cy, a) { var c = Math.cos(a), s = Math.sin(a), dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
   function key(t, ks) { /* ks = [[time, value], ...] eased between */ if (t <= ks[0][0]) return ks[0][1]; for (var i = 1; i < ks.length; i++) if (t <= ks[i][0]) { var a = ks[i - 1], b = ks[i], u = ease((t - a[0]) / (b[0] - a[0])); return a[1] + (b[1] - a[1]) * u; } return ks[ks.length - 1][1]; }
   var BLAST = 2.8; /* seconds */
   function pose(t, mode, mt) {
-    var br = Math.sin(t * 2 * Math.PI / 3.2), p = { breath: br, head: 0.018 * Math.sin(t * 2 * Math.PI / 3.2 - 0.6), jaw: 0.03 + 0.03 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 3.2 - 1.0)),
-      tailA: 1, tailT: t, arm: Math.sin(t * 2 * Math.PI / 3.2 - 0.3), spine: 0.08 + 0.14 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 2.4)), cascade: -1, core: 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 1.6)), mouth: 0, beam: 0, bodyX: 0, bodyY: 0 };
+    var C = 2 * Math.PI / 3.0, br = Math.sin(t * C), p = { breath: br, lean: 0.022 * Math.sin(t * C) + 0.006 * Math.sin(t * C * 2.3 + 1),
+      head: 0.055 * Math.sin(t * C - 0.9) + 0.015 * Math.sin(t * C * 2.7), jaw: 0.05 + 0.07 * (0.5 + 0.5 * Math.sin(t * C - 1.4)),
+      tailA: 1.9, tailT: t, arm: Math.sin(t * C - 0.6), arm2: Math.sin(t * C - 1.2), knee: 0.5 + 0.5 * Math.sin(t * C), spine: 0.08 + 0.14 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 2.4)), cascade: -1, core: 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 1.6)), mouth: 0, beam: 0, bodyX: 0, bodyY: 0 };
     if (mode === "blast") {
       var u = mt;
-      p.head += key(u, [[0, 0], [0.35, -0.10], [0.85, -0.13], [1.05, 0.07], [1.15, 0.09], [1.9, 0.08], [2.4, 0], [BLAST, 0]]);
+      p.lean += key(u, [[0, 0], [0.45, -0.05], [0.9, -0.07], [1.06, 0.05], [1.2, 0.035], [1.9, 0.03], [2.45, 0], [BLAST, 0]]);
+      p.knee += key(u, [[0, 0], [0.9, -0.6], [1.06, 1.2], [1.9, 0.8], [2.45, 0], [BLAST, 0]]);
+      p.head += key(u, [[0, 0], [0.35, -0.15], [0.85, -0.2], [1.05, 0.12], [1.15, 0.14], [1.9, 0.12], [2.4, 0], [BLAST, 0]]) + (u > 1.05 && u < 1.95 ? 0.012 * Math.sin(u * 70) : 0);
+      p.arm += key(u, [[0, 0], [0.9, -1.6], [1.06, 1.4], [1.9, 1.2], [2.45, 0], [BLAST, 0]]);
       p.jaw += key(u, [[0, 0], [0.8, 0.06], [1.0, 0.42], [1.9, 0.42], [2.3, 0.03], [BLAST, 0]]);
       p.bodyX = key(u, [[0, 0], [0.85, 10], [1.1, -8], [1.9, -4], [2.5, 0], [BLAST, 0]]);
       p.cascade = u < 1.2 ? u / 0.95 : -1; /* spines light tail -> head */
@@ -22,24 +26,27 @@
       p.core += key(u, [[0, 0], [0.9, 0.6], [1.9, 0.7], [2.5, 0], [BLAST, 0]]);
       p.mouth = key(u, [[0, 0], [0.55, 0], [1.0, 1], [1.9, 1], [2.2, 0], [BLAST, 0]]);
       p.beam = u > 1.02 && u < 2.0 ? Math.min(1, (u - 1.02) / 0.08) * Math.min(1, (2.0 - u) / 0.15) : 0;
-      p.tailA = 1 + key(u, [[0, 0], [0.9, 0.8], [1.9, 0.6], [2.5, 0], [BLAST, 0]]);
+      p.tailA += key(u, [[0, 0], [0.9, 1.6], [1.3, 2.2], [1.9, 1.2], [2.5, 0], [BLAST, 0]]);
     }
     return p;
   }
   function warp(x, y, p) { /* source px -> deformed source px */
     var still = 1 - sm(690, 830, y), X = x, Y = y;
     /* tail: travelling wave, amplitude grows to the tip */
-    if (x > P.tail0) { var u = (x - P.tail0) / (P.tipX - P.tail0), A = 16 * p.tailA * Math.pow(u, 1.5); Y += A * Math.sin(p.tailT * 2 * Math.PI / 2.6 - u * 3.2) * still * 0 + A * Math.sin(p.tailT * 2 * Math.PI / 2.6 - u * 3.2); X += -3 * u * Math.sin(p.tailT * 2 * Math.PI / 2.6 - u * 3.2 + 1); }
+    if (x > P.tail0) { var u = (x - P.tail0) / (P.tipX - P.tail0), A = 16 * p.tailA * Math.pow(u, 1.4), ph = p.tailT * 2 * Math.PI / 2.6 - u * 3.4; Y += A * Math.sin(ph) + A * 0.25 * Math.sin(ph * 2.1 + 0.7); X += -6 * u * Math.sin(ph + 1); }
     /* far arm, near arm: small sway about the shoulder */
     var wa = sm(260, 330, y) * (1 - sm(600, 640, y));
-    var wN = (1 - sm(470, 500, x)) * sm(300, 330, x) * sm(420, 450, y) * wa; if (wN > 0) { var q = rot(X, Y, P.shN[0], P.shN[1], 0.025 * p.arm * wN); X = q[0]; Y = q[1]; }
-    var wF = (1 - sm(230, 270, x)) * sm(380, 420, y) * wa; if (wF > 0) { var q2 = rot(X, Y, P.shF[0], P.shF[1], 0.03 * p.arm * wF); X = q2[0]; Y = q2[1]; }
+    var wN = (1 - sm(470, 500, x)) * sm(300, 330, x) * sm(420, 450, y) * wa; if (wN > 0) { var q = rot(X, Y, P.shN[0], P.shN[1], 0.07 * p.arm * wN); X = q[0]; Y = q[1]; }
+    var wF = (1 - sm(230, 270, x)) * sm(380, 420, y) * wa; if (wF > 0) { var q2 = rot(X, Y, P.shF[0], P.shF[1], 0.08 * (p.arm2 == null ? p.arm : p.arm2) * wF); X = q2[0]; Y = q2[1]; }
     /* jaw: lower jaw below the hinge line */
     var wj = sm(236, 258, y) * (1 - sm(195, 240, x)) * (1 - sm(350, 380, y)); if (wj > 0) { var qj = rot(X, Y, P.hinge[0], P.hinge[1], -p.jaw * wj); X = qj[0]; Y = qj[1]; }
     /* head + neck: rotate about the neck */
     var wh = (1 - sm(230, 380, x)) * (1 - sm(380, 470, y)); if (wh > 0) { var qh = rot(X, Y, P.neck[0], P.neck[1], -p.head * wh); X = qh[0]; Y = qh[1]; }
+    /* whole body leans from the hips; the legs bend (knees) so the feet stay put */
+    var wl = 1 - sm(640, 800, y); if (wl > 0 && x < 1500) { var ql = rot(X, Y, P.hip[0], P.hip[1], -(p.lean || 0) * wl); X = ql[0]; Y = ql[1]; }
+    var wk = sm(560, 700, y) * (1 - sm(760, 860, y)); Y += 7 * (p.knee || 0) * wk; Y += 7 * (p.knee || 0) * (1 - sm(560, 700, y)) * still;
     /* breathing: upper body rises and swells a little; whole upper body shifts with bodyX */
-    var up = still * (1 - y / 800); Y += -5 * (0.5 + 0.5 * p.breath) * Math.max(0, up); X += (x - 520) * 0.008 * (0.5 + 0.5 * p.breath) * Math.max(0, up) * 0.6;
+    var up = still * (1 - y / 800); Y += -9 * (0.5 + 0.5 * p.breath) * Math.max(0, up); X += (x - 520) * 0.008 * (0.5 + 0.5 * p.breath) * Math.max(0, up) * 0.6;
     X += p.bodyX * still * (1 - sm(700, 900, x)); Y += Math.abs(p.bodyX) * 0.25 * still * (1 - sm(700, 900, x));
     return [X, Y];
   }
