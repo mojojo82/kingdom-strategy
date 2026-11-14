@@ -10,6 +10,13 @@ window.frame = function (t, mode, mt, q) {
   var tgt = { x: w * 0.2, y: gy - h * (+window.__TY || 0.045) }, po = KAIJU.pose(t, mode, mt);
   if (po.mouth > 0) KAIJU.aim(po, px, gy + 12, sc, tgt, po.mouth);
   KAIJU.draw(x, { body: I.body, glow: I.glow }, px, gy + 12, sc, po, tgt);
+  if (window.__WATER !== 0) { /* rough placeholder for the real murky shallow-ocean level */
+    var wy = gy + 6, wg = x.createLinearGradient(0, wy, 0, h); wg.addColorStop(0, "rgba(22,52,60,0.93)"); wg.addColorStop(0.3, "rgba(12,32,40,0.97)"); wg.addColorStop(1, "rgba(5,14,20,1)");
+    x.fillStyle = wg; x.fillRect(0, wy, w, h - wy);
+    x.strokeStyle = "rgba(150,200,210,0.35)"; x.lineWidth = 1.5; x.beginPath(); for (var sx = 0; sx <= w; sx += 6) { var sy = wy + Math.sin(sx * 0.05 + t * 2) * 1.2; if (sx) x.lineTo(sx, sy); else x.moveTo(sx, sy); } x.stroke();
+    for (var li = 0; li < 40; li++) { var ly = wy + 8 + Math.pow((li * 0.618) % 1, 1.6) * (h - wy - 10), lx = ((li * 97.3 + t * (12 + li % 5 * 4)) % (w + 120)) - 60, ll = 20 + (li * 13) % 50;
+      x.strokeStyle = "rgba(120,170,185," + (0.12 + 0.1 * ((li * 7) % 3) / 2) + ")"; x.lineWidth = 1; x.beginPath(); x.moveTo(lx, ly); x.lineTo(lx + ll, ly); x.stroke(); }
+  }
   if (q != null && q >= 0) { var ft = KAIJU.mapPoint(250, 925, KAIJU.pose(t, "idle", 0), px, gy + 12, sc); KAIJU_QUAKE.draw(x, q, ft[0], w * 0.2, gy + 12, sc); }
 };
 </script></body></html>
