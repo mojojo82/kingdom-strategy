@@ -18,6 +18,14 @@ for p in fr:
         smear = (r_ > 170) & (b_ < 75) & (r_ - b_ > 150) & (g_ > b_ + 40)   # saturated orange / yellow only (skin and gold stay)
         lum = (r_ * 0.6 + g_ * 0.4) / 255.0
         fg[..., 0] = np.where(smear, 120 + 90 * lum, r_); fg[..., 1] = np.where(smear, 14 + 20 * lum, g_); fg[..., 2] = np.where(smear, 26 + 16 * lum, b_)
+    if os.environ.get('FLATTRAIL'):                     # Atlas's baked slash trails -> flat painted look: hard edges, 3 flat reds, no glow halo
+        r_, g_, b_ = fg[..., 0], fg[..., 1], fg[..., 2]
+        trail = (r_ > 140) & (b_ < 95) & (r_ - b_ > 110)            # saturated red / orange / yellow (trails + glow + blade)
+        keep = trail & (al > 0.5)                                    # hard edge: the soft glow fringe goes
+        lum = (r_ * 0.35 + g_ * 0.65) / 255.0                        # brighter / yellower = nearer the hot edge of the trail
+        col = np.where(lum[..., None] > 0.78, [255, 236, 230], np.where(lum[..., None] > 0.45, [196, 24, 36], [128, 12, 24]))
+        fg = np.where(keep[..., None], col, fg)
+        al = np.where(trail & ~keep, 0, np.where(keep, 1.0, al))
     al[al < 0.04] = 0
     Image.fromarray(np.dstack([fg.clip(0, 255), al * 255]).astype(np.uint8), 'RGBA').save(os.path.join(OUT, os.path.basename(p)))
 print(len(fr), 'frames, bg', BG)
