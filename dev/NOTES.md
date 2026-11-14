@@ -4989,3 +4989,4 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Beam aims from his mouth at your hull target (`arenaHullTarget`), so a high skin (Mecha) is aimed higher. Stomp sends the water surge from his front foot to your hull. `kaijuAct("blast"|"stomp")` plays them (the fight will call these).
 - His HP bar is redrawn over his head. Rig split into "body" (in the fortress pass) and "fx" (beam, over the fighters) layers.
 - Only an opponent with `kaiju: true` uses it (arenaOpponentFortressSkin) - nothing sets that yet. Mockup script: dev/bosses/kaiju/arena_mock.js.
+- (Harley) Water at the lower level (`KAIJU_WATER` = groundY + 2), and ground (melee) heroes stand in it: `kaijuDrawWaterBand` draws a strip of the same sea over their feet, ending just below them so their levels and bars stay clear.

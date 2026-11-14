@@ -24676,7 +24676,7 @@ var KAIJU_IMG = { body: null, glow: null, mask: null };
 var KAIJU_W_PX = 237;          /* on-screen width of the whole picture, tail included (Arena px) - Harley picked the biggest mockup size */
 var KAIJU_FEET = 9;            /* the heroes' feet line = groundY + 9 (arenaSlotPos: groundY - 4, sprite feet +13) */
 var KAIJU_SINK = 1;            /* he stands this much below the line - in the water */
-var KAIJU_WATER = -3;           /* water surface = groundY + this: just over the bottom of his claws (and the heroes' feet) */
+var KAIJU_WATER = 2;           /* water surface = groundY + this: just over the bottom of his claws (and the heroes' feet) */
 var KAIJU_SKIN = { id: "kaiju", name: "Kaiju", kaiju: true, calm: true, cq: null, cqScale: KAIJU_W_PX / 708 / (FORTRESS_SHIP_SCALE * 24 / 22), lift: 14 - KAIJU_FEET - 9 * KAIJU_W_PX / 1415, meleeFront: 1 - 105 / 1415 };
 SKIN_HULLT.kaiju = [0.70, 0.46]; /* his chest (picture faces right before the enemy-side flip) */
 function kaijuLoad() {
@@ -24709,8 +24709,15 @@ function kaijuDrawWater(ctx, w, h) { /* placeholder shallow sea until the boss l
     ctx.strokeStyle = "rgba(120,170,185," + (0.1 + 0.06 * (i % 3)) + ")"; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + ll, ly); ctx.stroke(); }
   ctx.restore();
 }
-function kaijuDrawArenaFx(ctx, w, h) { /* over the fighters: water, the stomp's water surge, the beam */
+function kaijuDrawWaterBand(ctx, w, h) { /* v1598 (Harley): ground (melee) heroes stand IN the water - a strip of the same sea from the surface down to just under their feet, drawn over them; their levels and bars sit below it, so they stay clear */
+  var gy = groundYFor(h), wy = gy + KAIJU_WATER, by = gy + KAIJU_FEET + 1, t = performance.now() / 1000; if (by <= wy) return;
+  ctx.save(); var g2 = ctx.createLinearGradient(0, wy, 0, by); g2.addColorStop(0, "rgba(22,52,60,0.9)"); g2.addColorStop(1, "rgba(20,48,56,0.92)"); ctx.fillStyle = g2; ctx.fillRect(0, wy, w, by - wy);
+  ctx.strokeStyle = "rgba(150,200,210,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); for (var sx = 0; sx <= w; sx += 4) { var sy = wy + Math.sin(sx * 0.07 + t * 2) * 0.6; if (sx) ctx.lineTo(sx, sy); else ctx.moveTo(sx, sy); } ctx.stroke();
+  ctx.restore();
+}
+function kaijuDrawArenaFx(ctx, w, h) { /* over the fighters: the water strip over the ground heroes' feet, the stomp's water surge, the beam */
   var k = kaijuState.last; if (!k) return;
+  if (kaijuState.water) kaijuDrawWaterBand(ctx, w, h);
   if (kaijuState.quake != null) { var q = performance.now() / 1000 - kaijuState.quake; if (q > KAIJU_QUAKE.LEN) kaijuState.quake = null; else if (q >= 0) { var ft = KAIJU.mapPoint(250, 925, KAIJU.pose(0, "idle", 0), k.x, k.feetY, k.s); KAIJU_QUAKE.draw(ctx, q, ft[0], k.tgt.x, groundYFor(h) + KAIJU_WATER, k.s); } }
   KAIJU.draw(ctx, KAIJU_IMG, k.x, k.feetY, k.s, k.po, k.tgt, "fx");
   drawArenaHpBar(ctx, w * 0.58, 22, w * 0.36, arenaAnim.aiMaxHp ? arenaAnim.aiHp / arenaAnim.aiMaxHp : 1, "#e05a5a", "#a02c2c"); /* his head reaches the bar - keep it readable on top */
