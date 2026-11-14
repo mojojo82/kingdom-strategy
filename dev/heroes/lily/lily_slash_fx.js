@@ -44,6 +44,8 @@
   var DETACHED = { over: 1.7, width: 0.34, detach: 0.42, travel: 0.35 };
   var FLAT = { flat: true, over: 1.18, width: 0.30, detach: 0, travel: 0 };
   var FLAT_DETACHED = { flat: true, over: 1.7, width: 0.30, detach: 0.42, travel: 0.35 };
+  var PAINTED = { painted: true, over: 1.25, detach: 0, travel: 0 };
+  var PAINTED_DETACHED = { painted: true, over: 1.7, detach: 0.42, travel: 0.35 };
   function slash(ctx, sw, idx, t, ox, oy, k, st) {
     st = st || ATTACHED;
     var f0 = sw[0], f1 = sw[1] + 1, end = f1 + FADE;
@@ -199,8 +201,46 @@
     }
     ctx.restore();
   }
-  function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) (st && st.flat ? slashFlat : slash)(ctx, swings[i], i, t, ox, oy, k, st); }
-  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED };
+
+  /* PAINTED look (Harley 15 Nov: "get GPT to draw the slashes"): hand-drawn anime slash sprites (ChatGPT sheet, cut + measured by
+     dev/heroes/lily/cut_slashes.py -> slashes.json: arc centre cx,cy, radius r, start angle a0, span, tipAtEnd). Each real swing gets
+     the painted slash whose length is closest; its tip is lined up with where her blade ends, it is drawn in from tail to tip as the
+     blade moves (angular wipe), then fades. Sprites with a bad arc fit (hooks) are left out via USE. */
+  var USE = [0, 1, 2, 3, 5, 6];
+  function pickSprite(sw, idx, sprites) {
+    var span = Math.abs(sw[3] - sw[2]), best = -1, bd = 1e9;
+    for (var j = 0; j < USE.length; j++) { var m = sprites[USE[j]] && sprites[USE[j]].meta; if (!m) continue;
+      var d = Math.abs(m.span - span) + 40 * rnd(idx * 17 + j); if (d < bd) { bd = d; best = USE[j]; } }   /* a little variety */
+    return sprites[best];
+  }
+  function slashSprite(ctx, sw, idx, t, ox, oy, k, st, sprites) {
+    var f0 = sw[0], f1 = sw[1] + 1, end = f1 + FADE;
+    if (t < f0 || t > end) return;
+    var spr = pickSprite(sw, idx, sprites); if (!spr || !spr.img.complete) return;
+    var m = spr.meta, p = Math.min(1, (t - f0) / (f1 - f0)), fade = t > f1 ? (t - f1) / FADE : 0;
+    var a0 = sw[2] * D2R, a1 = sw[3] * D2R, span = a1 - a0, dir = span < 0 ? -1 : 1;
+    var sdir = m.tipAtEnd ? 1 : -1, tipA = (m.tipAtEnd ? m.a0 + m.span : m.a0) * D2R, sspan = m.span * D2R;
+    var flip = sdir !== dir; if (flip) tipA = -tipA;                         /* mirror the art so it sweeps the same way as her blade */
+    var endA = a1 + dir * 8 * D2R;                                            /* tip lands a touch past where the blade stops */
+    var rot = endA - tipA;
+    var Rt = sw[4] * st.over * (1 + 0.08 * easeOut(fade)), sc = Rt / m.r;
+    var mid = a0 + span * 0.5, off = Rt * (st.detach + st.travel * (0.35 * p + easeOut(fade)));
+    var dx = st.detach ? Math.cos(mid) * (off - Rt * 0.45) : 0, dy = st.detach ? Math.sin(mid) * (off - Rt * 0.45) : 0;
+    var A = 1 - sm(0.3, 1, fade), rev = easeOut(p);
+    var tailA = endA - dir * sspan, headA = tailA + dir * sspan * rev;       /* revealed part: tail .. current head */
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * 0.9); ctx.translate(dx, dy);
+    ctx.globalAlpha = A;
+    if (rev < 0.999) {                                                         /* angular wipe (wedge from the tail to the head) */
+      var big = Rt * 3, n = 24; ctx.beginPath(); ctx.moveTo(0, 0);
+      for (var j = 0; j <= n; j++) { var aa = tailA - dir * 0.15 + (headA - tailA + dir * 0.15) * j / n; ctx.lineTo(Math.cos(aa) * big, Math.sin(aa) * big); }
+      ctx.closePath(); ctx.clip();
+    }
+    ctx.rotate(rot); ctx.scale(sc, flip ? -sc : sc);
+    ctx.drawImage(spr.img, -m.cx, -m.cy);
+    ctx.restore();
+  }
+  function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) { if (st && st.painted) slashSprite(ctx, swings[i], i, t, ox, oy, k, st, st.sprites || api.sprites); else (st && st.flat ? slashFlat : slash)(ctx, swings[i], i, t, ox, oy, k, st); } }
+  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
   if (typeof window !== "undefined") window.LILY_SLASH = api;
   if (typeof module !== "undefined") module.exports = api;
 })();

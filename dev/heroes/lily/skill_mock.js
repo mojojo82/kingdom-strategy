@@ -11,6 +11,9 @@ const ROOT = path.join(__dirname, "../../.."), IN = process.argv[2], OUT = proce
   await P.setContent("<canvas id=c width=1152 height=768></canvas>");
   await P.addScriptTag({ content: fs.readFileSync(path.join(__dirname, "lily_slash_fx.js"), "utf8") });
   await P.evaluate(async (bg) => { window.BG = await Promise.all(bg.map((s) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = s; }))); }, bg);
+  const SD = path.join(ROOT, "art/originals/heroes/ironlily/redo/fx/slashes"), SM = JSON.parse(fs.readFileSync(path.join(SD, "slashes.json"), "utf8"));
+  await P.evaluate(async (list) => { LILY_SLASH.sprites = await Promise.all(list.map((x) => new Promise((r) => { const i = new Image(); i.onload = () => r({ img: i, meta: x.meta }); i.src = x.src; }))); },
+    SM.map((meta) => ({ meta, src: b64(path.join(SD, meta.file)) })));
   const frames = fs.readdirSync(IN).filter((f) => f.endsWith(".png")).sort();
   for (let i = 0; i < frames.length; i++) {
     const png = await P.evaluate(async ({ src, t, SC, SET, STY }) => {
