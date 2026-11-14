@@ -208,9 +208,9 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   1. **Caelum Vex - Wing Guard** (own DEF +4%/level).
   2. **Aurek Solmane - Faithful** (own DEF +4%/level).
   3. **Bram Kettleback - Boiler Plating** (own DEF +4%/level).
-  4. **Seraphine Lux - Crystal Focus** (team damage +6%/level, `conquestDamageMult`).
+  4. ~~**Seraphine Lux - Crystal Focus**~~ **DONE v1607 → Shatterpoint** (team boss damage +6%/level, `effectType: "bossDmg"`, own multiplier).
   5. **Vesper Quill - Clean Code** (team damage +5%/level, `conquestDamageMult`).
-  One of these slots is the planned home for the **team boss-damage aura** (its own multiplier, like the Boss Slayer card; start ~+30%). Lyra's Eagle Eye is the same kind but already switched off (v1575). Borderline, kept for now: Hanzo Shadow Step (dodge), Halo-7 Stone Shell (less damage from ranged only). New skills must use existing mechanics, work the same in Conquest and Arena, and keep heroes below Hanzo / Kessa.
+  The **team boss-damage aura** went to Seraphine (Shatterpoint, v1607). Lyra's Eagle Eye is the same kind but already switched off (v1575). Borderline, kept for now: Hanzo Shadow Step (dodge), Halo-7 Stone Shell (less damage from ranged only). New skills must use existing mechanics, work the same in Conquest and Arena, and keep heroes below Hanzo / Kessa.
 - **OPEN - TO LOOK INTO with Harley: kaiju (Boss Rush) vs "% of max HP" effects (v1605, 15 Nov 2026).** In the kaiju fight ONLY, three effects were changed by Claude (not asked for by Harley - Harley wants them reviewed):
   1. **Railgun** - "hits the enemy fortress for 10-25% of its max HP" (25% at Lv50).
   2. **Clone Task** - clones self-destruct for a % of the enemy fortress's max HP (`boom` / selfDestructPct).

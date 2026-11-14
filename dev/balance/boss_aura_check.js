@@ -1,0 +1,27 @@
+const fs = require("fs"), path = require("path");
+const ROOT = require("path").join(__dirname, "../.."), OUTD = __dirname + "/results";
+const { chromium } = require("playwright");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.CHROME_PATH, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 2 });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, require(path.join(ROOT, "dev/tests/siteroute.js"))(GAME));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/", { timeout: 120000 }); await P.waitForSelector("#ksAuth .box", { timeout: 120000 });
+  await P.fill("#ksE", "sc" + Date.now() + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "PipTest"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => { const st = game.state; ["caelum", "kessa", "lyra"].forEach((k) => { st.heroes[k].owned = true; st.heroes[k].level = 40; st.heroes[k].skillLevels = { conquest: [3, 5, 3], expedition: [1, 1, 1] }; }); st.conquestRoster = ["caelum", "kessa", "lyra"]; document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove()); setScreen("more", "arena"); });
+  await P.waitForTimeout(3000);
+  const r = await P.evaluate(() => { const S = game.state; ["seraphine", "lyra", "kessa"].forEach((k) => { S.heroes[k].owned = true; S.heroes[k].level = 80; S.heroes[k].stars = 25; S.heroes[k].skillLevels = { conquest: [5, 5, 5], expedition: [5, 5, 5] }; });
+    const o = {}; S.conquestRoster = ["lyra", "kessa"]; o.without = kaijuBossMul(); S.conquestRoster = ["lyra", "kessa", "seraphine"]; o.withSera = kaijuBossMul();
+    S.cards[29].name = "Boss Slayer"; S.equippedCards = [29]; o.seraAndCard = kaijuBossMul(); S.equippedCards = [];
+    o.skill = HERO_DEFS.seraphine.conquestSkills[1].name; return o; });
+  console.log(JSON.stringify(r));
+  await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });
