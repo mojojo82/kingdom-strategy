@@ -4907,3 +4907,7 @@ Harley's 3 points:
 - Missile explosion from ChatGPT (art/originals/fx/missile_explosion/, 8 frames) is still a mock only - Harley couldn't judge it at the headless clip's frame rate.
 - Headless: tracers flying in Conquest and Arena, no errors.
 - (same day, after v1587) MiniMax H3 Max explosion test on Atlas: Image = ChatGPT frame 1 (small star flash, centred on black 1280x720), End = black, prompt "locked-off ... flash -> star -> fireball -> smoke + embers -> fades to black, pure black background". 1 run, $0.608 (balance $17.96 before). Clip art/originals/fx/missile_explosion/clips/explosion_h3_v1.mp4 (8 s; the 5 s duration didn't take). Active part 0-5.7 s squeezed to 0.9 s: 28 frames, 768 crop centred (681, 384) with a soft round edge mask, 192-px cells, 7x4 sheet (explosion_h3_sheet_28x192.webp). 60 fps comparison (current code / ChatGPT 8 frames / MiniMax): explosion_3way_60fps.mp4. Not in the game yet.
+
+## v1588 - missile impacts: MiniMax explosion (14 Nov 2026)
+- Harley picked the MiniMax version (60 fps three-way comparison) over the current code burst and ChatGPT's 8 frames. drawMissileImpactFx now plays the 28-frame sheet (MISSILE_EXP_IMG, 7x4, 192-px cells on black, inline webp 81 KB) over IDLE_MISSILE_IMPACT_DURATION (0.5 -> 0.9 s), frames blended, additive, 62 px (boss 1.8x). Same impact spots/timing in Conquest and Arena; the old code burst stays as fallback until the sheet loads.
+- Headless: explosions captured mid-play in Conquest and Arena, no errors.
