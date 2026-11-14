@@ -331,7 +331,7 @@ function shopEntryLive(e, now) { return (!e.start || now >= e.start) && (!e.end 
 function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
-const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle|speedups|skins)?\.?[a-zA-Z0-9_]+$/; /* v946: + speedups, skins */
+const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle|speedups|skins|items|weaponFrags)?\.?[a-zA-Z0-9_]+$/; /* v946: + speedups, skins; v1593: + items (backpack items), weaponFrags */
 function normalizeItems(items, allowEmpty) { /* allowEmpty: mails may be a message only (v939) */
   if (allowEmpty && (items == null || (typeof items === "object" && !Array.isArray(items) && !Object.keys(items).length))) return [];
   if (!items || typeof items !== "object") throw new GameError("invalid-argument", "no items");

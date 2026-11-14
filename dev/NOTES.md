@@ -4938,3 +4938,8 @@ Harley's approved list ("Go"):
 - **Stamina** can go over the 100 max with items (no refill while over; cap 9,999).
 - Backpack: a long list now scrolls inside the frame (the frame used to stretch off screen and squash tiles). Dev "+ test items" adds 3 of every item and speedup.
 - Headless (dev/shots_items_v1592.jpg): speedups (wrong kind refused, 3h on a 10-min upgrade finishes it and refunds 2h+30m+15m+5m), heal speedup, Stamina 100 -> 150, shield 8.00h, hero chest +20 Gareth shards (x2), weapon +10, Super Rare chest -> 1 SR piece, march speedup x0.667 and second use refused, recall -> returning, random teleport moved the city and used 1 item, cost tag with free teleports off, no errors. No combat code touched.
+
+## Server: item catalogue for the new items (14 Nov 2026, no game version change)
+- Harley: every deal / pack / shop / event reward must be set up from the admin console. The server catalogue (functions/items.json) only had 25 items, so the admin could not give any v1592 item.
+- Added 73: every speedup (speedup_<family>_<size>, 40), every backpack item (item_<id> -> items.<id>: teleports, Peace Shields, Anti-Scout, March Speedup, Recall, Stamina, selector / card / equipment chests, Enhance Stone, plus the resource chests custom_1-3 and supply_*), and shards for every hero that was missing (Bram, Juno, Pip, Hanzo, Iron Lily, Vesper, Aurek, Seraphine, Halo-7, Caelum).
+- functions/core.js SAVE_PATH_OK now also allows items.* and weaponFrags.*. The game already adds any catalogue path to the save on claim (ksAddAtPath), so these work in mail, packs and top-up rewards with no game change.
