@@ -4974,3 +4974,11 @@ Step 3 (part 1). Harley: "for popup deals they often are not on a tab, but its o
 - Each running deal gets an icon on the World map dock (hero face or the shop icon); deals with "Pops up" open by themselves once a UTC day on the World map, one at a time.
 - **Admin console > Shop > 🪟 Popup deals**: pick a pack from the Pack library, a hero (optional), title, value badge, from / until, Pops up, Active. Saved in config/shop popups (normalizeShop; deleted packs drop out). Unit test added.
 - Headless (dev/shots_deals_v1596.jpg): a Caelum Hero Pack (30 shards, 500 gems, Hero Selector Chest, 5x 1h) popped up by itself; dock shows both deals; buy shows the payments note; a no-hero deal uses the vault banner; no errors.
+
+## v1597 - Forge Frenzy (14 Nov 2026)
+Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 2 === parity; admin picks even / odd weeks).
+- Points: 10 per weapon draw (each draw ticket), 1 per piece forged (forgeOnce -> evAct("forge")). 5 milestones: 200 = 10 draw tickets, 500 = 15 Event Tokens, 1,000 = 20 draw tickets, 2,000 = Elite equipment chest, 3,500 = Weapon Fragment Selector (stingy start).
+- The "Forge Frenzy" tab shows in the Events window only while it runs (red dot when a reward is ready); Go buttons open the Weapon Draw / the Forge.
+- ChatGPT forge banner + anvil icon (art/originals/events/forge/, art/events/).
+- Admin console > Live events: Forge Frenzy block (on/off, even/odd weeks, points per ticket and per piece, milestones). Server: normalizeFF in normalizeLiveops.
+- Headless: off this weekend (odd week) by default; switched on: 120 forges + 15 draws = 270 points, first milestone pays; admin round-trip passes the server check; no errors.
