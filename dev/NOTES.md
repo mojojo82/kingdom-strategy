@@ -4982,3 +4982,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - ChatGPT forge banner + anvil icon (art/originals/events/forge/, art/events/).
 - Admin console > Live events: Forge Frenzy block (on/off, even/odd weeks, points per ticket and per piece, milestones). Server: normalizeFF in normalizeLiveops.
 - Headless: off this weekend (odd week) by default; switched on: 120 forges + 15 draws = 270 points, first milestone pays; admin round-trip passes the server check; no errors.
+
+## v1598 — Boss Rush kaiju in the Arena (TEST, not reachable by players yet)
+- The coded kaiju rig (dev/bosses/kaiju/) is now in the game. In the Arena he takes the enemy fortress's place through a stand-in skin `KAIJU_SKIN` (id "kaiju"): a small mirrored picture (art/bosses/kaiju/kaiju_mask.webp) gives the hit mask, hull target (`SKIN_HULLT.kaiju` = his chest) and melee stop (`meleeFront` = front of his front claws), so heroes, guns and shots treat him like a fortress. `drawArenaFortress` draws the rig instead.
+- Harley's rules: feet on the heroes' feet line (groundY + 9, `KAIJU_FEET`); shallow water just over the bottom of his claws (`KAIJU_WATER` = groundY + 6, placeholder sea until the boss level exists, drawn under the heroes and their bars); biggest mockup size (`KAIJU_W_PX` 237 px wide incl. tail), tail partly off screen.
+- Beam aims from his mouth at your hull target (`arenaHullTarget`), so a high skin (Mecha) is aimed higher. Stomp sends the water surge from his front foot to your hull. `kaijuAct("blast"|"stomp")` plays them (the fight will call these).
+- His HP bar is redrawn over his head. Rig split into "body" (in the fortress pass) and "fx" (beam, over the fighters) layers.
+- Only an opponent with `kaiju: true` uses it (arenaOpponentFortressSkin) - nothing sets that yet. Mockup script: dev/bosses/kaiju/arena_mock.js.

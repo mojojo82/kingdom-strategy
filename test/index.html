@@ -13638,7 +13638,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1597"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1598"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24433,6 +24433,288 @@ function cqBarrelAim(px, py, id) { /* Conquest: a beam aims where it is hitting;
    Mecha: the middle of his torso), and rapid-fire weapons gently track around inside a small zone on the hull (beams already wander). */
 var SKIN_HULLT = { "default": [0.50, 0.55], "void": [0.50, 0.50], serpent: [0.50, 0.80], serpent2: [0.50, 0.80], ironclad2: [0.50, 0.62],
   blackwatch2: [0.50, 0.72], void2a: [0.50, 0.60], void2b: [0.50, 0.60], void3b: [0.52, 0.74], mecha: [0.47, 0.50], walker: [0.50, 0.40], crawlerb: [0.50, 0.66], crawlerc: [0.50, 0.66], sanctum: [0.55, 0.68] };
+/* v1598: Boss Rush kaiju - code-rigged (mesh warp of the approved painting, smooth at any frame rate; dev/bosses/kaiju/). In the Arena he stands in for the
+   enemy fortress through a stand-in skin (KAIJU_SKIN): its picture (a small mirrored copy) gives the hit mask, hull target and melee stop point, so heroes,
+   guns and shots treat him exactly like a fortress; drawArenaFortress draws the rig instead of the picture. Feet on the heroes' feet line (groundY + 9),
+   shallow water just over the bottom of his claws. */
+/* Kaiju mesh-warp rig (prototype). The approved painting is drawn through a deforming triangle mesh every frame: breathing, head and jaw
+   rotation, arm sway, a travelling tail wave, plus additive glows (spines, reactor core, mouth) and a code beam. Source px = keyed image (1415x949).
+   kaijuPose(t, mode, mt) -> pose params; kaijuDraw(ctx, imgs, x, feetY, scale, pose). */
+(function () {
+  var W = 1415, H = 949, GX = 30, GY = 20;
+  var P = { hip: [640, 700], neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [44, 242], mouthBack: [171, 242], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
+  function sm(e0, e1, x) { var t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); }
+  function rot(x, y, cx, cy, a) { var c = Math.cos(a), s = Math.sin(a), dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; }
+  function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+  function key(t, ks) { /* ks = [[time, value], ...] eased between */ if (t <= ks[0][0]) return ks[0][1]; for (var i = 1; i < ks.length; i++) if (t <= ks[i][0]) { var a = ks[i - 1], b = ks[i], u = ease((t - a[0]) / (b[0] - a[0])); return a[1] + (b[1] - a[1]) * u; } return ks[ks.length - 1][1]; }
+  var BLAST = 2.8, STOMP = 2.1; /* seconds */
+  function pose(t, mode, mt) {
+    var C = 2 * Math.PI / 3.0, br = Math.sin(t * C), p = { breath: br, lean: 0.022 * Math.sin(t * C) + 0.006 * Math.sin(t * C * 2.3 + 1),
+      head: 0.055 * Math.sin(t * C - 0.9) + 0.015 * Math.sin(t * C * 2.7), jaw: 0.05 + 0.07 * (0.5 + 0.5 * Math.sin(t * C - 1.4)),
+      tailA: 1.9, tailT: t, arm: Math.sin(t * C - 0.6), arm2: Math.sin(t * C - 1.2), knee: 0.5 + 0.5 * Math.sin(t * C), spine: 0.08 + 0.14 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 2.4)), cascade: -1, core: 0.35 + 0.25 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI / 1.6)), mouth: 0, beam: 0, bodyX: 0, bodyY: 0 };
+    if (mode === "blast") {
+      var u = mt;
+      p.lean += key(u, [[0, 0], [0.45, -0.05], [0.9, -0.07], [1.06, 0.05], [1.2, 0.035], [1.9, 0.03], [2.45, 0], [BLAST, 0]]);
+      p.knee += key(u, [[0, 0], [0.9, -0.6], [1.06, 1.2], [1.9, 0.8], [2.45, 0], [BLAST, 0]]);
+      p.head += key(u, [[0, 0], [0.35, -0.15], [0.85, -0.2], [1.0, 0], [2.4, 0], [BLAST, 0]]) + (u > 1.05 && u < 1.95 ? 0.01 * Math.sin(u * 70) : 0);
+      p.arm += key(u, [[0, 0], [0.9, -1.6], [1.06, 1.4], [1.9, 1.2], [2.45, 0], [BLAST, 0]]);
+      p.jaw += key(u, [[0, 0], [0.8, 0.06], [1.0, 0.42], [1.9, 0.42], [2.3, 0.03], [BLAST, 0]]);
+      p.bodyX = key(u, [[0, 0], [0.85, 10], [1.1, -8], [1.9, -4], [2.5, 0], [BLAST, 0]]);
+      p.cascade = u < 1.2 ? u / 0.95 : -1; /* spines light tail -> head */
+      p.spine += key(u, [[0, 0], [0.9, 0.55], [1.9, 0.6], [2.5, 0], [BLAST, 0]]);
+      p.core += key(u, [[0, 0], [0.9, 0.6], [1.9, 0.7], [2.5, 0], [BLAST, 0]]);
+      p.mouth = key(u, [[0, 0], [0.55, 0], [1.0, 1], [1.9, 1], [2.2, 0], [BLAST, 0]]);
+      p.beam = u > 1.02 && u < 2.0 ? Math.min(1, (u - 1.02) / 0.08) * Math.min(1, (2.0 - u) / 0.15) : 0;
+      p.tailA += key(u, [[0, 0], [0.9, 1.6], [1.3, 2.2], [1.9, 1.2], [2.5, 0], [BLAST, 0]]);
+    }
+    if (mode === "stomp") { /* the front (left) foot lifts, holds, slams down; weight shifts back then drops */
+      var v = mt;
+      p.lift = key(v, [[0, 0], [0.55, 110], [0.78, 118], [0.9, -3], [0.98, 0], [STOMP, 0]]);
+      p.lean += key(v, [[0, 0], [0.55, -0.035], [0.78, -0.04], [0.9, 0.03], [1.3, 0.012], [STOMP, 0]]);
+      p.knee += key(v, [[0, 0], [0.55, 0.6], [0.88, 0.6], [0.95, 2.2], [1.4, 0.6], [STOMP, 0]]);
+      p.head += key(v, [[0, 0], [0.55, -0.06], [0.88, -0.07], [0.95, 0.07], [1.4, 0.01], [STOMP, 0]]);
+      p.arm += key(v, [[0, 0], [0.55, -1.2], [0.9, 1.5], [1.4, 0.3], [STOMP, 0]]);
+      p.tailA += key(v, [[0, 0], [0.9, 0.5], [1.1, 2.2], [1.6, 0.6], [STOMP, 0]]);
+      p.impact = v > 0.88 && v < 1.6 ? 1 - (v - 0.88) / 0.72 : 0; /* flash + dust + shake */
+      p.shake = v > 0.88 && v < 1.25 ? (1 - (v - 0.88) / 0.37) : 0;
+    }
+    return p;
+  }
+  function warp(x, y, p) { /* source px -> deformed source px */
+    var still = 1 - sm(690, 830, y), X = x, Y = y;
+    if (p.lift) { var wl2 = (1 - sm(400, 470, x)) * sm(520, 660, y); if (wl2 > 0) { var lf = p.lift * sm(560, 930, y) * wl2; Y -= lf; X += 0.18 * lf * (1 - sm(560, 930, y)) - 0.1 * lf; } } /* stomp leg */
+    /* tail: travelling wave, amplitude grows to the tip */
+    if (x > P.tail0) { var u = (x - P.tail0) / (P.tipX - P.tail0), A = 16 * p.tailA * Math.pow(u, 1.4), ph = p.tailT * 2 * Math.PI / 2.6 - u * 3.4; Y += A * Math.sin(ph) + A * 0.25 * Math.sin(ph * 2.1 + 0.7); X += -6 * u * Math.sin(ph + 1); }
+    /* far arm, near arm: small sway about the shoulder */
+    var wa = sm(260, 330, y) * (1 - sm(600, 640, y));
+    var wN = (1 - sm(470, 500, x)) * sm(300, 330, x) * sm(420, 450, y) * wa; if (wN > 0) { var q = rot(X, Y, P.shN[0], P.shN[1], 0.07 * p.arm * wN); X = q[0]; Y = q[1]; }
+    var wF = (1 - sm(230, 270, x)) * sm(380, 420, y) * wa; if (wF > 0) { var q2 = rot(X, Y, P.shF[0], P.shF[1], 0.08 * (p.arm2 == null ? p.arm : p.arm2) * wF); X = q2[0]; Y = q2[1]; }
+    /* jaw: lower jaw below the hinge line */
+    var wj = sm(236, 258, y) * (1 - sm(195, 240, x)) * (1 - sm(350, 380, y)); if (wj > 0) { var qj = rot(X, Y, P.hinge[0], P.hinge[1], -p.jaw * wj); X = qj[0]; Y = qj[1]; }
+    /* head + neck: rotate about the neck */
+    var wh = (1 - sm(230, 380, x)) * (1 - sm(380, 470, y)); if (wh > 0) { var qh = rot(X, Y, P.neck[0], P.neck[1], -(p.head + (p.aimHead || 0)) * wh); X = qh[0]; Y = qh[1]; }
+    /* whole body leans from the hips; the legs bend (knees) so the feet stay put */
+    var wl = 1 - sm(640, 800, y); if (wl > 0 && x < 1500) { var ql = rot(X, Y, P.hip[0], P.hip[1], -(p.lean || 0) * wl); X = ql[0]; Y = ql[1]; }
+    var wk = sm(560, 700, y) * (1 - sm(760, 860, y)); Y += 7 * (p.knee || 0) * wk; Y += 7 * (p.knee || 0) * (1 - sm(560, 700, y)) * still;
+    /* breathing: upper body rises and swells a little; whole upper body shifts with bodyX */
+    var up = still * (1 - y / 800); Y += -9 * (0.5 + 0.5 * p.breath) * Math.max(0, up); X += (x - 520) * 0.008 * (0.5 + 0.5 * p.breath) * Math.max(0, up) * 0.6;
+    X += p.bodyX * still * (1 - sm(700, 900, x)); Y += Math.abs(p.bodyX) * 0.25 * still * (1 - sm(700, 900, x));
+    return [X, Y];
+  }
+  var mesh = null;
+  function buildMesh() { var pts = []; for (var j = 0; j <= GY; j++) for (var i = 0; i <= GX; i++) pts.push([i * W / GX, j * H / GY]); return pts; }
+  function tri(ctx, img, s0, s1, s2, d0, d1, d2) {
+    /* affine map src triangle -> dst triangle, clipped to dst (grown 0.7 px so neighbours overlap - no hairline seams) */
+    var cx = (d0[0] + d1[0] + d2[0]) / 3, cy = (d0[1] + d1[1] + d2[1]) / 3, g = function (p) { var dx = p[0] - cx, dy = p[1] - cy, l = Math.hypot(dx, dy) || 1; return [p[0] + dx / l * 0.7, p[1] + dy / l * 0.7]; };
+    var e0 = g(d0), e1 = g(d1), e2 = g(d2);
+    ctx.save(); ctx.beginPath(); ctx.moveTo(e0[0], e0[1]); ctx.lineTo(e1[0], e1[1]); ctx.lineTo(e2[0], e2[1]); ctx.closePath(); ctx.clip();
+    var x0 = s0[0], y0 = s0[1], x1 = s1[0], y1 = s1[1], x2 = s2[0], y2 = s2[1], den = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+    var a = ((d1[0] - d0[0]) * (y2 - y0) - (d2[0] - d0[0]) * (y1 - y0)) / den, c = ((d2[0] - d0[0]) * (x1 - x0) - (d1[0] - d0[0]) * (x2 - x0)) / den;
+    var b = ((d1[1] - d0[1]) * (y2 - y0) - (d2[1] - d0[1]) * (y1 - y0)) / den, d = ((d2[1] - d0[1]) * (x1 - x0) - (d1[1] - d0[1]) * (x2 - x0)) / den;
+    var e = d0[0] - a * x0 - c * y0, f = d0[1] - b * x0 - d * y0;
+    ctx.transform(a, b, c, d, e, f); ctx.drawImage(img, 0, 0); ctx.restore();
+  }
+  function drawMesh(ctx, img, p, T) {
+    if (!mesh) mesh = buildMesh(); var dp = mesh.map(function (q) { var w = warp(q[0], q[1], p); return [T.x + w[0] * T.s, T.y + w[1] * T.s]; });
+    var sp = mesh.map(function (q) { return q; });
+    for (var j = 0; j < GY; j++) for (var i = 0; i < GX; i++) { var k = j * (GX + 1) + i, k2 = k + 1, k3 = k + GX + 1, k4 = k3 + 1;
+      tri(ctx, img, sp[k], sp[k2], sp[k3], dp[k], dp[k2], dp[k3]); tri(ctx, img, sp[k2], sp[k4], sp[k3], dp[k2], dp[k4], dp[k3]); }
+    return function (x, y) { var w = warp(x, y, p); return [T.x + w[0] * T.s, T.y + w[1] * T.s]; };
+  }
+  function glowAt(ctx, x, y, r, col, a) { var g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, "rgba(" + col + "," + a + ")"); g.addColorStop(1, "rgba(" + col + ",0)"); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); }
+  window.KAIJU = { BLAST: BLAST, STOMP: STOMP, W: W, H: H, pose: pose, P: P,
+    mapPoint: function (sx, sy, p, x, feetY, scale) { var w = warp(sx, sy, p); return [x + w[0] * scale, feetY - 940 * scale + w[1] * scale]; },
+    aim: function (p, x, feetY, scale, tgt, amount) { /* head angle so the mouth axis points at tgt (2 passes); amount 0..1 eases it in and out */
+      p.aimHead = 0; for (var it = 0; it < 3; it++) { var m = this.mapPoint(P.mouth[0], P.mouth[1], p, x, feetY, scale), b = this.mapPoint(P.mouthBack[0], P.mouthBack[1], p, x, feetY, scale);
+        var a0 = Math.atan2(m[1] - b[1], m[0] - b[0]), a1 = Math.atan2(tgt.y - m[1], tgt.x - m[0]), r = a1 - a0; while (r > Math.PI) r -= 2 * Math.PI; while (r < -Math.PI) r += 2 * Math.PI; p.aimHead += -r; }
+      p.aimHead *= amount; },
+    draw: function (ctx, imgs, x, feetY, scale, p, beamToX, layer) { /* x = left edge of the picture, feetY = the floor line; layer "body" = picture + glows, "fx" = beam only, none = both */
+      var sh = p.shake ? p.shake * 7 * Math.sin(performance.now() / 18) : 0;
+      var T = { x: x + sh * 0.4, y: feetY - 940 * scale + sh, s: scale };
+      /* the glow is added into one flat texture first (no seams), then the texture is warped once */
+      var mapT = function (sx, sy) { var w = warp(sx, sy, p); return [T.x + w[0] * T.s, T.y + w[1] * T.s]; }, map = mapT;
+      if (layer !== "fx") {
+      var tx = this._tx || (this._tx = document.createElement("canvas")); if (tx.width !== W) { tx.width = W; tx.height = H; } var tc = tx.getContext("2d");
+      tc.globalCompositeOperation = "source-over"; tc.globalAlpha = 1; tc.clearRect(0, 0, W, H); tc.drawImage(imgs.body, 0, 0);
+      tc.globalCompositeOperation = "lighter"; var sa = Math.min(1, p.spine);
+      if (p.cascade >= 0) { tc.globalAlpha = sa * 0.45; tc.drawImage(imgs.glow, 0, 0); var wx = W - p.cascade * W; tc.save(); tc.beginPath(); tc.rect(wx - 160, 0, W, H); tc.clip(); tc.globalAlpha = 0.85; tc.drawImage(imgs.glow, 0, 0); tc.restore(); }
+      else { tc.globalAlpha = sa; tc.drawImage(imgs.glow, 0, 0); }
+      tc.globalCompositeOperation = "source-over"; tc.globalAlpha = 1;
+      map = drawMesh(ctx, tx, p, T);
+      }
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      if (layer !== "fx") { ctx.globalAlpha = 1; var c = map(P.core[0], P.core[1]); glowAt(ctx, c[0], c[1], 90 * scale, "200,80,255", Math.min(1, p.core) * 0.9);
+      if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1] + 2); glowAt(ctx, m[0], m[1], (36 + 40 * p.mouth) * scale, "230,140,255", 0.5 * p.mouth); glowAt(ctx, m[0], m[1], 14 * scale * p.mouth, "255,255,255", 0.45 * p.mouth); }
+      if (p.impact > 0) { var fq0 = map(250, 925); glowAt(ctx, fq0[0], fq0[1], 170 * scale * (1.4 - p.impact * 0.4), "200,90,255", 0.85 * p.impact); glowAt(ctx, fq0[0], fq0[1], 60 * scale, "255,235,255", p.impact); }
+      }
+      if (layer !== "body" && p.beam > 0) { var m2 = map(P.mouth[0], P.mouth[1]), tg = beamToX && beamToX.x != null ? beamToX : { x: beamToX || 0, y: m2[1] }, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
+        var dx = tg.x - m2[0], dy = tg.y - m2[1], L = Math.hypot(dx, dy), an = Math.atan2(dy, dx);
+        ctx.save(); ctx.translate(m2[0], m2[1]); ctx.rotate(an);
+        var gr = ctx.createLinearGradient(0, -th, 0, th); gr.addColorStop(0, "rgba(180,60,255,0)"); gr.addColorStop(0.3, "rgba(200,90,255,0.75)"); gr.addColorStop(0.5, "rgba(255,240,255,1)"); gr.addColorStop(0.7, "rgba(200,90,255,0.75)"); gr.addColorStop(1, "rgba(180,60,255,0)");
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, -th * 0.45); ctx.lineTo(L, -th); ctx.lineTo(L, th); ctx.lineTo(0, th * 0.45); ctx.closePath(); ctx.fill(); ctx.restore();
+        glowAt(ctx, tg.x, tg.y, 120 * scale * p.beam, "230,150,255", 0.9 * p.beam); glowAt(ctx, m2[0], m2[1], 44 * scale * p.beam, "255,230,255", 0.45 * p.beam); }
+      ctx.restore();
+    } };
+})();
+
+/* Kaiju stomp: creeping WATER blast (the boss level is dark, murky, shallow ocean). Drawn in code - smooth at any frame rate.
+   KAIJU_QUAKE.draw(ctx, q, x0, x1, gy, scale)
+     q  = seconds since the foot hit the water (0 .. LEN); nothing drawn outside that
+     x0 = where the foot hit (screen px), x1 = target (ship hull) x, gy = water surface y, scale = kaiju scale.
+   A surge of energy-charged water races along the surface from the foot to the ship: a foaming crest with a
+   violet glow under it, splash columns that leap up behind it and fall back as spray, ripple rings, and a big
+   geyser under the target when it arrives. */
+(function () {
+  var TRAVEL = 1.0, LEN = 2.3;
+  function hash(i) { var s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+  function sm(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  function glow(ctx, x, y, rx, ry, col, a) {
+    if (a <= 0 || rx <= 0 || ry <= 0) return; ctx.save(); ctx.translate(x, y); ctx.scale(1, ry / rx);
+    var g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, "rgba(" + col + "," + a + ")"); g.addColorStop(1, "rgba(" + col + ",0)");
+    ctx.fillStyle = g; ctx.fillRect(-rx, -rx, 2 * rx, 2 * rx); ctx.restore();
+  }
+  function passT(d, D) { return TRAVEL * (1 - Math.pow(1 - Math.min(1, d / D), 1 / 1.6)); } /* when the front reaches distance d */
+
+  /* one splash column: a tapered sheet of water that shoots up, then collapses into falling drops */
+  function column(ctx, x, y, w, h, age, life, seed, a) {
+    if (age < 0 || age > life) return;
+    var u = age / life, rise = sm(0, 0.28, u), fall = sm(0.35, 1, u);
+    var hh = h * rise * (1 - 0.85 * fall); if (hh > 1) {
+      var g = ctx.createLinearGradient(0, y, 0, y - hh);
+      g.addColorStop(0, "rgba(25,65,75," + (0.6 * a) + ")"); g.addColorStop(0.45, "rgba(80,140,150," + (0.42 * a) + ")"); g.addColorStop(0.85, "rgba(200,235,240," + (0.35 * a) + ")"); g.addColorStop(1, "rgba(235,250,255," + (0.0) + ")");
+      ctx.fillStyle = g; var lw = w * (1 + 0.6 * fall), top = w * 0.35 * (1 + fall);
+      ctx.beginPath(); ctx.moveTo(x - lw, y); ctx.quadraticCurveTo(x - lw * 0.55, y - hh * 0.5, x - top, y - hh); ctx.quadraticCurveTo(x, y - hh * 1.08, x + top, y - hh); ctx.quadraticCurveTo(x + lw * 0.55, y - hh * 0.5, x + lw, y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "rgba(225,245,250," + (0.55 * a * (1 - fall)) + ")"; ctx.lineWidth = Math.max(1, w * 0.12); ctx.beginPath(); ctx.moveTo(x - top * 0.6, y - hh * 0.92); ctx.quadraticCurveTo(x - lw * 0.3, y - hh * 0.45, x - lw * 0.7, y - 2); ctx.stroke();
+    }
+    /* mist: soft white puffs up the column and at its foot, so it reads as spray, not glass */
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (var m = 0; m < 5; m++) { var mr = hash(seed * 7 + m), my = y - hh * (0.15 + 0.8 * m / 4), mx = x + (mr - 0.5) * w * 1.2;
+      glow(ctx, mx, my, w * (1.1 + 0.8 * mr) * (1 + fall), w * (1.0 + 0.6 * mr) * (1 + fall), "170,215,225", 0.22 * a * (1 - 0.7 * fall) * rise); }
+    glow(ctx, x, y - 2, w * 3 * (0.6 + u), w * 0.8, "190,230,235", 0.35 * a * (1 - u)); ctx.restore();
+    /* crown + falling drops (ballistic, so they arc out and rain back down) */
+    var g2 = h * 4.2, nd = 26;
+    for (var i = 0; i < nd; i++) {
+      var r1 = hash(seed * 31 + i), r2 = hash(seed * 17 + i + 5), t0 = 0.12 * life + r1 * 0.1 * life, ta = age - t0; if (ta < 0) continue;
+      var vy = -(Math.sqrt(2 * g2 * h) * (0.6 + 0.55 * r2)), vx = (r1 - 0.5) * w * 11;
+      var dy = vy * ta + 0.5 * g2 * ta * ta; if (dy > 0) continue;
+      var dx = x + vx * ta, py = y - h * 0.85 * rise + dy + h * 0.85 * rise;
+      var rr = w * (0.06 + 0.12 * r2 * r2) * (1 - 0.4 * u);
+      ctx.fillStyle = "rgba(" + (200 + 40 * r1 | 0) + ",240,250," + ((0.45 + 0.45 * r1) * a * (1 - 0.6 * u)) + ")";
+      ctx.beginPath(); ctx.ellipse(dx, py, rr, rr * (1.1 + Math.min(1.6, Math.abs(vy + g2 * ta) / (g2 * 0.6))), 0, 0, 6.283); ctx.fill();
+    }
+  }
+
+  function draw(ctx, q, x0, x1, gy, scale) {
+    if (!(q >= 0 && q < LEN)) return;
+    var S = scale / 0.34, dir = x1 < x0 ? -1 : 1, D = Math.abs(x1 - x0);
+    var front = D * (1 - Math.pow(1 - Math.min(1, q / TRAVEL), 1.6)), fx = x0 + dir * front;
+    var fade = 1 - sm(LEN - 0.6, LEN, q);
+
+    /* ripple rings on the surface: one big set at the foot, smaller ones along the path */
+    ctx.save(); ctx.lineCap = "round";
+    for (var r = 0; r < 4; r++) {
+      var ra = q - r * 0.13; if (ra < 0) continue;
+      var rad = (30 + 260 * (1 - Math.exp(-ra * 1.6))) * S, al = Math.max(0, 1 - ra / 1.6) * 0.55 * fade;
+      ctx.strokeStyle = "rgba(170,215,225," + al + ")"; ctx.lineWidth = 2.2 * S * (1 - ra / 2.2 + 0.2);
+      ctx.beginPath(); ctx.ellipse(x0, gy + 3 * S, rad, rad * 0.11, 0, 0, 6.283); ctx.stroke();
+    }
+    var step = 34 * S, n = Math.ceil(D / step);
+    for (var i = 1; i <= n; i++) {
+      var d = i * step - hash(i) * step * 0.4; if (d > front) break;
+      var ag = q - passT(d, D); if (ag < 0 || ag > 1.3) continue;
+      var rr2 = (14 + 90 * (1 - Math.exp(-ag * 2))) * S;
+      ctx.strokeStyle = "rgba(160,205,215," + (0.4 * (1 - ag / 1.3) * fade) + ")"; ctx.lineWidth = 1.6 * S;
+      ctx.beginPath(); ctx.ellipse(x0 + dir * d, gy + 4 * S, rr2, rr2 * 0.1, 0, 0, 6.283); ctx.stroke();
+    }
+    ctx.restore();
+
+    /* violet energy under the water, trailing the surge */
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (var e = 0; e <= n; e++) {
+      var de = e * step; if (de > front) break;
+      var heat = Math.max(0, 1 - (q - passT(de, D)) / 0.8) * fade;
+      glow(ctx, x0 + dir * de, gy + 6 * S, 46 * S, 10 * S, "150,60,230", 0.45 * heat);
+    }
+    ctx.restore();
+
+    /* splash columns behind the front */
+    for (var j = 1; j <= n; j++) {
+      var dj = j * step - hash(j + 20) * step * 0.6; if (dj > D * 0.97) continue;
+      var tp = passT(dj, D), ac = q - tp; if (ac < 0) continue;
+      var hgt = (55 + 55 * hash(j + 30)) * S * (0.85 + 0.25 * (1 - dj / D));
+      column(ctx, x0 + dir * dj, gy + 4 * S, (10 + 6 * hash(j + 40)) * S, hgt, ac, 0.95 + 0.3 * hash(j + 50), j, fade);
+    }
+
+    /* the travelling crest: a foaming hump of water with light under it */
+    if (q < TRAVEL + 0.15) {
+      var fa = 1 - sm(TRAVEL - 0.05, TRAVEL + 0.15, q), ch = 26 * S * fa, cw = 70 * S;
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; glow(ctx, fx, gy, 80 * S, 26 * S, "160,80,255", 0.7 * fa); ctx.restore();
+      var g = ctx.createLinearGradient(0, gy + 6 * S, 0, gy - ch);
+      g.addColorStop(0, "rgba(15,45,55,0.9)"); g.addColorStop(0.6, "rgba(60,120,130,0.9)"); g.addColorStop(1, "rgba(220,245,250,0.95)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(fx - dir * cw * 1.6, gy + 6 * S);
+      ctx.bezierCurveTo(fx - dir * cw * 0.8, gy + 2 * S, fx - dir * cw * 0.35, gy - ch, fx, gy - ch * 0.85);
+      ctx.bezierCurveTo(fx + dir * cw * 0.15, gy - ch * 0.7, fx + dir * cw * 0.3, gy + 2 * S, fx + dir * cw * 0.45, gy + 6 * S); ctx.closePath(); ctx.fill();
+      for (var f = 0; f < 18; f++) { /* foam spray thrown forward off the crest */
+        var fr = hash(f + 900), ft = ((q * 2.2 + fr) % 1), px = fx - dir * cw * 0.2 + dir * (ft * 60 * S) + (hash(f + 901) - 0.5) * 20 * S, py = gy - ch * 0.8 - 40 * S * ft + 70 * S * ft * ft;
+        ctx.fillStyle = "rgba(225,245,250," + (0.8 * (1 - ft) * fa) + ")"; ctx.beginPath(); ctx.arc(px, py, (1.5 + 2 * hash(f + 902)) * S, 0, 6.283); ctx.fill();
+      }
+    }
+
+    /* geyser under the target */
+    var ba = q - TRAVEL; if (ba > 0) {
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; glow(ctx, x1, gy, (90 + 80 * Math.min(1, ba)) * S, 30 * S, "160,80,255", 0.8 * Math.max(0, 1 - ba / 0.9) * fade); ctx.restore();
+      column(ctx, x1, gy + 6 * S, 30 * S, 190 * S, ba, 1.25, 77, fade);
+      column(ctx, x1 - 30 * S, gy + 6 * S, 16 * S, 110 * S, ba - 0.05, 1.05, 78, fade);
+      column(ctx, x1 + 32 * S, gy + 6 * S, 16 * S, 120 * S, ba - 0.08, 1.05, 79, fade);
+    }
+  }
+  window.KAIJU_QUAKE = { draw: draw, TRAVEL: TRAVEL, LEN: LEN };
+})();
+
+var KAIJU_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/bosses/kaiju/" : "art/bosses/kaiju/";
+var KAIJU_IMG = { body: null, glow: null, mask: null };
+var KAIJU_W_PX = 237;          /* on-screen width of the whole picture, tail included (Arena px) - Harley picked the biggest mockup size */
+var KAIJU_FEET = 9;            /* the heroes' feet line = groundY + 9 (arenaSlotPos: groundY - 4, sprite feet +13) */
+var KAIJU_SINK = 1;            /* he stands this much below the line - in the water */
+var KAIJU_WATER = 6;           /* water surface = groundY + this: just over the bottom of his claws (and the heroes' feet) */
+var KAIJU_SKIN = { id: "kaiju", name: "Kaiju", kaiju: true, calm: true, cq: null, cqScale: KAIJU_W_PX / 708 / (FORTRESS_SHIP_SCALE * 24 / 22), lift: 14 - KAIJU_FEET - 9 * KAIJU_W_PX / 1415, meleeFront: 1 - 105 / 1415 };
+SKIN_HULLT.kaiju = [0.70, 0.46]; /* his chest (picture faces right before the enemy-side flip) */
+function kaijuLoad() {
+  if (KAIJU_IMG.body) return;
+  [["body", "kaiju_body.webp"], ["glow", "kaiju_spineglow.webp"], ["mask", "kaiju_mask.webp"]].forEach(function (f) { var im = new Image(); im.src = KAIJU_ART_BASE + f[1] + "?v=1"; KAIJU_IMG[f[0]] = im; });
+  KAIJU_SKIN.cq = KAIJU_IMG.mask;
+}
+function kaijuReady() { return !!(KAIJU_IMG.body && KAIJU_IMG.body.complete && KAIJU_IMG.body.naturalWidth && KAIJU_IMG.glow.complete && KAIJU_IMG.glow.naturalWidth); }
+var kaijuState = { mode: "idle", t0: 0, quake: null, water: true, last: null };
+function kaijuAct(kind) { var now = performance.now() / 1000; kaijuState.mode = kind; kaijuState.t0 = now; if (kind === "stomp") kaijuState.quake = now + 0.88; }
+function kaijuPoseNow(w, h) {
+  var B = fortHullBox(w, h, "arena", false, false); if (!B) return null;
+  var now = performance.now() / 1000, K = kaijuState, mode = "idle", mt = 0;
+  if (K.mode !== "idle") { mt = now - K.t0; if (mt >= (K.mode === "blast" ? KAIJU.BLAST : KAIJU.STOMP)) K.mode = "idle"; else mode = K.mode; }
+  var s = B.sw / 1415, x = B.x, feetY = groundYFor(h) + KAIJU_FEET + KAIJU_SINK, po = KAIJU.pose(now, mode, mt), tgt = arenaHullTarget(w, h, true);
+  if (po.mouth > 0) KAIJU.aim(po, x, feetY, s, tgt, po.mouth); /* the beam goes from his mouth to your hull target - a high skin (Mecha) gets aimed higher */
+  return { po: po, x: x, feetY: feetY, s: s, tgt: tgt };
+}
+function kaijuDrawArena(ctx, w, h) { /* the body, in the enemy fortress's place (drawArenaFortress "back" pass) */
+  kaijuLoad(); if (!kaijuReady()) return;
+  var k = kaijuState.last = kaijuPoseNow(w, h); if (!k) return;
+  KAIJU.draw(ctx, KAIJU_IMG, k.x, k.feetY, k.s, k.po, k.tgt, "body");
+}
+function kaijuDrawWater(ctx, w, h) { /* placeholder shallow sea until the boss level exists: dark murky water over the floor */
+  var gy = groundYFor(h), wy = gy + KAIJU_WATER, t = performance.now() / 1000, wg = ctx.createLinearGradient(0, wy, 0, h);
+  wg.addColorStop(0, "rgba(22,52,60,0.9)"); wg.addColorStop(0.35, "rgba(12,32,40,0.96)"); wg.addColorStop(1, "rgba(5,14,20,1)");
+  ctx.save(); ctx.fillStyle = wg; ctx.fillRect(0, wy, w, h - wy);
+  ctx.strokeStyle = "rgba(150,200,210,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); for (var sx = 0; sx <= w; sx += 4) { var sy = wy + Math.sin(sx * 0.07 + t * 2) * 0.6; if (sx) ctx.lineTo(sx, sy); else ctx.moveTo(sx, sy); } ctx.stroke();
+  for (var i = 0; i < 26; i++) { var ly = wy + 4 + Math.pow((i * 0.618) % 1, 1.6) * (h - wy - 6), lx = ((i * 57.3 + t * (6 + i % 5 * 2)) % (w + 60)) - 30, ll = 10 + (i * 13) % 26;
+    ctx.strokeStyle = "rgba(120,170,185," + (0.1 + 0.06 * (i % 3)) + ")"; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + ll, ly); ctx.stroke(); }
+  ctx.restore();
+}
+function kaijuDrawArenaFx(ctx, w, h) { /* over the fighters: water, the stomp's water surge, the beam */
+  var k = kaijuState.last; if (!k) return;
+  if (kaijuState.quake != null) { var q = performance.now() / 1000 - kaijuState.quake; if (q > KAIJU_QUAKE.LEN) kaijuState.quake = null; else if (q >= 0) { var ft = KAIJU.mapPoint(250, 925, KAIJU.pose(0, "idle", 0), k.x, k.feetY, k.s); KAIJU_QUAKE.draw(ctx, q, ft[0], k.tgt.x, groundYFor(h) + KAIJU_WATER, k.s); } }
+  KAIJU.draw(ctx, KAIJU_IMG, k.x, k.feetY, k.s, k.po, k.tgt, "fx");
+  drawArenaHpBar(ctx, w * 0.58, 22, w * 0.36, arenaAnim.aiMaxHp ? arenaAnim.aiHp / arenaAnim.aiMaxHp : 1, "#e05a5a", "#a02c2c"); /* his head reaches the bar - keep it readable on top */
+}
 var WEAPON_TRACK = { scatter_rounds: 1, flak_burst: 1, missile_barrage: 1 };
 function arenaHullTarget(w, h, targetIsPlayerSide) { var box = fortHullBox(w, h, "arena", targetIsPlayerSide, false); if (!box) return { x: w * 0.5, y: groundYFor(h) - 18 };
   var sk = box.skin, f = SKIN_HULLT[sk.id] || [0.5, 0.6]; if (sk.parts) f = mechaPartPoint(sk, "torso", f); return fortHullPoint(box, f); }
@@ -37794,6 +38076,7 @@ function drawArenaBackground(ctx, w, h, groundY) {
 // Arena-hero-size / Conquest-hero-size ratio (24 / 22) so hero-to-fortress proportions match Conquest exactly. The AI's skin is picked
 // deterministically from its identity (so a given opponent always shows the same fortress). Enemy side is mirrored to face left.
 function arenaOpponentFortressSkin(opp) {
+  if (opp && opp.kaiju) { kaijuLoad(); return KAIJU_SKIN; } /* v1598: Boss Rush */
   var key = String((opp && (opp.id || opp.name)) || "x"), hsh = 0;
   for (var i = 0; i < key.length; i++) hsh = (hsh * 31 + key.charCodeAt(i)) >>> 0;
   return FORTRESS_SKINS[hsh % FORTRESS_SKINS.length];
@@ -37912,6 +38195,7 @@ function hexShieldStatusArenaAI() {
 }
 function drawArenaFortress(ctx, w, h, isPlayerSide, shieldSet, part) { /* v1530: part "back" / "front" - a layered skin draws its back before the riders and its front after them; plain skins draw whole on "back" and nothing on "front" */
   var skin = isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]);
+  if (skin.kaiju) { if (part !== "front") kaijuDrawArena(ctx, w, h); return; } /* v1598: Boss Rush kaiju */
   var img = skin.cq;
   if (!img || !img.complete || !img.naturalWidth) return;
   var sc = FORTRESS_SHIP_SCALE * skin.cqScale * (24 / 22);
@@ -38271,12 +38555,14 @@ function drawArenaFrame(ctx, w, h) {
   var hxSetB = null, hxBoxB = arenaAiShieldBox(w, h);
   if (hxBoxB) { hxSetB = hexShieldPrepare("arenaAI", hxBoxB.x, hxBoxB.y, hxBoxB.sw, hxBoxB.sh, hexShieldStatusArenaAI); if (hxSetB) hexShieldDrawPass(ctx, hxSetB, false); }
   drawArenaFortress(ctx, w, h, true, osSetA, "back"); drawArenaFortress(ctx, w, h, false, null, "back");
+  if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju && kaijuState.water) kaijuDrawWater(ctx, w, h); /* v1598: shallow sea over his claws, under the heroes and their bars */
   drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
   drawFormation(arenaAnim.playerRoster, true, "deck");
   drawFormation(arenaAnim.aiRoster, false, "deck");
   drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165; v1556: after the front hull layer - layered skins (crawlers, walker...) covered the guns in Arena
   drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
+  if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju) kaijuDrawArenaFx(ctx, w, h); /* v1598: water, stomp surge, beam */
   if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */
   (function drawArenaClones() { /* v975: Clone Task's clone - Gareth's sprite, heavy green tint; runs out and fights where the sim puts it */
     var cdm = arenaAnim.cloneD; if (!cdm || !arenaAnim.battleShared) return;
