@@ -8,7 +8,7 @@
   function rot(x, y, cx, cy, a) { var c = Math.cos(a), s = Math.sin(a), dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
   function key(t, ks) { /* ks = [[time, value], ...] eased between */ if (t <= ks[0][0]) return ks[0][1]; for (var i = 1; i < ks.length; i++) if (t <= ks[i][0]) { var a = ks[i - 1], b = ks[i], u = ease((t - a[0]) / (b[0] - a[0])); return a[1] + (b[1] - a[1]) * u; } return ks[ks.length - 1][1]; }
-  var BLAST = 2.8; /* seconds */
+  var BLAST = 2.8, STOMP = 2.1; /* seconds */
   function pose(t, mode, mt) {
     var C = 2 * Math.PI / 3.0, br = Math.sin(t * C), p = { breath: br, lean: 0.022 * Math.sin(t * C) + 0.006 * Math.sin(t * C * 2.3 + 1),
       head: 0.055 * Math.sin(t * C - 0.9) + 0.015 * Math.sin(t * C * 2.7), jaw: 0.05 + 0.07 * (0.5 + 0.5 * Math.sin(t * C - 1.4)),
@@ -28,10 +28,22 @@
       p.beam = u > 1.02 && u < 2.0 ? Math.min(1, (u - 1.02) / 0.08) * Math.min(1, (2.0 - u) / 0.15) : 0;
       p.tailA += key(u, [[0, 0], [0.9, 1.6], [1.3, 2.2], [1.9, 1.2], [2.5, 0], [BLAST, 0]]);
     }
+    if (mode === "stomp") { /* the front (left) foot lifts, holds, slams down; weight shifts back then drops */
+      var v = mt;
+      p.lift = key(v, [[0, 0], [0.55, 110], [0.78, 118], [0.9, -3], [0.98, 0], [STOMP, 0]]);
+      p.lean += key(v, [[0, 0], [0.55, -0.035], [0.78, -0.04], [0.9, 0.03], [1.3, 0.012], [STOMP, 0]]);
+      p.knee += key(v, [[0, 0], [0.55, 0.6], [0.88, 0.6], [0.95, 2.2], [1.4, 0.6], [STOMP, 0]]);
+      p.head += key(v, [[0, 0], [0.55, -0.06], [0.88, -0.07], [0.95, 0.07], [1.4, 0.01], [STOMP, 0]]);
+      p.arm += key(v, [[0, 0], [0.55, -1.2], [0.9, 1.5], [1.4, 0.3], [STOMP, 0]]);
+      p.tailA += key(v, [[0, 0], [0.9, 0.5], [1.1, 2.2], [1.6, 0.6], [STOMP, 0]]);
+      p.impact = v > 0.88 && v < 1.6 ? 1 - (v - 0.88) / 0.72 : 0; /* flash + dust + shake */
+      p.shake = v > 0.88 && v < 1.25 ? (1 - (v - 0.88) / 0.37) : 0;
+    }
     return p;
   }
   function warp(x, y, p) { /* source px -> deformed source px */
     var still = 1 - sm(690, 830, y), X = x, Y = y;
+    if (p.lift) { var wl2 = (1 - sm(400, 470, x)) * sm(520, 660, y); if (wl2 > 0) { var lf = p.lift * sm(560, 930, y) * wl2; Y -= lf; X += 0.18 * lf * (1 - sm(560, 930, y)) - 0.1 * lf; } } /* stomp leg */
     /* tail: travelling wave, amplitude grows to the tip */
     if (x > P.tail0) { var u = (x - P.tail0) / (P.tipX - P.tail0), A = 16 * p.tailA * Math.pow(u, 1.4), ph = p.tailT * 2 * Math.PI / 2.6 - u * 3.4; Y += A * Math.sin(ph) + A * 0.25 * Math.sin(ph * 2.1 + 0.7); X += -6 * u * Math.sin(ph + 1); }
     /* far arm, near arm: small sway about the shoulder */
@@ -41,7 +53,7 @@
     /* jaw: lower jaw below the hinge line */
     var wj = sm(236, 258, y) * (1 - sm(195, 240, x)) * (1 - sm(350, 380, y)); if (wj > 0) { var qj = rot(X, Y, P.hinge[0], P.hinge[1], -p.jaw * wj); X = qj[0]; Y = qj[1]; }
     /* head + neck: rotate about the neck */
-    var wh = (1 - sm(230, 380, x)) * (1 - sm(380, 470, y)); if (wh > 0) { var qh = rot(X, Y, P.neck[0], P.neck[1], -p.head * wh); X = qh[0]; Y = qh[1]; }
+    var wh = (1 - sm(230, 380, x)) * (1 - sm(380, 470, y)); if (wh > 0) { var qh = rot(X, Y, P.neck[0], P.neck[1], -(p.head + (p.aimHead || 0) * (p.mouth || 0)) * wh); X = qh[0]; Y = qh[1]; }
     /* whole body leans from the hips; the legs bend (knees) so the feet stay put */
     var wl = 1 - sm(640, 800, y); if (wl > 0 && x < 1500) { var ql = rot(X, Y, P.hip[0], P.hip[1], -(p.lean || 0) * wl); X = ql[0]; Y = ql[1]; }
     var wk = sm(560, 700, y) * (1 - sm(760, 860, y)); Y += 7 * (p.knee || 0) * wk; Y += 7 * (p.knee || 0) * (1 - sm(560, 700, y)) * still;
@@ -71,9 +83,10 @@
     return function (x, y) { var w = warp(x, y, p); return [T.x + w[0] * T.s, T.y + w[1] * T.s]; };
   }
   function glowAt(ctx, x, y, r, col, a) { var g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, "rgba(" + col + "," + a + ")"); g.addColorStop(1, "rgba(" + col + ",0)"); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); }
-  window.KAIJU = { BLAST: BLAST, W: W, H: H, pose: pose,
+  window.KAIJU = { BLAST: BLAST, STOMP: STOMP, W: W, H: H, pose: pose, P: P,
     draw: function (ctx, imgs, x, feetY, scale, p, beamToX) { /* x = left edge of the picture, feetY = the floor line */
-      var T = { x: x, y: feetY - 940 * scale, s: scale };
+      var sh = p.shake ? p.shake * 7 * Math.sin(performance.now() / 18) : 0;
+      var T = { x: x + sh * 0.4, y: feetY - 940 * scale + sh, s: scale };
       /* the glow is added into one flat texture first (no seams), then the texture is warped once */
       var tx = this._tx || (this._tx = document.createElement("canvas")); if (tx.width !== W) { tx.width = W; tx.height = H; } var tc = tx.getContext("2d");
       tc.globalCompositeOperation = "source-over"; tc.globalAlpha = 1; tc.clearRect(0, 0, W, H); tc.drawImage(imgs.body, 0, 0);
@@ -85,10 +98,13 @@
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 1; var c = map(P.core[0], P.core[1]); glowAt(ctx, c[0], c[1], 90 * scale, "200,80,255", Math.min(1, p.core) * 0.9);
       if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1] + 8); glowAt(ctx, m[0], m[1], (40 + 50 * p.mouth) * scale, "230,140,255", p.mouth); glowAt(ctx, m[0], m[1], 22 * scale * p.mouth, "255,255,255", p.mouth); }
-      if (p.beam > 0) { var m2 = map(P.mouth[0] - 10, P.mouth[1] + 10), bx = beamToX == null ? 0 : beamToX, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
-        var gr = ctx.createLinearGradient(0, m2[1] - th, 0, m2[1] + th); gr.addColorStop(0, "rgba(180,60,255,0)"); gr.addColorStop(0.3, "rgba(200,90,255,0.75)"); gr.addColorStop(0.5, "rgba(255,240,255,1)"); gr.addColorStop(0.7, "rgba(200,90,255,0.75)"); gr.addColorStop(1, "rgba(180,60,255,0)");
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(m2[0], m2[1] - th * 0.45); ctx.lineTo(bx, m2[1] - th); ctx.lineTo(bx, m2[1] + th); ctx.lineTo(m2[0], m2[1] + th * 0.45); ctx.closePath(); ctx.fill();
-        glowAt(ctx, bx + 10, m2[1], 120 * scale * p.beam, "230,150,255", 0.9 * p.beam); glowAt(ctx, m2[0], m2[1], 70 * scale * p.beam, "255,230,255", p.beam); }
+      if (p.beam > 0) { var m2 = map(P.mouth[0] - 10, P.mouth[1] + 10), tg = beamToX && beamToX.x != null ? beamToX : { x: beamToX || 0, y: m2[1] }, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
+        var dx = tg.x - m2[0], dy = tg.y - m2[1], L = Math.hypot(dx, dy), an = Math.atan2(dy, dx);
+        ctx.save(); ctx.translate(m2[0], m2[1]); ctx.rotate(an);
+        var gr = ctx.createLinearGradient(0, -th, 0, th); gr.addColorStop(0, "rgba(180,60,255,0)"); gr.addColorStop(0.3, "rgba(200,90,255,0.75)"); gr.addColorStop(0.5, "rgba(255,240,255,1)"); gr.addColorStop(0.7, "rgba(200,90,255,0.75)"); gr.addColorStop(1, "rgba(180,60,255,0)");
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, -th * 0.45); ctx.lineTo(L, -th); ctx.lineTo(L, th); ctx.lineTo(0, th * 0.45); ctx.closePath(); ctx.fill(); ctx.restore();
+        glowAt(ctx, tg.x, tg.y, 120 * scale * p.beam, "230,150,255", 0.9 * p.beam); glowAt(ctx, m2[0], m2[1], 70 * scale * p.beam, "255,230,255", p.beam); }
+      if (p.impact > 0) { var fq = map(250, 925); glowAt(ctx, fq[0], fq[1], 170 * scale * (1.4 - p.impact * 0.4), "200,90,255", 0.85 * p.impact); glowAt(ctx, fq[0], fq[1], 60 * scale, "255,235,255", p.impact); }
       ctx.restore();
     } };
 })();

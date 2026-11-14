@@ -8,3 +8,5 @@ The ChatGPT parts sheet (art/originals/bosses/kaiju/rig/kaiju_parts_v1_gpt.png) 
 - feet (y > ~700 px) never move
 Preview: view.html + render_preview.js (60 fps frames -> art/originals/bosses/kaiju/clips/kaiju_coded_preview_v1.mp4). ~8 ms a frame in headless Chromium on a desktop CPU; phones will be slower - consider fewer cells / WebGL when it goes in.
 Atlas clips (fallback): clips/kaiju_idle_v1.mp4, clips/kaiju_breath_v1.mp4.
+- v3: stomp (2.1 s): the front (left) foot lifts ~110 px, holds, slams; weight shifts back then drops, knees give, tail whips, impact flash at the foot + shake. The creeping ground blast it starts is a separate effect (to do).
+- Blast aim (Harley): the mouth points down-left at the ship - the head tilts by the angle from the mouth to the target (in the game: the player's skin hull target, SKIN_HULLT, so the tall Mecha gets a higher shot). The beam is drawn from the mouth to that point.
