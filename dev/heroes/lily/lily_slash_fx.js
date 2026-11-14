@@ -42,6 +42,8 @@
      travel = how far it keeps flying outward while it dissolves. ATTACHED = round her (v1), DETACHED = separate flying crescents (A1). */
   var ATTACHED = { over: 1.18, width: 0.30, detach: 0, travel: 0 };
   var DETACHED = { over: 1.7, width: 0.34, detach: 0.42, travel: 0.35 };
+  var FLAT = { flat: true, over: 1.18, width: 0.30, detach: 0, travel: 0 };
+  var FLAT_DETACHED = { flat: true, over: 1.7, width: 0.30, detach: 0.42, travel: 0.35 };
   function slash(ctx, sw, idx, t, ox, oy, k, st) {
     st = st || ATTACHED;
     var f0 = sw[0], f1 = sw[1] + 1, end = f1 + FADE;
@@ -132,8 +134,63 @@
     }
   }
 
-  function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) slash(ctx, swings[i], i, t, ox, oy, k, st); }
-  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], ATTACHED: ATTACHED, DETACHED: DETACHED };
+
+  /* FLAT look (Harley 15 Nov: "more 2D, flat colour, hand drawn, no glowing" - like the painted crescents in his reference):
+     normal blending only, crisp edges, 2-3 flat reds, a thin sharp cutting edge, a dry-brush body that breaks into separate
+     strips toward the tail, a dark smear behind it, and flat splatter drops flung off the tip. */
+  /* anime crescent: sharp at BOTH tips, fullest about two thirds of the way to the blade tip */
+  function profA(s) { s = Math.max(0, Math.min(1, s)); return Math.pow(s, 1.1) * Math.pow(1 - s, 0.42) * 2.25; }
+  function slashFlat(ctx, sw, idx, t, ox, oy, k, st) {
+    var f0 = sw[0], f1 = sw[1] + 1, end = f1 + FADE;
+    if (t < f0 || t > end) return;
+    var p = Math.min(1, (t - f0) / (f1 - f0)), fade = t > f1 ? (t - f1) / FADE : 0;
+    var a0 = sw[2] * D2R, a1 = sw[3] * D2R, span = a1 - a0, dir = span < 0 ? -1 : 1;
+    var head = a0 + span * easeOut(p) + (fade > 0 ? dir * 5 * D2R * easeOut(fade) : 0);
+    var trail = Math.max(MINTRAIL * D2R, Math.abs(span) * 1.1) * (1 - 0.6 * sm(0, 1, fade));
+    var tail = head - dir * trail;
+    var R = sw[4] * st.over * (1 + 0.05 * easeOut(fade)), W = R * st.width;
+    var mid = a0 + span * 0.5, off = R * (st.detach + st.travel * (0.35 * p + easeOut(fade)));
+    var dx = st.detach ? Math.cos(mid) * (off - R * 0.45) : 0, dy = st.detach ? Math.sin(mid) * (off - R * 0.45) : 0;
+    var A = 1 - sm(0.35, 1, fade), sy = 0.86, tilt = (rnd(idx + 3) - 0.5) * 0.25, N = 40, i, s, a;
+    var erode = 0;                                    /* (the shrinking trail keeps both tips pointed while it dissolves) */
+    function ang(s) { return tail + dir * trail * s; }
+    function strip(sa, sb, r0, r1, col, al) {        /* a flat crescent strip between depths r0..r1 (0 = outer rim, 1 = inner edge) */
+      sa = Math.max(sa, erode * 0.8); if (sb <= sa) return;
+      ctx.beginPath();
+      for (var j = 0; j <= N; j++) { var u = sa + (sb - sa) * j / N, w = W * profA(u), rr = R - w * r0, aa = ang(u); if (j === 0) ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); else ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+      for (var j2 = N; j2 >= 0; j2--) { var u2 = sa + (sb - sa) * j2 / N, w2 = W * profA(u2), rr2 = R - w2 * r1, aa2 = ang(u2); ctx.lineTo(Math.cos(aa2) * rr2, Math.sin(aa2) * rr2); }
+      ctx.closePath(); ctx.fillStyle = "rgba(" + col + "," + (al * A) + ")"; ctx.fill();
+    }
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * sy); ctx.translate(dx, dy); ctx.rotate(tilt);
+    ctx.globalCompositeOperation = "source-over";
+    /* smear: a dark, see-through brushed shadow just inside the crescent */
+    strip(0.05, 0.92, 0.55, 1.35, "60,8,16", 0.28);
+    /* body: dark crimson base, then a mid red band toward the cutting edge (flat tones, crisp edges) */
+    strip(0.12, 1, 0.08, 1.0, "128,12,24", 0.92);
+    strip(0.3, 1, 0.06, 0.55, "196,24,36", 0.95);
+    /* dry-brush strips: separate thin bands in the tail, each stopping at a different point, so it reads hand painted */
+    for (i = 0; i < 6; i++) {
+      var d0 = 0.15 + 0.13 * i, sa2 = 0.02 + 0.3 * rnd(idx * 11 + i), sb2 = sa2 + 0.25 + 0.25 * rnd(idx * 7 + i);
+      strip(sa2, Math.min(0.85, sb2), d0, d0 + 0.06 + 0.04 * rnd(i + idx), i % 2 ? "150,16,28" : "92,10,20", 0.85);
+    }
+    /* anime core: a crisp white crescent along the cutting edge, pointed at both ends (no glow) */
+    strip(0.3, 1, 0, 0.32, "255,236,230", 0.97);
+    strip(0.5, 1, 0, 0.14, "255,255,255", 1);
+    /* splatter: flat drops thrown off the tip along the swing (dark red and red, no glow) */
+    for (i = 0; i < 9; i++) {
+      var born = f0 + (f1 - f0) * rnd(idx * 13 + i), age = t - born; if (age < 0 || age > 9) continue;
+      var ab = a0 + span * easeOut(Math.min(1, (born - f0) / (f1 - f0))), sp = (8 + 13 * rnd(idx * 5 + i)) * (R / 330);
+      var tx = -Math.sin(ab) * dir, ty = Math.cos(ab) * dir, ux = Math.cos(ab), uy = Math.sin(ab), mix = 0.3 + 0.5 * rnd(i + idx);
+      var vx = (tx * 0.75 + ux * mix) * sp, vy = (ty * 0.75 + uy * mix) * sp;
+      var x = Math.cos(ab) * R + vx * age, y = Math.sin(ab) * R + vy * age + 1.3 * age * age * (R / 330);
+      var sz = (3 + 6 * rnd(idx * 3 + i)) * (R / 330) * (1 - age / 12), ro = Math.atan2(vy + 2.6 * age * (R / 330), vx);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ro); ctx.beginPath(); ctx.ellipse(0, 0, sz * 1.9, sz * 0.75, 0, 0, 6.283);
+      ctx.fillStyle = (i % 3 ? "rgba(150,14,26," : "rgba(70,6,14,") + (1 - age / 9) + ")"; ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+  }
+  function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) (st && st.flat ? slashFlat : slash)(ctx, swings[i], i, t, ox, oy, k, st); }
+  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED };
   if (typeof window !== "undefined") window.LILY_SLASH = api;
   if (typeof module !== "undefined") module.exports = api;
 })();

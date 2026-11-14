@@ -13,6 +13,11 @@ for p in fr:
     fg[..., 1] = np.minimum(fg[..., 1], np.maximum(fg[..., 0], fg[..., 2]) + 10)
     soft = al < 0.97                                   # glow / edges: no yellow-green, keep it red-orange
     fg[..., 1] = np.where(soft, np.minimum(fg[..., 1], 0.55 * fg[..., 0] + 10), fg[..., 1])
+    if os.environ.get('RECOLOR'):                       # turn Atlas's orange / yellow blade smears into the flat slash reds
+        r_, g_, b_ = fg[..., 0], fg[..., 1], fg[..., 2]
+        smear = (r_ > 170) & (b_ < 75) & (r_ - b_ > 150) & (g_ > b_ + 40)   # saturated orange / yellow only (skin and gold stay)
+        lum = (r_ * 0.6 + g_ * 0.4) / 255.0
+        fg[..., 0] = np.where(smear, 120 + 90 * lum, r_); fg[..., 1] = np.where(smear, 14 + 20 * lum, g_); fg[..., 2] = np.where(smear, 26 + 16 * lum, b_)
     al[al < 0.04] = 0
     Image.fromarray(np.dstack([fg.clip(0, 255), al * 255]).astype(np.uint8), 'RGBA').save(os.path.join(OUT, os.path.basename(p)))
 print(len(fr), 'frames, bg', BG)
