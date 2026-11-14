@@ -25,6 +25,10 @@
     [8, 11, 145, -34, 340], [12, 16, -55, -209, 340], [18, 21, -21, -135, 300], [22, 24, -60, 12, 380],
     [25, 29, -24, -194, 340], [31, 36, -30, -180, 320], [37, 39, 45, 5, 380], [42, 45, -24, -180, 360]
   ];
+  /* A-style reruns without the trail wording (lily_flurryA2_1 / _2), measured by dev/heroes/lily/measure_swings.py; chest 610, 506 */
+  var SWINGS_A21 = [[3, 8, 161, -28, 320], [8, 11, -28, -195, 330], [12, 15, 1, -147, 270], [17, 23, 24, -190, 350], [26, 28, -70, -204, 260], [28, 31, -204, -385, 320], [31, 35, -385, -557, 340]];
+  var SWINGS_A22 = [[3, 6, 156, -42, 340], [6, 10, -42, -216, 370], [12, 15, 150, 344, 340], [15, 16, 344, 382, 390], [18, 23, 7, -207, 350], [23, 26, -207, -410, 360],
+    [26, 30, -410, -575, 380], [32, 35, -77, -205, 370], [38, 41, -35, 126, 270], [41, 45, 126, 322, 220]];
   var SWINGS = SWINGS_A;
   var OVER = 1.18;    /* oversize the measured radius */
   var WIDTH = 0.30;   /* max crescent thickness as a share of its radius */
@@ -240,7 +244,7 @@
     ctx.restore();
   }
   function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) { if (st && st.painted) slashSprite(ctx, swings[i], i, t, ox, oy, k, st, st.sprites || api.sprites); else (st && st.flat ? slashFlat : slash)(ctx, swings[i], i, t, ox, oy, k, st); } }
-  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
+  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], SWINGS_A21: SWINGS_A21, CHEST_A21: [610, 506], SWINGS_A22: SWINGS_A22, CHEST_A22: [610, 506], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
   if (typeof window !== "undefined") window.LILY_SLASH = api;
   if (typeof module !== "undefined") module.exports = api;
 })();
