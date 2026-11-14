@@ -250,4 +250,11 @@ t("v1593 live events config: clamps, sorts, refuses gems / unknown items", () =>
   assert.throws(() => C.normalizeLiveops({ fhw: { check: [{ kind: "nope" }] } }), /bad kind/);
   assert.ok(C.ITEMS.event_tokens && C.ITEMS.item_tp_advanced && C.ITEMS.speedup_healing_24h && C.ITEMS.shards_caelum, "new catalogue items");
 });
+t("v1594 arena event: defaults, rank rewards, keys", () => {
+  const lo = C.normalizeLiveops({}); assert.strictEqual(lo.arena.win, 20); assert.strictEqual(C.arenaRankReward(lo.arena.rankD, 1).arena_medals, 200);
+  assert.strictEqual(C.arenaRankReward(lo.arena.rankD, 7).arena_medals, 100); assert.strictEqual(C.arenaRankReward(lo.arena.rankD, 5000).arena_medals, 20);
+  const k = C.arenaKeys(Date.UTC(2026, 10, 16, 1)); assert.strictEqual(k.w, C.arenaKeys(Date.UTC(2026, 10, 22, 23)).w, "Mon-Sun same week"); assert.notStrictEqual(k.w, C.arenaKeys(Date.UTC(2026, 10, 15, 23)).w, "Sunday before = previous week");
+  assert.throws(() => C.normalizeLiveops({ arena: { shop: { items: [{ item: "gems" }] } } }), /can't sell gems/);
+  assert.ok(C.ITEMS.arena_medals);
+});
 console.log(n + " tests passed");

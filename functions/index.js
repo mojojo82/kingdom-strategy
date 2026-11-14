@@ -359,6 +359,37 @@ exports.adminMarkPurchase = wrap(async (req, uid, R, d) => {
   });
 });
 
+// ---- v1594: Arena event leaderboards (per kingdom; daily + weekly). The game sends the points of each Arena win; capped per call and per day. ----
+const lbCol = (K, per, key) => db.collection(K + "arenalb/" + per + key + "/p");
+function lbName(n) { return String(n || "").replace(/[<>]/g, "").trim().slice(0, 24) || "Governor"; }
+exports.arenaScore = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), k = C.arenaKeys(now), gain = Math.trunc(+d.gain || 0), name = lbName(d.name), tag = String(d.tag || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 4);
+  if (!(gain >= 1 && gain <= 100)) throw new C.GameError("invalid-argument", "bad gain");
+  const dr = lbCol(K, "d", k.d).doc(uid), wr = lbCol(K, "w", k.w).doc(uid);
+  return db.runTransaction(async (tx) => {
+    const ds = await tx.get(dr), ws = await tx.get(wr), dd = ds.data() || {}, wd = ws.data() || {};
+    if ((dd.n || 0) >= 200) throw new C.GameError("resource-exhausted", "daily limit");
+    const dp = (dd.pts || 0) + gain, wp = (wd.pts || 0) + gain;
+    tx.set(dr, { pts: dp, n: (dd.n || 0) + 1, name, tag, at: now }, { merge: true }); tx.set(wr, { pts: wp, n: (wd.n || 0) + 1, name, tag, at: now }, { merge: true });
+    return { d: k.d, w: k.w, dpts: dp, wpts: wp };
+  });
+});
+exports.claimArenaRank = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), per = d.per === "w" ? "w" : "d", key = Math.trunc(+d.key), cur = C.arenaKeys(Date.now())[per];
+  if (!(key < cur && key >= cur - 30)) throw new C.GameError("failed-precondition", "not finished yet");
+  const ref = lbCol(K, per, key).doc(uid), s = await ref.get(), me = s.exists ? s.data() : null;
+  if (!me || !(me.pts > 0)) throw new C.GameError("not-found", "no score");
+  if (me.claimed) return { dup: true, rank: me.rank };
+  const above = await lbCol(K, per, key).where("pts", ">", me.pts).count().get(), rank = above.data().count + 1;
+  const lo = (await liveopsConfig(R)) || {}, A = lo.arena || C.LIVE_ARENA_DEFAULT, items = C.arenaRankReward(per === "w" ? A.rankW : A.rankD, rank);
+  return db.runTransaction(async (tx) => {
+    const s2 = await tx.get(ref); if (s2.data().claimed) return { dup: true, rank: s2.data().rank };
+    tx.update(ref, { claimed: true, rank });
+    if (items) tx.set(mailCol(R, uid).doc(), C.makeMail("🏆 Arena " + (per === "w" ? "weekly" : "daily") + " rank #" + rank, "Your Arena " + (per === "w" ? "week" : "day") + " finished with " + me.pts.toLocaleString("en-US") + " points.", items, "arena", Date.now(), "system"));
+    return { dup: false, rank, items: items || {} };
+  });
+});
+
 // ---- account dates ----
 // "Account created" and "last seen" only. No IPs, devices or sessions. Called by the game once per session (and at most hourly).
 exports.touch = wrap(async (req, uid, R) => {

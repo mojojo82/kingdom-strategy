@@ -266,6 +266,34 @@ function liveItems(obj, what) {
 }
 const num = (v, lo, hi, def) => { const n = Math.trunc(+v); return isFinite(n) && n >= lo && n <= hi ? n : def; };
 const heroKey = (k) => { const s = String(k || "").toLowerCase(); if (!/^[a-z0-9_]{1,24}$/.test(s)) throw new GameError("invalid-argument", "bad hero " + k); return s; };
+/* v1594: Arena event. Points per win (+ a bonus for beating a higher-rated opponent), a daily milestone track (paid by the game), daily and
+   weekly leaderboards per kingdom (<kingdom>arenalb/d<utc day>|w<week>/p/<uid>, written only by arenaScore) and rank rewards claimed after
+   the day / week ends (claimArenaRank -> mail). rank rows: { to: last rank of the row (0 = everyone else with points), items }. */
+const LIVE_ARENA_DEFAULT = {
+  win: 20, upset: 10,
+  ms: [{ at: 20, items: { arena_medals: 10 } }, { at: 60, items: { speedup_general_5m: 2 } }, { at: 100, items: { arena_medals: 20 } }, { at: 160, items: { weapon_tickets: 1 } }],
+  rankD: [{ to: 1, items: { arena_medals: 200 } }, { to: 3, items: { arena_medals: 150 } }, { to: 10, items: { arena_medals: 100 } }, { to: 50, items: { arena_medals: 60 } }, { to: 100, items: { arena_medals: 40 } }, { to: 0, items: { arena_medals: 20 } }],
+  rankW: [{ to: 1, items: { arena_medals: 1000 } }, { to: 3, items: { arena_medals: 700 } }, { to: 10, items: { arena_medals: 500 } }, { to: 50, items: { arena_medals: 300 } }, { to: 100, items: { arena_medals: 200 } }, { to: 0, items: { arena_medals: 100 } }],
+  shop: { items: [{ id: "roran", item: "shards_roran", qty: 1, price: 150, limit: 2 }, { id: "kessa", item: "shards_kessa", qty: 1, price: 150, limit: 2 }, { id: "wsel", item: "item_chest_weapon", qty: 1, price: 400, limit: 1 },
+    { id: "tix", item: "weapon_tickets", qty: 1, price: 80, limit: 5 }, { id: "su1h", item: "speedup_general_1h", qty: 1, price: 60, limit: 5 }, { id: "eq2", item: "item_chest_eq_2", qty: 1, price: 200, limit: 1 }] }
+};
+function arenaKeys(now) { const d = utcDay(now); return { d, w: Math.floor((d + 3) / 7) }; }
+function arenaRankReward(rows, rank) { for (const r of rows || []) if ((r.to && rank <= r.to) || !r.to) return r.items; return null; }
+function liveShopRows(list, what) {
+  const sseen = {}; return (Array.isArray(list) ? list : []).slice(0, 24).map((x, i) => {
+    const item = String((x && x.item) || ""); if (!liveItemOk(item)) throw new GameError("invalid-argument", what + " row " + (i + 1) + ": can't sell " + item);
+    let id = packIdFrom((x && x.id) || item); while (sseen[id]) id += "_2"; sseen[id] = 1;
+    return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
+}
+function liveRankRows(list, what) {
+  const rows = (Array.isArray(list) ? list : []).slice(0, 12).map((r, i) => ({ to: num(r && r.to, 0, 1e6, 0), items: liveItems(r && r.items, what + " row " + (i + 1)) }));
+  rows.sort((a, b) => (a.to || 1e9) - (b.to || 1e9)); return rows;
+}
+function normalizeArena(a) {
+  if (!a) return JSON.parse(JSON.stringify(LIVE_ARENA_DEFAULT));
+  const ms = (Array.isArray(a.ms) ? a.ms : []).slice(0, 12).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "arena milestone " + (i + 1) + " needs points"); })(), items: liveItems(m && m.items, "arena milestone " + (i + 1)) })).sort((x, y) => x.at - y.at);
+  return { win: num(a.win, 0, 10000, 20), upset: num(a.upset, 0, 10000, 0), ms, rankD: liveRankRows(a.rankD, "daily rank"), rankW: liveRankRows(a.rankW, "weekly rank"), shop: { items: liveShopRows((a.shop || {}).items, "Arena Shop") } };
+}
 function normalizeLiveops(c) {
   c = c || {}; const f = c.fhw || {}, sh = c.shop || {}, wk = c.wk || {}, pts = {}, P = f.pts || {};
   ["kill", "arena", "camp", "monster", "ticket"].forEach((k) => { pts[k] = num(P[k], 0, 100000, 0); });
@@ -280,7 +308,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {
@@ -544,5 +572,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { normalizeLiveops, LIVEOPS_KINDS, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

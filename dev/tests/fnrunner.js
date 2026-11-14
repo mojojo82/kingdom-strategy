@@ -22,6 +22,9 @@ module.exports = function makeRunner(store) {
       return out;
     }
   };
+  /* v1594: collection(c).doc(id) and collection(c).where(f, ">", v).count().get() (Arena leaderboards) */
+  const origCol = db.collection; db.collection = (c) => Object.assign(origCol(c), { doc: (id) => db.doc(c + "/" + id),
+    where: (f, op, v) => ({ count: () => ({ get: async () => { const n = Object.keys(store).filter((k) => k.indexOf(c + "/") === 0 && k.slice(c.length + 1).indexOf("/") < 0).filter((k) => { const x = (store[k] || {})[f]; return op === ">" ? x > v : op === "==" ? x === v : false; }).length; return { data: () => ({ count: n }) }; } }) }) });
   // give docRef a .set for adminSetWallet
   const origDoc = db.doc; db.doc = (p) => Object.assign(origDoc(p), { get: async () => snap(p), delete: async () => { delete store[p]; }, set: async (d, o) => { store[p] = o && o.merge ? Object.assign({}, store[p] || {}, clone(d)) : clone(d); } });
   const fakes = {
