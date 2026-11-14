@@ -463,7 +463,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #avatarEditBadge { position:absolute; bottom:-2px; right:-2px; background:var(--accent); color:#fff; font-size:9px; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1.5px solid var(--panel); opacity:.85; }
   #resbar { display:flex; gap:10px; }
   #resBtn { display:none; }
-  .su-row { display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; } .su-btn { border:1px dashed #c9a24a; background:#161f2e; color:#f0c95f; border-radius:6px; padding:3px 8px; font-size:12px; font-weight:700; cursor:pointer; } /* v946 speedups */
+  .su-row { display:flex; gap:6px; margin-top:4px; flex-wrap:wrap; } .su-btn { border:1px dashed #c9a24a; background:#161f2e; color:#f0c95f; border-radius:6px; padding:3px 8px; font-size:12px; font-weight:700; cursor:pointer; } /* v946 speedups */ .su-btn img { width:17px; height:17px; vertical-align:-4px; margin-right:2px; } /* v1592: item art */
   #resOverlay .res-row { display:flex; align-items:center; gap:12px; padding:9px 4px; border-bottom:1px dashed var(--border); font-size:15px; font-weight:700; }
   #resOverlay .res-row:last-child { border-bottom:none; }
   #resOverlay .res-row .icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25), 0 1px 3px rgba(0,0,0,.4); }
@@ -2642,7 +2642,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .lg-train svg { width:100%; height:100%; display:block; }
   /* v1329 (Harley: "Backpack" - hit list screen 2): same shared frame; the category tabs are CSS shields (the kit's tab SHAPE - image crops of the mock tabs kept eating their borders in the cut, and CSS stays crisp at every size), cyan active like the kit. Grid/Use logic untouched. */
   #bagPop { position:fixed; inset:0; z-index:9450; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); }
-  #bagPop .bg-box { position:relative; width:min(92vw,400px,61vh); aspect-ratio:1024/1536; display:flex; flex-direction:column; background:var(--ks-frame-b) center/100% 100% no-repeat; padding:21.5% 12.5% 23.5% 13%; }
+  #bagPop .bg-box { position:relative; width:min(92vw,400px,61vh); aspect-ratio:1024/1536; display:flex; flex-direction:column; background:var(--ks-frame-b) center/100% 100% no-repeat; padding:21.5% 12.5% 23.5% 13%; } #bagPop .bg-box { min-height:0; } /* v1592: a full bag scrolls inside the frame instead of stretching it */
   /* v1332 (Harley: "the bottom section - cant you just use it for the backpack"): Type B's tray is the REAL bottom section of the first mock,
      spliced onto the fixed frame (baked tabs rebuilt out of the band from each row's darkest third, real rail ends kept). The tab row floats over
      the baked tray. */
@@ -2671,7 +2671,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   /* v1591 (Harley: Kingshot-style backpack tiles): square tiles in the rarity colour, the item art filling them, the amount on top, how many you have
      bottom-right in big outlined numbers (no "x", commas), no name under the tile (it shows below when picked). */
   #bagPop .bg-grid { gap:9px; padding:9px; }
-  #bagPop .bg-it.ks2 { aspect-ratio:1; padding:0; border:2px solid rgba(255,255,255,.6); border-radius:12px; box-shadow:0 3px 0 rgba(60,35,10,.45); overflow:hidden; background:linear-gradient(#7d848c,#b9bec4); }
+  #bagPop .bg-it.ks2 { aspect-ratio:1; padding:0; border:2px solid rgba(255,255,255,.6); border-radius:12px; box-shadow:0 3px 0 rgba(60,35,10,.45); overflow:visible; background:linear-gradient(#7d848c,#b9bec4); } /* v1592: no overflow:hidden - with it the square tiles squashed in a long, scrolling list */
   #bagPop .bg-it.ks2.sel { border-color:#ffe28a; box-shadow:0 0 0 3px rgba(240,201,95,.85), 0 3px 0 rgba(60,35,10,.45); }
   #bagPop .bg-it.ks2.r1 { background:linear-gradient(#2f9a63,#7fd8a4); } #bagPop .bg-it.ks2.r2 { background:linear-gradient(#2a73c9,#6cc0f5); }
   #bagPop .bg-it.ks2.r3 { background:linear-gradient(#6a52d6,#b3a3f5); } #bagPop .bg-it.ks2.r4 { background:linear-gradient(#f0861c,#ffc56b); }
@@ -2690,6 +2690,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #bagPop .bg-pick span.on { border-color:#f0c95f; background:rgba(240,201,95,.2); color:#ffe9a8; } #bagPop .bg-pick .ri { width:16px; height:16px; vertical-align:-3px; }
   #bagPop .bg-btns { display:flex; gap:8px; margin-top:10px; } #bagPop .bg-btns button { flex:1; border:0; border-radius:8px; font-weight:800; padding:9px 6px; cursor:pointer; }
   #bagPop .bg-btns .bg-usebtn { background:#2bb3d9; color:#06131c; } #bagPop .bg-btns .bg-det { background:#33291c; color:#f0c95f; border:1px solid #6b5730; }
+  #bagPop .bg-pick.wrap { flex-wrap:wrap; } #bagPop .bg-pick.wrap span { flex:0 0 calc(33.3% - 4px); box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* v1592 selector chests */
+  #bagPop .bg-note { margin-top:8px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; font-size:12px; opacity:.9; } #bagPop .bg-tg .su-btn:disabled { opacity:.45; cursor:default; }
   #bagPop .bg-got { margin-top:8px; color:#7fe08a; font-weight:800; text-align:center; }
   #bagPop .bg-tg { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; }
   #mapIdleBtn .mmi { font-size:22px; line-height:1; margin-top:-6px; }
@@ -3618,6 +3620,10 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
                 <div class="dev-tools-row">
                   <span class="dev-tools-hint">🧪 FPS stress buttons on the world map:</span>
                   <button class="dev-btn" id="devStressToggle" type="button">Show</button>
+                </div>
+                <div class="dev-tools-row">
+                  <span class="dev-tools-hint">🌀 Free teleports (testing - off = they cost an item or 2,000 gems):</span>
+                  <button class="dev-btn" id="devTpFree" type="button">On</button>
                 </div>
                 <div class="dev-tools-row">
                   <span class="dev-tools-hint">🔬 Blue style FPS test, turn off:</span>
@@ -7329,6 +7335,33 @@ var ITEM_DEFS = (function () {
     D["custom_" + lv] = { kind: "choice", lv: lv, choice: c, name: "Lv." + lv + " Custom Resource Chest", desc: "Grants your choice of " + itemAmtLabel(c.food) + " Food, " + itemAmtLabel(c.wood) + " Wood, " + itemAmtLabel(c.stone) + " Stone or " + itemAmtLabel(c.gold) + " Gold." }; });
   return D;
 })();
+/* v1592 (Harley's approved item list): speedups for every timer + new backpack items. SU_FAMS x SU_SIZES = every speedup kind ("research_15m"). */
+var SU_FAMS = [["construction", "Construction"], ["research", "Research"], ["training", "Training"], ["healing", "Healing"], ["general", ""]];
+var SU_SIZES = [["1m", 60, 0], ["5m", 300, 1], ["15m", 900, 1], ["30m", 1800, 2], ["1h", 3600, 2], ["3h", 10800, 3], ["8h", 28800, 3], ["24h", 86400, 4]]; /* [tag, seconds, tile rarity] */
+var SU_TARGET = { construction: "build", research: "research", training: "train", healing: "heal" }; /* general = all four */
+var GI_TP_GEMS = 2000, GI_BEGINNER_TH = 5, GI_SELECT_N = 10, GI_STAMINA_CAP = 9999;
+var GI_DEFS = {
+  tp_advanced: { name: "Advanced Teleport", art: "tp_advanced", rar: 3, desc: "Move your city to any open spot: tap an empty tile on the World map, then Teleport." },
+  tp_beginner: { name: "Beginner Teleport", art: "tp_beginner", rar: 1, desc: "Move your city to any open spot you pick - only while your Town Hall is Lv " + GI_BEGINNER_TH + " or lower." },
+  tp_random: { name: "Random Teleport", art: "tp_random", rar: 1, desc: "Moves your city to a random open spot nearby." },
+  tp_alliance: { name: "Alliance Teleport", art: "tp_alliance", rar: 2, desc: "Moves your city to an open spot next to your alliance leader." },
+  shield_8h: { name: "8h Peace Shield", art: "peace_shield", rar: 2, top: "8h", sec: 8 * 3600, desc: "Nobody can attack your city for 8 hours. Attacking another city ends your shield." },
+  shield_24h: { name: "24h Peace Shield", art: "peace_shield", rar: 3, top: "24h", sec: 24 * 3600, desc: "Nobody can attack your city for 24 hours. Attacking another city ends your shield." },
+  shield_3d: { name: "3-day Peace Shield", art: "peace_shield", rar: 4, top: "3d", sec: 72 * 3600, desc: "Nobody can attack your city for 3 days. Attacking another city ends your shield." },
+  anti_scout: { name: "Anti-Scout", art: "anti_scout", rar: 2, top: "8h", later: "Scouting isn't in the game yet, so this can't be used for now.", desc: "Hides your city's details from scouts for 8 hours." },
+  march_speed: { name: "March Speedup", art: "march_speed", rar: 2, desc: "One march moves 50% faster until it reaches where it's going (once per trip)." },
+  march_recall: { name: "Recall", art: "march_recall", rar: 2, desc: "Turns a march around on its way out and brings it straight home." },
+  stamina_10: { name: "Stamina +10", art: "stamina", rar: 1, top: "+10", amt: 10, desc: "Adds 10 Stamina (used to attack monsters). Can go over the normal maximum." },
+  stamina_50: { name: "Stamina +50", art: "stamina", rar: 3, top: "+50", amt: 50, desc: "Adds 50 Stamina (used to attack monsters). Can go over the normal maximum." },
+  chest_hero: { name: "Hero Selector Chest", art: "chest_hero_select", rar: 4, desc: "Choose a hero and get " + GI_SELECT_N + " of their shards." },
+  chest_weapon: { name: "Weapon Fragment Selector", art: "chest_weapon_select", rar: 3, desc: "Choose a weapon and get " + GI_SELECT_N + " of its fragments." },
+  chest_card: { name: "Custom Card Chest", art: "chest_card_custom", rar: 4, later: "Cards can't be collected yet, so this chest can't be opened for now.", desc: "Choose a card." },
+  chest_eq_2: { name: "Elite Equipment Chest", art: "chest_equipment", rar: 2, top: "Elite", eqR: 2, desc: "Gives one Elite equipment piece." },
+  chest_eq_3: { name: "Super Rare Equipment Chest", art: "chest_equipment", rar: 3, top: "S.Rare", eqR: 3, desc: "Gives one Super Rare equipment piece." },
+  chest_eq_4: { name: "Epic Equipment Chest", art: "chest_equipment", rar: 4, top: "Epic", eqR: 4, desc: "Gives one Epic equipment piece." },
+  enhance_stone: { name: "Enhance Stone", art: "enhance_stone", rar: 2, later: "Enhancing equipment comes later - keep these for then.", desc: "Used to enhance equipment." }
+};
+var GI_ORDER = Object.keys(GI_DEFS);
 var ITEM_ORDER = Object.keys(ITEM_DEFS).sort(function (a, b) { var A = ITEM_DEFS[a], B = ITEM_DEFS[b], k = { choice: 0, supply: 1, res: 2 };
   return (k[A.kind] - k[B.kind]) || (A.kind === "res" ? (ITEM_RES.indexOf(A.res) - ITEM_RES.indexOf(B.res)) || (A.amt - B.amt) : (A.lv || A.amt) - (B.lv || B.amt)); });
 /* v1093 (Harley): Training Grounds - the ATK / HP / DEF bonus screen (plan: dev/plans/training-grounds.md). Three lanes, levelled with Essence.
@@ -7471,6 +7504,7 @@ function createGame(opts) {
       { name: "Formation 3", troops: { infantry: 0, archer: 0, cavalry: 0 }, heroKeys: [] },
       { name: "City Guard", guard: true, troops: { infantry: 0, archer: 0, cavalry: 0 }, heroKeys: [] } /* v894: defence-only march - never sent anywhere; defends the city while guardOn */
     ],
+    shieldUntil: 0, /* v1592 Peace Shield (Date.now() ms) */
     guardOn: false, /* v894: City Guard switched on -> attackers must beat it before they can damage the base */
     activeFormation: 0, // index of the currently-selected preset, or null if none chosen
     // ---- Cards (dev-side, prototype system — not part of the final build) ----
@@ -7680,9 +7714,9 @@ function createGame(opts) {
   }
   /* v946: speedup items. kind = "construction_1h" (building upgrades only) or "general_1h" (anything). what = "build" | "train" | "research". Each takes 1 hour off. */
   /* v1175 (Harley): + 5 min and 1 min speedups. Using a speedup on less time than it's worth refunds the unused part as 5 min + 1 min speedups of the same type (under a minute is lost). */
-  var SPEEDUP_SEC = { construction_1h: 3600, construction_5m: 300, construction_1m: 60, general_1h: 3600, general_5m: 300, general_1m: 60 };
+  var SPEEDUP_SEC = {}; SU_FAMS.forEach(function (f) { SU_SIZES.forEach(function (z) { SPEEDUP_SEC[f[0] + "_" + z[0]] = z[1]; }); }); /* v1592: every family x every size */
   function speedupFamily(kind) { return String(kind).split("_")[0]; }
-  function speedupTargets(kind, what) { var f = speedupFamily(kind); return !!SPEEDUP_SEC[kind] && (f === "general" || (f === "construction" && what === "build")); }
+  function speedupTargets(kind, what) { var f = speedupFamily(kind); return !!SPEEDUP_SEC[kind] && (f === "general" ? (what === "build" || what === "train" || what === "research" || what === "heal") : SU_TARGET[f] === what); }
   /* v1024: open / use backpack items. n = how many; choice = a resource for Custom chests. Returns { ok, got: { res: amount } } */
   function itemRoll() { var tot = 0, r, x; for (r in SUPPLY_ODDS) tot += SUPPLY_ODDS[r]; x = Math.random() * tot; for (r in SUPPLY_ODDS) { if (x < SUPPLY_ODDS[r]) return r; x -= SUPPLY_ODDS[r]; } return "food"; }
   function useItem(id, n, choice) {
@@ -7696,7 +7730,7 @@ function createGame(opts) {
     addResources(got); log("🎒 Used " + n + "x " + d.name + ": " + Object.keys(got).map(function (r) { return "+" + got[r].toLocaleString() + " " + ITEM_RES_NAME[r]; }).join(", "));
     return { ok: true, got: got };
   }
-  function addItem(id, n) { if (!ITEM_DEFS[id]) return false; if (!state.items) state.items = {}; state.items[id] = (state.items[id] || 0) + Math.max(0, Math.floor(n || 1)); return true; }
+  function addItem(id, n) { if (!ITEM_DEFS[id] && !GI_DEFS[id]) return false; if (!state.items) state.items = {}; state.items[id] = (state.items[id] || 0) + Math.max(0, Math.floor(n || 1)); return true; }
   function useSpeedup(kind, what, key) {
     if (!SPEEDUP_SEC[kind] || !speedupTargets(kind, what)) return { ok: false, reason: "wrong_kind" };
     if (!((state.speedups || {})[kind] > 0)) return { ok: false, reason: "none_left" };
@@ -7704,16 +7738,62 @@ function createGame(opts) {
     if (what === "build") { var b = state.buildings[key]; if (!b || !b.upgrading) return { ok: false, reason: "nothing_running" }; left = b.upgrading.finishAt - now(); b.upgrading.finishAt -= ms; }
     else if (what === "train") { var tb = state.buildings[key]; if (!tb || !tb.queue || !tb.queue.length) return { ok: false, reason: "nothing_running" }; left = tb.queue[tb.queue.length - 1].finishAt - now(); tb.queue.forEach(function (q, i) { q.finishAt -= ms; if (i) q.startedAt -= ms; }); }
     else if (what === "research") { if (!state.researchQueue) return { ok: false, reason: "nothing_running" }; left = state.researchQueue.finishAt - now(); state.researchQueue.finishAt -= ms; }
+    else if (what === "heal") { var hq = state.healQueue || []; if (!hq.length) return { ok: false, reason: "nothing_running" }; left = hq[hq.length - 1].finishAt - now(); hq.forEach(function (q, i) { q.finishAt -= ms; if (i) q.startedAt -= ms; }); } /* v1592 */
     else return { ok: false, reason: "bad_target" };
     state.speedups[kind]--;
     var fam = speedupFamily(kind), spare = Math.max(0, Math.floor((ms - Math.max(0, left)) / 1000)), refund = {};
-    var n5 = SPEEDUP_SEC[kind] > 300 ? Math.floor(spare / 300) : 0, n1 = SPEEDUP_SEC[kind] > 60 ? Math.floor((spare - n5 * 300) / 60) : 0;
-    if (n5) refund[fam + "_5m"] = n5; if (n1) refund[fam + "_1m"] = n1;
+    for (var zi = SU_SIZES.length - 1; zi >= 0; zi--) { var z = SU_SIZES[zi]; if (z[1] >= SPEEDUP_SEC[kind]) continue; var nz = Math.floor(spare / z[1]); if (nz) { refund[fam + "_" + z[0]] = nz; spare -= nz * z[1]; } } /* v1592: unused time back in the biggest smaller sizes */
     Object.keys(refund).forEach(function (k) { state.speedups[k] = (state.speedups[k] || 0) + refund[k]; });
     log("⏩ Used a " + speedupLabel(kind) + " speedup (" + fam + ")." + (Object.keys(refund).length ? " Unused time back: " + Object.keys(refund).map(function (k) { return refund[k] + "× " + speedupLabel(k); }).join(" + ") + "." : ""));
     dailyBump("speedup"); tick(); return { ok: true, refund: refund };
   }
   function speedupLabel(kind) { var t = SPEEDUP_SEC[kind] || 0; return t >= 3600 ? (t / 3600) + "h" : (t / 60) + " min"; }
+  /* v1592: the new backpack items (GI_DEFS). Teleports are used from the World map screen code (they need the shared map); everything else is here. */
+  function giCount(id) { return (state.items && state.items[id]) || 0; }
+  function giTake(id, n) { n = n || 1; if (giCount(id) < n) return false; state.items[id] -= n; if (state.items[id] <= 0) delete state.items[id]; return true; }
+  function shieldLeftSec() { return Math.max(0, Math.round(((state.shieldUntil || 0) - Date.now()) / 1000)); }
+  function giSelectHeroes() { return Object.keys(state.heroes).filter(function (k) { var d = HERO_DEFS[k], h = state.heroes[k]; return d && h && !d.vipOnly && d.class !== "governor" && heroStarArms(h) < STAR_MAX_ARMS; }); }
+  function giSelectWeapons() { return WEAPON_DEFS.filter(function (w) { return !w.visualOnly; }).map(function (w) { return w.id; }); }
+  function useGear(id, n, pick) {
+    var d = GI_DEFS[id]; n = Math.max(1, Math.floor(n || 1));
+    if (!d) return { ok: false, reason: "bad_item" };
+    if (d.later) return { ok: false, reason: "not_yet" };
+    if (giCount(id) < n) return { ok: false, reason: "not_enough" };
+    if (d.amt && /^stamina_/.test(id)) { monsterEnergy(); state.monsters.energy = Math.min(GI_STAMINA_CAP, state.monsters.energy + d.amt * n); giTake(id, n); log("⚡ Used " + n + "x " + d.name + " - Stamina now " + state.monsters.energy + "."); return { ok: true, msg: "Stamina is now " + state.monsters.energy }; }
+    if (d.sec) { state.shieldUntil = Math.max(Date.now(), state.shieldUntil || 0) + d.sec * 1000 * n; giTake(id, n); log("🛡️ Peace Shield on for " + Math.round(shieldLeftSec() / 3600) + "h."); return { ok: true, msg: "Peace Shield on" }; }
+    if (id === "chest_hero") { if (giSelectHeroes().indexOf(pick) < 0) return { ok: false, reason: "pick" }; giTake(id, n); state.heroes[pick].fragments = (state.heroes[pick].fragments | 0) + GI_SELECT_N * n; log("🧩 " + HERO_DEFS[pick].name + " +" + GI_SELECT_N * n + " shards (Hero Selector Chest)."); return { ok: true, msg: "+" + GI_SELECT_N * n + " " + HERO_DEFS[pick].name + " shards" }; }
+    if (id === "chest_weapon") { if (giSelectWeapons().indexOf(pick) < 0) return { ok: false, reason: "pick" }; giTake(id, n); state.weaponFrags[pick] = (state.weaponFrags[pick] || 0) + GI_SELECT_N * n; log("🧩 " + WEAPON_DEFS_BY_ID[pick].name + " +" + GI_SELECT_N * n + " fragments (Weapon Fragment Selector)."); return { ok: true, msg: "+" + GI_SELECT_N * n + " " + WEAPON_DEFS_BY_ID[pick].name + " fragments" }; }
+    if (d.eqR != null) { var E = state.equipment; if (E.inv.length + n > eqInvMax()) return { ok: false, reason: "inventory_full" }; giTake(id, n);
+      for (var i = 0; i < n; i++) { var r = d.eqR, base = EQ_MAIN_BASE[r], pc = { id: E.nextId++, icon: Math.floor(Math.random() * EQ_ICON_COUNT), r: r, atk: eqRound1(base * eqRoll()), hp: eqRound1(base * eqRoll()), def: eqRound1(base * EQ_DEF_FRAC * eqRoll()), sec: [] }, pool = EQ_SEC_KEYS.slice();
+        for (var q = 0; q < EQ_SEC_LINES[r] && pool.length; q++) { var ki = Math.floor(Math.random() * pool.length); pc.sec.push({ k: pool.splice(ki, 1)[0], v: eqRound1(EQ_SEC_BASE[r] * eqRoll()) }); }
+        E.inv.push(pc); }
+      log("🎁 Opened " + n + "x " + d.name + "."); return { ok: true, msg: n + " " + EQ_RARITIES[d.eqR].name + " piece" + (n > 1 ? "s" : "") + " added to your equipment bag" }; }
+    return { ok: false, reason: "bad_item" };
+  }
+  /* March Speedup: the rest of this leg takes 1/1.5 of the time (once per leg); the march keeps its spot on the map (travelSec is re-fitted so
+     the progress fraction stays the same). The return leg keeps the normal travel time (legSec). Recall: an outbound march turns round where it is. */
+  function marchMine(id) { return (state.marches || []).filter(function (m) { return m.id === id && !m.foreign; })[0] || null; }
+  function marchSpeedUp(id) {
+    var m = marchMine(id), t = now(); if (!m) return { ok: false, reason: "no_march" };
+    if (m.status !== "outbound" && m.status !== "returning") return { ok: false, reason: "not_moving" };
+    if ((m.boosted || {})[m.status]) return { ok: false, reason: "already" };
+    if (!giTake("march_speed")) return { ok: false, reason: "not_enough" };
+    var end = m.status === "outbound" ? m.arriveAt : m.returnAt, T = m.travelSec * 1000, f = T > 0 ? Math.max(0, Math.min(0.999, 1 - (end - t) / T)) : 0, R = Math.max(0, end - t) / 1.5;
+    if (!m.legSec) m.legSec = m.travelSec;
+    m.travelSec = Math.max(0.5, R / (1 - f) / 1000);
+    if (m.status === "outbound") { m.arriveAt = t + R; } else m.returnAt = t + R;
+    m.boosted = m.boosted || {}; m.boosted[m.status] = 1; m._retime = 1;
+    log("💨 March #" + m.id + " sped up."); return { ok: true };
+  }
+  function marchRecall(id) {
+    var m = marchMine(id), t = now(); if (!m) return { ok: false, reason: "no_march" };
+    if (m.status !== "outbound") return { ok: false, reason: "not_outbound" };
+    if (!giTake("march_recall")) return { ok: false, reason: "not_enough" };
+    var T = m.travelSec * 1000, f = T > 0 ? Math.max(0, Math.min(1, (t - (m.arriveAt - T)) / T)) : 1;
+    m.status = "returning"; m.arriveAt = t; m.actionEnd = t; m.result = null; m.recalled = true; m.returnAt = t + Math.max(1000, f * T);
+    if (m.monster) { state.monsters.energy += MONSTER_ENERGY_COST; m.monster = null; } /* the Stamina comes back - the monster was never hit */
+    log("↩️ March #" + m.id + " recalled."); return { ok: true };
+  }
   function instantFinish(key) {
     var b = state.buildings[key];
     if (b && b.upgrading) b.upgrading.finishAt = now();
@@ -7961,7 +8041,7 @@ function createGame(opts) {
   /* v1215: monster energy - refills 1 per MONSTER_ENERGY_REGEN_SEC up to the max */
   function monsterEnergy() {
     var M = state.monsters, t = now();
-    if (!M.energyT || M.energy >= MONSTER_ENERGY_MAX) { M.energyT = t; if (M.energy > MONSTER_ENERGY_MAX) M.energy = MONSTER_ENERGY_MAX; return M.energy; }
+    if (!M.energyT || M.energy >= MONSTER_ENERGY_MAX) { M.energyT = t; return M.energy; } /* v1592: Stamina items can take it over the max (no refill while over) */
     var n = Math.floor((t - M.energyT) / (MONSTER_ENERGY_REGEN_SEC * 1000));
     if (n > 0) { M.energy = Math.min(MONSTER_ENERGY_MAX, M.energy + n); M.energyT = M.energy >= MONSTER_ENERGY_MAX ? t : M.energyT + n * MONSTER_ENERGY_REGEN_SEC * 1000; }
     return M.energy;
@@ -7988,6 +8068,7 @@ function createGame(opts) {
       if (!hero || !hero.owned) return { ok: false, reason: "hero_not_owned" };
       if (hero.busy) return { ok: false, reason: "hero_busy" };
     }
+    if (action === "attack" && tile.type === "empty" && !monster && (state.shieldUntil || 0) > Date.now()) { state.shieldUntil = 0; log("🛡️ Your Peace Shield ended - you attacked another city."); } /* v1592 */
     var mcap = marchCapacity(heroArr), capped = total > mcap; if (capped) army = fitArmyToCap(army, mcap); /* v1240: march size cap */
     var home = mapTileById(state.map, state.homeTileId);
     var dist = distanceBetween(home, tile);
@@ -8206,6 +8287,7 @@ function createGame(opts) {
     if (march.result && march.result.frags && march.result.frags.n) { var fk = grantRandomFragments(march.result.frags.n); march.result.frags.hero = fk || null; var rp = state.battleReports.filter(function (q) { return q.id === march.result.reportId; })[0]; if (rp && fk) rp.frags = { hero: fk, n: march.result.frags.n }; }
     if (march.result && march.result.loot) addResourcesClamped(march.result.loot);
     march.status = "returning";
+    if (march.legSec) { march.travelSec = march.legSec; march.legSec = null; } /* v1592: a March Speedup only shortened the way out */
     march.returnAt = Math.min(now(), march.actionEnd || now()) + march.travelSec * 1000; /* v833: return leg starts when the action ended, not when we got around to processing it */
   }
   function resolveReturn(march) {
@@ -10879,12 +10961,12 @@ function createGame(opts) {
     state.conquestOpened = (typeof saved.conquestOpened === "boolean") ? saved.conquestOpened : true; // saves from before v806 have already been playing it
     if (opts.deferConquest) state.conquestOpened = conquestOpenedThisSession; /* v872: a fresh load never starts Conquest by itself (the saved flag said "opened once, ever", so every later load fought straight away on whatever screen you were on) - it starts when you open the Conquest screen; a cloud save applied mid-session keeps it running if you already have */
     if (saved.training && typeof saved.training === "object") { var stn = saved.training; state.training = {}; ["atk", "hp", "def", "ms", "essence", "chPaid", "gPaid"].forEach(function (k) { var v = Math.floor(+stn[k]); state.training[k] = isFinite(v) && v > 0 ? v : 0; }); } /* v1093 */
-    if (saved.monsters && typeof saved.monsters === "object") { var smo = saved.monsters; state.monsters = { maxBeat: Math.max(0, Math.min(MONSTER_MAX_LEVEL, smo.maxBeat | 0)), energy: isFinite(+smo.energy) ? Math.max(0, Math.min(MONSTER_ENERGY_MAX, +smo.energy)) : MONSTER_ENERGY_MAX, energyT: +smo.energyT || 0, kills: (smo.kills && typeof smo.kills === "object") ? smo.kills : {}, summon: smo.summon && smo.summon.id ? smo.summon : null }; } /* v1215 */
+    if (saved.monsters && typeof saved.monsters === "object") { var smo = saved.monsters; state.monsters = { maxBeat: Math.max(0, Math.min(MONSTER_MAX_LEVEL, smo.maxBeat | 0)), energy: isFinite(+smo.energy) ? Math.max(0, Math.min(GI_STAMINA_CAP, +smo.energy)) : MONSTER_ENERGY_MAX, energyT: +smo.energyT || 0, kills: (smo.kills && typeof smo.kills === "object") ? smo.kills : {}, summon: smo.summon && smo.summon.id ? smo.summon : null }; } /* v1215 */
     if (saved.daily && typeof saved.daily === "object") { var sdy = saved.daily; state.daily = { day: sdy.day | 0, p: {}, c: Array.isArray(sdy.c) ? sdy.c.filter(function (x) { return typeof x === "string"; }) : [], ch: Array.isArray(sdy.ch) ? sdy.ch.filter(function (x) { return x === (x | 0); }) : [], sv: Array.isArray(sdy.sv) ? sdy.sv.filter(function (x) { return typeof x === "string"; }) : [], gc: !!sdy.gc }; if (sdy.p && typeof sdy.p === "object") Object.keys(sdy.p).forEach(function (k) { var v = +sdy.p[k]; if (isFinite(v) && v > 0) state.daily.p[k] = Math.floor(v); }); } /* v1231 */
     if (saved.gauntlet && typeof saved.gauntlet === "object") state.gauntlet = { floor: Math.max(1, Math.min(101, saved.gauntlet.floor | 0 || 1)) };
     if (saved.td && typeof saved.td === "object") state.td = { day: String(saved.td.day || ""), runs: Math.max(0, saved.td.runs | 0), best: Math.max(0, saved.td.best | 0) };
     if (saved.weaponFrags && typeof saved.weaponFrags === "object") Object.keys(saved.weaponFrags).forEach(function (wid) { var n = saved.weaponFrags[wid]; if (WEAPON_DEFS_BY_ID[wid] && typeof n === "number" && isFinite(n) && n > 0) state.weaponFrags[wid] = Math.floor(n); });
-    if (saved.items && typeof saved.items === "object") { state.items = {}; Object.keys(saved.items).forEach(function (k) { var v = Math.floor(+saved.items[k]); if (ITEM_DEFS[k] && isFinite(v) && v > 0) state.items[k] = v; }); } /* v1024 */
+    if (saved.items && typeof saved.items === "object") { state.items = {}; Object.keys(saved.items).forEach(function (k) { var v = Math.floor(+saved.items[k]); if ((ITEM_DEFS[k] || GI_DEFS[k]) && isFinite(v) && v > 0) state.items[k] = v; }); } /* v1024; v1592 + GI_DEFS */
     if (typeof saved.weaponTickets === "number" && isFinite(saved.weaponTickets)) state.weaponTickets = Math.max(0, Math.floor(saved.weaponTickets));
     if (typeof saved.weaponPity === "number" && isFinite(saved.weaponPity)) state.weaponPity = Math.max(0, Math.floor(saved.weaponPity)); /* v1409 */
     if (!saved.ticketsX10) { /* v1227: an older save - its tickets were worth 10 of the new ones */
@@ -10941,6 +11023,7 @@ function createGame(opts) {
     // tracked production against.
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
+    state.shieldUntil = isFinite(+saved.shieldUntil) ? Math.max(0, +saved.shieldUntil) : 0; /* v1592 */
     if (fortTypeOk(saved.arenaFort)) state.arenaFort = saved.arenaFort; /* v1033: fortress type used in the Arena */
     state.mailApplied = (saved.mailApplied && typeof saved.mailApplied === "object") ? saved.mailApplied : {}; /* v911: mails whose items are already in this save */
     state.mailSaved = (saved.mailSaved && typeof saved.mailSaved === "object") ? saved.mailSaved : {}; /* v914: mails the player starred (Saved tab) */
@@ -11144,7 +11227,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { state: state, tick: tick, useSpeedup: useSpeedup, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { state: state, tick: tick, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -13316,7 +13399,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1591"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1592"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -13939,11 +14022,13 @@ function renderResources() {
 }
 // Phones show a single resources button in the top bar; tapping it opens this small popup with every resource.
 /* v946: little "-1h" buttons for speedup items on a running timer */
-var SU_KINDS = [["construction_1h", "🔨"], ["construction_5m", "🔨"], ["construction_1m", "🔨"], ["general_1h", "⏩"], ["general_5m", "⏩"], ["general_1m", "⏩"]]; /* v1175 */
+var SU_KINDS = []; SU_FAMS.forEach(function (f) { SU_SIZES.slice().reverse().forEach(function (z) { SU_KINDS.push([f[0] + "_" + z[0], f[0]]); }); }); /* v1592: every family x size, biggest first; [kind, family] */
+function suArt(fam) { return itemArt("speed_" + fam); }
+function suName(kind) { var f = kind.split("_")[0], fl = (SU_FAMS.filter(function (x) { return x[0] === f; })[0] || [f, ""])[1]; return game.speedupLabel(kind) + " " + (fl ? fl + " speedup" : "Speedup"); }
 function suShort(kind) { var t = game.SPEEDUP_SEC[kind] || 0; return t >= 3600 ? (t / 3600) + "h" : (t / 60) + "m"; }
 function speedupBtnsHtml(what, key) {
   var su = game.state.speedups || {}, out = "";
-  SU_KINDS.forEach(function (k) { if (su[k[0]] > 0 && game.speedupTargets(k[0], what)) out += '<button type="button" class="su-btn" data-su="' + k[0] + '" data-suw="' + what + '" data-suk="' + (key || "") + '" title="Use a ' + game.speedupLabel(k[0]) + (k[0].indexOf("general") === 0 ? " speedup" : " construction speedup") + '">' + k[1] + " −" + suShort(k[0]) + " ×" + su[k[0]] + "</button>"; });
+  SU_KINDS.forEach(function (k) { if (su[k[0]] > 0 && game.speedupTargets(k[0], what)) out += '<button type="button" class="su-btn" data-su="' + k[0] + '" data-suw="' + what + '" data-suk="' + (key || "") + '" title="Use a ' + suName(k[0]) + '">' + suArt(k[1]) + "−" + suShort(k[0]) + " ×" + su[k[0]] + "</button>"; });
   return out ? '<div class="su-row">' + out + "</div>" : "";
 }
 document.addEventListener("click", function (e) {
@@ -16681,6 +16766,7 @@ function renderInfirmary() {
       var remain = (job.finishAt - vnow()) / 1000, pct = Math.max(0, Math.min(100, 100 - (remain / job.duration) * 100));
       html += '<div class="progress"><div style="width:' + pct + '%"></div></div>';
     }
+    html += speedupBtnsHtml("heal", null); /* v1592 */
   }
   el.innerHTML = html;
   el.querySelectorAll("button[data-heal]").forEach(function (btn) {
@@ -21075,12 +21161,13 @@ function teleportTo(tileId) {
       return send(oldTileId).catch(function (e) { /* v1214: the server has my city somewhere else - move from there instead */
         if (!e || e.message !== "not_your_city") throw e;
         return ksMyServerCities().then(function (list) { var real = list.filter(function (t) { return t !== tileId; })[0]; if (!real) throw e; tpConfirmed = real; return send(real); });
-      }).then(function () { tpConfirmed = tileId; }, function (e) {
+      }).then(function () { tpConfirmed = tileId; if (tpCount <= 1) tpLastPay = null; }, function (e) {
         tpGen++;
         var back = tpConfirmed || oldTileId, cur = game.state.homeTileId;
         if (cur !== back) moveLocal(cur, back);
         try { render(); } catch (e2) {}
         try { miniToast("Teleport failed (" + ksErrText(e) + ") - your city is back where it was."); } catch (e3) {}
+        try { tpRefundLast(); } catch (e4) {} /* v1592: the item / gems come back */
       });
     }).then(function () { tpCount--; if (tpCount === 0) tpPending = null; }, function () { tpCount--; if (tpCount === 0) tpPending = null; });
     return Promise.resolve({ ok: true });
@@ -21433,7 +21520,8 @@ function fetchDefenderFormation(ownerId) {
   return cloudDb.doc(docPath).get().then(function (snap) {
     var saved = snap.exists ? snap.data() : null;
     if (!saved) return null;
-    return defenderFromSave(saved, { cityGuard: true });
+    var dfs = defenderFromSave(saved, { cityGuard: true }); if (dfs) dfs.shieldUntil = +saved.shieldUntil || 0; /* v1592 Peace Shield */
+    return dfs;
   });
 }
 // ---- World PvP combat: the Arena's rules, run headless ----
@@ -21557,6 +21645,7 @@ function resolveMarchAgainstSharedWorld(m, G) {
     return Promise.race([fetchDefenderFormation(defOwner), defTimeout]).then(function (def) {
       if (!def) { game.log("PvP: couldn't read " + defOwner + "'s saved formation — no battle happened."); pvpNoBattleReport(m, "No battle: couldn't read " + defOwner + "'s saved formation."); }
       if (!def) { game.resolveArrival(m, null, null); return; }
+      if (def.shieldUntil > Date.now()) { pvpNoBattleReport(m, "🛡️ No battle: that city is protected by a Peace Shield."); game.resolveArrival(m); return; } /* v1592 */
       return cityAttackOutcome(game, m, def, defOwner, function () { return worldPvpBattle(m, def, defOwner); }); /* v894 */
     }).catch(function (e) {
       // Surface why, instead of silently falling back to "found nothing" — shows in the Log tab and the console.
@@ -21696,6 +21785,8 @@ function stressBarShow() {
 document.addEventListener("click", function (e) { var t = e.target && e.target.closest && e.target.closest("#devStressToggle"); if (!t) return; e.preventDefault();
   try { localStorage.setItem(STRESS_BAR_KEY, stressBarOn() ? "0" : "1"); } catch (er) {} if (!stressBarOn()) stressSend(0); stressBarShow(); });
 setTimeout(stressBarShow, 1500); setTimeout(stressBarShow, 6000);
+(function () { var b = document.getElementById("devTpFree"); if (!b) return; var sync = function () { b.textContent = tpFree() ? "On" : "Off"; }; sync(); /* v1592 */
+  b.addEventListener("click", function (e) { e.preventDefault(); try { localStorage.setItem(TP_FREE_KEY, tpFree() ? "0" : "1"); } catch (er) {} sync(); }); })();
 function foreignMarchList(t) {
   var out = [];
   Object.keys(worldMarches).forEach(function (k) {
@@ -21728,6 +21819,10 @@ function syncMyMarchRecords() {
       ops.push({ key: key, kind: "set", data: { skin: m.skin || "voidspire", ownerId: PLAYER_ID, ownerName: (typeof playerDisplayName === "function" ? playerDisplayName() : null) || null, mid: m.id, tileId: m.tileId, homeTileId: st.homeTileId,
         patches: marchPatchList(st.homeTileId, m.tileId), targetOwner: (occupiedTileIds[m.tileId] && occupiedTileIds[m.tileId] !== "?" ? occupiedTileIds[m.tileId] : null), aid: (ALLY.my && ALLY.my.aid) || null, /* v1082: which map patches it crosses, whose base it targets, my alliance - so other phones can listen only to the marches that matter to them */ action: m.action, travelSec: m.travelSec, arriveAt: m.arriveAt, actionEnd: actionEnd, returnAt: returnAt, army: plainClone(m.army), heroKeys: plainClone(m.heroKeys || []), resolved: resolved, result: resolved ? { loot: plainClone((m.result && m.result.loot) || {}) } : null, report: rep, updatedAt: Date.now() } });
       myMarchPublished[key] = resolved ? "resolved" : "new";
+    } else if (pub === "new" && !resolved && m._retime) { /* v1592: March Speedup - tell the other players the new arrival time */
+      delete m._retime; var rtEnd = m.arriveAt + 5000;
+      ops.push({ key: key, kind: "update", data: { arriveAt: m.arriveAt, travelSec: m.travelSec, actionEnd: rtEnd, returnAt: rtEnd + (m.legSec || m.travelSec) * 1000, updatedAt: Date.now() } });
+    } else if (pub === "resolved" && m.status === "returning" && m._retime) { delete m._retime; ops.push({ key: key, kind: "update", data: { returnAt: m.returnAt, travelSec: m.travelSec, updatedAt: Date.now() } }); /* v1592 */
     } else if (pub === "new" && resolved) {
       var rep2 = (st.battleReports[0] && st.battleReports[0].marchId === m.id) ? plainClone(st.battleReports[0]) : null;
       ops.push({ key: key, kind: "update", data: { resolved: true, army: plainClone(m.army), result: { loot: plainClone((m.result && m.result.loot) || {}) }, report: rep2, actionEnd: actionEnd, returnAt: returnAt, updatedAt: Date.now() } });
@@ -21806,6 +21901,7 @@ function foreignResolveSweep() {
           : pvpOwner
           ? fetchDefenderFormation(pvpOwner).then(function (def) {
               if (!def) { sim.state.battleReports.unshift({ id: sim.state.nextBattleReportId++, marchId: m.id, time: Date.now(), tileId: m.tileId, tileType: "city", win: false, atkPower: 0, defPower: 0, attackerArmy: Object.assign({}, m.army), defenderArmy: {}, attackerLosses: {}, defenderLosses: {}, loot: {}, heroKeys: hk.slice(), note: "No battle: couldn't read " + pvpOwner + "'s saved formation." }); sim.resolveArrival(m); return; }
+              if (def.shieldUntil > Date.now()) { sim.state.battleReports.unshift({ id: sim.state.nextBattleReportId++, marchId: m.id, time: Date.now(), tileId: m.tileId, tileType: "city", win: false, atkPower: 0, defPower: 0, attackerArmy: Object.assign({}, m.army), defenderArmy: {}, attackerLosses: {}, defenderLosses: {}, loot: {}, heroKeys: hk.slice(), note: "🛡️ No battle: that city is protected by a Peace Shield." }); sim.resolveArrival(m); return; } /* v1592 */
               return cityAttackOutcome(sim, m, def, pvpOwner, function () { return worldPvpBattle(m, def, pvpOwner, { atkSim: sim, atkBaseHp: arenaBaseHpPlayer }); }); /* v894 */
             })
           : resolveMarchAgainstSharedWorld(m, sim);
@@ -31227,7 +31323,7 @@ function renderEmptyTileInfo(el, tile) {
   if (tile.id === game.state.homeTileId) { /* v852 */
     var av = getAvatar(), tr = 0; for (var tk in game.state.troops) tr += game.state.troops[tk] || 0;
     el.innerHTML = ticHtml({ id: tile.id, theme: "royal", portrait: av ? '<img src="' + av + '" alt="">' : "👑", name: (ALLY.my ? "[" + ALLY.my.tag + "] " : "") + getPlayerName(), sub: "Your City",
-      stats: [["Power", fmt(game.governorPower())], ["Town Hall", "Lv " + game.state.buildings.townhall.level], ["Troops at home", fmt(Math.round(tr))]].concat(baseHpStatRows(tile.id), [["City Guard", game.state.guardOn ? "🛡️ On" : "Off — attacks hit the base"]]) }) +
+      stats: [["Power", fmt(game.governorPower())], ["Town Hall", "Lv " + game.state.buildings.townhall.level], ["Troops at home", fmt(Math.round(tr))]].concat(baseHpStatRows(tile.id), game.shieldLeftSec() > 0 ? [["Peace Shield", "🛡️ " + fmtTime(game.shieldLeftSec())]] : [], [["City Guard", game.state.guardOn ? "🛡️ On" : "Off — attacks hit the base"]]) }) +
       '<button class="tic-btn" id="ticEnterCity">🏰 Enter City</button>' + myBaseHpButtons();
     document.getElementById("ticEnterCity").onclick = function () { selectedTile = null; renderTileInfo(); setScreen("city"); };
     var bx = document.getElementById("ticExtinguish"); if (bx) bx.onclick = extinguishMyBase;
@@ -31270,14 +31366,19 @@ function renderEmptyTileInfo(el, tile) {
     return;
   }
   /* v1029 (Harley: no info card for empty tiles): open land shows just a small Teleport button over the tile (Kingshot style), no card. */
-  el.innerHTML = ((game.state.marches || []).length ? '<button id="teleportBtn" class="tic-btn" disabled><svg class="ico-svg" viewBox="7.5 5.5 13 13" aria-hidden="true"><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#0b3a44" stroke-width="3.8" stroke-linecap="round"/><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Teleport</button><div class="sub tp-note">Marches still out</div>' : '<button id="teleportBtn" class="tic-btn"><svg class="ico-svg" viewBox="7.5 5.5 13 13" aria-hidden="true"><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#0b3a44" stroke-width="3.8" stroke-linecap="round"/><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Teleport</button>') +
+  el.innerHTML = ((game.state.marches || []).length ? '<button id="teleportBtn" class="tic-btn" disabled><svg class="ico-svg" viewBox="7.5 5.5 13 13" aria-hidden="true"><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#0b3a44" stroke-width="3.8" stroke-linecap="round"/><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Teleport</button><div class="sub tp-note">Marches still out</div>' : '<button id="teleportBtn" class="tic-btn"><svg class="ico-svg" viewBox="7.5 5.5 13 13" aria-hidden="true"><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#0b3a44" stroke-width="3.8" stroke-linecap="round"/><path d="M13.2,12 a1.3,1.3 0 0,1 2.6,0 a2.9,2.9 0 0,1 -5.8,0 a4.5,4.5 0 0,1 9,0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Teleport' + tpCostTag() + '</button>') +
     '<div class="sub tp-note" id="teleportStatus"></div>';
   var btn = document.getElementById("teleportBtn");
   var status = document.getElementById("teleportStatus");
   btn.onclick = function () {
+    var pay = tpPayChoice(); /* v1592 */
+    if (!pay) { status.textContent = "You need an Advanced Teleport or " + GI_TP_GEMS.toLocaleString("en-US") + " gems."; return; }
+    tpLastPay = null;
+    if ((game.state.marches || []).length === 0 && !isTileOccupied(tile.id) && !isTileTooCloseToCity(tile.id) && !tpPay(pay)) { status.textContent = "Couldn't pay for the teleport."; return; }
     btn.disabled = true;
     status.textContent = "Teleporting…";
     teleportTo(tile.id).then(function (res) {
+      if (!res.ok) tpRefundLast(); /* v1592 */
       if (res.ok) {
         // Deliberately NOT calling centerMapOnHome() here. The map's tile
         // layout is fixed (WORLD_MAP_SEED) and never actually changes — but
@@ -32884,19 +32985,89 @@ function bagSpeedUse(kind) { /* the timers this speedup can shorten, each with i
   Object.keys(st.buildings).forEach(function (k) { var b = st.buildings[k]; if (b.upgrading && game.speedupTargets(kind, "build")) out += bagTarget("🔨 " + BUILDING_DEFS[k].name + " → Lv " + b.upgrading.toLevel, b.upgrading.finishAt, kind, "build", k);
     if (b.queue && b.queue.length && game.speedupTargets(kind, "train")) out += bagTarget("⚔️ Training at " + BUILDING_DEFS[k].name, b.queue[b.queue.length - 1].finishAt, kind, "train", k); });
   if (st.researchQueue && game.speedupTargets(kind, "research")) out += bagTarget("🔬 " + (researchQueueDef(st.researchQueue) || { name: "Research" }).name + " Lv " + st.researchQueue.toLevel, st.researchQueue.finishAt, kind, "research", "");
-  return out || '<div style="opacity:.8;margin-top:6px">Nothing ' + (kind.indexOf("construction") === 0 ? "is being built" : "is running") + ' right now.</div>';
+  if (st.healQueue && st.healQueue.length && game.speedupTargets(kind, "heal")) out += bagTarget("⚕️ Healing " + st.healQueue.reduce(function (a, j) { return a + j.count; }, 0).toLocaleString("en-US") + " troops", st.healQueue[st.healQueue.length - 1].finishAt, kind, "heal", ""); /* v1592 */
+  var fam = kind.split("_")[0];
+  return out || '<div style="opacity:.8;margin-top:6px">' + ({ construction: "Nothing is being built", research: "No research is running", training: "No troops are training", healing: "No troops are healing" }[fam] || "Nothing is running") + ' right now.</div>';
 }
 function bagTarget(label, finishAt, kind, what, key) { return '<div class="bg-tg"><span>' + label + '<br><small style="opacity:.75" data-bfin="' + finishAt + '">' + fmtTime(Math.max(0, (finishAt - vnow()) / 1000)) + ' left</small></span><button type="button" class="su-btn" data-su="' + kind + '" data-suw="' + what + '" data-suk="' + key + '">−' + suShort(kind) + '</button></div>'; }
 var BAG_ITEMS = [
-  { id: "su_con", cat: "speed", top: "1h", rar: 2, icon: function () { return itemArt("speed_construction"); }, name: "1h Construction speedup", count: function () { return (game.state.speedups || {}).construction_1h || 0; }, desc: "Takes 1 hour off a building upgrade.", use: function () { return bagSpeedUse("construction_1h"); } },
-  { id: "su_con5", cat: "speed", top: "5 min", rar: 1, icon: function () { return itemArt("speed_construction"); }, name: "5 min Construction speedup", count: function () { return (game.state.speedups || {}).construction_5m || 0; }, desc: "Takes 5 minutes off a building upgrade.", use: function () { return bagSpeedUse("construction_5m"); } }, /* v1175 */
-  { id: "su_con1", cat: "speed", top: "1 min", rar: 0, icon: function () { return itemArt("speed_construction"); }, name: "1 min Construction speedup", count: function () { return (game.state.speedups || {}).construction_1m || 0; }, desc: "Takes 1 minute off a building upgrade.", use: function () { return bagSpeedUse("construction_1m"); } },
-  { id: "su_gen5", cat: "speed", top: "5 min", rar: 1, icon: function () { return itemArt("speed_general"); }, name: "5 min Speedup", count: function () { return (game.state.speedups || {}).general_5m || 0; }, desc: "Takes 5 minutes off anything: building, training or research.", use: function () { return bagSpeedUse("general_5m"); } },
-  { id: "su_gen1", cat: "speed", top: "1 min", rar: 0, icon: function () { return itemArt("speed_general"); }, name: "1 min Speedup", count: function () { return (game.state.speedups || {}).general_1m || 0; }, desc: "Takes 1 minute off anything: building, training or research.", use: function () { return bagSpeedUse("general_1m"); } },
-  { id: "su_gen", cat: "speed", top: "1h", rar: 2, icon: function () { return itemArt("speed_general"); }, name: "1h Speedup", count: function () { return (game.state.speedups || {}).general_1h || 0; }, desc: "Takes 1 hour off anything: building, training or research.", use: function () { return bagSpeedUse("general_1h"); } },
   { id: "tickets", cat: "items", icon: function () { return ico("ticket"); }, name: "Weapon draw ticket", count: function () { return game.state.weaponTickets || 0; }, desc: "One draw in the Weapon Draw.", go: function () { setScreen("more", "weapons"); } },
   { id: "books", cat: "items", icon: function () { return ico("books"); }, name: "Conquest Books", count: function () { return (game.state.idle && game.state.idle.conquestBooks) || 0; }, desc: "Levels up your heroes' skills.", go: function () { setScreen("heroes"); } }
 ];
+/* v1592: every speedup (family x size) and every new item (GI_DEFS) */
+(function () { var sp = [];
+  SU_FAMS.forEach(function (f) { SU_SIZES.slice().reverse().forEach(function (z) { var kind = f[0] + "_" + z[0], tl = z[1] >= 3600 ? (z[1] / 3600) + "h" : (z[1] / 60) + " min";
+    sp.push({ id: "su_" + kind, cat: "speed", top: tl, rar: z[2], icon: function () { return suArt(f[0]); }, name: tl + " " + (f[1] ? f[1] + " speedup" : "Speedup"),
+      count: function () { return (game.state.speedups || {})[kind] || 0; }, desc: "Takes " + (z[1] >= 3600 ? (z[1] / 3600) + (z[1] === 3600 ? " hour" : " hours") : (z[1] / 60) + (z[1] === 60 ? " minute" : " minutes")) + " off " + ({ construction: "a building upgrade", research: "research", training: "troop training", healing: "healing troops" }[f[0]] || "anything: building, research, training or healing") + ".",
+      use: function () { return bagSpeedUse(kind); } }); }); });
+  var gi = GI_ORDER.map(function (id) { var d = GI_DEFS[id]; return { id: "gi_" + id, gi: id, cat: "items", top: d.top || "", rar: d.rar, icon: function () { return itemArt(d.art); }, name: d.name, desc: d.desc, count: function () { return game.giCount(id); }, use: function () { return giPanel(id); } }; });
+  BAG_ITEMS = sp.concat(gi, BAG_ITEMS); })();
+function giBtn(label, act, arg, off) { return '<button type="button" class="su-btn" data-bx="' + act + '"' + (arg != null ? ' data-bxa="' + arg + '"' : "") + (off ? " disabled" : "") + ">" + label + "</button>"; }
+function giUseRow(id, n) { return '<div class="bg-btns">' + (n > 1 ? '<button type="button" class="bg-det" data-bx="use" data-bxa="all">Use all (' + n + ')</button>' : "") + '<button type="button" class="bg-usebtn" data-bx="use" data-bxa="1">Use</button></div>'; }
+function giMarchRows(act) { var ms = (game.state.marches || []).filter(function (m) { return !m.foreign; }), out = "";
+  ms.forEach(function (m) { var xy = String(m.tileId).split(","), end = m.status === "outbound" ? m.arriveAt : m.status === "returning" ? m.returnAt : 0,
+      ok = act === "mrecall" ? m.status === "outbound" : (m.status === "outbound" || m.status === "returning") && !(m.boosted || {})[m.status];
+    out += '<div class="bg-tg"><span>March #' + m.id + " → X:" + xy[0] + " Y:" + (xy[1] || "?") + "<br><small style=\"opacity:.75\"" + (end ? ' data-bfin="' + end + '"' : "") + ">" + (end ? fmtTime(Math.max(0, (end - vnow()) / 1000)) + " left" : m.status) + "</small></span>" +
+      giBtn(act === "mrecall" ? "Recall" : ((m.boosted || {})[m.status] ? "Sped up" : "Speed up"), act, m.id, !ok) + "</div>"; });
+  return out || '<div class="bg-note">No marches out right now.</div>'; }
+function giPanel(id) { /* the Use area for a GI_DEFS item */
+  var d = GI_DEFS[id], n = game.giCount(id), st = game.state, h = "", th = st.buildings.townhall ? st.buildings.townhall.level : 1;
+  if (d.later) return '<div class="bg-note">' + d.later + "</div>";
+  if (id === "tp_advanced" || id === "tp_beginner") { h = '<div class="bg-note">Tap an empty tile on the World map, then press Teleport.' + (id === "tp_beginner" ? (th <= GI_BEGINNER_TH ? " Your Town Hall is Lv " + th + ", so you can still use these." : " Your Town Hall is Lv " + th + " - too high for Beginner Teleports.") : "") + (tpFree() ? "<br><small>Teleporting is free while testing - no item is used yet.</small>" : "") + '</div><div class="bg-btns"><button type="button" class="bg-usebtn" data-bx="map">World map</button></div>'; }
+  else if (id === "tp_random") h = '<div class="bg-btns"><button type="button" class="bg-usebtn" data-bx="tprandom">Teleport now</button></div>';
+  else if (id === "tp_alliance") h = ALLY.my ? '<div class="bg-btns"><button type="button" class="bg-usebtn" data-bx="tpally">Teleport to alliance</button></div>' : '<div class="bg-note">Join an alliance first.</div>';
+  else if (d.sec) { var sl = game.shieldLeftSec(); h = '<div class="bg-note">' + (sl > 0 ? "🛡️ Peace Shield on: <b data-bfin=\"" + st.shieldUntil + '">' + fmtTime(sl) + " left</b> (another shield adds to it)" : "No Peace Shield on right now.") + "</div>" + giUseRow(id, 1); }
+  else if (id === "march_speed" || id === "march_recall") h = giMarchRows(id === "march_speed" ? "mspeed" : "mrecall");
+  else if (d.amt) h = '<div class="bg-note">⚡ Stamina now: <b>' + game.monsterEnergy() + "</b> / " + MONSTER_ENERGY_MAX + "</div>" + giUseRow(id, n);
+  else if (id === "chest_hero" || id === "chest_weapon") { var opts = id === "chest_hero" ? game.giSelectHeroes() : game.giSelectWeapons();
+    h = '<div class="bg-pick wrap">' + opts.map(function (k) { var nm = id === "chest_hero" ? (HERO_DEFS[k].icon || "") + " " + HERO_DEFS[k].name : WEAPON_DEFS_BY_ID[k].name; return '<span data-bx="pick" data-bxa="' + k + '"' + (bagState.pick === k ? ' class="on"' : "") + ">" + escapeHtml(nm) + "</span>"; }).join("") + "</div>" + giUseRow(id, n); }
+  else if (d.eqR != null) h = giUseRow(id, n);
+  if (bagState.got) h += '<div class="bg-got">' + bagState.got + "</div>";
+  return h;
+}
+var GI_FAIL = { not_yet: "Can't be used yet.", not_enough: "You don't have one.", pick: "Pick one first.", inventory_full: "Your equipment bag is full.", already: "Already sped up on this trip.", not_moving: "That march isn't moving.", not_outbound: "Only a march on its way out can be recalled.", no_march: "That march is gone." };
+function bagGearAction(act, arg) {
+  var it = bagItemsFor(bagState.cat).filter(function (x) { return x.id === bagState.sel; })[0], id = it && it.gi, r = null;
+  if (act === "pick") { bagState.pick = arg; bagState.got = ""; bagRender(); return; }
+  if (act === "map") { document.getElementById("bagPop").style.display = "none"; setScreen("world"); return; }
+  if (act === "tprandom" || act === "tpally") { tpUseItem(act === "tprandom" ? "tp_random" : "tp_alliance"); return; }
+  if (act === "mspeed") r = game.marchSpeedUp(+arg); else if (act === "mrecall") r = game.marchRecall(+arg);
+  else if (act === "use" && id) { if (bagState.qtyFor !== id) { bagState.qtyFor = id; } r = game.useGear(id, arg === "all" ? game.giCount(id) : 1, bagState.pick); }
+  if (!r) return;
+  if (r.ok) { try { sfxReward(); } catch (e) {} bagState.got = r.msg || "Done"; persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} }
+  else bagState.got = '<span style="color:#ff9a8a">' + (GI_FAIL[r.reason] || "Can't use that (" + r.reason + ").") + "</span>";
+  bagRender();
+}
+/* ---- v1592: teleport costs. Free while testing (Dev Tools > Speed & Testing switch, per device); otherwise an item or GI_TP_GEMS gems. ---- */
+var TP_FREE_KEY = "kingdom_tp_free_v1", tpLastPay = null;
+function tpFree() { try { return localStorage.getItem(TP_FREE_KEY) !== "0"; } catch (e) { return true; } }
+function tpPayChoice() { var st = game.state, th = st.buildings.townhall ? st.buildings.townhall.level : 1;
+  if (tpFree()) return "free"; if (game.giCount("tp_beginner") && th <= GI_BEGINNER_TH) return "tp_beginner"; if (game.giCount("tp_advanced")) return "tp_advanced"; if ((st.gems || 0) >= GI_TP_GEMS) return "gems"; return null; }
+function tpCostTag() { var p = tpPayChoice(); return p === "free" || !p ? "" : p === "gems" ? " · " + ico("gems") + GI_TP_GEMS.toLocaleString("en-US") : ' · <img alt="" src="' + ITEM_ART_PRE + GI_DEFS[p].art + '.webp" style="width:16px;height:16px;vertical-align:-3px">×1'; }
+function tpPay(kind) { if (!kind || kind === "free") { tpLastPay = null; return true; } if (kind === "gems") { if ((game.state.gems || 0) < GI_TP_GEMS) return false; game.state.gems -= GI_TP_GEMS; } else if (!game.giTake(kind)) return false; tpLastPay = kind; persist(); return true; }
+function tpRefundLast() { var k = tpLastPay; tpLastPay = null; if (!k) return; if (k === "gems") game.state.gems = (game.state.gems || 0) + GI_TP_GEMS; else game.state.items[k] = (game.state.items[k] || 0) + 1; persist(); }
+function tpTileOk(t) { return !!t && t.type === "empty" && t.id !== game.state.homeTileId && !isTileOccupied(t.id) && !isTileTooCloseToCity(t.id) && (!patchMode() || patchKnown(t.id)); }
+function tpFindNear(cx, cy, r0, r1, random) { var map = game.state.map, best = [];
+  for (var r = r0; r <= r1; r++) { for (var dx = -r; dx <= r; dx++) for (var dy = -r; dy <= r; dy++) { if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; var t = mapTileAt(map, cx + dx, cy + dy); if (tpTileOk(t)) best.push(t); }
+    if (best.length && !random) return best[Math.floor(Math.random() * best.length)]; }
+  return best.length ? best[Math.floor(Math.random() * best.length)] : null; }
+function tpLand(tileId) { armTeleportDropEffect(tileId); selectedTile = null; persist(); render(); try { devInvasionOnTeleport(); } catch (e) {} spawnTeleportDropExtras(tileId); try { sfxTeleport(); } catch (e) {} }
+function tpUseItem(id) { /* Random / Alliance Teleport from the Backpack */
+  var fail = function (t) { bagState.got = '<span style="color:#ff9a8a">' + t + "</span>"; bagRender(); };
+  if ((game.state.marches || []).length) return fail("You can't teleport while a march is out.");
+  if (game.giCount(id) < 1) return fail("You don't have one.");
+  var home = mapTileById(game.state.map, game.state.homeTileId), target = null; if (!home) return fail("Your city isn't on the map yet.");
+  if (id === "tp_random") target = tpFindNear(home.x, home.y, 6, 18, true);
+  else { var lead = null, any = null; Object.keys(occupiedTileIds).forEach(function (tid) { var o = occupiedTileIds[tid]; if (!isAlly(o)) return; any = any || tid; if (ALLY.members[o] && ALLY.members[o].rank === 5) lead = tid; });
+    var at = lead || any; if (!at) return fail("Can't see your alliance's cities on the map - scroll the map near them first.");
+    var axy = tileXY(at); target = tpFindNear(axy[0], axy[1], 3, 12, false); }
+  if (!target) return fail("No open spot found - try again.");
+  if (!tpPay(id)) return fail("You don't have one.");
+  teleportTo(target.id).then(function (res) {
+    if (res.ok) { tpLand(target.id); bagState.got = "Teleported to X:" + target.x + " Y:" + target.y; document.getElementById("bagPop").style.display = "none"; setScreen("world"); try { centerMapOnHome(); } catch (e) {} }
+    else { tpRefundLast(); fail("Couldn't teleport (" + res.reason + ") - the item wasn't used."); }
+  });
+}
 function bagRarity(d) { var v = d.kind === "choice" ? d.lv : d.amt >= 1e6 ? 4 : d.amt >= 1e5 ? 3 : d.amt >= 1e4 ? 2 : d.amt >= 1e3 ? 1 : 0; return d.kind === "choice" ? d.lv : v; }
 function bagResItems() { /* v1024: resource packs and chests from state.items */
   var I = game.state.items || {};
@@ -32938,17 +33109,19 @@ function bagItemUse() {
 }
 function bagOpen() {
   var pop = document.getElementById("bagPop");
-  if (!pop) { pop = document.createElement("div"); pop.id = "bagPop"; pop.innerHTML = '<div class="bg-box"><button class="bg-x" aria-label="Close">✕</button><div class="bg-t">Backpack</div><div class="bg-tabs"></div><div class="bg-grid"></div><div class="bg-use"></div><a href="#" class="bg-dev" style="display:none;margin-top:8px;font-size:11px;color:#7a6a4a;text-align:center">dev: + test chests &amp; packs</a></div>'; document.body.appendChild(pop);
+  if (!pop) { pop = document.createElement("div"); pop.id = "bagPop"; pop.innerHTML = '<div class="bg-box"><button class="bg-x" aria-label="Close">✕</button><div class="bg-t">Backpack</div><div class="bg-tabs"></div><div class="bg-grid"></div><div class="bg-use"></div><a href="#" class="bg-dev" style="display:none;margin-top:8px;font-size:11px;color:#7a6a4a;text-align:center">dev: + test items (all kinds)</a></div>'; document.body.appendChild(pop);
     pop.addEventListener("click", function (e) { var t = e.target;
       if (t === pop || (t.closest && t.closest(".bg-x"))) { pop.style.display = "none"; return; }
       var c = t.closest && t.closest("[data-bc]"); if (c) { bagState.cat = c.getAttribute("data-bc"); bagState.sel = null; bagRender(); return; }
-      var it = t.closest && t.closest("[data-bi]"); if (it) { bagState.sel = it.getAttribute("data-bi"); bagState.got = ""; bagRender(); return; }
+      var it = t.closest && t.closest("[data-bi]"); if (it) { if (bagState.sel !== it.getAttribute("data-bi")) bagState.pick = null; bagState.sel = it.getAttribute("data-bi"); bagState.got = ""; bagRender(); return; }
       if (t.closest && t.closest("[data-bgo]")) { var s2 = bagItemsFor(bagState.cat).filter(function (x) { return x.id === bagState.sel; })[0]; pop.style.display = "none"; if (s2 && s2.go) s2.go(); return; }
       var q = t.closest && t.closest("[data-bq]"); if (q) { var mx = +(document.getElementById("bgRange") || {}).max || 1, v = q.getAttribute("data-bq"); bagState.qty = v === "max" ? mx : Math.max(1, Math.min(mx, (bagState.qty || 1) + (+v))); var rg = document.getElementById("bgRange"); if (rg) rg.value = bagState.qty; document.getElementById("bgN").textContent = bagState.qty; return; }
       var pk = t.closest && t.closest("[data-bp]"); if (pk) { bagState.pick = pk.getAttribute("data-bp"); bagState.got = ""; bagRender(); return; }
       if (t.closest && t.closest("[data-bdet]")) { bagState.det = bagState.det === bagState.sel ? null : bagState.sel; bagRender(); return; }
       if (t.closest && t.closest("[data-buse]")) { bagItemUse(); return; }
-      if (t.closest && t.closest(".bg-dev")) { e.preventDefault(); ["custom_1", "custom_2", "custom_3", "supply_1000", "supply_10000", "supply_100000"].forEach(function (k) { game.addItem(k, 5); }); ITEM_RES.forEach(function (r) { game.addItem("res_" + r + "_1000", 10); game.addItem("res_" + r + "_10000", 3); }); persist(); bagRender(); return; }
+      var gx = t.closest && t.closest("[data-bx]"); if (gx) { if (!gx.disabled) bagGearAction(gx.getAttribute("data-bx"), gx.getAttribute("data-bxa")); return; } /* v1592 */
+      if (t.closest && t.closest(".bg-dev")) { e.preventDefault(); ["custom_1", "custom_2", "custom_3", "supply_1000", "supply_10000", "supply_100000"].forEach(function (k) { game.addItem(k, 5); }); ITEM_RES.forEach(function (r) { game.addItem("res_" + r + "_1000", 10); game.addItem("res_" + r + "_10000", 3); });
+        GI_ORDER.forEach(function (k) { game.addItem(k, 3); }); SU_KINDS.forEach(function (k) { game.state.speedups[k[0]] = (game.state.speedups[k[0]] || 0) + 3; }); persist(); bagRender(); return; } /* v1592: + every speedup and new item */
       if (t.closest && t.closest("[data-su]")) setTimeout(bagRender, 50); /* a speedup was used */
     });
     pop.addEventListener("input", function (e) { if (e.target && e.target.id === "bgRange") { bagState.qty = +e.target.value; var n = document.getElementById("bgN"); if (n) n.textContent = bagState.qty; } }); }
@@ -32971,7 +33144,7 @@ function bagOpen() {
 var bagSig = "";
 setInterval(function () { /* refresh only when something changed (so taps never land on a rebuilt button); the timers tick on their own */
   var pop = document.getElementById("bagPop"); if (!pop || pop.style.display !== "flex") return;
-  var st = game.state, sig = JSON.stringify([bagState.cat, bagState.sel, bagState.pick, bagState.det, bagState.got, BAG_CATS.map(function (c) { return bagItemsFor(c[0]).map(function (x) { return x.id + x.count(); }); }), Object.keys(st.buildings).map(function (k) { var b = st.buildings[k]; return (b.upgrading ? b.upgrading.finishAt : 0) + "/" + (b.queue ? b.queue.length : 0); }), st.researchQueue && st.researchQueue.finishAt]);
+  var st = game.state, sig = JSON.stringify([bagState.cat, bagState.sel, bagState.pick, bagState.det, bagState.got, BAG_CATS.map(function (c) { return bagItemsFor(c[0]).map(function (x) { return x.id + x.count(); }); }), Object.keys(st.buildings).map(function (k) { var b = st.buildings[k]; return (b.upgrading ? b.upgrading.finishAt : 0) + "/" + (b.queue ? b.queue.length : 0); }), st.researchQueue && st.researchQueue.finishAt, (st.marches || []).map(function (m) { return m.id + m.status + JSON.stringify(m.boosted || 0); }), st.shieldUntil, (st.healQueue || []).length && st.healQueue[st.healQueue.length - 1].finishAt]);
   if (sig !== bagSig) { bagSig = sig; bagRender(); return; }
   [].forEach.call(pop.querySelectorAll("[data-bfin]"), function (e) { e.textContent = fmtTime(Math.max(0, (+e.getAttribute("data-bfin") - vnow()) / 1000)) + " left"; });
 }, 1000);
