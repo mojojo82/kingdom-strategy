@@ -5056,3 +5056,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Crystal Focus (+6%/level flat team damage - a skill a stat could do) is gone. **Shatterpoint** (`effectType: "bossDmg"`, 6%/level, +30% at Lv5): while Seraphine is in the line-up, the whole team deals more damage to bosses - Conquest chapter bosses (`idleMarkMult` via `bossBonusMul`) and the Boss Rush kaiju (`kaijuBossMul`). Nothing in PvP. Its own multiplier: equipment Boss Damage × Boss Slayer card × Shatterpoint (checked: Seraphine ×1.30, + card ×1.69).
 - PvP effect: she loses the +30% team damage, so she drops from the weakest to weaker still (solo duel win 7% → 0%). That's expected for a boss specialist - noted for Harley. Meta check unchanged (her team isn't in it; the old "meta not strongest" warning is as before).
 - Still to replace: Caelum Wing Guard, Aurek Faithful, Bram Boiler Plating, Vesper Clean Code (HANDOVER.md > Open items). Script: dev/balance/boss_aura_check.js.
+
+## v1608 — Vesper Quill's Clean Code deleted (Harley)
+- Harley picked Seraphine for the boss skill after a test with both second skills removed (Seraphine weaker: 1v1 vs everyone 0% vs Vesper 7%, head to head Vesper 100%, as 5th in a Lyra/Roran/Kessa/Pip team 30% vs 43%). Shatterpoint stays on Seraphine.
+- Vesper's Clean Code (flat +5%/level team damage) is removed; she has Orbital Patch only until Harley gives her a new 2nd skill. Checked headless: her hero card shows just Orbital Patch, Arena fight with her runs, no errors.
