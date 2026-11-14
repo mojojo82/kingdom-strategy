@@ -4896,3 +4896,8 @@ Harley's 3 points:
 - Layered skin (sanctumAnim): back = whole ship incl. both towers (riders stand in front of them), front = railings + everything below the decks (edge rows: rear deck 376, lower deck 432, prow 402 in the 1706-px original) so the riders' legs are covered. Spots (Harley): h4 rear deck, h1-h3 lower deck, h0 on the prow, lowered so the legs hide (0.540 / 0.600 / 0.576).
 - 1000 x 506 webp; cqScale 0.21464 (Bonewake length), lift 12, calm (floating, no shudder), meleeFront 0.81 (hull front edge at 76-88% height), SKIN_WSLOTS on the hull band under the lower deck, SKIN_HULLT [0.55, 0.68]. Art only, no combat code touched.
 - Headless: Conquest (foundry) and Arena (bot weapons off, same level) - riders on deck, legs behind the railings, guns on the hull, hull target mid-body; no console errors. Originals + mockups: art/originals/ships/holy/.
+
+## v1586 - Mecha skin: fortress cannon fires small blue energy balls (14 Nov 2026)
+- Harley: on the Mecha skin only, the fortress cannon shots are small blue energy balls instead of the gold bullet streaks; colour = the Mecha's chest gem. Visual only (timing, damage, hits unchanged).
+- drawMechaEnergyBall: soft additive glow (gem core #8bedf4 -> #2ca5b2 -> #16646d, ~5 px, gentle pulse) + solid #2ca5b2 ball (2.3 px) with a pale #c9f8fb centre; colours sampled from art/originals/ships/mecha/parts/part_torso.png (chest gem). Conquest: isCannon branch when fortressSkin() is mecha. Arena: p.cannon when the SHOOTING side's skin is mecha (hitsPlayer -> the bot's skin, else the player's).
+- Headless: captured cannon bursts in Conquest and Arena with the Mecha - cyan balls fly from the cannon, no errors.
