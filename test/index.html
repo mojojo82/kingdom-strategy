@@ -6436,7 +6436,7 @@ var HERO_DEFS = {
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 250 }, levelBaseCost: { gold: 60, stone: 80 }, levelCostMult: 1.35,
     conquestSkills: [
       { name: "Piston Slam", icon: "⚙️💥", kind: "active", cooldown: 9, splash: { n: 1, pct: 0.5 }, desc: "Every 9s, a full-steam piston punch slams the enemy at his fists; the enemy right behind it takes half.", pctByLevel: [0.60, 0.68, 0.76, 0.84, 0.92] },
-      { name: "Pressure Build", icon: "♨️💥", kind: "limit", onHit: true, keepOnKo: true, hitsToFill: 12, takenPts: 3, targetsByLevel: [1, 1, 1, 1, 1], executePct: 0, pctByLevel: [3.0, 3.5, 4.0, 4.5, 5.0], desc: "Every hit Bram takes builds steam (and each swing a little). The boiler keeps its pressure even if he is knocked out. When it is full, his next hit lets it all go: a blast for 300% of his skill damage (500% at Lv 5)." } /* v1609 (Harley): replaces Boiler Plating (own DEF - a skill a stat could do). Melee rule: helps him do damage. Fills fast enough to fire at least once vs 5 equal ranged heroes. */
+      { disabled: true, note: "very very strong" /* v1612 (Harley): switched OFF - VERY VERY STRONG (melee went from 13% to ~79% vs ranged with it in). Kept for later tuning. */, name: "Pressure Build", icon: "♨️💥", kind: "limit", onHit: true, keepOnKo: true, hitsToFill: 12, takenPts: 3, targetsByLevel: [1, 1, 1, 1, 1], executePct: 0, pctByLevel: [3.0, 3.5, 4.0, 4.5, 5.0], desc: "Every hit Bram takes builds steam (and each swing a little). The boiler keeps its pressure even if he is knocked out. When it is full, his next hit lets it all go: a blast for 300% of his skill damage (500% at Lv 5)." } /* v1609 (Harley): replaces Boiler Plating (own DEF - a skill a stat could do). Melee rule: helps him do damage. Fills fast enough to fire at least once vs 5 equal ranged heroes. */
     ],
     expeditionSkills: [
       { name: "Shop Foreman", icon: "🔧", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.04 },
@@ -10522,7 +10522,7 @@ function createGame(opts) {
   function idleHeroBaseAtk(key) { var h = state.heroes[key]; return (h && h.owned) ? Math.round(heroPowerLevel(h) * heroAtkPerPowerEffective()) : 0; } // base ATK stat = power level × attack constant (no skill bonuses)
   function idleHeroDefMult(key, A) { return defReduce(A, heroDefNetOwn(key, state.heroes[key], heroBonusMult("def"))); } /* v1413: Iron Will */
   /* v954: limit skills (Death Strike) - a bar per hero that fills one step for every hit he takes; a KO empties it. Kept across levels. */
-  function idleLimitSkill(key) { var d = HERO_DEFS[key], cs = d && d.conquestSkills; if (!cs) return null; for (var i = 0; i < cs.length; i++) if (cs[i].kind === "limit") return { sk: cs[i], idx: i }; return null; }
+  function idleLimitSkill(key) { var d = HERO_DEFS[key], cs = d && d.conquestSkills; if (!cs) return null; for (var i = 0; i < cs.length; i++) if (cs[i].kind === "limit" && !cs[i].disabled) return { sk: cs[i], idx: i }; return null; } /* v1612: not switched-off ones */
   function idleLimitAdd(key, taken) { var L = idleLimitSkill(key); if (!L) return; var lm = state.idle.limit || (state.idle.limit = {}); lm[key] = Math.min(L.sk.hitsToFill, (lm[key] || 0) + (taken ? L.sk.takenPts || 1 : (L.sk.swingPts != null ? L.sk.swingPts : 1))); } /* v1609: swingPts per skill (Pressure Build: hits taken only) */
   function idleLimitFrac(key) { var L = idleLimitSkill(key); if (!L) return null; return Math.min(1, ((state.idle.limit || {})[key] || 0) / L.sk.hitsToFill); }
   // v954/v961: limit skills (Death Strike). A full bar stays loaded and fires together with the hero's next active skill (Shield Slam) -
@@ -13668,7 +13668,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1611"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1612"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -37101,7 +37101,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
       if (skill.kind === "passive" && skill.effectType === "conquestDamageMult") dmgMultSum += lvl * skill.perLevel;
       if (skill.kind === "active" && skill.support) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel || skill.buffPctByLevel)[Math.min(5, lvl) - 1] || 0, sec: skill.buffSec || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
-      if (skill.kind === "limit") limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest */
+      if (skill.kind === "limit" && !skill.disabled) limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest (v1612: a switched-off limit skill does nothing) */
       if (skill.kind === "active" && !skill.support) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skillCdAt(skill, lvl), skill: skill, lvl: lvl, requiresClose: isInfantry && !skill.aoeAll && !skill.dive, aoe: !!skill.aoeAll, /* v1514: a dive needs no reach - he flies to the target */ /* v992: Shuriken Storm needs no reach. Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
     });
   });
