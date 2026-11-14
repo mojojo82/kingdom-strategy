@@ -3,7 +3,7 @@
    kaijuPose(t, mode, mt) -> pose params; kaijuDraw(ctx, imgs, x, feetY, scale, pose). */
 (function () {
   var W = 1415, H = 949, GX = 30, GY = 20;
-  var P = { hip: [640, 700], neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [46, 234], mouthBack: [172, 236], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
+  var P = { hip: [640, 700], neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [44, 242], mouthBack: [171, 242], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
   function sm(e0, e1, x) { var t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); }
   function rot(x, y, cx, cy, a) { var c = Math.cos(a), s = Math.sin(a), dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
@@ -30,20 +30,20 @@
     }
     if (mode === "stomp") { /* the front (left) foot lifts, holds, slams down; weight shifts back then drops */
       var v = mt;
-      p.lift = key(v, [[0, 0], [0.6, 185], [0.8, 196], [0.92, -4], [0.98, 0], [STOMP, 0]]);
+      p.lift = key(v, [[0, 0], [0.55, 110], [0.78, 118], [0.9, -3], [0.98, 0], [STOMP, 0]]);
       p.lean += key(v, [[0, 0], [0.55, -0.035], [0.78, -0.04], [0.9, 0.03], [1.3, 0.012], [STOMP, 0]]);
-      p.knee += key(v, [[0, 0], [0.6, 1.0], [0.9, 1.0], [0.97, 2.4], [1.4, 0.6], [STOMP, 0]]);
+      p.knee += key(v, [[0, 0], [0.55, 0.6], [0.88, 0.6], [0.95, 2.2], [1.4, 0.6], [STOMP, 0]]);
       p.head += key(v, [[0, 0], [0.55, -0.06], [0.88, -0.07], [0.95, 0.07], [1.4, 0.01], [STOMP, 0]]);
       p.arm += key(v, [[0, 0], [0.55, -1.2], [0.9, 1.5], [1.4, 0.3], [STOMP, 0]]);
       p.tailA += key(v, [[0, 0], [0.9, 0.5], [1.1, 2.2], [1.6, 0.6], [STOMP, 0]]);
-      p.impact = v > 0.92 && v < 1.6 ? 1 - (v - 0.92) / 0.68 : 0; /* flash + dust + shake */
-      p.shake = v > 0.92 && v < 1.28 ? (1 - (v - 0.92) / 0.36) : 0;
+      p.impact = v > 0.88 && v < 1.6 ? 1 - (v - 0.88) / 0.72 : 0; /* flash + dust + shake */
+      p.shake = v > 0.88 && v < 1.25 ? (1 - (v - 0.88) / 0.37) : 0;
     }
     return p;
   }
   function warp(x, y, p) { /* source px -> deformed source px */
     var still = 1 - sm(690, 830, y), X = x, Y = y;
-    if (p.lift) { var wl2 = (1 - sm(400, 470, x)) * sm(520, 660, y); if (wl2 > 0) { var lf = p.lift * sm(520, 740, y) * wl2; Y -= lf; X += 0.18 * lf * (1 - sm(520, 740, y)) - 0.1 * lf; } } /* stomp leg */
+    if (p.lift) { var wl2 = (1 - sm(400, 470, x)) * sm(520, 660, y); if (wl2 > 0) { var lf = p.lift * sm(560, 930, y) * wl2; Y -= lf; X += 0.18 * lf * (1 - sm(560, 930, y)) - 0.1 * lf; } } /* stomp leg */
     /* tail: travelling wave, amplitude grows to the tip */
     if (x > P.tail0) { var u = (x - P.tail0) / (P.tipX - P.tail0), A = 16 * p.tailA * Math.pow(u, 1.4), ph = p.tailT * 2 * Math.PI / 2.6 - u * 3.4; Y += A * Math.sin(ph) + A * 0.25 * Math.sin(ph * 2.1 + 0.7); X += -6 * u * Math.sin(ph + 1); }
     /* far arm, near arm: small sway about the shoulder */
@@ -102,7 +102,7 @@
       var map = drawMesh(ctx, tx, p, T);
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 1; var c = map(P.core[0], P.core[1]); glowAt(ctx, c[0], c[1], 90 * scale, "200,80,255", Math.min(1, p.core) * 0.9);
-      if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1]); glowAt(ctx, m[0], m[1], (40 + 50 * p.mouth) * scale, "230,140,255", p.mouth); glowAt(ctx, m[0], m[1], 22 * scale * p.mouth, "255,255,255", p.mouth); }
+      if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1] + 2); glowAt(ctx, m[0], m[1], (40 + 50 * p.mouth) * scale, "230,140,255", p.mouth); glowAt(ctx, m[0], m[1], 22 * scale * p.mouth, "255,255,255", p.mouth); }
       if (p.beam > 0) { var m2 = map(P.mouth[0], P.mouth[1]), tg = beamToX && beamToX.x != null ? beamToX : { x: beamToX || 0, y: m2[1] }, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
         var dx = tg.x - m2[0], dy = tg.y - m2[1], L = Math.hypot(dx, dy), an = Math.atan2(dy, dx);
         ctx.save(); ctx.translate(m2[0], m2[1]); ctx.rotate(an);
