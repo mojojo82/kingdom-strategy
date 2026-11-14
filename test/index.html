@@ -2742,7 +2742,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-t.dim { opacity:.6; }
   #evWin .evw-t .ti { flex:none; width:40px; height:40px; border-radius:8px; background:rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; }
   #evWin .evw-t .ti img { width:90%; height:90%; object-fit:contain; }
-  #evWin .evw-t .tx { flex:1; min-width:0; font-size:12.5px; line-height:1.3; } #evWin .evw-t .tx b { display:block; color:#f6e7c4; font-size:13px; } #evWin .evw-t .tx em { font-style:normal; color:#ffd77a; font-weight:800; }
+  #evWin .evw-t .tx { flex:1; min-width:0; font-size:12.5px; line-height:1.3; } #evWin .evw-t .tx b { display:block; color:#f6e7c4; font-size:13px; } #evWin .evw-t .tx em { font-style:normal; color:#ffd77a; font-weight:800; white-space:nowrap; }
   #evWin .evw-t .bar { margin-top:4px; height:7px; border-radius:5px; background:#1a120a; overflow:hidden; } #evWin .evw-t .bar i { display:block; height:100%; background:#2bb3d9; }
   #evWin .evw-t .go { flex:none; min-width:58px; text-align:center; font-weight:800; font-size:13px; color:#06131c; background:#2bb3d9; border:0; border-radius:8px; padding:8px 10px; cursor:pointer; }
   #evWin .evw-t .go.done { background:#33291c; color:#7fe08a; border:1px solid #6b5730; cursor:default; } #evWin .evw-t .go.claim { background:linear-gradient(#f0c95f,#c98f1e); color:#2a1806; }
@@ -2774,7 +2774,9 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-wk .pick span { font-size:11.5px; color:#a9b4c8; line-height:1.3; }
   #evWin .evw-wkbtn { display:block; width:100%; margin-top:10px; padding:9px; border:0; border-radius:9px; font-weight:800; font-size:14px; color:#2a1806; background:linear-gradient(#f0c95f,#c98f1e); cursor:pointer; }
   #evWin .evw-srv { padding:10px; }
-  #evWin .evw-how { margin-top:30px; display:flex; align-items:center; gap:8px; font-size:12px; color:#e8d3a6; } #evWin .evw-how b { color:#ffd77a; }
+  #evWin .evw-t .go:not(.done):not(.claim), #evWin .evw-si .buy:not(.off), #evWin .evw-how .go, #evWin .evw-tt .info { color:#fff; text-shadow:0 1px 1px rgba(0,40,60,.55); } /* v1595 (Harley): white text on the cyan buttons */
+
+  #evWin .evw-how { margin-top:30px; display:flex; align-items:center; gap:8px; font-size:12px; line-height:1.35; color:#e8d3a6; } #evWin .evw-how span { flex:1; min-width:0; } #evWin .evw-how b { color:#ffd77a; }
   #evWin .evw-how .go { margin-left:auto; font-weight:800; font-size:13px; color:#06131c; background:#2bb3d9; border:0; border-radius:8px; padding:6px 12px; cursor:pointer; }
   #evWin .evw-lb { margin:0 10px; border:1.5px solid #8a6a3a; border-radius:10px; overflow:hidden; background:linear-gradient(180deg,#4a3218,#33220f); }
   #evWin .evw-lr { display:flex; align-items:center; gap:8px; padding:7px 10px; border-top:1px dotted rgba(201,162,74,.35); font-size:13px; }
@@ -13600,7 +13602,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1594"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1595"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19634,7 +19636,7 @@ function evArenaHtml() {
   var h = '<div class="evw-hd2" style="background-image:url(' + evArt("banner_arena") + ')"><div class="evw-cur"><img alt="" src="' + evArt("icon_arena_medal") + '">' + Math.floor(E.am).toLocaleString("en-US") + '</div><div class="tt"><h1>Arena</h1><br><span class="tm">⏳ Day ends in <b data-evend="' + (Date.now() + game.dailyMsLeft()) + '">' + evLeft(game.dailyMsLeft()) + "</b></span></div></div>";
   h += '<div class="evw-act" style="padding-bottom:10px"><div class="row1"><b>' + pts.toLocaleString("en-US") + '</b><span>Arena points today · ' + Math.floor(E.awp).toLocaleString("en-US") + ' this week</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
     + ms.map(function (m, i) { var got = E.ad.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-eams="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at + "</small></button>"; }).join("") + "</div>"
-    + '<div class="evw-how">Win an Arena fight: <b>+' + (A.win || 0) + "</b>" + (A.upset ? " · beat a higher-rated governor: <b>+" + A.upset + "</b> more" : "") + ' <button type="button" class="go" data-evgo="arena">Fight</button></div></div>';
+    + '<div class="evw-how"><span>Each win <b>+' + (A.win || 0) + "</b>" + (A.upset ? " · beating a higher-rated governor <b>+" + A.upset + "</b> more" : "") + '</span><button type="button" class="go" data-evgo="arena">Fight</button></div></div>';
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   ["d", "w"].forEach(function (per) { var p = EVA.prev[per]; if (p && !p.claimed) h += '<button type="button" class="evw-wkbtn" style="width:auto;margin:10px 10px 0" data-earank="' + per + '" data-eakey="' + p.key + '">🏆 Claim ' + (per === "d" ? "yesterday's" : "last week's") + " rank reward (" + p.pts.toLocaleString("en-US") + " points)</button>"; });
   h += '<div class="evw-sub"><button type="button" data-easub="day"' + (EVA.sub === "day" ? ' class="on"' : "") + '>Today</button><button type="button" data-easub="week"' + (EVA.sub === "week" ? ' class="on"' : "") + '>This week</button><button type="button" data-easub="shop"' + (EVA.sub === "shop" ? ' class="on"' : "") + ">Arena Shop</button></div>";

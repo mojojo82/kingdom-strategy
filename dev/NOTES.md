@@ -4963,3 +4963,7 @@ Step 2 of the event plan (Harley: Arena every day, every week; maybe 5 days a we
 - **Admin console > Live events**: new Arena block - points per win and upset bonus, daily track, daily and weekly rank reward rows, Arena Shop rows. normalizeArena validates it (no gems).
 - dev/tests/fnrunner.js: collection().doc() and where().count() for the leaderboard tests.
 - Headless (dev/shots_arena_v1594.jpg): 2 wins (one upset) = 50 points on both boards on the server; loss = 0; track and shop limits work; leaderboard shows rivals with ties ranked; yesterday's claim -> rank #2, 150 medals by mail; admin round-trip passes the server check; no errors.
+
+## v1595 - Events window touch-ups (14 Nov 2026)
+- Harley: white text on the cyan buttons (shop prices, Go, Fight, Hero details) instead of dark text.
+- Task rows: the "+N Medals / Activity" part never splits across two lines; the Arena "each win +20 · beating a higher-rated governor +10 more" line is one flowing sentence beside the Fight button (it was broken into pieces and overlapped the track labels).
