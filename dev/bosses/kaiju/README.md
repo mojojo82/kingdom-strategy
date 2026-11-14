@@ -10,3 +10,4 @@ Preview: view.html + render_preview.js (60 fps frames -> art/originals/bosses/ka
 Atlas clips (fallback): clips/kaiju_idle_v1.mp4, clips/kaiju_breath_v1.mp4.
 - v3: stomp (2.1 s): the front (left) foot lifts ~110 px, holds, slams; weight shifts back then drops, knees give, tail whips, impact flash at the foot + shake. The creeping ground blast it starts is a separate effect (to do).
 - Blast aim (Harley): the mouth points down-left at the ship - the head tilts by the angle from the mouth to the target (in the game: the player's skin hull target, SKIN_HULLT, so the tall Mecha gets a higher shot). The beam is drawn from the mouth to that point.
+- kaiju_quake.js: creeping ground blast after the stomp (crack of light, crystal spikes, sparks, burst under the target). KAIJU_QUAKE.draw(ctx, q, footX, targetX, groundY, scale).
