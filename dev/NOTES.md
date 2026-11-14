@@ -5011,3 +5011,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - "featured_shards" isn't a catalogue item, so a rank reward of featured shards sent by mail couldn't be collected. `resolveFeatured` (functions/core.js) now turns it into `shards_<hero>` before mailing, in `claimBossRank` and `claimArenaRank`.
 - Boss Rush: `bossScore` stores the run week's featured hero on the leaderboard row (`fh`), so the rank reward pays that hero even if claimed after the featured hero changed.
 - Tested: server test (17 pass) + dev/bosses/kaiju/claim_test.js (ranks 1-3 claim, duplicate claim refused, mail holds real hero shards).
+
+## v1602 — Boss Test tab (TEST game only)
+- Events > 🧪 **Boss Test**: Harley's any-day kaiju fight to check how he looks live. Same fight as Boss Rush, but no tries used, no points, no rewards, no leaderboard, nothing saved (`kaijuOpponent(true)` → `kaijuTest`). Back returns to the Boss Test tab.
+- Only shows when `kaijuTestOk()` (the page is under /test/ or the backend env is "test"), so it won't exist once the game is copied to LIVE.
+- Headless (Saturday, Boss Rush closed): two fights back to back (24,958 / 24,798 damage), `state.ev.br` untouched, no leaderboard write, no errors. Script: dev/bosses/kaiju/boss_test_tab_test.js.
