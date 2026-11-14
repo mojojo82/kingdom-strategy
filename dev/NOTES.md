@@ -5070,3 +5070,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1610 — test hook: area-skill casts reported by the Arena sim
 - `info.casts` lists the area skills cast that tick ("p_aurek", "a_hanzo"...), for tests only - no gameplay change.
 - Aurek's Sunforge Slam (Lv80 5* skill Lv5): 211 damage to every enemy (≈15% of an equal ranged hero's 1,380 HP, 0.26% of the fortress). First slam at 0.4 s. Vs equal 5-ranged teams: with 4 ranged allies he slams exactly once a fight (fights ~34 s); in a melee team 2.3 a fight (1: 15%, 2: 50%, 3: 28%, 4: 7%; fights ~57 s). Over a fight it adds ~1,050 damage to enemy heroes and ~200 to the fortress. Script: dev/balance/aurek_slams.js.
+
+## v1611 — Aurek's Faithful and Caelum's Wing Guard switched off (Harley)
+- Both `disabled: true` with 0 DEF (like Lyra's Eagle Eye) - still shown on their cards until the replacements come.
+- **Balance has swung to melee** (dev/balance/ranged_vs_melee.js): 5 ranged vs 5 melee was ranged 87% this morning; after v1607-v1611 (Crystal Focus and Clean Code gone, Pressure Build in, Wing Guard / Faithful off) **melee wins 77%**. Melee teams 52-94%; best ranged team lyra+roran+kessa+juno+pip 72%; ranged teams with Sera + Vesper + Seraphine 0%. The swing is mostly the two lost team-damage passives (the melee team without Bram went 9% → 63%), plus Bram's blasts.
+- Aurek slam ×3 test (before the switch-off, dev/balance/aurek_x3.js): 211 → 634 per target; 1v1 duels 27% → 31%; his melee team vs 5 ranged 94% → 98% - small change, and measured on the shifted baseline.

@@ -204,9 +204,10 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - Sera is an OLD MAN (old wizard, purple staff) - use he/him (Harley, 12 Nov).
 
 ## Open items / to-dos
+- **OPEN - balance swung to melee (15 Nov, v1607-v1611).** 5 ranged vs 5 melee (all Lv80 5*, no weapons, no Hanzo): this morning ranged won 87%; after removing Seraphine's Crystal Focus (+30% team dmg) and Vesper's Clean Code (+25%), adding Bram's Pressure Build and switching off Wing Guard / Faithful, **melee wins 77%** (best melee team 94%, even the no-Bram team 63%). Ranged teams with Seraphine + Vesper + Sera now win 0%. Settle the overall balance before tuning Aurek / Caelum replacements (dev/balance/ranged_vs_melee.js).
 - **OPEN - 5 hero passives need a REPLACEMENT skill (Harley, 15 Nov 2026).** Harley's rule: no hero skill that just "makes them stronger" - that wastes a skill slot on what a stat can do (stats exist so heroes can have more or less). Marked for replacement:
-  1. **Caelum Vex - Wing Guard** (own DEF +4%/level).
-  2. **Aurek Solmane - Faithful** (own DEF +4%/level).
+  1. **Caelum Vex - Wing Guard** (own DEF +4%/level) - **switched OFF v1611** (`disabled`, 0 DEF), still on his card until replaced.
+  2. **Aurek Solmane - Faithful** (own DEF +4%/level) - **switched OFF v1611** (`disabled`, 0 DEF), still on his card until replaced.
   3. **Bram Kettleback - Boiler Plating → Pressure Build (v1609, first version, more tests later)**: limit bar filled by hits taken (3) + swings (`swingPts`, 1), kept through KOs (`keepOnKo`), released on his next landed hit (`onHit`) for 300-500% skill damage (2,400 at Lv80 5* = one-shots an equal ranged hero, 1,380 HP). Bar 12: vs equal 5-ranged teams it fires in 100% of fights when he is in a melee team, only ~25% when he is the lone melee (focus-fired, dies before landing a hit). Open idea: boiler bursts on KO when full.
   4. ~~**Seraphine Lux - Crystal Focus**~~ **DONE v1607 → Shatterpoint** (team boss damage +6%/level, `effectType: "bossDmg"`, own multiplier).
   5. **Vesper Quill - Clean Code DELETED (v1608)** - she has only Orbital Patch for now; Harley will give her a new 2nd skill later.
