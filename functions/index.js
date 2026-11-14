@@ -381,7 +381,7 @@ exports.claimArenaRank = wrap(async (req, uid, R, d) => {
   if (!me || !(me.pts > 0)) throw new C.GameError("not-found", "no score");
   if (me.claimed) return { dup: true, rank: me.rank };
   const above = await lbCol(K, per, key).where("pts", ">", me.pts).count().get(), rank = above.data().count + 1;
-  const lo = (await liveopsConfig(R)) || {}, A = lo.arena || C.LIVE_ARENA_DEFAULT, items = C.arenaRankReward(per === "w" ? A.rankW : A.rankD, rank);
+  const lo = (await liveopsConfig(R)) || {}, A = lo.arena || C.LIVE_ARENA_DEFAULT, items0 = C.arenaRankReward(per === "w" ? A.rankW : A.rankD, rank), items = items0 ? C.resolveFeatured(items0, lo.fhw ? lo : { fhw: C.normalizeLiveops({}).fhw }) : null;
   return db.runTransaction(async (tx) => {
     const s2 = await tx.get(ref); if (s2.data().claimed) return { dup: true, rank: s2.data().rank };
     tx.update(ref, { claimed: true, rank });
@@ -402,7 +402,7 @@ exports.bossScore = wrap(async (req, uid, R, d) => {
     const s = await tx.get(ref), o = s.data() || {}, today = o.day === k.d ? (o.nd || 0) : 0;
     if (today >= (BR.tries || 3) + 2) throw new C.GameError("resource-exhausted", "daily limit");
     const best = Math.max(o.dmg || 0, dmg);
-    tx.set(ref, { dmg: best, name, tag, at: now, day: k.d, nd: today + 1 }, { merge: true });
+    tx.set(ref, { dmg: best, name, tag, at: now, day: k.d, nd: today + 1, fh: (lo.fhw && lo.fhw.hero) || null }, { merge: true }); /* fh: the run week's featured hero - rank rewards pay that hero even if claimed later */
     return { w: k.w, best, isBest: dmg >= best };
   });
 });
@@ -412,7 +412,7 @@ exports.claimBossRank = wrap(async (req, uid, R, d) => {
   const ref = bossCol(K, w).doc(uid), s = await ref.get(), me = s.exists ? s.data() : null;
   if (!me || !(me.dmg > 0)) throw new C.GameError("not-found", "no score");
   if (me.claimed) return { dup: true, rank: me.rank };
-  const above = await bossCol(K, w).where("dmg", ">", me.dmg).count().get(), rank = above.data().count + 1, items = C.arenaRankReward(BR.rank, rank);
+  const above = await bossCol(K, w).where("dmg", ">", me.dmg).count().get(), rank = above.data().count + 1, items0 = C.arenaRankReward(BR.rank, rank), items = items0 ? C.resolveFeatured(items0, me.fh ? { fhw: { hero: me.fh } } : lo.fhw ? lo : { fhw: C.normalizeLiveops({}).fhw }) : null;
   return db.runTransaction(async (tx) => {
     const s2 = await tx.get(ref); if (s2.data().claimed) return { dup: true, rank: s2.data().rank };
     tx.update(ref, { claimed: true, rank });

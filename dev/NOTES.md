@@ -5006,3 +5006,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Rank rewards (`br.rank`, default #1 10 featured shards · #2-3 5 · #4-10 60 Tokens · #11-50 40 · #51-100 25 · everyone else 10) - players see them under "Rank rewards"; claimed after the run ends (server `claimBossRank`, `bossRunOver`: the week is past, or no run day left this week) and paid by mail. The tab stays until the reward is claimed.
 - Milestone points now come from surviving: `br.ptsSec` (1) a second alive + `br.ptsFull` (40) for lasting the whole fight (100 for a full survive; 9 tries = 900 max). Track: 100 Books 20 · 250 Tokens 15 · 450 Research 300 · 650 Tokens 25 · 800 featured shards 10.
 - Admin console > Live events > Boss Rush: points a second, full-survive bonus, rank reward rows (the HP % field is gone). Server test extended (run open / over by weekday). Headless flow: 24,709 damage, survived (+100), score saved to the leaderboard and shown; no errors.
+
+## v1601 — featured shards in mailed rank rewards (bug fix)
+- "featured_shards" isn't a catalogue item, so a rank reward of featured shards sent by mail couldn't be collected. `resolveFeatured` (functions/core.js) now turns it into `shards_<hero>` before mailing, in `claimBossRank` and `claimArenaRank`.
+- Boss Rush: `bossScore` stores the run week's featured hero on the leaderboard row (`fh`), so the rank reward pays that hero even if claimed after the featured hero changed.
+- Tested: server test (17 pass) + dev/bosses/kaiju/claim_test.js (ranks 1-3 claim, duplicate claim refused, mail holds real hero shards).

@@ -333,6 +333,12 @@ function bossRunOver(br, w, now) {
   const pos = (d) => (d + 6) % 7, today = pos((k.d + 4) % 7), last = Math.max.apply(null, (br.days || [2, 3, 4]).map(pos));
   return today > last;
 }
+/* v1601: mail can only carry real catalogue items - turn "featured_shards" into that week's featured hero's shards before a reward is mailed */
+function resolveFeatured(items, lo) {
+  const hero = lo && lo.fhw && lo.fhw.hero, out = {};
+  Object.keys(items || {}).forEach((id) => { const k = id === "featured_shards" ? (hero && ITEMS["shards_" + hero] ? "shards_" + hero : null) : id; if (k) out[k] = (out[k] || 0) + items[id]; });
+  return out;
+}
 function bossRunOpen(br, now) { const k = arenaKeys(now); return br.on !== false && (br.days || []).indexOf((k.d + 4) % 7) >= 0;
 }
 function normalizeLiveops(c) {
@@ -613,5 +619,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

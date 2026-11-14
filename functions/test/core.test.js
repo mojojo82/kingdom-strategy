@@ -272,4 +272,9 @@ t("v1599 Boss Rush config", () => {
   assert.strictEqual(C.bossRunOver(BR, wk, day(2026, 11, 23)), true, "next week");
   assert.throws(() => C.normalizeLiveops({ br: { ms: [{ at: 10, items: { gems: 5 } }] } }), /gems/);
 });
+t("v1601 featured shards in mail", () => {
+  const L = C.normalizeLiveops({}), h = L.fhw.hero, r = C.resolveFeatured({ featured_shards: 10, event_tokens: 5 }, L);
+  assert.strictEqual(r["shards_" + h], 10); assert.strictEqual(r.event_tokens, 5); assert.ok(!r.featured_shards);
+  assert.ok(C.ITEMS["shards_" + h], "the featured hero has a shard item");
+});
 console.log(n + " tests passed");
