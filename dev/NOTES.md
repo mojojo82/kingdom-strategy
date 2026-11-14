@@ -5016,3 +5016,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Events > 🧪 **Boss Test**: Harley's any-day kaiju fight to check how he looks live. Same fight as Boss Rush, but no tries used, no points, no rewards, no leaderboard, nothing saved (`kaijuOpponent(true)` → `kaijuTest`). Back returns to the Boss Test tab.
 - Only shows when `kaijuTestOk()` (the page is under /test/ or the backend env is "test"), so it won't exist once the game is copied to LIVE.
 - Headless (Saturday, Boss Rush closed): two fights back to back (24,958 / 24,798 damage), `state.ev.br` untouched, no leaderboard write, no errors. Script: dev/bosses/kaiju/boss_test_tab_test.js.
+
+## v1603 — kaiju drawn on the graphics chip (WebGL)
+- Harley's phone ran the kaiju fight at ~5 fps: the 2D mesh draw did ~1,200 clipped triangle copies a frame. Now `glDraw` (inside the rig) bends the painting on the GPU in one draw call (31×21 grid, mipmapped 1024² textures, spine glow + blast cascade mixed in the shader with the same maths as the old "lighter" texture), then one `drawImage` puts it on the Arena canvas. Falls back to the old 2D path if WebGL is missing or fails (`KAIJU.useGL = false` forces 2D).
+- Headless at 6× CPU slowdown: body draw 152 ms → 12 ms. The headless browser has no real GPU (software WebGL), so the copy onto the canvas is far slower there than on a phone - the real test is Harley's phone.
+- Boss Test fights show a small fps counter under the damage bar ("N fps · GPU/2D", green ≥50, yellow ≥30, red below) - TEST tab only.
+- Looks the same as the 2D version (side-by-side capture). Script: dev/bosses/kaiju/gl_speed_test.js.

@@ -13649,7 +13649,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1602"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1603"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24581,8 +24581,52 @@ var SKIN_HULLT = { "default": [0.50, 0.55], "void": [0.50, 0.50], serpent: [0.50
       tri(ctx, img, sp[k], sp[k2], sp[k3], dp[k], dp[k2], dp[k3]); tri(ctx, img, sp[k2], sp[k4], sp[k3], dp[k2], dp[k4], dp[k3]); }
     return function (x, y) { var w = warp(x, y, p); return [T.x + w[0] * T.s, T.y + w[1] * T.s]; };
   }
+  /* v1603: draw the bent painting on the graphics chip (WebGL) - one draw call instead of ~1,200 clipped triangle copies, which ran at ~5 fps on
+     Harley's phone. The spine glow is mixed in the shader (same maths as the old "lighter" texture). Falls back to the 2D path if WebGL isn't there. */
+  var KG = null; /* { cv, gl, prog, ... } or false = no WebGL */
+  function glPot(img) { var c = document.createElement("canvas"); c.width = 1024; c.height = 1024; var x = c.getContext("2d"); x.drawImage(img, 0, 0, 1024, 1024); return c; }
+  function glInit(imgs) {
+    if (KG === false) return null; if (KG && !KG.gl.isContextLost()) return KG;
+    try {
+      var cv = document.createElement("canvas"), gl = cv.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: true }) || cv.getContext("experimental-webgl");
+      if (!gl) { KG = false; return null; }
+      var vs = "attribute vec2 aP; attribute vec2 aU; uniform vec2 uR; varying vec2 vU; void main(){ vU = aU; vec2 c = aP / uR * 2.0 - 1.0; gl_Position = vec4(c.x, -c.y, 0.0, 1.0); }";
+      var fs = "precision mediump float; varying vec2 vU; uniform sampler2D uB; uniform sampler2D uG; uniform float uSa; uniform float uCasc; uniform float uWx;"
+        + "void main(){ vec4 b = texture2D(uB, vU); vec4 g = texture2D(uG, vU); float ga = uCasc >= 0.0 ? 0.45 * uSa + (vU.x * " + W.toFixed(1) + " >= uWx - 160.0 ? 0.85 : 0.0) : uSa;"
+        + " vec3 rgb = b.rgb * b.a + g.rgb * g.a * ga; float a = min(1.0, b.a + g.a * ga); gl_FragColor = vec4(min(rgb, vec3(a)), a); }";
+      function sh(t, s) { var o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
+      var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error("link");
+      gl.useProgram(pr);
+      function tex(img, unit) { var t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, glPot(img)); gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; }
+      tex(imgs.body, 0); tex(imgs.glow, 1); gl.uniform1i(gl.getUniformLocation(pr, "uB"), 0); gl.uniform1i(gl.getUniformLocation(pr, "uG"), 1);
+      if (!mesh) mesh = buildMesh();
+      var uv = new Float32Array(mesh.length * 2); mesh.forEach(function (q, i) { uv[i * 2] = q[0] / W; uv[i * 2 + 1] = q[1] / H; });
+      var idx = []; for (var j = 0; j < GY; j++) for (var i = 0; i < GX; i++) { var k = j * (GX + 1) + i; idx.push(k, k + 1, k + GX + 1, k + 1, k + GX + 2, k + GX + 1); }
+      var bu = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bu); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW); var aU = gl.getAttribLocation(pr, "aU"); gl.enableVertexAttribArray(aU); gl.vertexAttribPointer(aU, 2, gl.FLOAT, false, 0, 0);
+      var bp = gl.createBuffer(), aP = gl.getAttribLocation(pr, "aP"); gl.bindBuffer(gl.ARRAY_BUFFER, bp); gl.bufferData(gl.ARRAY_BUFFER, mesh.length * 8, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
+      var bi = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bi); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+      cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); KG = null; }, false);
+      KG = { cv: cv, gl: gl, pr: pr, bp: bp, n: idx.length, pos: new Float32Array(mesh.length * 2), uR: gl.getUniformLocation(pr, "uR"), uSa: gl.getUniformLocation(pr, "uSa"), uCasc: gl.getUniformLocation(pr, "uCasc"), uWx: gl.getUniformLocation(pr, "uWx") };
+      return KG;
+    } catch (e) { try { console.warn("kaiju webgl", e && e.message); } catch (x) {} KG = false; return null; }
+  }
+  function glDraw(ctx, imgs, p, T) { /* the bent body onto ctx in one drawImage; false = use the 2D path */
+    var K = glInit(imgs); if (!K) return false; var gl = K.gl;
+    var tr = ctx.getTransform ? ctx.getTransform() : null, dpr = tr ? Math.max(1, Math.abs(tr.a)) : (window.devicePixelRatio || 1);
+    var ox = T.x - 0.18 * W * T.s, oy = T.y - 0.4 * H * T.s, cw = 1.36 * W * T.s, ch = 1.5 * H * T.s, pw = Math.max(16, Math.ceil(cw * dpr)), ph = Math.max(16, Math.ceil(ch * dpr));
+    if (K.cv.width !== pw || K.cv.height !== ph) { K.cv.width = pw; K.cv.height = ph; }
+    var k = dpr; for (var i = 0; i < mesh.length; i++) { var w = warp(mesh[i][0], mesh[i][1], p); K.pos[i * 2] = (T.x + w[0] * T.s - ox) * k; K.pos[i * 2 + 1] = (T.y + w[1] * T.s - oy) * k; }
+    gl.viewport(0, 0, pw, ph); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.disable(gl.BLEND);
+    gl.bindBuffer(gl.ARRAY_BUFFER, K.bp); gl.bufferSubData(gl.ARRAY_BUFFER, 0, K.pos);
+    gl.uniform2f(K.uR, pw, ph); gl.uniform1f(K.uSa, Math.min(1, p.spine)); gl.uniform1f(K.uCasc, p.cascade >= 0 ? 1 : -1); gl.uniform1f(K.uWx, W - Math.max(0, p.cascade) * W);
+    gl.drawElements(gl.TRIANGLES, K.n, gl.UNSIGNED_SHORT, 0);
+    ctx.drawImage(K.cv, ox, oy, cw, ch); return true;
+  }
   function glowAt(ctx, x, y, r, col, a) { var g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, "rgba(" + col + "," + a + ")"); g.addColorStop(1, "rgba(" + col + ",0)"); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); }
-  window.KAIJU = { BLAST: BLAST, STOMP: STOMP, W: W, H: H, pose: pose, P: P,
+  window.KAIJU = { glOn: function () { return !!KG && KAIJU.useGL !== false; }, BLAST: BLAST, STOMP: STOMP, W: W, H: H, pose: pose, P: P,
     mapPoint: function (sx, sy, p, x, feetY, scale) { var w = warp(sx, sy, p); return [x + w[0] * scale, feetY - 940 * scale + w[1] * scale]; },
     aim: function (p, x, feetY, scale, tgt, amount) { /* head angle so the mouth axis points at tgt (2 passes); amount 0..1 eases it in and out */
       p.aimHead = 0; for (var it = 0; it < 3; it++) { var m = this.mapPoint(P.mouth[0], P.mouth[1], p, x, feetY, scale), b = this.mapPoint(P.mouthBack[0], P.mouthBack[1], p, x, feetY, scale);
@@ -24593,7 +24637,8 @@ var SKIN_HULLT = { "default": [0.50, 0.55], "void": [0.50, 0.50], serpent: [0.50
       var T = { x: x + sh * 0.4, y: feetY - 940 * scale + sh, s: scale };
       /* the glow is added into one flat texture first (no seams), then the texture is warped once */
       var mapT = function (sx, sy) { var w = warp(sx, sy, p); return [T.x + w[0] * T.s, T.y + w[1] * T.s]; }, map = mapT;
-      if (layer !== "fx") {
+      if (layer !== "fx" && KAIJU.useGL !== false && glDraw(ctx, imgs, p, T)) { /* v1603: graphics chip */ }
+      else if (layer !== "fx") {
       var tx = this._tx || (this._tx = document.createElement("canvas")); if (tx.width !== W) { tx.width = W; tx.height = H; } var tc = tx.getContext("2d");
       tc.globalCompositeOperation = "source-over"; tc.globalAlpha = 1; tc.clearRect(0, 0, W, H); tc.drawImage(imgs.body, 0, 0);
       tc.globalCompositeOperation = "lighter"; var sa = Math.min(1, p.spine);
@@ -24772,7 +24817,12 @@ function kaijuDrawWater(ctx, w, h) { /* placeholder shallow sea until the boss l
 function kaijuDrawDmg(ctx, w) {
   var x = w * 0.58, y = 22, bw = w * 0.36, bh = 14, d = kaijuDealt();
   ctx.save(); ctx.fillStyle = "rgba(10,8,18,0.88)"; ctx.fillRect(x - 1, y - 1, bw + 2, bh + 2); var gr = ctx.createLinearGradient(x, 0, x + bw, 0); gr.addColorStop(0, "#6a2a9c"); gr.addColorStop(1, "#3a1660"); ctx.fillStyle = gr; ctx.fillRect(x, y, bw, bh);
-  ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff"; ctx.fillText("💥 " + d.toLocaleString("en-US") + " damage", x + bw / 2, y + bh / 2 + 0.5); ctx.restore();
+  ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#fff"; ctx.fillText("💥 " + d.toLocaleString("en-US") + " damage", x + bw / 2, y + bh / 2 + 0.5);
+  if (arenaOpponent && arenaOpponent.kaijuTest) { /* v1603: Boss Test only - frames per second, so Harley can read the speed on his phone */
+    var now = performance.now(), F = kaijuState.fps || (kaijuState.fps = { n: 0, t0: now, v: 0 }); F.n++; if (now - F.t0 >= 1000) { F.v = F.n * 1000 / (now - F.t0); F.n = 0; F.t0 = now; }
+    ctx.font = "bold 10px sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = F.v >= 50 ? "#7dff8a" : F.v >= 30 ? "#ffd84a" : "#ff6a6a"; ctx.fillText(Math.round(F.v) + " fps · " + (KAIJU.glOn() ? "GPU" : "2D"), x + bw, y + bh + 10);
+  }
+  ctx.restore();
 }
 function kaijuDrawWaterBand(ctx, w, h) { /* v1598 (Harley): ground (melee) heroes stand IN the water - a strip of the same sea from the surface down to just under their feet, drawn over them; their levels and bars sit below it, so they stay clear */
   var gy = groundYFor(h), wy = gy + KAIJU_WATER, by = gy + KAIJU_FEET + 1, t = performance.now() / 1000; if (by <= wy) return;
