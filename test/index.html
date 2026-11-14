@@ -2692,6 +2692,88 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #bagPop .bg-btns .bg-usebtn { background:#2bb3d9; color:#06131c; } #bagPop .bg-btns .bg-det { background:#33291c; color:#f0c95f; border:1px solid #6b5730; }
   #bagPop .bg-pick.wrap { flex-wrap:wrap; } #bagPop .bg-pick.wrap span { flex:0 0 calc(33.3% - 4px); box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* v1592 selector chests */
   #bagPop .bg-note { margin-top:8px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; font-size:12px; opacity:.9; } #bagPop .bg-tg .su-btn:disabled { opacity:.45; cursor:default; }
+  /* v1593: Events window (evWinOpen) - Kingshot style, from the approved mockups */
+  #evWin { position:fixed; inset:0; z-index:2147482000; display:none; flex-direction:column; background:#0b1322; color:#f3e9d2; font-family:var(--bodyfont,system-ui); }
+  #evWin button { font-family:inherit; }
+  #evWin .evw-top { position:relative; flex:none; display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px; background:linear-gradient(180deg,#1a2a44,#0f1a2e); border-bottom:2px solid #c9a24a; }
+  #evWin .evw-ttl { position:absolute; left:0; right:0; bottom:9px; text-align:center; pointer-events:none; font-family:'KS Title','Lilita One',sans-serif; font-size:24px; letter-spacing:1px; color:#f6e2a6; -webkit-text-stroke:1.6px #3a2a10; paint-order:stroke fill; }
+  #evWin .evw-x { position:relative; width:34px; height:34px; border-radius:50%; border:2px solid #e9c46a; background:radial-gradient(circle at 40% 35%,#7a2f1c,#3d140b); color:#fbe7b2; font-size:16px; font-weight:900; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.5); }
+  #evWin .evw-tabs { flex:none; display:flex; gap:8px; padding:8px 10px; overflow-x:auto; background:#0f1a2e; border-bottom:1px dashed rgba(201,162,74,.5); scrollbar-width:none; }
+  #evWin .evw-tab { flex:0 0 66px; background:none; border:0; padding:0; text-align:center; font-size:10.5px; font-weight:700; color:#a9b4c8; cursor:pointer; }
+  #evWin .evw-tab .ic { position:relative; width:58px; height:58px; margin:0 auto 3px; border-radius:12px; border:2px solid rgba(255,255,255,.35); background:linear-gradient(#20324f,#2d4a72); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 0 rgba(0,0,0,.45); }
+  #evWin .evw-tab .ic img { width:86%; height:86%; object-fit:contain; }
+  #evWin .evw-tab.on { color:#f6e2a6; } #evWin .evw-tab.on .ic { border-color:#ffe28a; box-shadow:0 0 0 2px rgba(240,201,95,.8), 0 2px 0 rgba(0,0,0,.45); background:linear-gradient(#2a5aa0,#4a8fd8); }
+  #evWin .evw-tab .dot { position:absolute; right:-3px; top:-3px; width:13px; height:13px; border-radius:50%; background:#e23b2e; border:2px solid #fff; }
+  #evWin .evw-body { flex:1; overflow-y:auto; scrollbar-width:none; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 8px); }
+  #evWin .evw-ban { position:relative; height:300px; background:center 40%/cover; overflow:hidden; }
+  #evWin .evw-ban::after { content:""; position:absolute; left:0; right:0; bottom:0; height:90px; background:linear-gradient(180deg,rgba(11,19,34,0),#0b1322); pointer-events:none; }
+  #evWin .evw-hero { position:absolute; right:-18px; bottom:-34px; height:330px; filter:drop-shadow(0 6px 10px rgba(0,0,0,.55)); -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22%); mask-image:linear-gradient(90deg,transparent 0,#000 22%); }
+  #evWin .evw-herocard { position:absolute; right:14px; top:22px; height:220px; border-radius:12px; border:3px solid #f0c95f; box-shadow:0 6px 16px rgba(0,0,0,.6); }
+  #evWin .evw-tt { position:absolute; left:12px; top:14px; width:56%; z-index:2; }
+  #evWin .evw-tt .k { display:inline-block; font-size:11px; font-weight:800; letter-spacing:1px; color:#1a1206; background:linear-gradient(#f0c95f,#c98f1e); padding:3px 9px; border-radius:20px; }
+  #evWin .evw-tt h1, #evWin .evw-hd2 h1 { margin:6px 0 2px; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:30px; line-height:1.02; color:#fff; -webkit-text-stroke:2.2px #2a1c08; paint-order:stroke fill; text-shadow:0 3px 0 rgba(0,0,0,.4); }
+  #evWin .evw-tt .hn { font-family:'KS Title','Lilita One',sans-serif; font-size:19px; color:#ffd77a; -webkit-text-stroke:1.6px #2a1c08; paint-order:stroke fill; }
+  #evWin .evw-tt .rar { display:inline-block; margin-top:5px; font-size:11px; font-weight:800; color:#fff; background:#c0661c; border:1px solid #ffc56b; border-radius:6px; padding:2px 7px; }
+  #evWin .evw-tt .tm, #evWin .evw-hd2 .tm { margin-top:10px; display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; background:rgba(5,10,20,.72); border:1px solid rgba(240,201,95,.6); border-radius:16px; padding:4px 10px; }
+  #evWin .evw-tt .info { margin-top:8px; display:block; font-size:12px; font-weight:800; color:#06131c; background:#2bb3d9; border:0; border-radius:8px; padding:6px 12px; cursor:pointer; }
+  #evWin .evw-pts, #evWin .evw-act { position:relative; z-index:3; background:linear-gradient(180deg,#5a3d1e,#3a2610); border:2px solid #b18a50; border-radius:12px; padding:10px 10px 26px; box-shadow:0 4px 0 rgba(0,0,0,.4); }
+  #evWin .evw-pts { margin:-46px 10px 0; } #evWin .evw-act { margin:10px 10px 0; }
+  #evWin .row1 { display:flex; align-items:center; gap:8px; } #evWin .row1 img { width:34px; height:34px; }
+  #evWin .row1 b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:22px; color:#ffe6a0; -webkit-text-stroke:1.4px #2a1c08; paint-order:stroke fill; } #evWin .row1 span { font-size:12px; color:#e8d3a6; }
+  #evWin .evw-trk { position:relative; margin:30px 14px 4px 10px; height:12px; border-radius:8px; background:#1a120a; border:1px solid #7a5a2c; }
+  #evWin .evw-trk > i { position:absolute; left:0; top:0; bottom:0; border-radius:8px; background:linear-gradient(90deg,#c98f1e,#f6d36b); max-width:100%; }
+  #evWin .evw-ms, #evWin .evw-ch { position:absolute; top:-17px; transform:translateX(-50%); background:none; border:0; padding:0; cursor:pointer; text-align:center; }
+  #evWin .evw-ms small, #evWin .evw-ch small { display:block; margin-top:4px; font-size:11px; font-weight:800; color:#e8d3a6; }
+  #evWin .evw-ch { top:-22px; } #evWin .evw-ch img { width:46px; height:46px; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+  #evWin .evw-ch.ready img { filter:drop-shadow(0 0 8px #ffd04d); } #evWin .evw-ch.got img { opacity:.4; }
+  #evWin .evw-tile { position:relative; width:44px; height:44px; border-radius:9px; border:2px solid rgba(255,255,255,.6); background:linear-gradient(#7d848c,#b9bec4); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 0 rgba(0,0,0,.45); margin:0 auto; }
+  #evWin .r1 { background:linear-gradient(#2f9a63,#7fd8a4); } #evWin .r2 { background:linear-gradient(#2a73c9,#6cc0f5); } #evWin .r3 { background:linear-gradient(#6a52d6,#b3a3f5); } #evWin .r4 { background:linear-gradient(#f0861c,#ffc56b); }
+  #evWin .evw-tile .art { width:88%; height:88%; display:flex; align-items:center; justify-content:center; line-height:0; } #evWin .evw-tile .art img { width:100%; height:100%; object-fit:contain; }
+  #evWin .evw-tile img.face { width:100%; height:100%; object-fit:cover; object-position:50% 12%; border-radius:7px; }
+  #evWin .evw-tile .pz { position:absolute; left:-5px; top:-6px; width:20px; height:20px; }
+  #evWin .evw-tile > b { position:absolute; right:2px; bottom:-1px; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:14px; color:#fff; -webkit-text-stroke:2px #3a2f28; paint-order:stroke fill; }
+  #evWin .evw-tile > i { position:absolute; left:0; right:0; top:1px; font-style:normal; font-family:'KS Title','Lilita One',sans-serif; font-size:10.5px; color:#fff; -webkit-text-stroke:1.6px #3a2f28; paint-order:stroke fill; z-index:1; }
+  #evWin .evw-tile.ready { box-shadow:0 0 0 3px #ffe28a, 0 0 14px #ffd04d; } #evWin .evw-tile.got::after { content:"✓"; position:absolute; inset:0; border-radius:8px; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; color:#7fe08a; font-size:22px; font-weight:900; }
+  #evWin .evw-sub { display:flex; gap:8px; margin:12px 10px 6px; }
+  #evWin .evw-sub button { flex:1; padding:8px 4px; border-radius:9px; font-weight:800; font-size:13px; color:#a9b4c8; border:1px dotted #5d6f93; background:none; cursor:pointer; }
+  #evWin .evw-sub button.on { color:#f0c95f; border:1px dashed #c9a24a; background:#161f2e; }
+  #evWin .evw-list { padding:0 10px 10px; display:flex; flex-direction:column; gap:8px; }
+  #evWin .evw-t { display:flex; align-items:center; gap:10px; background:linear-gradient(180deg,#4a3218,#33220f); border:1.5px solid #8a6a3a; border-radius:10px; padding:8px 10px; }
+  #evWin .evw-t.dim { opacity:.6; }
+  #evWin .evw-t .ti { flex:none; width:40px; height:40px; border-radius:8px; background:rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; }
+  #evWin .evw-t .ti img { width:90%; height:90%; object-fit:contain; }
+  #evWin .evw-t .tx { flex:1; min-width:0; font-size:12.5px; line-height:1.3; } #evWin .evw-t .tx b { display:block; color:#f6e7c4; font-size:13px; } #evWin .evw-t .tx em { font-style:normal; color:#ffd77a; font-weight:800; }
+  #evWin .evw-t .bar { margin-top:4px; height:7px; border-radius:5px; background:#1a120a; overflow:hidden; } #evWin .evw-t .bar i { display:block; height:100%; background:#2bb3d9; }
+  #evWin .evw-t .go { flex:none; min-width:58px; text-align:center; font-weight:800; font-size:13px; color:#06131c; background:#2bb3d9; border:0; border-radius:8px; padding:8px 10px; cursor:pointer; }
+  #evWin .evw-t .go.done { background:#33291c; color:#7fe08a; border:1px solid #6b5730; cursor:default; } #evWin .evw-t .go.claim { background:linear-gradient(#f0c95f,#c98f1e); color:#2a1806; }
+  #evWin .evw-foot { margin:6px 12px 14px; font-size:11.5px; color:#93a2ba; text-align:center; }
+  #evWin .evw-note2 { margin:8px 12px 2px; text-align:center; font-size:13px; font-weight:800; color:#7fe08a; } #evWin .evw-note2 .bad { color:#ff9a8a; }
+  #evWin .evw-hd2 { position:relative; height:170px; background-size:cover; background-position:50% 45%; }
+  #evWin .evw-hd2::after { content:""; position:absolute; inset:auto 0 0 0; height:70px; background:linear-gradient(180deg,rgba(11,19,34,0),#0b1322); }
+  #evWin .evw-hd2 .tt { position:absolute; left:12px; bottom:22px; z-index:2; } #evWin .evw-hd2 h1 { margin:0; }
+  #evWin .evw-cur { position:absolute; right:10px; top:10px; z-index:2; display:flex; align-items:center; gap:4px; background:rgba(5,10,20,.78); border:1px solid rgba(240,201,95,.6); border-radius:18px; padding:3px 10px 3px 4px; font-family:'KS Title','Lilita One',sans-serif; font-size:17px; color:#ffe6a0; }
+  #evWin .evw-cur img { width:28px; height:28px; }
+  #evWin .evw-sec { margin:12px 12px 6px; font-family:'KS Title','Lilita One',sans-serif; font-size:17px; color:#f6e2a6; -webkit-text-stroke:1px #2a1c08; paint-order:stroke fill; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  #evWin .evw-sec small { font-family:var(--bodyfont,system-ui); font-size:11.5px; color:#93a2ba; -webkit-text-stroke:0; text-align:right; }
+  #evWin .evw-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:0 10px; }
+  #evWin .evw-si { background:linear-gradient(180deg,#4a3218,#33220f); border:1.5px solid #8a6a3a; border-radius:10px; padding:8px 6px 7px; text-align:center; min-width:0; }
+  #evWin .evw-si .evw-tile { width:72%; height:auto; aspect-ratio:1; border-radius:10px; } #evWin .evw-si .evw-tile > b { font-size:16px; right:3px; }
+  #evWin .evw-si .nm { margin-top:5px; font-size:11.5px; font-weight:700; color:#f6e7c4; line-height:1.15; min-height:27px; overflow-wrap:anywhere; }
+  #evWin .evw-si .lim { font-size:10.5px; color:#c9b48a; margin:2px 0 5px; }
+  #evWin .evw-si .buy { width:100%; display:flex; align-items:center; justify-content:center; gap:3px; font-weight:800; font-size:13px; color:#06131c; background:#2bb3d9; border:0; border-radius:7px; padding:5px 2px; cursor:pointer; }
+  #evWin .evw-si .buy img { width:17px; height:17px; } #evWin .evw-si .buy.off { background:#33291c; color:#8f8066; border:1px solid #6b5730; cursor:default; } #evWin .evw-si .buy.poor { opacity:.7; }
+  #evWin .evw-wk { margin:10px 10px 0; background:linear-gradient(180deg,#1c2c46,#132036); border:1.5px dashed #c9a24a; border-radius:12px; padding:10px; }
+  #evWin .evw-wk .t { display:flex; justify-content:space-between; font-weight:800; font-size:13px; color:#f6e2a6; } #evWin .evw-wk .t .r { color:#93a2ba; font-weight:700; }
+  #evWin .evw-wk .days { display:flex; gap:6px; margin:8px 0; } #evWin .evw-wk .days i { flex:1; height:10px; border-radius:6px; background:#0b1322; border:1px solid #3a4c6e; }
+  #evWin .evw-wk .days i.on { background:linear-gradient(90deg,#c98f1e,#f6d36b); border-color:#c9a24a; }
+  #evWin .evw-wk .pick { display:flex; gap:8px; align-items:center; }
+  #evWin .evw-wk .pick .tile { position:relative; flex:none; width:52px; height:52px; padding:0; border-radius:9px; border:2px solid rgba(255,255,255,.6); overflow:hidden; cursor:pointer; }
+  #evWin .evw-wk .pick .tile.sel { box-shadow:0 0 0 3px #ffe28a; border-color:#ffe28a; }
+  #evWin .evw-wk .pick .tile img { width:100%; height:100%; object-fit:cover; object-position:50% 10%; }
+  #evWin .evw-wk .pick .tile b { position:absolute; right:2px; bottom:-1px; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:14px; color:#fff; -webkit-text-stroke:2px #3a2f28; paint-order:stroke fill; }
+  #evWin .evw-wk .pick span { font-size:11.5px; color:#a9b4c8; line-height:1.3; }
+  #evWin .evw-wkbtn { display:block; width:100%; margin-top:10px; padding:9px; border:0; border-radius:9px; font-weight:800; font-size:14px; color:#2a1806; background:linear-gradient(#f0c95f,#c98f1e); cursor:pointer; }
+  #evWin .evw-srv { padding:10px; }
   #bagPop .bg-got { margin-top:8px; color:#7fe08a; font-weight:800; text-align:center; }
   #bagPop .bg-tg { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px; background:rgba(0,0,0,.28); border-radius:8px; }
   #mapIdleBtn .mmi { font-size:22px; line-height:1; margin-top:-6px; }
@@ -7362,6 +7444,22 @@ var GI_DEFS = {
   enhance_stone: { name: "Enhance Stone", art: "enhance_stone", rar: 2, later: "Enhancing equipment comes later - keep these for then.", desc: "Used to enhance equipment." }
 };
 var GI_ORDER = Object.keys(GI_DEFS);
+/* v1593: live events config (Featured Hero Week, Event Shop, Weekly Chest, Event Tokens on the daily chests). The admin console saves it to
+   <root>config/liveops (functions/core.js normalizeLiveops); the game starts from these defaults and swaps in the server copy when it arrives.
+   Harley (14 Nov): start stingy, raise gently; Legendary heroes only (any except Hanzo); Weekly Chest heroes fixed until further notice.
+   Reward / stock ids are the server catalogue ids (functions/items.json) + "featured_shards" (this week's featured hero). */
+var LIVEOPS_DEFAULT = {
+  fhw: { hero: "caelum", killsPer: 100, pts: { kill: 5, arena: 20, camp: 15, monster: 15, ticket: 3 },
+    ms: [{ at: 100, items: { event_tokens: 10 } }, { at: 300, items: { speedup_general_5m: 3 } }, { at: 600, items: { event_tokens: 20 } }, { at: 1000, items: { item_stamina_10: 1 } }, { at: 1600, items: { featured_shards: 10 } }],
+    check: [{ id: "newlvl", kind: "newlevel", name: "Clear 1 new Conquest level", need: 1, pts: 150 }, { id: "boss", kind: "boss", name: "Beat your next chapter boss", need: 1, pts: 300 },
+      { id: "tix", kind: "ticket", name: "Use 20 weapon draw tickets", need: 20, pts: 150 }, { id: "bld", kind: "build", name: "Upgrade any building", need: 1, pts: 100 }, { id: "mon", kind: "monster", name: "Defeat 3 monsters on the World map", need: 3, pts: 150 }] },
+  shop: { items: [{ id: "feat", item: "featured_shards", qty: 1, price: 50, limit: 5 }, { id: "halo7", item: "shards_halo7", qty: 1, price: 50, limit: 5 }, { id: "ironlily", item: "shards_ironlily", qty: 1, price: 50, limit: 5 },
+    { id: "wsel", item: "item_chest_weapon", qty: 1, price: 200, limit: 2 }, { id: "tix", item: "weapon_tickets", qty: 1, price: 60, limit: 10 }, { id: "books", item: "conquest_books", qty: 10, price: 40, limit: 10 },
+    { id: "su1h", item: "speedup_general_1h", qty: 1, price: 50, limit: 10 }, { id: "stam", item: "item_stamina_50", qty: 1, price: 80, limit: 5 }, { id: "eq3", item: "item_chest_eq_3", qty: 1, price: 300, limit: 1 }] },
+  wk: { heroes: ["roran", "kessa", "halo7", "ironlily"], shards: 10, days: 7, act: 60 },
+  dailyTok: [2, 3, 4, 5, 6]
+};
+var LIVEOPS = JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
 var ITEM_ORDER = Object.keys(ITEM_DEFS).sort(function (a, b) { var A = ITEM_DEFS[a], B = ITEM_DEFS[b], k = { choice: 0, supply: 1, res: 2 };
   return (k[A.kind] - k[B.kind]) || (A.kind === "res" ? (ITEM_RES.indexOf(A.res) - ITEM_RES.indexOf(B.res)) || (A.amt - B.amt) : (A.lv || A.amt) - (B.lv || B.amt)); });
 /* v1093 (Harley): Training Grounds - the ATK / HP / DEF bonus screen (plan: dev/plans/training-grounds.md). Three lanes, levelled with Essence.
@@ -7710,7 +7808,7 @@ function createGame(opts) {
     var dur = timeFor(key, nextLevel) / buildSpeedMult();
     b.upgrading = { finishAt: now() + dur * 1000, toLevel: nextLevel, startedAt: now(), duration: dur };
     log(def.name + " upgrade to level " + nextLevel + " started (" + dur + "s)");
-    dailyBump("build"); return { ok: true, finishAt: b.upgrading.finishAt };
+    dailyBump("build"); evAct("build"); return { ok: true, finishAt: b.upgrading.finishAt };
   }
   /* v946: speedup items. kind = "construction_1h" (building upgrades only) or "general_1h" (anything). what = "build" | "train" | "research". Each takes 1 hour off. */
   /* v1175 (Harley): + 5 min and 1 min speedups. Using a speedup on less time than it's worth refunds the unused part as 5 min + 1 min speedups of the same type (under a minute is lost). */
@@ -8220,6 +8318,7 @@ function createGame(opts) {
       var garrisonLeft = totalTroops(tile.garrison);
       if (report.win) {
         if (garrisonLeft <= 0) tile.garrison = null;
+        if (tile.type === "npc") evAct("camp"); /* v1593 */
         if (tile.type === "npc") {
           loot = {}; for (var lr in tile.loot) loot[lr] = Math.round(tile.loot[lr] * gatherBonusMult());
           log("March #" + march.id + " defeated the level " + tile.level + " camp and looted resources.");
@@ -8269,7 +8368,7 @@ function createGame(opts) {
       if (Math.random() < rw.extraChance) for (var r2 in rw.extra) loot[r2] = (loot[r2] || 0) + Math.round(rw.extra[r2] * gm);
       valor = Math.round(rw.valor * idleValorMult());
       if (Math.random() < rw.fragChance) frags = { n: 1 + Math.floor(Math.random() * 2) };
-      state.monsters.kills[mo.id] = now(); dailyBump("monster");
+      state.monsters.kills[mo.id] = now(); dailyBump("monster"); evAct("monster");
       if (L > (state.monsters.maxBeat | 0)) state.monsters.maxBeat = Math.min(MONSTER_MAX_LEVEL, L);
       if (state.monsters.summon && state.monsters.summon.id === mo.id) state.monsters.summon = null;
       log("March #" + march.id + " defeated the level " + L + " " + def.name + ".");
@@ -9124,7 +9223,7 @@ function createGame(opts) {
     var D = dailySync(), t = dailyTask(id); if (!t) return { ok: false, reason: "bad_task" };
     if (D.c.indexOf(id) >= 0) return { ok: false, reason: "claimed" };
     if ((D.p[id] || 0) < t.need) return { ok: false, reason: "not_done" };
-    D.c.push(id); var r = Object.assign({ pts: t.pts }, DAILY_TASK_REWARD); dailyGrant(r);
+    D.c.push(id); var r = Object.assign({ pts: t.pts }, DAILY_TASK_REWARD); dailyGrant(r); evDayCount(); /* v1593: Weekly Chest day */
     return { ok: true, reward: r, day: D.day };
   }
   function dailyClaimChest(i) {
@@ -9132,7 +9231,73 @@ function createGame(opts) {
     if (D.ch.indexOf(i) >= 0) return { ok: false, reason: "claimed" };
     if (dailyPoints() < c.at) return { ok: false, reason: "not_done" };
     D.ch.push(i); var r = dailyChestReward(i); dailyGrant(r);
+    var tk = (LIVEOPS.dailyTok || [])[i] || 0; if (tk > 0) { evSync().tok += tk; r = Object.assign({}, r, { tokens: tk }); } /* v1593 */
+    evDayCount();
     return { ok: true, reward: r, day: D.day };
+  }
+  /* ---- v1593: live events (LIVEOPS). state.ev = { tok: Event Tokens (kept), w: UTC week (Monday start), pts: Hero Medals, ms: milestones claimed,
+     ck: checklist progress, ckc: checklist claimed, kills / killPaid: Conquest kills this week, buys: Event Shop buys this week, days: UTC days
+     the Weekly Chest counted, wkc: Weekly Chest claimed }. The game pays these itself (catalogue ids, see grantCat). */
+  function evWeekNow() { return Math.floor((dailyDayNow() + 3) / 7); }
+  function evWeekMsLeft() { return ((evWeekNow() + 1) * 7 - 3) * 86400000 - Date.now(); }
+  function evSync() {
+    var E = state.ev, w = evWeekNow();
+    if (!E || typeof E !== "object") E = state.ev = { tok: 0 };
+    if (E.w !== w) { E.w = w; E.pts = 0; E.ms = []; E.ck = {}; E.ckc = []; E.kills = 0; E.killPaid = 0; E.buys = {}; E.days = []; E.wkc = false; }
+    if (!(E.tok >= 0)) E.tok = 0;
+    return E;
+  }
+  function evAct(kind, n) {
+    var E = evSync(), F = LIVEOPS.fhw; n = n == null ? 1 : n; if (!(n > 0)) return;
+    if (kind === "kill") { E.kills += n; var whole = Math.floor(E.kills / (F.killsPer || 100)); if (whole > E.killPaid) { E.pts += (whole - E.killPaid) * (F.pts.kill || 0); E.killPaid = whole; } }
+    else if (F.pts[kind]) E.pts += F.pts[kind] * n;
+    (F.check || []).forEach(function (c) { if (c.kind === kind && E.ckc.indexOf(c.id) < 0) E.ck[c.id] = Math.min(c.need, (E.ck[c.id] || 0) + n); });
+  }
+  function grantCat(id, qty) { /* server catalogue id -> the save (same paths as functions/items.json). Gems are server-held: never granted here. */
+    qty = Math.max(0, Math.floor(qty || 0)); if (!qty) return false; var m;
+    if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
+    if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { var h = state.heroes[m[1]]; if (!h) return false; h.fragments = (h.fragments | 0) + qty; return true; }
+    if ((m = /^item_([a-z0-9_]+)$/.exec(id))) return addItem(m[1], qty);
+    if ((m = /^speedup_([a-z]+_[0-9]+[mh])$/.exec(id))) { if (!SPEEDUP_SEC[m[1]]) return false; state.speedups[m[1]] = (state.speedups[m[1]] || 0) + qty; return true; }
+    if (id === "event_tokens") { evSync().tok += qty; return true; }
+    if (id === "weapon_tickets") { state.weaponTickets = (state.weaponTickets || 0) + qty * WEAPON_TICKET_SCALE; return true; }
+    if (id === "conquest_books") { state.idle.conquestBooks = (state.idle.conquestBooks || 0) + qty; return true; }
+    if (id === "valor") { state.idle.valor = (state.idle.valor || 0) + qty; return true; }
+    if (id === "energon") { state.energon = (state.energon || 0) + qty; return true; }
+    if (id === "research") { state.researchPoints = (state.researchPoints || 0) + qty; return true; }
+    if (ITEM_RES.indexOf(id) >= 0) { var g = {}; g[id] = qty; addResources(g); return true; }
+    return false;
+  }
+  function grantAll(items, mult) { var got = {}; Object.keys(items || {}).forEach(function (k) { var q = items[k] * (mult || 1); if (grantCat(k, q)) got[k] = q; }); return got; }
+  function evClaimMs(i) {
+    var E = evSync(), m = (LIVEOPS.fhw.ms || [])[i]; if (!m) return { ok: false, reason: "bad" };
+    if (E.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (E.pts < m.at) return { ok: false, reason: "not_done" };
+    E.ms.push(i); var got = grantAll(m.items); log("🏅 Featured Hero Week reward claimed."); return { ok: true, got: got };
+  }
+  function evClaimCheck(id) {
+    var E = evSync(), c = (LIVEOPS.fhw.check || []).filter(function (x) { return x.id === id; })[0]; if (!c) return { ok: false, reason: "bad" };
+    if (E.ckc.indexOf(id) >= 0) return { ok: false, reason: "claimed" }; if ((E.ck[id] || 0) < c.need) return { ok: false, reason: "not_done" };
+    E.ckc.push(id); E.pts += c.pts; return { ok: true, pts: c.pts };
+  }
+  function evBuy(id, n) {
+    var E = evSync(), x = (LIVEOPS.shop.items || []).filter(function (r) { return r.id === id; })[0]; n = Math.max(1, Math.floor(n || 1)); if (!x) return { ok: false, reason: "bad" };
+    if ((E.buys[id] || 0) + n > x.limit) return { ok: false, reason: "limit" }; if (E.tok < x.price * n) return { ok: false, reason: "tokens" };
+    var g = {}; g[x.item] = x.qty * n; if (!grantCat(x.item, x.qty * n)) return { ok: false, reason: "bad_item" };
+    E.tok -= x.price * n; E.buys[id] = (E.buys[id] || 0) + n; log("🪙 Event Shop: bought " + n + "x " + x.item + "."); return { ok: true, got: g };
+  }
+  function evDayCount() { var E = evSync(), d = dailyDayNow(); if (E.days.indexOf(d) < 0 && dailyPoints() >= LIVEOPS.wk.act) E.days.push(d); return E.days.length; }
+  function evClaimWeek(hero) {
+    var E = evSync(), W = LIVEOPS.wk; evDayCount();
+    if (E.wkc) return { ok: false, reason: "claimed" }; if (E.days.length < W.days) return { ok: false, reason: "not_done" };
+    if ((W.heroes || []).indexOf(hero) < 0 || !state.heroes[hero]) return { ok: false, reason: "pick" };
+    E.wkc = true; grantCat("shards_" + hero, W.shards); log("🎁 Weekly Chest: " + W.shards + " " + ((HERO_DEFS[hero] || {}).name || hero) + " shards."); return { ok: true };
+  }
+  function evReady() { /* rewards waiting (red dots) */
+    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable() };
+    (F.ms || []).forEach(function (m, i) { if (E.pts >= m.at && E.ms.indexOf(i) < 0) n.fhw++; });
+    (F.check || []).forEach(function (c) { if ((E.ck[c.id] || 0) >= c.need && E.ckc.indexOf(c.id) < 0) n.fhw++; });
+    if (!E.wkc && evDayCount() >= LIVEOPS.wk.days) n.daily++;
+    return n;
   }
   function collectBucket() {
     var b = state.bucket, en = Math.floor(b.en), val = Math.floor(b.val);
@@ -9253,6 +9418,7 @@ function createGame(opts) {
     // while Conquest isn't the visible tab. Grabbed BEFORE levelNum/chapter
     // increment below so it names the level that was just finished, not the
     // one the player is about to start.
+    evAct("newlevel"); if (idleIsChapterBossLevel()) evAct("boss"); /* v1593 */
     state.idle.lastLevelClearLabel = state.idle.chapter + "-" + state.idle.levelNum;
     state.idle.lastLevelClearAt = Date.now();
     state.idle.bossRetry = false; state.idle.bossPhase = false;
@@ -9307,6 +9473,7 @@ function createGame(opts) {
   var idleDying = [];
   function idleCreditKill(wasBoss) {
     state.idle.defeated++; // lifetime counter, never rolled back by a level reset
+    evAct("kill"); /* v1593 Featured Hero Week */
     state.idle.enemiesKilledInLevel++;
     idleGrantKill(wasBoss);
     if (wasBoss) {
@@ -10604,7 +10771,7 @@ function createGame(opts) {
       }
       state.weaponDraws = (state.weaponDraws || 0) + 1;
     }
-    dailyBump("tickets", nd);
+    dailyBump("tickets", nd); evAct("ticket", nd);
     var res = { ok: true, tickets: tickets, levelBefore: lvBefore, levelAfter: weaponDrawLevel(), got: order.map(function (id) { return { id: id, n: got[id] }; }) };
     state.lastDraw = res; return res;
   }
@@ -11024,6 +11191,8 @@ function createGame(opts) {
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
     state.shieldUntil = isFinite(+saved.shieldUntil) ? Math.max(0, +saved.shieldUntil) : 0; /* v1592 */
+    if (saved.ev && typeof saved.ev === "object") { var sev = saved.ev; state.ev = { tok: Math.max(0, Math.floor(+sev.tok || 0)), w: sev.w | 0, pts: Math.max(0, +sev.pts || 0), ms: Array.isArray(sev.ms) ? sev.ms : [], ck: (sev.ck && typeof sev.ck === "object") ? sev.ck : {},
+      ckc: Array.isArray(sev.ckc) ? sev.ckc : [], kills: +sev.kills || 0, killPaid: +sev.killPaid || 0, buys: (sev.buys && typeof sev.buys === "object") ? sev.buys : {}, days: Array.isArray(sev.days) ? sev.days : [], wkc: !!sev.wkc }; } /* v1593 */
     if (fortTypeOk(saved.arenaFort)) state.arenaFort = saved.arenaFort; /* v1033: fortress type used in the Arena */
     state.mailApplied = (saved.mailApplied && typeof saved.mailApplied === "object") ? saved.mailApplied : {}; /* v911: mails whose items are already in this save */
     state.mailSaved = (saved.mailSaved && typeof saved.mailSaved === "object") ? saved.mailSaved : {}; /* v914: mails the player starred (Saved tab) */
@@ -11227,7 +11396,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { state: state, tick: tick, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -13399,7 +13568,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1592"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1593"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19218,7 +19387,8 @@ function ksEvSubscribe() {
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/events").onSnapshot(function (s) { KSE.list = s.exists ? (s.data().events || []) : []; ksEvRender(); }, function () {}); }).catch(function () {});
   try { if (window.KS_BACKEND && KS_BACKEND.call) KS_BACKEND.call("touch", {}).then(function (r) { if (r && r.createdAt) { KSE.created = r.createdAt; ksEvRender(); } }, function () {}); } catch (e) {}
 }
-function ksEvOpen() {
+function ksEvOpen() { evWinOpen(KSE.tab ? "x:" + KSE.tab : "fhw"); KSE.tab = null; } /* v1593: the Events window */
+function ksEvOpenOld() {
   ksEvSubscribe(); var ov = document.getElementById("ksEvents");
   if (!ov) {
     var st = document.createElement("style"); st.textContent = "#ksEvents{position:fixed;inset:0;z-index:2147482000;background:rgba(5,9,20,.88);display:flex;align-items:center;justify-content:center;padding:10px}#ksEvents .ebox{width:100%;max-width:520px;max-height:calc(100vh - 20px);display:flex;flex-direction:column;background:#0f1520;border:2px dashed #c9a24a;border-radius:12px;color:#f3e9d2;font-family:var(--bodyfont,system-ui)}"
@@ -19239,6 +19409,7 @@ function ksEvOpen() {
   ov.style.display = "flex"; ksEvRender(); clearInterval(KSE.timer); KSE.timer = setInterval(ksEvRender, 1000);
 }
 function ksEvRender() {
+  try { evWinRender(true); } catch (e) {} /* v1593 */
   var ov = document.getElementById("ksEvents"); if (!ov || ov.style.display === "none") return;
   var live = ksEvLive(), now = Date.now(); if (!live.some(function (e) { return e.id === KSE.tab; })) KSE.tab = live.length ? live[0].id : null;
   document.getElementById("ksEvTabs").innerHTML = live.length > 1 ? live.map(function (e) { return '<button type="button" class="etab' + (e.id === KSE.tab ? " on" : "") + '" data-evtab="' + escapeHtml(e.id) + '">' + escapeHtml((e.icon ? e.icon + " " : "") + e.name) + "</button>"; }).join("") : "";
@@ -19260,6 +19431,146 @@ function ksEvClaim(id, i) {
       .then(function () { delete KSE.busy[key]; ksEvRender(); });
   }, 1500);
 }
+/* ---- v1593: Events window (Kingshot style, Harley approved the mockups 14 Nov): Featured Hero Week, Event Shop, Daily Missions, plus the
+   admin console's own events (sign-in etc.) as more tabs. Config = LIVEOPS (admin console -> config/liveops). Engine: game.ev*. ---- */
+var EVW = { tab: "fhw", sub: "earn", pick: null, note: "", sig: "", timer: null, sub2: false };
+function evArt(n) { return (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/events/" + n + ".webp"; }
+var EV_HERO_ART = { caelum: "hero_caelum", halo7: "hero_halo7" }; /* keyed banner portraits; other heroes show their card art in a frame */
+function evFace(k) { return (typeof HERO_CARD_ART2 !== "undefined" && HERO_CARD_ART2[k]) || ""; }
+function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
+  var m, k, d;
+  if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
+  if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = HERO_DEFS[k] || {}; return { face: evFace(k), name: (d.name || k) + " shards", rar: d.rarity === "Legendary" ? 4 : d.rarity === "Epic" ? 3 : 2 }; }
+  if ((m = /^item_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = GI_DEFS[k]; if (d) return { art: itemArt(d.art), name: d.name, rar: d.rar, top: d.top || "" };
+    d = ITEM_DEFS[k]; if (d) return { art: d.kind === "res" ? ico(d.res) : itemArt(d.kind === "choice" ? "chest_res_custom" : "chest_res_supply"), name: d.name, rar: bagRarity(d), top: d.kind === "choice" ? "Lv." + d.lv : itemAmtLabel(d.amt) }; }
+  if ((m = /^speedup_([a-z]+)_([0-9]+[mh])$/.exec(id))) { var kind = m[1] + "_" + m[2], z = SU_SIZES.filter(function (x) { return x[0] === m[2]; })[0] || [m[2], 0, 2]; return { art: suArt(m[1]), name: suName(kind), rar: z[2], top: m[2].replace("m", " min") }; }
+  if (id === "event_tokens") return { art: '<img alt="" src="' + evArt("icon_token") + '">', name: "Event Tokens", rar: 3 };
+  var R = { weapon_tickets: ["ticket", "Weapon draw tickets", 2], conquest_books: ["books", "Conquest Books", 2], valor: ["valor", "Valor", 1], energon: ["energon", "Energon", 1], research: ["rp", "Research Points", 1], food: ["food", "Food", 1], wood: ["wood", "Wood", 1], stone: ["stone", "Stone", 1], gold: ["gold", "Gold", 2] }[id];
+  if (R) return { art: ico(R[0]), name: R[1], rar: R[2] };
+  return { art: "", name: id, rar: 0 };
+}
+function evTile(id, n, extra) { var I = evItemInfo(id);
+  return '<div class="evw-tile r' + I.rar + (extra || "") + '">' + (I.top ? "<i>" + I.top + "</i>" : "") + (I.face ? '<img class="face" alt="" src="' + I.face + '"><img class="pz" alt="" src="' + ICON_SRC.fragment + '">' : '<span class="art">' + I.art + "</span>") + (n != null ? "<b>" + Math.floor(n).toLocaleString("en-US") + "</b>" : "") + "</div>"; }
+function evLeft(ms) { var s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60; return d > 0 ? d + "d " + h + "h" : h > 0 ? h + "h " + m + "m" : m + "m " + (s % 60) + "s"; }
+var EV_GO = { kill: function () { setScreen("conquest"); }, newlevel: function () { setScreen("conquest"); }, boss: function () { setScreen("conquest"); }, arena: function () { setScreen("more", "arena"); },
+  camp: function () { setScreen("world"); }, monster: function () { DAILY_GO.monster(); }, ticket: function () { DAILY_GO.tickets(); }, build: function () { DAILY_GO.build(); } };
+var EV_KIND_ART = { kill: "speed_training", newlevel: "fragment", boss: "chest_hero_select", arena: "@icon_arena", camp: "march_speed", monster: "stamina", ticket: "ticket", build: "speed_construction" };
+function evKindArt(k) { var a = EV_KIND_ART[k] || "ticket"; return a[0] === "@" ? '<img alt="" src="' + evArt(a.slice(1)) + '">' : a === "ticket" || a === "fragment" ? ico(a) : itemArt(a); }
+var EV_EARN_NAME = { kill: function (F) { return ["Defeat enemies in Conquest", "Every " + F.killsPer + " enemies (farming counts)"]; }, arena: function () { return ["Win Arena fights", "Each win"]; }, camp: function () { return ["Win against camps on the World map", "Each win"]; },
+  monster: function () { return ["Defeat monsters on the World map", "Each win"]; }, ticket: function () { return ["Use weapon draw tickets", "Each ticket"]; } };
+function evTabs() {
+  var t = [{ id: "fhw", name: "Featured Hero", icon: evArt("icon_fhw") }, { id: "shop", name: "Event Shop", icon: evArt("icon_shop") }, { id: "daily", name: "Daily Missions", icon: evArt("icon_daily") }];
+  try { ksEvLive().forEach(function (ev) { t.push({ id: "x:" + ev.id, name: ev.goal === "signin" ? "Sign-in" : ev.name, icon: evArt(ev.goal === "signin" ? "icon_signin" : "icon_medal"), ev: ev }); }); } catch (e) {}
+  return t;
+}
+function evWinOpen(tab) {
+  evLiveopsSubscribe(); try { ksEvSubscribe(); } catch (e) {}
+  var ov = document.getElementById("evWin");
+  if (!ov) { ov = document.createElement("div"); ov.id = "evWin"; document.body.appendChild(ov);
+    ov.addEventListener("click", evWinClick); }
+  if (tab) EVW.tab = tab; EVW.note = ""; EVW.sig = ""; ov.style.display = "flex"; evWinRender(true);
+  clearInterval(EVW.timer); EVW.timer = setInterval(function () { evWinRender(false); }, 1000);
+  try { dailyServerSync(); } catch (e) {}
+}
+function evWinClose() { var ov = document.getElementById("evWin"); if (ov) ov.style.display = "none"; clearInterval(EVW.timer); }
+function evWinSig() { var E = game.evSync(), D = game.dailySync(); return JSON.stringify([EVW.tab, EVW.sub, EVW.pick, EVW.note, E, D.p, D.c, D.ch, LIVEOPS, (KSE.list || []).length, typeof KSW !== "undefined" ? KSW.events : 0, Math.floor(Date.now() / 60000)]); }
+function evWinRender(force) {
+  var ov = document.getElementById("evWin"); if (!ov || ov.style.display === "none") return;
+  var sig = evWinSig();
+  if (!force && sig === EVW.sig) { [].forEach.call(ov.querySelectorAll("[data-evend]"), function (e) { e.textContent = evLeft(+e.getAttribute("data-evend") - Date.now()); }); return; }
+  EVW.sig = sig;
+  var tabs = evTabs(); if (!tabs.some(function (t) { return t.id === EVW.tab; })) EVW.tab = "fhw";
+  var rd = game.evReady(), body = "", T = tabs.filter(function (t) { return t.id === EVW.tab; })[0];
+  if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else body = evServerHtml(T.ev);
+  var keep = ov.querySelector(".evw-body"), st = keep ? keep.scrollTop : 0;
+  ov.innerHTML = '<div class="evw-top"><div class="evw-ttl">EVENTS</div><span style="flex:1"></span><button type="button" class="evw-x" data-evx="1" aria-label="Close">✕</button></div>'
+    + '<div class="evw-tabs">' + tabs.map(function (t) { var dot = t.id === "fhw" ? rd.fhw : t.id === "daily" ? rd.daily : t.ev ? (function () { try { return ksEvReady(t.ev, Date.now()); } catch (e) { return 0; } })() : 0;
+      return '<button type="button" class="evw-tab' + (t.id === EVW.tab ? " on" : "") + '" data-evt="' + escapeHtml(t.id) + '"><span class="ic"><img alt="" src="' + t.icon + '">' + (dot ? '<span class="dot"></span>' : "") + "</span>" + escapeHtml(t.name) + "</button>"; }).join("") + "</div>"
+    + '<div class="evw-body">' + body + "</div>";
+  var nb = ov.querySelector(".evw-body"); if (nb && keep) nb.scrollTop = st;
+}
+function evFhwHtml() {
+  var F = LIVEOPS.fhw, E = game.evSync(), hk = F.hero, hd = HERO_DEFS[hk] || { name: hk }, ms = F.ms || [], n = ms.length || 1, pts = E.pts;
+  var fill = (function () { var prev = 0; for (var i = 0; i < ms.length; i++) { if (pts < ms[i].at) return (i + (pts - prev) / (ms[i].at - prev)) / n * 100; prev = ms[i].at; } return 100; })();
+  var por = EV_HERO_ART[hk] ? '<img class="evw-hero" alt="" src="' + evArt(EV_HERO_ART[hk]) + '">' : (evFace(hk) ? '<img class="evw-herocard" alt="" src="' + evFace(hk) + '">' : "");
+  var h = '<div class="evw-ban" style="background-image:url(' + evArt("banner_fhw") + ')">' + por + '<div class="evw-tt"><span class="k">WEEKLY EVENT</span><h1>Featured<br>Hero Week</h1><div class="hn">' + escapeHtml(hd.name) + '</div><span class="rar">' + escapeHtml(String(hd.rarity || "").toUpperCase()) + '</span><br>'
+    + '<span class="tm">⏳ Ends in <b data-evend="' + (Date.now() + game.evWeekMsLeft()) + '">' + evLeft(game.evWeekMsLeft()) + '</b></span><button type="button" class="info" data-evhero="' + hk + '">Hero details</button></div></div>';
+  h += '<div class="evw-pts"><div class="row1"><img alt="" src="' + evArt("icon_medal") + '"><b>' + Math.floor(pts).toLocaleString("en-US") + '</b><span>Hero Medals this week</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
+    + ms.map(function (m, i) { var got = E.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0];
+      return '<button type="button" class="evw-ms" data-evms="' + i + '" style="left:' + ((i + 1) / n * 100 - 4) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at.toLocaleString("en-US") + "</small></button>"; }).join("") + "</div></div>";
+  h += '<div class="evw-sub"><button type="button" data-evsub="earn"' + (EVW.sub !== "check" ? ' class="on"' : "") + '>Earn Medals</button><button type="button" data-evsub="check"' + (EVW.sub === "check" ? ' class="on"' : "") + ">Weekly Checklist</button></div>";
+  if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
+  h += '<div class="evw-list">';
+  if (EVW.sub === "check") (F.check || []).forEach(function (c) { var have = Math.min(c.need, E.ck[c.id] || 0), done = have >= c.need, cl = E.ckc.indexOf(c.id) >= 0;
+    h += '<div class="evw-t"><div class="ti">' + evKindArt(c.kind) + '</div><div class="tx"><b>' + escapeHtml(c.name) + "</b>" + (c.need > 1 ? have + " / " + c.need : "Once this week") + ' · <em>+' + c.pts + " Medals</em>" + (c.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / c.need * 100) + '%"></i></div>' : "") + "</div>"
+      + (cl ? '<div class="go done">✓ Done</div>' : done ? '<button type="button" class="go claim" data-evck="' + c.id + '">Claim</button>' : '<button type="button" class="go" data-evgo="' + c.kind + '">Go</button>') + "</div>"; });
+  else Object.keys(EV_EARN_NAME).forEach(function (k) { var p = F.pts[k]; if (!p) return; var nm = EV_EARN_NAME[k](F);
+    h += '<div class="evw-t"><div class="ti">' + evKindArt(k) + '</div><div class="tx"><b>' + nm[0] + "</b>" + nm[1] + ' · <em>+' + p + " Medals</em></div>" + '<button type="button" class="go" data-evgo="' + k + '">Go</button></div>'; });
+  return h + '</div><div class="evw-foot">Medals reset every Monday (UTC). ' + escapeHtml(hd.name) + " shards go straight to your hero.</div>";
+}
+function evShopHtml() {
+  var E = game.evSync(), it = LIVEOPS.shop.items || [], heroes = it.filter(function (x) { return /shards/.test(x.item); }), rest = it.filter(function (x) { return !/shards/.test(x.item); });
+  var cell = function (x) { var I = evItemInfo(x.item), b = E.buys[x.id] || 0, off = b >= x.limit, poor = E.tok < x.price;
+    return '<div class="evw-si">' + evTile(x.item, x.qty) + '<div class="nm">' + escapeHtml(I.name) + '</div><div class="lim">Limit ' + b + "/" + x.limit + '</div><button type="button" class="buy' + (off ? " off" : poor ? " poor" : "") + '" data-evbuy="' + x.id + '"' + (off ? " disabled" : "") + '><img alt="" src="' + evArt("icon_token") + '">' + x.price.toLocaleString("en-US") + "</button></div>"; };
+  var h = '<div class="evw-hd2" style="background-image:url(' + evArt("banner_shop") + ')"><div class="evw-cur"><img alt="" src="' + evArt("icon_token") + '">' + Math.floor(E.tok).toLocaleString("en-US") + '</div><div class="tt"><h1>Event Shop</h1><br><span class="tm">⏳ Limits reset in <b data-evend="' + (Date.now() + game.evWeekMsLeft()) + '">' + evLeft(game.evWeekMsLeft()) + "</b></span></div></div>";
+  if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
+  if (heroes.length) h += '<div class="evw-sec">Hero shards <small>' + heroes.length + " heroes this week</small></div><div class=\"evw-grid\">" + heroes.map(cell).join("") + "</div>";
+  if (rest.length) h += '<div class="evw-sec">Items <small>limits reset weekly</small></div><div class="evw-grid">' + rest.map(cell).join("") + "</div>";
+  return h + '<div class="evw-foot">Event Tokens come from Featured Hero Week and the Daily Missions chests.</div>';
+}
+function evDailyHtml() {
+  var g = game, list = g.dailyList(), chests = g.dailyChests(), pts = g.dailyPoints(), E = g.evSync(), W = LIVEOPS.wk, days = g.evDayCount(), R = g.DAILY_TASK_REWARD;
+  var h = '<div class="evw-hd2" style="background-image:url(' + evArt("banner_daily") + ')"><div class="tt"><h1>Daily Missions</h1><br><span class="tm">⏳ Resets in <b data-evend="' + (Date.now() + g.dailyMsLeft()) + '">' + evLeft(g.dailyMsLeft()) + "</b></span></div></div>";
+  h += '<div class="evw-act"><div class="row1"><b>' + pts + '</b><span>Activity today</span></div><div class="evw-trk" style="margin-top:34px"><i style="width:' + Math.min(100, pts) + '%"></i>'
+    + chests.map(function (c) { var tier = c.idx < 2 ? 1 : c.idx < 4 ? 2 : 3; return '<button type="button" class="evw-ch' + (c.claimed ? " got" : c.ready ? " ready" : "") + '" data-evch="' + c.idx + '" style="left:' + (c.at - 4) + '%"><img alt="" src="' + evArt("chest_act_" + tier) + '"><small>' + c.at + "</small></button>"; }).join("") + "</div></div>";
+  if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
+  h += '<div class="evw-wk"><div class="t"><span>Weekly Chest · ' + Math.min(days, W.days) + " / " + W.days + ' days</span><span class="r">' + (E.wkc ? "claimed" : "resets Monday") + '</span></div><div class="days">';
+  for (var i = 0; i < W.days; i++) h += "<i" + (i < days ? ' class="on"' : "") + "></i>";
+  h += '</div><div class="pick">' + (W.heroes || []).map(function (k) { return '<button type="button" class="tile r4' + (EVW.pick === k ? " sel" : "") + '" data-evpick="' + k + '"><img alt="" src="' + evFace(k) + '"><b>' + W.shards + "</b></button>"; }).join("")
+    + '<span>A day counts at ' + W.act + ' Activity. At ' + W.days + ' days: choose ' + W.shards + " shards of one of these heroes.</span></div>"
+    + (!E.wkc && days >= W.days ? '<button type="button" class="evw-wkbtn" data-evwk="1">' + (EVW.pick ? "Claim " + W.shards + " " + escapeHtml((HERO_DEFS[EVW.pick] || {}).name || "") + " shards" : "Pick a hero above") + "</button>" : "") + "</div>";
+  h += '<div class="evw-sec" style="margin-top:14px">Today <small>each task: ' + (R.gems ? R.gems + " gems, " : "") + R.valor + " Valor, " + R.tickets + ' tickets</small></div><div class="evw-list">';
+  var order = list.filter(function (t) { return t.done && !t.claimed; }).concat(list.filter(function (t) { return !t.done; }), list.filter(function (t) { return t.claimed; }));
+  order.forEach(function (t) { var have = Math.min(t.have, t.need);
+    h += '<div class="evw-t' + (t.claimed ? " dim" : "") + '"><div class="ti">' + evKindArt({ arena: "arena", monster: "monster", tickets: "ticket", build: "build", research: "build", train: "kill", gather: "camp", recon: "camp", chest: "boss", levelup: "newlevel", speedup: "build", login: "boss" }[t.id] || "ticket") + '</div><div class="tx"><b>' + escapeHtml(t.name) + "</b>" + have + " / " + t.need + ' · <em>+' + t.pts + ' Activity</em><div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div></div>'
+      + (t.claimed ? '<div class="go done">✓ Done</div>' : t.done ? '<button type="button" class="go claim" data-evdt="' + t.id + '">Claim</button>' : DAILY_GO[t.id] ? '<button type="button" class="go" data-evdg="' + t.id + '">Go</button>' : '<div class="go done">…</div>') + "</div>"; });
+  return h + '</div><div class="evw-foot">Activity chests give speedups, tickets, shards, gems' + ((LIVEOPS.dailyTok || []).some(function (v) { return v > 0; }) ? " and Event Tokens" : "") + ".</div>";
+}
+function evServerHtml(ev) { /* an admin-console event (sign-in, Burst of Life ...) inside the window */
+  if (!ev) return '<div class="evw-foot">Loading…</div>'; var now = Date.now(), c = ksEvClaimed(ev);
+  return '<div class="kse evw-srv">' + ksEvCardHtml(ev, ev.goal === "signin" ? ksEvSigninProg(ev, now) : ksEvProgress(ev.goal), c, ev._end, now, escapeHtml) + "</div>";
+}
+function evWinClick(e) {
+  var t = e.target, b, v;
+  if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
+  if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
+  if ((b = t.closest && t.closest("[data-evsub]"))) { EVW.sub = b.getAttribute("data-evsub"); EVW.note = ""; evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evhero]"))) { evWinClose(); try { setScreen("heroes"); openHeroDetail(b.getAttribute("data-evhero")); } catch (er) {} return; }
+  if ((b = t.closest && t.closest("[data-evgo]"))) { evWinClose(); try { EV_GO[b.getAttribute("data-evgo")](); } catch (er) {} return; }
+  if ((b = t.closest && t.closest("[data-evdg]"))) { evWinClose(); try { DAILY_GO[b.getAttribute("data-evdg")](); } catch (er) {} return; }
+  if ((b = t.closest && t.closest("[data-evms]"))) { var r = game.evClaimMs(+b.getAttribute("data-evms")), m = LIVEOPS.fhw.ms[+b.getAttribute("data-evms")];
+    if (r.ok) evDone("Got " + evGotText(r.got)); else EVW.note = r.reason === "claimed" ? "Already claimed." : "Reward at " + m.at.toLocaleString("en-US") + " Medals: " + evGotText(m.items); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evck]"))) { var r2 = game.evClaimCheck(b.getAttribute("data-evck")); if (r2.ok) evDone("+" + r2.pts + " Hero Medals"); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evbuy]"))) { if (b.disabled) return; var r3 = game.evBuy(b.getAttribute("data-evbuy"), 1);
+    if (r3.ok) evDone("Bought " + evGotText(r3.got)); else EVW.note = '<span class="bad">' + (r3.reason === "tokens" ? "Not enough Event Tokens." : r3.reason === "limit" ? "Weekly limit reached." : "Can't buy that.") + "</span>"; evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evdt]"))) { dailyClaim("task", b.getAttribute("data-evdt")); EVW.note = dailyNote; evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evch]"))) { var i = +b.getAttribute("data-evch"), c = game.dailyChests()[i];
+    if (c.ready && !c.claimed) { dailyClaim("chest", i); EVW.note = dailyNote + ((LIVEOPS.dailyTok || [])[i] ? " · +" + LIVEOPS.dailyTok[i] + " Event Tokens" : ""); }
+    else EVW.note = c.claimed ? "Already opened." : "Opens at " + c.at + " Activity: " + dailyRewardText(c.reward) + ((LIVEOPS.dailyTok || [])[i] ? ", +" + LIVEOPS.dailyTok[i] + " Event Tokens" : ""); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evpick]"))) { EVW.pick = b.getAttribute("data-evpick"); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evwk]"))) { if (!EVW.pick) return; var r4 = game.evClaimWeek(EVW.pick); if (r4.ok) evDone("Weekly Chest: +" + LIVEOPS.wk.shards + " " + ((HERO_DEFS[EVW.pick] || {}).name || "") + " shards"); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evc]"))) { ksEvClaim(b.getAttribute("data-evc"), +b.getAttribute("data-evi")); return; }
+  if ((b = t.closest && t.closest("[data-evgo]"))) return;
+}
+function evGotText(o) { return Object.keys(o || {}).map(function (k) { return o[k].toLocaleString("en-US") + " " + evItemInfo(k).name; }).join(", "); }
+function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) {} persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} }
+function evLiveopsSubscribe() {
+  if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
+  window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    evWinRender(true); }, function () {}); }).catch(function () {});
+}
+setTimeout(evLiveopsSubscribe, 4000);
 /* v948: World-map shortcuts for running events + Deals. Red dot when there's a reward ready. */
 function ksEvReady(ev, now) {
   var c = ksEvClaimed(ev), ms = ev.milestones || [];
@@ -19270,7 +19581,8 @@ function ksEvDockUpdate() {
   var d = document.getElementById("ksEvDock"); if (!d) return;
   if (!window.KS_BACKEND || !KS_BACKEND.call || typeof PLAYER_ID === "undefined" || !PLAYER_ID || typeof appScreen === "undefined" || appScreen !== "world") { if (d.className) d.className = ""; return; }
   ksEvSubscribe(); var now = Date.now(), items = [];
-  ksEvLive().forEach(function (ev) { items.push({ k: "ev:" + ev.id, label: ev.goal === "signin" ? "Sign-in" : ev.name, icon: ev.goal === "signin" ? '<span class="cal"><i></i><b>' + Math.min(99, (ev.milestones || []).length) + "</b></span>" : escapeHtml(ev.icon || "🎉"), has: ksEvReady(ev, now) }); });
+  var evr = game.evReady(); items.push({ k: "evw", label: "Events", icon: '<img alt="" src="' + evArt("icon_fhw") + '" style="width:100%;height:100%;object-fit:contain">', has: evr.fhw + evr.daily > 0 || ksEvLive().some(function (ev) { return ev.goal !== "signin" && ksEvReady(ev, now); }) }); /* v1593 */
+  ksEvLive().filter(function (ev) { return ev.goal === "signin"; }).forEach(function (ev) { items.push({ k: "ev:" + ev.id, label: ev.goal === "signin" ? "Sign-in" : ev.name, icon: ev.goal === "signin" ? '<span class="cal"><i></i><b>' + Math.min(99, (ev.milestones || []).length) + "</b></span>" : escapeHtml(ev.icon || "🎉"), has: ksEvReady(ev, now) }); });
   items.push({ k: "shop", label: "Deals", icon: "🛒", has: false });
   var sig = items.map(function (x) { return x.k + (x.has ? "!" : "") + x.label + x.icon; }).join("|");
   if (d.getAttribute("data-sig") !== sig) {
@@ -19280,7 +19592,7 @@ function ksEvDockUpdate() {
   if (d.className !== "on") d.className = "on";
 }
 (function () { var d = document.getElementById("ksEvDock"); if (!d) return; d.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-ek]"); if (!b) return; e.stopPropagation(); var k = b.getAttribute("data-ek");
-  if (k === "shop") { if (typeof ksShopOpen === "function") ksShopOpen(); return; } KSE.tab = k.slice(3); ksEvOpen(); });
+  if (k === "shop") { if (typeof ksShopOpen === "function") ksShopOpen(); return; } if (k === "evw") { evWinOpen("fhw"); return; } KSE.tab = k.slice(3); ksEvOpen(); });
   ["pointerdown", "mousedown", "touchstart", "wheel"].forEach(function (t) { d.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true }); }); /* don't drag the map */
   setInterval(ksEvDockUpdate, 1000); })();
 function ksMailClaimAll() { /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
@@ -19711,7 +20023,8 @@ function dailyClaim(kind, key) {
   if (r.reward.gems && !ksFb()) game.state.gems = (game.state.gems || 0) + r.reward.gems;
   try { sfxReward(); } catch (e) {} dailyNote = "🎉 " + dailyRewardText(r.reward); persist(); renderDailyTasks(); updateDailyBadge(); dailyServerSync(); try { render(); } catch (e) {}
 }
-function openDailyTasks() {
+function openDailyTasks() { evWinOpen("daily"); } /* v1593: Daily Missions tab of the Events window (old sheet: openDailyTasksOld) */
+function openDailyTasksOld() {
   var sh = document.getElementById("dailySheet"); if (!sh) { sh = document.createElement("div"); sh.id = "dailySheet"; document.body.appendChild(sh); }
   dailyNote = ""; renderDailyTasks(); sh.style.display = "flex"; dailyServerSync();
 }
@@ -36047,7 +36360,7 @@ function recordArenaResult(winner, opponentPoints) {
   var arena = game.state.arena;
   var r = arena.record;
   try { game.dailyBump("arena"); } catch (e) {} /* v1231: any arena fight counts (win or lose) */
-  if (winner === "player") { r.wins++; game.grantRandomFragments(1 + Math.floor(Math.random() * 2)); }
+  if (winner === "player") { r.wins++; game.grantRandomFragments(1 + Math.floor(Math.random() * 2)); try { game.evAct("arena"); } catch (e) {} } /* v1593 */
   else if (winner === "ai") r.losses++;
   else r.draws++;
   var actual = winner === "player" ? 1 : winner === "ai" ? 0 : 0.5;

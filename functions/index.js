@@ -428,8 +428,17 @@ async function shopConfig(R, packIds) {
   try { return C.normalizeShop({ tiers: d.tiers, topups: d.topups, tabs: (d.tabs || []).map((t) => Object.assign({}, t, { items: (t.items || []).filter((e) => !packIds || packIds.indexOf(e.pack) >= 0) })) }, null); }
   catch (e) { return C.normalizeShop({}, null); }
 }
+async function liveopsConfig(R) { const s = await db.doc(R + "config/liveops").get(); if (!s.exists) return null; try { return C.normalizeLiveops(s.data()); } catch (e) { return null; } }
 async function eventsConfig(R) { const s = await db.doc(R + "config/events").get(); try { return C.normalizeEvents(s.exists ? s.data().events : []); } catch (e) { return []; } }
-exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const packs = await allPacks(R); return { items: C.ITEMS, packs, shop: await shopConfig(R, Object.keys(packs)), events: await eventsConfig(R), currencies: C.SHOP_CURRENCIES, resets: C.PACK_RESETS }; });
+exports.adminCatalog = wrap(async (req, uid, R) => { adminOnly(uid, req); const packs = await allPacks(R); return { items: C.ITEMS, packs, shop: await shopConfig(R, Object.keys(packs)), events: await eventsConfig(R), liveops: await liveopsConfig(R), currencies: C.SHOP_CURRENCIES, resets: C.PACK_RESETS }; });
+// v1593: live events (Featured Hero Week, Event Shop, Weekly Chest). Players read <root>config/liveops; only this function writes it.
+exports.adminSaveLiveops = wrap(async (req, uid, R, d) => {
+  adminOnly(uid, req);
+  const lo = C.normalizeLiveops(d.liveops);
+  await db.doc(R + "config/liveops").set(Object.assign({}, lo, { updatedAt: Date.now(), updatedBy: uid }));
+  await db.collection(R + "adminlog").add({ by: uid, liveops: lo.fhw.hero + " ms" + lo.fhw.ms.length + " shop" + lo.shop.items.length, at: Date.now() });
+  return { liveops: lo };
+});
 // v946: events (Burst of Life etc). Players read <root>config/events; only this function writes it.
 exports.adminSaveEvents = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);

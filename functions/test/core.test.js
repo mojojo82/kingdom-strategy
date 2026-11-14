@@ -241,4 +241,13 @@ t("v1231 daily tasks gems: 20 per task once a day, 300 chest only after 100 serv
   assert.throws(() => C.decideDailyClaim(null, "task", "nope", T), /no such task/); assert.throws(() => C.decideDailyClaim(null, "x", "", T), /bad kind/);
   assert.strictEqual(ids.reduce((a, k) => a + C.DAILY_TASK_PTS[k], 0), 100);
 });
+t("v1593 live events config: clamps, sorts, refuses gems / unknown items", () => {
+  const lo = C.normalizeLiveops({ fhw: { hero: "caelum", pts: { kill: 5 }, ms: [{ at: 1600, items: { featured_shards: 10 } }, { at: 100, items: { event_tokens: 10 } }], check: [{ kind: "boss", need: 1, pts: 300, name: "Beat boss" }] },
+    shop: { items: [{ item: "item_chest_weapon", qty: 1, price: 200, limit: 2 }] }, wk: { heroes: ["roran"] }, dailyTok: [2, 3] });
+  assert.deepStrictEqual(lo.fhw.ms.map((m) => m.at), [100, 1600]); assert.strictEqual(lo.fhw.pts.arena, 0); assert.deepStrictEqual(lo.dailyTok, [2, 3, 0, 0, 0]);
+  assert.strictEqual(lo.wk.days, 7); assert.strictEqual(lo.shop.items[0].limit, 2);
+  assert.throws(() => C.normalizeLiveops({ shop: { items: [{ item: "gems" }] } }), /can't sell gems/);
+  assert.throws(() => C.normalizeLiveops({ fhw: { check: [{ kind: "nope" }] } }), /bad kind/);
+  assert.ok(C.ITEMS.event_tokens && C.ITEMS.item_tp_advanced && C.ITEMS.speedup_healing_24h && C.ITEMS.shards_caelum, "new catalogue items");
+});
 console.log(n + " tests passed");

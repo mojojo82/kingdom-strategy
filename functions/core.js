@@ -255,6 +255,33 @@ function normalizeEvents(list) {
       banner, goal, schedule, active: ev.active !== false, milestones };
   });
 }
+/* v1593: live events (Featured Hero Week, Event Shop, Weekly Chest, Event Tokens on the daily chests). Players read <root>config/liveops;
+   only adminSaveLiveops writes it. The game pays these rewards itself (into the save), so only 'save' catalogue items (no gems) - plus
+   "featured_shards" = shards of this week's featured hero. Every number is clamped; missing parts fall back to the game's own defaults. */
+const LIVEOPS_KINDS = ["kill", "arena", "camp", "monster", "ticket", "newlevel", "boss", "build"];
+function liveItemOk(id) { return id === "featured_shards" || (!!ITEMS[id] && id[0] !== "_" && ITEMS[id].kind === "save"); }
+function liveItems(obj, what) {
+  const out = {}; Object.keys(obj || {}).forEach((id) => { const q = Math.trunc(+obj[id]); if (!liveItemOk(id)) throw new GameError("invalid-argument", "can't use " + id + " in " + what + " (gems and unknown items aren't allowed)"); if (q >= 1 && q <= 1e9) out[id] = q; });
+  if (!Object.keys(out).length) throw new GameError("invalid-argument", what + " needs at least one item"); if (Object.keys(out).length > 6) throw new GameError("invalid-argument", "max 6 items in " + what); return out;
+}
+const num = (v, lo, hi, def) => { const n = Math.trunc(+v); return isFinite(n) && n >= lo && n <= hi ? n : def; };
+const heroKey = (k) => { const s = String(k || "").toLowerCase(); if (!/^[a-z0-9_]{1,24}$/.test(s)) throw new GameError("invalid-argument", "bad hero " + k); return s; };
+function normalizeLiveops(c) {
+  c = c || {}; const f = c.fhw || {}, sh = c.shop || {}, wk = c.wk || {}, pts = {}, P = f.pts || {};
+  ["kill", "arena", "camp", "monster", "ticket"].forEach((k) => { pts[k] = num(P[k], 0, 100000, 0); });
+  const ms = (Array.isArray(f.ms) ? f.ms : []).slice(0, 12).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "milestone " + (i + 1) + " needs points"); })(), items: liveItems(m && m.items, "milestone " + (i + 1)) })).sort((a, b) => a.at - b.at);
+  const seen = {}, check = (Array.isArray(f.check) ? f.check : []).slice(0, 12).map((t, i) => {
+    const kind = String((t && t.kind) || ""); if (LIVEOPS_KINDS.indexOf(kind) < 0) throw new GameError("invalid-argument", "checklist task " + (i + 1) + ": bad kind");
+    let id = packIdFrom((t && t.id) || kind + "_" + i); while (seen[id]) id += "_2"; seen[id] = 1;
+    return { id, kind, name: String((t && t.name) || "").trim().slice(0, 60) || kind, need: num(t && t.need, 1, 1e6, 1), pts: num(t && t.pts, 0, 1e6, 0) }; });
+  const sseen = {}, items = (Array.isArray(sh.items) ? sh.items : []).slice(0, 24).map((x, i) => {
+    const item = String((x && x.item) || ""); if (!liveItemOk(item)) throw new GameError("invalid-argument", "shop row " + (i + 1) + ": can't sell " + item);
+    let id = packIdFrom((x && x.id) || item); while (sseen[id]) id += "_2"; sseen[id] = 1;
+    return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
+  const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
+  const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
+  return { fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+}
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {
   if (!ev || ev.active === false) return null;
@@ -331,7 +358,7 @@ function shopEntryLive(e, now) { return (!e.start || now >= e.start) && (!e.end 
 function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "pack"; }
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
-const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle|speedups|skins|items|weaponFrags)?\.?[a-zA-Z0-9_]+$/; /* v946: + speedups, skins; v1593: + items (backpack items), weaponFrags */
+const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle|speedups|skins|items|weaponFrags|ev)?\.?[a-zA-Z0-9_]+$/; /* v946: + speedups, skins; v1593: + items (backpack items), weaponFrags */
 function normalizeItems(items, allowEmpty) { /* allowEmpty: mails may be a message only (v939) */
   if (allowEmpty && (items == null || (typeof items === "object" && !Array.isArray(items) && !Object.keys(items).length))) return [];
   if (!items || typeof items !== "object") throw new GameError("invalid-argument", "no items");
@@ -517,5 +544,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { normalizeLiveops, LIVEOPS_KINDS, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
