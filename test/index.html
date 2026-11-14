@@ -11814,6 +11814,17 @@ function drawMechaEnergyBall(ctx, x, y, seed) {
   ctx.fillStyle = "#2ca5b2"; ctx.beginPath(); ctx.arc(x, y, 2.3, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#c9f8fb"; ctx.beginPath(); ctx.arc(x - 0.4, y - 0.4, 1.3, 0, Math.PI * 2); ctx.fill();
 }
+/* v1587 (Harley, from a reference clip; picked the "10% smaller" mock): fortress cannon bullets are slim glowing orange tracer streaks (peach tip,
+   orange body, fading tail), additive, drawn along the flight angle. Visual only. The Mecha keeps its blue energy balls. */
+var CANNON_TRACER_K = 0.648;
+function drawCannonTracer(ctx, x, y, ang) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(CANNON_TRACER_K, CANNON_TRACER_K); ctx.globalCompositeOperation = "lighter";
+  var g = ctx.createLinearGradient(-15, 0, 5, 0); g.addColorStop(0, "rgba(255,70,20,0)"); g.addColorStop(0.55, "rgba(255,110,40,0.45)"); g.addColorStop(1, "rgba(255,150,70,0.6)");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(-4.5, 0, 10, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  var g2 = ctx.createLinearGradient(-12.5, 0, 5, 0); g2.addColorStop(0, "rgba(255,110,40,0)"); g2.addColorStop(0.45, "rgba(255,135,55,0.9)"); g2.addColorStop(0.9, "rgba(255,185,120,1)"); g2.addColorStop(1, "rgba(255,225,185,1)");
+  ctx.fillStyle = g2; ctx.beginPath(); ctx.ellipse(-3.8, 0, 8.6, 1.25, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
 function getCannonBulletSprite() {
   if (!idleProjectileSpriteCache.cannonBullet) {
     idleProjectileSpriteCache.cannonBullet = bakeProjectileSprite(32, 24, 16, 12, function (c) {
@@ -13258,7 +13269,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1586"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1587"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28690,6 +28701,7 @@ function drawIdleAnim(ctx, w, h) {
       // the diagonal it's flying, instead of staying level like a flat shot.
       var cannonAngle = Math.atan2(p.toY - p.startY, p.toX - p.startX);
       if (fortressSkin().id === "mecha") { drawMechaEnergyBall(ctx, p.x, p.y, p.startX + p.startY); return; } /* v1586 */
+      drawCannonTracer(ctx, p.x, p.y, cannonAngle); return; /* v1587 */
       ctx.save();
       ctx.translate(p.x, p.y); ctx.rotate(cannonAngle);
       var s2 = getCannonBulletSprite();
@@ -37615,7 +37627,8 @@ function drawArenaFrame(ctx, w, h) {
       drawFireballShot(ctx, p, Math.atan2(p.toY - p.startY, p.toX - p.startX), skillShotVisualScale / 100);
       return;
     } else if (p.cannon && ((p.hitsPlayer ? arenaAnim.aiFortressSkin : fortressSkin()) || {}).id === "mecha") { drawMechaEnergyBall(ctx, p.x, p.y, p.startX + p.startY); /* v1586: the shooter is the Mecha */
-    } else if (p.cannon) {
+    } else if (p.cannon) { drawCannonTracer(ctx, p.x, p.y, Math.atan2(p.toY - p.startY, p.toX - p.startX)); /* v1587 */
+    } else if (p.cannon && false) { /* old gold bullet line (kept for reference) */
       var cAng = Math.atan2(p.toY - p.startY, p.toX - p.startX), cs = getCannonBulletSprite();
       ctx.translate(p.x, p.y); ctx.rotate(cAng);
       // drawn directly (vector, no shadow blur / no 1x bitmap upscaled by the display scale) so it stays crisp instead of a blurry glow

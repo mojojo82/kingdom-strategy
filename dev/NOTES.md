@@ -4901,3 +4901,8 @@ Harley's 3 points:
 - Harley: on the Mecha skin only, the fortress cannon shots are small blue energy balls instead of the gold bullet streaks; colour = the Mecha's chest gem. Visual only (timing, damage, hits unchanged).
 - drawMechaEnergyBall: soft additive glow (gem core #8bedf4 -> #2ca5b2 -> #16646d, ~5 px, gentle pulse) + solid #2ca5b2 ball (2.3 px) with a pale #c9f8fb centre; colours sampled from art/originals/ships/mecha/parts/part_torso.png (chest gem). Conquest: isCannon branch when fortressSkin() is mecha. Arena: p.cannon when the SHOOTING side's skin is mecha (hitsPlayer -> the bot's skin, else the player's).
 - Headless: captured cannon bursts in Conquest and Arena with the Mecha - cyan balls fly from the cannon, no errors.
+
+## v1587 - fortress cannon bullets: orange tracer streaks (14 Nov 2026)
+- Harley sent a reference clip of a rapid-fire cannon and picked the "10% smaller" mock: every fortress cannon bullet is now a slim glowing orange tracer (peach tip, orange body, fading tail, additive), drawn along its flight angle - drawCannonTracer, CANNON_TRACER_K 0.648 (sizes compared at 3x against the reference: art/originals/fx/explosion_ref/). Conquest (isCannon) and Arena (p.cannon), both sides. The Mecha keeps its blue energy balls (v1586). Visual only.
+- Missile explosion from ChatGPT (art/originals/fx/missile_explosion/, 8 frames) is still a mock only - Harley couldn't judge it at the headless clip's frame rate.
+- Headless: tracers flying in Conquest and Arena, no errors.
