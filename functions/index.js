@@ -390,6 +390,37 @@ exports.claimArenaRank = wrap(async (req, uid, R, d) => {
   });
 });
 
+// ---- v1600: Boss Rush damage leaderboard (per kingdom, per run week). The game sends each fight's damage; only the player's best fight is kept. ----
+const bossCol = (K, w) => db.collection(K + "bosslb/w" + w + "/p");
+exports.bossScore = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), k = C.arenaKeys(now), dmg = Math.trunc(+d.dmg || 0), name = lbName(d.name), tag = String(d.tag || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 4);
+  const lo = (await liveopsConfig(R)) || {}, BR = lo.br || C.LIVE_BR_DEFAULT;
+  if (!C.bossRunOpen(BR, now)) throw new C.GameError("failed-precondition", "Boss Rush isn't running");
+  if (!(dmg >= 1 && dmg <= 1e13)) throw new C.GameError("invalid-argument", "bad damage");
+  const ref = bossCol(K, k.w).doc(uid);
+  return db.runTransaction(async (tx) => {
+    const s = await tx.get(ref), o = s.data() || {}, today = o.day === k.d ? (o.nd || 0) : 0;
+    if (today >= (BR.tries || 3) + 2) throw new C.GameError("resource-exhausted", "daily limit");
+    const best = Math.max(o.dmg || 0, dmg);
+    tx.set(ref, { dmg: best, name, tag, at: now, day: k.d, nd: today + 1 }, { merge: true });
+    return { w: k.w, best, isBest: dmg >= best };
+  });
+});
+exports.claimBossRank = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), w = Math.trunc(+d.key), now = Date.now(), lo = (await liveopsConfig(R)) || {}, BR = lo.br || C.LIVE_BR_DEFAULT;
+  if (!(w >= C.arenaKeys(now).w - 4) || !C.bossRunOver(BR, w, now)) throw new C.GameError("failed-precondition", "not finished yet");
+  const ref = bossCol(K, w).doc(uid), s = await ref.get(), me = s.exists ? s.data() : null;
+  if (!me || !(me.dmg > 0)) throw new C.GameError("not-found", "no score");
+  if (me.claimed) return { dup: true, rank: me.rank };
+  const above = await bossCol(K, w).where("dmg", ">", me.dmg).count().get(), rank = above.data().count + 1, items = C.arenaRankReward(BR.rank, rank);
+  return db.runTransaction(async (tx) => {
+    const s2 = await tx.get(ref); if (s2.data().claimed) return { dup: true, rank: s2.data().rank };
+    tx.update(ref, { claimed: true, rank });
+    if (items) tx.set(mailCol(R, uid).doc(), C.makeMail("🐉 Boss Rush rank #" + rank, "Boss Rush finished - your best fight did " + me.dmg.toLocaleString("en-US") + " damage.", items, "bossrush", Date.now(), "system"));
+    return { dup: false, rank, items: items || {} };
+  });
+});
+
 // ---- account dates ----
 // "Account created" and "last seen" only. No IPs, devices or sessions. Called by the game once per session (and at most hourly).
 exports.touch = wrap(async (req, uid, R) => {

@@ -2,7 +2,7 @@ const fs = require("fs"), path = require("path");
 const ROOT = "/home/claude/kingdom-strategy", OUTD = __dirname + "/" + (process.env.CAPD || "car");
 const { chromium } = require("playwright");
 const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
-const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+const store = { "envs/test/config/liveops": require("/home/claude/kingdom-strategy/functions/core.js").normalizeLiveops({ br: { days: [0, 1, 2, 3, 4, 5, 6] } }) }, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   fs.rmSync(OUTD, { recursive: true, force: true }); fs.mkdirSync(OUTD);
   const b = await chromium.launch({ executablePath: process.env.CHROME_PATH, args: ["--no-sandbox"] }), errs = [];
@@ -30,6 +30,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   console.log("acts", await P.evaluate(() => JSON.stringify(window.__acts)));
   console.log("done", await P.evaluate(() => JSON.stringify({ res: document.getElementById("arenaResult").textContent, br: game.evBRSync(), left: game.evBRTriesLeft(), btn: document.getElementById("arenaAttackBtn").textContent })));
   await P.evaluate(() => document.getElementById("arenaNewOpponentBtn").click()); await P.waitForTimeout(1500); await P.screenshot({ path: OUTD + "/5_back.png" });
+  await P.waitForTimeout(2000); console.log("store", JSON.stringify(Object.keys(store).filter((k) => /bosslb/.test(k)).map((k) => [k, store[k]])));
+  await P.evaluate(() => { EVB.sub = "rank"; EVB.lb = null; evWinRender(true); }); await P.waitForTimeout(2500); await P.screenshot({ path: OUTD + "/6_rank.png" });
+  await P.evaluate(() => { EVB.sub = "rew"; evWinRender(true); }); await P.waitForTimeout(800); await P.screenshot({ path: OUTD + "/7_rew.png" });
   console.log("back", await P.evaluate(() => JSON.stringify({ view: arenaView, opp: !!arenaOpponent, ev: document.getElementById("evWin") && document.getElementById("evWin").style.display, tab: EVW.tab })));
   console.log("errs", errs.slice(0, 6)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

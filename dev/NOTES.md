@@ -4999,3 +4999,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Server: `LIVE_BR_DEFAULT` / `normalizeBR` in functions/core.js (part of config/liveops, saved by adminSaveLiveops); test added (16 pass). Admin console > Live events > 🐉 Boss Rush: on/off, days, tries, seconds, HP %, beam / stomp % and timings, milestones.
 - Art: art/events/banner_boss.webp + icon_boss.webp (composited from the approved kaiju painting; originals in art/originals/events/boss/).
 - Checks: meta balance numbers identical before/after (the old "meta not strongest" warning is unchanged), a normal Arena fight unaffected, no console errors. Test script: dev/bosses/kaiju/br_flow_test.js.
+
+## v1600 — Boss Rush is a strict damage ranker (Harley)
+- The kaiju can't die (`KAIJU_INF` health); his HP bar is replaced by a live "💥 N damage" counter. The v1599 HP estimate (`kaijuHpFor`) is gone.
+- Ranking: your **best single fight's damage** this run, per kingdom. Server `bossScore` (keeps the best, only while the run is open, max tries+2 calls a day) → `<kingdom>bosslb/w<week>/p/<uid>`; read rule added in firestore.rules (4 places). Events > Boss Rush > Ranking shows the top 50.
+- Rank rewards (`br.rank`, default #1 10 featured shards · #2-3 5 · #4-10 60 Tokens · #11-50 40 · #51-100 25 · everyone else 10) - players see them under "Rank rewards"; claimed after the run ends (server `claimBossRank`, `bossRunOver`: the week is past, or no run day left this week) and paid by mail. The tab stays until the reward is claimed.
+- Milestone points now come from surviving: `br.ptsSec` (1) a second alive + `br.ptsFull` (40) for lasting the whole fight (100 for a full survive; 9 tries = 900 max). Track: 100 Books 20 · 250 Tokens 15 · 450 Research 300 · 650 Tokens 25 · 800 featured shards 10.
+- Admin console > Live events > Boss Rush: points a second, full-survive bonus, rank reward rows (the HP % field is gone). Server test extended (run open / over by weekday). Headless flow: 24,709 damage, survived (+100), score saved to the leaderboard and shown; no errors.
