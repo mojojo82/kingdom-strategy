@@ -5060,3 +5060,4 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1608 — Vesper Quill's Clean Code deleted (Harley)
 - Harley picked Seraphine for the boss skill after a test with both second skills removed (Seraphine weaker: 1v1 vs everyone 0% vs Vesper 7%, head to head Vesper 100%, as 5th in a Lyra/Roran/Kessa/Pip team 30% vs 43%). Shatterpoint stays on Seraphine.
 - Vesper's Clean Code (flat +5%/level team damage) is removed; she has Orbital Patch only until Harley gives her a new 2nd skill. Checked headless: her hero card shows just Orbital Patch, Arena fight with her runs, no errors.
+- **Melee rule (Harley, 15 Nov):** Caelum / Aurek / Bram keep a 2nd skill - the replacement must help the hero survive, deal more damage, or help other melee heroes (melee already loses 87/13 to ranged). Recorded in HANDOVER.md.

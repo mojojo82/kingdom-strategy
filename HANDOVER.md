@@ -210,7 +210,8 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
   3. **Bram Kettleback - Boiler Plating** (own DEF +4%/level).
   4. ~~**Seraphine Lux - Crystal Focus**~~ **DONE v1607 → Shatterpoint** (team boss damage +6%/level, `effectType: "bossDmg"`, own multiplier).
   5. **Vesper Quill - Clean Code DELETED (v1608)** - she has only Orbital Patch for now; Harley will give her a new 2nd skill later.
-  The **team boss-damage aura** went to Seraphine (Shatterpoint, v1607). Lyra's Eagle Eye is the same kind but already switched off (v1575). Borderline, kept for now: Hanzo Shadow Step (dodge), Halo-7 Stone Shell (less damage from ranged only). New skills must use existing mechanics, work the same in Conquest and Arena, and keep heroes below Hanzo / Kessa.
+  The **team boss-damage aura** went to Seraphine (Shatterpoint, v1607).
+  **Melee rule (Harley, 15 Nov):** melee is already at a big disadvantage (5 ranged vs 5 melee test: ranged win 87%). Caelum, Aurek and Bram must NOT just lose their 2nd skill - each gets a replacement that helps the hero stay alive, do more damage, or help the other melee heroes. Lyra's Eagle Eye is the same kind but already switched off (v1575). Borderline, kept for now: Hanzo Shadow Step (dodge), Halo-7 Stone Shell (less damage from ranged only). New skills must use existing mechanics, work the same in Conquest and Arena, and keep heroes below Hanzo / Kessa.
 - **OPEN - TO LOOK INTO with Harley: kaiju (Boss Rush) vs "% of max HP" effects (v1605, 15 Nov 2026).** In the kaiju fight ONLY, three effects were changed by Claude (not asked for by Harley - Harley wants them reviewed):
   1. **Railgun** - "hits the enemy fortress for 10-25% of its max HP" (25% at Lv50).
   2. **Clone Task** - clones self-destruct for a % of the enemy fortress's max HP (`boom` / selfDestructPct).
