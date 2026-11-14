@@ -207,7 +207,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **OPEN - 5 hero passives need a REPLACEMENT skill (Harley, 15 Nov 2026).** Harley's rule: no hero skill that just "makes them stronger" - that wastes a skill slot on what a stat can do (stats exist so heroes can have more or less). Marked for replacement:
   1. **Caelum Vex - Wing Guard** (own DEF +4%/level).
   2. **Aurek Solmane - Faithful** (own DEF +4%/level).
-  3. **Bram Kettleback - Boiler Plating** (own DEF +4%/level).
+  3. **Bram Kettleback - Boiler Plating → Pressure Build (v1609, first version, more tests later)**: limit bar filled by hits taken (3) + swings (`swingPts`, 1), kept through KOs (`keepOnKo`), released on his next landed hit (`onHit`) for 300-500% skill damage (2,400 at Lv80 5* = one-shots an equal ranged hero, 1,380 HP). Bar 12: vs equal 5-ranged teams it fires in 100% of fights when he is in a melee team, only ~25% when he is the lone melee (focus-fired, dies before landing a hit). Open idea: boiler bursts on KO when full.
   4. ~~**Seraphine Lux - Crystal Focus**~~ **DONE v1607 → Shatterpoint** (team boss damage +6%/level, `effectType: "bossDmg"`, own multiplier).
   5. **Vesper Quill - Clean Code DELETED (v1608)** - she has only Orbital Patch for now; Harley will give her a new 2nd skill later.
   The **team boss-damage aura** went to Seraphine (Shatterpoint, v1607).
