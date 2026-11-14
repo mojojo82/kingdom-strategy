@@ -2053,6 +2053,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .skillbar-8heroes .skill-slot { gap:2px; width:44px; }
   .skill-icon-wrap { position:relative; width:36px; height:36px; border-radius:50%; border:2px solid #f0c95f; overflow:hidden; background:#1a1410; display:flex; align-items:center; justify-content:center; font-size:16px; }
   .skillbar-8heroes .skill-icon-wrap { width:29px; height:29px; font-size:12px; }
+  #idleSkillbar .skill-icon-wrap, .idle-header { will-change:transform; } /* v1583: own layers - the spinning cooldown ring and changing numbers repaint only themselves, not the panel / Blue frame art around them */
   .skill-icon-wrap .cd-overlay { position:absolute; inset:0; background:conic-gradient(rgba(0,0,0,.82) var(--pct,0deg), transparent var(--pct,0deg)); }
   .skill-icon-wrap .cd-text { position:relative; z-index:2; font-size:10px; font-weight:800; color:#fff; text-shadow:0 1px 2px #000; }
   .skillbar-8heroes .skill-icon-wrap .cd-text { font-size:7.5px; }
@@ -13240,7 +13241,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1582"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1583"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29357,6 +29358,9 @@ function renderWeaponSlotsInto(box) {
     wrap.appendChild(d);
   }
 }
+/* v1583 (Harley's PERF test: the header numbers cost ~20 FPS on a warm phone): write text only when it changed - even the same text replaces the
+   node, and the phone re-lays-out and repaints that bit of the page (over the Blue frame art) every frame. */
+function setTxt(el, v) { if (el && el._txt !== v) { el._txt = v; el.textContent = v; } }
 function renderIdleHeader() {
   renderIdleWeaponSlots();
   try { renderConquestCardSlots(); } catch (e) {}
@@ -29371,20 +29375,20 @@ function renderIdleHeader() {
   }
   var els = idleHeaderEls;
   if (els.retryBtn) { var wantRetry = !!game.state.idle.bossRetry && !game.state.idle.pending; /* v1135: not while the Defeat screen / the boss that beat you is still up - only once the level has reset */ if (wantRetry !== els.retryShown) { els.retryShown = wantRetry; els.retryBtn.style.display = wantRetry ? "flex" : "none"; } }
-  els.valor.textContent = fmt(game.state.idle.valor);
-  if (els.books) els.books.textContent = fmt(game.state.idle.conquestBooks);
-  els.dps.textContent = fmt(game.idlePower());
-  els.defeated.textContent = fmt(game.state.idle.defeated);
-  els.level.textContent = game.idleLevelLabel();
+  setTxt(els.valor, fmt(game.state.idle.valor)); /* v1583: only touch the page when a number really changes (was rewritten 60x a second) */
+  if (els.books) setTxt(els.books, fmt(game.state.idle.conquestBooks));
+  setTxt(els.dps, fmt(game.idlePower()));
+  setTxt(els.defeated, fmt(game.state.idle.defeated));
+  setTxt(els.level, game.idleLevelLabel());
   try { lsHeaderSync(); } catch (e) {} /* v1317: farming look + the "back to your best stage" button */
   // Same displayedPlayerHp source as the canvas bar (see drawIdleAnim) so
   // this text label and the in-world bar always agree, and both wait for a
   // shot's actual landing rather than the engine's instant tick-time drop.
   var maxHp = game.idlePlayerMaxHp();
   var hp = idleAnim.displayedPlayerHp == null ? game.state.idle.playerHp : idleAnim.displayedPlayerHp;
-  els.hp.textContent = fmt(hp == null ? Math.round(maxHp) : idleHpDisplayNumber(hp)) + "/" + fmt(Math.round(maxHp));
-  els.horde.textContent = (game.state.idle.enemies || []).length;
-  if (els.bossBadge) els.bossBadge.style.display = game.idleIsBossLevel() ? "inline" : "none";
+  setTxt(els.hp, fmt(hp == null ? Math.round(maxHp) : idleHpDisplayNumber(hp)) + "/" + fmt(Math.round(maxHp)));
+  setTxt(els.horde, String((game.state.idle.enemies || []).length));
+  if (els.bossBadge) { var bbD = game.idleIsBossLevel() ? "inline" : "none"; if (els.bossBadge._d !== bbD) { els.bossBadge._d = bbD; els.bossBadge.style.display = bbD; } }
 }
 
 function renderIdleDebug() {
@@ -30717,9 +30721,9 @@ function updateIdleSkillbarDom() {
     var remaining = idleAnim.smoothCooldown[key] != null ? idleAnim.smoothCooldown[key] : rawRemaining;
     var ready = remaining <= 0.05;
     var deg = Math.round((remaining / skillCdAt(skill1, heroSkill1Lvl(key))) * 360);
-    nodes.wrap.classList.toggle("ready", ready);
-    nodes.overlay.style.setProperty("--pct", deg + "deg");
-    if (nodes.text) nodes.text.textContent = skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "";
+    if (nodes._ready !== ready) { nodes._ready = ready; nodes.wrap.classList.toggle("ready", ready); } /* v1583: only on change */
+    if (nodes._deg !== deg) { nodes._deg = deg; nodes.overlay.style.setProperty("--pct", deg + "deg"); }
+    if (nodes.text) setTxt(nodes.text, skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "");
   });
 }
 
