@@ -25,11 +25,13 @@ def key_cell(cell):
     rgb[..., 2] = np.where(spill, np.minimum(b, g + (m - g) * 0.3 + 40), b)
     out = np.dstack([np.clip(rgb, 0, 255), alpha * 255]).astype(np.uint8)
     return Image.fromarray(out, 'RGBA')
-SHEETS = {
- 'art/originals/items/icons_sheet1_gpt.png': (3, 2, ['speed_general', 'speed_construction', 'speed_research', 'speed_training', 'speed_healing', 'peace_shield']),
- 'art/originals/items/icons_sheet2_gpt.png': (3, 2, ['tp_advanced', 'tp_random', 'tp_alliance', 'tp_beginner', 'march_speed', 'march_recall']),
- 'art/originals/items/icons_sheet3_gpt.png': (3, 2, ['stamina', 'chest_hero_select', 'chest_weapon_select', 'chest_card_custom', 'chest_equipment', 'enhance_stone']),
- 'art/originals/items/icons_sheet4_gpt.png': (3, 1, ['anti_scout', 'chest_res_custom', 'chest_res_supply']),
+SHEETS = {  # v2 (Harley 14 Nov): Kingshot-style redraws - thin soft outlines in each object's own colour
+ 'art/originals/items/ks/ks_sheet1_gpt.png': (3, 2, ['speed_general', 'speed_construction', 'speed_research', 'speed_training', 'speed_healing', 'peace_shield']),
+ 'art/originals/items/ks/ks_sheet2_gpt.png': (3, 2, ['tp_advanced', 'tp_random', 'tp_alliance', 'tp_beginner', 'march_speed', 'march_recall']),
+ 'art/originals/items/ks/ks_sheet3_gpt.png': (3, 2, ['stamina', 'chest_hero_select', 'chest_weapon_select', 'chest_card_custom', 'chest_equipment', 'enhance_stone']),
+ 'art/originals/items/ks/ks_sheet4_gpt.png': (3, 2, ['anti_scout', 'chest_res_custom', 'chest_res_supply', 'res_food', 'res_wood', 'res_stone']),
+ 'art/originals/items/ks/ks_sheet5_gpt.png': (3, 2, ['res_gold', 'gems', 'valor', 'books', 'energon', 'rp']),
+ 'art/originals/items/ks/ks_sheet6_gpt.png': (2, 1, ['ticket', 'fragment']),
 }
 if __name__ == '__main__':
     names = []
@@ -39,7 +41,7 @@ if __name__ == '__main__':
             cell = im.crop((round((i % c) * cw), round((i // c) * ch), round((i % c + 1) * cw), round((i // c + 1) * ch)))
             k = key_cell(cell); bb = k.getchannel('A').point(lambda v: 255 if v > 20 else 0).getbbox(); k = k.crop(bb)
             s = max(k.size); sq = Image.new('RGBA', (s, s), (0, 0, 0, 0)); sq.alpha_composite(k, ((s - k.width) // 2, (s - k.height) // 2))
-            sq.save('art/originals/items/cut/%s.png' % n)
+            sq.save('art/originals/items/ks/cut/%s.png' % n)
             sq.resize((192, 192), Image.LANCZOS).save('art/items/%s.webp' % n, quality=90)
             names.append(n)
     print(len(names), 'icons')
