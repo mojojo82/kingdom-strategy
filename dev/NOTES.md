@@ -4911,3 +4911,7 @@ Harley's 3 points:
 ## v1588 - missile impacts: MiniMax explosion (14 Nov 2026)
 - Harley picked the MiniMax version (60 fps three-way comparison) over the current code burst and ChatGPT's 8 frames. drawMissileImpactFx now plays the 28-frame sheet (MISSILE_EXP_IMG, 7x4, 192-px cells on black, inline webp 81 KB) over IDLE_MISSILE_IMPACT_DURATION (0.5 -> 0.9 s), frames blended, additive, 62 px (boss 1.8x). Same impact spots/timing in Conquest and Arena; the old code burst stays as fallback until the sheet loads.
 - Headless: explosions captured mid-play in Conquest and Arena, no errors.
+
+## v1589 - tiny metal sparks when cannon bullets hit a fortress (Arena) (14 Nov 2026)
+- Harley: sparks on fortress-cannon bullet hits on the other fortress, smaller than the usual sparks, close to real bullet-on-metal. spawnBulletSparks / stepBulletSparks / drawBulletSparks (arenaAnim.bulletSparks): 1-frame white pin flash (3 px) + 3-6 fragments ricocheting back toward the shooter (mostly upward), 150-380 px/s, heavy drag + gravity, 0.09-0.31 s, drawn as 0.55-0.9 px streaks along their motion cooling white -> yellow -> orange, additive. Both sides; the Mecha's energy balls don't spark. Conquest unchanged (the cannon only hits enemies there).
+- Checks: frame-exact 60 fps preview + 4x zoomed slow-motion (art/originals/fx/explosion_ref/bullet_sparks_*.mp4); real Arena fight: sparks spawn (up to ~40 tiny streaks alive during a burst), no errors.

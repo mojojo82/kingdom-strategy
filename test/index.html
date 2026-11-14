@@ -11817,6 +11817,37 @@ function drawMechaEnergyBall(ctx, x, y, seed) {
 /* v1587 (Harley, from a reference clip; picked the "10% smaller" mock): fortress cannon bullets are slim glowing orange tracer streaks (peach tip,
    orange body, fading tail), additive, drawn along the flight angle. Visual only. The Mecha keeps its blue energy balls. */
 var CANNON_TRACER_K = 0.648;
+/* v1589 (Harley): a cannon bullet hitting the other fortress (Arena) throws a few tiny, real-looking metal sparks - smaller than the usual sparks so
+   they don't distract. Like a bullet on steel: a 1-frame white pin flash, then 3-6 hot fragments ricochet back off the hull (mostly toward the
+   shooter, fanned up), very fast, drawn as short streaks along their motion that cool white -> yellow -> orange, slow down and drop with gravity
+   within ~0.1-0.3 s. Visual only. The Mecha's energy balls don't spark. */
+function spawnBulletSparks(list, x, y, dirX) {
+  var n = 3 + Math.floor(Math.random() * 4);
+  list.push({ flash: true, x: x, y: y, life: 0.05, max: 0.05 });
+  for (var i = 0; i < n; i++) {
+    var a = (Math.random() - 0.3) * 1.6; /* angle above (+) / below (-) the horizontal, mostly upward */
+    var sp = 150 + Math.random() * 230, vx = -dirX * Math.cos(a) * sp, vy = -Math.sin(a) * sp; /* back toward the shooter */
+    var life = 0.09 + Math.random() * 0.22;
+    list.push({ x: x, y: y, px: x, py: y, vx: vx, vy: vy, life: life, max: life, w: 0.55 + Math.random() * 0.35 });
+  }
+}
+function stepBulletSparks(list, dt) {
+  for (var i = list.length - 1; i >= 0; i--) { var s = list[i]; s.life -= dt; if (s.life <= 0) { list.splice(i, 1); continue; } if (s.flash) continue;
+    s.px = s.x; s.py = s.y; s.vx *= Math.pow(0.02, dt); s.vy = s.vy * Math.pow(0.02, dt) + 520 * dt; s.x += s.vx * dt; s.y += s.vy * dt; }
+}
+function drawBulletSparks(ctx, list) {
+  if (!list.length) return;
+  ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+  list.forEach(function (s) {
+    var k = s.life / s.max; /* 1 = fresh, 0 = gone */
+    if (s.flash) { var g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 3.2); g.addColorStop(0, "rgba(255,255,240," + k + ")"); g.addColorStop(1, "rgba(255,200,120,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, 3.2, 0, Math.PI * 2); ctx.fill(); return; }
+    var col = k > 0.66 ? "255,250,225" : k > 0.33 ? "255,214,120" : "255,140,50";
+    var tx = s.x - s.vx * 0.012, ty = s.y - s.vy * 0.012; /* streak = where it was ~12 ms ago */
+    ctx.strokeStyle = "rgba(" + col + "," + Math.min(1, k * 1.4) + ")"; ctx.lineWidth = s.w;
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(s.x, s.y); ctx.stroke();
+  });
+  ctx.restore();
+}
 function drawCannonTracer(ctx, x, y, ang) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(CANNON_TRACER_K, CANNON_TRACER_K); ctx.globalCompositeOperation = "lighter";
   var g = ctx.createLinearGradient(-15, 0, 5, 0); g.addColorStop(0, "rgba(255,70,20,0)"); g.addColorStop(0.55, "rgba(255,110,40,0.45)"); g.addColorStop(1, "rgba(255,150,70,0.6)");
@@ -13269,7 +13300,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1588"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1589"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -37702,6 +37733,7 @@ function drawArenaFrame(ctx, w, h) {
   // v453: missile explosions at the enemy fortress + Piercing Volley
   // fireball embers — the same shared drawing Conquest uses.
   arenaAnim.missileImpacts.forEach(function (fx) { drawMissileImpactFx(ctx, fx); });
+  if (arenaAnim.bulletSparks) drawBulletSparks(ctx, arenaAnim.bulletSparks); /* v1589 */
   if (arenaAnim.beams.length) {
     var bpg = arenaFortressGeom(w, h, true);
     var bWid = (game.state.equippedWeapons || []).filter(function (q) { var qd = WEAPON_DEFS_BY_ID[q]; return qd && qd.kind === "beam"; })[0], bwP = weaponSlotPoint(w, h, "arena", true, bWid); // v1109: beams leave the beam weapon's slot
@@ -37843,6 +37875,7 @@ function stepArenaAnim(dtSec, w, h) {
   arenaAnim.projectiles.forEach(function (p) {
     if (!p.cannon || p.t < 1 || p.landed) return;
     p.landed = true;
+    if (((p.hitsPlayer ? arenaAnim.aiFortressSkin : fortressSkin()) || {}).id !== "mecha") spawnBulletSparks(arenaAnim.bulletSparks || (arenaAnim.bulletSparks = []), p.toX, p.toY, p.toX >= p.startX ? 1 : -1); /* v1589 */
   });
   // Piercing Volley fireball (v453): same light glow trail + shed embers as
   // Conquest's skill shot.
@@ -37885,6 +37918,7 @@ function stepArenaAnim(dtSec, w, h) {
     if (m.t >= 1) spawnMissileImpactFx(m.toX, m.toY, false, arenaAnim.missileImpacts);
   });
   arenaAnim.missileImpacts.forEach(function (fx) { fx.age += dtSec; });
+  if (arenaAnim.bulletSparks) stepBulletSparks(arenaAnim.bulletSparks, dtSec); /* v1589 */
   arenaAnim.missileImpacts = arenaAnim.missileImpacts.filter(function (fx) { return fx.age < IDLE_MISSILE_IMPACT_DURATION; });
   (arenaAnim.dmgNums || []).forEach(function (n) { n.y -= 28 * dtSec; n.life -= dtSec; });
   arenaAnim.dmgNums = (arenaAnim.dmgNums || []).filter(function (n) { return n.life > 0; });
