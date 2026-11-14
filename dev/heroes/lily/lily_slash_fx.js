@@ -145,46 +145,56 @@
     if (t < f0 || t > end) return;
     var p = Math.min(1, (t - f0) / (f1 - f0)), fade = t > f1 ? (t - f1) / FADE : 0;
     var a0 = sw[2] * D2R, a1 = sw[3] * D2R, span = a1 - a0, dir = span < 0 ? -1 : 1;
+    /* every slash its own character: thickness, length, curvature, roughness */
+    var wf = 0.6 + 0.8 * rnd(idx * 19 + 1), lf = 0.85 + 0.45 * rnd(idx * 23 + 2), curv = (rnd(idx * 29 + 3) - 0.5) * 0.5, rough = 0.6 + 0.8 * rnd(idx * 31 + 4);
     var head = a0 + span * easeOut(p) + (fade > 0 ? dir * 5 * D2R * easeOut(fade) : 0);
-    var trail = Math.max(MINTRAIL * D2R, Math.abs(span) * 1.1) * (1 - 0.6 * sm(0, 1, fade));
+    var trail = Math.max(MINTRAIL * D2R, Math.abs(span) * 1.1) * lf * (1 - 0.6 * sm(0, 1, fade));
     var tail = head - dir * trail;
-    var R = sw[4] * st.over * (1 + 0.05 * easeOut(fade)), W = R * st.width;
+    var R = sw[4] * st.over * (1 + 0.05 * easeOut(fade)), W = R * st.width * wf;
     var mid = a0 + span * 0.5, off = R * (st.detach + st.travel * (0.35 * p + easeOut(fade)));
     var dx = st.detach ? Math.cos(mid) * (off - R * 0.45) : 0, dy = st.detach ? Math.sin(mid) * (off - R * 0.45) : 0;
-    var A = 1 - sm(0.35, 1, fade), sy = 0.86, tilt = (rnd(idx + 3) - 0.5) * 0.25, N = 40, i, s, a;
-    var erode = 0;                                    /* (the shrinking trail keeps both tips pointed while it dissolves) */
-    function ang(s) { return tail + dir * trail * s; }
-    function strip(sa, sb, r0, r1, col, al) {        /* a flat crescent strip between depths r0..r1 (0 = outer rim, 1 = inner edge) */
-      sa = Math.max(sa, erode * 0.8); if (sb <= sa) return;
+    var A = 1 - sm(0.35, 1, fade), sy = 0.86, tilt = (rnd(idx + 3) - 0.5) * 0.3, N = 56, i;
+    var ph = [rnd(idx * 3 + 7) * 6.28, rnd(idx * 5 + 9) * 6.28, rnd(idx * 7 + 11) * 6.28];
+    function ang(u) { return tail + dir * trail * u; }
+    function rad(u) { return R * (1 + curv * (u - 0.6)); }                       /* not a perfect circle */
+    function noise(u, depth) {                                                     /* bumpy, hand-cut edge; rougher on the inside */
+      var n = Math.sin(u * 17 + ph[0] + depth * 3) * 0.5 + Math.sin(u * 39 + ph[1] - depth * 5) * 0.3 + Math.sin(u * 83 + ph[2]) * 0.2;
+      return n * W * 0.09 * rough * (0.35 + depth);
+    }
+    function strip(sa, sb, r0, r1, col, al) {        /* rough crescent strip between depths r0..r1 (0 = outer rim, 1 = inner edge) */
+      if (sb <= sa) return;
       ctx.beginPath();
-      for (var j = 0; j <= N; j++) { var u = sa + (sb - sa) * j / N, w = W * profA(u), rr = R - w * r0, aa = ang(u); if (j === 0) ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); else ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
-      for (var j2 = N; j2 >= 0; j2--) { var u2 = sa + (sb - sa) * j2 / N, w2 = W * profA(u2), rr2 = R - w2 * r1, aa2 = ang(u2); ctx.lineTo(Math.cos(aa2) * rr2, Math.sin(aa2) * rr2); }
+      for (var j = 0; j <= N; j++) { var u = sa + (sb - sa) * j / N, w = W * profA(u), rr = rad(u) - w * r0 + noise(u, r0), aa = ang(u); if (j === 0) ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); else ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+      for (var j2 = N; j2 >= 0; j2--) { var u2 = sa + (sb - sa) * j2 / N, w2 = W * profA(u2), rr2 = rad(u2) - w2 * r1 + noise(u2, r1), aa2 = ang(u2); ctx.lineTo(Math.cos(aa2) * rr2, Math.sin(aa2) * rr2); }
       ctx.closePath(); ctx.fillStyle = "rgba(" + col + "," + (al * A) + ")"; ctx.fill();
     }
     ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * sy); ctx.translate(dx, dy); ctx.rotate(tilt);
     ctx.globalCompositeOperation = "source-over";
-    /* smear: a dark, see-through brushed shadow just inside the crescent */
-    strip(0.05, 0.92, 0.55, 1.35, "60,8,16", 0.28);
-    /* body: dark crimson base, then a mid red band toward the cutting edge (flat tones, crisp edges) */
-    strip(0.12, 1, 0.08, 1.0, "128,12,24", 0.92);
-    strip(0.3, 1, 0.06, 0.55, "196,24,36", 0.95);
-    /* dry-brush strips: separate thin bands in the tail, each stopping at a different point, so it reads hand painted */
-    for (i = 0; i < 6; i++) {
-      var d0 = 0.15 + 0.13 * i, sa2 = 0.02 + 0.3 * rnd(idx * 11 + i), sb2 = sa2 + 0.25 + 0.25 * rnd(idx * 7 + i);
-      strip(sa2, Math.min(0.85, sb2), d0, d0 + 0.06 + 0.04 * rnd(i + idx), i % 2 ? "150,16,28" : "92,10,20", 0.85);
+    /* smear: dark, see-through brushed shadow inside the crescent */
+    strip(0.04, 0.9, 0.5, 1.4, "60,8,16", 0.26);
+    /* body in pieces: one or two nicks / gaps break it up */
+    var gap1 = 0.38 + 0.25 * rnd(idx * 37), gw = 0.015 + 0.03 * rnd(idx * 41);
+    strip(0.2, gap1, 0.06, 1.0, "128,12,24", 0.92); strip(gap1 + gw, 1, 0.06, 1.0, "128,12,24", 0.92);
+    strip(0.32, gap1 - 0.01, 0.05, 0.52 + 0.15 * rnd(idx), "196,24,36", 0.95); strip(gap1 + gw, 1, 0.05, 0.58, "196,24,36", 0.95);
+    /* frayed tail: the back end splits into bristles of different lengths with gaps between them */
+    var nb = 4 + Math.floor(3 * rnd(idx * 43));
+    for (i = 0; i < nb; i++) {
+      var d0 = 0.1 + 0.85 * i / nb, sa2 = 0.03 + 0.18 * rnd(idx * 11 + i), sb2 = 0.22 + 0.3 * rnd(idx * 7 + i);
+      strip(sa2, sb2, d0, d0 + 0.5 / nb, i % 2 ? "150,16,28" : "100,10,20", 0.85 + 0.15 * rnd(i));
     }
-    /* anime core: a crisp white crescent along the cutting edge, pointed at both ends (no glow) */
-    strip(0.3, 1, 0, 0.32, "255,236,230", 0.97);
-    strip(0.5, 1, 0, 0.14, "255,255,255", 1);
-    /* splatter: flat drops thrown off the tip along the swing (dark red and red, no glow) */
-    for (i = 0; i < 9; i++) {
+    /* uneven white core along the cutting edge */
+    var c0 = 0.3 + 0.2 * rnd(idx * 47), c1 = 0.93 + 0.07 * rnd(idx * 53);
+    strip(c0, c1, 0, 0.22 + 0.15 * rnd(idx * 59), "255,236,230", 0.97);
+    strip(c0 + 0.15, Math.min(1, c1 + 0.04), 0, 0.09 + 0.06 * rnd(idx * 61), "255,255,255", 1);
+    /* splatter: flat drops of different sizes thrown off the tip */
+    for (i = 0; i < 11; i++) {
       var born = f0 + (f1 - f0) * rnd(idx * 13 + i), age = t - born; if (age < 0 || age > 9) continue;
-      var ab = a0 + span * easeOut(Math.min(1, (born - f0) / (f1 - f0))), sp = (8 + 13 * rnd(idx * 5 + i)) * (R / 330);
-      var tx = -Math.sin(ab) * dir, ty = Math.cos(ab) * dir, ux = Math.cos(ab), uy = Math.sin(ab), mix = 0.3 + 0.5 * rnd(i + idx);
+      var ab = a0 + span * easeOut(Math.min(1, (born - f0) / (f1 - f0))), sp = (8 + 15 * rnd(idx * 5 + i)) * (R / 330);
+      var tx = -Math.sin(ab) * dir, ty = Math.cos(ab) * dir, ux = Math.cos(ab), uy = Math.sin(ab), mix = 0.3 + 0.6 * rnd(i + idx);
       var vx = (tx * 0.75 + ux * mix) * sp, vy = (ty * 0.75 + uy * mix) * sp;
       var x = Math.cos(ab) * R + vx * age, y = Math.sin(ab) * R + vy * age + 1.3 * age * age * (R / 330);
-      var sz = (3 + 6 * rnd(idx * 3 + i)) * (R / 330) * (1 - age / 12), ro = Math.atan2(vy + 2.6 * age * (R / 330), vx);
-      ctx.save(); ctx.translate(x, y); ctx.rotate(ro); ctx.beginPath(); ctx.ellipse(0, 0, sz * 1.9, sz * 0.75, 0, 0, 6.283);
+      var sz = (2 + 8 * Math.pow(rnd(idx * 3 + i), 2)) * (R / 330) * (1 - age / 12), ro = Math.atan2(vy + 2.6 * age * (R / 330), vx);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ro); ctx.beginPath(); ctx.ellipse(0, 0, sz * (1.4 + rnd(i) * 1.4), sz * 0.7, 0, 0, 6.283);
       ctx.fillStyle = (i % 3 ? "rgba(150,14,26," : "rgba(70,6,14,") + (1 - age / 9) + ")"; ctx.fill(); ctx.restore();
     }
     ctx.restore();
