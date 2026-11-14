@@ -1,0 +1,39 @@
+/* 5 ranged (fortress riders) vs 5 melee heroes, all Lv80 5* skills 5, no weapons, no Hanzo: every 5-hero combo of each group, both sides, 3 seeds. Run: PW_PATH=playwright CHROME_PATH=... node dev/balance/ranged_vs_melee.js */
+const fs = require("fs"), path = require("path");
+const ROOT = require("path").join(__dirname, "../.."), OUTD = __dirname + "/results";
+const { chromium } = require("playwright");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.CHROME_PATH, args: ["--no-sandbox"] }), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 2 });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, require(path.join(ROOT, "dev/tests/siteroute.js"))(GAME));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/", { timeout: 120000 }); await P.waitForSelector("#ksAuth .box", { timeout: 120000 });
+  await P.fill("#ksE", "sc" + Date.now() + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "PipTest"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  await P.evaluate(() => { const st = game.state; ["caelum", "kessa", "lyra"].forEach((k) => { st.heroes[k].owned = true; st.heroes[k].level = 40; st.heroes[k].skillLevels = { conquest: [3, 5, 3], expedition: [1, 1, 1] }; }); st.conquestRoster = ["caelum", "kessa", "lyra"]; document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove()); setScreen("more", "arena"); });
+  await P.waitForTimeout(3000);
+  const r = await P.evaluate(() => {
+    const H = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && k !== "hanzo"), hs = {};
+    H.forEach((k) => { hs[k] = { owned: true, level: 80, stars: 25, skillLevels: { conquest: [5, 5, 5], expedition: [5, 5, 5] } }; });
+    const probe = arenaSideStats(H, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS), inf = {}; (probe.heroHp || []).forEach((e) => { inf[e.id] = !!e.infantry; });
+    const M = H.filter((k) => inf[k]), R = H.filter((k) => !inf[k]);
+    const combos = (a, n) => { const o = []; const rec = (s, c) => { if (c.length === n) { o.push(c.slice()); return; } for (let i = s; i < a.length; i++) { c.push(a[i]); rec(i + 1, c); c.pop(); } }; rec(0, []); return o; };
+    const mk = (ros, isP) => { const st = arenaSideStats(ros, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, ros.indexOf(e.id), isP); }); return st; };
+    const MT = combos(M, 5), RT = combos(R, 5), sc = { ranged: 0, melee: 0, draw: 0 }, mw = {}, rw = {};
+    MT.forEach((m) => RT.forEach((rr) => { for (let side = 0; side < 2; side++) for (let s = 0; s < 3; s++) { const sd = m.join() + rr.join() + side + s, rP = side === 0;
+      const sim = arenaMakeSim(mk(rP ? rr : m, true), mk(rP ? m : rr, false), { rng: worldPvpSeededRng(sd), critSeed: sd }); const w = sim.runToEnd();
+      const rWin = (w === "player" && rP) || (w === "ai" && !rP), mWin = (w === "player" && !rP) || (w === "ai" && rP); if (rWin) sc.ranged++; else if (mWin) sc.melee++; else sc.draw++;
+      const mk1 = m.join("+"), rk = rr.join("+"); mw[mk1] = mw[mk1] || [0, 0]; rw[rk] = rw[rk] || [0, 0]; mw[mk1][1]++; rw[rk][1]++; if (mWin) mw[mk1][0]++; if (rWin) rw[rk][0]++; } }));
+    const tot = sc.ranged + sc.melee + sc.draw, pct = (o) => Object.entries(o).map(([k, v]) => [k, Math.round(100 * v[0] / v[1])]).sort((a, b) => b[1] - a[1]);
+    return { melee: M, ranged: R, fights: tot, rangedWin: Math.round(100 * sc.ranged / tot), meleeWin: Math.round(100 * sc.melee / tot), draws: sc.draw, meleeTeams: pct(mw), rangedTop: pct(rw).slice(0, 5), rangedBottom: pct(rw).slice(-3) };
+  });
+  console.log(JSON.stringify(r, null, 1));
+  await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });
