@@ -7275,6 +7275,7 @@ var CARD_EFFECTS_BY_NAME = {
   "#13": { kind: "cavAtk", pct: 0.15 },                        // v989: cavalry heroes (Roran) +15% base ATK
   "#14": { kind: "gerbil", every: 5, pct: 0.5 },               // v990 horde card: every 5s (no cap) summon a Death Gerbil - a living summon with its own stats = 50% of your average hero (HP, hit, DEF). Not a hero copy. Doesn't count for the Railgun/clone link.
   "#15": { kind: "allHp", pct: 0.05 },                         // v990: all your heroes AND summons (clones, gerbils) +5% max HP
+  "boss slayer": { kind: "bossDmg", pct: 0.30 },               // v1606 (Harley): +30% damage to bosses - Conquest chapter bosses and the Boss Rush kaiju; nothing in PvP. Its own multiplier (not inside the 75% equipment Boss Damage cap). Placeholder art.
   "cannon doctrine": { kind: "t1Army", pct: 0.70 },           // v1072: Fortress I's early-game card - your whole side deals +70% damage while your fortress for that fight is Fortress I (sims: Fortress I wins the first ~1M of research, Fortress III catches up after; dev/balance/f1cards.js)
   "#11": { kind: "soloAtk", pct: 2.0, perHero: 0.10, free: 1 } // v988: +200% ATK (heroes + fortress cannon) with 0 or 1 hero, x0.10 for every hero after the first (2 heroes +20%, 3 +2%, 5 ~+0.02%)
 };
@@ -7285,17 +7286,21 @@ function cardEffectKeyAt(state, idx) {
   var sk = "#" + (idx + 1); return CARD_EFFECTS_BY_NAME[sk] ? sk : "";
 }
 // v985: every equipped card effect rolled into one set of combat modifiers (same rules in Conquest and Arena)
-function cardModsBlank() { return { infAtk: 0, infHp: 0, allHp: 0, gerbil: null, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, t1Army: 0, any: false }; }
+function cardModsBlank() { return { bossDmg: 0, infAtk: 0, infHp: 0, allHp: 0, gerbil: null, cavAtk: 0, kessaArcLow: null, kessaAtkLow: null, lastStand: null, polarFlux: null, t1Def: 0, critDmg: 0, cdr: 0, cdrLow: null, cdrDmg: null, soloAtk: null, t1Army: 0, any: false }; }
 /* v1474: Fortress II's skill-cooldown bonus joins the card cooldown total (same slot, same 90% cap), so the cooldown maths AND card 10's
    "more than 25% cooldown bonus" check see one combined number - in Conquest (conqCardMods) and in the Arena / World PvP engine (arenaMakeSim). */
 function cardModsWithFortCdr(m, cdr) { if (!(cdr > 0)) return m; var o = Object.assign(cardModsBlank(), m || {}); o.cdr = (o.cdr || 0) + cdr; o.any = true; return o; }
 function conqCardMods(state) { return cardModsWithFortCdr(cardModsFrom(state), fortressBonusFrom(state.fortressTech || {}).cdr); }
+/* v1606 (Harley): boss damage beyond the equipment line - the Boss Slayer card (and later a hero passive), each its own multiplier. Cached per card loadout. */
+var BOSS_MUL_C = { key: null, v: 1 };
+function bossBonusMul(state) { if (!state) return 1; var k = (state.equippedCards || []).join(",") + "|" + (state.cards ? state.cards.length : 0); if (BOSS_MUL_C.key !== k || BOSS_MUL_C.st !== state) { BOSS_MUL_C = { key: k, st: state, v: 1 + (cardModsFrom(state).bossDmg || 0) }; } return BOSS_MUL_C.v; }
 function cardModsFrom(state) {
   var m = cardModsBlank();
   equippedCardEffects(state).forEach(function (fx) {
     m.any = true;
     if (fx.kind === "infAtk") m.infAtk += fx.pct || 0; else if (fx.kind === "cavAtk") m.cavAtk += fx.pct || 0; else if (fx.kind === "infHp") m.infHp += fx.pct || 0; else if (fx.kind === "allHp") m.allHp += fx.pct || 0; else if (fx.kind === "t1Def") m.t1Def += fx.pct || 0; else if (fx.kind === "critDmg") m.critDmg += fx.pct || 0;
     else if (fx.kind === "cdr") m.cdr += fx.pct || 0;
+    else if (fx.kind === "bossDmg") m.bossDmg += fx.pct || 0; /* v1606: Boss Slayer */
     else if (fx.kind === "t1Army") m.t1Army += fx.pct || 0; /* v1072: Cannon Doctrine */
     else if (m.hasOwnProperty(fx.kind)) m[fx.kind] = fx;
   });
@@ -9411,7 +9416,7 @@ function createGame(opts) {
   function forgeInfo() { var F = state.forge; return { level: F.level, progress: F.progress, need: forgeNeed(F.level), cost: forgeCost(F.level), odds: forgeOdds(F.level), maxLevel: FORGE_MAX_LEVEL, unlock: EQ_UNLOCK.slice(), invMax: eqInvMax(F.level), autoDis: F.autoDis == null ? -1 : F.autoDis }; }
   // ================= end v727 =================
   function idleSpotMul(e, aid) { if (aid !== "pip" || !e || !(e.spotMk > 0)) return 1; var c = spotMarkCfg(heroSkillLevel("pip", "conquest", 1)), m = e.spotMk; e.spotMk = 0; return c ? 1 + m * c.pct : 1; } /* v1499: Spotter's Mark - Pip's hit spends the marks */
-  function idleMarkMult(e, aid) { return idleSpotMul(e, aid) * ((e && e.markT > 0 && !idleAttackerIsMelee(aid)) ? 1 + (e.markPct || 0) : 1) * ((e && e.type === "boss") ? 1 + (equipBonus.boss || 0) / 100 : 1); } // Kessa's Storm Mark: marked enemies take extra damage from ranged heroes
+  function idleMarkMult(e, aid) { return idleSpotMul(e, aid) * ((e && e.markT > 0 && !idleAttackerIsMelee(aid)) ? 1 + (e.markPct || 0) : 1) * ((e && e.type === "boss") ? (1 + (equipBonus.boss || 0) / 100) * bossBonusMul(state) : 1); } // Kessa's Storm Mark: marked enemies take extra damage from ranged heroes
   function idleEnemyDefTake(e, A) { var d = e && e.def; return (d > 0 && A > 0) ? A / (A + d) : 1; } // enemy DEF: damage taken = hit x A/(A+DEF), same rule as heroes
   function idleSpawnEnemy() {
     var type = IDLE_ENEMY_TYPE_ORDER[state.idle.enemySpawnIndex % IDLE_ENEMY_TYPE_ORDER.length];
@@ -13649,7 +13654,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1605"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1606"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -15351,12 +15356,13 @@ document.getElementById("cardDevModBtn").onclick = function () { if (!cardTextEd
 // and Drop Signal goes into the first free slot if no card has that name yet. Offline / claude.ai build (no Firebase): text stays per save.
 var CARD_CATALOG_DOC = "assetitems/cardcatalog";
 var CARD_CATALOG_DROP_SIGNAL = { name: "Drop Signal", type: "Summon", effect: "Drop Signal", narrative: "" };
+var CARD_CATALOG_BOSS_SLAYER = { name: "Boss Slayer", type: "Boss", effect: "+30% damage to bosses (Conquest chapter bosses and the Boss Rush kaiju)", narrative: "" }; /* v1606 */
 // v978: card text written in the code (slot index -> text). Shown to every player in any slot the shared catalog leaves empty; an admin's
 // in-game edit (saved to the catalog) takes priority. Order per slot: shared catalog > the admin's own save text > these defaults.
 var CARD_TEXT_DEFAULTS = { /* v984: Harley's card text, cards 1-11 (text only - no game effect yet) */ 0: { name: "Iron Vanguard", type: "", effect: "All of your infantry heroes gain +10% to their base atk", narrative: "" }, 1: { name: "Storm's Fury", type: "", effect: "Increase Kessa's arc burst damage by 30% when health below 30%", narrative: "" }, 2: { name: "Desperate Spark", type: "", effect: "Increase Kessa's base ATK by 200%", narrative: "" }, 3: { name: "Last Bastion", type: "", effect: "When Health is below 10% activate a shield making you invincible for 2 seconds", narrative: "" }, 4: { name: "Polar Flux", type: "", effect: "When fortress health is below 50% summons Polar Flux. Polar Flux fires a blast onto the field damaging everyone by 30% of their max health", narrative: "" }, 5: { name: "Twin Citadels", type: "", effect: "If both players control a Type 1 fortress, you gain 30% defense", narrative: "" }, 6: { name: "Keen Edge", type: "", effect: "Increase your crit damage by 10%", narrative: "" }, 7: { name: "Quick Study", type: "", effect: "Skill cooldown bonus +5%", narrative: "" }, 8: { name: "Second Wind", type: "", effect: "When health is below 90% increase skill cooldown +5%", narrative: "" }, 9: { name: "Overclock", type: "", effect: "If your skill cooldown exceeds 25% increase hero damage by 25%", narrative: "" }, 10: { name: "Lone Wolf", type: "", effect: "Gain 200% ATK bonus. Decrease this bonus by 90% for every hero you control after the first", narrative: "" }, 11: { name: "Shield Brothers", type: "", effect: "All of your infantry heroes gain +15% max health", narrative: "" }, 12: { name: "Thundering Hooves", type: "", effect: "All of your Ranged heroes gain +15% to their base atk", narrative: "" }, 13: { name: "Death Gerbils", type: "Summon", effect: "Every 5 seconds summon a Death Gerbil", narrative: "" }, 14: { name: "Hardy Stock", type: "", effect: "All your heroes, including summons, gain +5% health", narrative: "" }, 27: { name: "Critical Mass", type: "", effect: "Critical Mass", narrative: "" }, 28: { name: "Regen", type: "", effect: "Regen", narrative: "" }, 29: CARD_CATALOG_DROP_SIGNAL, 16: { name: "Cannon Doctrine", type: "Fortress I", effect: "While your fortress is Fortress I (Heavy Cannon), everything on your side - heroes, troops, weapons and the cannon - deals 70% more damage. Does nothing on Fortress III.", narrative: "" } /* v1072 */ }; /* v981: all three effect cards on cards 28-30 */
 // v980 (Harley): a card with an effect shows that effect's name in its description box (Regen -> "Regen"), so it's clear at a glance which
 // card it is. Fills an empty description or placeholder text (v979's "Test", the old long Drop Signal line); real text is left alone.
-var CARD_EFFECT_LABEL = { "critical mass": "Critical Mass", "regen": "Regen", "drop signal": "Drop Signal" };
+var CARD_EFFECT_LABEL = { "critical mass": "Critical Mass", "regen": "Regen", "drop signal": "Drop Signal", "boss slayer": "+30% damage to bosses (Conquest chapter bosses and the Boss Rush kaiju)" };
 var CARD_PLACEHOLDER_TEXT = ["Test", "Each time your Railgun fires, your fallen summons are redeployed and any switched-off drones come back online."];
 var cardCatalog = null, cardCatalogPushT = null;
 function cardTextEditable() { var K = window.KS_BACKEND; return !K || K.kind !== "firebase" || !!K.isAdmin; }
@@ -15399,6 +15405,8 @@ function cardCatalogSettle() { /* also re-run after a save loads, so an admin's 
       if (K.isAdmin) {
         if (!merged.some(function (t) { return t.name.trim().toLowerCase() === "drop signal"; })) { var fi = -1; for (var bi = merged.length - 1; bi >= 0; bi--) if (cardTextBlank(merged[bi])) { fi = bi; break; } /* the LAST free slot - the imported original cards sit at the front */ if (fi >= 0) { merged[fi] = cardTextOf(CARD_CATALOG_DROP_SIGNAL); changed = true; } }
       }
+      if (K.isAdmin && !merged.some(function (t) { return t.name.trim().toLowerCase() === "boss slayer"; })) { /* v1606: Boss Slayer goes into the last free card slot (like Drop Signal) */
+        var bsI = -1; for (var bsi = merged.length - 1; bsi >= 0; bsi--) if (cardTextBlank(merged[bsi])) { bsI = bsi; break; } if (bsI >= 0) { merged[bsI] = cardTextOf(CARD_CATALOG_BOSS_SLAYER); changed = true; } }
       cardCatalog = merged; cardCatalogApply();
       if (changed) cardCatalogPush();
     })(0);
@@ -24851,7 +24859,9 @@ function kaijuLevel(B, dealt) { /* v1604: his level from the damage taken this f
   while (lv < max && dealt >= need) { dealt -= need; lv++; need *= g; }
   return { lv: lv, into: dealt, need: lv >= max ? Infinity : need };
 }
-function kaijuAiStats(hp) { var s = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); s.maxHp = Math.max(1000, Math.round(hp)); s.kaiju = true; return s; } /* kaiju: % of max HP effects use the player's own fortress HP instead (arenaMakeSim) */
+function kaijuAiStats(hp) { var s = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); s.maxHp = Math.max(1000, Math.round(hp)); s.kaiju = true;
+  s.dmgTakenMult = (s.dmgTakenMult || 1) * kaijuBossMul(); return s; } /* v1606: your Boss Damage counts against him */
+function kaijuBossMul() { /* v1606: equipment Boss Damage (75% cap) x Boss Slayer card - separate multipliers (Harley). All your damage to him. */ return (1 + Math.min(75, equipBonus.boss || 0) / 100) * bossBonusMul(game.state); } /* kaiju: % of max HP effects use the player's own fortress HP instead (arenaMakeSim) */
 function kaijuDealt() { return Math.max(0, Math.floor((arenaAnim.aiMaxHp || KAIJU_INF) - (arenaAnim.aiHp || 0))); }
 function kaijuReport(dmg) {
   if (!ksFb() || !(dmg > 0)) return;
