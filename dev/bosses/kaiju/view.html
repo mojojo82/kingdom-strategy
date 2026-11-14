@@ -3,13 +3,12 @@
 <script>
 var I = {}, n = 0; ["body", "glow", "bg", "fort"].forEach(function (k) { var i = new Image(); i.onload = function () { if (++n === 4) window.__ready = 1; }; i.src = { body: "body.png", glow: "spineglow.png", bg: "bg.png", fort: "fort.png" }[k]; I[k] = i; });
 window.frame = function (t, mode, mt) {
-  var c = document.getElementById("c"), x = c.getContext("2d"), w = c.width, h = c.height, gy = h * 0.72;
+  var c = document.getElementById("c"), x = c.getContext("2d"), w = c.width, h = c.height, gy = h * 0.745;
   x.clearRect(0, 0, w, h); var bs = Math.max(w / I.bg.width, h / I.bg.height); x.drawImage(I.bg, (w - I.bg.width * bs) / 2, (h - I.bg.height * bs) / 2, I.bg.width * bs, I.bg.height * bs);
   var fs = (w * 0.34) / I.fort.width; x.drawImage(I.fort, w * 0.16 - I.fort.width * fs / 2, gy + 14 - I.fort.height * fs, I.fort.width * fs, I.fort.height * fs);
   var sc = (w * (+window.__KW || 0.56)) / 1415, px = w * (+window.__KX || 0.5);
-  var tgt = { x: w * 0.2, y: gy - h * (+window.__TY || 0.06) }, po = KAIJU.pose(t, mode, mt);
-  /* head tilts so the mouth points at the target: angle from the mouth (rest pose) to the target, minus the horizontal */
-  var mx = px + KAIJU.P.mouth[0] * sc, my = gy + 12 - 940 * sc + KAIJU.P.mouth[1] * sc; po.aimHead = Math.max(-0.3, Math.min(0.35, Math.atan2(tgt.y - my, mx - tgt.x) * 0.9));
+  var tgt = { x: w * 0.2, y: gy - h * (+window.__TY || 0.045) }, po = KAIJU.pose(t, mode, mt);
+  if (po.mouth > 0) KAIJU.aim(po, px, gy + 12, sc, tgt, po.mouth);
   KAIJU.draw(x, { body: I.body, glow: I.glow }, px, gy + 12, sc, po, tgt);
 };
 </script></body></html>

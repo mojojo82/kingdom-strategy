@@ -3,7 +3,7 @@
    kaijuPose(t, mode, mt) -> pose params; kaijuDraw(ctx, imgs, x, feetY, scale, pose). */
 (function () {
   var W = 1415, H = 949, GX = 30, GY = 20;
-  var P = { hip: [640, 700], neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [70, 262], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
+  var P = { hip: [640, 700], neck: [300, 310], hinge: [190, 246], core: [520, 322], mouth: [42, 250], mouthBack: [170, 248], shN: [450, 455], shF: [245, 450], tail0: 770, tipX: 1400 };
   function sm(e0, e1, x) { var t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); }
   function rot(x, y, cx, cy, a) { var c = Math.cos(a), s = Math.sin(a), dx = x - cx, dy = y - cy; return [cx + dx * c - dy * s, cy + dx * s + dy * c]; }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
@@ -17,7 +17,7 @@
       var u = mt;
       p.lean += key(u, [[0, 0], [0.45, -0.05], [0.9, -0.07], [1.06, 0.05], [1.2, 0.035], [1.9, 0.03], [2.45, 0], [BLAST, 0]]);
       p.knee += key(u, [[0, 0], [0.9, -0.6], [1.06, 1.2], [1.9, 0.8], [2.45, 0], [BLAST, 0]]);
-      p.head += key(u, [[0, 0], [0.35, -0.15], [0.85, -0.2], [1.05, 0.12], [1.15, 0.14], [1.9, 0.12], [2.4, 0], [BLAST, 0]]) + (u > 1.05 && u < 1.95 ? 0.012 * Math.sin(u * 70) : 0);
+      p.head += key(u, [[0, 0], [0.35, -0.15], [0.85, -0.2], [1.0, 0], [2.4, 0], [BLAST, 0]]) + (u > 1.05 && u < 1.95 ? 0.01 * Math.sin(u * 70) : 0);
       p.arm += key(u, [[0, 0], [0.9, -1.6], [1.06, 1.4], [1.9, 1.2], [2.45, 0], [BLAST, 0]]);
       p.jaw += key(u, [[0, 0], [0.8, 0.06], [1.0, 0.42], [1.9, 0.42], [2.3, 0.03], [BLAST, 0]]);
       p.bodyX = key(u, [[0, 0], [0.85, 10], [1.1, -8], [1.9, -4], [2.5, 0], [BLAST, 0]]);
@@ -53,7 +53,7 @@
     /* jaw: lower jaw below the hinge line */
     var wj = sm(236, 258, y) * (1 - sm(195, 240, x)) * (1 - sm(350, 380, y)); if (wj > 0) { var qj = rot(X, Y, P.hinge[0], P.hinge[1], -p.jaw * wj); X = qj[0]; Y = qj[1]; }
     /* head + neck: rotate about the neck */
-    var wh = (1 - sm(230, 380, x)) * (1 - sm(380, 470, y)); if (wh > 0) { var qh = rot(X, Y, P.neck[0], P.neck[1], -(p.head + (p.aimHead || 0) * (p.mouth || 0)) * wh); X = qh[0]; Y = qh[1]; }
+    var wh = (1 - sm(230, 380, x)) * (1 - sm(380, 470, y)); if (wh > 0) { var qh = rot(X, Y, P.neck[0], P.neck[1], -(p.head + (p.aimHead || 0)) * wh); X = qh[0]; Y = qh[1]; }
     /* whole body leans from the hips; the legs bend (knees) so the feet stay put */
     var wl = 1 - sm(640, 800, y); if (wl > 0 && x < 1500) { var ql = rot(X, Y, P.hip[0], P.hip[1], -(p.lean || 0) * wl); X = ql[0]; Y = ql[1]; }
     var wk = sm(560, 700, y) * (1 - sm(760, 860, y)); Y += 7 * (p.knee || 0) * wk; Y += 7 * (p.knee || 0) * (1 - sm(560, 700, y)) * still;
@@ -84,6 +84,11 @@
   }
   function glowAt(ctx, x, y, r, col, a) { var g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, "rgba(" + col + "," + a + ")"); g.addColorStop(1, "rgba(" + col + ",0)"); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); }
   window.KAIJU = { BLAST: BLAST, STOMP: STOMP, W: W, H: H, pose: pose, P: P,
+    mapPoint: function (sx, sy, p, x, feetY, scale) { var w = warp(sx, sy, p); return [x + w[0] * scale, feetY - 940 * scale + w[1] * scale]; },
+    aim: function (p, x, feetY, scale, tgt, amount) { /* head angle so the mouth axis points at tgt (2 passes); amount 0..1 eases it in and out */
+      p.aimHead = 0; for (var it = 0; it < 3; it++) { var m = this.mapPoint(P.mouth[0], P.mouth[1], p, x, feetY, scale), b = this.mapPoint(P.mouthBack[0], P.mouthBack[1], p, x, feetY, scale);
+        var a0 = Math.atan2(m[1] - b[1], m[0] - b[0]), a1 = Math.atan2(tgt.y - m[1], tgt.x - m[0]), r = a1 - a0; while (r > Math.PI) r -= 2 * Math.PI; while (r < -Math.PI) r += 2 * Math.PI; p.aimHead += -r; }
+      p.aimHead *= amount; },
     draw: function (ctx, imgs, x, feetY, scale, p, beamToX) { /* x = left edge of the picture, feetY = the floor line */
       var sh = p.shake ? p.shake * 7 * Math.sin(performance.now() / 18) : 0;
       var T = { x: x + sh * 0.4, y: feetY - 940 * scale + sh, s: scale };
@@ -98,7 +103,7 @@
       ctx.save(); ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 1; var c = map(P.core[0], P.core[1]); glowAt(ctx, c[0], c[1], 90 * scale, "200,80,255", Math.min(1, p.core) * 0.9);
       if (p.mouth > 0) { var m = map(P.mouth[0], P.mouth[1] + 8); glowAt(ctx, m[0], m[1], (40 + 50 * p.mouth) * scale, "230,140,255", p.mouth); glowAt(ctx, m[0], m[1], 22 * scale * p.mouth, "255,255,255", p.mouth); }
-      if (p.beam > 0) { var m2 = map(P.mouth[0] - 10, P.mouth[1] + 10), tg = beamToX && beamToX.x != null ? beamToX : { x: beamToX || 0, y: m2[1] }, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
+      if (p.beam > 0) { var m2 = map(P.mouth[0], P.mouth[1]), tg = beamToX && beamToX.x != null ? beamToX : { x: beamToX || 0, y: m2[1] }, th = (58 + 8 * Math.sin(performance.now() / 40)) * scale * p.beam;
         var dx = tg.x - m2[0], dy = tg.y - m2[1], L = Math.hypot(dx, dy), an = Math.atan2(dy, dx);
         ctx.save(); ctx.translate(m2[0], m2[1]); ctx.rotate(an);
         var gr = ctx.createLinearGradient(0, -th, 0, th); gr.addColorStop(0, "rgba(180,60,255,0)"); gr.addColorStop(0.3, "rgba(200,90,255,0.75)"); gr.addColorStop(0.5, "rgba(255,240,255,1)"); gr.addColorStop(0.7, "rgba(200,90,255,0.75)"); gr.addColorStop(1, "rgba(180,60,255,0)");
