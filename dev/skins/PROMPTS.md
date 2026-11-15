@@ -6,7 +6,7 @@ Swap the subject words ("mech on its round platform", "weapon, shield") for what
 ALSO swap the colour line: the one below is for the white/red/blue mech. For any other skin, say "keep the <skin>'s own <colours>, richer and warmer, with brass/gold instead of dull bronze; no flat dull colours" (olive mech, 11 Nov), and in the clean prompt replace "slightly brighter warm-white armour" with the skin's own colour.
 Harley picks per skin (11 Nov: "case by case... comes down to the skin design"): always show the source as-is AND both restyles on the map, side by side.
 
-## Base prompt 1 (Harley, 11 Nov: "record this as base prompt 1")
+## Base prompt 1 = "STYLE 1" (Harley, 11 Nov: "record this as base prompt 1"; 15 Nov: he calls it style 1 - the weathered look)
 Gives a weathered, battle-worn look (worn painted metal, chips, dirt). With one picture it leans quite hard into the wear.
 
 ```
@@ -23,7 +23,7 @@ Repaint my mech in EXACTLY the art style of images 2 and 3, so it looks like it 
 ```
 (For a 2D painting, write "(a 2D painting)" instead of "(a 3D render)".)
 
-## Clean prompt (follow-up in the same chat, after base prompt 1)
+## Clean prompt = "STYLE 2" (follow-up in the same chat, after base prompt 1; 15 Nov: Harley calls it style 2 - polished, light wear)
 ```
 Good direction. Now make a second version that is CLEANER and more heroic, closer to image 2 (the blue and gold mech skin): polished painted armour with only light edge wear (no rust, no dirt streaks), crisp bevelled panel edges catching the light, glossy highlights, a stronger gold trim, slightly brighter warm-white armour (still not pure white), the same deep navy/teal shadows and teal glow. Same design, pose, weapon, shield, platform and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
 ```
