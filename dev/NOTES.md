@@ -5229,3 +5229,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Server buyHeroShop: takes the gems from the wallet (ledger "hero_shop"), checks the stock (wallet.hs), returns the items; the game adds them only after the server says yes. Local (no-Firebase) game: same, against the save.
 - Admin > Live events > "Hero Shop": rows of item, amount, gem price, weekly stock.
 - Tests: unit tests 30 pass (stock, refill, not enough gems, no gems for sale, featured shards); dev/tests/heroshop_game_test.js headless (buy Kessa twice -> 2 shards, wallet 1,000 -> 800, "Remaining: 18", no errors); admin round trip.
+
+## v1637 — Season Pass premium worth buying
+- Premium track gems raised from 50 to 200 a level (6,000 a season) on top of the 60 season-hero shards, speedups and chests (LIVE_GEMS_PATCH spPrem, same in the server, game and admin). The premium box now says what it's worth ("6,000 gems, 60 Halo-7 shards, speedups, equipment and weapon chests") and "In the shop soon" instead of "Payments aren't connected yet".
+- Buying it: a shop pack with "Also gives: Season Pass premium" (v1635) sets wallet.spPrem = this season; the game now unlocks the premium track from that (and the server pays premium rewards from it on LIVE).
+- Only a Season Pass that isn't saved in the admin page gets the new numbers ("Load the starting numbers" brings them in).
+- Tests: unit tests 30 pass; headless Season Pass tab shows the new premium text, no errors.

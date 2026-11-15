@@ -324,7 +324,7 @@ t("v1625 event rewards on the server: gems allowed in rewards, never in shops; i
   assert.throws(() => C.evClaimPlan(lo, "np", 0, "t:x", ctx(day + 20)), /not running/);
   const sp = C.normalizeLiveops({}), sd = sp.sp.start + 3, sk = 0;
   assert.ok(C.evClaimPlan(sp, "sp", sk, "1:free", { now: sd * 86400000 })); assert.throws(() => C.evClaimPlan(sp, "sp", sk, "1:prem", { now: sd * 86400000, prem: () => false }), /premium/);
-  assert.deepStrictEqual(C.evClaimPlan(sp, "sp", sk, "1:prem", { now: sd * 86400000, prem: (k) => k === 0 }).items, { shards_halo7: 2, gems: 50 });
+  assert.deepStrictEqual(C.evClaimPlan(sp, "sp", sk, "1:prem", { now: sd * 86400000, prem: (k) => k === 0 }).items, { shards_halo7: 2, gems: 200 });
   const lw = C.normalizeLiveops({ wk: { heroes: ["kessa"], shards: 15 } }); assert.deepStrictEqual(C.evClaimPlan(lw, "wk", wk(sd), "kessa", { now: sd * 86400000 }).items, { shards_kessa: 15 });
   assert.throws(() => C.evClaimPlan(lw, "wk", wk(sd), "roran", { now: sd * 86400000 }), /no such reward/, "only a hero on the list");
   const r1 = C.decideEvClaim(null, p, "t:a", M, null, now); assert.strictEqual(r1.dup, false); assert.strictEqual(r1.gems, 100); assert.deepStrictEqual(r1.save, {}, "food is phone-paid");
@@ -345,7 +345,7 @@ t("v1629 gems in the starting event rewards: same patch in the game and the admi
   const pat = (src) => JSON.parse(src.match(/var LIVE_GEMS_PATCH = (\{.*\});/)[1]);
   assert.deepStrictEqual(pat(html), C.LIVE_GEMS_PATCH, "game patch = server patch"); assert.deepStrictEqual(pat(adm), C.LIVE_GEMS_PATCH, "admin patch = server patch");
   const L = C.normalizeLiveops({}); assert.strictEqual(L.cs.fin.gems, 600); assert.ok(L.cs.tasks.every((t) => t.items.gems === 50)); assert.strictEqual(L.np.chests.reduce((a, c) => a + (c.items.gems || 0), 0), 3200);
-  assert.strictEqual(L.sp.levels.reduce((a, l) => a + (l.free.gems || 0), 0), 300); assert.strictEqual(L.sp.levels.reduce((a, l) => a + (l.prem.gems || 0), 0), 1500);
+  assert.strictEqual(L.sp.levels.reduce((a, l) => a + (l.free.gems || 0), 0), 300); assert.strictEqual(L.sp.levels.reduce((a, l) => a + (l.prem.gems || 0), 0), 6000);
   assert.ok(L.sg.personal.every((t) => t.items.gems > 0) && L.sg.alliance.every((t) => t.items.gems > 0)); assert.strictEqual(L.arena.rankW[0].items.gems, 1000);
   ["arena", "ff", "br"].forEach((k) => assert.ok(L[k].ms.every((m) => m.items.gems > 0), k));
 });
