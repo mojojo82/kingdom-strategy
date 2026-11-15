@@ -1499,7 +1499,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .hc-sk.off { opacity:.45; filter:grayscale(1); } /* v1575: a skill that is switched off (shown, does nothing) */
   .hc-sk .sq { position:absolute; left:12px; top:18px; width:96px; height:96px; border:3px solid #e9b54c; border-radius:18px; display:grid; place-items:center; font-size:50px; background:#1a1204; box-shadow:0 0 12px #e9b54c55; }
   .hc-sk .nm { font-size:44px; font-weight:700; color:#f6e1b8; display:flex; align-items:center; gap:14px; }
-  .hc-sk .tg { font-size:21px; font-weight:800; letter-spacing:1.5px; padding:4px 12px; border-radius:8px; border:2px solid #b7821a; color:#e9b54c; }
+  .hc-sk .tg { white-space:nowrap; font-size:21px; font-weight:800; letter-spacing:1.5px; padding:4px 12px; border-radius:8px; border:2px solid #b7821a; color:#e9b54c; }
   .hc-sk .tg.on { background:#e9b54c; color:#1a1204; border-color:#e9b54c; }
   .hc-sk .cost { margin-left:auto; font-size:30px; font-weight:700; color:#f2d497; display:flex; align-items:center; gap:8px; }
   .hc-sk .cost.short { color:#c98f6a; }
@@ -6363,8 +6363,8 @@ function heroStarCost(arm) { return STAR_FRAGMENT_COST_BASE + STAR_FRAGMENT_COST
    t("English text") returns the current language's version (falls back to the English). Language saved per device
    (kingdom_lang_v1), picked in Options. Russian letters come from a small Cyrillic-only font (Inter Display Black subset, OFL,
    fonts/InterDisplay-Black-cyrillic.woff) registered as part of "Lilita One" (unicode-range), so Lilita text just works. */
-var KS_LANGS = [["en", "English"], ["ru", "Русский"], ["es", "Español"]]; /* v1643: Spanish (heroes screen + Sera's skills so far) */
-var KS_LANG = "en"; try { var _l = localStorage.getItem("kingdom_lang_v1"); if (_l === "ru" || _l === "es") KS_LANG = _l; } catch (e) {}
+var KS_LANGS = [["en", "English"], ["ru", "Русский"], ["es", "Español"], ["ja", "日本語"]]; /* v1643: Spanish (heroes screen + Sera's skills so far) */
+var KS_LANG = "en"; try { var _l = localStorage.getItem("kingdom_lang_v1"); if (_l === "ru" || _l === "es" || _l === "ja") KS_LANG = _l; } catch (e) {}
 var I18N = { ru: {
   "Heroes": "Герои", "Recruit": "Нанять", "Lv. ": "Ур. ", "Lv.": "Ур.", "Lv": "Ур", "MAX": "МАКС",
   "Epic": "Эпический", "Legendary": "Легендарный", "Rare": "Редкий",
@@ -6375,7 +6375,7 @@ var I18N = { ru: {
   "💎 VIP pack only": "💎 Только в VIP-наборе", "🔒 Requires Hall of Heroes": "🔒 Нужен Зал героев",
   "Helmet": "Шлем", "Armour": "Броня", "Weapon": "Оружие", "Gloves": "Перчатки", "Belt": "Пояс", "Boots": "Сапоги",
   "🔒 Gear is coming in a future update.": "🔒 Снаряжение появится в будущем обновлении.",
-  "Language": "Язык"
+  "Language": "Язык", "Power": "Сила", "Conquest": "Завоевание", "City": "Город", "World": "Мир", "More": "Ещё"
 }, es: {
   "Heroes": "Héroes", "Recruit": "Reclutar", "Lv. ": "Nv. ", "Lv.": "Nv.", "Lv": "Nv", "MAX": "MÁX",
   "Epic": "Épico", "Legendary": "Legendario", "Rare": "Raro",
@@ -6386,11 +6386,28 @@ var I18N = { ru: {
   "💎 VIP pack only": "💎 Solo en el pack VIP", "🔒 Requires Hall of Heroes": "🔒 Requiere el Salón de Héroes",
   "Helmet": "Casco", "Armour": "Armadura", "Weapon": "Arma", "Gloves": "Guantes", "Belt": "Cinturón", "Boots": "Botas",
   "🔒 Gear is coming in a future update.": "🔒 El equipo llegará en una futura actualización.",
-  "Language": "Idioma", "Heals ": "Cura ", "Guard shield ": "Escudo de guardia ", "% max HP / ": "% de PV máx. / ", " · at hero Lv 1": " · con el héroe en Nv. 1"
+  "Language": "Idioma", "Heals ": "Cura ", "Guard shield ": "Escudo de guardia ", "% max HP / ": "% de PV máx. / ", " · at hero Lv 1": " · con el héroe en Nv. 1",
+  " burst dmg / ": " de daño de ráfaga / ", "% of basic attack)": "% del ataque básico)", "Power": "Poder", "Conquest": "Conquista", "City": "Ciudad", "World": "Mundo", "More": "Más"
+}, ja: { /* v1644: Japanese (heroes screen + Skills tab; Sera's and Vesper's skills so far). CJK letters use the phone's own font. */
+  "Heroes": "ヒーロー", "Recruit": "雇用", "Lv. ": "Lv. ", "Lv.": "Lv.", "Lv": "Lv", "MAX": "MAX",
+  "Epic": "エピック", "Legendary": "レジェンド", "Rare": "レア",
+  "Stats": "ステータス", "Skills": "スキル", "Gear": "装備",
+  "HP": "HP", "ATK": "攻撃", "DEFENSE": "防御", "ACTIVE": "アクティブ", "PASSIVE": "パッシブ", "LIMIT": "リミット", "DISABLED": "無効", "s": "秒", "Max": "最大",
+  "Level Up": "レベルアップ", "Star Up": "星アップ", "Equip in Conquest": "征服に編成", "Unequip from Conquest": "征服から外す",
+  "Conquest Roster Full (5/5)": "征服の編成がいっぱい (5/5)", "Recruit — ": "雇用 — ", "🔒 Coming soon": "🔒 近日公開", "🔒 Needs 1 fragment": "🔒 欠片が1つ必要",
+  "💎 VIP pack only": "💎 VIPパック限定", "🔒 Requires Hall of Heroes": "🔒 英雄の殿堂が必要",
+  "Helmet": "兜", "Armour": "鎧", "Weapon": "武器", "Gloves": "籠手", "Belt": "ベルト", "Boots": "ブーツ",
+  "🔒 Gear is coming in a future update.": "🔒 装備は今後のアップデートで追加されます。",
+  "Language": "言語", "Heals ": "回復 ", "Guard shield ": "ガードシールド ", "% max HP / ": "%（最大HP） / ", " · at hero Lv 1": " · ヒーローLv1時",
+  " burst dmg / ": " バーストダメージ / ", "% of basic attack)": "%：通常攻撃比)", "Power": "戦力", "Conquest": "征服", "City": "都市", "World": "ワールド", "More": "その他"
 } };
 /* v1643: per-skill text (name, description) by hero / group / index, for the Skills tab. Missing = the English text. */
 var I18N_SKILL = { es: {
+  vesper: { conquest: [["Parche Orbital", "Cada 12 s programa un ataque desde el cielo: rayos de luz caen uno tras otro por todo el lado enemigo y golpean a cada enemigo cuando un rayo lo alcanza, fortaleza incluida. El Muro de Proyección protege de él a los héroes a distancia."], ["Código Limpio", "Más daño en cada batalla."]] },
   sera: { conquest: [["Luz Sanadora", "Cada 12 s cura a la fortaleza un 8% de sus PV máx. (16% en Nv. 5)."], ["Arenga", "Luz Sanadora reduce en 0,2 s por nivel el temporizador de habilidad de los demás héroes."], ["Guardia de Sobrecuración", "La curación sobrante se convierte en escudo: hasta un 4% de PV máx. por nivel."]] }
+}, ja: {
+  vesper: { conquest: [["オービタル・パッチ", "12秒ごとに空へ攻撃をプログラムする。光の光線が敵陣全体に次々と降り注ぎ、光線が届いた敵すべてに命中する（要塞を含む）。プロジェクション・ウォールは遠距離ヒーローをこれから守る。"], ["クリーンコード", "すべての戦闘でダメージが増加。"]] },
+  sera: { conquest: [["癒しの光", "12秒ごとに要塞の最大HPの8%を回復する（Lv5で16%）。"], ["鼓舞", "癒しの光が他のヒーロー全員のスキルタイマーをレベルごとに0.2秒短縮する。"], ["過剰回復の守り", "過剰な回復がシールドになる：レベルごとに最大HPの4%まで。"]] }
 } };
 function tSkill(key, group, idx, i, en) { var d = I18N_SKILL[KS_LANG], r = d && d[key] && d[key][group] && d[key][group][idx]; return (r && r[i]) || en; }
 var I18N_HERO = { ru: {
@@ -6405,13 +6422,17 @@ var I18N_HERO = { ru: {
   torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 8 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
   ironlily: ["Железная Лили", "Багровая буря", "Каждые 12 с — яростный вихрь ударов меча: тяжёлый урон всему, до чего достаёт её меч в радиусе ударов — враги, бойцы ближнего боя, крепости и боссы (120%, 400% на ур. 5)."],
-  vesper: ["Веспер Квилл", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
+  vesper: ["Веспер", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
   aurek: ["Аурек Солмейн", "Удар солнечной кузни", "Каждые 12 с вонзает меч в землю: столбы священного огня бегут по земле в обе стороны и бьют всех врагов, включая крепость. Проекционная стена защищает от них стрелков."],
   seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
   halo7: ["Хейло-7", "Луч ядра", "Каждые 13 с выпускает из ядра в груди огромный луч через всё поле: бьёт каждого врага, до которого дотянется, включая крепость (героя в прыжке луч не задевает). Проекционная стена защищает от него стрелков."],
   caelum: ["Кейлум Векс", "Удар Разлома", "Каждые 15 с взмывает в небо, зависает и обрушивается молотом на ОДНОГО врага с огромным уроном — сначала герои (у кого больше всего здоровья), крепость — только если героев не осталось. Физический удар: Проекционная стена его не останавливает. Остаётся там, где приземлился; пока он в воздухе, наземные атаки его не достают."]
 }, es: {
-  sera: ["Sera", "Luz Sanadora", "Cada 12 s cura a la fortaleza un 8% de sus PV máx. (16% en Nv. 5)."]
+  sera: ["Sera", "Luz Sanadora", "Cada 12 s cura a la fortaleza un 8% de sus PV máx. (16% en Nv. 5)."],
+  vesper: ["Vesper", "Parche Orbital", "Cada 12 s programa un ataque desde el cielo: rayos de luz caen uno tras otro por todo el lado enemigo y golpean a cada enemigo cuando un rayo lo alcanza, fortaleza incluida."]
+}, ja: {
+  sera: ["セラ", "癒しの光", "12秒ごとに要塞の最大HPの8%を回復する（Lv5で16%）。"],
+  vesper: ["ヴェスパー", "オービタル・パッチ", "12秒ごとに空へ攻撃をプログラムする。光の光線が敵陣全体に次々と降り注ぎ、光線が届いた敵すべてに命中する（要塞を含む）。"]
 } };
 function t(en) { var d = I18N[KS_LANG]; return (d && d[en] != null) ? d[en] : en; }
 /* v1408: shrink a text element's font until its content fits its own box (any language). room = width available (default: its own box). */
@@ -6436,11 +6457,12 @@ function ksFitHeroList() {
 }
 function tHero(key, i, en) { var d = I18N_HERO[KS_LANG]; return (d && d[key] && d[key][i]) || en; } /* i: 0 name, 1 main skill name, 2 main skill text */
 function setLang(code) {
-  KS_LANG = (code === "ru" || code === "es") ? code : "en"; try { localStorage.setItem("kingdom_lang_v1", KS_LANG); } catch (e) {}
+  KS_LANG = (code === "ru" || code === "es" || code === "ja") ? code : "en"; try { localStorage.setItem("kingdom_lang_v1", KS_LANG); } catch (e) {}
   document.documentElement.lang = KS_LANG;
   try { var el = document.getElementById("heroesList"); if (el) el._sig = ""; renderHeroes(); } catch (e) {}
   try { var tb = document.querySelector("#heroTitleBar .htb-t"); if (tb) tb.textContent = t("Heroes"); } catch (e) {}
   try { if (heroDetailKey) renderHeroDetail(); } catch (e) {}
+  try { renderBottomNav(); } catch (e) {} /* v1644: nav labels + Power label */
 }
 (function () { /* Cyrillic part of the "Lilita One" family */
   var base = /\/test\/[^\/]*$/.test(location.pathname) ? "../fonts/" : "fonts/", st = document.createElement("style");
@@ -6614,7 +6636,7 @@ var HERO_DEFS = {
   // v1385 (Harley: "start setting up icons for them in the hero index along with all their skills and stats"): 5 new heroes from Claude's
   // list, placeholders like Iron Lily (comingSoon + vipOnly: shown in the hero list with their skills, can't be recruited/equipped, never on
   // bots / Arena). Skills are text only until each one is built and balance-checked. No art yet (emoji icon) - mockup first. No new stats.
-  vesper: { name: "Vesper Quill", title: "The Codeweaver", class: "archer", icon: "📘", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.4, /* v1508: built - hit-everything hero (orbital beams), rides the fortress, kept well below Kessa */
+  vesper: { name: "Vesper", /* v1644 (Harley): no last name any more (was Vesper Quill) */ title: "The Codeweaver", class: "archer", icon: "📘", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.4, /* v1508: built - hit-everything hero (orbital beams), rides the fortress, kept well below Kessa */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       { name: "Orbital Patch", icon: "🛰️⚡", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.5 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, codes a strike into the sky: beams of light drop one after another across the whole enemy side, each enemy hit as a beam reaches it, fortress included. Projection Wall shields ranged heroes from it." },
@@ -14027,7 +14049,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1643"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1644"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -33948,8 +33970,8 @@ function skillValueText(skill, level, heroKey, group, idx) {
     if (ov != null) burst = ov;
     else if (skill.pctByLevel) burst = skillDamageBaseFor(heroKey, game.state.heroes[heroKey], game.idleAttackerDamage(heroKey)) * (skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0);
     else burst = (skill.burstBase || 0) + (skill.burstPerLevel || 0) * level; // legacy fallback for any skill not yet converted to pctByLevel
-    var pctLabel = skill.pctByLevel && ov == null ? " (" + Math.round((skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0) * 1000) / 10 + "% of basic attack)" : "";
-    return Math.round(burst) + " burst dmg / " + skill.cooldown + "s" + pctLabel + (ov != null ? " (custom)" : "");
+    var pctLabel = skill.pctByLevel && ov == null ? " (" + Math.round((skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0) * 1000) / 10 + t("% of basic attack)") : "";
+    return Math.round(burst) + t(" burst dmg / ") + skill.cooldown + t("s") + pctLabel + (ov != null ? " (custom)" : "");
   }
   var frac = ov != null ? ov : level * skill.perLevel;
   return "+" + Math.round(frac * 1000) / 10 + "%" + (ov != null ? " (custom)" : "");
@@ -34529,9 +34551,10 @@ var NAV_ICON = {conquest:"data:image/webp;base64,UklGRqYXAABXRUJQVlA4WAoAAAAQAAA
 function renderBottomNav() {
   var nav = document.getElementById("bottomNav");
   nav.innerHTML = "";
+  document.querySelectorAll(".power-label").forEach(function (el) { el.textContent = t("Power"); }); /* v1644: the top bar's Power label follows the language */
   [{ k: "conquest", ic: "⚔️", l: "Conquest" }, { k: "heroes", ic: "🦸", l: "Heroes" }, { k: "city", ic: "🏰", l: "City" }, { k: "world", ic: "🗺️", l: "World" }, { k: "more", ic: "☰", l: "More" }].forEach(function (n) {
     var d = document.createElement("div"); d.className = "bn" + (appScreen === n.k ? " active" : "");
-    d.innerHTML = '<span class="ic"><img alt="" src="' + NAV_ICON[n.k] + '"></span>' + n.l;
+    d.innerHTML = '<span class="ic"><img alt="" src="' + NAV_ICON[n.k] + '"></span>' + t(n.l); /* v1644: translated */
     d.onclick = function () { setScreen(n.k, n.k === "more" ? "menu" : undefined); };
     nav.appendChild(d);
   });

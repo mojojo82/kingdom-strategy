@@ -5267,3 +5267,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley needed a screenshot of Sera's skills in Spanish, made with the game's own language switch. Options > Language now has Español (saved per device like Russian).
 - Spanish covers everything the Russian proof of concept covers (heroes list + hero card: tabs, buttons, rarity, HP/ATK/DEF, gear slots) plus the Skills tab: ACTIVE/PASSIVE/LIMIT/DISABLED tags, "Lv", "Max", the heal/shield value line, and per-skill names + descriptions through a new `I18N_SKILL` table (`tSkill(key, group, idx, 0|1, en)`). Only Sera's skills have Spanish text so far; other heroes fall back to English.
 - Screenshot (headless, 430x932 at 3x): art/originals/screens/sera_skills_es_v1643.png.
+
+## v1644 — Vesper (no last name) + Japanese
+- Vesper Quill is now just "Vesper" everywhere (hero name, Russian name, server item "Vesper shards").
+- New language: 日本語 (Japanese) in Options > Language, same coverage as Spanish (heroes screen + Skills tab). Sera's and Vesper's skills are translated in Spanish and Japanese; other heroes' skills fall back to English. Japanese letters use the phone's own font.
+- The bottom menu (Conquest / Heroes / City / World / More) and the top bar's Power label now follow the language too (en / ru / es / ja). Skill tags (ACTIVE...) no longer wrap onto two lines.
+- Screenshots for Harley (headless, 430x932 at 3x, Vesper Lv 42, 2 stars, her switched-off Clean Code hidden for the shot): art/originals/screens/vesper_skills_es_v1644.png, vesper_skills_ja_v1644.png.
