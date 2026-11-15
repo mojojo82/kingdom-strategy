@@ -20,21 +20,22 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.evaluate(() => { const st = game.state; ["caelum", "kessa", "lyra"].forEach((k) => { st.heroes[k].owned = true; st.heroes[k].level = 40; st.heroes[k].skillLevels = { conquest: [3, 5, 3], expedition: [1, 1, 1] }; }); st.conquestRoster = ["caelum", "kessa", "lyra"]; document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove()); setScreen("more", "arena"); });
   await P.waitForTimeout(3000);
   if (process.env.SKIPR) await P.evaluate(() => { ARENA_MELEE_BASIC_SKIPS_RANGED = true; });
+  await P.evaluate((ex) => { window.__EXCL = ex; }, process.env.EXCL || "hanzo"); if (process.env.OLDARENA) await P.evaluate(() => { ARENA_BASIC_MULT_ON = false; });
   if (process.env.MULT) await P.evaluate((m) => { ARENA_MELEE_ATK_MULT = m; }, +process.env.MULT);
   const r = await P.evaluate(() => {
-    const H = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && k !== "hanzo"), hs = {};
+    const EX = (window.__EXCL || "hanzo").split(","), H = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && EX.indexOf(k) < 0), hs = {};
     H.forEach((k) => { hs[k] = { owned: true, level: 80, stars: 25, skillLevels: { conquest: [5, 5, 5], expedition: [5, 5, 5] } }; });
     const probe = arenaSideStats(H, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS), inf = {}; (probe.heroHp || []).forEach((e) => { inf[e.id] = !!e.infantry; });
     const M = H.filter((k) => inf[k]), R = H.filter((k) => !inf[k]);
     const combos = (a, n) => { const o = []; const rec = (s, c) => { if (c.length === n) { o.push(c.slice()); return; } for (let i = s; i < a.length; i++) { c.push(a[i]); rec(i + 1, c); c.pop(); } }; rec(0, []); return o; };
     const mk = (ros, isP) => { const st = arenaSideStats(ros, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, ros.indexOf(e.id), isP); }); return st; };
-    const MT = combos(M, 5), RT = combos(R, 5), sc = { ranged: 0, melee: 0, draw: 0 }, mw = {}, rw = {};
+    const MT = combos(M, 5), RT = combos(R, 5), sc = { ranged: 0, melee: 0, draw: 0 }, mw = {}, rw = {}, mvr = {};
     MT.forEach((m) => RT.forEach((rr) => { for (let side = 0; side < 2; side++) for (let s = 0; s < 3; s++) { const sd = m.join() + rr.join() + side + s, rP = side === 0;
       const sim = arenaMakeSim(mk(rP ? rr : m, true), mk(rP ? m : rr, false), { rng: worldPvpSeededRng(sd), critSeed: sd }); const w = sim.runToEnd();
       const rWin = (w === "player" && rP) || (w === "ai" && !rP), mWin = (w === "player" && !rP) || (w === "ai" && rP); if (rWin) sc.ranged++; else if (mWin) sc.melee++; else sc.draw++;
-      const mk1 = m.join("+"), rk = rr.join("+"); mw[mk1] = mw[mk1] || [0, 0]; rw[rk] = rw[rk] || [0, 0]; mw[mk1][1]++; rw[rk][1]++; if (mWin) mw[mk1][0]++; if (rWin) rw[rk][0]++; } }));
+      const mk1 = m.join("+"), rk = rr.join("+"); mw[mk1] = mw[mk1] || [0, 0]; rw[rk] = rw[rk] || [0, 0]; mw[mk1][1]++; rw[rk][1]++; if (mWin) mw[mk1][0]++; if (rWin) rw[rk][0]++; mvr[rk] = mvr[rk] || [0, 0]; mvr[rk][1]++; if (mWin) mvr[rk][0]++; } }));
     const tot = sc.ranged + sc.melee + sc.draw, pct = (o) => Object.entries(o).map(([k, v]) => [k, Math.round(100 * v[0] / v[1])]).sort((a, b) => b[1] - a[1]);
-    return { melee: M, ranged: R, fights: tot, rangedWin: Math.round(100 * sc.ranged / tot), meleeWin: Math.round(100 * sc.melee / tot), draws: sc.draw, meleeTeams: pct(mw), rangedTop: pct(rw).slice(0, 5), rangedBottom: pct(rw).slice(-3) };
+    return { melee: M, ranged: R, fights: tot, rangedWin: Math.round(100 * sc.ranged / tot), meleeWin: Math.round(100 * sc.melee / tot), draws: sc.draw, meleeTeams: pct(mw), rangedTop: pct(rw).slice(0, 5), rangedBottom: pct(rw).slice(-3), bestRanged: pct(rw)[0][0], meleeVsBestRanged: Math.round(100 * mvr[pct(rw)[0][0]][0] / mvr[pct(rw)[0][0]][1]), meleeVsTop5Ranged: pct(rw).slice(0, 5).map(([k]) => [k, Math.round(100 * mvr[k][0] / mvr[k][1])]) };
   });
   console.log(JSON.stringify(r, null, 1));
   await b.close();

@@ -5249,3 +5249,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1640 — two bug fixes (Harley's screenshots)
 - Troop promotion took 0 s from T6 to T7 (and T7 -> T8, T9 -> T10): the time was only the difference in base training time, and those tiers share the same time in the table (60 s / 120 s). Promotion now takes at least 30% of the new tier's training time per troop (PROMOTE_MIN_TIME_SHARE), still sped up by the building level and training bonuses. Tiers with a real difference are unchanged when the difference is bigger. Measured: 1,405 Casters T6 -> T8 at Lv 25 = 2h 47m (was 0 s for T6 -> T7).
 - Arena: support-skill heroes (Torvald's Guard Stance, Sera's heal) showed no skill timer on their portrait - only damage skills were passed to the timer bar. The fight now reports the support cooldowns too and the bar counts them down like the others (headless: Torvald 4.1s -> resets to ~7.8s every 8s).
+
+## v1641 — Roran's Arena hit now matches his card
+- Roran's normal attack in Arena was 640 (basicMult x1.54 applied on top) while his card and Conquest show 416. Arena now applies basicMult the same way as Conquest, so his Arena hit = card number. Switch: `ARENA_BASIC_MULT_ON` (false = old Arena numbers, for tests).
+- Numbers (Hanzo and Lily excluded from all tests, Lv80):
+  - Roran 1v1 duels: 92% -> 42% win (1st -> 9th of 14).
+  - Average 5-hero melee vs average 5-hero ranged team: melee 69% -> 77%.
+  - Melee teams vs the best ranged team (Lyra+Roran+Kessa+Juno+Pip): melee 25% -> 33%.
+- Balance scripts: `EXCL=hanzo,ironlily` and `OLDARENA=1` options; ranged_vs_melee.js also reports melee vs the best ranged team. Results in dev/balance/results/*v1641*.
