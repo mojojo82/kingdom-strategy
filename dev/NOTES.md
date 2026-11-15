@@ -5294,3 +5294,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1649 — what-if switch: ranged may hit deck heroes once the ground is clear (OFF)
 - `ARENA_RANGED_DECK_AFTER_FRONT` (off): once every enemy ground hero is down, ranged shots (still the 50% share) go at the enemy deck heroes, front seat first; Projection Wall blocks them. Game unchanged while off. Test scripts: DECK=1 for ranged_vs_melee.js / hero_rank_solo.js, new arena_composition.js (win % by number of ranged heroes in a random team).
+
+## v1650 — ranged heroes can hit deck heroes once the ground is clear (ON)
+- Harley ("sounds good"): ARENA_RANGED_DECK_AFTER_FRONT is now on. Arena / World PvP: once every enemy ground (Infantry) hero is down, ranged shots (the 50% hero share) go at the enemy deck heroes, front seat first; Projection Wall blocks them. Before, deck heroes were never targets (10 Nov rule).
+- Numbers (Lv80, Hanzo + Lily out): random mixed teams barely change (1-4 ranged: 40 / 51 / 49 / 54% win); all-ranged teams 55% -> 42% (no front line = exposed from the start); 1v1 duels Pip 78 -> 86, Kessa 87 -> 81, Lyra 81 -> 79, rest same; all-melee vs all-ranged unchanged (65 / 35) - no deck heroes on the melee side. Meta check: same top builds, known warning.
+- Headless Arena with an all-ranged team: no errors.
