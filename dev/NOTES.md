@@ -5262,3 +5262,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Fortress cannon super bursts (the 20% "crit" bursts on Fortress 1) now fire bigger, longer white-gold slugs with a hot flickering halo instead of the slim orange streak. Mecha skin: a bigger, brighter energy ball with a white core. Conquest and Arena (both sides). Visual only.
 - Code: sim info gains `firePMult` / `fireAMult` (crit mult of the bullets fired this tick); projectiles carry `sup`; `drawCannonSuper`, `CANNON_SUPER_K` (size), `drawMechaEnergyBall(..., sup)`.
 - Test: headless Arena with forced player crits - super and normal bullets on screen together, no errors (scale 3 captures).
+
+## v1643 — Spanish language (heroes screen + Sera's skills)
+- Harley needed a screenshot of Sera's skills in Spanish, made with the game's own language switch. Options > Language now has Español (saved per device like Russian).
+- Spanish covers everything the Russian proof of concept covers (heroes list + hero card: tabs, buttons, rarity, HP/ATK/DEF, gear slots) plus the Skills tab: ACTIVE/PASSIVE/LIMIT/DISABLED tags, "Lv", "Max", the heal/shield value line, and per-skill names + descriptions through a new `I18N_SKILL` table (`tSkill(key, group, idx, 0|1, en)`). Only Sera's skills have Spanish text so far; other heroes fall back to English.
+- Screenshot (headless, 430x932 at 3x): art/originals/screens/sera_skills_es_v1643.png.

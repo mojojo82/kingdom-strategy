@@ -6363,8 +6363,8 @@ function heroStarCost(arm) { return STAR_FRAGMENT_COST_BASE + STAR_FRAGMENT_COST
    t("English text") returns the current language's version (falls back to the English). Language saved per device
    (kingdom_lang_v1), picked in Options. Russian letters come from a small Cyrillic-only font (Inter Display Black subset, OFL,
    fonts/InterDisplay-Black-cyrillic.woff) registered as part of "Lilita One" (unicode-range), so Lilita text just works. */
-var KS_LANGS = [["en", "English"], ["ru", "Русский"]];
-var KS_LANG = "en"; try { var _l = localStorage.getItem("kingdom_lang_v1"); if (_l === "ru") KS_LANG = _l; } catch (e) {}
+var KS_LANGS = [["en", "English"], ["ru", "Русский"], ["es", "Español"]]; /* v1643: Spanish (heroes screen + Sera's skills so far) */
+var KS_LANG = "en"; try { var _l = localStorage.getItem("kingdom_lang_v1"); if (_l === "ru" || _l === "es") KS_LANG = _l; } catch (e) {}
 var I18N = { ru: {
   "Heroes": "Герои", "Recruit": "Нанять", "Lv. ": "Ур. ", "Lv.": "Ур.", "Lv": "Ур", "MAX": "МАКС",
   "Epic": "Эпический", "Legendary": "Легендарный", "Rare": "Редкий",
@@ -6376,7 +6376,23 @@ var I18N = { ru: {
   "Helmet": "Шлем", "Armour": "Броня", "Weapon": "Оружие", "Gloves": "Перчатки", "Belt": "Пояс", "Boots": "Сапоги",
   "🔒 Gear is coming in a future update.": "🔒 Снаряжение появится в будущем обновлении.",
   "Language": "Язык"
+}, es: {
+  "Heroes": "Héroes", "Recruit": "Reclutar", "Lv. ": "Nv. ", "Lv.": "Nv.", "Lv": "Nv", "MAX": "MÁX",
+  "Epic": "Épico", "Legendary": "Legendario", "Rare": "Raro",
+  "Stats": "Atributos", "Skills": "Habilidades", "Gear": "Equipo",
+  "HP": "PV", "ATK": "ATQ", "DEFENSE": "DEFENSA", "ACTIVE": "ACTIVA", "PASSIVE": "PASIVA", "LIMIT": "LÍMITE", "DISABLED": "DESACTIVADA", "s": "s", "Max": "Máx",
+  "Level Up": "Subir nivel", "Star Up": "Subir estrella", "Equip in Conquest": "Equipar en Conquista", "Unequip from Conquest": "Quitar de Conquista",
+  "Conquest Roster Full (5/5)": "Escuadra de Conquista llena (5/5)", "Recruit — ": "Reclutar — ", "🔒 Coming soon": "🔒 Próximamente", "🔒 Needs 1 fragment": "🔒 Necesita 1 fragmento",
+  "💎 VIP pack only": "💎 Solo en el pack VIP", "🔒 Requires Hall of Heroes": "🔒 Requiere el Salón de Héroes",
+  "Helmet": "Casco", "Armour": "Armadura", "Weapon": "Arma", "Gloves": "Guantes", "Belt": "Cinturón", "Boots": "Botas",
+  "🔒 Gear is coming in a future update.": "🔒 El equipo llegará en una futura actualización.",
+  "Language": "Idioma", "Heals ": "Cura ", "Guard shield ": "Escudo de guardia ", "% max HP / ": "% de PV máx. / ", " · at hero Lv 1": " · con el héroe en Nv. 1"
 } };
+/* v1643: per-skill text (name, description) by hero / group / index, for the Skills tab. Missing = the English text. */
+var I18N_SKILL = { es: {
+  sera: { conquest: [["Luz Sanadora", "Cada 12 s cura a la fortaleza un 8% de sus PV máx. (16% en Nv. 5)."], ["Arenga", "Luz Sanadora reduce en 0,2 s por nivel el temporizador de habilidad de los demás héroes."], ["Guardia de Sobrecuración", "La curación sobrante se convierte en escudo: hasta un 4% de PV máx. por nivel."]] }
+} };
+function tSkill(key, group, idx, i, en) { var d = I18N_SKILL[KS_LANG], r = d && d[key] && d[key][group] && d[key][group][idx]; return (r && r[i]) || en; }
 var I18N_HERO = { ru: {
   pip: ["Пип Ларкспур", "Выстрел наводчика", "Каждые 9 с выпускает сигнальный снаряд в любого врага на экране."],
   bram: ["Брам Котлоспин", "Поршневой удар", "Каждые 9 с мощный поршневой удар бьёт врага перед ним; враг сразу за ним получает половину урона."],
@@ -6394,6 +6410,8 @@ var I18N_HERO = { ru: {
   seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
   halo7: ["Хейло-7", "Луч ядра", "Каждые 13 с выпускает из ядра в груди огромный луч через всё поле: бьёт каждого врага, до которого дотянется, включая крепость (героя в прыжке луч не задевает). Проекционная стена защищает от него стрелков."],
   caelum: ["Кейлум Векс", "Удар Разлома", "Каждые 15 с взмывает в небо, зависает и обрушивается молотом на ОДНОГО врага с огромным уроном — сначала герои (у кого больше всего здоровья), крепость — только если героев не осталось. Физический удар: Проекционная стена его не останавливает. Остаётся там, где приземлился; пока он в воздухе, наземные атаки его не достают."]
+}, es: {
+  sera: ["Sera", "Luz Sanadora", "Cada 12 s cura a la fortaleza un 8% de sus PV máx. (16% en Nv. 5)."]
 } };
 function t(en) { var d = I18N[KS_LANG]; return (d && d[en] != null) ? d[en] : en; }
 /* v1408: shrink a text element's font until its content fits its own box (any language). room = width available (default: its own box). */
@@ -6418,7 +6436,7 @@ function ksFitHeroList() {
 }
 function tHero(key, i, en) { var d = I18N_HERO[KS_LANG]; return (d && d[key] && d[key][i]) || en; } /* i: 0 name, 1 main skill name, 2 main skill text */
 function setLang(code) {
-  KS_LANG = code === "ru" ? "ru" : "en"; try { localStorage.setItem("kingdom_lang_v1", KS_LANG); } catch (e) {}
+  KS_LANG = (code === "ru" || code === "es") ? code : "en"; try { localStorage.setItem("kingdom_lang_v1", KS_LANG); } catch (e) {}
   document.documentElement.lang = KS_LANG;
   try { var el = document.getElementById("heroesList"); if (el) el._sig = ""; renderHeroes(); } catch (e) {}
   try { var tb = document.querySelector("#heroTitleBar .htb-t"); if (tb) tb.textContent = t("Heroes"); } catch (e) {}
@@ -14009,7 +14027,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1642"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1643"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -33912,7 +33930,7 @@ function skillValueText(skill, level, heroKey, group, idx) {
   if (skill.kind === "active" && skill.support && skill.buffPctByLevel) return "All heroes +" + Math.round(ksPickL(skill.buffPctByLevel, level) * 100) + "% ATK for " + skill.buffSec + "s / " + skill.cooldown + "s"; /* v1413: Crimson Oath */
   if (skill.kind === "active" && skill.support) {
     var arrS = skill.healPctByLevel || skill.guardPctByLevel, pS = arrS[Math.max(1, Math.min(arrS.length, level)) - 1] || 0;
-    return (skill.support === "heal" ? "Heals " : "Guard shield ") + Math.round(pS * 1000) / 10 + "% max HP / " + skill.cooldown + "s";
+    return (skill.support === "heal" ? t("Heals ") : t("Guard shield ")) + Math.round(pS * 1000) / 10 + t("% max HP / ") + skill.cooldown + t("s"); /* v1643: translated */
   }
   var pickL = function (arr) { return arr[Math.max(1, Math.min(arr.length, level)) - 1] || 0; }; /* v1410: Iron Lily's kit + placeholder skills */
   if (skill.buffPctByLevel) return "All heroes +" + Math.round(pickL(skill.buffPctByLevel) * 100) + "% ATK for " + skill.buffSec + "s / " + skill.cooldown + "s";
@@ -33945,22 +33963,22 @@ function renderHeroSkillsTabCombat(content, key, def, h) {
   function skillBlock(skill, group, idx) { /* v1140: new card panels; the book count sits on the name line (have/need) */
     var level = h.owned ? game.heroSkillLevel(key, group, idx) : 0;
     var maxed = level >= 5, click = h.owned && !maxed && !skill.disabled; /* v1575: a disabled skill can't be upgraded */
-    var kindTag = skill.disabled ? '<span class="tg">DISABLED</span>' : skill.kind === "limit" ? '<span class="tg on">LIMIT</span>' : skill.kind === "active" ? '<span class="tg on">ACTIVE</span>' : '<span class="tg">PASSIVE</span>';
-    var lvlTag = h.owned ? '<span class="tg">Lv ' + level + '/5</span>' : '';
+    var kindTag = skill.disabled ? '<span class="tg">' + t("DISABLED") + '</span>' : skill.kind === "limit" ? '<span class="tg on">' + t("LIMIT") + '</span>' : skill.kind === "active" ? '<span class="tg on">' + t("ACTIVE") + '</span>' : '<span class="tg">' + t("PASSIVE") + '</span>'; /* v1643: translated */
+    var lvlTag = h.owned ? '<span class="tg">' + t("Lv") + ' ' + level + '/5</span>' : '';
     var cost = "";
     if (h.owned) {
-      if (maxed) cost = '<span class="cost">✓ Max</span>';
+      if (maxed) cost = '<span class="cost">✓ ' + t("Max") + '</span>';
       else { var need = game.heroSkillCost(level), have = game.state.idle.conquestBooks | 0; cost = '<span class="cost' + (have >= need ? '' : ' short') + '">' + fmt(have) + '/' + fmt(need) + ' ' + ico("books") + '</span>'; }
     }
     var ic = String(skill.icon || "").match(/^(\p{Extended_Pictographic}\uFE0F?)/u);
     if (skill.disabled) cost = "";
     var b = '<div class="hc-sk' + (click ? ' clickable' : '') + (skill.disabled ? ' off' : '') + '"' + (click ? (' data-hero="' + key + '" data-group="' + group + '" data-idx="' + idx + '"') : '') + '>';
-    b += '<div class="sq">' + (ic ? ic[1] : skill.icon) + '</div><div class="nm"><span>' + skill.name + '</span>' + kindTag + lvlTag + cost + '</div>';
+    b += '<div class="sq">' + (ic ? ic[1] : skill.icon) + '</div><div class="nm"><span>' + tSkill(key, group, idx, 0, skill.name) + '</span>' + kindTag + lvlTag + cost + '</div>';
     if (h.owned && !skill.disabled) b += '<div class="vl">' + skillValueText(skill, level, key, group, idx) + '</div>';
     else if (!skill.disabled) { /* v1618 (Harley): show the number on heroes you don't own yet too - worked out for a level 1 hero, skill Lv 1 */
       var o0 = h.owned, l0 = h.level, vt = ""; try { h.owned = true; h.level = 1; vt = skillValueText(skill, 1, key, group, idx); } catch (e) {} h.owned = o0; h.level = l0;
-      if (vt) b += '<div class="vl">' + vt + ' <span style="opacity:.7">· at hero Lv 1</span></div>'; }
-    b += '<div class="ds">' + (skill.cardDesc || skill.desc) + '</div></div>';
+      if (vt) b += '<div class="vl">' + vt + ' <span style="opacity:.7">' + t(" · at hero Lv 1").trim() + '</span></div>'; }
+    b += '<div class="ds">' + tSkill(key, group, idx, 1, skill.cardDesc || skill.desc) + '</div></div>';
     return b;
   }
 
