@@ -373,4 +373,11 @@ t("v1632 Hero Collection: steps checked against the saved heroes (stars = arms /
   assert.ok(C.evClaimPlan(L, "hc", 0, "c:0", { now, save })); assert.throws(() => C.evClaimPlan(L, "hc", 0, "c:1", { now, save }), (e) => e.code === "aborted");
   assert.throws(() => C.evClaimPlan(L, "hc", 0, "h:nobody:0", { now, save }), /no such reward/); assert.throws(() => C.evClaimPlan(L, "hc", 1, "c:0", { now, save }), /not running/);
 });
+t("v1633 Seasonal Festivals: dated, no overlaps, claims only while one runs, period = its start day", () => {
+  const L = C.normalizeLiveops({}); assert.strictEqual(L.fs.list.length, 2); assert.strictEqual(C.fsAt(L.fs, 20810).name, "Winter Festival"); assert.strictEqual(C.fsAt(L.fs, 20830), null);
+  assert.deepStrictEqual(C.evClaimPlan(L, "fs", 20805, "ms:0", { now: 20810 * 86400000 }).items, { gems: 200, speedup_general_1h: 2 });
+  assert.ok(C.evClaimPlan(L, "fs", 20805, "ms:0", { now: 20822 * 86400000 + 5 }), "a day after it ends still pays (grace)"); assert.throws(() => C.evClaimPlan(L, "fs", 20805, "ms:0", { now: 20830 * 86400000 }), /not running/);
+  assert.throws(() => C.normalizeLiveops({ fs: { list: [{ name: "A", start: 100, end: 110, ms: [] }, { name: "B", start: 105, end: 120, ms: [] }] } }), /overlap/);
+  assert.throws(() => C.normalizeLiveops({ fs: { list: [{ name: "A", start: 100, end: 90, ms: [] }] } }), /start and an end/);
+});
 console.log(n + " tests passed");

@@ -1,0 +1,33 @@
+// v1633: Seasonal Festival, in the real TEST game (headless, fake Firebase + local functions). node dev/tests/pick_hero_game_test.js
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "playwright");
+const C = require(path.join(ROOT, "functions/core.js")), R = C.envRoot("test");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: process.env.SHOT ? 2 : 1 });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, require(path.join(__dirname, "siteroute.js"))(GAME));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "fs@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "fs"); await P.click("#ksGo"); await P.waitForTimeout(8000);
+  const uid = await P.evaluate(() => KS_BACKEND.uid); const out = {};
+  const today = Math.floor(Date.now() / 86400000);
+  const FS = { on: true, list: [{ id: "testfest", name: "Test Festival", start: today - 1, end: today + 5, pts: { kill: 2, arena: 20, camp: 15, monster: 15, ticket: 3, build: 10, newlevel: 30 }, ms: [{ at: 30, items: { gems: 200, speedup_general_1h: 2 } }, { at: 5000, items: { gems: 2500 } }] }] };
+  store[R + "config/liveops"] = C.normalizeLiveops({ fs: FS });
+  await P.evaluate((FS) => { LIVEOPS.fs = FS; game.evAct("arena", 2); evWinOpen("fs"); }, FS); await P.waitForTimeout(800);
+  out.tab = await P.evaluate(() => evTabs()[0].id); assert.strictEqual(out.tab, "fs", "festival tab first while it runs");
+  out.pts = await P.evaluate(() => game.fsSync().pts); assert.strictEqual(out.pts, 40);
+  if (process.env.SHOT) await P.screenshot({ path: process.env.SHOT });
+  const w0 = (store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0;
+  await P.evaluate((FS) => { LIVEOPS.fs = FS; document.querySelector('#evWin [data-evfs="0"]').click(); }, FS); await P.waitForTimeout(2500);
+  out.gems = ((store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0) - w0; assert.strictEqual(out.gems, 200);
+  out.errors = errs; console.log(JSON.stringify(out, null, 1)); assert.deepStrictEqual(errs, []); console.log("festival game test passed"); await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });

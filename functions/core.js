@@ -419,6 +419,22 @@ function normalizeHC(p) {
 const HC_HEROES = () => Object.keys(ITEMS).filter((k) => /^shards_/.test(k)).map((k) => k.slice(7)); /* collectable heroes = the ones with shards */
 function hcOwned(save) { const H = (save && save.heroes) || {}; return HC_HEROES().filter((k) => H[k] && H[k].owned); }
 function hcStars(save, k) { const h = ((save && save.heroes) || {})[k]; return h && h.owned ? Math.floor(Math.max(0, Math.min(25, +h.stars || 0)) / 5) : -1; }
+/* v1633: Seasonal Festivals - dated festivals (UTC days, start..end inclusive) set in the admin page. While one runs: festival points from play
+   (pts per action, like Featured Hero Week) fill a milestone track; rewards paid by the server (claimEv src "fs", period = the festival's start day). */
+const FS_KINDS = ["kill", "arena", "camp", "monster", "ticket", "build", "newlevel"];
+const LIVE_FS_DEFAULT = {"on": true, "list": [{"id": "winter26", "name": "Winter Festival", "start": 20805, "end": 20821, "pts": {"kill": 2, "arena": 20, "camp": 15, "monster": 15, "ticket": 3, "build": 10, "newlevel": 30}, "ms": [{"at": 200, "items": {"gems": 200, "speedup_general_1h": 2}}, {"at": 600, "items": {"gems": 400, "weapon_tickets": 3}}, {"at": 1200, "items": {"gems": 600, "item_chest_eq_3": 1}}, {"at": 2000, "items": {"gems": 1000, "featured_shards": 10}}, {"at": 3500, "items": {"gems": 1500, "item_chest_weapon": 1}}, {"at": 5000, "items": {"gems": 2500, "item_chest_eq_4": 1, "featured_shards": 20}}]}, {"id": "lunar27", "name": "Lunar Festival", "start": 20855, "end": 20865, "pts": {"kill": 2, "arena": 20, "camp": 15, "monster": 15, "ticket": 3, "build": 10, "newlevel": 30}, "ms": [{"at": 200, "items": {"gems": 200, "conquest_books": 20}}, {"at": 600, "items": {"gems": 400, "weapon_tickets": 3}}, {"at": 1200, "items": {"gems": 600, "item_chest_eq_3": 1}}, {"at": 2000, "items": {"gems": 1000, "featured_shards": 10}}, {"at": 3500, "items": {"gems": 2000, "item_chest_weapon": 1, "item_chest_eq_4": 1}}]}]};
+function normalizeFS(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_FS_DEFAULT));
+  const seen = {}, list = (Array.isArray(p.list) ? p.list : []).slice(0, 12).map((f, i) => {
+    let id = packIdFrom((f && f.id) || (f && f.name) || "fest" + i); while (seen[id]) id += "_2"; seen[id] = 1;
+    const start = num(f && f.start, 1, 1e6, 0), end = num(f && f.end, 1, 1e6, 0); if (!start || end < start || end - start > 60) throw new GameError("invalid-argument", "festival " + (i + 1) + ": needs a start and an end date (at most 60 days)");
+    const P = (f && f.pts) || {}, pts = {}; FS_KINDS.forEach((k) => { pts[k] = num(P[k], 0, 1e5, 0); });
+    const ms = (Array.isArray(f.ms) ? f.ms : []).slice(0, 12).map((m, j) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "festival " + (i + 1) + " milestone " + (j + 1) + " needs points"); })(), items: liveItems(m && m.items, "festival " + (i + 1) + " milestone " + (j + 1)) })).sort((a, b) => a.at - b.at);
+    return { id, name: String((f && f.name) || "").trim().slice(0, 40) || "Festival", start, end, pts, ms }; }).sort((a, b) => a.start - b.start);
+  for (let i = 1; i < list.length; i++) if (list[i].start <= list[i - 1].end) throw new GameError("invalid-argument", "festivals " + list[i - 1].name + " and " + list[i].name + " overlap");
+  return { on: p.on !== false, list };
+}
+function fsAt(FS, day) { return FS && FS.on !== false ? (FS.list || []).find((f) => day >= f.start && day <= f.end) || null : null; }
 /* v1629: gems in the starting event rewards (Harley: lack of gems, rewards should be groups) - added on top of each default reward, so most become groups.
    An admin-saved event keeps what was saved; "Load the starting numbers" in the admin page brings these in. */
 const LIVE_GEMS_PATCH = {"fhw": [50, 100, 150, 250, 400], "arena": [10, 20, 30, 50], "rankD": [200, 150, 100, 60, 40, 20], "rankW": [1000, 700, 500, 300, 200, 100], "ff": [50, 100, 200, 300, 500], "br": [50, 100, 200, 300, 500], "brRank": [1000, 700, 400, 250, 150, 50], "npChest": [100, 100, 150, 150, 200, 200, 300, 200, 200, 250, 250, 300, 300, 500], "csTask": 50, "csFin": 600, "spFree": {"5": 50, "10": 50, "15": 50, "20": 50, "25": 50, "30": 50}, "spPrem": 50, "sgP": [20, 50, 100, 150, 200, 250, 300], "sgA": [50, 100, 150, 200, 300, 500]};
@@ -458,7 +474,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { hc: normalizeHC(c.hc), cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { fs: normalizeFS(c.fs), hc: normalizeHC(c.hc), cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* v1628: activity gems - gems for everyday play, paid by the server with a cap per day for each activity (Harley: an active player ~5,000 gems a
    day from all sources). The game reports each activity (claimGemAct; the server trusts the report like Daily Tasks, the daily caps limit it);
@@ -497,7 +513,7 @@ function itemServerPaid(modes, id) { if (id === "gems") return true; const M = m
      sp   "<lv>:free" | "<lv>:prem"  Season Pass level (period = season)
    The period must be the current one or one that was running in the last 2 days (a claim made offline just before a reset still pays).
    ctx = { now, createdAt (account), prem(season) -> bool }. Returns { k, items } with featured/np/sp shards turned into real hero shards. */
-const EV_SRCS = ["fhw", "arena", "ff", "br", "wk", "np", "cs", "sp", "cb", "hc"];
+const EV_SRCS = ["fhw", "arena", "ff", "br", "wk", "np", "cs", "sp", "cb", "hc", "fs"];
 function evPeriodAt(lo, src, t, createdAt) {
   const d = utcDay(t), w = Math.floor((d + 3) / 7), dow = (d + 4) % 7;
   if (src === "fhw" || src === "wk") return w;
@@ -507,6 +523,7 @@ function evPeriodAt(lo, src, t, createdAt) {
   if (src === "cs") { const P = lo.cs || {}; return P.on !== false && (w % 2) === (P.parity || 0) ? w : null; }
   if (src === "sp") { const P = lo.sp || {}; if (P.on === false || !(P.days > 0) || d < (P.start || 0)) return null; return Math.floor((d - (P.start || 0)) / P.days); }
   if (src === "hc") return (lo.hc || {}).on === false ? null : 0;
+  if (src === "fs") { const f = fsAt(lo.fs, d); return f ? f.start : null; }
   if (src === "cb") { const P = lo.cb || {}, st = createdAt; if (!st && st !== 0) return null; return d - st >= 0 && d - st < (P.days || 7) ? st : null; } /* createdAt = the comeback start day here */
   if (src === "np") { const P = lo.np || {}; if (P.on === false || !createdAt) return null; const day = d - utcDay(createdAt) + 1; return day >= 1 && day <= (P.days || 14) ? 0 : null; }
   return null;
@@ -531,6 +548,7 @@ function evClaimPlan(lo, src, k, ref, ctx) {
     if (t != null) { const x = (P.tasks || []).find((y) => y.id === t); if (x && x.day <= day) items = x.items; }
     else if (c != null) { const x = (P.chests || []).find((y) => y.day === +c); if (x && x.day <= day) items = x.items; }
   }
+  else if (src === "fs") { const f = ((lo.fs || {}).list || []).find((x) => x.start === k), i = idx(/^ms:(\d{1,2})$/); if (f && i != null && f.ms[+i]) items = f.ms[+i].items; }
   else if (src === "hc") { const P = lo.hc || {}, m = /^h:([a-z0-9_]{1,24}):(\d)$/.exec(ref), c = idx(/^c:(\d{1,2})$/);
     if (m) { const st = (P.steps || [])[+m[2]]; if (st && HC_HEROES().indexOf(m[1]) >= 0) { if (hcStars(ctx.save, m[1]) < st.stars) throw new GameError("aborted", "not in your saved game yet"); items = st.items; } }
     else if (c != null) { const x = (P.counts || [])[+c]; if (x) { if (hcOwned(ctx.save).length < x.n) throw new GameError("aborted", "not in your saved game yet"); items = x.items; } } }
@@ -821,5 +839,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

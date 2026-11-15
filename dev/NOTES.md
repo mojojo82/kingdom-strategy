@@ -5206,3 +5206,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Server: claimEv src "hc" reads the saved game (heroes[k].owned / stars = star arms, 5 a star) and refuses a step the save hasn't reached ("aborted" = not in your saved game yet: the game keeps it queued and retries; after 10 tries the items are taken back). The game waits ~6 s after a claim so the cloud save lands first.
 - Admin > Live events > "Hero Collection Book": on/off, the per-hero steps (stars + reward group), the collection milestones.
 - Tests: unit tests 27 pass; dev/tests/collection_game_test.js headless (new account owns 2 heroes -> claim "Own" for Gareth -> 100 gems after the save check, queue empty, no errors); admin round trip.
+
+## v1633 — Seasonal Festivals
+- Dated festivals (admin > Live events > "Seasonal Festivals": name, from / to date in UTC days, festival points per action, a milestone track of reward groups; festivals can't overlap; add / remove festivals and milestones). While one runs it gets a tab first in the Events window: festival points from play (Conquest kills per 100, Arena wins, camps, monsters, weapon tickets, building upgrades, new Conquest levels) and the milestone rewards, paid by the server (claimEv src "fs", period = the festival's start day, one day of grace after it ends).
+- Starting festivals: Winter Festival 18 Dec 2026 - 3 Jan 2027 (6 milestones, 200 - 2,500 gems each, chests, featured hero shards) and Lunar Festival 6 - 16 Feb 2027 (5 milestones). The TEST game shows the next festival as a preview tab (claims open when it starts).
+- Art: the trophy icon and a purple / gold header box for now (festival art = mockup first).
+- Tests: unit tests 28 pass (dates, overlap and bad-date refusals, period + grace); dev/tests/festival_game_test.js headless (festival running -> tab first, 2 Arena wins = 40 points, claim the 30-point milestone -> 200 gems, no errors); admin round trip incl. adding a festival + milestone.
