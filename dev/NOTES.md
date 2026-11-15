@@ -5108,3 +5108,12 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Card: new front-facing portrait (ChatGPT), background cut out so the game paints the Legendary gold like every other legendary card (HERO_CARD_ART2 + HERO_STILL_BUILTIN). Card video: sword twirl + figure-eight into a blade-up guard, then a calm idle loop (art/heroes/ironlily/ironlily_card_v2.mp4, loopStart 7.9583, gold bg).
 - Atlas: card clip $0.61 + idle loop $0.38 (balance roughly $5-6 left).
 - Tests (headless): Conquest + Arena - grey Lily runs while moving, all three swings at her target, feet still; hero list + card + video loop; no page errors. Meta check: same pre-existing warning, unchanged.
+
+## v1617 — New Player Path (event 11 of the event plan)
+- Harley: "you pick for now. just get it started"; keep the old Burst of Life / 7-Day Sign-in events as they are (they still work, as their own tabs).
+- **New Player tab** (first tab of the Events window) during an account's first 14 days (day 1 = the day the account was made: server createdAt, else state.startedAt). A strip of 14 days; each day unlocks 3 tasks (UTC days), past days stay open until the path ends. Each task pays a small reward once; all of a day's tasks done = that day's chest.
+- **Hero: Roran** (Claude's pick): day 3 chest = 1 Roran shard (his Recruit button), day 14 chest = 20 Roran shards. "np_shards" = shards of the path hero (admin can change the hero).
+- Task kinds: th (Town Hall level), cq (Conquest levels cleared), heroes (owned), hlv (highest hero level), eq (equipment equipped), ally (in an alliance) are checked against the save; arena / camp / monster / ticket / build / forge / kill count from when the path starts (evAct hook). 42 starting tasks + 14 chests, stingy, all editable.
+- Engine: npActive / npDayNow / npHave / npClaimTask / npClaimDay / npReady (red dot), state.ev.np = { c, t, d }. ChatGPT art: road-to-the-castle banner + signpost tab icon + alliance-flags task icon (art/originals/events/newplayer/, art/events/banner_np, icon_np, icon_np_ally).
+- Server: LIVE_NP_DEFAULT / normalizeNP in functions/core.js (part of config/liveops; bad kinds, gems, duplicate chest days refused), unit test added (18 pass). Admin console > Live events > 🧭 New Player Path: on/off, days, hero, task rows (day, name, what counts, amount, reward), day chests (up to 2 rewards).
+- Tests (headless): counting, claiming, the day lock and chest rules work; tab + day 1 / 3 / 14 screenshots; admin form edit -> save payload passes the server check; no errors.

@@ -277,4 +277,13 @@ t("v1601 featured shards in mail", () => {
   assert.strictEqual(r["shards_" + h], 10); assert.strictEqual(r.event_tokens, 5); assert.ok(!r.featured_shards);
   assert.ok(C.ITEMS["shards_" + h], "the featured hero has a shard item");
 });
+t("v1617 New Player Path: defaults, np_shards allowed, bad kinds / gems / duplicate chest days refused", () => {
+  const L = C.normalizeLiveops({}); assert.strictEqual(L.np.days, 14); assert.strictEqual(L.np.hero, "roran"); assert.strictEqual(L.np.tasks.length, 42);
+  assert.strictEqual(L.np.chests.filter((c) => c.items.np_shards).length, 2);
+  const n = C.normalizeLiveops({ np: { days: 7, hero: "kessa", tasks: [{ id: "a", day: 9, kind: "th", need: 3, name: "TH 3", items: { food: 100 } }], chests: [{ day: 3, items: { np_shards: 1 } }] } }).np;
+  assert.strictEqual(n.tasks[0].day, 1, "day past the end falls back"); assert.strictEqual(n.hero, "kessa");
+  assert.throws(() => C.normalizeLiveops({ np: { tasks: [{ kind: "fly", items: { food: 1 } }] } }), /bad kind/);
+  assert.throws(() => C.normalizeLiveops({ np: { tasks: [{ kind: "th", items: { gems: 1 } }] } }), /gems/);
+  assert.throws(() => C.normalizeLiveops({ np: { chests: [{ day: 2, items: { food: 1 } }, { day: 2, items: { food: 1 } }] } }), /own day/);
+});
 console.log(n + " tests passed");

@@ -7540,7 +7540,7 @@ var LIVEOPS_DEFAULT = {
   /* v1617: New Player Path (functions/core.js LIVE_NP_DEFAULT) - the first `days` days of an account. Each task unlocks on its day and pays once; finishing all of a
      day's tasks opens that day's chest. "np_shards" = shards of np.hero (day 3 recruits them, day 14 gives 20 more). Task kinds: th / cq / heroes / hlv / eq / ally are
      checked against the save; arena / camp / monster / ticket / build / forge / kill count from the moment the path starts. */
-  np: {"on": false /* WIP: waiting for Harley */, "days": 14, "hero": "roran", "tasks": [
+  np: {"on": true, "days": 14, "hero": "roran", "tasks": [
     {"id": "d1a", "day": 1, "kind": "cq", "need": 3, "name": "Clear 3 Conquest levels", "items": {"conquest_books": 5}},
     {"id": "d1b", "day": 1, "kind": "build", "need": 2, "name": "Upgrade buildings 2 times", "items": {"speedup_general_5m": 3}},
     {"id": "d1c", "day": 1, "kind": "kill", "need": 200, "name": "Defeat 200 enemies in Conquest", "items": {"food": 2000}},
@@ -13784,7 +13784,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1616"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1617"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19886,7 +19886,7 @@ function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) 
 function evLiveopsSubscribe() {
   if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
-    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)) } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
     evWinRender(true); }, function () {}); }).catch(function () {});
 }
 setTimeout(evLiveopsSubscribe, 4000);
