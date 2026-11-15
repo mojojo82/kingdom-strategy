@@ -5138,3 +5138,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Engine spKey / spSync / spXp / spLevel / spClaim / spClaimAll / spReady; "sp_shards" catalogue id. Server LIVE_SP_DEFAULT / normalizeSP + unit test (20 pass). Admin console > Live events > 👑 Season Pass: on/off, name, hero, first season date, days, tokens a level, every level's free + premium rewards.
 - ChatGPT art: treasure-hall banner + crown-and-ticket icon (art/originals/events/season/).
 - Tests (headless): earning 10 tokens = +10 XP (spending doesn't remove it), level 7 at 150 XP, premium locked until unlocked, claim all = 13 rewards, admin round-trip passes the server check, no errors.
+
+## v1622 — Season Pass switched on (Harley: "Good to go")
+- `sp.on` true; season 1 runs 9 Nov - 6 Dec 2026 (UTC). Retested headless, no errors.
