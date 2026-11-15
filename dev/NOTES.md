@@ -5257,3 +5257,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   - Average 5-hero melee vs average 5-hero ranged team: melee 69% -> 77%.
   - Melee teams vs the best ranged team (Lyra+Roran+Kessa+Juno+Pip): melee 25% -> 33%.
 - Balance scripts: `EXCL=hanzo,ironlily` and `OLDARENA=1` options; ranged_vs_melee.js also reports melee vs the best ranged team. Results in dev/balance/results/*v1641*.
+
+## v1642 — super burst bullets look different (Harley)
+- Fortress cannon super bursts (the 20% "crit" bursts on Fortress 1) now fire bigger, longer white-gold slugs with a hot flickering halo instead of the slim orange streak. Mecha skin: a bigger, brighter energy ball with a white core. Conquest and Arena (both sides). Visual only.
+- Code: sim info gains `firePMult` / `fireAMult` (crit mult of the bullets fired this tick); projectiles carry `sup`; `drawCannonSuper`, `CANNON_SUPER_K` (size), `drawMechaEnergyBall(..., sup)`.
+- Test: headless Arena with forced player crits - super and normal bullets on screen together, no errors (scale 3 captures).
