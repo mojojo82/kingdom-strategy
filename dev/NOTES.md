@@ -5098,3 +5098,13 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Arena (real positions): ground heroes whose gap to her is within the radius; deck heroes and the fortress too when she is that close to the enemy fortress (the same targets her sword can legally reach). New `splashFort` adds the fortress hit to that side's damage.
 - Conquest: a melee skill there charges at ANY enemy on the field (v845 rule), so the flurry happens at the enemy she strikes - every enemy within the radius of that spot (screen positions reported by the drawing each frame, `#x` in the melee-reach report). Test: 2 casts each - chapter 2: 2 extra hits, chapter 8: 7, chapter 14: 1. No page errors.
 - Balance (5 ranged vs 5 melee, Lily in the melee team): **melee 98%** (v1614 "up to 4 nearest front-line" was 91%) - at the enemy fortress the radius catches the whole deck + the fortress in one flurry. Not tuned yet - Harley to decide.
+
+## v1616 — Iron Lily redo is playable: grey frames, 3 basic attacks, new card + card video, no longer "coming soon"
+- Harley: "implement her regular. Run, a few basic attacks. Bench the flip... remove that coming soon tag... replace her spot in any event rewards with another legendary hero. New static hero card... new card idle animation."
+- Frames: new grey design (Atlas H3 Max, green screen) - idle, run, attack (slash), attack2 (spin slash), attack3 (jump chop). Sheet art/heroes/ironlily/ironlily_anim_v7.webp (HERO_ANIMS.ironlily); LARGE keep-set in art/originals/heroes/ironlily/large/. Flip benched (clip kept), butterfly kick dropped.
+- Basic attacks now rotate through attack / attack2 / attack3 when a hero has a 3rd row (Conquest + Arena; heroes with 2 rows unchanged).
+- Old dark-Lily drawing system switched off behind `LILY_LEGACY = false` (code kept).
+- `comingSoon` removed. Event rewards: Weekly Chest Lily → Caelum, Event Shop Lily → Roran (game + admin defaults). NOTE: if the live server config was saved from the admin, Lily may still be listed there - check the admin Live events page.
+- Card: new front-facing portrait (ChatGPT), background cut out so the game paints the Legendary gold like every other legendary card (HERO_CARD_ART2 + HERO_STILL_BUILTIN). Card video: sword twirl + figure-eight into a blade-up guard, then a calm idle loop (art/heroes/ironlily/ironlily_card_v2.mp4, loopStart 7.9583, gold bg).
+- Atlas: card clip $0.61 + idle loop $0.38 (balance roughly $5-6 left).
+- Tests (headless): Conquest + Arena - grey Lily runs while moving, all three swings at her target, feet still; hero list + card + video loop; no page errors. Meta check: same pre-existing warning, unchanged.
