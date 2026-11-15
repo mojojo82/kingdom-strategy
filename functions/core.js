@@ -378,6 +378,23 @@ function normalizeSP(p) {
   if (!levels.length) throw new GameError("invalid-argument", "Season Pass needs at least one level");
   return { on: p.on !== false, start: num(p.start, 0, 1e6, LIVE_SP_DEFAULT.start), days: num(p.days, 7, 120, 28), hero: heroKey(p.hero || "halo7"), name: String(p.name || "").trim().slice(0, 50), xp: num(p.xp, 1, 1e6, 20), levels };
 }
+/* v1623: Alliance Siege (Bear Hunt style). Each alliance gets `perWeek` hunts a UTC week; an R4/R5 schedules each one (or starts it now). A hunt lasts
+   `mins` minutes: the siege boss stands at the alliance's spot on the World map and members attack it in RALLIES - one member starts a rally, others
+   join within `wait` seconds (up to `maxRally` players), then it hits once. Each member's share = their power (alliance roster) x `dpp`, x0.9-1.1, x the
+   rally bonus (1 + bonusPer per extra member, at most +bonusCap). Rewards after the hunt (by mail): the highest personal tier reached + the highest
+   alliance tier reached. The boss never dies - it's all about total damage. */
+const LIVE_SG_DEFAULT = {"on": true, "perWeek": 3, "mins": 30, "wait": 60, "maxRally": 15, "dpp": 1.0, "bonusPer": 0.04, "bonusCap": 0.5, "personal": [{"dmg": 1, "items": {"speedup_general_5m": 5, "conquest_books": 5}}, {"dmg": 100000, "items": {"speedup_general_5m": 10, "conquest_books": 10}}, {"dmg": 1000000, "items": {"speedup_general_1h": 2, "conquest_books": 20, "weapon_tickets": 1}}, {"dmg": 5000000, "items": {"speedup_general_1h": 4, "conquest_books": 40, "weapon_tickets": 2, "event_tokens": 15}}, {"dmg": 20000000, "items": {"speedup_general_1h": 6, "conquest_books": 60, "weapon_tickets": 3, "event_tokens": 25}}, {"dmg": 60000000, "items": {"speedup_general_1h": 10, "conquest_books": 100, "weapon_tickets": 5, "event_tokens": 40, "item_chest_eq_3": 1}}, {"dmg": 150000000, "items": {"speedup_general_1h": 15, "conquest_books": 150, "weapon_tickets": 8, "event_tokens": 60, "item_chest_eq_4": 1}}], "alliance": [{"dmg": 1, "items": {"speedup_general_5m": 5}}, {"dmg": 10000000, "items": {"speedup_general_1h": 2, "research": 500}}, {"dmg": 100000000, "items": {"speedup_general_1h": 4, "research": 1500, "weapon_tickets": 1}}, {"dmg": 500000000, "items": {"speedup_general_1h": 6, "research": 3000, "weapon_tickets": 2, "event_tokens": 20}}, {"dmg": 1500000000, "items": {"speedup_general_1h": 10, "research": 6000, "weapon_tickets": 3, "event_tokens": 30, "featured_shards": 3}}, {"dmg": 4000000000, "items": {"speedup_general_1h": 15, "research": 10000, "weapon_tickets": 5, "event_tokens": 50, "featured_shards": 5}}]};
+function sgTiers(a, what) { return (Array.isArray(a) ? a : []).slice(0, 12).map((t, i) => ({ dmg: num(t && t.dmg, 1, 1e15, 0), items: liveItems(t && t.items, "Alliance Siege " + what + " tier " + (i + 1)) })).filter((t) => t.dmg > 0).sort((x, y) => x.dmg - y.dmg); }
+function normalizeSG(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_SG_DEFAULT));
+  const fl = (v, lo, hi, d) => { v = +v; return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+  return { on: p.on !== false, perWeek: num(p.perWeek, 1, 14, 3), mins: num(p.mins, 5, 180, 30), wait: num(p.wait, 10, 600, 60), maxRally: num(p.maxRally, 2, 100, 15),
+    dpp: fl(p.dpp, 0.001, 1000, 1), bonusPer: fl(p.bonusPer, 0, 1, 0.04), bonusCap: fl(p.bonusCap, 0, 5, 0.5), personal: sgTiers(p.personal, "personal"), alliance: sgTiers(p.alliance, "alliance") };
+}
+/* highest tier reached (or null) */
+function sgTier(tiers, dmg) { let out = null; (tiers || []).forEach((t) => { if (dmg >= t.dmg) out = t; }); return out; }
+/* one member's share of a rally hit */
+function sgShare(SG, power, nMembers, roll) { const bonus = 1 + Math.min(SG.bonusCap, SG.bonusPer * Math.max(0, nMembers - 1)); return Math.max(1, Math.round(Math.max(0, +power || 0) * SG.dpp * (0.9 + 0.2 * roll) * bonus)); }
 function normalizeLiveops(c) {
   c = c || {}; const f = c.fhw || {}, sh = c.shop || {}, wk = c.wk || {}, pts = {}, P = f.pts || {};
   ["kill", "arena", "camp", "monster", "ticket"].forEach((k) => { pts[k] = num(P[k], 0, 100000, 0); });
@@ -392,7 +409,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {
@@ -656,5 +673,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

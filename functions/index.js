@@ -421,6 +421,104 @@ exports.claimBossRank = wrap(async (req, uid, R, d) => {
   });
 });
 
+// ---- v1623: Alliance Siege (Bear Hunt style) ----
+// <K>siege/<aid> { hunts: [{ id, start, end, x, y, by }] }   <K>siege/<aid>/h/<hid> { start, end, x, y, total, dmg: {uid}, names: {uid}, busy: {uid: rid}, hits, last: [...], claimed: {uid} }
+// <K>siege/<aid>/r/<rid> { hid, leader, lname, launch, members: {uid: name}, done, hit, shares: {uid} }
+const sgRoot = (K, aid) => K + "siege/" + aid;
+function sgId(s) { s = String(s || ""); if (!/^[A-Za-z0-9_-]{1,80}$/.test(s)) throw new C.GameError("invalid-argument", "bad id"); return s; }
+async function sgConfig(R) { const lo = (await liveopsConfig(R)) || {}; const SG = lo.sg || C.LIVE_SG_DEFAULT; if (SG.on === false) throw new C.GameError("failed-precondition", "Alliance Siege is off"); return { SG, lo }; }
+async function sgMember(tx, K, uid) { const ix = await tx.get(db.doc(K + "allyindex/" + uid)); const o = ix.exists ? ix.data() : null; if (!o || !o.aid) throw new C.GameError("failed-precondition", "not in an alliance"); return o; }
+function sgChat(tx, K, aid, text, now) { tx.set(db.doc(K + "alliances/" + aid + "/chat/" + now + "_siege" + Math.floor(Math.random() * 1e6)), { pid: "system", name: "🦏 Alliance Siege", text: text.slice(0, 300), ts: now, sys: true }); }
+function sgWhen(t) { const d = new Date(t); return d.toISOString().slice(5, 16).replace("T", " ") + " UTC"; }
+exports.siegeSchedule = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), { SG } = await sgConfig(R);
+  const start = d.now ? now : Math.trunc(+d.start || 0), x = Math.trunc(+d.x), y = Math.trunc(+d.y);
+  if (!(start >= now - 60000 && start <= now + 8 * 86400000)) throw new C.GameError("invalid-argument", "pick a time in the next 7 days");
+  if (!(x >= 0 && x < 100000 && y >= 0 && y < 100000)) throw new C.GameError("invalid-argument", "bad spot");
+  return db.runTransaction(async (tx) => {
+    const me = await sgMember(tx, K, uid); if (!(me.rank >= 4)) throw new C.GameError("permission-denied", "only R4 and R5 can schedule a hunt");
+    const ref = db.doc(sgRoot(K, me.aid)), s = await tx.get(ref), hunts = ((s.exists && s.data().hunts) || []).filter((h) => h.end > now - 14 * 86400000);
+    const end = start + SG.mins * 60000, wk = C.arenaKeys(start).w;
+    if (hunts.filter((h) => C.arenaKeys(h.start).w === wk).length >= SG.perWeek) throw new C.GameError("resource-exhausted", "all " + SG.perWeek + " hunts for that week are already scheduled");
+    if (hunts.some((h) => h.start < end && start < h.end)) throw new C.GameError("failed-precondition", "another hunt is at that time");
+    const hid = start + "_" + uid.slice(0, 8), h = { id: hid, start, end, x, y, by: lbName(d.name) };
+    hunts.push(h); hunts.sort((a, b) => a.start - b.start);
+    tx.set(ref, { hunts }, { merge: true });
+    tx.set(db.doc(sgRoot(K, me.aid) + "/h/" + hid), { start, end, x, y, total: 0, dmg: {}, names: {}, busy: {}, hits: 0, last: [], claimed: {} });
+    sgChat(tx, K, me.aid, d.now ? "🦏 " + h.by + " started an Alliance Siege - the boss is on the World map for " + SG.mins + " minutes. Rally up!" : "🦏 " + h.by + " scheduled an Alliance Siege for " + sgWhen(start) + " (" + SG.mins + " minutes).", now);
+    return { ok: true, hunt: h };
+  });
+});
+exports.siegeCancel = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), hid = sgId(d.hid);
+  return db.runTransaction(async (tx) => {
+    const me = await sgMember(tx, K, uid); if (!(me.rank >= 4)) throw new C.GameError("permission-denied", "only R4 and R5 can cancel a hunt");
+    const ref = db.doc(sgRoot(K, me.aid)), s = await tx.get(ref), hunts = (s.exists && s.data().hunts) || [], h = hunts.filter((x) => x.id === hid)[0];
+    if (!h) throw new C.GameError("not-found", "no such hunt"); if (h.start <= now) throw new C.GameError("failed-precondition", "it has already started");
+    tx.set(ref, { hunts: hunts.filter((x) => x.id !== hid) }, { merge: true }); tx.delete(db.doc(sgRoot(K, me.aid) + "/h/" + hid));
+    sgChat(tx, K, me.aid, "🦏 The Alliance Siege at " + sgWhen(h.start) + " was cancelled.", now);
+    return { ok: true };
+  });
+});
+exports.siegeRally = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), hid = sgId(d.hid), { SG } = await sgConfig(R);
+  return db.runTransaction(async (tx) => {
+    const me = await sgMember(tx, K, uid), href = db.doc(sgRoot(K, me.aid) + "/h/" + hid), hs = await tx.get(href); if (!hs.exists) throw new C.GameError("not-found", "no such hunt");
+    const h = hs.data(); if (!(now >= h.start && now + SG.wait * 1000 <= h.end)) throw new C.GameError("failed-precondition", now < h.start ? "the hunt hasn't started" : "too late for a new rally");
+    if (h.busy && h.busy[uid]) throw new C.GameError("failed-precondition", "your march is already in a rally");
+    const rid = now + "_" + uid.slice(0, 8), name = lbName(d.name);
+    tx.set(db.doc(sgRoot(K, me.aid) + "/r/" + rid), { hid, leader: uid, lname: name, launch: now + SG.wait * 1000, members: { [uid]: name }, done: false, at: now });
+    const busy = Object.assign({}, h.busy || {}); busy[uid] = rid; tx.update(href, { busy });
+    return { ok: true, rid, launch: now + SG.wait * 1000 };
+  });
+});
+exports.siegeJoin = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), rid = sgId(d.rid), { SG } = await sgConfig(R);
+  return db.runTransaction(async (tx) => {
+    const me = await sgMember(tx, K, uid), rref = db.doc(sgRoot(K, me.aid) + "/r/" + rid), rs = await tx.get(rref); if (!rs.exists) throw new C.GameError("not-found", "no such rally");
+    const r = rs.data(); if (r.done || now >= r.launch) throw new C.GameError("failed-precondition", "that rally has already marched");
+    if (r.members[uid]) return { ok: true, dup: true };
+    if (Object.keys(r.members).length >= SG.maxRally) throw new C.GameError("resource-exhausted", "that rally is full");
+    const href = db.doc(sgRoot(K, me.aid) + "/h/" + r.hid), h = (await tx.get(href)).data() || {}; if (h.busy && h.busy[uid]) throw new C.GameError("failed-precondition", "your march is already in a rally");
+    const members = Object.assign({}, r.members); members[uid] = lbName(d.name); tx.update(rref, { members });
+    const busy = Object.assign({}, h.busy || {}); busy[uid] = rid; tx.update(href, { busy });
+    return { ok: true };
+  });
+});
+exports.siegeHit = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), rid = sgId(d.rid), { SG } = await sgConfig(R);
+  return db.runTransaction(async (tx) => {
+    const me = await sgMember(tx, K, uid), base = sgRoot(K, me.aid), rref = db.doc(base + "/r/" + rid), rs = await tx.get(rref); if (!rs.exists) throw new C.GameError("not-found", "no such rally");
+    const r = rs.data(); if (r.done) return { ok: true, dup: true, hit: r.hit, shares: r.shares };
+    if (now < r.launch) throw new C.GameError("failed-precondition", "not yet");
+    const href = db.doc(base + "/h/" + r.hid), h = (await tx.get(href)).data() || {}, ids = Object.keys(r.members);
+    const mem = await Promise.all(ids.map((m) => tx.get(db.doc(K + "alliances/" + me.aid + "/members/" + m))));
+    const shares = {}; let hit = 0;
+    ids.forEach((m, i) => { const pw = mem[i].exists ? (mem[i].data().power || 0) : 0; const sh = C.sgShare(SG, pw, ids.length, Math.random()); shares[m] = sh; hit += sh; });
+    const dmg = Object.assign({}, h.dmg || {}), names = Object.assign({}, h.names || {}), busy = Object.assign({}, h.busy || {});
+    ids.forEach((m) => { dmg[m] = (dmg[m] || 0) + shares[m]; names[m] = r.members[m]; if (busy[m] === rid) delete busy[m]; });
+    const last = (h.last || []).concat([{ t: now, hit, n: ids.length, by: r.lname }]).slice(-8);
+    tx.update(href, { dmg, names, busy, total: (h.total || 0) + hit, hits: (h.hits || 0) + 1, last });
+    tx.update(rref, { done: true, hit, shares });
+    return { ok: true, hit, shares };
+  });
+});
+exports.siegeClaim = wrap(async (req, uid, R, d) => {
+  const K = kingdomRoot(R, d.srv), now = Date.now(), hid = sgId(d.hid), lo = (await liveopsConfig(R)) || {}, SG = lo.sg || C.LIVE_SG_DEFAULT;
+  return db.runTransaction(async (tx) => {
+    const me = await sgMember(tx, K, uid), href = db.doc(sgRoot(K, me.aid) + "/h/" + hid), hs = await tx.get(href); if (!hs.exists) throw new C.GameError("not-found", "no such hunt");
+    const h = hs.data(); if (now < h.end) throw new C.GameError("failed-precondition", "the hunt isn't over yet");
+    const mine = (h.dmg || {})[uid] || 0; if (!(mine > 0)) throw new C.GameError("failed-precondition", "you didn't take part in that hunt");
+    if (h.claimed && h.claimed[uid]) return { dup: true };
+    const pT = C.sgTier(SG.personal, mine), aT = C.sgTier(SG.alliance, h.total || 0), items = {};
+    [pT, aT].forEach((t) => { if (t) Object.keys(t.items).forEach((k) => { items[k] = (items[k] || 0) + t.items[k]; }); });
+    const claimed = Object.assign({}, h.claimed || {}); claimed[uid] = true; tx.update(href, { claimed });
+    const out = C.resolveFeatured(items, lo.fhw ? lo : { fhw: C.normalizeLiveops({}).fhw });
+    if (Object.keys(out).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🦏 Alliance Siege rewards", "Your damage: " + mine.toLocaleString("en-US") + " · alliance total: " + (h.total || 0).toLocaleString("en-US") + ".", out, "siege", now, "alliance"));
+    return { dup: false, items: out, mine, total: h.total || 0 };
+  });
+});
+
 // ---- account dates ----
 // "Account created" and "last seen" only. No IPs, devices or sessions. Called by the game once per session (and at most hourly).
 exports.touch = wrap(async (req, uid, R) => {

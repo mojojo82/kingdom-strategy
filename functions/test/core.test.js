@@ -298,4 +298,11 @@ t("v1621 Season Pass: defaults (30 levels, 60 premium season-hero shards), sp_sh
   assert.throws(() => C.normalizeLiveops({ sp: { levels: [{ free: { gems: 5 }, prem: { food: 1 } }] } }), /gems/);
   assert.throws(() => C.normalizeLiveops({ sp: { levels: [] } }), /at least one level/);
 });
+t("v1623 Alliance Siege: defaults, tiers, rally share and bonus", () => {
+  const L = C.normalizeLiveops({}); assert.strictEqual(L.sg.perWeek, 3); assert.strictEqual(L.sg.mins, 30); assert.ok(L.sg.personal.length >= 3 && L.sg.alliance.length >= 3);
+  assert.strictEqual(C.sgTier(L.sg.personal, 0), null); assert.strictEqual(C.sgTier(L.sg.personal, 5).dmg, 1, "taking part pays"); assert.strictEqual(C.sgTier(L.sg.personal, 2e6).dmg, 1e6);
+  const SG = C.normalizeLiveops({ sg: { dpp: 1, bonusPer: 0.1, bonusCap: 0.3, personal: [], alliance: [] } }).sg;
+  assert.strictEqual(C.sgShare(SG, 1000, 1, 0.5), 1000); assert.strictEqual(C.sgShare(SG, 1000, 3, 0.5), 1200); assert.strictEqual(C.sgShare(SG, 1000, 10, 0.5), 1300, "bonus capped");
+  assert.throws(() => C.normalizeLiveops({ sg: { personal: [{ dmg: 5, items: { gems: 1 } }] } }), /gems/);
+});
 console.log(n + " tests passed");
