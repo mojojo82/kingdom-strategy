@@ -94,8 +94,15 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
        "caelum_skill": {"hero": "caelum", "tag": "v1", "stand": 90, "disp_stand": 30, "per_clip": True, "same_space": True, "canvas": 2, "wrap": 10,
                  "idle": {"fps": 8, "frames": [0]},
                  "skill": {"fps": 12, "parts": [["takeoff", list(range(0, 39, 2)) + list(range(63, 89, 2))], ["hover", list(range(0, 14, 2))],
-                                                ["slam_down", list(range(50, 58))], ["slam_clean", list(range(58, 111, 2))]]}}}[HERO]
-ROWS = [r for r in ("idle", "run", "attack", "attack2", "skill") if r in CFG]
+                                                ["slam_down", list(range(50, 58))], ["slam_clean", list(range(58, 111, 2))]]}},
+       # v1616 Iron Lily redo (grey ninja, green screen, one start frame for idle/run/attacks): run = one clean 2-step stride (video 38-63);
+       # attack = slash swing (8-36) + back to guard (52-68), the long hold in between cut; attack2 = spin slash, first burst (4-56); attack3 = hop + chop (16-48) + back (64-84). Every 2nd frame, 24 fps (~1 s each)
+       "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
+                 "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 38, "to": 63},
+                 "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},
+                 "attack2": {"fps": 24, "frames": list(range(4, 57, 2))},
+                 "attack3": {"fps": 24, "frames": list(range(16, 49, 2)) + list(range(64, 85, 2))}}}[HERO]
+ROWS = [r for r in ("idle", "run", "attack", "attack2", "attack3", "skill") if r in CFG]   # v1616: attack3 (Iron Lily rotates three basic attacks)
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}
 META = json.load(open(os.path.join(L, "meta.json"))) if CFG.get("per_clip") else None
