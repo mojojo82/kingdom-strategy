@@ -392,4 +392,11 @@ t("v1635 cards: grants extend from the current end, daily once a day while activ
   assert.throws(() => C.evClaimPlan(L, "cdp", w, "0:0", { now, cards: {} }), /card not active/);
   assert.deepStrictEqual(C.applyGrant({}, "pass_sp", L, (L.sp.start + 3) * 86400000), { spPrem: 0 }); assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, grant: "nope" }).grant, "");
 });
+t("v1636 Hero Shop: gems taken on the server, weekly stock per player, featured shards resolved, no gems for sale", () => {
+  const L = C.normalizeLiveops({}), now = 20800 * 86400000; const r = C.decideHeroShop(null, L.hs, "kessa", 2, 500, L, now);
+  assert.strictEqual(r.gems, 300); assert.deepStrictEqual(r.items, { shards_kessa: 2 }); assert.strictEqual(r.left, 18);
+  assert.throws(() => C.decideHeroShop(r.hs, L.hs, "kessa", 19, 1e6, L, now), /sold out/); assert.strictEqual(C.decideHeroShop(r.hs, L.hs, "kessa", 19, 1e6, L, now + 7 * 86400000).left, 1, "refills next week");
+  assert.throws(() => C.decideHeroShop(null, L.hs, "kessa", 1, 99, L, now), /not_enough_gems/); assert.throws(() => C.normalizeLiveops({ hs: { items: [{ item: "gems", price: 1 }] } }), /can't sell gems/);
+  assert.deepStrictEqual(C.decideHeroShop(null, L.hs, "feat", 1, 100, L, now).items, { ["shards_" + L.fhw.hero]: 1 });
+});
 console.log(n + " tests passed");

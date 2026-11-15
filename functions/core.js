@@ -460,6 +460,26 @@ function applyGrant(wallet, grant, lo, now) {
   if (grant === "pass_sp") { const k = evPeriodAt(lo, "sp", now, null); return k == null ? {} : { spPrem: k }; }
   return {};
 }
+/* v1636: Hero Shop - hero shards (and a few items) for GEMS, with a stock per player that refills every Monday (UTC). The server takes the
+   gems and records the buy (buyHeroShop); the game adds the items. A gem sink for the ~5,000 gems a day an active player earns. */
+const LIVE_HS_DEFAULT = {"on": true, "items": [{"id": "feat", "item": "featured_shards", "qty": 1, "price": 60, "stock": 50}, {"id": "kessa", "item": "shards_kessa", "qty": 1, "price": 100, "stock": 20}, {"id": "roran", "item": "shards_roran", "qty": 1, "price": 100, "stock": 20}, {"id": "halo7", "item": "shards_halo7", "qty": 1, "price": 100, "stock": 20}, {"id": "pip", "item": "shards_pip", "qty": 1, "price": 100, "stock": 20}, {"id": "ironlily", "item": "shards_ironlily", "qty": 1, "price": 100, "stock": 20}, {"id": "hchest", "item": "item_chest_hero", "qty": 1, "price": 500, "stock": 3}, {"id": "tix", "item": "weapon_tickets", "qty": 1, "price": 50, "stock": 20}]};
+function normalizeHS(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_HS_DEFAULT));
+  const seen = {}, items = (Array.isArray(p.items) ? p.items : []).slice(0, 24).map((x, i) => { const item = String((x && x.item) || ""); if (!liveShopOk(item)) throw new GameError("invalid-argument", "Hero Shop row " + (i + 1) + ": can't sell " + item);
+    let id = packIdFrom((x && x.id) || item); while (seen[id]) id += "_2"; seen[id] = 1; return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), stock: num(x && x.stock, 1, 9999, 10) }; });
+  return { on: p.on !== false, items };
+}
+/* rec = wallet.hs { w: week, b: { id: bought this week } } */
+function decideHeroShop(rec, HS, id, n, gems, lo, now) {
+  if (!HS || HS.on === false) throw new GameError("failed-precondition", "the Hero Shop is closed");
+  const x = (HS.items || []).find((r) => r.id === id); if (!x) throw new GameError("not-found", "no such item");
+  n = Math.trunc(+n || 1); if (!(n >= 1 && n <= 100)) throw new GameError("invalid-argument", "bad amount");
+  const w = Math.floor((utcDay(now) + 3) / 7), cur = rec && rec.w === w ? { w, b: Object.assign({}, rec.b || {}) } : { w, b: {} };
+  if ((cur.b[id] || 0) + n > x.stock) throw new GameError("resource-exhausted", "sold out for this week", { left: x.stock - (cur.b[id] || 0) });
+  const cost = x.price * n; if ((gems || 0) < cost) throw new GameError("failed-precondition", "not_enough_gems", { gems: gems || 0, cost });
+  cur.b[id] = (cur.b[id] || 0) + n; const items = evRealItems({ [x.item]: x.qty * n }, lo);
+  return { hs: cur, cost, gems: (gems || 0) - cost, items, left: x.stock - cur.b[id] };
+}
 /* v1629: gems in the starting event rewards (Harley: lack of gems, rewards should be groups) - added on top of each default reward, so most become groups.
    An admin-saved event keeps what was saved; "Load the starting numbers" in the admin page brings these in. */
 const LIVE_GEMS_PATCH = {"fhw": [50, 100, 150, 250, 400], "arena": [10, 20, 30, 50], "rankD": [200, 150, 100, 60, 40, 20], "rankW": [1000, 700, 500, 300, 200, 100], "ff": [50, 100, 200, 300, 500], "br": [50, 100, 200, 300, 500], "brRank": [1000, 700, 400, 250, 150, 50], "npChest": [100, 100, 150, 150, 200, 200, 300, 200, 200, 250, 250, 300, 300, 500], "csTask": 50, "csFin": 600, "spFree": {"5": 50, "10": 50, "15": 50, "20": 50, "25": 50, "30": 50}, "spPrem": 50, "sgP": [20, 50, 100, 150, 200, 250, 300], "sgA": [50, 100, 150, 200, 300, 500]};
@@ -499,7 +519,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { cd: normalizeCD(c.cd), fs: normalizeFS(c.fs), hc: normalizeHC(c.hc), cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { hs: normalizeHS(c.hs), cd: normalizeCD(c.cd), fs: normalizeFS(c.fs), hc: normalizeHC(c.hc), cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* v1628: activity gems - gems for everyday play, paid by the server with a cap per day for each activity (Harley: an active player ~5,000 gems a
    day from all sources). The game reports each activity (claimGemAct; the server trusts the report like Daily Tasks, the daily caps limit it);
@@ -869,5 +889,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { LIVE_CD_DEFAULT, normalizeCD, cardActive, anyCardActive, PACK_GRANTS, applyGrant, LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { LIVE_HS_DEFAULT, normalizeHS, decideHeroShop, LIVE_CD_DEFAULT, normalizeCD, cardActive, anyCardActive, PACK_GRANTS, applyGrant, LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

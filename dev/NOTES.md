@@ -5223,3 +5223,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - To sell them: admin > Shop > packs: make a pack with the card's right-away items (e.g. 2,500 gems), its price tier and "Also gives: the Weekly Card". Payments still aren't connected, so on LIVE the tab says "in the shop soon". TEST: "Unlock for testing" (server testGrant, refused on LIVE) adds the card days without a payment (no right-away gems).
 - Admin > Live events > "Weekly / Monthly Cards": names, days, price tier, right-away / daily items, track points, the pick track (up to 4 choices per milestone).
 - Tests: unit tests 29 pass; server flow (TEST unlock, daily once, the other card refused); dev/tests/cards_game_test.js headless (unlock -> daily 600 gems -> 16 Arena wins -> pick 500 gems -> second pick refused, no errors); admin round trip.
+
+## v1636 — Hero Shop (gems, weekly stock)
+- New Events tab "Hero Shop" (next to the Event Shop): hero shards and a few items for GEMS with a stock per player that refills every Monday UTC ("Remaining: 18"). Starting stock: this week's featured hero 60 gems a shard (50 a week), Kessa / Roran / Halo-7 / Pip / Iron Lily 100 a shard (20 a week each), Hero Selector Chest 500 (3), weapon tickets 50 (20). A gem sink for the ~5,000 gems a day.
+- Server buyHeroShop: takes the gems from the wallet (ledger "hero_shop"), checks the stock (wallet.hs), returns the items; the game adds them only after the server says yes. Local (no-Firebase) game: same, against the save.
+- Admin > Live events > "Hero Shop": rows of item, amount, gem price, weekly stock.
+- Tests: unit tests 30 pass (stock, refill, not enough gems, no gems for sale, featured shards); dev/tests/heroshop_game_test.js headless (buy Kessa twice -> 2 shards, wallet 1,000 -> 800, "Remaining: 18", no errors); admin round trip.

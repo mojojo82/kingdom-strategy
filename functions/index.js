@@ -635,6 +635,14 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
     return { dup: false, events: patchEvents, gems: g, items: r.items, progress };
   });
 });
+/* v1636: Hero Shop - buy with gems (server-held), weekly stock per player; returns the items for the game to add */
+exports.buyHeroShop = wrap(async (req, uid, R, d) => {
+  const lo = (await liveopsConfig(R)) || C.normalizeLiveops({}), now = Date.now();
+  return db.runTransaction(async (tx) => { const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {};
+    const r = C.decideHeroShop(wd.hs, lo.hs, String(d.id || ""), d.n, wd.gems || 0, lo, now);
+    ledger(tx, R, uid, "gems", -r.cost, r.gems, "hero_shop", String(d.id || "")); Object.keys(r.items).forEach((id) => { if (C.LEDGER_ITEMS.indexOf(id) >= 0) ledger(tx, R, uid, id, r.items[id], null, "hero_shop", String(d.id || "")); });
+    tx.set(walletRef(R, uid), { gems: r.gems, hs: r.hs }, { merge: true }); return { gems: r.gems, items: r.items, hs: r.hs, left: r.left }; });
+});
 /* v1635: TEST game only - "Unlock for testing" a card (or the Season Pass premium) without a payment. Refused on LIVE. */
 exports.testGrant = wrap(async (req, uid, R, d) => {
   if (R !== "envs/test/") throw new C.GameError("permission-denied", "TEST game only"); const grant = String(d.grant || ""); if (!grant || C.PACK_GRANTS.indexOf(grant) < 0) throw new C.GameError("invalid-argument", "bad grant");

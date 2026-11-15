@@ -1,0 +1,31 @@
+// v1636: Hero Shop, in the real TEST game (headless, fake Firebase + local functions). node dev/tests/pick_hero_game_test.js
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "playwright");
+const C = require(path.join(ROOT, "functions/core.js")), R = C.envRoot("test");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: process.env.SHOT ? 2 : 1 });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, require(path.join(__dirname, "siteroute.js"))(GAME));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "hs@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "hs"); await P.click("#ksGo"); await P.waitForTimeout(8000);
+  const uid = await P.evaluate(() => KS_BACKEND.uid); const out = {};
+  store[R + "players/" + uid + "/wallet/main"] = Object.assign({}, store[R + "players/" + uid + "/wallet/main"], { gems: 1000 });
+  await P.evaluate(() => { KSW.gems = 1000; evWinOpen("hs"); }); await P.waitForTimeout(500);
+  const f0 = await P.evaluate(() => game.state.heroes.kessa.fragments | 0);
+  await P.evaluate(() => document.querySelector('#evWin [data-hsbuy="kessa"]').click()); await P.waitForTimeout(1500);
+  await P.evaluate(() => document.querySelector('#evWin [data-hsbuy="kessa"]').click()); await P.waitForTimeout(1500);
+  if (process.env.SHOT) await P.screenshot({ path: process.env.SHOT });
+  out.shards = (await P.evaluate(() => game.state.heroes.kessa.fragments | 0)) - f0; out.wallet = store[R + "players/" + uid + "/wallet/main"].gems; out.left = await P.evaluate(() => document.querySelector('#evWin [data-hsbuy="kessa"]').parentNode.querySelector(".lim").textContent);
+  assert.strictEqual(out.shards, 2); assert.strictEqual(out.wallet, 800); assert.strictEqual(out.left, "Remaining: 18");
+  out.errors = errs; console.log(JSON.stringify(out, null, 1)); assert.deepStrictEqual(errs, []); console.log("hero shop game test passed"); await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });
