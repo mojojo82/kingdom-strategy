@@ -5287,3 +5287,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1647 — card effect text moved down
 - Harley: the effect text sat too close to the type bar. Effect box now starts lower (71.9% of the card, was 70.2%) on the Full View and the grid tiles; flavour line nudged down to match.
+
+## v1648 — no ranged hero has a range limit any more (Arena too)
+- Harley: ranged heroes aren't supposed to have a limit. Conquest already dropped it (v1573, Lyra) but Arena / World PvP still gave Lyra, Roran, Kessa and Sera the old 62% limit (only Juno onwards had noRangeLimit), and Sera kept it in Conquest. Now every fortress rider shoots any standing front-line (ground) enemy hero on screen; still never deck heroes (10 Nov rule). Sera gets basicAnyTarget.
+- Balance (Lv80, Hanzo + Lily out, 5 v 5): ranged 23% -> 35%, melee 77% -> 65%; melee teams vs the best ranged team 33% -> 11%. 6-hero Arena round robin: about the same (w/o Kessa 30 -> 24, w/o Lyra 30 -> 36 at Lv80). Meta check: same order as before (the known warning).

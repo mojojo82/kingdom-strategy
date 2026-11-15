@@ -6574,7 +6574,7 @@ var HERO_DEFS = {
       { name: "Storm Ward", icon: "🛡️🌩️", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Charged Advance", icon: "💨⚡", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.025 }
     ] },
-  sera: { name: "Sera", title: "The Mending Light", class: "archer", icon: "✨", rarity: "Epic", atkMult: 0.4,
+  sera: { name: "Sera", title: "The Mending Light", class: "archer", icon: "✨", rarity: "Epic", basicAnyTarget: true, /* v1648: no range limit (Conquest) like every ranged hero */ atkMult: 0.4,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 250, food: 120 }, levelBaseCost: { gold: 70, food: 70 }, levelCostMult: 1.35,
     conquestSkills: [
       // Support: heals the fortress instead of dealing damage. First cast waits the full 12s (so it needs a front-line hero to carry the opening — see Torvald).
@@ -14121,7 +14121,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1647"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1648"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38236,7 +38236,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var me = hh.by[id]; if (!me) return true;
     var best = null;
     var meD = (me.ko && me.koTick === tick) ? me.koD : me.d;
-    var noR = HERO_DEFS[id] && HERO_DEFS[id].noRangeLimit; /* v1476 (Harley 10 Nov): Juno onwards - no range limit: any standing FRONT-LINE (ground) enemy hero at any distance; once the front line is down she hits the fortress. Heroes on the enemy deck are NOT targets (hitting them made her a must-pick) */
+    var noR = !me.infantry || (HERO_DEFS[id] && HERO_DEFS[id].noRangeLimit); /* v1648 (Harley): NO ranged hero has a range limit any more - every fortress rider shoots any front-line hero on screen (Lyra, Roran, Kessa, Sera kept the old 62% limit in Arena) */ /* v1476 (Harley 10 Nov): Juno onwards - no range limit: any standing FRONT-LINE (ground) enemy hero at any distance; once the front line is down she hits the fortress. Heroes on the enemy deck are NOT targets (hitting them made her a must-pick) */
     if (noR) oh.list.forEach(function (o) { if (o.ko || o.dead || !o.infantry || o.air) return; /* v1514: not a hero in the air */ if (!best || o.d > best.d) best = o; });
     else oh.list.forEach(function (o) { if (!o.infantry || o.ko || o.air) return; var dist = (1 - o.d) - (me.infantry ? meD : 0); if (dist <= ARENA_RANGED_RANGE && (!best || o.d > best.d)) best = o; });
     if (!best) return true;
