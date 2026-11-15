@@ -20,7 +20,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.evaluate(() => { const st = game.state; ["caelum", "kessa", "lyra"].forEach((k) => { st.heroes[k].owned = true; st.heroes[k].level = 40; st.heroes[k].skillLevels = { conquest: [3, 5, 3], expedition: [1, 1, 1] }; }); st.conquestRoster = ["caelum", "kessa", "lyra"]; document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove()); setScreen("more", "arena"); });
   await P.waitForTimeout(3000);
   if (process.env.SKIPR) await P.evaluate(() => { ARENA_MELEE_BASIC_SKIPS_RANGED = true; });
-  await P.evaluate((ex) => { window.__EXCL = ex; }, process.env.EXCL || "hanzo,ironlily"); if (process.env.OLDARENA) await P.evaluate(() => { ARENA_BASIC_MULT_ON = false; });
+  await P.evaluate((p) => { window.__POOL = p; }, process.env.POOL || ""); await P.evaluate((ex) => { window.__EXCL = ex; }, process.env.EXCL || "hanzo,ironlily"); if (process.env.OLDARENA) await P.evaluate(() => { ARENA_BASIC_MULT_ON = false; });
   if (process.env.MULT) await P.evaluate((m) => { ARENA_MELEE_ATK_MULT = m; }, +process.env.MULT);
   const r = await P.evaluate(() => {
     const EX = (window.__EXCL || "hanzo,ironlily").split(","), H = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && EX.indexOf(k) < 0), hs = {};
@@ -32,9 +32,10 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     /* a wins %, both sides swapped, 2 seeds */
     const wr = (a, b, la, lb, tag) => { let s = 0, n = 0; for (let sd = 0; sd < 2; sd++) { s += fight(a, b, kit(la), kit(lb), tag + "a" + sd); s += 1 - fight(b, a, kit(lb), kit(la), tag + "b" + sd); n += 2; } return s / n; };
     let rs = 12345; const rnd = () => { rs = (rs * 1103515245 + 12345) % 2147483648; return rs / 2147483648; };
-    const team = () => { const a = H.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, 5); };
+    const probe = arenaSideStats(H, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS), inf = {}; (probe.heroHp || []).forEach((e) => { inf[e.id] = !!e.infantry; }); const POOL = window.__POOL === "melee" ? H.filter((k) => inf[k]) : window.__POOL === "ranged" ? H.filter((k) => !inf[k]) : H;
+    const team = () => { const a = POOL.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, 5); };
     const out = {}, S = 10, N = 80, P2 = []; for (let i = 0; i < N; i++) P2.push([team(), team()]);
-    [["noWeapons", 0], ["bothLv50", 50]].forEach(([tag, lv]) => { let fixed = 0, mostly = 0, coin = 0, agree = 0, tot = 0;
+    [["noWeapons", 0]].forEach(([tag, lv]) => { let fixed = 0, mostly = 0, coin = 0, agree = 0, tot = 0;
       P2.forEach(([x, y], i) => { let w = 0; for (let sd = 0; sd < S; sd++) w += fight(x, y, kit(lv), kit(lv), "D" + i + "_" + sd); const top = Math.max(w, S - w); agree += top; tot += S;
         if (top === S) fixed++; else if (top >= 8) mostly++; else coin++; });
       out[tag] = { sameWinnerAll10Seeds: Math.round(100 * fixed / N), sameWinner8or9of10: Math.round(100 * mostly / N), closeTo5050: Math.round(100 * coin / N), avgFightsMatchingUsualWinner: Math.round(100 * agree / tot) }; });
