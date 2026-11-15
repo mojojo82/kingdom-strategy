@@ -349,4 +349,11 @@ t("v1629 gems in the starting event rewards: same patch in the game and the admi
   assert.ok(L.sg.personal.every((t) => t.items.gems > 0) && L.sg.alliance.every((t) => t.items.gems > 0)); assert.strictEqual(L.arena.rankW[0].items.gems, 1000);
   ["arena", "ff", "br"].forEach((k) => assert.ok(L[k].ms.every((m) => m.items.gems > 0), k));
 });
+t("v1630 hero of your choice (pick_shards) in events: allowed alone or with items, resolved to a Weekly Chest hero only", () => {
+  const ev = C.normalizeEvents([{ name: "7-Day Sign-in", goal: "signin", schedule: { type: "newplayer", days: 0 }, milestones: [{ items: { gems: 5 } }, { items: { pick_shards: 30, gems: 1000 } }, { items: { pick_shards: 3 } }] }])[0];
+  assert.deepStrictEqual(ev.milestones[1].items, { gems: 1000, pick_shards: 30 }); assert.strictEqual(ev.milestones[2].labels.pick_shards, C.PICK_SHARDS_LABEL);
+  assert.deepStrictEqual(C.resolvePickShards(ev.milestones[1].items, "kessa", C.WK_HEROES_DEFAULT), { gems: 1000, shards_kessa: 30 });
+  assert.throws(() => C.resolvePickShards(ev.milestones[1].items, "", C.WK_HEROES_DEFAULT), /pick a hero/); assert.throws(() => C.resolvePickShards(ev.milestones[1].items, "gareth", C.WK_HEROES_DEFAULT), /can't be picked/);
+  assert.deepStrictEqual(C.resolvePickShards({ gems: 1 }, null, []), { gems: 1 }, "no pick needed");
+});
 console.log(n + " tests passed");

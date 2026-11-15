@@ -254,7 +254,7 @@
   function toast(t, bad) { var el = $("toast"); el.textContent = t; el.className = bad ? "err" : ""; el.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(function () { el.style.display = "none"; }, 4000); }
   function call(name, data) { return fns.httpsCallable(name)(Object.assign({ env: S.env }, data || {})).then(function (r) { return r.data; }); }
   function errText(e) { return (e && e.message) || "error"; }
-  function itemLabel(id) { var d = S.catalog && S.catalog.items[id]; return d ? (d.icon ? d.icon + " " : "") + d.name : id; }
+  function itemLabel(id) { if (id === "pick_shards") return "🦸 Hero of your choice shards (a Weekly Chest hero, picked when claiming)"; var d = S.catalog && S.catalog.items[id]; return d ? (d.icon ? d.icon + " " : "") + d.name : id; }
 
   // ---- environment switch ----
   function renderEnv() {
@@ -282,7 +282,7 @@
 
   // ---- item rows ----
   function addItemRow(box) {
-    var ids = Object.keys(S.catalog.items).filter(function (k) { return k[0] !== "_"; });
+    var ids = Object.keys(S.catalog.items).filter(function (k) { return k[0] !== "_"; }); if (/^em_/.test(box)) ids = ["pick_shards"].concat(ids); /* v1630: events can give a hero of the player's choice */
     var r = document.createElement("div"); r.className = "itemrow";
     r.innerHTML = '<select><option value="">— No item (message only) —</option>' + ids.map(function (k) { return '<option value="' + esc(k) + '">' + esc(itemLabel(k)) + "</option>"; }).join("") + '</select><input type="number" min="1" placeholder="Amount"><button class="b ghost" title="Remove">✕</button>';
     r.querySelector("button").onclick = function () { r.remove(); };
@@ -694,7 +694,7 @@ function ksEvCardHtml(ev, prog, claimed, end, now, esc) {
     { target: 4, worth: 0, items: { shards_roran: 15 } },
     { target: 5, worth: 0, items: { conquest_books: 20 } },
     { target: 6, worth: 0, items: { valor: 2000, speedup_general_1h: 3 } },
-    { target: 7, worth: 0, items: { shards_roran: 30, gems: 1000 } } ] };
+    { target: 7, worth: 0, items: { pick_shards: 30, gems: 1000 } } ] }; /* v1630: day 7 = 30 shards of a Weekly Chest hero the player picks */
   function evSync() { /* copy the form back into the draft */
     (S.evDraft || []).forEach(function (ev, ei) {
       var q = function (f) { return document.querySelector('[data-ef2="' + f + '"][data-ei2="' + ei + '"]'); }; if (!q("name")) return;

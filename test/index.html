@@ -2839,6 +2839,14 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-lr .pt { font-family:'KS Title','Lilita One',sans-serif; color:#ffd77a; }
   #evWin .evw-t .evw-gi { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } #evWin .evw-t .evw-gi .evw-tile.sm { width:36px; height:36px; margin:0; }
   #evWin .evw-rr.wide { flex:0 0 100%; } #evWin .evw-rr.wide span { flex:1; }
+  #ksPick { position:fixed; inset:0; z-index:100000; background:rgba(4,8,18,.78); display:flex; align-items:center; justify-content:center; padding:16px; }
+  #ksPick .kp-box { width:100%; max-width:380px; background:#101a2e; border:2px dashed #c9a24a; border-radius:14px; padding:14px; color:#f3e9d2; text-align:center; }
+  #ksPick .kp-t { font-family:'KS Title','Lilita One',sans-serif; font-size:22px; color:#f0c95f; } #ksPick .kp-s { font-size:13px; color:#a9b4c8; margin:2px 0 10px; }
+  #ksPick .kp-g { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; } #ksPick .kp-h { position:relative; border:2px solid rgba(255,255,255,.35); border-radius:10px; padding:0; overflow:hidden; aspect-ratio:3/4; cursor:pointer; background:linear-gradient(#7d848c,#b9bec4); }
+  #ksPick .kp-h.r3 { background:linear-gradient(180deg,#a66bd8,#6e3bb0); } #ksPick .kp-h.r4 { background:linear-gradient(180deg,#f2b632,#d9902a); } #ksPick .kp-h img { width:100%; height:100%; object-fit:cover; object-position:50% 12%; display:block; }
+  #ksPick .kp-h b { position:absolute; left:0; right:0; bottom:0; padding:4px 2px; background:rgba(5,9,20,.72); font-size:13px; color:#fff; } #ksPick .kp-h.on { border-color:#ffe28a; box-shadow:0 0 0 3px #ffd04d; }
+  #ksPick .kp-b { display:flex; gap:8px; margin-top:12px; } #ksPick .kp-b button { flex:1; border:0; border-radius:8px; padding:10px; font-weight:800; font-size:14px; cursor:pointer; }
+  #ksPick .kp-no { background:#33291c; color:#c9b48a; border:1px dashed #6b5730 !important; } #ksPick .kp-ok { background:#2bb3d9; color:#fff; text-shadow:0 1px 1px rgba(0,40,60,.55); } #ksPick .kp-ok:disabled { opacity:.5; }
   #evWin .evw-rrs { display:flex; flex-wrap:wrap; gap:8px; padding:0 10px; }
   #evWin .evw-rr { flex:0 0 calc(33.3% - 6px); box-sizing:border-box; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.28); border:1px dashed rgba(201,162,74,.5); border-radius:9px; padding:5px 7px; font-size:11.5px; font-weight:800; color:#f6e2a6; }
   #evWin .evw-rr span { flex:1; min-width:0; } #evWin .evw-rr .evw-tile { width:38px; height:38px; margin:0; flex:none; }
@@ -13906,7 +13914,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1629"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1630"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19761,11 +19769,25 @@ function ksEvRender() {
   [].forEach.call(el.querySelectorAll("[data-evc]"), function (b) { if (KSE.busy[b.getAttribute("data-evc") + "#" + b.getAttribute("data-evi")]) { b.disabled = true; b.textContent = "…"; } });
 }
 function ksEvNote(t) { var n = document.getElementById("ksEvNote"); if (n) { n.textContent = t; clearTimeout(KSE.nt); KSE.nt = setTimeout(function () { n.textContent = ""; }, 4000); } }
-function ksEvClaim(id, i) {
+/* v1630: "Hero of your choice" reward (pick_shards, e.g. day 7 of the sign-in): pick one of the Weekly Chest heroes, the server checks the pick */
+function ksPickHero(n, done) {
+  var hs = ((LIVEOPS.wk || {}).heroes || []).filter(function (k) { return HERO_DEFS[k]; }); if (!hs.length) { ksEvNote("No heroes to choose from right now."); return; }
+  var ov = document.getElementById("ksPick"); if (ov) ov.remove(); ov = document.createElement("div"); ov.id = "ksPick"; var sel = null;
+  ov.innerHTML = '<div class="kp-box"><div class="kp-t">Choose your hero</div><div class="kp-s">' + n + " shards of the hero you pick</div><div class=\"kp-g\">" + hs.map(function (k) { var d = HERO_DEFS[k];
+    return '<button type="button" class="kp-h r' + (d.rarity === "Legendary" ? 4 : d.rarity === "Epic" ? 3 : 2) + '" data-kph="' + k + '"><img alt="" src="' + evFace(k) + '"><b>' + escapeHtml(d.name || k) + "</b></button>"; }).join("") + '</div><div class="kp-b"><button type="button" class="kp-no">Cancel</button><button type="button" class="kp-ok" disabled>Pick a hero</button></div></div>';
+  document.body.appendChild(ov);
+  ov.onclick = function (e) { var t = e.target, b = t.closest && t.closest("[data-kph]");
+    if (b) { sel = b.getAttribute("data-kph"); [].forEach.call(ov.querySelectorAll("[data-kph]"), function (x) { x.classList.toggle("on", x === b); }); var ok = ov.querySelector(".kp-ok"); ok.disabled = false; ok.textContent = "Claim " + n + " " + ((HERO_DEFS[sel] || {}).name || sel) + " shards"; return; }
+    if (t.closest && t.closest(".kp-ok") && sel) { ov.remove(); done(sel); return; }
+    if (t === ov || (t.closest && t.closest(".kp-no"))) ov.remove(); };
+}
+function ksEvClaim(id, i, pick) {
+  var ev0 = (KSE.list || []).filter(function (e) { return e.id === id; })[0], m0 = ev0 && (ev0.milestones || [])[i];
+  if (m0 && m0.items && m0.items.pick_shards && !pick) { ksPickHero(m0.items.pick_shards, function (h) { ksEvClaim(id, i, h); }); return; }
   if (!window.KS_BACKEND || !KS_BACKEND.call) return; var key = id + "#" + i; if (KSE.busy[key]) return; KSE.busy[key] = 1; ksEvRender();
   try { cloudSyncNow(true); } catch (e) {} /* the server checks the saved power, so save first */
   setTimeout(function () {
-    KS_BACKEND.call("claimEvent", { event: id, idx: i }).then(function (r) {
+    KS_BACKEND.call("claimEvent", pick ? { event: id, idx: i, pick: pick } : { event: id, idx: i }).then(function (r) {
       if (r && r.events) KSW.events = r.events; if (r && typeof r.gems === "number") { KSW.gems = r.gems; game.state.gems = r.gems; } try { render(); } catch (e) {}
       if (!r.dup) ksEvNote("🎉 Claimed!" + (Object.keys(r.items || {}).some(function (k) { return k !== "gems"; }) ? " Items are in your mail." : ""));
     }, function (e) { ksEvNote(/come back tomorrow/.test(String(e && e.message)) ? "Already claimed today - come back tomorrow!" : /not reached/.test(String(e && e.message)) ? "Not quite yet - your saved progress hasn't reached it. Try again in a moment." : ksErrText(e)); })

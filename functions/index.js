@@ -615,6 +615,7 @@ exports.adminSaveEvents = wrap(async (req, uid, R, d) => {
 exports.claimEvent = wrap(async (req, uid, R, d) => {
   const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted"); /* v995: Security panel "hide from rankings & event rewards" */
   const events = await eventsConfig(R), ev = events.find((e) => e.id === String(d.event || "")), idx = Math.trunc(+d.idx), base = R + "players/" + uid + "/";
+  const lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
   const [sv, mt] = await Promise.all([db.doc(base + "save/main").get(), db.doc(base + "meta/account").get()]);
   const save = sv.exists ? sv.data() : {}, createdAt = (mt.exists && mt.data().createdAt) || save.startedAt || null;
   const win = C.eventWindow(ev, createdAt), progress = ev ? C.eventProgress(ev.goal, save) : 0;
@@ -622,6 +623,7 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
     const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {}, evs = wd.events || {};
     const r = C.decideEventClaim(evs[ev ? ev.id : ""], ev, idx, progress, win, Date.now());
     if (r.dup) return { dup: true, events: evs, gems: wd.gems || 0 };
+    if (r.items && r.items.pick_shards) r.items = C.resolvePickShards(r.items, d.pick, (((lo || {}).wk || {}).heroes || []).length ? lo.wk.heroes : C.WK_HEROES_DEFAULT); /* v1630: hero of your choice */
     const patchEvents = Object.assign({}, evs); patchEvents[ev.id] = r.claimed;
     const patch = { events: patchEvents }, gems = Math.trunc(r.items.gems || 0), others = {}; Object.keys(r.items).forEach((k) => { if (k !== "gems") others[k] = r.items[k]; });
     let g = wd.gems || 0; if (gems > 0) { g += gems; patch.gems = g; ledger(tx, R, uid, "gems", gems, g, "event_reward", ev.id + "#" + idx); }

@@ -259,7 +259,11 @@ function normalizeEvents(list) {
     const ms = Array.isArray(ev.milestones) ? ev.milestones : []; if (!ms.length || ms.length > 30) throw new GameError("invalid-argument", "1-30 milestones (" + name + ")");
     if (goal === "signin" && ms.length > 30) throw new GameError("invalid-argument", "max 30 days (" + name + ")");
     const milestones = ms.map((m, mi) => { const target = goal === "signin" ? mi + 1 : Math.trunc(+(m && m.target) || 0); if (!(target > 0 && target <= 1e12)) throw new GameError("invalid-argument", "milestone target must be more than 0 (" + name + ")");
-      const list2 = normalizeItems(m.items), items = {}, labels = {}; list2.forEach((x) => { items[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
+      /* v1630: "pick_shards" = shards of a hero the player picks when claiming (one of the Weekly Chest heroes, liveops wk.heroes) */
+      const raw = Object.assign({}, (m && m.items) || {}), pick = Math.trunc(+raw.pick_shards || 0); delete raw.pick_shards;
+      if (pick && !(pick >= 1 && pick <= 1e6)) throw new GameError("invalid-argument", "bad amount for pick_shards (" + name + ")");
+      const list2 = pick && !Object.keys(raw).length ? [] : normalizeItems(raw), items = {}, labels = {}; list2.forEach((x) => { items[x.id] = x.qty; labels[x.id] = (x.icon ? x.icon + " " : "") + x.name; });
+      if (pick) { items.pick_shards = pick; labels.pick_shards = PICK_SHARDS_LABEL; }
       return { target, worth: Math.max(0, Math.trunc(+m.worth || 0)), items, labels }; }).sort((a, b) => a.target - b.target);
     return { id, name, icon: Array.from(String(ev.icon || "🎉").trim()).slice(0, 4).join("") || "🎉", tag: String(ev.tag || "").trim().slice(0, 20), desc: String(ev.desc || "").trim().slice(0, 200),
       banner, goal, schedule, active: ev.active !== false, milestones };
@@ -589,6 +593,14 @@ function packIdFrom(name) { return String(name || "").toLowerCase().replace(/[^a
 
 // ---- mail: admin gifts. Any catalogue item; the player claims it once; each item claimed gets a ledger entry. ----
 const SAVE_PATH_OK = /^(resources|troops|heroes\.[a-z0-9_]+|idle|speedups|skins|items|weaponFrags|ev)?\.?[a-zA-Z0-9_]+$/; /* v946: + speedups, skins; v1593: + items (backpack items), weaponFrags */
+const WK_HEROES_DEFAULT = ["roran", "kessa", "halo7", "caelum"]; /* the game's default Weekly Chest heroes (used when none are saved) */
+const PICK_SHARDS_LABEL = "🦸 Hero of your choice shards";
+/* the hero picked for a "pick_shards" reward must be one of the Weekly Chest heroes */
+function resolvePickShards(items, pick, heroes) {
+  if (!items || !items.pick_shards) return items; const h = String(pick || "");
+  if (!h) throw new GameError("failed-precondition", "pick a hero"); if ((heroes || []).indexOf(h) < 0 || !ITEMS["shards_" + h]) throw new GameError("invalid-argument", "that hero can't be picked");
+  const out = Object.assign({}, items); out["shards_" + h] = (out["shards_" + h] || 0) + out.pick_shards; delete out.pick_shards; return out;
+}
 function normalizeItems(items, allowEmpty) { /* allowEmpty: mails may be a message only (v939) */
   if (allowEmpty && (items == null || (typeof items === "object" && !Array.isArray(items) && !Object.keys(items).length))) return [];
   if (!items || typeof items !== "object") throw new GameError("invalid-argument", "no items");
@@ -774,5 +786,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

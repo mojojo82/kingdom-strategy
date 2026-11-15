@@ -5186,3 +5186,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Only events NOT already saved in the admin page use these; a saved event keeps what was saved ("Load the starting numbers" brings them in).
 - Admin: no items can be lost on save any more - Conquest Sprint tasks now have 4 slots (were 1), its final chest 6, New Player Path tasks / chests and Season Pass levels at least 4 (were 1-2), any group bigger than the slots gets extra slots.
 - Tests: unit tests 24 pass; admin defaults saved without edits come back identical through the server check (109 gem entries); headless Conquest Sprint tab shows the 2-item groups, no errors.
+
+## v1630 — 7-Day Sign-in: day 7 = hero of your choice
+- New event reward "🦸 Hero of your choice shards" (item id pick_shards, admin event editor -> any milestone's item list). When a player claims it, a picker opens with the Weekly Chest heroes (Live events > Weekly Chest heroes; default Roran / Kessa / Halo-7 / Caelum); the server checks the pick is on that list (claimEvent, resolvePickShards) and mails the shards (gems still go straight to the wallet).
+- The admin's "7-Day Sign-in" template: day 7 is now 30 shards of a picked hero + 1,000 gems. An already-saved sign-in event keeps its own day 7 - change it in the admin event editor.
+- Picker: dark navy panel, gold dashed border, hero cards on their rarity background, flat cyan Claim button.
+- Tests: unit tests 25 pass; dev/tests/pick_hero_game_test.js headless (sign-in day with the hero choice -> picker shows 4 heroes -> pick Kessa -> 1,000 gems in the wallet + 30 Kessa shards by mail, no errors).
