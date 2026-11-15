@@ -29,6 +29,11 @@
   var SWINGS_A21 = [[3, 8, 161, -28, 320], [8, 11, -28, -195, 330], [12, 15, 1, -147, 270], [17, 23, 24, -190, 350], [26, 28, -70, -204, 260], [28, 31, -204, -385, 320], [31, 35, -385, -557, 340]];
   var SWINGS_A22 = [[3, 6, 156, -42, 340], [6, 10, -42, -216, 370], [12, 15, 150, 344, 340], [15, 16, 344, 382, 390], [18, 23, 7, -207, 350], [23, 26, -207, -410, 360],
     [26, 30, -410, -575, 380], [32, 35, -77, -205, 370], [38, 41, -35, 126, 270], [41, 45, 126, 322, 220]];
+  /* 3-second flurries (lily_flurryL_1 / _2), measured by measure_swings.py; chest 610, 506 */
+  var SWINGS_L1 = [[10, 12, 150, 298, 320], [13, 16, -97, -208, 440], [19, 20, -112, -190, 170], [21, 25, -140, 33, 400], [29, 34, -19, -219, 400], [36, 42, 0, -217, 330],
+    [44, 48, 159, 359, 370], [52, 58, 12, -191, 320], [61, 63, -96, -147, 180], [64, 67, -73, 21, 430], [69, 74, 21, -198, 390], [76, 81, 170, 376, 370]];
+  var SWINGS_L2 = [[19, 23, -171, 35, 290], [28, 32, 22, -192, 330], [38, 42, 165, 383, 350], [46, 51, 11, -203, 320], [57, 60, 158, 345, 370], [60, 63, 345, 529, 280],
+    [63, 67, 529, 727, 330], [67, 69, 727, 780, 250], [72, 75, 5, -182, 340], [75, 76, -182, -218, 290], [80, 81, -104, -185, 160], [82, 85, -152, 11, 350]];
   var SWINGS = SWINGS_A;
   var OVER = 1.18;    /* oversize the measured radius */
   var WIDTH = 0.30;   /* max crescent thickness as a share of its radius */
@@ -243,8 +248,9 @@
     ctx.drawImage(spr.img, -m.cx, -m.cy);
     ctx.restore();
   }
-  function draw(ctx, t, ox, oy, k, swings, st) { swings = swings || SWINGS; for (var i = 0; i < swings.length; i++) { if (st && st.painted) slashSprite(ctx, swings[i], i, t, ox, oy, k, st, st.sprites || api.sprites); else (st && st.flat ? slashFlat : slash)(ctx, swings[i], i, t, ox, oy, k, st); } }
-  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], SWINGS_A21: SWINGS_A21, CHEST_A21: [610, 506], SWINGS_A22: SWINGS_A22, CHEST_A22: [610, 506], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
+  /* seed: shifts which painted slash / tilt each swing gets (used when the flurry is replayed, so the 2nd pass looks different) */
+  function draw(ctx, t, ox, oy, k, swings, st, seed) { swings = swings || SWINGS; seed = seed || 0; for (var i = 0; i < swings.length; i++) { if (st && st.painted) slashSprite(ctx, swings[i], i + seed, t, ox, oy, k, st, st.sprites || api.sprites); else (st && st.flat ? slashFlat : slash)(ctx, swings[i], i + seed, t, ox, oy, k, st); } }
+  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], SWINGS_A21: SWINGS_A21, CHEST_A21: [610, 506], SWINGS_A22: SWINGS_A22, CHEST_A22: [610, 506], SWINGS_L1: SWINGS_L1, CHEST_L1: [610, 506], SWINGS_L2: SWINGS_L2, CHEST_L2: [610, 506], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
   if (typeof window !== "undefined") window.LILY_SLASH = api;
   if (typeof module !== "undefined") module.exports = api;
 })();
