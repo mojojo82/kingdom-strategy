@@ -5084,3 +5084,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Clean Code added back as her 2nd skill with `disabled: true, note: "very very strong"` and `perLevel: 0` (same pattern as Lyra's Eagle Eye), so it shows on her card but does nothing. Was +5% team damage per level.
 - Why: test with it ON (Vesper only, test only): ranged vs melee went from **31/69 to 67/33**; every 100% ranged team had Vesper.
 - Check on v1613 (dev/balance/ranged_vs_melee.js): ranged 31 / melee 69 - unchanged from v1612, so the skill is really off.
+
+## v1614 — Iron Lily: new main skill Crimson Tempest (sword flurry); old skills off, Iron Will deleted
+- Harley: "Disable all her skills, but Iron Will gets deleted. The new main skill is this sword flurry. At level 5 it should be quite deadly... fortresses, bosses, enemies, enemy melee heroes."
+- **Crimson Tempest** (name is a placeholder): every 12 s, hits what she faces AND up to 4 more enemies / enemy front-line heroes near her for the same full damage (existing splash mechanic, pct 1.0), fortress and bosses included. pctByLevel 1.2 / 1.7 / 2.3 / 3.0 / 4.0. Same in Conquest and Arena. Visuals (painted slashes on her real swings, dev/heroes/lily/) come with her new frames - she still uses her old sheets.
+- Crimson Oath + Blade Wall: `disabled: true` (kept on her card). Iron Will deleted.
+- Fix: in Arena a switched-off ACTIVE or SUPPORT skill still fired (only limit skills were skipped); now `!skill.disabled` there too, and switched-off DEF / block passives do nothing.
+- Tests (headless, she is still comingSoon - un-hidden in the test page only): Conquest - 2 casts in 42 s, 4 splash hits (6,144 dmg). Arena - same fight does more damage with the splash than without.
+- Balance (Lv80 5*, skills 5, no weapons): 1v1 duels Hanzo 100, **Lily 87**, Roran 78, Kessa 68 (her skill off: 49; at half: 84). 5 ranged vs 5 melee with Lily in the melee team: **melee 91%** (skill at half: 90%, skill off: 67%; melee without her: 69%). Not tuned yet - Harley to decide.

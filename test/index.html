@@ -6310,7 +6310,7 @@ var I18N_HERO = { ru: {
   sera: ["Сера", "Целительный свет", "Каждые 12 с лечит крепость на 8% макс. ОЗ (16% на ур. 5)."],
   torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 8 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
-  ironlily: ["Железная Лили", "Алая клятва", "Каждые 12 с воодушевляет отряд: все герои получают +20% АТК на 4 с (+40% на ур. 5)."],
+  ironlily: ["Железная Лили", "Багровая буря", "Каждые 12 с — яростный вихрь ударов меча: тяжёлый урон всем, кто рядом (враг перед ней и ещё до 4 врагов рядом, крепости и боссы тоже) — 120%, 400% на ур. 5."],
   vesper: ["Веспер Квилл", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
   aurek: ["Аурек Солмейн", "Удар солнечной кузни", "Каждые 12 с вонзает меч в землю: столбы священного огня бегут по земле в обе стороны и бьют всех врагов, включая крепость. Проекционная стена защищает от них стрелков."],
   seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
@@ -6503,9 +6503,13 @@ var HERO_DEFS = {
     /* v1410 (Harley): her kit = a melee fighter that is extremely hard to remove + team ATK leader. Text only until she is built
        (comingSoon). Blade Wall = BULLETS only (fortress cannon now, future bullet enemies/heroes), evenly spread like Shadow Step (no dice). */
     conquestSkills: [
-      { name: "Crimson Oath", icon: "🌺📣", kind: "active", support: "oath", cooldown: 12, buffPctByLevel: [0.20, 0.25, 0.30, 0.35, 0.40], buffSec: 4, desc: "Every 12s, rallies the team: all heroes get +20% ATK for 4s (+40% at Lv 5)." },
-      { name: "Blade Wall", icon: "🗡️🛡️", kind: "passive", blockPctByLevel: [0.20, 0.30, 0.40, 0.50, 0.60], desc: "Parries bullets fired at her in a flurry of sword blocks: blocks 20% of them (60% at Lv 5), evenly - every 5th bullet at 20%, every 2nd at 50%." },
-      { name: "Iron Will", icon: "🛡️", kind: "passive", defPctByLevel: [0.08, 0.12, 0.16, 0.20, 0.25], desc: "Her own DEF +8% (+25% at Lv 5)." }
+      /* v1614 (Harley): NEW main skill - the sword flurry ("ball of death"). Hits what is in front of her AND everything caught round her
+         (up to 4 more enemies / enemy front-line heroes) for the SAME full damage - fortresses, bosses, enemies, enemy melee heroes.
+         Existing mechanics only (Piston Slam's splash, pct 1). Visuals (painted slashes on her real swings) come with her new frames. Name is a placeholder. */
+      { name: "Crimson Tempest", icon: "🌺⚔️", kind: "active", cooldown: 12, splash: { n: 4, pct: 1.0 }, pctByLevel: [1.2, 1.7, 2.3, 3.0, 4.0], desc: "Every 12s, a chaotic, blinding flurry of sword slashes: everything caught around her takes heavy damage - the enemy she faces and up to 4 more nearby, fortress and bosses included (120%, 400% at Lv 5)." },
+      { disabled: true /* v1614 (Harley): switched OFF - was her main skill; may come back as skill 2 or be replaced */, name: "Crimson Oath", icon: "🌺📣", kind: "active", support: "oath", cooldown: 12, buffPctByLevel: [0.20, 0.25, 0.30, 0.35, 0.40], buffSec: 4, desc: "Every 12s, rallies the team: all heroes get +20% ATK for 4s (+40% at Lv 5)." },
+      { disabled: true /* v1614 (Harley): switched OFF */, name: "Blade Wall", icon: "🗡️🛡️", kind: "passive", blockPctByLevel: [0, 0, 0, 0, 0], desc: "Parries bullets fired at her in a flurry of sword blocks: blocks 20% of them (60% at Lv 5), evenly - every 5th bullet at 20%, every 2nd at 50%." }
+      /* v1614 (Harley): Iron Will (own DEF +8..25% - a skill a stat could do) DELETED */
     ],
     expeditionSkills: [] },
   // v1505 (Harley 12 Nov): only Hanzo is VIP - Iron Lily and these five are not (still comingSoon until built).
@@ -6921,9 +6925,9 @@ function ksPickL(arr, lvl) { return arr ? (arr[Math.max(1, Math.min(arr.length, 
 function heroRangedTakeMult(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 1; var p = 0; /* v1521: Halo-7's Stone Shell - share of RANGED damage he still takes */
   d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.rangedRedByLevel) p += ksPickL(sk.rangedRedByLevel, ksSkLvl(h, i)); }); return Math.max(0, 1 - p); }
 function heroOwnDefMult(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 1; var p = 0;
-  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.defPctByLevel) p += ksPickL(sk.defPctByLevel, ksSkLvl(h, i)); }); return 1 + p; }
+  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.defPctByLevel && !sk.disabled) p += ksPickL(sk.defPctByLevel, ksSkLvl(h, i)); }); return 1 + p; }
 function heroBladeWallPct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0;
-  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.blockPctByLevel) p += ksPickL(sk.blockPctByLevel, ksSkLvl(h, i)); }); return Math.min(0.95, p); }
+  d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.blockPctByLevel && !sk.disabled) p += ksPickL(sk.blockPctByLevel, ksSkLvl(h, i)); }); return Math.min(0.95, p); }
 function bladeWallRoll(ent, p) { if (!(p > 0) || !ent) return false; var n = ent.bwN || 0; ent.bwN = n + 1; if (Math.floor((n + 1) * p + 1e-9) > Math.floor(n * p + 1e-9)) { ent.bwBlocks = (ent.bwBlocks || 0) + 1; return true; } return false; } // call this where a BULLET would hit a hero (none exist yet)
 function skillValueAtLevel(heroKey, skillIdx, level, skill, h, basicAtkDmg) {
   var ov = getSkillOverride(heroKey, skillIdx, level);
@@ -13669,7 +13673,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1613"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1614"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -37101,9 +37105,9 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
       if (skill.kind === "passive" && skill.effectType === "conquestDamageMult") dmgMultSum += lvl * skill.perLevel;
-      if (skill.kind === "active" && skill.support) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel || skill.buffPctByLevel)[Math.min(5, lvl) - 1] || 0, sec: skill.buffSec || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
+      if (skill.kind === "active" && skill.support && !skill.disabled) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel || skill.buffPctByLevel)[Math.min(5, lvl) - 1] || 0, sec: skill.buffSec || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
       if (skill.kind === "limit" && !skill.disabled) limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest (v1612: a switched-off limit skill does nothing) */
-      if (skill.kind === "active" && !skill.support) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skillCdAt(skill, lvl), skill: skill, lvl: lvl, requiresClose: isInfantry && !skill.aoeAll && !skill.dive, aoe: !!skill.aoeAll, /* v1514: a dive needs no reach - he flies to the target */ /* v992: Shuriken Storm needs no reach. Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
+      if (skill.kind === "active" && !skill.support && !skill.disabled) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skillCdAt(skill, lvl), skill: skill, lvl: lvl, requiresClose: isInfantry && !skill.aoeAll && !skill.dive, aoe: !!skill.aoeAll, /* v1514: a dive needs no reach - he flies to the target */ /* v992: Shuriken Storm needs no reach. Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
     });
   });
   // dmgMultSum only settles once the WHOLE roster's passives are known, so
