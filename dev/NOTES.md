@@ -5125,3 +5125,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1619 — Conquest Sprint switched on (Harley: "Finish the conquest sprint")
 - `cs.on` true in the game. Runs Mon-Sun UTC on odd weeks (this week, 16-22 Nov is week 2967 → on); even weeks are kept for Alliance Siege. Everything editable in admin console > Live events > 🏁 Conquest Sprint.
 - Retested headless: task counting / claims / final chest, no errors.
+
+## v1620 — Iron Lily's Crimson Tempest now shows (Harley: "it reaches zero, I don't see anything play, but the timer resets")
+- Reproduced (headless Conquest, Lv40 1*, skill Lv2): the skill fired and landed (282 dmg) but (1) Lily had no skill animation, so nothing played, and (2) Conquest melee skills strike ANY enemy on the field (v845), so the hit often landed on an enemy far away from her.
+- Fix 1: skill sheet `ironlily_skill` (art/heroes/ironlily/ironlily_skill_anim_v1.webp, 84 frames, 24 fps = 3.5 s): the picked flurry (A-redo 2 at 1.5x, played twice) with the painted ChatGPT slashes baked onto her tracked blade path (dev/heroes/lily/skill_mock.js NOBG=1, SC 0.5; frames kept in art/originals/heroes/ironlily/large/skill/). Plays in Conquest and Arena (she holds her spot while it plays).
+- Fix 2: Crimson Tempest only strikes an enemy at her sword (skills with splash.around); nobody in reach = it stays ready at 0 and fires the moment she reaches one - the flurry now always happens on the enemies it hits.
+- Checked headless: Conquest - flurry on the enemy she strikes, numbers on the targets; Arena - flurry at her target (the fortress front when no enemy hero is in the way); no errors.

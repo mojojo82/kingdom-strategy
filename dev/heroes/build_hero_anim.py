@@ -97,6 +97,10 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                                                 ["slam_down", list(range(50, 58))], ["slam_clean", list(range(58, 111, 2))]]}},
        # v1616 Iron Lily redo (grey ninja, green screen, one start frame for idle/run/attacks): run = one clean 2-step stride (video 38-63);
        # attack = slash swing (8-36) + back to guard (52-68), the long hold in between cut; attack2 = spin slash, first burst (4-56); attack3 = hop + chop (16-48) + back (64-84). Every 2nd frame, 24 fps (~1 s each)
+       # v1619 Crimson Tempest (own sheet - the painted slashes reach far round her): the flurry clip A-redo 2 at 1.5x played twice with the picked
+       # ChatGPT slashes baked on her tracked blade path (84 frames, 24 fps = 3.5 s); stand 70 keeps the sheet under 4096
+       "ironlily_skill": {"hero": "ironlily", "tag": "v1", "stand": 70, "disp_stand": 24, "per_clip": True, "canvas": 3, "wrap": 14,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(0, 84))}},
        "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 38, "to": 63},
                  "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},
