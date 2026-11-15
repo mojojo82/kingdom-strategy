@@ -269,7 +269,7 @@ function normalizeEvents(list) {
    only adminSaveLiveops writes it. The game pays these rewards itself (into the save), so only 'save' catalogue items (no gems) - plus
    "featured_shards" = shards of this week's featured hero. Every number is clamped; missing parts fall back to the game's own defaults. */
 const LIVEOPS_KINDS = ["kill", "arena", "camp", "monster", "ticket", "newlevel", "boss", "build"];
-function liveItemOk(id) { return id === "featured_shards" || id === "np_shards" || (!!ITEMS[id] && id[0] !== "_" && ITEMS[id].kind === "save"); }
+function liveItemOk(id) { return id === "featured_shards" || id === "np_shards" || id === "sp_shards" || (!!ITEMS[id] && id[0] !== "_" && ITEMS[id].kind === "save"); }
 function liveItems(obj, what) {
   const out = {}; Object.keys(obj || {}).forEach((id) => { const q = Math.trunc(+obj[id]); if (!liveItemOk(id)) throw new GameError("invalid-argument", "can't use " + id + " in " + what + " (gems and unknown items aren't allowed)"); if (q >= 1 && q <= 1e9) out[id] = q; });
   if (!Object.keys(out).length) throw new GameError("invalid-argument", what + " needs at least one item"); if (Object.keys(out).length > 6) throw new GameError("invalid-argument", "max 6 items in " + what); return out;
@@ -369,6 +369,15 @@ function normalizeCS(p) {
     return { id, kind, need: num(t && t.need, 1, 1e9, 1), name: String((t && t.name) || "").trim().slice(0, 60) || kind, items: liveItems(t && t.items, "Conquest Sprint task " + (i + 1)) }; });
   return { on: p.on !== false, parity: num(p.parity, 0, 1, 1), tasks, fin: liveItems(p.fin, "Conquest Sprint final chest") };
 }
+/* v1621: Season Pass - `days`-long seasons from UTC day `start`; XP = Event Tokens earned; `xp` tokens a level; each level a free + a premium reward
+   (premium = a paid pass - payments not connected yet). The game pays the rewards into the save. "sp_shards" = shards of the season hero. */
+const LIVE_SP_DEFAULT = {"on": true, "start": 20766, "days": 28, "hero": "halo7", "name": "Season of the Iron Golem", "xp": 20, "levels": [{"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"item_stamina_10": 1}, "prem": {"sp_shards": 2, "speedup_general_1h": 2}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"sp_shards": 2}, "prem": {"sp_shards": 2, "item_chest_eq_3": 1}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"item_stamina_10": 1}, "prem": {"sp_shards": 2, "speedup_general_1h": 2}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"sp_shards": 2}, "prem": {"sp_shards": 2, "item_chest_weapon": 1}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"item_stamina_10": 1}, "prem": {"sp_shards": 2, "speedup_general_1h": 2}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"sp_shards": 2}, "prem": {"sp_shards": 2, "item_chest_eq_4": 1}}]};
+function normalizeSP(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_SP_DEFAULT));
+  const levels = (Array.isArray(p.levels) ? p.levels : []).slice(0, 60).map((l, i) => ({ free: liveItems(l && l.free, "Season Pass level " + (i + 1) + " free"), prem: liveItems(l && l.prem, "Season Pass level " + (i + 1) + " premium") }));
+  if (!levels.length) throw new GameError("invalid-argument", "Season Pass needs at least one level");
+  return { on: p.on !== false, start: num(p.start, 0, 1e6, LIVE_SP_DEFAULT.start), days: num(p.days, 7, 120, 28), hero: heroKey(p.hero || "halo7"), name: String(p.name || "").trim().slice(0, 50), xp: num(p.xp, 1, 1e6, 20), levels };
+}
 function normalizeLiveops(c) {
   c = c || {}; const f = c.fhw || {}, sh = c.shop || {}, wk = c.wk || {}, pts = {}, P = f.pts || {};
   ["kill", "arena", "camp", "monster", "ticket"].forEach((k) => { pts[k] = num(P[k], 0, 100000, 0); });
@@ -383,7 +392,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {

@@ -292,4 +292,10 @@ t("v1618 Conquest Sprint: defaults, heroup kind, bad kinds / gems refused, needs
   assert.throws(() => C.normalizeLiveops({ cs: { tasks: [{ kind: "nope", items: { food: 1 } }], fin: { food: 1 } } }), /bad kind/);
   assert.throws(() => C.normalizeLiveops({ cs: { tasks: [], fin: { gems: 5 } } }), /gems/);
 });
+t("v1621 Season Pass: defaults (30 levels, 60 premium season-hero shards), sp_shards allowed, gems refused", () => {
+  const L = C.normalizeLiveops({}); assert.strictEqual(L.sp.levels.length, 30); assert.strictEqual(L.sp.levels.reduce((a, x) => a + (x.prem.sp_shards || 0), 0), 60);
+  const n = C.normalizeLiveops({ sp: { days: 3, xp: 0, hero: "kessa", levels: [{ free: { food: 1 }, prem: { sp_shards: 5 } }] } }).sp; assert.strictEqual(n.days, 28, "too short falls back"); assert.strictEqual(n.xp, 20); assert.strictEqual(n.hero, "kessa");
+  assert.throws(() => C.normalizeLiveops({ sp: { levels: [{ free: { gems: 5 }, prem: { food: 1 } }] } }), /gems/);
+  assert.throws(() => C.normalizeLiveops({ sp: { levels: [] } }), /at least one level/);
+});
 console.log(n + " tests passed");

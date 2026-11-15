@@ -2776,6 +2776,18 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-srv { padding:10px; }
   #evWin .evw-t .go:not(.done):not(.claim), #evWin .evw-si .buy:not(.off), #evWin .evw-how .go, #evWin .evw-tt .info { color:#fff; text-shadow:0 1px 1px rgba(0,40,60,.55); } /* v1595 (Harley): white text on the cyan buttons */
 
+  /* v1621: Season Pass */
+  #evWin .evw-sphd { height:190px; } #evWin .evw-splv { font-family:'KS Title','Lilita One',sans-serif; font-size:24px; color:#ffe6a0; -webkit-text-stroke:1.4px #2a1c08; paint-order:stroke fill; }
+  #evWin .evw-spnote { font-size:11.5px; color:#c9b48a; margin-top:6px; line-height:1.35; } #evWin .evw-spnote b { color:#ffd77a; }
+  #evWin .evw-spprem { margin-top:10px; } #evWin .evw-sptest { display:block; margin:8px auto 0; background:none; border:1px dashed #5d6f93; color:#a9b4c8; font-size:11.5px; border-radius:8px; padding:5px 10px; cursor:pointer; }
+  #evWin .evw-sphead { display:grid; grid-template-columns:1fr 40px 1fr; margin:12px 10px 4px; font-size:11px; font-weight:800; letter-spacing:1px; color:#c9b48a; text-align:center; }
+  #evWin .evw-sptrk { display:flex; flex-direction:column; gap:6px; padding:0 10px; }
+  #evWin .evw-spr { display:grid; grid-template-columns:1fr 40px 1fr; align-items:center; gap:6px; }
+  #evWin .evw-spc { position:relative; display:flex; justify-content:center; gap:6px; background:linear-gradient(180deg,#4a3218,#33220f); border:1.5px solid #8a6a3a; border-radius:10px; padding:6px 4px; cursor:pointer; min-height:58px; align-items:center; }
+  #evWin .evw-spr .evw-spc:last-child { background:linear-gradient(180deg,#3d2a52,#2a1c3a); border-color:#9b7ac8; }
+  #evWin .evw-spc.lock .evw-tile { filter:saturate(.5) brightness(.75); } #evWin .evw-spc .lk { position:absolute; right:4px; top:3px; font-style:normal; font-size:12px; }
+  #evWin .evw-spn { width:34px; height:34px; margin:auto; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'KS Title','Lilita One',sans-serif; font-size:16px; color:#a9b4c8; background:#161f2e; border:2px solid #3a4c6e; }
+  #evWin .evw-spr.on .evw-spn { color:#2a1806; background:linear-gradient(#f0c95f,#c98f1e); border-color:#ffe28a; }
   /* v1618: Conquest Sprint */
   #evWin .evw-cshd { height:180px; } #evWin .evw-csp { padding-bottom:12px; } #evWin .evw-csbar { margin:8px 4px 0; height:12px; border-radius:8px; background:#1a120a; border:1px solid #7a5a2c; overflow:hidden; } #evWin .evw-csbar i { display:block; height:100%; background:linear-gradient(90deg,#c98f1e,#f6d36b); }
   /* v1617: New Player Path */
@@ -7590,6 +7602,9 @@ var LIVEOPS_DEFAULT = {
       {"day": 10, "items": {"speedup_general_1h": 3}}, {"day": 11, "items": {"event_tokens": 20}}, {"day": 12, "items": {"weapon_tickets": 3}}, {"day": 13, "items": {"item_chest_eq_2": 1}}, {"day": 14, "items": {"np_shards": 20}}]},
   /* v1618: Conquest Sprint (functions/core.js LIVE_CS_DEFAULT) - Mon-Sun of every second week (week % 2 === parity); one-time tasks, each pays; all done = the final chest */
   cs: {"on": true, "parity": 1, "tasks": [{"id": "lvl", "kind": "newlevel", "need": 3, "name": "Clear 3 new Conquest levels", "items": {"conquest_books": 10}}, {"id": "boss", "kind": "boss", "need": 1, "name": "Beat your next chapter boss", "items": {"weapon_tickets": 2}}, {"id": "kill", "kind": "kill", "need": 2000, "name": "Defeat 2,000 enemies in Conquest (farming counts)", "items": {"speedup_general_1h": 1}}, {"id": "arena", "kind": "arena", "need": 5, "name": "Win 5 Arena fights", "items": {"event_tokens": 10}}, {"id": "hero", "kind": "heroup", "need": 3, "name": "Level up your heroes 3 times", "items": {"conquest_books": 10}}, {"id": "tix", "kind": "ticket", "need": 20, "name": "Use 20 weapon draw tickets", "items": {"speedup_general_5m": 6}}, {"id": "bld", "kind": "build", "need": 3, "name": "Upgrade buildings 3 times", "items": {"food": 5000}}, {"id": "camp", "kind": "camp", "need": 3, "name": "Win 3 fights against camps", "items": {"item_stamina_10": 1}}], "fin": {"speedup_general_1h": 3, "event_tokens": 25, "conquest_books": 20, "featured_shards": 3}},
+  /* v1621: Season Pass (functions/core.js LIVE_SP_DEFAULT) - `days`-long seasons from UTC day `start`; season XP = Event Tokens EARNED (spending them doesn't lower it), `xp` per level;
+     each level has a free reward and a premium one (premium = paid pass, payments not connected yet). "sp_shards" = shards of the season hero. */
+  sp: {"on": false /* WIP: waiting for Harley */, "start": 20766, "days": 28, "hero": "halo7", "name": "Season of the Iron Golem", "xp": 20, "levels": [{"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"item_stamina_10": 1}, "prem": {"sp_shards": 2, "speedup_general_1h": 2}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"sp_shards": 2}, "prem": {"sp_shards": 2, "item_chest_eq_3": 1}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"item_stamina_10": 1}, "prem": {"sp_shards": 2, "speedup_general_1h": 2}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"sp_shards": 2}, "prem": {"sp_shards": 2, "item_chest_weapon": 1}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"item_stamina_10": 1}, "prem": {"sp_shards": 2, "speedup_general_1h": 2}}, {"free": {"conquest_books": 10}, "prem": {"sp_shards": 2}}, {"free": {"weapon_tickets": 1}, "prem": {"sp_shards": 2}}, {"free": {"speedup_general_5m": 5}, "prem": {"sp_shards": 2}}, {"free": {"research": 300}, "prem": {"sp_shards": 2}}, {"free": {"sp_shards": 2}, "prem": {"sp_shards": 2, "item_chest_eq_4": 1}}]},
   wk: { heroes: ["roran", "kessa", "halo7", "caelum"] /* v1616: Caelum replaces Iron Lily */, shards: 10, days: 7, act: 60 },
   dailyTok: [2, 3, 4, 5, 6],
   /* v1599/v1604: Boss Rush (functions/core.js LIVE_BR_DEFAULT) - levels: hp1 health at level 1, +hpGrow% health and +dmgGrow% damage a level, unkillable at maxLv; milestones = highest level reached */
@@ -9371,7 +9386,7 @@ function createGame(opts) {
     if (D.ch.indexOf(i) >= 0) return { ok: false, reason: "claimed" };
     if (dailyPoints() < c.at) return { ok: false, reason: "not_done" };
     D.ch.push(i); var r = dailyChestReward(i); dailyGrant(r);
-    var tk = (LIVEOPS.dailyTok || [])[i] || 0; if (tk > 0) { evSync().tok += tk; r = Object.assign({}, r, { tokens: tk }); } /* v1593 */
+    var tk = (LIVEOPS.dailyTok || [])[i] || 0; if (tk > 0) { evSync().tok += tk; spXp(tk); /* v1621 */ r = Object.assign({}, r, { tokens: tk }); } /* v1593 */
     evDayCount();
     return { ok: true, reward: r, day: D.day };
   }
@@ -9414,10 +9429,11 @@ function createGame(opts) {
     qty = Math.max(0, Math.floor(qty || 0)); if (!qty) return false; var m;
     if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
     if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran"); /* v1617 */
+    if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7"); /* v1621 */
     if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { var h = state.heroes[m[1]]; if (!h) return false; h.fragments = (h.fragments | 0) + qty; return true; }
     if ((m = /^item_([a-z0-9_]+)$/.exec(id))) return addItem(m[1], qty);
     if ((m = /^speedup_([a-z]+_[0-9]+[mh])$/.exec(id))) { if (!SPEEDUP_SEC[m[1]]) return false; state.speedups[m[1]] = (state.speedups[m[1]] || 0) + qty; return true; }
-    if (id === "event_tokens") { evSync().tok += qty; return true; }
+    if (id === "event_tokens") { evSync().tok += qty; spXp(qty); /* v1621 Season Pass XP */ return true; }
     if (id === "arena_medals") { evSync().am += qty; return true; } /* v1594 */
     if (id === "weapon_tickets") { state.weaponTickets = (state.weaponTickets || 0) + qty * WEAPON_TICKET_SCALE; return true; }
     if (id === "conquest_books") { state.idle.conquestBooks = (state.idle.conquestBooks || 0) + qty; return true; }
@@ -9500,6 +9516,20 @@ function createGame(opts) {
   function npReady() { if (!npActive()) return 0; var N = npSync(), d = npDayNow(), n = 0;
     npTasks().forEach(function (t) { if (t.day <= d && N.t.indexOf(t.id) < 0 && npHave(t) >= t.need) n++; });
     ((LIVEOPS.np || {}).chests || []).forEach(function (c) { if (c.day <= d && N.d.indexOf(c.day) < 0 && npDayDone(c.day)) n++; }); return n; }
+  /* v1621: Season Pass - state.ev.sp = { k: season index, xp: Event Tokens earned this season, f / p: levels claimed (free / premium), prem: premium pass owned } */
+  function spKey() { var P = LIVEOPS.sp; if (!P || P.on === false || !(P.days > 0)) return null; var d = dailyDayNow() - (P.start || 0); return d < 0 ? null : Math.floor(d / P.days); }
+  function spMsLeft() { var P = LIVEOPS.sp || {}, k = spKey(); return k == null ? 0 : ((P.start || 0) + (k + 1) * P.days) * 86400000 - Date.now(); }
+  function spSync() { var E = evSync(), k = spKey(); if (k == null) return null; if (!E.sp || E.sp.k !== k) E.sp = { k: k, xp: 0, f: [], p: [], prem: false }; return E.sp; }
+  function spXp(n) { var S = spSync(); if (S && n > 0) S.xp += n; }
+  function spLevel() { var S = spSync(), P = LIVEOPS.sp || {}; if (!S) return 0; return Math.min((P.levels || []).length, Math.floor(S.xp / (P.xp || 20))); }
+  function spClaim(lv, track) { var S = spSync(), L = ((LIVEOPS.sp || {}).levels || [])[lv - 1]; if (!S || !L) return { ok: false, reason: "bad" };
+    var arr = track === "prem" ? S.p : S.f; if (track === "prem" && !S.prem) return { ok: false, reason: "premium" };
+    if (arr.indexOf(lv) >= 0) return { ok: false, reason: "claimed" }; if (spLevel() < lv) return { ok: false, reason: "not_done" };
+    arr.push(lv); return { ok: true, got: grantAll(track === "prem" ? L.prem : L.free) }; }
+  function spClaimAll() { var S = spSync(); if (!S) return { ok: false }; var got = {}, n = 0;
+    for (var lv = 1; lv <= spLevel(); lv++) ["free", "prem"].forEach(function (tr) { var r = spClaim(lv, tr); if (r.ok) { n++; Object.keys(r.got).forEach(function (k) { got[k] = (got[k] || 0) + r.got[k]; }); } });
+    return { ok: n > 0, got: got, n: n }; }
+  function spReady() { var S = spSync(); if (!S) return 0; var n = 0, L = spLevel(); for (var lv = 1; lv <= L; lv++) { if (S.f.indexOf(lv) < 0) n++; if (S.prem && S.p.indexOf(lv) < 0) n++; } return n; }
   /* v1618: Conquest Sprint - state.ev.cs = { k: week, c: task progress, tc: tasks claimed, fin: final chest claimed } */
   function csKey() { var C = LIVEOPS.cs; if (!C || C.on === false) return null; var w = evWeekNow(); return (w % 2) === (C.parity || 0) ? w : null; }
   function csSync() { var E = evSync(), k = csKey(); if (k == null) return null; if (!E.cs || E.cs.k !== k) E.cs = { k: k, c: {}, tc: [], fin: false }; return E.cs; }
@@ -9510,7 +9540,7 @@ function createGame(opts) {
     C.fin = true; var got = grantAll((LIVEOPS.cs || {}).fin); log("🏁 Conquest Sprint: final chest."); return { ok: true, got: got }; }
   function csReady() { var C = csSync(); if (!C) return 0; var n = 0; ((LIVEOPS.cs || {}).tasks || []).forEach(function (t) { if ((C.c[t.id] || 0) >= t.need && C.tc.indexOf(t.id) < 0) n++; }); if (!C.fin && csAllDone()) n++; return n; }
   function evReady() { /* rewards waiting (red dots) */
-    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady(), cs: csReady() };
+    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady(), cs: csReady(), sp: spReady() };
     ((LIVEOPS.arena || {}).ms || []).forEach(function (m, i) { if (E.ad.pts >= m.at && E.ad.ms.indexOf(i) < 0) n.arena++; });
     n.br = 0; var brs = evBRSync(); if (brs) ((LIVEOPS.br || {}).ms || []).forEach(function (m, i) { if (brs.pts >= m.at && brs.ms.indexOf(i) < 0) n.br++; });
     n.ff = 0; var ffs = evFFSync(); if (ffs) ((LIVEOPS.ff || {}).ms || []).forEach(function (m, i) { if (ffs.pts >= m.at && ffs.ms.indexOf(i) < 0) n.ff++; });
@@ -11626,7 +11656,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, spKey: spKey, spMsLeft: spMsLeft, spSync: spSync, spLevel: spLevel, spClaim: spClaim, spClaimAll: spClaimAll, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -13798,7 +13828,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1620"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1621"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19674,6 +19704,7 @@ function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
   var m, k, d;
   if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
   if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran"); /* v1617 */
+  if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7"); /* v1621 */
   if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = HERO_DEFS[k] || {}; return { face: evFace(k), name: (d.name || k) + " shards", rar: d.rarity === "Legendary" ? 4 : d.rarity === "Epic" ? 3 : 2 }; }
   if ((m = /^item_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = GI_DEFS[k]; if (d) return { art: itemArt(d.art), name: d.name, rar: d.rar, top: d.top || "" };
     d = ITEM_DEFS[k]; if (d) return { art: d.kind === "res" ? ico(d.res) : itemArt(d.kind === "choice" ? "chest_res_custom" : "chest_res_supply"), name: d.name, rar: bagRarity(d), top: d.kind === "choice" ? "Lv." + d.lv : itemAmtLabel(d.amt) }; }
@@ -19699,6 +19730,7 @@ var EV_EARN_NAME = { kill: function (F) { return ["Defeat enemies in Conquest", 
 function evTabs() {
   var t = [{ id: "fhw", name: "Featured Hero", icon: evArt("icon_fhw") }, { id: "shop", name: "Event Shop", icon: evArt("icon_shop") }, { id: "daily", name: "Daily Missions", icon: evArt("icon_daily") }, { id: "arena", name: "Arena", icon: evArt("icon_arena") }];
   if (game.evFFKey() != null) t.splice(1, 0, { id: "ff", name: "Forge Frenzy", icon: evArt("icon_forge") }); /* v1597: only while it runs */
+  if (game.spKey() != null) t.splice(1, 0, { id: "sp", name: "Season Pass", icon: evArt("icon_sp") }); /* v1621 */
   if (game.csKey() != null) t.splice(1, 0, { id: "cs", name: "Conquest Sprint", icon: evArt("icon_cs") }); /* v1618: every second week */
   if (game.npActive()) t.unshift({ id: "np", name: "New Player", icon: evArt("icon_np") }); /* v1617: first 14 days of an account */
   if (kaijuTestOk()) t.push({ id: "brt", name: "Boss Test", icon: evArt("icon_boss") }); /* v1602: TEST game only */
@@ -19724,13 +19756,30 @@ function evWinRender(force) {
   EVW.sig = sig;
   var tabs = evTabs(); if (!tabs.some(function (t) { return t.id === EVW.tab; })) EVW.tab = tabs[0].id;
   var rd = game.evReady(), body = "", T = tabs.filter(function (t) { return t.id === EVW.tab; })[0];
-  if (EVW.tab === "np") body = evNpHtml(); else if (EVW.tab === "cs") body = evCsHtml(); else if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else if (EVW.tab === "arena") body = evArenaHtml(); else if (EVW.tab === "ff") body = evFFHtml(); else if (EVW.tab === "br") body = evBRHtml(); else if (EVW.tab === "brt") body = evBRTestHtml(); else body = evServerHtml(T.ev);
+  if (EVW.tab === "np") body = evNpHtml(); else if (EVW.tab === "sp") body = evSpHtml(); else if (EVW.tab === "cs") body = evCsHtml(); else if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else if (EVW.tab === "arena") body = evArenaHtml(); else if (EVW.tab === "ff") body = evFFHtml(); else if (EVW.tab === "br") body = evBRHtml(); else if (EVW.tab === "brt") body = evBRTestHtml(); else body = evServerHtml(T.ev);
   var keep = ov.querySelector(".evw-body"), st = keep ? keep.scrollTop : 0;
   ov.innerHTML = '<div class="evw-top"><div class="evw-ttl">EVENTS</div><span style="flex:1"></span><button type="button" class="evw-x" data-evx="1" aria-label="Close">✕</button></div>'
-    + '<div class="evw-tabs">' + tabs.map(function (t) { var dot = t.id === "np" ? rd.np : t.id === "cs" ? rd.cs : t.id === "fhw" ? rd.fhw : t.id === "daily" ? rd.daily : t.id === "ff" ? rd.ff : t.id === "br" ? rd.br + (EVB.prev && !EVB.prev.claimed ? 1 : 0) : t.id === "arena" ? rd.arena + (EVA.prev.d && !EVA.prev.d.claimed ? 1 : 0) + (EVA.prev.w && !EVA.prev.w.claimed ? 1 : 0) : t.ev ? (function () { try { return ksEvReady(t.ev, Date.now()); } catch (e) { return 0; } })() : 0;
+    + '<div class="evw-tabs">' + tabs.map(function (t) { var dot = t.id === "np" ? rd.np : t.id === "cs" ? rd.cs : t.id === "sp" ? rd.sp : t.id === "fhw" ? rd.fhw : t.id === "daily" ? rd.daily : t.id === "ff" ? rd.ff : t.id === "br" ? rd.br + (EVB.prev && !EVB.prev.claimed ? 1 : 0) : t.id === "arena" ? rd.arena + (EVA.prev.d && !EVA.prev.d.claimed ? 1 : 0) + (EVA.prev.w && !EVA.prev.w.claimed ? 1 : 0) : t.ev ? (function () { try { return ksEvReady(t.ev, Date.now()); } catch (e) { return 0; } })() : 0;
       return '<button type="button" class="evw-tab' + (t.id === EVW.tab ? " on" : "") + '" data-evt="' + escapeHtml(t.id) + '"><span class="ic"><img alt="" src="' + t.icon + '">' + (dot ? '<span class="dot"></span>' : "") + "</span>" + escapeHtml(t.name) + "</button>"; }).join("") + "</div>"
     + '<div class="evw-body">' + body + "</div>";
   var nb = ov.querySelector(".evw-body"); if (nb && keep) nb.scrollTop = st;
+}
+/* v1621: Season Pass tab */
+function evSpHtml() {
+  var P = LIVEOPS.sp || {}, S = game.spSync() || { xp: 0, f: [], p: [], prem: false }, lv = game.spLevel(), L = P.levels || [], per = P.xp || 20, hk = P.hero || "halo7", hd = HERO_DEFS[hk] || { name: hk };
+  var maxed = lv >= L.length, into = maxed ? per : S.xp - lv * per, premShards = L.reduce(function (a, x) { return a + ((x.prem || {}).sp_shards || 0); }, 0);
+  var h = '<div class="evw-hd2 evw-sphd" style="background-image:url(' + evArt("banner_sp") + ')">' + (evFace(hk) ? '<div class="evw-npher"><img alt="" src="' + evFace(hk) + '"><div><span>Season hero</span><span><b>' + escapeHtml(hd.name) + "</b></span></div></div>" : "")
+    + '<div class="tt"><span class="k">SEASON ' + ((game.spKey() || 0) + 1) + '</span><h1>Season<br>Pass</h1><span class="tm">⏳ Ends in <b data-evend="' + (Date.now() + game.spMsLeft()) + '">' + evLeft(game.spMsLeft()) + "</b></span></div></div>";
+  h += '<div class="evw-act evw-csp"><div class="row1"><span class="evw-splv">Lv ' + lv + "</span><span>" + (maxed ? "Top level reached!" : Math.floor(into) + " / " + per + " Event Tokens to level " + (lv + 1)) + '</span></div><div class="evw-csbar"><i style="width:' + Math.round(into / per * 100) + '%"></i></div><div class="evw-spnote">Every Event Token you earn (any event, the daily chests) also fills the pass - spending them doesn\'t take it back.</div></div>';
+  if (!S.prem) h += '<div class="evw-npch big evw-spprem"><div class="t">👑 Premium Pass<span>this season</span></div><div class="evw-spnote" style="margin:6px 0 8px">Unlocks the premium track: <b>' + premShards + " " + escapeHtml(hd.name) + " shards</b> plus equipment and weapon chests, and pays every premium reward you have already reached.</div>"
+    + '<div class="evw-npbtn off">Payments aren\'t connected yet</div>' + (typeof kaijuTestOk === "function" && kaijuTestOk() ? '<button type="button" class="evw-sptest" data-evspprem="1">Unlock for testing (TEST game only)</button>' : "") + "</div>";
+  if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
+  var ready = 0; for (var q = 1; q <= lv; q++) { if (S.f.indexOf(q) < 0) ready++; if (S.prem && S.p.indexOf(q) < 0) ready++; }
+  if (ready) h += '<button type="button" class="evw-npbtn" style="margin:10px 10px 0;width:calc(100% - 20px)" data-evspall="1">Claim all (' + ready + ")</button>";
+  h += '<div class="evw-sphead"><span>FREE</span><span></span><span>👑 PREMIUM</span></div><div class="evw-sptrk">' + L.map(function (x, i) { var n = i + 1, reach = lv >= n, fG = S.f.indexOf(n) >= 0, pG = S.p.indexOf(n) >= 0;
+    var tiles = function (items, got, rdy, lock, tr) { return '<button type="button" class="evw-spc' + (lock ? " lock" : "") + '" data-evspc="' + n + ":" + tr + '">' + Object.keys(items || {}).map(function (k) { return evTile(k, items[k], got ? " got" : rdy ? " ready" : ""); }).join("") + (lock ? '<i class="lk">🔒</i>' : "") + "</button>"; };
+    return '<div class="evw-spr' + (reach ? " on" : "") + '">' + tiles(x.free, fG, reach && !fG, false, "free") + '<span class="evw-spn">' + n + "</span>" + tiles(x.prem, pG, reach && S.prem && !pG, !S.prem, "prem") + "</div>"; }).join("") + "</div>";
+  return h + '<div class="evw-foot">' + escapeHtml(P.name || "") + (P.name ? " · " : "") + "A new season starts every " + (P.days || 28) + " days; levels and rewards reset with it.</div>";
 }
 /* v1618: Conquest Sprint tab */
 function evCsHtml() {
@@ -19829,6 +19878,10 @@ function evWinClick(e) {
   if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
   if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
   if (t.closest && evArenaClick(t)) return; /* v1594 */
+  if ((b = t.closest && t.closest("[data-evspc]"))) { var spa = b.getAttribute("data-evspc").split(":"), spr = game.spClaim(+spa[0], spa[1]); /* v1621 Season Pass */
+    if (spr.ok) evDone("Got " + evGotText(spr.got)); else EVW.note = spr.reason === "premium" ? "That reward is on the Premium Pass." : spr.reason === "claimed" ? "Already claimed." : '<span class="bad">Reach level ' + spa[0] + " first.</span>"; evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evspall]"))) { var spl = game.spClaimAll(); if (spl.ok) evDone("Got " + evGotText(spl.got)); evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evspprem]"))) { var sps = game.spSync(); if (sps && kaijuTestOk()) { sps.prem = true; evDone("Premium Pass unlocked (test)"); } evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-evcst]"))) { var csr = game.csClaimTask(b.getAttribute("data-evcst")); if (csr.ok) evDone("Got " + evGotText(csr.got)); evWinRender(true); return; } /* v1618 */
   if ((b = t.closest && t.closest("[data-evcsf]"))) { if (b.disabled) return; var csf = game.csClaimFin(); if (csf.ok) evDone("Final chest: " + evGotText(csf.got)); evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-evnpd]"))) { EVW.npd = +b.getAttribute("data-evnpd"); EVW.note = ""; evWinRender(true); return; } /* v1617 */
@@ -19918,7 +19971,7 @@ function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) 
 function evLiveopsSubscribe() {
   if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
-    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
     evWinRender(true); }, function () {}); }).catch(function () {});
 }
 setTimeout(evLiveopsSubscribe, 4000);
