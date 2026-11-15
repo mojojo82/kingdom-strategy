@@ -1,0 +1,1 @@
+Seasonal Festival banner candidates (ChatGPT, 15 Nov 2026; same chat / style as the Welcome Back banners): fs_winter_v1_gpt = Winter Festival, fs_lunar_v1_gpt = Lunar Festival. Not in the game until Harley approves (mockup first).

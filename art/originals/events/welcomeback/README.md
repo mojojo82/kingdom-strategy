@@ -1,0 +1,1 @@
+Welcome Back banner candidates (ChatGPT, 15 Nov 2026; style refs = banner_np + banner_sp). a = gate with red carpet (left wall), b = gate with blue banners + city behind. Not in the game until Harley picks one (mockup: headless Events window).
