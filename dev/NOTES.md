@@ -5281,3 +5281,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Text: the new effect wording shows unless an admin wrote custom text for that card (old defaults / placeholders count as not custom); the flavour line shows unless the card has its own narrative.
 - Files: art/cards/ (frame_*, sock_*, icon_*, art_* webp; 2 MB, loaded when cards show). Old built-in pictures stay for cards without new art.
 - Checked headless (430x932 at 3x): grid, full view, Conquest boxes, profile; no errors. Google fonts don't load in the headless test, so shots use fallback serif fonts.
+
+## v1646 — card Full View: no box, dimmed background
+- Harley: the new cards' Full View no longer sits inside the blue panel - the panel is see-through and the screen behind is dimmed (82% dark). Close button, Equip button and the ability line stay. Cards without new art keep the old view. Headless check: art/originals/screens/card_full_v1646.png.

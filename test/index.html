@@ -1720,6 +1720,10 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .tcg.r-epic .tcg-plate, .tcg-full.r-epic .tcg-plate { color:#efe0ff; } .tcg.r-legendary .tcg-plate, .tcg-full.r-legendary .tcg-plate { color:#ffe9a8; }
   #cardsModeContent .card-slot.tcg-slot { aspect-ratio:2/3; background:transparent; border:none; box-shadow:none; overflow:visible; }
   #cardsModeContent .card-slot.tcg-slot .eq-badge { z-index:8; }
+  #cardDetailOverlay.tcg-mode { background:rgba(4,6,12,.82) !important; backdrop-filter:none; }
+  #cardDetailOverlay.tcg-mode .save-card { background:transparent !important; border:none !important; box-shadow:none !important; outline:none !important; }
+  #cardDetailOverlay.tcg-mode .save-card::before, #cardDetailOverlay.tcg-mode .save-card::after { display:none !important; }
+  #cardDetailOverlay.tcg-mode #cardDetailTitle { visibility:hidden; }
   #cardDetailOverlay .tcg-full .cd-fv-art { left:6.25%; top:4.56%; width:87.5%; height:54.36%; border-radius:5% / 5.4%; z-index:1; overflow:hidden; }
   #cardDetailOverlay .tcg-full .cd-fv-bg { left:0; top:0; width:100%; height:100%; z-index:2; pointer-events:none; }
   #cardDetailOverlay .tcg-full .cd-fv-name { left:19%; top:59.4%; width:62%; height:5%; z-index:5; font-family:'Cinzel', Georgia, serif; font-weight:700; font-size:4.6cqw; letter-spacing:.02em; color:#fff6dc; text-shadow:0 0 .3cqw #1a1020, 0 .25cqw .4cqw #000; }
@@ -14117,7 +14121,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1645"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1646"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -15898,6 +15902,7 @@ function cardDetailTcg(idx) {
   if (CD_OLD_BG == null) CD_OLD_BG = bg.getAttribute("src");
   var d = cardTcgDef(idx);
   ["tcg-icon", "tcg-sock", "tcg-flav", "tcg-plate"].forEach(function (k) { var e = w.querySelector(":scope > ." + k); if (e) e.remove(); });
+  var ov = document.getElementById("cardDetailOverlay"); ov.classList.toggle("tcg-mode", !!d); /* v1646: no blue box around the new cards - just a dimmed background */
   if (!d) { w.className = "cd-fullview-wrap"; bg.setAttribute("src", CD_OLD_BG); return; }
   var r = cardRarity(idx); w.className = "cd-fullview-wrap tcg-full r-" + r; bg.setAttribute("src", CARD_TCG_BASE + "frame_" + r + ".webp");
   var add = function (html) { w.insertAdjacentHTML("beforeend", html); };
