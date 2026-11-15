@@ -365,4 +365,12 @@ t("v1631 Welcome Back: detected after `away` days, day n opens on the n-th day b
   assert.deepStrictEqual(C.evClaimPlan(L, "cb", day, "d:7", { now: now + 6 * 86400000, createdAt: day }).items, { gems: 1000, shards_kessa: 30, item_chest_weapon: 1 });
   assert.throws(() => C.evClaimPlan(L, "cb", day, "d:1", { now: now + 10 * 86400000, createdAt: day }), /not running/); assert.throws(() => C.evClaimPlan(L, "cb", day, "d:1", { now, createdAt: null }), /not running/);
 });
+t("v1632 Hero Collection: steps checked against the saved heroes (stars = arms / 5), collection counts, not-yet = retry later (aborted)", () => {
+  const L = C.normalizeLiveops({}), save = { heroes: { kessa: { owned: true, stars: 16 }, roran: { owned: true, stars: 2 }, lyra: { owned: true }, gareth: { owned: false, stars: 25 } } }, now = Date.now();
+  assert.strictEqual(C.hcStars(save, "kessa"), 3); assert.strictEqual(C.hcStars(save, "gareth"), -1); assert.strictEqual(C.hcOwned(save).length, 3);
+  assert.deepStrictEqual(C.evClaimPlan(L, "hc", 0, "h:kessa:1", { now, save }).items, { gems: 300, speedup_general_1h: 2 });
+  assert.throws(() => C.evClaimPlan(L, "hc", 0, "h:kessa:2", { now, save }), (e) => e.code === "aborted"); assert.throws(() => C.evClaimPlan(L, "hc", 0, "h:gareth:0", { now, save }), (e) => e.code === "aborted");
+  assert.ok(C.evClaimPlan(L, "hc", 0, "c:0", { now, save })); assert.throws(() => C.evClaimPlan(L, "hc", 0, "c:1", { now, save }), (e) => e.code === "aborted");
+  assert.throws(() => C.evClaimPlan(L, "hc", 0, "h:nobody:0", { now, save }), /no such reward/); assert.throws(() => C.evClaimPlan(L, "hc", 1, "c:0", { now, save }), /not running/);
+});
 console.log(n + " tests passed");

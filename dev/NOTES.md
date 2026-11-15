@@ -5200,3 +5200,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Art: reuses the New Player Path banner / icon for now (new art = mockup first).
 - Event tiles show 10,000+ as "20K" / "1.5M" so big amounts fit the small tiles.
 - Tests: unit tests 26 pass; server flow (back after 8 days -> touch starts it and keeps it; day 1 pays 300 gems, day 2 not yet; a player who didn't come back can't claim); dev/tests/comeback_game_test.js headless (tab first, boosts 50/50, day 1 claim = 2 speedups + 300 gems, day 2 locked, no errors); admin round trip.
+
+## v1632 — Hero Collection Book
+- New Events tab "Hero Collection": collection milestones (own 3 / 6 / 10 / 15 heroes: 300 / 600 / 1,200 / 2,500 gems + an equipment or weapon chest) and, for every hero, three steps - own it (100 gems + 10 books), 3 stars (300 gems + 2 x 1h speedups), 5 stars (800 gems + 5 weapon tickets). Each step pays once per account.
+- Server: claimEv src "hc" reads the saved game (heroes[k].owned / stars = star arms, 5 a star) and refuses a step the save hasn't reached ("aborted" = not in your saved game yet: the game keeps it queued and retries; after 10 tries the items are taken back). The game waits ~6 s after a claim so the cloud save lands first.
+- Admin > Live events > "Hero Collection Book": on/off, the per-hero steps (stars + reward group), the collection milestones.
+- Tests: unit tests 27 pass; dev/tests/collection_game_test.js headless (new account owns 2 heroes -> claim "Own" for Gareth -> 100 gems after the save check, queue empty, no errors); admin round trip.

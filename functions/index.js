@@ -655,12 +655,13 @@ exports.claimEv = wrap(async (req, uid, R, d) => {
   const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted");
   const lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
   let createdAt = null;
+  let save = null; if (src === "hc") { const sv = await db.doc(base + "save/main").get(); save = sv.exists ? sv.data() : {}; } /* v1632: Hero Collection checks the saved heroes */
   if (src === "cb") { const mt = await db.doc(base + "meta/account").get(), cb = mt.exists && mt.data().cb; createdAt = cb && cb.start != null ? cb.start : null; } /* v1631: comeback start day */
   if (src === "np") { const mt = await db.doc(base + "meta/account").get(); createdAt = (mt.exists && mt.data().createdAt) || null;
     if (!createdAt) { const sv = await db.doc(base + "save/main").get(); createdAt = (sv.exists && sv.data().startedAt) || null; } }
   return db.runTransaction(async (tx) => {
     const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {};
-    const plan = C.evClaimPlan(lo, src, d.k, ref, { now, createdAt, prem: (k) => R === "envs/test/" || wd.spPrem === k }); /* premium: the TEST game unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
+    const plan = C.evClaimPlan(lo, src, d.k, ref, { now, createdAt, save, prem: (k) => R === "envs/test/" || wd.spPrem === k }); /* premium: the TEST game unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
     const cref = db.doc(base + "evclaims/" + src + "_" + plan.k), cs = await tx.get(cref);
     const r = C.decideEvClaim(cs.exists ? cs.data() : null, plan, ref, lo.items, wd.evg, now);
     if (r.dup) return { dup: true, gems: wd.gems || 0 };
