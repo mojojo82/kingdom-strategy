@@ -2776,6 +2776,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-srv { padding:10px; }
   #evWin .evw-t .go:not(.done):not(.claim), #evWin .evw-si .buy:not(.off), #evWin .evw-how .go, #evWin .evw-tt .info { color:#fff; text-shadow:0 1px 1px rgba(0,40,60,.55); } /* v1595 (Harley): white text on the cyan buttons */
 
+  /* v1618: Conquest Sprint */
+  #evWin .evw-cshd { height:180px; } #evWin .evw-csp { padding-bottom:12px; } #evWin .evw-csbar { margin:8px 4px 0; height:12px; border-radius:8px; background:#1a120a; border:1px solid #7a5a2c; overflow:hidden; } #evWin .evw-csbar i { display:block; height:100%; background:linear-gradient(90deg,#c98f1e,#f6d36b); }
   /* v1617: New Player Path */
   #evWin .evw-nphd { height:190px; } #evWin .evw-nphd .tt { bottom:16px; } #evWin .evw-hd2 .k { display:inline-block; font-size:11px; font-weight:800; letter-spacing:1px; color:#1a1206; background:linear-gradient(#f0c95f,#c98f1e); padding:3px 9px; border-radius:20px; margin-bottom:4px; }
   #evWin .evw-npher { position:absolute; right:10px; top:12px; z-index:2; width:124px; background:rgba(5,10,20,.78); border:1.5px solid #f0c95f; border-radius:12px; padding:6px; text-align:center; }
@@ -7586,6 +7588,8 @@ var LIVEOPS_DEFAULT = {
     "chests": [{"day": 1, "items": {"speedup_general_5m": 5}}, {"day": 2, "items": {"weapon_tickets": 1}}, {"day": 3, "items": {"np_shards": 1, "speedup_general_1h": 1}}, {"day": 4, "items": {"event_tokens": 10}},
       {"day": 5, "items": {"weapon_tickets": 2}}, {"day": 6, "items": {"speedup_general_1h": 2}}, {"day": 7, "items": {"item_chest_eq_2": 1}}, {"day": 8, "items": {"event_tokens": 15}}, {"day": 9, "items": {"weapon_tickets": 2}},
       {"day": 10, "items": {"speedup_general_1h": 3}}, {"day": 11, "items": {"event_tokens": 20}}, {"day": 12, "items": {"weapon_tickets": 3}}, {"day": 13, "items": {"item_chest_eq_2": 1}}, {"day": 14, "items": {"np_shards": 20}}]},
+  /* v1618: Conquest Sprint (functions/core.js LIVE_CS_DEFAULT) - Mon-Sun of every second week (week % 2 === parity); one-time tasks, each pays; all done = the final chest */
+  cs: {"on": false /* WIP: waiting for Harley */, "parity": 1, "tasks": [{"id": "lvl", "kind": "newlevel", "need": 3, "name": "Clear 3 new Conquest levels", "items": {"conquest_books": 10}}, {"id": "boss", "kind": "boss", "need": 1, "name": "Beat your next chapter boss", "items": {"weapon_tickets": 2}}, {"id": "kill", "kind": "kill", "need": 2000, "name": "Defeat 2,000 enemies in Conquest (farming counts)", "items": {"speedup_general_1h": 1}}, {"id": "arena", "kind": "arena", "need": 5, "name": "Win 5 Arena fights", "items": {"event_tokens": 10}}, {"id": "hero", "kind": "heroup", "need": 3, "name": "Level up your heroes 3 times", "items": {"conquest_books": 10}}, {"id": "tix", "kind": "ticket", "need": 20, "name": "Use 20 weapon draw tickets", "items": {"speedup_general_5m": 6}}, {"id": "bld", "kind": "build", "need": 3, "name": "Upgrade buildings 3 times", "items": {"food": 5000}}, {"id": "camp", "kind": "camp", "need": 3, "name": "Win 3 fights against camps", "items": {"item_stamina_10": 1}}], "fin": {"speedup_general_1h": 3, "event_tokens": 25, "conquest_books": 20, "featured_shards": 3}},
   wk: { heroes: ["roran", "kessa", "halo7", "caelum"] /* v1616: Caelum replaces Iron Lily */, shards: 10, days: 7, act: 60 },
   dailyTok: [2, 3, 4, 5, 6],
   /* v1599/v1604: Boss Rush (functions/core.js LIVE_BR_DEFAULT) - levels: hp1 health at level 1, +hpGrow% health and +dmgGrow% damage a level, unkillable at maxLv; milestones = highest level reached */
@@ -8602,7 +8606,7 @@ function createGame(opts) {
     state.idle.valor -= cost.valor;
     h.level += 1;
     log(def.name + " reached level " + h.level + ".");
-    dailyBump("levelup"); return { ok: true };
+    dailyBump("levelup"); evAct("heroup"); /* v1618 */ return { ok: true };
   }
   function setGovernor(key) {
     var def = HERO_DEFS[key], h = state.heroes[key];
@@ -9400,6 +9404,7 @@ function createGame(opts) {
   function evAct(kind, n) {
     var E = evSync(), F = LIVEOPS.fhw; n = n == null ? 1 : n; if (!(n > 0)) return;
     if (npActive()) { var NP = npSync(); NP.c[kind] = (NP.c[kind] || 0) + n; } /* v1617 New Player Path counters */
+    var CS = csSync(); if (CS) ((LIVEOPS.cs || {}).tasks || []).forEach(function (t) { if (t.kind === kind && CS.tc.indexOf(t.id) < 0) CS.c[t.id] = Math.min(t.need, (CS.c[t.id] || 0) + n); }); /* v1618 Conquest Sprint */
     if (kind === "ticket" || kind === "forge") { var ff = evFFSync(), fp = ((LIVEOPS.ff || {}).pts || {})[kind] || 0; if (ff && fp) ff.pts += fp * n; } /* v1597 */
     if (kind === "kill") { E.kills += n; var whole = Math.floor(E.kills / (F.killsPer || 100)); if (whole > E.killPaid) { E.pts += (whole - E.killPaid) * (F.pts.kill || 0); E.killPaid = whole; } }
     else if (F.pts[kind]) E.pts += F.pts[kind] * n;
@@ -9495,8 +9500,17 @@ function createGame(opts) {
   function npReady() { if (!npActive()) return 0; var N = npSync(), d = npDayNow(), n = 0;
     npTasks().forEach(function (t) { if (t.day <= d && N.t.indexOf(t.id) < 0 && npHave(t) >= t.need) n++; });
     ((LIVEOPS.np || {}).chests || []).forEach(function (c) { if (c.day <= d && N.d.indexOf(c.day) < 0 && npDayDone(c.day)) n++; }); return n; }
+  /* v1618: Conquest Sprint - state.ev.cs = { k: week, c: task progress, tc: tasks claimed, fin: final chest claimed } */
+  function csKey() { var C = LIVEOPS.cs; if (!C || C.on === false) return null; var w = evWeekNow(); return (w % 2) === (C.parity || 0) ? w : null; }
+  function csSync() { var E = evSync(), k = csKey(); if (k == null) return null; if (!E.cs || E.cs.k !== k) E.cs = { k: k, c: {}, tc: [], fin: false }; return E.cs; }
+  function csClaimTask(id) { var C = csSync(), t = ((LIVEOPS.cs || {}).tasks || []).filter(function (x) { return x.id === id; })[0]; if (!C || !t) return { ok: false, reason: "bad" };
+    if (C.tc.indexOf(id) >= 0) return { ok: false, reason: "claimed" }; if ((C.c[id] || 0) < t.need) return { ok: false, reason: "not_done" }; C.tc.push(id); return { ok: true, got: grantAll(t.items) }; }
+  function csAllDone() { var C = csSync(), ts = (LIVEOPS.cs || {}).tasks || []; return !!C && ts.length > 0 && ts.every(function (t) { return C.tc.indexOf(t.id) >= 0; }); }
+  function csClaimFin() { var C = csSync(); if (!C) return { ok: false, reason: "closed" }; if (C.fin) return { ok: false, reason: "claimed" }; if (!csAllDone()) return { ok: false, reason: "not_done" };
+    C.fin = true; var got = grantAll((LIVEOPS.cs || {}).fin); log("🏁 Conquest Sprint: final chest."); return { ok: true, got: got }; }
+  function csReady() { var C = csSync(); if (!C) return 0; var n = 0; ((LIVEOPS.cs || {}).tasks || []).forEach(function (t) { if ((C.c[t.id] || 0) >= t.need && C.tc.indexOf(t.id) < 0) n++; }); if (!C.fin && csAllDone()) n++; return n; }
   function evReady() { /* rewards waiting (red dots) */
-    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady() };
+    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady(), cs: csReady() };
     ((LIVEOPS.arena || {}).ms || []).forEach(function (m, i) { if (E.ad.pts >= m.at && E.ad.ms.indexOf(i) < 0) n.arena++; });
     n.br = 0; var brs = evBRSync(); if (brs) ((LIVEOPS.br || {}).ms || []).forEach(function (m, i) { if (brs.pts >= m.at && brs.ms.indexOf(i) < 0) n.br++; });
     n.ff = 0; var ffs = evFFSync(); if (ffs) ((LIVEOPS.ff || {}).ms || []).forEach(function (m, i) { if (ffs.pts >= m.at && ffs.ms.indexOf(i) < 0) n.ff++; });
@@ -11612,7 +11626,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -19676,15 +19690,16 @@ function evTile(id, n, extra) { var I = evItemInfo(id);
 function evLeft(ms) { var s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60; return d > 0 ? d + "d " + h + "h" : h > 0 ? h + "h " + m + "m" : m + "m " + (s % 60) + "s"; }
 var EV_GO = { kill: function () { setScreen("conquest"); }, newlevel: function () { setScreen("conquest"); }, boss: function () { setScreen("conquest"); }, arena: function () { setScreen("more", "arena"); },
   camp: function () { setScreen("world"); }, monster: function () { DAILY_GO.monster(); }, ticket: function () { DAILY_GO.tickets(); }, build: function () { DAILY_GO.build(); }, forge: function () { try { openForge(); } catch (e) { setScreen("conquest"); } },
-  th: function () { DAILY_GO.build(); }, cq: function () { setScreen("conquest"); }, heroes: function () { setScreen("heroes"); }, hlv: function () { setScreen("heroes"); }, eq: function () { setScreen("heroes"); }, ally: function () { setScreen("more", "alliance"); } }; /* v1617: New Player Path kinds */
+  th: function () { DAILY_GO.build(); }, cq: function () { setScreen("conquest"); }, heroes: function () { setScreen("heroes"); }, heroup: function () { setScreen("heroes"); }, hlv: function () { setScreen("heroes"); }, eq: function () { setScreen("heroes"); }, ally: function () { setScreen("more", "alliance"); } }; /* v1617: New Player Path kinds */
 var EV_KIND_ART = { kill: "speed_training", newlevel: "fragment", boss: "chest_hero_select", arena: "@icon_arena", camp: "march_speed", monster: "stamina", ticket: "ticket", build: "speed_construction",
-  th: "speed_construction", cq: "fragment", heroes: "chest_hero_select", hlv: "speed_training", eq: "chest_equipment", forge: "chest_equipment", ally: "@icon_np_ally" };
+  th: "speed_construction", heroup: "speed_training", cq: "fragment", heroes: "chest_hero_select", hlv: "speed_training", eq: "chest_equipment", forge: "chest_equipment", ally: "@icon_np_ally" };
 function evKindArt(k) { var a = EV_KIND_ART[k] || "ticket"; return a[0] === "@" ? '<img alt="" src="' + evArt(a.slice(1)) + '">' : a === "ticket" || a === "fragment" ? ico(a) : itemArt(a); }
 var EV_EARN_NAME = { kill: function (F) { return ["Defeat enemies in Conquest", "Every " + F.killsPer + " enemies (farming counts)"]; }, arena: function () { return ["Win Arena fights", "Each win"]; }, camp: function () { return ["Win against camps on the World map", "Each win"]; },
   monster: function () { return ["Defeat monsters on the World map", "Each win"]; }, ticket: function () { return ["Use weapon draw tickets", "Each ticket"]; } };
 function evTabs() {
   var t = [{ id: "fhw", name: "Featured Hero", icon: evArt("icon_fhw") }, { id: "shop", name: "Event Shop", icon: evArt("icon_shop") }, { id: "daily", name: "Daily Missions", icon: evArt("icon_daily") }, { id: "arena", name: "Arena", icon: evArt("icon_arena") }];
   if (game.evFFKey() != null) t.splice(1, 0, { id: "ff", name: "Forge Frenzy", icon: evArt("icon_forge") }); /* v1597: only while it runs */
+  if (game.csKey() != null) t.splice(1, 0, { id: "cs", name: "Conquest Sprint", icon: evArt("icon_cs") }); /* v1618: every second week */
   if (game.npActive()) t.unshift({ id: "np", name: "New Player", icon: evArt("icon_np") }); /* v1617: first 14 days of an account */
   if (kaijuTestOk()) t.push({ id: "brt", name: "Boss Test", icon: evArt("icon_boss") }); /* v1602: TEST game only */
   if (game.evBRKey() != null || (EVB.prev && !EVB.prev.claimed)) t.splice(1, 0, { id: "br", name: "Boss Rush", icon: evArt("icon_boss") }); /* v1599: Tue-Thu; v1600: stays after the run until the rank reward is claimed */
@@ -19709,13 +19724,28 @@ function evWinRender(force) {
   EVW.sig = sig;
   var tabs = evTabs(); if (!tabs.some(function (t) { return t.id === EVW.tab; })) EVW.tab = tabs[0].id;
   var rd = game.evReady(), body = "", T = tabs.filter(function (t) { return t.id === EVW.tab; })[0];
-  if (EVW.tab === "np") body = evNpHtml(); else if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else if (EVW.tab === "arena") body = evArenaHtml(); else if (EVW.tab === "ff") body = evFFHtml(); else if (EVW.tab === "br") body = evBRHtml(); else if (EVW.tab === "brt") body = evBRTestHtml(); else body = evServerHtml(T.ev);
+  if (EVW.tab === "np") body = evNpHtml(); else if (EVW.tab === "cs") body = evCsHtml(); else if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else if (EVW.tab === "arena") body = evArenaHtml(); else if (EVW.tab === "ff") body = evFFHtml(); else if (EVW.tab === "br") body = evBRHtml(); else if (EVW.tab === "brt") body = evBRTestHtml(); else body = evServerHtml(T.ev);
   var keep = ov.querySelector(".evw-body"), st = keep ? keep.scrollTop : 0;
   ov.innerHTML = '<div class="evw-top"><div class="evw-ttl">EVENTS</div><span style="flex:1"></span><button type="button" class="evw-x" data-evx="1" aria-label="Close">✕</button></div>'
-    + '<div class="evw-tabs">' + tabs.map(function (t) { var dot = t.id === "np" ? rd.np : t.id === "fhw" ? rd.fhw : t.id === "daily" ? rd.daily : t.id === "ff" ? rd.ff : t.id === "br" ? rd.br + (EVB.prev && !EVB.prev.claimed ? 1 : 0) : t.id === "arena" ? rd.arena + (EVA.prev.d && !EVA.prev.d.claimed ? 1 : 0) + (EVA.prev.w && !EVA.prev.w.claimed ? 1 : 0) : t.ev ? (function () { try { return ksEvReady(t.ev, Date.now()); } catch (e) { return 0; } })() : 0;
+    + '<div class="evw-tabs">' + tabs.map(function (t) { var dot = t.id === "np" ? rd.np : t.id === "cs" ? rd.cs : t.id === "fhw" ? rd.fhw : t.id === "daily" ? rd.daily : t.id === "ff" ? rd.ff : t.id === "br" ? rd.br + (EVB.prev && !EVB.prev.claimed ? 1 : 0) : t.id === "arena" ? rd.arena + (EVA.prev.d && !EVA.prev.d.claimed ? 1 : 0) + (EVA.prev.w && !EVA.prev.w.claimed ? 1 : 0) : t.ev ? (function () { try { return ksEvReady(t.ev, Date.now()); } catch (e) { return 0; } })() : 0;
       return '<button type="button" class="evw-tab' + (t.id === EVW.tab ? " on" : "") + '" data-evt="' + escapeHtml(t.id) + '"><span class="ic"><img alt="" src="' + t.icon + '">' + (dot ? '<span class="dot"></span>' : "") + "</span>" + escapeHtml(t.name) + "</button>"; }).join("") + "</div>"
     + '<div class="evw-body">' + body + "</div>";
   var nb = ov.querySelector(".evw-body"); if (nb && keep) nb.scrollTop = st;
+}
+/* v1618: Conquest Sprint tab */
+function evCsHtml() {
+  var C = LIVEOPS.cs || {}, S = game.csSync() || { c: {}, tc: [], fin: false }, ts = C.tasks || [], nDone = ts.filter(function (t) { return S.tc.indexOf(t.id) >= 0; }).length, all = game.csAllDone();
+  var h = '<div class="evw-hd2 evw-cshd" style="background-image:url(' + evArt("banner_cs") + ')"><div class="tt"><span class="k">EVERY OTHER WEEK</span><h1>Conquest<br>Sprint</h1><span class="tm">⏳ Ends in <b data-evend="' + (Date.now() + game.evWeekMsLeft()) + '">' + evLeft(game.evWeekMsLeft()) + "</b></span></div></div>";
+  h += '<div class="evw-act evw-csp"><div class="row1"><b>' + nDone + " / " + ts.length + '</b><span>tasks done this week · finish them all for the final chest</span></div><div class="evw-csbar"><i style="width:' + (ts.length ? nDone / ts.length * 100 : 0) + '%"></i></div></div>';
+  if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
+  h += '<div class="evw-list" style="margin-top:10px">' + ts.map(function (t) { var have = Math.min(t.need, S.c[t.id] || 0), ok = have >= t.need, cl = S.tc.indexOf(t.id) >= 0, k0 = Object.keys(t.items || {})[0];
+    return '<div class="evw-t"><div class="ti">' + evKindArt(t.kind) + '</div><div class="tx"><b>' + escapeHtml(t.name) + "</b>" + (t.need > 1 ? have.toLocaleString("en-US") + " / " + t.need.toLocaleString("en-US") : ok ? "Done" : "Once this week")
+      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + (k0 ? evTile(k0, t.items[k0], " sm") : "")
+      + (cl ? '<div class="go done">✓</div>' : ok ? '<button type="button" class="go claim" data-evcst="' + t.id + '">Claim</button>' : '<button type="button" class="go" data-evgo="' + t.kind + '">Go</button>') + "</div>"; }).join("") + "</div>";
+  var F = C.fin || {};
+  h += '<div class="evw-npch big"><div class="t">🏁 Final chest<span>' + nDone + " / " + ts.length + " tasks</span></div><div class=\"it\">" + Object.keys(F).map(function (k) { return evTile(k, F[k], S.fin ? " got" : all ? " ready" : ""); }).join("") + "</div>"
+    + (S.fin ? '<div class="evw-npbtn off">✓ Opened</div>' : '<button type="button" class="evw-npbtn' + (all ? "" : " off") + '" data-evcsf="1"' + (all ? "" : " disabled") + ">" + (all ? "Open the final chest" : "Finish every task to open") + "</button>") + "</div>";
+  return h + '<div class="evw-foot">Each task counts once a week. Conquest Sprint runs Monday to Sunday (UTC) every second week, taking turns with Alliance Siege. Farming an easy level counts for enemies defeated.</div>';
 }
 /* v1617: New Player Path tab */
 function evNpHtml() {
@@ -19799,6 +19829,8 @@ function evWinClick(e) {
   if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
   if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
   if (t.closest && evArenaClick(t)) return; /* v1594 */
+  if ((b = t.closest && t.closest("[data-evcst]"))) { var csr = game.csClaimTask(b.getAttribute("data-evcst")); if (csr.ok) evDone("Got " + evGotText(csr.got)); evWinRender(true); return; } /* v1618 */
+  if ((b = t.closest && t.closest("[data-evcsf]"))) { if (b.disabled) return; var csf = game.csClaimFin(); if (csf.ok) evDone("Final chest: " + evGotText(csf.got)); evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-evnpd]"))) { EVW.npd = +b.getAttribute("data-evnpd"); EVW.note = ""; evWinRender(true); return; } /* v1617 */
   if ((b = t.closest && t.closest("[data-evnpt]"))) { var npr = game.npClaimTask(b.getAttribute("data-evnpt")); if (npr.ok) evDone("Got " + evGotText(npr.got)); else EVW.note = '<span class="bad">' + (npr.reason === "locked" ? "That day isn't open yet." : "Not done yet.") + "</span>"; evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-evnpc]"))) { if (b.disabled) return; var npc = game.npClaimDay(+b.getAttribute("data-evnpc")); if (npc.ok) evDone("Day " + b.getAttribute("data-evnpc") + " chest: " + evGotText(npc.got)); evWinRender(true); return; }
@@ -19886,7 +19918,7 @@ function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) 
 function evLiveopsSubscribe() {
   if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
-    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
     evWinRender(true); }, function () {}); }).catch(function () {});
 }
 setTimeout(evLiveopsSubscribe, 4000);

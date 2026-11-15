@@ -286,4 +286,10 @@ t("v1617 New Player Path: defaults, np_shards allowed, bad kinds / gems / duplic
   assert.throws(() => C.normalizeLiveops({ np: { tasks: [{ kind: "th", items: { gems: 1 } }] } }), /gems/);
   assert.throws(() => C.normalizeLiveops({ np: { chests: [{ day: 2, items: { food: 1 } }, { day: 2, items: { food: 1 } }] } }), /own day/);
 });
+t("v1618 Conquest Sprint: defaults, heroup kind, bad kinds / gems refused, needs a final chest", () => {
+  const L = C.normalizeLiveops({}); assert.strictEqual(L.cs.tasks.length, 8); assert.strictEqual(L.cs.fin.featured_shards, 3);
+  const n = C.normalizeLiveops({ cs: { parity: 0, tasks: [{ kind: "heroup", need: 2, items: { food: 1 } }], fin: { event_tokens: 5 } } }).cs; assert.strictEqual(n.parity, 0); assert.strictEqual(n.tasks[0].kind, "heroup");
+  assert.throws(() => C.normalizeLiveops({ cs: { tasks: [{ kind: "nope", items: { food: 1 } }], fin: { food: 1 } } }), /bad kind/);
+  assert.throws(() => C.normalizeLiveops({ cs: { tasks: [], fin: { gems: 5 } } }), /gems/);
+});
 console.log(n + " tests passed");

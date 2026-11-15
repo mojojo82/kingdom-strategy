@@ -357,6 +357,18 @@ function normalizeNP(p) {
     return { day, items: liveItems(c && c.items, "New Player Path day " + day + " chest") }; }).sort((a, b) => a.day - b.day);
   return { on: p.on !== false, days, hero: heroKey(p.hero || "roran"), tasks, chests };
 }
+/* v1618: Conquest Sprint - Mon-Sun of every second week (week % 2 === parity); one-time tasks (each pays once a week, the game pays into the save);
+   all tasks claimed = the final chest. Kinds = LIVEOPS_KINDS + heroup (hero level-ups). */
+const CS_KINDS = ["kill", "arena", "camp", "monster", "ticket", "newlevel", "boss", "build", "forge", "heroup"];
+const LIVE_CS_DEFAULT = {"on": true, "parity": 1, "tasks": [{"id": "lvl", "kind": "newlevel", "need": 3, "name": "Clear 3 new Conquest levels", "items": {"conquest_books": 10}}, {"id": "boss", "kind": "boss", "need": 1, "name": "Beat your next chapter boss", "items": {"weapon_tickets": 2}}, {"id": "kill", "kind": "kill", "need": 2000, "name": "Defeat 2,000 enemies in Conquest (farming counts)", "items": {"speedup_general_1h": 1}}, {"id": "arena", "kind": "arena", "need": 5, "name": "Win 5 Arena fights", "items": {"event_tokens": 10}}, {"id": "hero", "kind": "heroup", "need": 3, "name": "Level up your heroes 3 times", "items": {"conquest_books": 10}}, {"id": "tix", "kind": "ticket", "need": 20, "name": "Use 20 weapon draw tickets", "items": {"speedup_general_5m": 6}}, {"id": "bld", "kind": "build", "need": 3, "name": "Upgrade buildings 3 times", "items": {"food": 5000}}, {"id": "camp", "kind": "camp", "need": 3, "name": "Win 3 fights against camps", "items": {"item_stamina_10": 1}}], "fin": {"speedup_general_1h": 3, "event_tokens": 25, "conquest_books": 20, "featured_shards": 3}};
+function normalizeCS(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_CS_DEFAULT));
+  const seen = {}, tasks = (Array.isArray(p.tasks) ? p.tasks : []).slice(0, 16).map((t, i) => {
+    const kind = String((t && t.kind) || ""); if (CS_KINDS.indexOf(kind) < 0) throw new GameError("invalid-argument", "Conquest Sprint task " + (i + 1) + ": bad kind");
+    let id = packIdFrom((t && t.id) || kind + "_" + i); while (seen[id]) id += "_2"; seen[id] = 1;
+    return { id, kind, need: num(t && t.need, 1, 1e9, 1), name: String((t && t.name) || "").trim().slice(0, 60) || kind, items: liveItems(t && t.items, "Conquest Sprint task " + (i + 1)) }; });
+  return { on: p.on !== false, parity: num(p.parity, 0, 1, 1), tasks, fin: liveItems(p.fin, "Conquest Sprint final chest") };
+}
 function normalizeLiveops(c) {
   c = c || {}; const f = c.fhw || {}, sh = c.shop || {}, wk = c.wk || {}, pts = {}, P = f.pts || {};
   ["kill", "arena", "camp", "monster", "ticket"].forEach((k) => { pts[k] = num(P[k], 0, 100000, 0); });
@@ -371,7 +383,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* when this event runs for this player (createdAt = when their account was made); null = never */
 function eventWindow(ev, createdAt) {
