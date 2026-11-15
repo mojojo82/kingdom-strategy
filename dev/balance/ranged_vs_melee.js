@@ -20,6 +20,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.evaluate(() => { const st = game.state; ["caelum", "kessa", "lyra"].forEach((k) => { st.heroes[k].owned = true; st.heroes[k].level = 40; st.heroes[k].skillLevels = { conquest: [3, 5, 3], expedition: [1, 1, 1] }; }); st.conquestRoster = ["caelum", "kessa", "lyra"]; document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove()); setScreen("more", "arena"); });
   await P.waitForTimeout(3000);
   if (process.env.SKIPR) await P.evaluate(() => { ARENA_MELEE_BASIC_SKIPS_RANGED = true; });
+  if (process.env.MULT) await P.evaluate((m) => { ARENA_MELEE_ATK_MULT = m; }, +process.env.MULT);
   const r = await P.evaluate(() => {
     const H = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && k !== "hanzo"), hs = {};
     H.forEach((k) => { hs[k] = { owned: true, level: 80, stars: 25, skillLevels: { conquest: [5, 5, 5], expedition: [5, 5, 5] } }; });

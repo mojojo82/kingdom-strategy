@@ -5833,6 +5833,7 @@ var TROOP_TIER_TIME_MULT = 1.19; /* v1181: no longer used for training (Kingshot
 /* v1181 (Harley): Kingshot's base training time per troop by tier, the same for all three types (kingshotlab.com database, from kingshotcalculator.net;
    matches Harley's screenshot: 300 Tier VI archers = 5:00:00 before bonuses). Building level / research bonuses still apply on top as before. */
 var TROOP_TIER_TRAIN_SEC = [0, 12, 17, 24, 32, 44, 60, 60, 60, 120, 120];
+var ARENA_MELEE_ATK_MULT = 1; /* what-if switch: melee heroes' ATK x this in Arena (1 = off) */
 var ARENA_MELEE_BASIC_SKIPS_RANGED = false; /* what-if switch (off): melee basic attacks skip ranged heroes */
 var PROMOTE_MIN_TIME_SHARE = 0.3; /* v1640: promoting always takes at least 30% of the new tier's training time */
 var PROMOTE_UNLOCK_LEVEL = 13; /* v1182: Kingshot - troop promotion unlocks with Barracks/Range/Stable Lv 13 */
@@ -37759,7 +37760,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var def = HERO_DEFS[key], h = heroesState[key];
     if (!h || !h.owned) return;
     var isInfantry = def.class === "infantry";
-    attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */, melee: isInfantry });
+    attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */ * (isInfantry ? ARENA_MELEE_ATK_MULT : 1) /* what-if switch (1 = off) */, melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
     if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), rt: heroRangedTakeMult(key, h) /* v1521 */, dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
