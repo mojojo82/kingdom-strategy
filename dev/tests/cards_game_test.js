@@ -1,0 +1,34 @@
+// v1635: Weekly / Monthly Cards, in the real TEST game (headless, fake Firebase + local functions). node dev/tests/pick_hero_game_test.js
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "playwright");
+const C = require(path.join(ROOT, "functions/core.js")), R = C.envRoot("test");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: process.env.SHOT ? 2 : 1 });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, require(path.join(__dirname, "siteroute.js"))(GAME));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "cd@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "cd"); await P.click("#ksGo"); await P.waitForTimeout(8000);
+  const uid = await P.evaluate(() => KS_BACKEND.uid); const out = {};
+  await P.evaluate(() => evWinOpen("cd")); await P.waitForTimeout(500);
+  out.before = await P.evaluate(() => [...document.querySelectorAll("#evWin [data-cdt]")].map((b) => b.textContent));
+  await P.evaluate(() => document.querySelector('#evWin [data-cdt="weekly"]').click()); await P.waitForTimeout(1500);
+  out.active = await P.evaluate(() => game.cdActive("weekly")); assert.ok(out.active, "weekly card unlocked (TEST)");
+  const w0 = (store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0;
+  await P.evaluate(() => document.querySelector('#evWin [data-cdd="weekly"]').click()); await P.waitForTimeout(2000);
+  await P.evaluate(() => { game.evAct("arena", 16); evWinRender(true); }); await P.waitForTimeout(400);
+  if (process.env.SHOT) await P.screenshot({ path: process.env.SHOT, fullPage: false });
+  await P.evaluate(() => document.querySelector('#evWin [data-cdp="0:0"]').click()); await P.waitForTimeout(2000);
+  out.gems = ((store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0) - w0; assert.strictEqual(out.gems, 600 + 500, "daily 600 + pick 500");
+  out.second = await P.evaluate(() => game.cdPick(0, 1).reason); assert.strictEqual(out.second, "claimed");
+  out.errors = errs; console.log(JSON.stringify(out, null, 1)); assert.deepStrictEqual(errs, []); console.log("cards game test passed"); await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });

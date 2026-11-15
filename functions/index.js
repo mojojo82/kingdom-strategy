@@ -294,6 +294,7 @@ async function allPacks(R) {
 }
 async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
   const id = C.purchaseId(provider, receiptId), pref = db.doc(R + "purchases/" + id), pack = await loadPack(R, packId);
+  const lo = pack && pack.grant ? ((await liveopsConfig(R)) || C.normalizeLiveops({})) : null; /* v1635: cards / Season Pass premium */
   const shop = await shopConfig(R, null), points = pack ? (((shop.tiers || {})[pack.tier || 0] || {}).points || 0) : 0; /* v945: top-up points */
   if (pack && pack.limit) { /* v943: buy limits (once ever, or N per day/week/month) */
     const ex = await pref.get();
@@ -315,6 +316,7 @@ async function deliverPurchase(R, uid, packId, provider, receiptId, by) {
     rec.points = points; const wd = ws.data() || {}, wpatch = {};
     if (r.add > 0) { wpatch.gems = r.gems; ledger(tx, R, uid, "gems", r.add, r.gems, "purchase", id, by); }
     if (points > 0) { wpatch.topup = C.addTopup(wd.topup, shop.topups, points, Date.now()); } /* the purchase record keeps .points */
+    if (pack.grant) { Object.assign(wpatch, C.applyGrant(wd, pack.grant, lo, Date.now())); rec.grant = pack.grant; } /* v1635: Weekly / Monthly Card days, Season Pass premium */
     tx.set(pref, rec); if (Object.keys(wpatch).length) tx.set(walletRef(R, uid), wpatch, { merge: true });
     return { dup: false, id, gems: r.gems, record: rec };
   });
@@ -633,6 +635,12 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
     return { dup: false, events: patchEvents, gems: g, items: r.items, progress };
   });
 });
+/* v1635: TEST game only - "Unlock for testing" a card (or the Season Pass premium) without a payment. Refused on LIVE. */
+exports.testGrant = wrap(async (req, uid, R, d) => {
+  if (R !== "envs/test/") throw new C.GameError("permission-denied", "TEST game only"); const grant = String(d.grant || ""); if (!grant || C.PACK_GRANTS.indexOf(grant) < 0) throw new C.GameError("invalid-argument", "bad grant");
+  const lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
+  return db.runTransaction(async (tx) => { const ws = await tx.get(walletRef(R, uid)), patch = C.applyGrant(ws.data() || {}, grant, lo, Date.now()); tx.set(walletRef(R, uid), patch, { merge: true }); return patch; });
+});
 /* v1628: activity gems (C.decideGemAct). payGemAct runs inside a transaction after its reads; claimGemAct is the game's report of a monster / camp /
    Arena win / the daily login. Over the day's cap it just pays nothing. */
 function payGemAct(tx, R, uid, ws, act, GA, ref, now) {
@@ -663,16 +671,16 @@ exports.claimEv = wrap(async (req, uid, R, d) => {
     : src === "np" ? ((meta && meta.createdAt) || (save && save.startedAt) || null) : null;
   return db.runTransaction(async (tx) => {
     const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {};
-    const plans = list.map((x) => { try { return { x, plan: C.evClaimPlan(lo, x.src, x.k, x.ref, { now, createdAt: startOf(x.src), save, prem: (k) => R === "envs/test/" || wd.spPrem === k }) }; } /* premium: TEST unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
+    const plans = list.map((x) => { try { return { x, plan: C.evClaimPlan(lo, x.src, x.k, x.ref, { now, createdAt: startOf(x.src), save, cards: wd.cards, prem: (k) => R === "envs/test/" || wd.spPrem === k }) }; } /* premium: TEST unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
       catch (e) { if (one || !(e instanceof C.GameError)) throw e; return { x, err: { code: e.code, message: e.message } }; } });
     const recs = {}, refs = {};
     for (const p of plans) { if (!p.plan) continue; const key = p.x.src + "_" + p.plan.k; if (!refs[key]) { refs[key] = db.doc(base + "evclaims/" + key); const cs = await tx.get(refs[key]); recs[key] = cs.exists ? cs.data() : null; } }
     let g = wd.gems || 0, gd = wd.evg; const out = [], dirty = {};
     plans.forEach((p) => { if (p.err) { out.push({ error: p.err }); return; }
-      const key = p.x.src + "_" + p.plan.k, r = C.decideEvClaim(recs[key], p.plan, p.x.ref, lo.items, gd, now);
+      const key = p.x.src + "_" + p.plan.k, r = C.decideEvClaim(recs[key], p.plan, p.plan.ref || p.x.ref, lo.items, gd, now); /* a card pick: once per milestone whichever choice */
       if (r.dup) { out.push({ dup: true }); return; }
       recs[key] = Object.assign({ src: p.x.src, k: p.plan.k, at: now }, r.rec); dirty[key] = 1; gd = r.gd;
-      const why = "ev_" + p.x.src, tag = p.plan.k + ":" + p.x.ref; if (r.gems > 0) { g += r.gems; ledger(tx, R, uid, "gems", r.gems, g, why, tag); }
+      const why = "ev_" + p.x.src, tag = p.plan.k + ":" + p.x.ref + (p.x.src === "cdp" ? ":pick" : ""); if (r.gems > 0) { g += r.gems; ledger(tx, R, uid, "gems", r.gems, g, why, tag); }
       Object.keys(r.save).forEach((id) => { if (C.LEDGER_ITEMS.indexOf(id) >= 0) ledger(tx, R, uid, id, r.save[id], null, why, tag); });
       out.push({ dup: false, added: r.gems, capped: r.capped, save: r.save }); });
     Object.keys(dirty).forEach((key) => tx.set(refs[key], recs[key]));

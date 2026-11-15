@@ -380,4 +380,16 @@ t("v1633 Seasonal Festivals: dated, no overlaps, claims only while one runs, per
   assert.throws(() => C.normalizeLiveops({ fs: { list: [{ name: "A", start: 100, end: 110, ms: [] }, { name: "B", start: 105, end: 120, ms: [] }] } }), /overlap/);
   assert.throws(() => C.normalizeLiveops({ fs: { list: [{ name: "A", start: 100, end: 90, ms: [] }] } }), /start and an end/);
 });
+t("v1635 cards: grants extend from the current end, daily once a day while active, one pick per milestone, pass_sp = this season", () => {
+  const L = C.normalizeLiveops({}), day = 20800, now = day * 86400000 + 5, w = Math.floor((day + 3) / 7);
+  const g1 = C.applyGrant({}, "card_weekly", L, now); assert.deepStrictEqual(g1.cards.weekly, { from: day, until: day + 7 });
+  assert.deepStrictEqual(C.applyGrant(g1, "card_weekly", L, now + 2 * 86400000).cards.weekly, { from: day, until: day + 14 }, "buying again adds days");
+  assert.deepStrictEqual(C.applyGrant(g1, "card_monthly", L, now).cards.monthly, { from: day, until: day + 30 });
+  assert.ok(C.evClaimPlan(L, "cdd", day, "weekly", { now, cards: g1.cards })); assert.throws(() => C.evClaimPlan(L, "cdd", day, "monthly", { now, cards: g1.cards }), /card not active/);
+  assert.throws(() => C.evClaimPlan(L, "cdd", day + 8, "weekly", { now: now + 8 * 86400000, cards: g1.cards }), /card not active/);
+  const p = C.evClaimPlan(L, "cdp", w, "2:1", { now, cards: g1.cards }); assert.strictEqual(p.ref, "2"); assert.deepStrictEqual(p.items, { ["shards_" + L.fhw.hero]: 10 });
+  const r = C.decideEvClaim(null, p, p.ref, L.items, null, now); assert.strictEqual(C.decideEvClaim(r.rec, C.evClaimPlan(L, "cdp", w, "2:0", { now, cards: g1.cards }), "2", L.items, r.gd, now).dup, true, "other choice of the same milestone = already claimed");
+  assert.throws(() => C.evClaimPlan(L, "cdp", w, "0:0", { now, cards: {} }), /card not active/);
+  assert.deepStrictEqual(C.applyGrant({}, "pass_sp", L, (L.sp.start + 3) * 86400000), { spPrem: 0 }); assert.strictEqual(C.normalizePack({ name: "x", items: { gems: 1 }, grant: "nope" }).grant, "");
+});
 console.log(n + " tests passed");

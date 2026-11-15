@@ -37,5 +37,10 @@ const assert = require("assert");
   // v1634: many claims in one call (Claim all) - per-claim results, one bad one doesn't stop the rest
   const bl = (await go("claimEv", "p5", { list: [{ src: "fhw", k: w, ref: "ms:0" }, { src: "fhw", k: w, ref: "ms:9" }, { src: "fhw", k: w, ref: "ms:0" }, { src: "wk", k: w, ref: "roran" }] })).data;
   out.batch = bl.results.map((x) => x.error ? "err:" + x.error.message : x.dup ? "dup" : "+" + x.added); assert.deepStrictEqual(out.batch, ["+150", "err:no such reward", "dup", "+0"]); assert.strictEqual(bl.gems, 150);
+  // v1635 cards: TEST unlock, daily once, purchase grant through deliverPurchase
+
+  out.cardUnlock = (await go("testGrant", "p6", { grant: "card_weekly" })).data; assert.strictEqual(out.cardUnlock.cards.weekly.until, day + 7);
+  out.cardDaily = [(await go("claimEv", "p6", { src: "cdd", k: day, ref: "weekly" })).data.added, (await go("claimEv", "p6", { src: "cdd", k: day, ref: "weekly" })).data.dup]; assert.deepStrictEqual(out.cardDaily, [600, true]);
+  out.cardMonthlyNo = (await go("claimEv", "p6", { src: "cdd", k: day, ref: "monthly" })).error.message;
   console.log(JSON.stringify(out, null, 1)); console.log("evclaim server test passed");
 })().catch((e) => { console.error(e); process.exit(1); });

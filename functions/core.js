@@ -145,7 +145,7 @@ function normalizePack(p) {
   let banner = null; /* v944: optional banner picture (the admin page shrinks it to a small JPEG first) */
   if (p.banner) { banner = String(p.banner); if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(banner)) throw new GameError("invalid-argument", "banner must be a JPEG, PNG or WebP picture"); if (banner.length > 700000) throw new GameError("invalid-argument", "banner picture is too big (max ~500 KB)"); }
   return { name, desc: String(p.desc || "").trim().slice(0, 200), icon: Array.from(String(p.icon || "📦").trim()).slice(0, 4).join("") || "📦", items, labels, banner, tier, limit, reset: limit ? reset : "none",
-    mail: p.mail === true, active: p.active !== false, order: Math.trunc(+p.order || 0) };
+    mail: p.mail === true, active: p.active !== false, order: Math.trunc(+p.order || 0), grant: PACK_GRANTS.indexOf(String(p.grant || "")) >= 0 ? String(p.grant || "") : "" }; /* v1635: grant = card_weekly / card_monthly / pass_sp */
 }
 /* Repeating buy limits: "daily" resets at 00:00 UTC, "weekly" on Monday 00:00 UTC, "monthly" on the 1st 00:00 UTC. Returns when the current period began. */
 const PACK_RESETS = ["none", "daily", "weekly", "monthly"];
@@ -435,6 +435,31 @@ function normalizeFS(p) {
   return { on: p.on !== false, list };
 }
 function fsAt(FS, day) { return FS && FS.on !== false ? (FS.list || []).find((f) => day >= f.start && day <= f.end) || null : null; }
+/* v1635: Weekly / Monthly Cards (paid, "best value" packs). A card = `days` days: gems + items the moment it's bought (the shop pack carries
+   them), and a daily reward claimed each day it's active (claimEv src "cdd", ref = card id). Card owners also get the weekly "pick your reward"
+   track: festival-style points from play, each milestone lets the player choose 1 of its options (src "cdp", ref "<milestone>:<option>").
+   Ownership: wallet.cards = { <id>: { from: utc day, until: utc day (not included) } }, set by a purchase of a pack with grant "card_<id>". */
+const LIVE_CD_DEFAULT = {"on": true, "cards": [{"id": "weekly", "name": "Weekly Card", "days": 7, "tier": 4, "now": {"gems": 2500}, "daily": {"gems": 600, "speedup_general_1h": 1, "weapon_tickets": 1}}, {"id": "monthly", "name": "Monthly Card", "days": 30, "tier": 5, "now": {"gems": 5000}, "daily": {"gems": 800, "speedup_general_1h": 2, "item_stamina_10": 1}}], "pts": {"kill": 2, "arena": 20, "camp": 15, "monster": 15, "ticket": 3, "build": 10, "newlevel": 30}, "track": [{"at": 300, "opts": [{"gems": 500}, {"speedup_general_1h": 5}, {"weapon_tickets": 5}]}, {"at": 600, "opts": [{"gems": 800}, {"featured_shards": 5}, {"item_chest_eq_3": 1}]}, {"at": 1200, "opts": [{"gems": 1200}, {"featured_shards": 10}, {"item_chest_weapon": 1}]}, {"at": 2500, "opts": [{"gems": 2000}, {"featured_shards": 20}, {"item_chest_eq_4": 1}]}]};
+function normalizeCD(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_CD_DEFAULT));
+  const cards = ["weekly", "monthly"].map((id, i) => { const c = (Array.isArray(p.cards) ? p.cards : []).find((x) => x && x.id === id) || LIVE_CD_DEFAULT.cards[i];
+    return { id, name: String(c.name || "").trim().slice(0, 30) || LIVE_CD_DEFAULT.cards[i].name, days: num(c.days, 1, 90, LIVE_CD_DEFAULT.cards[i].days), tier: num(c.tier, 0, 50, LIVE_CD_DEFAULT.cards[i].tier), now: liveItems(c.now, id + " card - when bought"), daily: liveItems(c.daily, id + " card - daily") }; });
+  const P = p.pts || {}, pts = {}; FS_KINDS.forEach((k) => { pts[k] = num(P[k], 0, 1e5, 0); });
+  const track = (Array.isArray(p.track) ? p.track : []).slice(0, 10).map((m, i) => ({ at: num(m && m.at, 1, 1e9, 0) || (() => { throw new GameError("invalid-argument", "card track milestone " + (i + 1) + " needs points"); })(),
+    opts: (Array.isArray(m.opts) ? m.opts : []).slice(0, 4).map((o, j) => liveItems(o, "card track milestone " + (i + 1) + " choice " + (j + 1))) })).filter((m) => m.opts.length).sort((a, b) => a.at - b.at);
+  return { on: p.on !== false, cards, pts, track };
+}
+function cardActive(cards, id, day) { const c = cards && cards[id]; return !!c && day >= (c.from || 0) && day < (c.until || 0); }
+function anyCardActive(cards, day) { return cardActive(cards, "weekly", day) || cardActive(cards, "monthly", day); }
+/* a purchase's grant -> wallet patch (cards extend from their current end; pass_sp unlocks this season's premium track) */
+const PACK_GRANTS = ["", "card_weekly", "card_monthly", "pass_sp"];
+function applyGrant(wallet, grant, lo, now) {
+  const day = utcDay(now), w = wallet || {};
+  if (grant === "card_weekly" || grant === "card_monthly") { const id = grant.slice(5), C0 = ((lo.cd || {}).cards || []).find((c) => c.id === id) || LIVE_CD_DEFAULT.cards.find((c) => c.id === id), cur = (w.cards || {})[id];
+    const live = cur && cur.until > day, cards = Object.assign({}, w.cards || {}); cards[id] = { from: live ? cur.from : day, until: (live ? cur.until : day) + C0.days }; return { cards }; }
+  if (grant === "pass_sp") { const k = evPeriodAt(lo, "sp", now, null); return k == null ? {} : { spPrem: k }; }
+  return {};
+}
 /* v1629: gems in the starting event rewards (Harley: lack of gems, rewards should be groups) - added on top of each default reward, so most become groups.
    An admin-saved event keeps what was saved; "Load the starting numbers" in the admin page brings these in. */
 const LIVE_GEMS_PATCH = {"fhw": [50, 100, 150, 250, 400], "arena": [10, 20, 30, 50], "rankD": [200, 150, 100, 60, 40, 20], "rankW": [1000, 700, 500, 300, 200, 100], "ff": [50, 100, 200, 300, 500], "br": [50, 100, 200, 300, 500], "brRank": [1000, 700, 400, 250, 150, 50], "npChest": [100, 100, 150, 150, 200, 200, 300, 200, 200, 250, 250, 300, 300, 500], "csTask": 50, "csFin": 600, "spFree": {"5": 50, "10": 50, "15": 50, "20": 50, "25": 50, "30": 50}, "spPrem": 50, "sgP": [20, 50, 100, 150, 200, 250, 300], "sgA": [50, 100, 150, 200, 300, 500]};
@@ -474,7 +499,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { fs: normalizeFS(c.fs), hc: normalizeHC(c.hc), cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { cd: normalizeCD(c.cd), fs: normalizeFS(c.fs), hc: normalizeHC(c.hc), cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* v1628: activity gems - gems for everyday play, paid by the server with a cap per day for each activity (Harley: an active player ~5,000 gems a
    day from all sources). The game reports each activity (claimGemAct; the server trusts the report like Daily Tasks, the daily caps limit it);
@@ -513,7 +538,7 @@ function itemServerPaid(modes, id) { if (id === "gems") return true; const M = m
      sp   "<lv>:free" | "<lv>:prem"  Season Pass level (period = season)
    The period must be the current one or one that was running in the last 2 days (a claim made offline just before a reset still pays).
    ctx = { now, createdAt (account), prem(season) -> bool }. Returns { k, items } with featured/np/sp shards turned into real hero shards. */
-const EV_SRCS = ["fhw", "arena", "ff", "br", "wk", "np", "cs", "sp", "cb", "hc", "fs"];
+const EV_SRCS = ["fhw", "arena", "ff", "br", "wk", "np", "cs", "sp", "cb", "hc", "fs", "cdd", "cdp"];
 function evPeriodAt(lo, src, t, createdAt) {
   const d = utcDay(t), w = Math.floor((d + 3) / 7), dow = (d + 4) % 7;
   if (src === "fhw" || src === "wk") return w;
@@ -524,6 +549,8 @@ function evPeriodAt(lo, src, t, createdAt) {
   if (src === "sp") { const P = lo.sp || {}; if (P.on === false || !(P.days > 0) || d < (P.start || 0)) return null; return Math.floor((d - (P.start || 0)) / P.days); }
   if (src === "hc") return (lo.hc || {}).on === false ? null : 0;
   if (src === "fs") { const f = fsAt(lo.fs, d); return f ? f.start : null; }
+  if (src === "cdd") return (lo.cd || {}).on === false ? null : d;
+  if (src === "cdp") return (lo.cd || {}).on === false ? null : w;
   if (src === "cb") { const P = lo.cb || {}, st = createdAt; if (!st && st !== 0) return null; return d - st >= 0 && d - st < (P.days || 7) ? st : null; } /* createdAt = the comeback start day here */
   if (src === "np") { const P = lo.np || {}; if (P.on === false || !createdAt) return null; const day = d - utcDay(createdAt) + 1; return day >= 1 && day <= (P.days || 14) ? 0 : null; }
   return null;
@@ -540,7 +567,7 @@ function evClaimPlan(lo, src, k, ref, ctx) {
   [0, 1, 2].forEach((back) => { const p = evPeriodAt(lo, src, now - back * 86400000, ctx.createdAt); if (p != null && ok.indexOf(p) < 0) ok.push(p); });
   if (ok.indexOf(k) < 0) throw new GameError("failed-precondition", "event not running");
   const idx = (re) => { const m = re.exec(ref); return m ? m[1] : null; };
-  let items = null;
+  let items = null, canon = null; /* canon = the once-only key when it differs from ref (a card pick: one choice per milestone) */
   if (src === "fhw" || src === "arena" || src === "ff" || src === "br") { const i = idx(/^ms:(\d{1,3})$/), list = (src === "fhw" ? lo.fhw : lo[src] || {}).ms || []; if (i != null && list[+i]) items = list[+i].items; }
   else if (src === "wk") { if ((lo.wk.heroes || []).indexOf(ref) >= 0 && lo.wk.shards > 0) { items = {}; items["shards_" + ref] = lo.wk.shards; } }
   else if (src === "np") {
@@ -548,6 +575,9 @@ function evClaimPlan(lo, src, k, ref, ctx) {
     if (t != null) { const x = (P.tasks || []).find((y) => y.id === t); if (x && x.day <= day) items = x.items; }
     else if (c != null) { const x = (P.chests || []).find((y) => y.day === +c); if (x && x.day <= day) items = x.items; }
   }
+  else if (src === "cdd") { const c = ((lo.cd || {}).cards || []).find((x) => x.id === ref); if (c) { if (!cardActive(ctx.cards, ref, k)) throw new GameError("failed-precondition", "card not active"); items = c.daily; } }
+  else if (src === "cdp") { const m = /^(\d{1,2}):(\d)$/.exec(ref), t = m && ((lo.cd || {}).track || [])[+m[1]];
+    if (t && t.opts[+m[2]]) { if (!anyCardActive(ctx.cards, k * 7 - 3 + 6) && !anyCardActive(ctx.cards, utcDay(now))) throw new GameError("failed-precondition", "card not active"); items = t.opts[+m[2]]; canon = m[1]; } }
   else if (src === "fs") { const f = ((lo.fs || {}).list || []).find((x) => x.start === k), i = idx(/^ms:(\d{1,2})$/); if (f && i != null && f.ms[+i]) items = f.ms[+i].items; }
   else if (src === "hc") { const P = lo.hc || {}, m = /^h:([a-z0-9_]{1,24}):(\d)$/.exec(ref), c = idx(/^c:(\d{1,2})$/);
     if (m) { const st = (P.steps || [])[+m[2]]; if (st && HC_HEROES().indexOf(m[1]) >= 0) { if (hcStars(ctx.save, m[1]) < st.stars) throw new GameError("aborted", "not in your saved game yet"); items = st.items; } }
@@ -556,7 +586,7 @@ function evClaimPlan(lo, src, k, ref, ctx) {
   else if (src === "cs") { const P = lo.cs || {}, t = idx(/^t:([A-Za-z0-9_-]{1,40})$/); if (ref === "fin") items = P.fin; else if (t != null) { const x = (P.tasks || []).find((y) => y.id === t); if (x) items = x.items; } }
   else if (src === "sp") { const m = /^(\d{1,2}):(free|prem)$/.exec(ref), L = m && ((lo.sp || {}).levels || [])[+m[1] - 1]; if (L) { if (m[2] === "prem" && !(ctx.prem && ctx.prem(k))) throw new GameError("permission-denied", "premium pass needed"); items = m[2] === "prem" ? L.prem : L.free; } }
   if (!items) throw new GameError("not-found", "no such reward");
-  return { k, items: evRealItems(items, lo) };
+  return canon != null ? { k, items: evRealItems(items, lo), ref: canon } : { k, items: evRealItems(items, lo) };
 }
 /* Pay a planned claim. rec = this period's claim record { r: [refs] }, gd = gems from event claims today { d, n }. Gems over the daily cap are
    dropped (the rest still pays). Returns what the server pays: gems (wallet) + the server-paid save items (recorded in the ledger; the game
@@ -839,5 +869,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { LIVE_CD_DEFAULT, normalizeCD, cardActive, anyCardActive, PACK_GRANTS, applyGrant, LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };
