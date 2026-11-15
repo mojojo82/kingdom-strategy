@@ -5273,3 +5273,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - New language: 日本語 (Japanese) in Options > Language, same coverage as Spanish (heroes screen + Skills tab). Sera's and Vesper's skills are translated in Spanish and Japanese; other heroes' skills fall back to English. Japanese letters use the phone's own font.
 - The bottom menu (Conquest / Heroes / City / World / More) and the top bar's Power label now follow the language too (en / ru / es / ja). Skill tags (ACTIVE...) no longer wrap onto two lines.
 - Screenshots for Harley (headless, 430x932 at 3x, Vesper Lv 42, 2 stars, her switched-off Clean Code hidden for the shot): art/originals/screens/vesper_skills_es_v1644.png, vesper_skills_ja_v1644.png.
+
+## v1645 — new support card design in the game
+- Every named card (20) now shows the new design: royal frame by rarity, new art, class / target icon in the socket (drawn behind the socket ring and spike), name / type / effect / flavour / rarity drawn by code (Cinzel + EB Garamond, sized with cqw). Cards work exactly the same - only the look changed.
+- Where: Cards grid (full card tiles), Full View (same layout; name / type / effect boxes sit in the new text zones and stay editable for admins), Conquest card boxes and Overlord profile (square crop of the new art via getCardArt).
+- NEW: card rarity (common / rare / epic / legendary). card.rarity in the catalog wins, else CARD_TCG (Harley: "you set them"): Legendary Desperate Spark, Lone Wolf, Cannon Doctrine, Critical Mass; Epic Storm's Fury, Last Bastion, Polar Flux, Overclock, Drop Signal, Death Gerbils; Rare Iron Vanguard, Shield Brothers, Thundering Hooves, Twin Citadels, Second Wind, Regen, Boss Slayer; Common Keen Edge, Quick Study, Hardy Stock.
+- Text: the new effect wording shows unless an admin wrote custom text for that card (old defaults / placeholders count as not custom); the flavour line shows unless the card has its own narrative.
+- Files: art/cards/ (frame_*, sock_*, icon_*, art_* webp; 2 MB, loaded when cards show). Old built-in pictures stay for cards without new art.
+- Checked headless (430x932 at 3x): grid, full view, Conquest boxes, profile; no errors. Google fonts don't load in the headless test, so shots use fallback serif fonts.
