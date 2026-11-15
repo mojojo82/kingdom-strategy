@@ -5284,3 +5284,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1646 — card Full View: no box, dimmed background
 - Harley: the new cards' Full View no longer sits inside the blue panel - the panel is see-through and the screen behind is dimmed (82% dark). Close button, Equip button and the ability line stay. Cards without new art keep the old view. Headless check: art/originals/screens/card_full_v1646.png.
+
+## v1647 — card effect text moved down
+- Harley: the effect text sat too close to the type bar. Effect box now starts lower (71.9% of the card, was 70.2%) on the Full View and the grid tiles; flavour line nudged down to match.
