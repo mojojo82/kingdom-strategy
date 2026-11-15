@@ -533,7 +533,8 @@ exports.touch = wrap(async (req, uid, R) => {
     const s = await tx.get(ref), d = s.exists ? s.data() : {};
     if (d.lastSeen && now - d.lastSeen < 10 * 60 * 1000) return { createdAt: d.createdAt, lastSeen: d.lastSeen, cb: C.comebackCheck(d, lo.cb, now) };
     const cb = C.comebackCheck(d, lo.cb, now); /* v1631: back after cb.away days -> Welcome Back starts today */
-    const out = { createdAt: d.createdAt || now, lastSeen: now, cb: cb || null }; tx.set(ref, out, { merge: true }); return out;
+    const out = { createdAt: d.createdAt || now, lastSeen: now }; if (cb) out.cb = cb; /* only kept while there is one (the account doc stays just the dates otherwise) */
+    tx.set(ref, out, { merge: true }); return Object.assign({ cb: cb || null }, out);
   });
 });
 

@@ -5235,3 +5235,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Buying it: a shop pack with "Also gives: Season Pass premium" (v1635) sets wallet.spPrem = this season; the game now unlocks the premium track from that (and the server pays premium rewards from it on LIVE).
 - Only a Season Pass that isn't saved in the admin page gets the new numbers ("Load the starting numbers" brings them in).
 - Tests: unit tests 30 pass; headless Season Pass tab shows the new premium text, no errors.
+
+## v1638 — server deploy fix (account dates)
+- The server deploy for v1631-v1637 stopped at its end-to-end test "account dates: only the two dates are stored": touch (v1631 Welcome Back) wrote cb: null into players/<uid>/meta/account for everyone. Now cb is only written while a player has a comeback running; touch still returns cb (null when none). Nothing else changed - all the v1631-v1637 server functions go out with this deploy.
+- Also banked the art candidates (art/originals/events/welcomeback, festival) - not in the game until Harley picks.
