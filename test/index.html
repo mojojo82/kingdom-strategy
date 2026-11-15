@@ -2837,6 +2837,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-lr.t1 .rk { color:#ffd54a; } #evWin .evw-lr.t2 .rk { color:#dfe6ee; } #evWin .evw-lr.t3 .rk { color:#e0a26a; }
   #evWin .evw-lr .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#f6e7c4; font-weight:700; }
   #evWin .evw-lr .pt { font-family:'KS Title','Lilita One',sans-serif; color:#ffd77a; }
+  #evWin .evw-t .evw-gi { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } #evWin .evw-t .evw-gi .evw-tile.sm { width:36px; height:36px; margin:0; }
+  #evWin .evw-rr.wide { flex:0 0 100%; } #evWin .evw-rr.wide span { flex:1; }
   #evWin .evw-rrs { display:flex; flex-wrap:wrap; gap:8px; padding:0 10px; }
   #evWin .evw-rr { flex:0 0 calc(33.3% - 6px); box-sizing:border-box; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,.28); border:1px dashed rgba(201,162,74,.5); border-radius:9px; padding:5px 7px; font-size:11.5px; font-weight:800; color:#f6e2a6; }
   #evWin .evw-rr span { flex:1; min-width:0; } #evWin .evw-rr .evw-tile { width:38px; height:38px; margin:0; flex:none; }
@@ -13890,7 +13892,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1626"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1627"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19780,6 +19782,9 @@ function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
 }
 function evTile(id, n, extra) { var I = evItemInfo(id);
   return '<div class="evw-tile r' + I.rar + (extra || "") + '">' + (I.top ? "<i>" + I.top + "</i>" : "") + (I.face ? '<img class="face" alt="" src="' + I.face + '"><img class="pz" alt="" src="' + ICON_SRC.fragment + '">' : '<span class="art">' + I.art + "</span>") + (n != null ? "<b>" + Math.floor(n).toLocaleString("en-US") + "</b>" : "") + "</div>"; }
+function evGrpN(items) { return Object.keys(items || {}).length; }
+function evGrpLine(items) { /* v1626: list rows show a whole reward group under the task text (single items stay on the right) */ if (evGrpN(items) < 2) return "";
+  return '<div class="evw-gi">' + Object.keys(items).map(function (k) { return evTile(k, items[k], " sm"); }).join("") + "</div>"; }
 function evTileG(items, extra) { /* v1625: a reward group shows its first item + a "+N" badge; tapping a group that isn't ready lists everything in it */
   var ks = Object.keys(items || {}); if (!ks.length) return ""; var h = evTile(ks[0], items[ks[0]], extra); if (ks.length < 2) return h;
   return h.replace('<div class="evw-tile', '<div data-evgrp="' + ks.map(function (k) { return k + ":" + items[k]; }).join(",") + '" class="evw-tile').replace(/<\/div>$/, '<em class="evw-more">+' + (ks.length - 1) + "</em></div>"); }
@@ -19945,7 +19950,7 @@ function evCsHtml() {
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   h += '<div class="evw-list" style="margin-top:10px">' + ts.map(function (t) { var have = Math.min(t.need, S.c[t.id] || 0), ok = have >= t.need, cl = S.tc.indexOf(t.id) >= 0, k0 = Object.keys(t.items || {})[0];
     return '<div class="evw-t"><div class="ti">' + evKindArt(t.kind) + '</div><div class="tx"><b>' + escapeHtml(t.name) + "</b>" + (t.need > 1 ? have.toLocaleString("en-US") + " / " + t.need.toLocaleString("en-US") : ok ? "Done" : "Once this week")
-      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + evTileG(t.items, " sm")
+      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + evGrpLine(t.items) + "</div>" + (evGrpN(t.items) > 1 ? "" : evTileG(t.items, " sm"))
       + (cl ? '<div class="go done">✓</div>' : ok ? '<button type="button" class="go claim" data-evcst="' + t.id + '">Claim</button>' : '<button type="button" class="go" data-evgo="' + t.kind + '">Go</button>') + "</div>"; }).join("") + "</div>";
   var F = C.fin || {};
   h += '<div class="evw-npch big"><div class="t">🏁 Final chest<span>' + nDone + " / " + ts.length + " tasks</span></div><div class=\"it\">" + Object.keys(F).map(function (k) { return evTile(k, F[k], S.fin ? " got" : all ? " ready" : ""); }).join("") + "</div>"
@@ -19969,7 +19974,7 @@ function evNpHtml() {
   var lockSel = sel > today, ts = game.npTasks(sel);
   h += '<div class="evw-list" style="margin-top:8px">' + ts.map(function (t) { var have = game.npHave(t), ok = have >= t.need, cl = N.t.indexOf(t.id) >= 0, k0 = Object.keys(t.items || {})[0];
     return '<div class="evw-t' + (lockSel ? " dim" : "") + '"><div class="ti">' + evKindArt(t.kind) + '</div><div class="tx"><b>' + escapeHtml(t.name) + "</b>" + (t.need > 1 ? Math.floor(have).toLocaleString("en-US") + " / " + t.need.toLocaleString("en-US") : ok ? "Done" : "Not yet")
-      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + evTileG(t.items, " sm")
+      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + evGrpLine(t.items) + "</div>" + (evGrpN(t.items) > 1 ? "" : evTileG(t.items, " sm"))
       + (cl ? '<div class="go done">✓</div>' : lockSel ? '<div class="go done lk">🔒</div>' : ok ? '<button type="button" class="go claim" data-evnpt="' + t.id + '">Claim</button>' : '<button type="button" class="go" data-evgo="' + t.kind + '">Go</button>') + "</div>"; }).join("") + "</div>";
   var ch = chOf(sel);
   if (ch) { var cdone = N.d.indexOf(sel) >= 0, cready = !lockSel && game.npDayDone(sel) && !cdone, nDone = ts.filter(function (t) { return N.t.indexOf(t.id) >= 0; }).length;
@@ -20181,7 +20186,7 @@ function evPrevLoad() { /* yesterday's / last week's score, for the rank-reward 
   });
 }
 function evRankRowsHtml(rows) { var prev = 0; return (rows || []).map(function (r) { var k0 = Object.keys(r.items)[0], lab = r.to ? (r.to === prev + 1 ? "#" + r.to : "#" + (prev + 1) + "-" + r.to) : "Everyone else"; prev = r.to || prev;
-  return '<div class="evw-rr"><span>' + lab + "</span>" + evTileG(r.items) + "</div>"; }).join(""); }
+  return evGrpN(r.items) > 1 ? '<div class="evw-rr wide"><span>' + lab + "</span>" + Object.keys(r.items).map(function (k) { return evTile(k, r.items[k]); }).join("") + "</div>" : '<div class="evw-rr"><span>' + lab + "</span>" + evTileG(r.items) + "</div>"; }).join(""); }
 function evArenaHtml() {
   var A = LIVEOPS.arena || {}, E = game.evSync(), ms = A.ms || [], n = ms.length || 1, pts = E.ad.pts;
   var fill = (function () { var prev = 0; for (var i = 0; i < ms.length; i++) { if (pts < ms[i].at) return (i + (pts - prev) / (ms[i].at - prev)) / n * 100; prev = ms[i].at; } return 100; })();

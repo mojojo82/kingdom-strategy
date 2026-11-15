@@ -5169,3 +5169,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Admin > Live events: every reward that was ONE item (Featured Hero Week milestones, Forge Frenzy, Boss Rush milestones + rank rewards, Arena daily track + daily / weekly rank rewards) now has 4 item slots like the others - fill one for a single item, or more for a group. Empty slots are ignored. Default rewards unchanged.
 - Game: a group shows its first item with a gold "+N" badge (top-right of the tile); tapping a group that isn't ready to claim lists everything in it. Claiming pays every item (server rules from v1625 apply to each).
 - Tests: admin round trip (group of 3 in a milestone, gems + medals in a rank row) accepted by the server; headless Events window: badge shows, tap note lists the group, no errors; unit tests pass.
+
+## v1627 — list rows show the whole reward group
+- Events window: task rows (New Player Path, Conquest Sprint) with a group show every item in a line under the task text (single items stay on the right, as before). Rank-reward rows with a group (Arena, Boss Rush) take the full width and show every item. Milestone bars keep the first item + "+N" badge (tap lists the group). Based on Harley's screenshots of another game (project doc claude/reward-reference.md).
+- Tests: headless New Player Path tab (3- and 4-item groups) and Arena rank rows (3- and 2-item groups), no errors.
