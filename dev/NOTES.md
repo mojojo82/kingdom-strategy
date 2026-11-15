@@ -5164,3 +5164,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Season Pass premium on the server: TEST allows it (the testing unlock); LIVE needs wallet.spPrem = season (set by the pass purchase when payments are connected).
 - Not yet: the bundle + gem amounts rework of the default rewards (next), "Claim all" sending one call for many rewards.
 - Tests: unit tests 22 pass (plan, period + 2-day grace, once-only, cap, switches, gems refused in shops); dev/tests/evclaim_server_test.js (pay, repeat, old week, fake reward, cap, weekly chest, NPP locked day, ledger, restricted player); dev/tests/evclaim_game_test.js headless (instant + confirmed, fake reward taken back, offline, Phone switch + master switch, no errors); admin form round trip accepted by the server. dev/tests/fnrunner.js: collection().doc() without an id now makes a random id (ledger entries in one transaction overwrote each other in tests only).
+
+## v1626 — reward groups are an option everywhere
+- Admin > Live events: every reward that was ONE item (Featured Hero Week milestones, Forge Frenzy, Boss Rush milestones + rank rewards, Arena daily track + daily / weekly rank rewards) now has 4 item slots like the others - fill one for a single item, or more for a group. Empty slots are ignored. Default rewards unchanged.
+- Game: a group shows its first item with a gold "+N" badge (top-right of the tile); tapping a group that isn't ready to claim lists everything in it. Claiming pays every item (server rules from v1625 apply to each).
+- Tests: admin round trip (group of 3 in a milestone, gems + medals in a rank row) accepted by the server; headless Events window: badge shows, tap note lists the group, no errors; unit tests pass.

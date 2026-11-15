@@ -2733,6 +2733,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-tile .pz { position:absolute; left:-5px; top:-6px; width:20px; height:20px; }
   #evWin .evw-tile > b { position:absolute; right:2px; bottom:-1px; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:14px; color:#fff; -webkit-text-stroke:2px #3a2f28; paint-order:stroke fill; }
   #evWin .evw-tile > i { position:absolute; left:0; right:0; top:1px; font-style:normal; font-family:'KS Title','Lilita One',sans-serif; font-size:10.5px; color:#fff; -webkit-text-stroke:1.6px #3a2f28; paint-order:stroke fill; z-index:1; }
+  #evWin .evw-tile > em.evw-more { position:absolute; right:-7px; top:-7px; min-width:17px; height:17px; padding:0 3px; box-sizing:border-box; border-radius:9px; background:#16233d; border:1.5px solid #f0c95f; color:#f0c95f; font-style:normal; font-size:10.5px; font-weight:800; line-height:14px; text-align:center; z-index:2; }
   #evWin .evw-tile.ready { box-shadow:0 0 0 3px #ffe28a, 0 0 14px #ffd04d; } #evWin .evw-tile.got::after { content:"✓"; position:absolute; inset:0; border-radius:8px; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; color:#7fe08a; font-size:22px; font-weight:900; }
   #evWin .evw-sub { display:flex; gap:8px; margin:12px 10px 6px; }
   #evWin .evw-sub button { flex:1; padding:8px 4px; border-radius:9px; font-weight:800; font-size:13px; color:#a9b4c8; border:1px dotted #5d6f93; background:none; cursor:pointer; }
@@ -13889,7 +13890,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1625"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1626"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19779,6 +19780,9 @@ function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
 }
 function evTile(id, n, extra) { var I = evItemInfo(id);
   return '<div class="evw-tile r' + I.rar + (extra || "") + '">' + (I.top ? "<i>" + I.top + "</i>" : "") + (I.face ? '<img class="face" alt="" src="' + I.face + '"><img class="pz" alt="" src="' + ICON_SRC.fragment + '">' : '<span class="art">' + I.art + "</span>") + (n != null ? "<b>" + Math.floor(n).toLocaleString("en-US") + "</b>" : "") + "</div>"; }
+function evTileG(items, extra) { /* v1625: a reward group shows its first item + a "+N" badge; tapping a group that isn't ready lists everything in it */
+  var ks = Object.keys(items || {}); if (!ks.length) return ""; var h = evTile(ks[0], items[ks[0]], extra); if (ks.length < 2) return h;
+  return h.replace('<div class="evw-tile', '<div data-evgrp="' + ks.map(function (k) { return k + ":" + items[k]; }).join(",") + '" class="evw-tile').replace(/<\/div>$/, '<em class="evw-more">+' + (ks.length - 1) + "</em></div>"); }
 function evLeft(ms) { var s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60; return d > 0 ? d + "d " + h + "h" : h > 0 ? h + "h " + m + "m" : m + "m " + (s % 60) + "s"; }
 var EV_GO = { kill: function () { setScreen("conquest"); }, newlevel: function () { setScreen("conquest"); }, boss: function () { setScreen("conquest"); }, arena: function () { setScreen("more", "arena"); },
   camp: function () { setScreen("world"); }, monster: function () { DAILY_GO.monster(); }, ticket: function () { DAILY_GO.tickets(); }, build: function () { DAILY_GO.build(); }, forge: function () { try { openForge(); } catch (e) { setScreen("conquest"); } },
@@ -19941,7 +19945,7 @@ function evCsHtml() {
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   h += '<div class="evw-list" style="margin-top:10px">' + ts.map(function (t) { var have = Math.min(t.need, S.c[t.id] || 0), ok = have >= t.need, cl = S.tc.indexOf(t.id) >= 0, k0 = Object.keys(t.items || {})[0];
     return '<div class="evw-t"><div class="ti">' + evKindArt(t.kind) + '</div><div class="tx"><b>' + escapeHtml(t.name) + "</b>" + (t.need > 1 ? have.toLocaleString("en-US") + " / " + t.need.toLocaleString("en-US") : ok ? "Done" : "Once this week")
-      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + (k0 ? evTile(k0, t.items[k0], " sm") : "")
+      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + evTileG(t.items, " sm")
       + (cl ? '<div class="go done">✓</div>' : ok ? '<button type="button" class="go claim" data-evcst="' + t.id + '">Claim</button>' : '<button type="button" class="go" data-evgo="' + t.kind + '">Go</button>') + "</div>"; }).join("") + "</div>";
   var F = C.fin || {};
   h += '<div class="evw-npch big"><div class="t">🏁 Final chest<span>' + nDone + " / " + ts.length + " tasks</span></div><div class=\"it\">" + Object.keys(F).map(function (k) { return evTile(k, F[k], S.fin ? " got" : all ? " ready" : ""); }).join("") + "</div>"
@@ -19965,7 +19969,7 @@ function evNpHtml() {
   var lockSel = sel > today, ts = game.npTasks(sel);
   h += '<div class="evw-list" style="margin-top:8px">' + ts.map(function (t) { var have = game.npHave(t), ok = have >= t.need, cl = N.t.indexOf(t.id) >= 0, k0 = Object.keys(t.items || {})[0];
     return '<div class="evw-t' + (lockSel ? " dim" : "") + '"><div class="ti">' + evKindArt(t.kind) + '</div><div class="tx"><b>' + escapeHtml(t.name) + "</b>" + (t.need > 1 ? Math.floor(have).toLocaleString("en-US") + " / " + t.need.toLocaleString("en-US") : ok ? "Done" : "Not yet")
-      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + (k0 ? evTile(k0, t.items[k0], " sm") : "")
+      + (t.need > 1 ? '<div class="bar"><i style="width:' + Math.round(have / t.need * 100) + '%"></i></div>' : "") + "</div>" + evTileG(t.items, " sm")
       + (cl ? '<div class="go done">✓</div>' : lockSel ? '<div class="go done lk">🔒</div>' : ok ? '<button type="button" class="go claim" data-evnpt="' + t.id + '">Claim</button>' : '<button type="button" class="go" data-evgo="' + t.kind + '">Go</button>') + "</div>"; }).join("") + "</div>";
   var ch = chOf(sel);
   if (ch) { var cdone = N.d.indexOf(sel) >= 0, cready = !lockSel && game.npDayDone(sel) && !cdone, nDone = ts.filter(function (t) { return N.t.indexOf(t.id) >= 0; }).length;
@@ -19982,7 +19986,7 @@ function evFhwHtml() {
     + '<span class="tm">⏳ Ends in <b data-evend="' + (Date.now() + game.evWeekMsLeft()) + '">' + evLeft(game.evWeekMsLeft()) + '</b></span><button type="button" class="info" data-evhero="' + hk + '">Hero details</button></div></div>';
   h += '<div class="evw-pts"><div class="row1"><img alt="" src="' + evArt("icon_medal") + '"><b>' + Math.floor(pts).toLocaleString("en-US") + '</b><span>Hero Medals this week</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
     + ms.map(function (m, i) { var got = E.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0];
-      return '<button type="button" class="evw-ms" data-evms="' + i + '" style="left:' + ((i + 1) / n * 100 - 4) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at.toLocaleString("en-US") + "</small></button>"; }).join("") + "</div></div>";
+      return '<button type="button" class="evw-ms" data-evms="' + i + '" style="left:' + ((i + 1) / n * 100 - 4) + '%">' + evTileG(m.items, (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at.toLocaleString("en-US") + "</small></button>"; }).join("") + "</div></div>";
   h += '<div class="evw-sub"><button type="button" data-evsub="earn"' + (EVW.sub !== "check" ? ' class="on"' : "") + '>Earn Medals</button><button type="button" data-evsub="check"' + (EVW.sub === "check" ? ' class="on"' : "") + ">Weekly Checklist</button></div>";
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   h += '<div class="evw-list">';
@@ -20029,6 +20033,7 @@ function evWinClick(e) {
   var t = e.target, b, v;
   if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
   if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
+  if ((b = t.closest && t.closest("[data-evgrp]")) && !/\bready\b/.test(b.className)) { var gi = {}; b.getAttribute("data-evgrp").split(",").forEach(function (x) { var p = x.split(":"); gi[p[0]] = +p[1]; }); EVW.note = "🎁 Reward: " + evGotText(gi); evWinRender(true); return; } /* v1625 reward groups */
   if (t.closest && evArenaClick(t)) return; /* v1594 */
   if ((b = t.closest && t.closest("[data-sgrally]"))) { if (sgActive()) sgCall("siegeRally", { hid: SG.hid }); return; } /* v1623 Alliance Siege */
   if ((b = t.closest && t.closest("[data-sgjoin]"))) { sgCall("siegeJoin", { rid: b.getAttribute("data-sgjoin") }); return; }
@@ -20077,7 +20082,7 @@ function evFFHtml() { /* v1597 */
   var fill = (function () { var prev = 0; for (var i = 0; i < ms.length; i++) { if (pts < ms[i].at) return (i + (pts - prev) / (ms[i].at - prev)) / n * 100; prev = ms[i].at; } return 100; })();
   var h = '<div class="evw-hd2" style="background-image:url(' + evArt("banner_forge") + ')"><div class="tt"><h1>Forge Frenzy</h1><br><span class="tm">⏳ Ends in <b data-evend="' + (Date.now() + game.evFFMsLeft()) + '">' + evLeft(game.evFFMsLeft()) + "</b></span></div></div>";
   h += '<div class="evw-act" style="padding-bottom:10px"><div class="row1"><b>' + Math.floor(pts).toLocaleString("en-US") + '</b><span>Forge points this weekend</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
-    + ms.map(function (m, i) { var got = f.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-effms="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at.toLocaleString("en-US") + "</small></button>"; }).join("") + '</div><div style="height:26px"></div></div>';
+    + ms.map(function (m, i) { var got = f.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-effms="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTileG(m.items, (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at.toLocaleString("en-US") + "</small></button>"; }).join("") + '</div><div style="height:26px"></div></div>';
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   h += '<div class="evw-list" style="margin-top:12px">'
     + (F.pts && F.pts.ticket ? '<div class="evw-t"><div class="ti">' + ico("ticket") + '</div><div class="tx"><b>Use weapon draw tickets</b>Each draw · <em>+' + F.pts.ticket + ' points</em></div><button type="button" class="go" data-evgo="ticket">Go</button></div>' : "")
@@ -20116,7 +20121,7 @@ function evBRHtml() { /* v1599/v1600: Boss Rush - a damage ranker against the ka
   }
   var fill = (function () { var prev = 0; for (var i = 0; i < ms.length; i++) { if (pts < ms[i].at) return (i + (pts - prev) / (ms[i].at - prev)) / n * 100; prev = ms[i].at; } return 100; })();
   h += '<div class="evw-act" style="padding-bottom:10px;margin-top:10px"><div class="row1"><b>Lv ' + Math.max(0, Math.floor(pts)) + '</b><span>highest level this run · best fight ' + (b.best || 0).toLocaleString("en-US") + ' damage</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
-    + ms.map(function (m, i) { var got = b.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-ebrms="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>Lv " + m.at + "</small></button>"; }).join("") + '</div><div style="height:26px"></div></div>';
+    + ms.map(function (m, i) { var got = b.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-ebrms="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTileG(m.items, (ready ? " ready" : "") + (got ? " got" : "")) + "<small>Lv " + m.at + "</small></button>"; }).join("") + '</div><div style="height:26px"></div></div>';
   h += '<div class="evw-list" style="margin-top:12px"><div class="evw-t"><div class="ti"><img alt="" src="' + evArt("icon_boss") + '"></div><div class="tx"><b>Fight the Kaiju</b>' + (B.sec || 60) + ' seconds. Each health bar you empty takes him up a level - more health, harder hits. <em>Up to Lv ' + (B.maxLv || 100) + "</em>, then he can\'t die · " + left + " of " + (B.tries || 3) + ' tries left today</div><button type="button" class="go" data-ebrgo="1"' + (left > 0 ? "" : " disabled") + '>Fight</button></div></div>';
   return h + '<div class="evw-foot">Your best fight\'s damage ranks you in your kingdom. Tuesday to Thursday (UTC).</div>';
 }
@@ -20176,13 +20181,13 @@ function evPrevLoad() { /* yesterday's / last week's score, for the rank-reward 
   });
 }
 function evRankRowsHtml(rows) { var prev = 0; return (rows || []).map(function (r) { var k0 = Object.keys(r.items)[0], lab = r.to ? (r.to === prev + 1 ? "#" + r.to : "#" + (prev + 1) + "-" + r.to) : "Everyone else"; prev = r.to || prev;
-  return '<div class="evw-rr"><span>' + lab + "</span>" + evTile(k0, r.items[k0]) + "</div>"; }).join(""); }
+  return '<div class="evw-rr"><span>' + lab + "</span>" + evTileG(r.items) + "</div>"; }).join(""); }
 function evArenaHtml() {
   var A = LIVEOPS.arena || {}, E = game.evSync(), ms = A.ms || [], n = ms.length || 1, pts = E.ad.pts;
   var fill = (function () { var prev = 0; for (var i = 0; i < ms.length; i++) { if (pts < ms[i].at) return (i + (pts - prev) / (ms[i].at - prev)) / n * 100; prev = ms[i].at; } return 100; })();
   var h = '<div class="evw-hd2" style="background-image:url(' + evArt("banner_arena") + ')"><div class="evw-cur"><img alt="" src="' + evArt("icon_arena_medal") + '">' + Math.floor(E.am).toLocaleString("en-US") + '</div><div class="tt"><h1>Arena</h1><br><span class="tm">⏳ Day ends in <b data-evend="' + (Date.now() + game.dailyMsLeft()) + '">' + evLeft(game.dailyMsLeft()) + "</b></span></div></div>";
   h += '<div class="evw-act" style="padding-bottom:10px"><div class="row1"><b>' + pts.toLocaleString("en-US") + '</b><span>Arena points today · ' + Math.floor(E.awp).toLocaleString("en-US") + ' this week</span></div><div class="evw-trk"><i style="width:' + fill + '%"></i>'
-    + ms.map(function (m, i) { var got = E.ad.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-eams="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTile(k0, m.items[k0], (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at + "</small></button>"; }).join("") + "</div>"
+    + ms.map(function (m, i) { var got = E.ad.ms.indexOf(i) >= 0, ready = pts >= m.at && !got, k0 = Object.keys(m.items)[0]; return '<button type="button" class="evw-ms" data-eams="' + i + '" style="left:' + ((i + 1) / n * 100 - 5) + '%">' + evTileG(m.items, (ready ? " ready" : "") + (got ? " got" : "")) + "<small>" + m.at + "</small></button>"; }).join("") + "</div>"
     + '<div class="evw-how"><span>Each win <b>+' + (A.win || 0) + "</b>" + (A.upset ? " · beating a higher-rated governor <b>+" + A.upset + "</b> more" : "") + '</span><button type="button" class="go" data-evgo="arena">Fight</button></div></div>';
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   ["d", "w"].forEach(function (per) { var p = EVA.prev[per]; if (p && !p.claimed) h += '<button type="button" class="evw-wkbtn" style="width:auto;margin:10px 10px 0" data-earank="' + per + '" data-eakey="' + p.key + '">🏆 Claim ' + (per === "d" ? "yesterday's" : "last week's") + " rank reward (" + p.pts.toLocaleString("en-US") + " points)</button>"; });
