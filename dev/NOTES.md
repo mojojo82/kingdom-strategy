@@ -5245,3 +5245,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Seasonal Festivals: each festival can have a banner (admin > Seasonal Festivals > Banner: none / Winter / Lunar; server field fs.list[].art). Winter Festival and Lunar Festival use art/events/banner_fs_winter.webp / banner_fs_lunar.webp (title on the banner like the other events); none = the plain box as before.
 - Originals (1536x1024) in art/originals/events/welcomeback and festival; game copies 1000x667 WebP.
 - Tests: unit tests 30 pass; headless Welcome Back and festival tabs show the banners, no errors.
+
+## v1640 — two bug fixes (Harley's screenshots)
+- Troop promotion took 0 s from T6 to T7 (and T7 -> T8, T9 -> T10): the time was only the difference in base training time, and those tiers share the same time in the table (60 s / 120 s). Promotion now takes at least 30% of the new tier's training time per troop (PROMOTE_MIN_TIME_SHARE), still sped up by the building level and training bonuses. Tiers with a real difference are unchanged when the difference is bigger. Measured: 1,405 Casters T6 -> T8 at Lv 25 = 2h 47m (was 0 s for T6 -> T7).
+- Arena: support-skill heroes (Torvald's Guard Stance, Sera's heal) showed no skill timer on their portrait - only damage skills were passed to the timer bar. The fight now reports the support cooldowns too and the bar counts them down like the others (headless: Torvald 4.1s -> resets to ~7.8s every 8s).

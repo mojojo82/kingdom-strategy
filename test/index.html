@@ -5833,6 +5833,7 @@ var TROOP_TIER_TIME_MULT = 1.19; /* v1181: no longer used for training (Kingshot
 /* v1181 (Harley): Kingshot's base training time per troop by tier, the same for all three types (kingshotlab.com database, from kingshotcalculator.net;
    matches Harley's screenshot: 300 Tier VI archers = 5:00:00 before bonuses). Building level / research bonuses still apply on top as before. */
 var TROOP_TIER_TRAIN_SEC = [0, 12, 17, 24, 32, 44, 60, 60, 60, 120, 120];
+var PROMOTE_MIN_TIME_SHARE = 0.3; /* v1640: promoting always takes at least 30% of the new tier's training time */
 var PROMOTE_UNLOCK_LEVEL = 13; /* v1182: Kingshot - troop promotion unlocks with Barracks/Range/Stable Lv 13 */
 function troopKey(type, tier) { return tier <= 1 ? type : type + "_t" + tier; }
 function troopBase(key) { var d = TROOP_DEFS[key]; return d ? d.baseType : key; }
@@ -8182,7 +8183,7 @@ function createGame(opts) {
     var cf = TROOP_DEFS[fromKey].cost, ct = TROOP_DEFS[toKey].cost, cost = {};
     for (var r in ct) { var d = Math.max(0, (ct[r] || 0) - (cf[r] || 0)) * count; if (d > 0) cost[r] = d; }
     out.count = count; out.cost = cost;
-    out.secs = Math.max(0, TROOP_DEFS[toKey].trainTime - TROOP_DEFS[fromKey].trainTime) * count / (1 + b.level * 0.05) / trainSpeedMult();
+    out.secs = Math.max(TROOP_DEFS[toKey].trainTime - TROOP_DEFS[fromKey].trainTime, TROOP_DEFS[toKey].trainTime * PROMOTE_MIN_TIME_SHARE) * count / (1 + b.level * 0.05) / trainSpeedMult(); /* v1640: tiers with the same base time (T6-T8, T9-T10) used to promote in 0 s */
     out.ok = true; return out;
   }
   function promoteTroops(buildingKey, fromTier, count) {
@@ -13981,7 +13982,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1639"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1640"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38596,7 +38597,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
     var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach, g: !!e.gerbil }; }) : []; }; /* v975: clones for the visuals */
-    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, playerCd), secondsLeft: secondsLeft,
+    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
       landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     info.bossAct = bossAct;
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
@@ -39864,10 +39865,10 @@ function renderArenaSkillbar() {
   if (!el) return;
   var p = arenaPlayerRosterAndHeroes();
   var pStats = arenaSideStats(p.roster, p.heroes, game.state.buildings.townhall.level, arenaBaseHpPlayer, true);
-  arenaAnim.playerActiveDefs = pStats.actives;
+  arenaAnim.playerActiveDefs = pStats.actives.concat((pStats.supports || []).filter(function (u) { return !pStats.actives.some(function (a) { return a.key === u.key; }); }).map(function (u) { return { key: u.key, cooldown: u.first > u.cooldown ? u.first : u.cooldown, support: true }; })); /* v1640: support skills get a timer like actives */
   arenaAnim.playerCooldownsRaw = {};
   arenaAnim.smoothCooldown = {};
-  pStats.actives.forEach(function (a) { arenaAnim.playerCooldownsRaw[a.key] = a.cooldown; arenaAnim.smoothCooldown[a.key] = a.cooldown; });
+  arenaAnim.playerActiveDefs.forEach(function (a) { arenaAnim.playerCooldownsRaw[a.key] = a.cooldown; arenaAnim.smoothCooldown[a.key] = a.cooldown; });
   el.className = "idle-skillbar" + (skillbarSizeMode === "8heroes" ? " skillbar-8heroes" : "");
   var notchHtml = '<div class="skillbar-notch"></div>';
   if (p.roster.length === 0) { el.innerHTML = notchHtml; appendSkillPlaceholders(el, 0); return; }
