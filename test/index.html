@@ -9428,7 +9428,7 @@ function createGame(opts) {
   function evFFKey() { var F = LIVEOPS.ff; if (!F || F.on === false) return null; var d = dailyDayNow(), dow = (d + 4) % 7; /* 0 = Sunday */ if (dow !== 5 && dow !== 6 && dow !== 0) return null; var w = evWeekNow(); return (w % 2) === (F.parity || 0) ? w : null; }
   function evFFMsLeft() { var d = dailyDayNow(), dow = (d + 4) % 7, left = dow === 0 ? 1 : dow === 6 ? 2 : 3; return (d + left) * 86400000 - Date.now(); }
   function evFFSync() { var E = evSync(), k = evFFKey(); if (k == null) return null; if (!E.ff || E.ff.k !== k) E.ff = { k: k, pts: 0, ms: [] }; return E.ff; }
-  function evFFClaim(i) { var f = evFFSync(), m = ((LIVEOPS.ff || {}).ms || [])[i]; if (!f || !m) return { ok: false, reason: "bad" }; if (f.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (f.pts < m.at) return { ok: false, reason: "not_done" }; f.ms.push(i); return { ok: true, got: grantAll(m.items) }; }
+  function evFFClaim(i) { var f = evFFSync(), m = ((LIVEOPS.ff || {}).ms || [])[i]; if (!f || !m) return { ok: false, reason: "bad" }; if (f.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (f.pts < m.at) return { ok: false, reason: "not_done" }; if (evNeedNet(m.items)) return { ok: false, reason: "offline" }; f.ms.push(i); return { ok: true, got: evPay("ff", f.k, "ms:" + i, m.items) }; }
   /* v1599: Boss Rush - the kaiju on the UTC weekdays in LIVEOPS.br.days (Tue-Thu), br.tries fights a day, points add up over the run */
   function evBRKey() { var B = LIVEOPS.br; if (!B || B.on === false) return null; var dow = (dailyDayNow() + 4) % 7; return (B.days || []).indexOf(dow) >= 0 ? evWeekNow() : null; }
   function evBRMsLeft() { var B = LIVEOPS.br || {}, d = dailyDayNow(), dow = (d + 4) % 7, left = 1; while (left < 7 && (B.days || []).indexOf((dow + left) % 7) >= 0) left++; return (d + left) * 86400000 - Date.now(); }
@@ -9436,7 +9436,7 @@ function createGame(opts) {
   function evBRTriesLeft() { var b = evBRSync(); return b ? Math.max(0, ((LIVEOPS.br || {}).tries || 3) - b.tries) : 0; }
   function evBRStart() { var b = evBRSync(); if (!b) return { ok: false, reason: "closed" }; if (evBRTriesLeft() <= 0) return { ok: false, reason: "tries" }; b.tries++; return { ok: true }; } /* a try is used when the fight starts */
   function evBRScore(lv, dmg) { /* v1604: milestones on the highest level reached this run (b.pts); damage ranks you (b.best) */ var b = evBRSync(); if (!b) return 0; lv = Math.max(1, Math.floor(lv || 1)); if (lv > b.pts) b.pts = lv; dmg = Math.floor(dmg || 0); if (dmg > b.best) b.best = dmg; b.last = dmg; return lv; }
-  function evBRClaim(i) { var b = evBRSync(), m = ((LIVEOPS.br || {}).ms || [])[i]; if (!b || !m) return { ok: false, reason: "bad" }; if (b.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (b.pts < m.at) return { ok: false, reason: "not_done" }; b.ms.push(i); return { ok: true, got: grantAll(m.items) }; }
+  function evBRClaim(i) { var b = evBRSync(), m = ((LIVEOPS.br || {}).ms || [])[i]; if (!b || !m) return { ok: false, reason: "bad" }; if (b.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (b.pts < m.at) return { ok: false, reason: "not_done" }; if (evNeedNet(m.items)) return { ok: false, reason: "offline" }; b.ms.push(i); return { ok: true, got: evPay("br", b.k, "ms:" + i, m.items) }; }
   function evAct(kind, n) {
     var E = evSync(), F = LIVEOPS.fhw; n = n == null ? 1 : n; if (!(n > 0)) return;
     if (npActive()) { var NP = npSync(); NP.c[kind] = (NP.c[kind] || 0) + n; } /* v1617 New Player Path counters */
@@ -9465,10 +9465,44 @@ function createGame(opts) {
     return false;
   }
   function grantAll(items, mult) { var got = {}; Object.keys(items || {}).forEach(function (k) { var q = items[k] * (mult || 1); if (grantCat(k, q)) got[k] = q; }); return got; }
+  /* v1625: event rewards go through the server (claimEv). The game shows + adds the reward at once and queues the claim (state.ev.pq); the server checks
+     it, pays gems into the wallet and records the server-paid items. If the server refuses, the queued items are taken back (evPayUndo). Which items
+     the server handles = LIVEOPS.items (admin switches: off = all on the phone, phone = list of phone-paid items). Gems are always the server's. */
+  function evSrvOn() { return typeof ksFb === "function" && ksFb(); }
+  function evSrvItem(id) { if (id === "gems") return true; if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero; else if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran"); else if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7"); var M = LIVEOPS.items || {}; return !M.off && (M.phone || []).indexOf(id) < 0; }
+  function evNeedNet(items) { if (!evSrvOn()) return false; var off = false; try { off = navigator.onLine === false; } catch (e) {} if (!(off && Object.keys(items || {}).some(evSrvItem))) return false;
+    try { EVW.note = '<span class="bad">No connection - connect to the internet to claim this reward.</span>'; } catch (e) {} return true; }
+  function evPay(src, k, ref, items) {
+    var got = {}, job = { s: src, k: k, r: ref, it: {}, g: 0 }, srv = evSrvOn();
+    Object.keys(items || {}).forEach(function (id) { var q = Math.max(0, Math.floor(items[id] || 0)); if (!q) return;
+      if (id === "gems") { got.gems = q; if (srv) job.g = q; else state.gems = (state.gems || 0) + q; return; } /* offline / local game: gems straight into the save */
+      if (!grantCat(id, q)) return; got[id] = q; if (srv && evSrvItem(id)) job.it[id] = q; });
+    if (srv && (job.g || Object.keys(job.it).length)) { var E = evSync(); if (!Array.isArray(E.pq)) E.pq = []; E.pq.push(job); if (E.pq.length > 200) E.pq.splice(0, E.pq.length - 200); }
+    return got;
+  }
+  function takeCat(id, qty) { /* the opposite of grantCat (never below 0) */
+    qty = Math.max(0, Math.floor(qty || 0)); if (!qty) return; var m, sub = function (v) { return Math.max(0, (v || 0) - qty); };
+    if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
+    if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran");
+    if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7");
+    if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { var h = state.heroes[m[1]]; if (h) h.fragments = sub(h.fragments | 0); return; }
+    if ((m = /^item_([a-z0-9_]+)$/.exec(id))) { if (state.items && state.items[m[1]]) { state.items[m[1]] = sub(state.items[m[1]]); if (!state.items[m[1]]) delete state.items[m[1]]; } return; }
+    if ((m = /^speedup_([a-z]+_[0-9]+[mh])$/.exec(id))) { state.speedups[m[1]] = sub(state.speedups[m[1]]); return; }
+    if (id === "event_tokens") { var E = evSync(); E.tok = sub(E.tok); var S = spSync(); if (S) S.xp = Math.max(0, S.xp - qty); return; }
+    if (id === "arena_medals") { var E2 = evSync(); E2.am = sub(E2.am); return; }
+    if (id === "weapon_tickets") { state.weaponTickets = Math.max(0, (state.weaponTickets || 0) - qty * WEAPON_TICKET_SCALE); return; }
+    if (id === "conquest_books") { state.idle.conquestBooks = sub(state.idle.conquestBooks); return; }
+    if (id === "valor") { state.idle.valor = sub(state.idle.valor); return; }
+    if (id === "energon") { state.energon = sub(state.energon); return; }
+    if (id === "research") { state.researchPoints = sub(state.researchPoints); return; }
+    if (ITEM_RES.indexOf(id) >= 0 && state.resources) state.resources[id] = sub(state.resources[id]);
+  }
+  function evPayUndo(job) { Object.keys((job && job.it) || {}).forEach(function (id) { takeCat(id, job.it[id]); }); }
   function evClaimMs(i) {
     var E = evSync(), m = (LIVEOPS.fhw.ms || [])[i]; if (!m) return { ok: false, reason: "bad" };
     if (E.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (E.pts < m.at) return { ok: false, reason: "not_done" };
-    E.ms.push(i); var got = grantAll(m.items); log("🏅 Featured Hero Week reward claimed."); return { ok: true, got: got };
+    if (evNeedNet(m.items)) return { ok: false, reason: "offline" };
+    E.ms.push(i); var got = evPay("fhw", E.w, "ms:" + i, m.items); log("🏅 Featured Hero Week reward claimed."); return { ok: true, got: got };
   }
   function evClaimCheck(id) {
     var E = evSync(), c = (LIVEOPS.fhw.check || []).filter(function (x) { return x.id === id; })[0]; if (!c) return { ok: false, reason: "bad" };
@@ -9486,14 +9520,16 @@ function createGame(opts) {
     var E = evSync(), W = LIVEOPS.wk; evDayCount();
     if (E.wkc) return { ok: false, reason: "claimed" }; if (E.days.length < W.days) return { ok: false, reason: "not_done" };
     if ((W.heroes || []).indexOf(hero) < 0 || !state.heroes[hero]) return { ok: false, reason: "pick" };
-    E.wkc = true; grantCat("shards_" + hero, W.shards); log("🎁 Weekly Chest: " + W.shards + " " + ((HERO_DEFS[hero] || {}).name || hero) + " shards."); return { ok: true };
+    var wi = {}; wi["shards_" + hero] = W.shards; if (evNeedNet(wi)) return { ok: false, reason: "offline" };
+    E.wkc = true; evPay("wk", E.w, hero, wi); log("🎁 Weekly Chest: " + W.shards + " " + ((HERO_DEFS[hero] || {}).name || hero) + " shards."); return { ok: true };
   }
   /* v1594: Arena event - points per win (+ upset bonus), a daily milestone track paid here, the leaderboards live on the server (arenaScore). */
   function evArenaWin(upset) { var E = evSync(), A = LIVEOPS.arena || {}, g = (A.win || 0) + (upset ? (A.upset || 0) : 0); if (g <= 0) return 0; E.ad.pts += g; E.awp += g; return g; }
   function evArenaClaimMs(i) {
     var E = evSync(), m = ((LIVEOPS.arena || {}).ms || [])[i]; if (!m) return { ok: false, reason: "bad" };
     if (E.ad.ms.indexOf(i) >= 0) return { ok: false, reason: "claimed" }; if (E.ad.pts < m.at) return { ok: false, reason: "not_done" };
-    E.ad.ms.push(i); return { ok: true, got: grantAll(m.items) };
+    if (evNeedNet(m.items)) return { ok: false, reason: "offline" };
+    E.ad.ms.push(i); return { ok: true, got: evPay("arena", E.ad.d, "ms:" + i, m.items) };
   }
   function evArenaBuy(id) {
     var E = evSync(), x = (((LIVEOPS.arena || {}).shop || {}).items || []).filter(function (r) { return r.id === id; })[0]; if (!x) return { ok: false, reason: "bad" };
@@ -9526,13 +9562,15 @@ function createGame(opts) {
     var N = npSync(), t = npTasks().filter(function (x) { return x.id === id; })[0]; if (!t) return { ok: false, reason: "bad" };
     if (!npActive()) return { ok: false, reason: "over" }; if (t.day > npDayNow()) return { ok: false, reason: "locked" };
     if (N.t.indexOf(id) >= 0) return { ok: false, reason: "claimed" }; if (npHave(t) < t.need) return { ok: false, reason: "not_done" };
-    N.t.push(id); return { ok: true, got: grantAll(t.items) };
+    if (evNeedNet(t.items)) return { ok: false, reason: "offline" };
+    N.t.push(id); return { ok: true, got: evPay("np", 0, "t:" + id, t.items) };
   }
   function npDayDone(day) { var N = npSync(), ts = npTasks(day); return ts.length > 0 && ts.every(function (t) { return N.t.indexOf(t.id) >= 0; }); }
   function npClaimDay(day) {
     var N = npSync(), c = ((LIVEOPS.np || {}).chests || []).filter(function (x) { return x.day === day; })[0]; if (!c) return { ok: false, reason: "bad" };
     if (!npActive()) return { ok: false, reason: "over" }; if (day > npDayNow()) return { ok: false, reason: "locked" }; if (N.d.indexOf(day) >= 0) return { ok: false, reason: "claimed" }; if (!npDayDone(day)) return { ok: false, reason: "not_done" };
-    N.d.push(day); var got = grantAll(c.items); log("🧭 New Player Path: day " + day + " chest."); return { ok: true, got: got };
+    if (evNeedNet(c.items)) return { ok: false, reason: "offline" };
+    N.d.push(day); var got = evPay("np", 0, "d:" + day, c.items); log("🧭 New Player Path: day " + day + " chest."); return { ok: true, got: got };
   }
   function npReady() { if (!npActive()) return 0; var N = npSync(), d = npDayNow(), n = 0;
     npTasks().forEach(function (t) { if (t.day <= d && N.t.indexOf(t.id) < 0 && npHave(t) >= t.need) n++; });
@@ -9546,7 +9584,8 @@ function createGame(opts) {
   function spClaim(lv, track) { var S = spSync(), L = ((LIVEOPS.sp || {}).levels || [])[lv - 1]; if (!S || !L) return { ok: false, reason: "bad" };
     var arr = track === "prem" ? S.p : S.f; if (track === "prem" && !S.prem) return { ok: false, reason: "premium" };
     if (arr.indexOf(lv) >= 0) return { ok: false, reason: "claimed" }; if (spLevel() < lv) return { ok: false, reason: "not_done" };
-    arr.push(lv); return { ok: true, got: grantAll(track === "prem" ? L.prem : L.free) }; }
+    var spi = track === "prem" ? L.prem : L.free; if (evNeedNet(spi)) return { ok: false, reason: "offline" };
+    arr.push(lv); return { ok: true, got: evPay("sp", S.k, lv + ":" + (track === "prem" ? "prem" : "free"), spi) }; }
   function spClaimAll() { var S = spSync(); if (!S) return { ok: false }; var got = {}, n = 0;
     for (var lv = 1; lv <= spLevel(); lv++) ["free", "prem"].forEach(function (tr) { var r = spClaim(lv, tr); if (r.ok) { n++; Object.keys(r.got).forEach(function (k) { got[k] = (got[k] || 0) + r.got[k]; }); } });
     return { ok: n > 0, got: got, n: n }; }
@@ -9555,10 +9594,11 @@ function createGame(opts) {
   function csKey() { var C = LIVEOPS.cs; if (!C || C.on === false) return null; var w = evWeekNow(); return (w % 2) === (C.parity || 0) ? w : null; }
   function csSync() { var E = evSync(), k = csKey(); if (k == null) return null; if (!E.cs || E.cs.k !== k) E.cs = { k: k, c: {}, tc: [], fin: false }; return E.cs; }
   function csClaimTask(id) { var C = csSync(), t = ((LIVEOPS.cs || {}).tasks || []).filter(function (x) { return x.id === id; })[0]; if (!C || !t) return { ok: false, reason: "bad" };
-    if (C.tc.indexOf(id) >= 0) return { ok: false, reason: "claimed" }; if ((C.c[id] || 0) < t.need) return { ok: false, reason: "not_done" }; C.tc.push(id); return { ok: true, got: grantAll(t.items) }; }
+    if (C.tc.indexOf(id) >= 0) return { ok: false, reason: "claimed" }; if ((C.c[id] || 0) < t.need) return { ok: false, reason: "not_done" }; if (evNeedNet(t.items)) return { ok: false, reason: "offline" }; C.tc.push(id); return { ok: true, got: evPay("cs", C.k, "t:" + id, t.items) }; }
   function csAllDone() { var C = csSync(), ts = (LIVEOPS.cs || {}).tasks || []; return !!C && ts.length > 0 && ts.every(function (t) { return C.tc.indexOf(t.id) >= 0; }); }
   function csClaimFin() { var C = csSync(); if (!C) return { ok: false, reason: "closed" }; if (C.fin) return { ok: false, reason: "claimed" }; if (!csAllDone()) return { ok: false, reason: "not_done" };
-    C.fin = true; var got = grantAll((LIVEOPS.cs || {}).fin); log("🏁 Conquest Sprint: final chest."); return { ok: true, got: got }; }
+    if (evNeedNet((LIVEOPS.cs || {}).fin)) return { ok: false, reason: "offline" };
+    C.fin = true; var got = evPay("cs", C.k, "fin", (LIVEOPS.cs || {}).fin); log("🏁 Conquest Sprint: final chest."); return { ok: true, got: got }; }
   function csReady() { var C = csSync(); if (!C) return 0; var n = 0; ((LIVEOPS.cs || {}).tasks || []).forEach(function (t) { if ((C.c[t.id] || 0) >= t.need && C.tc.indexOf(t.id) < 0) n++; }); if (!C.fin && csAllDone()) n++; return n; }
   function evReady() { /* rewards waiting (red dots) */
     var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady(), cs: csReady(), sp: spReady() };
@@ -11677,7 +11717,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, spKey: spKey, spMsLeft: spMsLeft, spSync: spSync, spLevel: spLevel, spClaim: spClaim, spClaimAll: spClaimAll, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { evPayUndo: evPayUndo, evSrvItem: evSrvItem, takeCat: takeCat, evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, spKey: spKey, spMsLeft: spMsLeft, spSync: spSync, spLevel: spLevel, spClaim: spClaim, spClaimAll: spClaimAll, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -13849,7 +13889,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1624"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1625"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19767,7 +19807,7 @@ function evWinOpen(tab) {
     ov.addEventListener("click", evWinClick); }
   if (tab) EVW.tab = tab; EVW.note = ""; EVW.sig = ""; ov.style.display = "flex"; evWinRender(true);
   clearInterval(EVW.timer); EVW.timer = setInterval(function () { evWinRender(false); }, 1000);
-  try { dailyServerSync(); } catch (e) {}
+  try { dailyServerSync(); } catch (e) {} try { evPaySync(); } catch (e) {}
 }
 function evWinClose() { var ov = document.getElementById("evWin"); if (ov) ov.style.display = "none"; clearInterval(EVW.timer); }
 function evWinSig() { var E = game.evSync(), D = game.dailySync(); return JSON.stringify([EVW.tab, EVW.npd, typeof ALLY !== "undefined" && !!ALLY.my, EVW.sub, EVA.sub, EVW.pick, EVW.note, E, D.p, D.c, D.ch, LIVEOPS, (KSE.list || []).length, typeof KSW !== "undefined" ? KSW.events : 0, Math.floor(Date.now() / 60000)]); }
@@ -20004,7 +20044,7 @@ function evWinClick(e) {
   if ((b = t.closest && t.closest("[data-evcst]"))) { var csr = game.csClaimTask(b.getAttribute("data-evcst")); if (csr.ok) evDone("Got " + evGotText(csr.got)); evWinRender(true); return; } /* v1618 */
   if ((b = t.closest && t.closest("[data-evcsf]"))) { if (b.disabled) return; var csf = game.csClaimFin(); if (csf.ok) evDone("Final chest: " + evGotText(csf.got)); evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-evnpd]"))) { EVW.npd = +b.getAttribute("data-evnpd"); EVW.note = ""; evWinRender(true); return; } /* v1617 */
-  if ((b = t.closest && t.closest("[data-evnpt]"))) { var npr = game.npClaimTask(b.getAttribute("data-evnpt")); if (npr.ok) evDone("Got " + evGotText(npr.got)); else EVW.note = '<span class="bad">' + (npr.reason === "locked" ? "That day isn't open yet." : "Not done yet.") + "</span>"; evWinRender(true); return; }
+  if ((b = t.closest && t.closest("[data-evnpt]"))) { var npr = game.npClaimTask(b.getAttribute("data-evnpt")); if (npr.ok) evDone("Got " + evGotText(npr.got)); else if (npr.reason !== "offline") EVW.note = '<span class="bad">' + (npr.reason === "locked" ? "That day isn't open yet." : "Not done yet.") + "</span>"; evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-evnpc]"))) { if (b.disabled) return; var npc = game.npClaimDay(+b.getAttribute("data-evnpc")); if (npc.ok) evDone("Day " + b.getAttribute("data-evnpc") + " chest: " + evGotText(npc.got)); evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-ebrms]"))) { var bi = +b.getAttribute("data-ebrms"), bm = LIVEOPS.br.ms[bi], br = game.evBRClaim(bi); if (br.ok) evDone("Got " + evGotText(br.got)); else EVW.note = br.reason === "claimed" ? "Already claimed." : "Reach Lv " + bm.at + ": " + evGotText(bm.items); evWinRender(true); return; }
   if ((b = t.closest && t.closest("[data-ebrsub]"))) { EVB.sub = b.getAttribute("data-ebrsub"); EVW.note = ""; evWinRender(true); return; }
@@ -20086,11 +20126,31 @@ function evBRTestHtml() { /* v1602: Harley's test fight - only in the TEST game 
     + '<div class="evw-foot">This tab doesn\'t exist in the LIVE game.</div>';
 }
 function evGotText(o) { return Object.keys(o || {}).map(function (k) { return o[k].toLocaleString("en-US") + " " + evItemInfo(k).name; }).join(", "); }
-function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) {} persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} }
+function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) {} persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} evPaySync(); }
+/* v1625: send queued event claims to the server one by one (claimEv). Paid / already paid -> off the queue. Refused -> take the items back and say so.
+   No connection / server busy -> stays queued, tried again later (Events window, next claim, every minute). */
+function evPaySync() {
+  if (!ksFb() || evPaySync.busy) return; var E = game.evSync(); if (!Array.isArray(E.pq) || !E.pq.length) return; evPaySync.busy = true;
+  var job = E.pq[0];
+  KS_BACKEND.call("claimEv", { src: job.s, k: job.k, ref: job.r }).then(function (r) {
+    var E2 = game.evSync(); if (E2.pq && E2.pq[0] === job) E2.pq.shift();
+    if (r && typeof r.gems === "number") { KSW.gems = r.gems; game.state.gems = r.gems; }
+    if (r && r.capped > 0) EVW.note = '<span class="bad">Daily gem limit from events reached - ' + r.capped.toLocaleString("en-US") + " gems not paid.</span>";
+    evPaySync.busy = false; persist(); try { render(); } catch (e) {} evPayRedraw(); evPaySync();
+  }, function (e) {
+    evPaySync.busy = false; var code = String((e && e.code) || "").replace(/^functions\//, ""); try { console.warn("claimEv", code, e && e.message); } catch (x) {}
+    if (["failed-precondition", "not-found", "permission-denied", "invalid-argument"].indexOf(code) < 0) return; /* network / busy / maintenance: keep it, try later */
+    var E2 = game.evSync(); if (E2.pq && E2.pq[0] === job) E2.pq.shift(); game.evPayUndo(job);
+    EVW.note = '<span class="bad">A reward couldn\'t be confirmed by the server and was taken back' + (e && e.message ? " (" + String(e.message).replace(/[<>]/g, "") + ")" : "") + ".</span>";
+    persist(); try { render(); } catch (x) {} evPayRedraw(); evPaySync();
+  });
+}
+function evPayRedraw() { try { var w = document.getElementById("evWin"); if (w && w.style.display !== "none") evWinRender(true); } catch (e) {} }
+setInterval(function () { try { evPaySync(); } catch (e) {} }, 60000);
 function evLiveopsSubscribe() {
   if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
-    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */, sg: d.sg && d.sg.personal ? d.sg : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sg)) /* v1623 */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */, sg: d.sg && d.sg.personal ? d.sg : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sg)) /* v1623 */, items: d.items && typeof d.items === "object" ? d.items : { off: false, phone: [] } /* v1625 who pays each reward item */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
     evWinRender(true); }, function () {}); }).catch(function () {});
 }
 setTimeout(evLiveopsSubscribe, 4000);

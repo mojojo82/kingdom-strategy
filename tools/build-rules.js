@@ -99,7 +99,7 @@ service cloud.firestore {
     function isMe(pid) { return signedIn() && request.auth.uid == pid; }
     function isAdmin() { return signedIn() && request.auth.uid in ${adminList}${adminProv}; }
     function hpKeys() { return ['hp', 'hpT', 'burnLeft', 'raidedAt']; }
-    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail']; }
+    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail', 'evclaims']; }
 
     // ===== live =====
     function liveOpen() { return isAdmin() || (!(exists(${MAINT_LIVE}) && get(${MAINT_LIVE}).data.on == true) && ${notBanned(BAN_LIVE)}); } // v942: maintenance locks player writes; v995: so does a ban / suspension

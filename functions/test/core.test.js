@@ -270,7 +270,7 @@ t("v1599 Boss Rush config", () => {
   assert.strictEqual(C.bossRunOpen(BR, day(2026, 11, 18)), true); assert.strictEqual(C.bossRunOpen(BR, day(2026, 11, 20)), false);
   assert.strictEqual(C.bossRunOver(BR, wk, day(2026, 11, 19)), false, "Thursday: still running"); assert.strictEqual(C.bossRunOver(BR, wk, day(2026, 11, 20)), true, "Friday: over");
   assert.strictEqual(C.bossRunOver(BR, wk, day(2026, 11, 23)), true, "next week");
-  assert.throws(() => C.normalizeLiveops({ br: { ms: [{ at: 10, items: { gems: 5 } }] } }), /gems/);
+  assert.strictEqual(C.normalizeLiveops({ br: { ms: [{ at: 10, items: { gems: 5 } }] } }).br.ms[0].items.gems, 5, "v1625: gems allowed");
 });
 t("v1601 featured shards in mail", () => {
   const L = C.normalizeLiveops({}), h = L.fhw.hero, r = C.resolveFeatured({ featured_shards: 10, event_tokens: 5 }, L);
@@ -283,19 +283,19 @@ t("v1617 New Player Path: defaults, np_shards allowed, bad kinds / gems / duplic
   const n = C.normalizeLiveops({ np: { days: 7, hero: "kessa", tasks: [{ id: "a", day: 9, kind: "th", need: 3, name: "TH 3", items: { food: 100 } }], chests: [{ day: 3, items: { np_shards: 1 } }] } }).np;
   assert.strictEqual(n.tasks[0].day, 1, "day past the end falls back"); assert.strictEqual(n.hero, "kessa");
   assert.throws(() => C.normalizeLiveops({ np: { tasks: [{ kind: "fly", items: { food: 1 } }] } }), /bad kind/);
-  assert.throws(() => C.normalizeLiveops({ np: { tasks: [{ kind: "th", items: { gems: 1 } }] } }), /gems/);
+  assert.strictEqual(C.normalizeLiveops({ np: { tasks: [{ kind: "th", items: { gems: 1 } }] } }).np.tasks[0].items.gems, 1);
   assert.throws(() => C.normalizeLiveops({ np: { chests: [{ day: 2, items: { food: 1 } }, { day: 2, items: { food: 1 } }] } }), /own day/);
 });
 t("v1618 Conquest Sprint: defaults, heroup kind, bad kinds / gems refused, needs a final chest", () => {
   const L = C.normalizeLiveops({}); assert.strictEqual(L.cs.tasks.length, 8); assert.strictEqual(L.cs.fin.featured_shards, 3);
   const n = C.normalizeLiveops({ cs: { parity: 0, tasks: [{ kind: "heroup", need: 2, items: { food: 1 } }], fin: { event_tokens: 5 } } }).cs; assert.strictEqual(n.parity, 0); assert.strictEqual(n.tasks[0].kind, "heroup");
   assert.throws(() => C.normalizeLiveops({ cs: { tasks: [{ kind: "nope", items: { food: 1 } }], fin: { food: 1 } } }), /bad kind/);
-  assert.throws(() => C.normalizeLiveops({ cs: { tasks: [], fin: { gems: 5 } } }), /gems/);
+  assert.strictEqual(C.normalizeLiveops({ cs: { tasks: [], fin: { gems: 5 } } }).cs.fin.gems, 5);
 });
-t("v1621 Season Pass: defaults (30 levels, 60 premium season-hero shards), sp_shards allowed, gems refused", () => {
+t("v1621 Season Pass: defaults (30 levels, 60 premium season-hero shards), sp_shards allowed, gems allowed (v1625)", () => {
   const L = C.normalizeLiveops({}); assert.strictEqual(L.sp.levels.length, 30); assert.strictEqual(L.sp.levels.reduce((a, x) => a + (x.prem.sp_shards || 0), 0), 60);
   const n = C.normalizeLiveops({ sp: { days: 3, xp: 0, hero: "kessa", levels: [{ free: { food: 1 }, prem: { sp_shards: 5 } }] } }).sp; assert.strictEqual(n.days, 28, "too short falls back"); assert.strictEqual(n.xp, 20); assert.strictEqual(n.hero, "kessa");
-  assert.throws(() => C.normalizeLiveops({ sp: { levels: [{ free: { gems: 5 }, prem: { food: 1 } }] } }), /gems/);
+  assert.strictEqual(C.normalizeLiveops({ sp: { levels: [{ free: { gems: 5 }, prem: { food: 1 } }] } }).sp.levels[0].free.gems, 5);
   assert.throws(() => C.normalizeLiveops({ sp: { levels: [] } }), /at least one level/);
 });
 t("v1623 Alliance Siege: defaults, tiers, rally share and bonus", () => {
@@ -303,6 +303,33 @@ t("v1623 Alliance Siege: defaults, tiers, rally share and bonus", () => {
   assert.strictEqual(C.sgTier(L.sg.personal, 0), null); assert.strictEqual(C.sgTier(L.sg.personal, 5).dmg, 1, "taking part pays"); assert.strictEqual(C.sgTier(L.sg.personal, 2e6).dmg, 1e6);
   const SG = C.normalizeLiveops({ sg: { dpp: 1, bonusPer: 0.1, bonusCap: 0.3, personal: [], alliance: [] } }).sg;
   assert.strictEqual(C.sgShare(SG, 1000, 1, 0.5), 1000); assert.strictEqual(C.sgShare(SG, 1000, 3, 0.5), 1200); assert.strictEqual(C.sgShare(SG, 1000, 10, 0.5), 1300, "bonus capped");
-  assert.throws(() => C.normalizeLiveops({ sg: { personal: [{ dmg: 5, items: { gems: 1 } }] } }), /gems/);
+  assert.strictEqual(C.normalizeLiveops({ sg: { personal: [{ dmg: 5, items: { gems: 1 } }] } }).sg.personal[0].items.gems, 1);
+});
+t("v1625 event rewards on the server: gems allowed in rewards, never in shops; item switches; claim plan + period + once-only + gem cap", () => {
+  assert.throws(() => C.normalizeLiveops({ shop: { items: [{ item: "gems", qty: 1, price: 5 }] } }), /can't sell gems/);
+  assert.throws(() => C.normalizeLiveops({ arena: { shop: { items: [{ item: "gems", qty: 1, price: 5 }] } } }), /can't sell gems/);
+  const M = C.normalizeItemModes({ phone: ["gems", "food", "nope", "food"], gemDay: 300 }); assert.deepStrictEqual(M.phone, ["food"]); assert.strictEqual(M.gemDay, 300);
+  assert.strictEqual(C.itemServerPaid(M, "food"), false); assert.strictEqual(C.itemServerPaid(M, "wood"), true); assert.strictEqual(C.itemServerPaid({ off: true, phone: [] }, "wood"), false); assert.strictEqual(C.itemServerPaid({ off: true, phone: [] }, "gems"), true);
+  const lo = C.normalizeLiveops({ cs: { parity: 1, tasks: [{ id: "a", kind: "kill", need: 5, items: { gems: 100, food: 50 } }], fin: { featured_shards: 2, gems: 400 } }, np: { days: 14, tasks: [{ id: "x", day: 3, kind: "th", items: { gems: 20 } }], chests: [{ day: 1, items: { np_shards: 2 } }] } });
+  const day = 20800, wk = (dd) => Math.floor((dd + 3) / 7); let d0 = day; while (wk(d0) % 2 !== 1) d0++; const now = d0 * 86400000 + 3600000, w = wk(d0);
+  const p = C.evClaimPlan(lo, "cs", w, "t:a", { now }); assert.deepStrictEqual(p.items, { gems: 100, food: 50 });
+  assert.deepStrictEqual(C.evClaimPlan(lo, "cs", w, "fin", { now }).items, { ["shards_" + lo.fhw.hero]: 2, gems: 400 }, "featured shards turned into real shards");
+  assert.throws(() => C.evClaimPlan(lo, "cs", w + 1, "t:a", { now }), /not running/); assert.throws(() => C.evClaimPlan(lo, "cs", w, "t:zzz", { now }), /no such reward/);
+  assert.throws(() => C.evClaimPlan(lo, "cs", w - 1, "t:a", { now }), /not running/, "an off week is not claimable");
+  const nextOff = (wk(d0) + 1) * 7 - 3; assert.ok(C.evClaimPlan(lo, "cs", w, "t:a", { now: (nextOff + 1) * 86400000 }), "a sprint claim still pays a day after it ended");
+  const created = (day - 1) * 86400000 + 5000, ctx = (dd) => ({ now: dd * 86400000 + 1000, createdAt: created });
+  assert.deepStrictEqual(C.evClaimPlan(lo, "np", 0, "d:1", ctx(day)).items, { shards_roran: 2 });
+  assert.throws(() => C.evClaimPlan(lo, "np", 0, "t:x", ctx(day)), /no such reward/, "day 3 task locked on day 2");
+  assert.deepStrictEqual(C.evClaimPlan(lo, "np", 0, "t:x", ctx(day + 1)).items, { gems: 20 });
+  assert.throws(() => C.evClaimPlan(lo, "np", 0, "t:x", ctx(day + 20)), /not running/);
+  const sp = C.normalizeLiveops({}), sd = sp.sp.start + 3, sk = 0;
+  assert.ok(C.evClaimPlan(sp, "sp", sk, "1:free", { now: sd * 86400000 })); assert.throws(() => C.evClaimPlan(sp, "sp", sk, "1:prem", { now: sd * 86400000, prem: () => false }), /premium/);
+  assert.deepStrictEqual(C.evClaimPlan(sp, "sp", sk, "1:prem", { now: sd * 86400000, prem: (k) => k === 0 }).items, { shards_halo7: 2 });
+  const lw = C.normalizeLiveops({ wk: { heroes: ["kessa"], shards: 15 } }); assert.deepStrictEqual(C.evClaimPlan(lw, "wk", wk(sd), "kessa", { now: sd * 86400000 }).items, { shards_kessa: 15 });
+  assert.throws(() => C.evClaimPlan(lw, "wk", wk(sd), "roran", { now: sd * 86400000 }), /no such reward/, "only a hero on the list");
+  const r1 = C.decideEvClaim(null, p, "t:a", M, null, now); assert.strictEqual(r1.dup, false); assert.strictEqual(r1.gems, 100); assert.deepStrictEqual(r1.save, {}, "food is phone-paid");
+  assert.strictEqual(C.decideEvClaim(r1.rec, p, "t:a", M, r1.gd, now).dup, true, "once only");
+  const r2 = C.decideEvClaim(null, { items: { gems: 500, wood: 9 } }, "z", M, r1.gd, now); assert.strictEqual(r2.gems, 200); assert.strictEqual(r2.capped, 300); assert.deepStrictEqual(r2.save, { wood: 9 });
+  assert.strictEqual(C.decideEvClaim(null, { items: { gems: 500 } }, "z", M, r2.gd, now + 86400000).gems, 300, "cap resets next UTC day");
 });
 console.log(n + " tests passed");

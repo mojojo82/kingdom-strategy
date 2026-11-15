@@ -8,7 +8,7 @@ service cloud.firestore {
     function isMe(pid) { return signedIn() && request.auth.uid == pid; }
     function isAdmin() { return signedIn() && request.auth.uid in ['ZPTZEZC4XfSx4KA4rPJY6GHMmMC3'] && request.auth.token.firebase.sign_in_provider == 'google.com'; }
     function hpKeys() { return ['hp', 'hpT', 'burnLeft', 'raidedAt']; }
-    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail']; }
+    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail', 'evclaims']; }
 
     // ===== live =====
     function liveOpen() { return isAdmin() || (!(exists(/databases/$(database)/documents/config/maintenance) && get(/databases/$(database)/documents/config/maintenance).data.on == true) && (!exists(/databases/$(database)/documents/bans/$(request.auth.uid)) || (get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.kind != 'ban' && get(/databases/$(database)/documents/bans/$(request.auth.uid)).data.untilMs < request.time.toMillis()))); } // v942: maintenance locks player writes; v995: so does a ban / suspension

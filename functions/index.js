@@ -626,6 +626,31 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
     return { dup: false, events: patchEvents, gems: g, items: r.items, progress };
   });
 });
+/* v1625: an event-reward claim from the game (Featured Hero Week, Arena milestones, Forge Frenzy, Boss Rush, Weekly Chest, New Player Path, Conquest
+   Sprint, Season Pass). The game shows the reward at once and queues this call; the server works out the reward from the live config (the game
+   never sends items or amounts), checks the event period and that this reward wasn't paid before, pays gems into the wallet (daily cap) and records
+   the server-paid items in the ledger. Progress (points, task counts) is the game's own count - as with Daily Tasks.
+   Record: players/<uid>/evclaims/<src>_<period> { r: [refs] }. */
+exports.claimEv = wrap(async (req, uid, R, d) => {
+  const src = String(d.src || ""), ref = String(d.ref || "").slice(0, 60), now = Date.now(), base = R + "players/" + uid + "/";
+  const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted");
+  const lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
+  let createdAt = null;
+  if (src === "np") { const mt = await db.doc(base + "meta/account").get(); createdAt = (mt.exists && mt.data().createdAt) || null;
+    if (!createdAt) { const sv = await db.doc(base + "save/main").get(); createdAt = (sv.exists && sv.data().startedAt) || null; } }
+  return db.runTransaction(async (tx) => {
+    const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {};
+    const plan = C.evClaimPlan(lo, src, d.k, ref, { now, createdAt, prem: (k) => R === "envs/test/" || wd.spPrem === k }); /* premium: the TEST game unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
+    const cref = db.doc(base + "evclaims/" + src + "_" + plan.k), cs = await tx.get(cref);
+    const r = C.decideEvClaim(cs.exists ? cs.data() : null, plan, ref, lo.items, wd.evg, now);
+    if (r.dup) return { dup: true, gems: wd.gems || 0 };
+    const why = "ev_" + src, tag = plan.k + ":" + ref, patch = { evg: r.gd };
+    let g = wd.gems || 0; if (r.gems > 0) { g += r.gems; patch.gems = g; ledger(tx, R, uid, "gems", r.gems, g, why, tag); }
+    Object.keys(r.save).forEach((id) => { if (C.LEDGER_ITEMS.indexOf(id) >= 0) ledger(tx, R, uid, id, r.save[id], null, why, tag); });
+    tx.set(cref, Object.assign({ src, k: plan.k, at: now }, r.rec)); tx.set(walletRef(R, uid), patch, { merge: true });
+    return { dup: false, gems: g, added: r.gems, capped: r.capped, save: r.save };
+  });
+});
 // v943: shop layout - price tiers and tabs (Deals, Shop, ...). Players read <root>config/shop; only this function writes it.
 exports.adminSaveShop = wrap(async (req, uid, R, d) => {
   adminOnly(uid, req);
