@@ -10,6 +10,11 @@
     if (v && typeof v === "object") { for (var k in v) checkVal(v[k], false); }
   }
   var subs = [];
+  /* v1625: optional usage counters for the cost calculator (dev/costsim). Billing-like: get = 1 read per doc returned; a listener = 1 read per doc on
+     the first delivery, then 1 read per doc that CHANGED; set / update / delete = 1 write. Paths are grouped with ids replaced by * */
+  var ST = window.__fbStats = { reads: 0, writes: 0, calls: 0, byPath: {}, byFn: {}, listeners: {} };
+  function pat(p) { return segs(p).map(function (x, i) { return i % 2 ? "*" : x; }).join("/").replace(/^envs\/\*\//, "").replace(/^servers\/\*\//, ""); }
+  function bump(kind, p, n) { if (!(n > 0)) return; ST[kind] += n; var k = pat(p), o = ST.byPath[k] || (ST.byPath[k] = { reads: 0, writes: 0 }); o[kind] += n; }
   async function all() { return JSON.parse(await window.__fbstore("dump")); }
   async function notify() { var st = await all(); subs.forEach(function (s) { try { s(st); } catch (e) { console.error(e); } }); }
   window.__fbNotify = notify;
@@ -20,18 +25,19 @@
     if (segs(path).length % 2 !== 0) throw err("invalid-argument", "Invalid document reference. Document references must have an even number of segments, but " + path + " has " + segs(path).length);
     this.path = segs(path).join("/"); this.id = segs(path).pop();
   }
-  DocRef.prototype.get = async function () { var st = await all(); return snapDoc(this.path, st[this.path]); };
-  DocRef.prototype.set = async function (d, opt) { checkVal(d); var st = await all(); var v = (opt && opt.merge) ? Object.assign({}, st[this.path] || {}, d) : d; var js = JSON.stringify(v); if (js.length > 1048000) throw err("invalid-argument", "Document exceeds the maximum allowed size of 1,048,576 bytes."); await window.__fbstore("set", this.path, js); notify(); };
+  DocRef.prototype.get = async function () { var st = await all(); bump("reads", this.path, 1); return snapDoc(this.path, st[this.path]); };
+  DocRef.prototype.set = async function (d, opt) { checkVal(d); bump("writes", this.path, 1); var st = await all(); var v = (opt && opt.merge) ? Object.assign({}, st[this.path] || {}, d) : d; var js = JSON.stringify(v); if (js.length > 1048000) throw err("invalid-argument", "Document exceeds the maximum allowed size of 1,048,576 bytes."); await window.__fbstore("set", this.path, js); notify(); };
   DocRef.prototype.update = async function () {
-    var a = [].slice.call(arguments), st = await all(), cur = st[this.path];
+    var a = [].slice.call(arguments), st = await all(), cur = st[this.path]; bump("writes", this.path, 1);
     if (!cur) throw err("not-found", "No document to update: " + this.path);
     var patch = {};
     if (a[0] instanceof FieldPath) { for (var i = 0; i < a.length; i += 2) patch[a[i].k] = a[i + 1]; }
     else { patch = a[0]; for (var k in patch) if (k.indexOf(".") !== -1) throw new Error("test: dotted key used without FieldPath: " + k); }
     checkVal(patch); await window.__fbstore("set", this.path, JSON.stringify(Object.assign({}, cur, patch))); notify();
   };
-  DocRef.prototype.delete = async function () { await window.__fbstore("del", this.path); notify(); };
-  DocRef.prototype.onSnapshot = function (next, error) { var self = this, f = function (st) { next(snapDoc(self.path, st[self.path])); }; subs.push(f); all().then(f); return function () { subs = subs.filter(function (x) { return x !== f; }); }; };
+  DocRef.prototype.delete = async function () { bump("writes", this.path, 1); await window.__fbstore("del", this.path); notify(); };
+  DocRef.prototype.onSnapshot = function (next, error) { var self = this, last, f = function (st) { var js = JSON.stringify(st[self.path] === undefined ? null : st[self.path]); if (js !== last) { bump("reads", self.path, 1); last = js; } next(snapDoc(self.path, st[self.path])); };
+    ST.listeners[pat(self.path)] = (ST.listeners[pat(self.path)] || 0) + 1; subs.push(f); all().then(f); return function () { subs = subs.filter(function (x) { return x !== f; }); }; };
   function Query(path, filters, order, lim) {
     if (segs(path).length % 2 !== 1) throw err("invalid-argument", "Invalid collection reference. Collection references must have an odd number of segments, but " + path + " has " + segs(path).length);
     this.path = segs(path).join("/"); this.f = filters || []; this.o = order || null; this.l = lim || 0;
@@ -46,8 +52,9 @@
     if (this.l) docs = docs.slice(0, this.l);
     return { docs: docs.map(function (x) { return snapDoc(x.k, x.d); }) };
   };
-  Query.prototype.get = async function () { return this.run(await all()); };
-  Query.prototype.onSnapshot = function (next, error) { var self = this, f = function (st) { next(self.run(st)); }; subs.push(f); all().then(f); return function () { subs = subs.filter(function (x) { return x !== f; }); }; };
+  Query.prototype.get = async function () { var r = this.run(await all()); bump("reads", this.path + "/x", Math.max(1, r.docs.length)); return r; };
+  Query.prototype.onSnapshot = function (next, error) { var self = this, seen = null, f = function (st) { var r = self.run(st), cur = {}, n = 0; r.docs.forEach(function (d) { var js = JSON.stringify(d.data()); cur[d.id] = js; if (!seen || seen[d.id] !== js) n++; }); if (!seen) n = Math.max(1, n); seen = cur; bump("reads", self.path + "/x", n); next(r); };
+    ST.listeners[pat(self.path + "/x")] = (ST.listeners[pat(self.path + "/x")] || 0) + 1; subs.push(f); all().then(f); return function () { subs = subs.filter(function (x) { return x !== f; }); }; };
   var fsObj = {
     useEmulator: function () {},
     settings: function (s) { window.__fbSettings = s; },
@@ -76,7 +83,7 @@
     sendPasswordResetEmail: function () { return Promise.resolve(); },
     signOut: function () { authUser = null; try { localStorage.removeItem("__fakeAuth"); } catch (e) {} return Promise.resolve(); }
   };
-  function functionsObj() { return { useEmulator: function () {}, httpsCallable: function (name) { return function (data) {
+  function functionsObj() { return { useEmulator: function () {}, httpsCallable: function (name) { return function (data) { ST.calls++; ST.byFn[name] = (ST.byFn[name] || 0) + 1;
     return window.__fbcall(name, JSON.stringify(data || {}), JSON.stringify(authUser ? { uid: authUser.uid, token: { firebase: { sign_in_provider: authUser.isAnonymous ? "anonymous" : "password" } } } : null)).then(function (r) {
       r = JSON.parse(r); if (r.error) { var e = new Error(r.error.message); e.code = r.error.code; e.details = r.error.details; throw e; } return { data: r.data }; }); }; } }; }
   var apps = [];
