@@ -13958,7 +13958,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1633"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1634"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20272,22 +20272,25 @@ function evGotText(o) { return Object.keys(o || {}).map(function (k) { return o[
 function evDone(msg) { EVW.note = "🎉 " + msg; try { sfxReward(); } catch (e) {} persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} evPaySync(); }
 /* v1625: send queued event claims to the server one by one (claimEv). Paid / already paid -> off the queue. Refused -> take the items back and say so.
    No connection / server busy -> stays queued, tried again later (Events window, next claim, every minute). */
-function evPaySync() {
-  if (!ksFb() || evPaySync.busy) return; var E = game.evSync(); if (!Array.isArray(E.pq) || !E.pq.length) return; evPaySync.busy = true;
-  var job = E.pq[0];
-  if (job.s === "hc" && Date.now() - (job.t || 0) < 6000) { evPaySync.busy = false; setTimeout(evPaySync, 6500); return; } /* v1632: let the cloud save (new hero / star) land first - the server checks it */
-  KS_BACKEND.call("claimEv", { src: job.s, k: job.k, ref: job.r }).then(function (r) {
-    var E2 = game.evSync(); if (E2.pq && E2.pq[0] === job) E2.pq.shift();
+function evPaySync() { /* v1634: up to 20 queued claims go in ONE server call (claimEv list) */
+  if (!ksFb() || evPaySync.busy) return; var E = game.evSync(); if (!Array.isArray(E.pq) || !E.pq.length) return;
+  var jobs = []; for (var qi = 0; qi < E.pq.length && jobs.length < 20; qi++) { var jb = E.pq[qi]; if (jb.s === "hc" && Date.now() - (jb.t || 0) < 6000) break; jobs.push(jb); } /* v1632: let the cloud save (new hero / star) land first - the server checks it */
+  if (!jobs.length) { setTimeout(evPaySync, 6500); return; }
+  evPaySync.busy = true;
+  var drop = function (job) { var E2 = game.evSync(), k = E2.pq ? E2.pq.indexOf(job) : -1; if (k >= 0) E2.pq.splice(k, 1); };
+  var refused = function (job, code, msg) { /* true = taken off the queue */
+    if (code === "aborted") { job.n = (job.n || 0) + 1; if (job.n < 10) return false; } /* "not in your saved game yet" - retry later, give up after 10 tries */
+    else if (["failed-precondition", "not-found", "permission-denied", "invalid-argument"].indexOf(code) < 0) return false; /* network / busy / maintenance: keep it */
+    drop(job); game.evPayUndo(job); EVW.note = '<span class="bad">A reward couldn\'t be confirmed by the server and was taken back' + (msg ? " (" + String(msg).replace(/[<>]/g, "") + ")" : "") + ".</span>"; return true; };
+  KS_BACKEND.call("claimEv", { list: jobs.map(function (j) { return { src: j.s, k: j.k, ref: j.r }; }) }).then(function (r) {
+    var res = (r && r.results) || [], capped = 0, more = false;
+    jobs.forEach(function (job, n) { var x = res[n] || {}; if (x.error) { if (refused(job, x.error.code, x.error.message)) more = true; } else { drop(job); more = true; capped += x.capped || 0; } });
     if (r && typeof r.gems === "number") { KSW.gems = r.gems; game.state.gems = r.gems; }
-    if (r && r.capped > 0) EVW.note = '<span class="bad">Daily gem limit from events reached - ' + r.capped.toLocaleString("en-US") + " gems not paid.</span>";
-    evPaySync.busy = false; persist(); try { render(); } catch (e) {} evPayRedraw(); evPaySync();
+    if (capped > 0) EVW.note = '<span class="bad">Daily gem limit from events reached - ' + capped.toLocaleString("en-US") + " gems not paid.</span>";
+    evPaySync.busy = false; persist(); try { render(); } catch (e) {} evPayRedraw(); if (more) evPaySync();
   }, function (e) {
     evPaySync.busy = false; var code = String((e && e.code) || "").replace(/^functions\//, ""); try { console.warn("claimEv", code, e && e.message); } catch (x) {}
-    if (code === "aborted") { job.n = (job.n || 0) + 1; if (job.n < 10) { persist(); return; } } /* v1632: "not in your saved game yet" - try again later, give up after 10 tries */
-    else if (["failed-precondition", "not-found", "permission-denied", "invalid-argument"].indexOf(code) < 0) return; /* network / busy / maintenance: keep it, try later */
-    var E2 = game.evSync(); if (E2.pq && E2.pq[0] === job) E2.pq.shift(); game.evPayUndo(job);
-    EVW.note = '<span class="bad">A reward couldn\'t be confirmed by the server and was taken back' + (e && e.message ? " (" + String(e.message).replace(/[<>]/g, "") + ")" : "") + ".</span>";
-    persist(); try { render(); } catch (x) {} evPayRedraw(); evPaySync();
+    if (["failed-precondition", "not-found", "permission-denied", "invalid-argument"].indexOf(code) >= 0) { jobs.forEach(function (job) { refused(job, code, e && e.message); }); persist(); try { render(); } catch (x) {} evPayRedraw(); }
   });
 }
 /* v1628: activity gems - each monster / camp win / Arena win (and the first visit of the day) asks the server for its gems (claimGemAct; a daily

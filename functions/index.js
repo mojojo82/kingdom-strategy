@@ -651,25 +651,33 @@ exports.claimGemAct = wrap(async (req, uid, R, d) => {
    the server-paid items in the ledger. Progress (points, task counts) is the game's own count - as with Daily Tasks.
    Record: players/<uid>/evclaims/<src>_<period> { r: [refs] }. */
 exports.claimEv = wrap(async (req, uid, R, d) => {
-  const src = String(d.src || ""), ref = String(d.ref || "").slice(0, 60), now = Date.now(), base = R + "players/" + uid + "/";
+  /* v1634: one call can carry many claims (d.list, up to 30 - "Claim all", a queue that built up offline); a single claim still works (d.src/k/ref) */
+  const one = !Array.isArray(d.list), list = (one ? [{ src: d.src, k: d.k, ref: d.ref }] : d.list.slice(0, 30)).map((x) => ({ src: String((x && x.src) || ""), k: x && x.k, ref: String((x && x.ref) || "").slice(0, 60) }));
+  const now = Date.now(), base = R + "players/" + uid + "/", has = (s) => list.some((x) => x.src === s);
   const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted");
   const lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
-  let createdAt = null;
-  let save = null; if (src === "hc") { const sv = await db.doc(base + "save/main").get(); save = sv.exists ? sv.data() : {}; } /* v1632: Hero Collection checks the saved heroes */
-  if (src === "cb") { const mt = await db.doc(base + "meta/account").get(), cb = mt.exists && mt.data().cb; createdAt = cb && cb.start != null ? cb.start : null; } /* v1631: comeback start day */
-  if (src === "np") { const mt = await db.doc(base + "meta/account").get(); createdAt = (mt.exists && mt.data().createdAt) || null;
-    if (!createdAt) { const sv = await db.doc(base + "save/main").get(); createdAt = (sv.exists && sv.data().startedAt) || null; } }
+  let save = null, meta = null;
+  if (has("hc") || has("np")) { const sv = await db.doc(base + "save/main").get(); save = sv.exists ? sv.data() : {}; } /* v1632: Hero Collection checks the saved heroes */
+  if (has("cb") || has("np")) { const mt = await db.doc(base + "meta/account").get(); meta = mt.exists ? mt.data() : {}; }
+  const startOf = (src) => src === "cb" ? (meta && meta.cb && meta.cb.start != null ? meta.cb.start : null) /* v1631: comeback start day */
+    : src === "np" ? ((meta && meta.createdAt) || (save && save.startedAt) || null) : null;
   return db.runTransaction(async (tx) => {
     const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {};
-    const plan = C.evClaimPlan(lo, src, d.k, ref, { now, createdAt, save, prem: (k) => R === "envs/test/" || wd.spPrem === k }); /* premium: the TEST game unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
-    const cref = db.doc(base + "evclaims/" + src + "_" + plan.k), cs = await tx.get(cref);
-    const r = C.decideEvClaim(cs.exists ? cs.data() : null, plan, ref, lo.items, wd.evg, now);
-    if (r.dup) return { dup: true, gems: wd.gems || 0 };
-    const why = "ev_" + src, tag = plan.k + ":" + ref, patch = { evg: r.gd };
-    let g = wd.gems || 0; if (r.gems > 0) { g += r.gems; patch.gems = g; ledger(tx, R, uid, "gems", r.gems, g, why, tag); }
-    Object.keys(r.save).forEach((id) => { if (C.LEDGER_ITEMS.indexOf(id) >= 0) ledger(tx, R, uid, id, r.save[id], null, why, tag); });
-    tx.set(cref, Object.assign({ src, k: plan.k, at: now }, r.rec)); tx.set(walletRef(R, uid), patch, { merge: true });
-    return { dup: false, gems: g, added: r.gems, capped: r.capped, save: r.save };
+    const plans = list.map((x) => { try { return { x, plan: C.evClaimPlan(lo, x.src, x.k, x.ref, { now, createdAt: startOf(x.src), save, prem: (k) => R === "envs/test/" || wd.spPrem === k }) }; } /* premium: TEST unlocks it for testing; LIVE needs the purchase (wallet.spPrem = season) */
+      catch (e) { if (one || !(e instanceof C.GameError)) throw e; return { x, err: { code: e.code, message: e.message } }; } });
+    const recs = {}, refs = {};
+    for (const p of plans) { if (!p.plan) continue; const key = p.x.src + "_" + p.plan.k; if (!refs[key]) { refs[key] = db.doc(base + "evclaims/" + key); const cs = await tx.get(refs[key]); recs[key] = cs.exists ? cs.data() : null; } }
+    let g = wd.gems || 0, gd = wd.evg; const out = [], dirty = {};
+    plans.forEach((p) => { if (p.err) { out.push({ error: p.err }); return; }
+      const key = p.x.src + "_" + p.plan.k, r = C.decideEvClaim(recs[key], p.plan, p.x.ref, lo.items, gd, now);
+      if (r.dup) { out.push({ dup: true }); return; }
+      recs[key] = Object.assign({ src: p.x.src, k: p.plan.k, at: now }, r.rec); dirty[key] = 1; gd = r.gd;
+      const why = "ev_" + p.x.src, tag = p.plan.k + ":" + p.x.ref; if (r.gems > 0) { g += r.gems; ledger(tx, R, uid, "gems", r.gems, g, why, tag); }
+      Object.keys(r.save).forEach((id) => { if (C.LEDGER_ITEMS.indexOf(id) >= 0) ledger(tx, R, uid, id, r.save[id], null, why, tag); });
+      out.push({ dup: false, added: r.gems, capped: r.capped, save: r.save }); });
+    Object.keys(dirty).forEach((key) => tx.set(refs[key], recs[key]));
+    if (Object.keys(dirty).length) tx.set(walletRef(R, uid), g !== (wd.gems || 0) ? { evg: gd, gems: g } : { evg: gd }, { merge: true });
+    return one ? Object.assign({ gems: g }, out[0]) : { gems: g, results: out };
   });
 });
 // v943: shop layout - price tiers and tabs (Deals, Shop, ...). Players read <root>config/shop; only this function writes it.

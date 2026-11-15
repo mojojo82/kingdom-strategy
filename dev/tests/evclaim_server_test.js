@@ -34,5 +34,8 @@ const assert = require("assert");
   out.cb1 = (await go("claimEv", "p4", { src: "cb", k: tc.cb.start, ref: "d:1" })).data; assert.strictEqual(out.cb1.added, 300);
   out.cb2 = (await go("claimEv", "p4", { src: "cb", k: tc.cb.start, ref: "d:2" })).error.message;
   out.cbNot = (await go("claimEv", "p3", { src: "cb", k: tc.cb.start, ref: "d:1" })).error.message;
+  // v1634: many claims in one call (Claim all) - per-claim results, one bad one doesn't stop the rest
+  const bl = (await go("claimEv", "p5", { list: [{ src: "fhw", k: w, ref: "ms:0" }, { src: "fhw", k: w, ref: "ms:9" }, { src: "fhw", k: w, ref: "ms:0" }, { src: "wk", k: w, ref: "roran" }] })).data;
+  out.batch = bl.results.map((x) => x.error ? "err:" + x.error.message : x.dup ? "dup" : "+" + x.added); assert.deepStrictEqual(out.batch, ["+150", "err:no such reward", "dup", "+0"]); assert.strictEqual(bl.gems, 150);
   console.log(JSON.stringify(out, null, 1)); console.log("evclaim server test passed");
 })().catch((e) => { console.error(e); process.exit(1); });

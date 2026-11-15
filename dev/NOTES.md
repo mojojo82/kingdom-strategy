@@ -5212,3 +5212,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Starting festivals: Winter Festival 18 Dec 2026 - 3 Jan 2027 (6 milestones, 200 - 2,500 gems each, chests, featured hero shards) and Lunar Festival 6 - 16 Feb 2027 (5 milestones). The TEST game shows the next festival as a preview tab (claims open when it starts).
 - Art: the trophy icon and a purple / gold header box for now (festival art = mockup first).
 - Tests: unit tests 28 pass (dates, overlap and bad-date refusals, period + grace); dev/tests/festival_game_test.js headless (festival running -> tab first, 2 Arena wins = 40 points, claim the 30-point milestone -> 200 gems, no errors); admin round trip incl. adding a festival + milestone.
+
+## v1634 — "Claim all" in one server trip
+- claimEv now takes a list (up to 30 claims) and answers each one separately (paid / already paid / refused) in one transaction; a single claim still works as before. The game sends up to 20 queued claims per call (Season Pass "Claim all", a queue that built up offline), so a big claim is one round trip instead of one per reward.
+- Tests: server flow (4 claims in one call: paid, refused, repeat, weekly chest); headless game tests (instant + confirmed, fake reward taken back, Hero Collection save check) pass.
