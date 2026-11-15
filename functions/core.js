@@ -273,7 +273,7 @@ function normalizeEvents(list) {
    only adminSaveLiveops writes it. The game pays these rewards itself (into the save), so only 'save' catalogue items (no gems) - plus
    "featured_shards" = shards of this week's featured hero. Every number is clamped; missing parts fall back to the game's own defaults. */
 const LIVEOPS_KINDS = ["kill", "arena", "camp", "monster", "ticket", "newlevel", "boss", "build"];
-function liveShopOk(id) { return id === "featured_shards" || id === "np_shards" || id === "sp_shards" || (!!ITEMS[id] && id[0] !== "_" && ITEMS[id].kind === "save"); }
+function liveShopOk(id) { return id === "featured_shards" || id === "np_shards" || id === "sp_shards" || id === "cb_shards" || (!!ITEMS[id] && id[0] !== "_" && ITEMS[id].kind === "save"); }
 /* v1625: event REWARDS may include gems (paid by the server: claimEv / mail); shops can't sell gems for event currencies */
 function liveItemOk(id) { return id === "gems" || liveShopOk(id); }
 function liveItems(obj, what) {
@@ -390,6 +390,23 @@ function normalizeSP(p) {
    rally bonus (1 + bonusPer per extra member, at most +bonusCap). Rewards after the hunt (by mail): the highest personal tier reached + the highest
    alliance tier reached. The boss never dies - it's all about total damage. */
 const LIVE_SG_DEFAULT = {"on": true, "perWeek": 3, "mins": 30, "wait": 60, "maxRally": 15, "dpp": 1.0, "bonusPer": 0.04, "bonusCap": 0.5, "personal": [{"dmg": 1, "items": {"speedup_general_5m": 5, "conquest_books": 5}}, {"dmg": 100000, "items": {"speedup_general_5m": 10, "conquest_books": 10}}, {"dmg": 1000000, "items": {"speedup_general_1h": 2, "conquest_books": 20, "weapon_tickets": 1}}, {"dmg": 5000000, "items": {"speedup_general_1h": 4, "conquest_books": 40, "weapon_tickets": 2, "event_tokens": 15}}, {"dmg": 20000000, "items": {"speedup_general_1h": 6, "conquest_books": 60, "weapon_tickets": 3, "event_tokens": 25}}, {"dmg": 60000000, "items": {"speedup_general_1h": 10, "conquest_books": 100, "weapon_tickets": 5, "event_tokens": 40, "item_chest_eq_3": 1}}, {"dmg": 150000000, "items": {"speedup_general_1h": 15, "conquest_books": 150, "weapon_tickets": 8, "event_tokens": 60, "item_chest_eq_4": 1}}], "alliance": [{"dmg": 1, "items": {"speedup_general_5m": 5}}, {"dmg": 10000000, "items": {"speedup_general_1h": 2, "research": 500}}, {"dmg": 100000000, "items": {"speedup_general_1h": 4, "research": 1500, "weapon_tickets": 1}}, {"dmg": 500000000, "items": {"speedup_general_1h": 6, "research": 3000, "weapon_tickets": 2, "event_tokens": 20}}, {"dmg": 1500000000, "items": {"speedup_general_1h": 10, "research": 6000, "weapon_tickets": 3, "event_tokens": 30, "featured_shards": 3}}, {"dmg": 4000000000, "items": {"speedup_general_1h": 15, "research": 10000, "weapon_tickets": 5, "event_tokens": 50, "featured_shards": 5}}]};
+/* v1631: Comeback Bonus ("Welcome back") - a player who comes back after `away` days gets a `days`-day reward track (day n opens on the n-th day back)
+   and boosts while it runs: gather (World map loot) and Conquest Valor + `boost` %. The server notices the return (touch: meta.account.cb = { start: utc
+   day }) and pays the rewards (claimEv src "cb"). "cb_shards" = shards of cb.hero. */
+const LIVE_CB_DEFAULT = {"on": true, "away": 7, "days": 7, "hero": "kessa", "name": "Welcome Back", "boost": {"gather": 50, "valor": 50}, "rewards": [{"day": 1, "items": {"gems": 300, "speedup_general_1h": 2, "food": 20000}}, {"day": 2, "items": {"gems": 300, "weapon_tickets": 3, "conquest_books": 20}}, {"day": 3, "items": {"gems": 400, "cb_shards": 10, "speedup_general_1h": 2}}, {"day": 4, "items": {"gems": 400, "item_stamina_10": 2, "wood": 30000}}, {"day": 5, "items": {"gems": 500, "weapon_tickets": 5, "research": 1000}}, {"day": 6, "items": {"gems": 500, "item_chest_eq_3": 1, "speedup_general_1h": 3}}, {"day": 7, "items": {"gems": 1000, "cb_shards": 30, "item_chest_weapon": 1}}]};
+function normalizeCB(p) {
+  if (!p) return JSON.parse(JSON.stringify(LIVE_CB_DEFAULT));
+  const days = num(p.days, 1, 14, 7), B = p.boost || {}, seen = {};
+  const rewards = (Array.isArray(p.rewards) ? p.rewards : []).slice(0, 14).map((r, i) => { const day = num(r && r.day, 1, days, 0); if (!day || seen[day]) throw new GameError("invalid-argument", "Welcome Back reward " + (i + 1) + ": needs its own day (1-" + days + ")"); seen[day] = 1;
+    return { day, items: liveItems(r && r.items, "Welcome Back day " + day) }; }).sort((a, b) => a.day - b.day);
+  return { on: p.on !== false, away: num(p.away, 2, 90, 7), days, hero: heroKey(p.hero || "kessa"), name: String(p.name || "").trim().slice(0, 40) || "Welcome Back", boost: { gather: num(B.gather, 0, 500, 50), valor: num(B.valor, 0, 500, 50) }, rewards };
+}
+/* touch: has this player just come back? d = meta.account before this visit. Returns the cb record to keep (or null). */
+function comebackCheck(d, CB, now) {
+  const cur = d && d.cb && utcDay(now) - d.cb.start < ((CB && CB.days) || 7) ? d.cb : null; if (cur) return cur;
+  if (!CB || CB.on === false || !d || !d.lastSeen) return null;
+  return now - d.lastSeen >= CB.away * 86400000 ? { start: utcDay(now) } : null;
+}
 /* v1629: gems in the starting event rewards (Harley: lack of gems, rewards should be groups) - added on top of each default reward, so most become groups.
    An admin-saved event keeps what was saved; "Load the starting numbers" in the admin page brings these in. */
 const LIVE_GEMS_PATCH = {"fhw": [50, 100, 150, 250, 400], "arena": [10, 20, 30, 50], "rankD": [200, 150, 100, 60, 40, 20], "rankW": [1000, 700, 500, 300, 200, 100], "ff": [50, 100, 200, 300, 500], "br": [50, 100, 200, 300, 500], "brRank": [1000, 700, 400, 250, 150, 50], "npChest": [100, 100, 150, 150, 200, 200, 300, 200, 200, 250, 250, 300, 300, 500], "csTask": 50, "csFin": 600, "spFree": {"5": 50, "10": 50, "15": 50, "20": 50, "25": 50, "30": 50}, "spPrem": 50, "sgP": [20, 50, 100, 150, 200, 250, 300], "sgA": [50, 100, 150, 200, 300, 500]};
@@ -429,7 +446,7 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { cb: normalizeCB(c.cb), ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
 }
 /* v1628: activity gems - gems for everyday play, paid by the server with a cap per day for each activity (Harley: an active player ~5,000 gems a
    day from all sources). The game reports each activity (claimGemAct; the server trusts the report like Daily Tasks, the daily caps limit it);
@@ -468,7 +485,7 @@ function itemServerPaid(modes, id) { if (id === "gems") return true; const M = m
      sp   "<lv>:free" | "<lv>:prem"  Season Pass level (period = season)
    The period must be the current one or one that was running in the last 2 days (a claim made offline just before a reset still pays).
    ctx = { now, createdAt (account), prem(season) -> bool }. Returns { k, items } with featured/np/sp shards turned into real hero shards. */
-const EV_SRCS = ["fhw", "arena", "ff", "br", "wk", "np", "cs", "sp"];
+const EV_SRCS = ["fhw", "arena", "ff", "br", "wk", "np", "cs", "sp", "cb"];
 function evPeriodAt(lo, src, t, createdAt) {
   const d = utcDay(t), w = Math.floor((d + 3) / 7), dow = (d + 4) % 7;
   if (src === "fhw" || src === "wk") return w;
@@ -477,12 +494,13 @@ function evPeriodAt(lo, src, t, createdAt) {
   if (src === "br") { const B = lo.br || {}; return B.on !== false && (B.days || []).indexOf(dow) >= 0 ? w : null; }
   if (src === "cs") { const P = lo.cs || {}; return P.on !== false && (w % 2) === (P.parity || 0) ? w : null; }
   if (src === "sp") { const P = lo.sp || {}; if (P.on === false || !(P.days > 0) || d < (P.start || 0)) return null; return Math.floor((d - (P.start || 0)) / P.days); }
+  if (src === "cb") { const P = lo.cb || {}, st = createdAt; if (!st && st !== 0) return null; return d - st >= 0 && d - st < (P.days || 7) ? st : null; } /* createdAt = the comeback start day here */
   if (src === "np") { const P = lo.np || {}; if (P.on === false || !createdAt) return null; const day = d - utcDay(createdAt) + 1; return day >= 1 && day <= (P.days || 14) ? 0 : null; }
   return null;
 }
 function evRealItems(items, lo) {
   const out = {}; Object.keys(items || {}).forEach((id) => {
-    let k = id; if (id === "featured_shards") k = "shards_" + lo.fhw.hero; else if (id === "np_shards") k = "shards_" + ((lo.np || {}).hero || "roran"); else if (id === "sp_shards") k = "shards_" + ((lo.sp || {}).hero || "halo7");
+    let k = id; if (id === "cb_shards") k = "shards_" + ((lo.cb || {}).hero || "kessa"); else if (id === "featured_shards") k = "shards_" + lo.fhw.hero; else if (id === "np_shards") k = "shards_" + ((lo.np || {}).hero || "roran"); else if (id === "sp_shards") k = "shards_" + ((lo.sp || {}).hero || "halo7");
     const q = Math.trunc(+items[id] || 0); if (q > 0) out[k] = (out[k] || 0) + q; });
   return out;
 }
@@ -500,6 +518,7 @@ function evClaimPlan(lo, src, k, ref, ctx) {
     if (t != null) { const x = (P.tasks || []).find((y) => y.id === t); if (x && x.day <= day) items = x.items; }
     else if (c != null) { const x = (P.chests || []).find((y) => y.day === +c); if (x && x.day <= day) items = x.items; }
   }
+  else if (src === "cb") { const c = idx(/^d:(\d{1,2})$/), x = c != null && ((lo.cb || {}).rewards || []).find((y) => y.day === +c); if (x && x.day <= utcDay(now) - k + 1) items = x.items; }
   else if (src === "cs") { const P = lo.cs || {}, t = idx(/^t:([A-Za-z0-9_-]{1,40})$/); if (ref === "fin") items = P.fin; else if (t != null) { const x = (P.tasks || []).find((y) => y.id === t); if (x) items = x.items; } }
   else if (src === "sp") { const m = /^(\d{1,2}):(free|prem)$/.exec(ref), L = m && ((lo.sp || {}).levels || [])[+m[1] - 1]; if (L) { if (m[2] === "prem" && !(ctx.prem && ctx.prem(k))) throw new GameError("permission-denied", "premium pass needed"); items = m[2] === "prem" ? L.prem : L.free; } }
   if (!items) throw new GameError("not-found", "no such reward");
@@ -786,5 +805,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

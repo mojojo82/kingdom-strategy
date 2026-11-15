@@ -7638,6 +7638,8 @@ var LIVEOPS_DEFAULT = {
   /* v1623: Alliance Siege (functions/core.js LIVE_SG_DEFAULT) - the server runs it (siegeSchedule / siegeRally / siegeJoin / siegeHit / siegeClaim); the game only shows it */
   sg: {"on": true, "perWeek": 3, "mins": 30, "wait": 60, "maxRally": 15, "dpp": 1.0, "bonusPer": 0.04, "bonusCap": 0.5, "personal": [{"dmg": 1, "items": {"speedup_general_5m": 5, "conquest_books": 5}}, {"dmg": 100000, "items": {"speedup_general_5m": 10, "conquest_books": 10}}, {"dmg": 1000000, "items": {"speedup_general_1h": 2, "conquest_books": 20, "weapon_tickets": 1}}, {"dmg": 5000000, "items": {"speedup_general_1h": 4, "conquest_books": 40, "weapon_tickets": 2, "event_tokens": 15}}, {"dmg": 20000000, "items": {"speedup_general_1h": 6, "conquest_books": 60, "weapon_tickets": 3, "event_tokens": 25}}, {"dmg": 60000000, "items": {"speedup_general_1h": 10, "conquest_books": 100, "weapon_tickets": 5, "event_tokens": 40, "item_chest_eq_3": 1}}, {"dmg": 150000000, "items": {"speedup_general_1h": 15, "conquest_books": 150, "weapon_tickets": 8, "event_tokens": 60, "item_chest_eq_4": 1}}], "alliance": [{"dmg": 1, "items": {"speedup_general_5m": 5}}, {"dmg": 10000000, "items": {"speedup_general_1h": 2, "research": 500}}, {"dmg": 100000000, "items": {"speedup_general_1h": 4, "research": 1500, "weapon_tickets": 1}}, {"dmg": 500000000, "items": {"speedup_general_1h": 6, "research": 3000, "weapon_tickets": 2, "event_tokens": 20}}, {"dmg": 1500000000, "items": {"speedup_general_1h": 10, "research": 6000, "weapon_tickets": 3, "event_tokens": 30, "featured_shards": 3}}, {"dmg": 4000000000, "items": {"speedup_general_1h": 15, "research": 10000, "weapon_tickets": 5, "event_tokens": 50, "featured_shards": 5}}]},
   wk: { heroes: ["roran", "kessa", "halo7", "caelum"] /* v1616: Caelum replaces Iron Lily */, shards: 10, days: 7, act: 60 },
+  /* v1631: Comeback Bonus (functions/core.js LIVE_CB_DEFAULT) */
+  cb: {"on": true, "away": 7, "days": 7, "hero": "kessa", "name": "Welcome Back", "boost": {"gather": 50, "valor": 50}, "rewards": [{"day": 1, "items": {"gems": 300, "speedup_general_1h": 2, "food": 20000}}, {"day": 2, "items": {"gems": 300, "weapon_tickets": 3, "conquest_books": 20}}, {"day": 3, "items": {"gems": 400, "cb_shards": 10, "speedup_general_1h": 2}}, {"day": 4, "items": {"gems": 400, "item_stamina_10": 2, "wood": 30000}}, {"day": 5, "items": {"gems": 500, "weapon_tickets": 5, "research": 1000}}, {"day": 6, "items": {"gems": 500, "item_chest_eq_3": 1, "speedup_general_1h": 3}}, {"day": 7, "items": {"gems": 1000, "cb_shards": 30, "item_chest_weapon": 1}}]},
   dailyTok: [2, 3, 4, 5, 6],
   /* v1599/v1604: Boss Rush (functions/core.js LIVE_BR_DEFAULT) - levels: hp1 health at level 1, +hpGrow% health and +dmgGrow% damage a level, unkillable at maxLv; milestones = highest level reached */
   br: {"on": true, "days": [2, 3, 4], "tries": 3, "sec": 60, "hp1": 1000, "hpGrow": 8, "dmgGrow": 8, "maxLv": 100, "beam": 300, "stomp": 250, "stompHero": 300, "blastEvery": 6, "stompEvery": 10, "blastFirst": 4, "stompFirst": 9, "ms": [{"at": 5, "items": {"conquest_books": 20}}, {"at": 10, "items": {"event_tokens": 15}}, {"at": 20, "items": {"research": 300}}, {"at": 35, "items": {"event_tokens": 25}}, {"at": 50, "items": {"featured_shards": 10}}], "rank": [{"to": 1, "items": {"featured_shards": 10}}, {"to": 3, "items": {"featured_shards": 5}}, {"to": 10, "items": {"event_tokens": 60}}, {"to": 50, "items": {"event_tokens": 40}}, {"to": 100, "items": {"event_tokens": 25}}, {"to": 0, "items": {"event_tokens": 10}}]},
@@ -7984,7 +7986,7 @@ function createGame(opts) {
   function buildSpeedMult() { return 1 + techBonusSum("buildSpeedMult"); }
   function trainSpeedMult() { return 1 + techBonusSum("trainSpeedMult"); }
   function rpProductionMult() { return 1 + techBonusSum("rpProductionMult"); }
-  function gatherBonusMult() { return 1 + techBonusSum("gatherBonusMult"); }
+  function gatherBonusMult() { return 1 + techBonusSum("gatherBonusMult") + (typeof cbBoostPct === "function" ? cbBoostPct("gather") / 100 : 0); } /* v1631 Welcome Back boost */
   function lossReductionAmt() { return Math.min(0.9, techBonusSum("lossReductionMult")); } // no tech uses this any more (v794); kept at 0 so battle code and sims stay unchanged
   function healSpeedMult() { return 1 + techBonusSum("healSpeedMult"); }
   function canAfford(cost) { for (var res in cost) if ((state.resources[res] || 0) < cost[res]) return false; return true; }
@@ -9476,6 +9478,7 @@ function createGame(opts) {
     if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
     if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran"); /* v1617 */
     if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7"); /* v1621 */
+    if (id === "cb_shards") id = "shards_" + ((LIVEOPS.cb || {}).hero || "kessa"); /* v1631 */
     if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { var h = state.heroes[m[1]]; if (!h) return false; h.fragments = (h.fragments | 0) + qty; return true; }
     if ((m = /^item_([a-z0-9_]+)$/.exec(id))) return addItem(m[1], qty);
     if ((m = /^speedup_([a-z]+_[0-9]+[mh])$/.exec(id))) { if (!SPEEDUP_SEC[m[1]]) return false; state.speedups[m[1]] = (state.speedups[m[1]] || 0) + qty; return true; }
@@ -9510,6 +9513,7 @@ function createGame(opts) {
     if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
     if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran");
     if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7");
+    if (id === "cb_shards") id = "shards_" + ((LIVEOPS.cb || {}).hero || "kessa");
     if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { var h = state.heroes[m[1]]; if (h) h.fragments = sub(h.fragments | 0); return; }
     if ((m = /^item_([a-z0-9_]+)$/.exec(id))) { if (state.items && state.items[m[1]]) { state.items[m[1]] = sub(state.items[m[1]]); if (!state.items[m[1]]) delete state.items[m[1]]; } return; }
     if ((m = /^speedup_([a-z]+_[0-9]+[mh])$/.exec(id))) { state.speedups[m[1]] = sub(state.speedups[m[1]]); return; }
@@ -9625,8 +9629,18 @@ function createGame(opts) {
     if (evNeedNet((LIVEOPS.cs || {}).fin)) return { ok: false, reason: "offline" };
     C.fin = true; var got = evPay("cs", C.k, "fin", (LIVEOPS.cs || {}).fin); log("🏁 Conquest Sprint: final chest."); return { ok: true, got: got }; }
   function csReady() { var C = csSync(); if (!C) return 0; var n = 0; ((LIVEOPS.cs || {}).tasks || []).forEach(function (t) { if ((C.c[t.id] || 0) >= t.need && C.tc.indexOf(t.id) < 0) n++; }); if (!C.fin && csAllDone()) n++; return n; }
+  /* v1631: Comeback Bonus - state.ev.cb = { k: comeback start day (server: touch -> meta.cb), d: days claimed } */
+  function cbStart() { try { var c = typeof KSE !== "undefined" && KSE.cb; return c && c.start != null ? c.start : null; } catch (e) { return null; } }
+  function cbActive() { var P = LIVEOPS.cb, st = cbStart(); if (!P || P.on === false || st == null) return false; var d = dailyDayNow() - st; return d >= 0 && d < (P.days || 7); }
+  function cbDayNow() { var st = cbStart(); return st == null ? 0 : dailyDayNow() - st + 1; }
+  function cbMsLeft() { var st = cbStart(), P = LIVEOPS.cb || {}; return st == null ? 0 : (st + (P.days || 7)) * 86400000 - Date.now(); }
+  function cbSync() { var E = evSync(), st = cbStart(); if (st == null) return null; if (!E.cb || E.cb.k !== st) E.cb = { k: st, d: [] }; return E.cb; }
+  function cbClaim(day) { var C = cbSync(), r = ((LIVEOPS.cb || {}).rewards || []).filter(function (x) { return x.day === day; })[0]; if (!C || !r || !cbActive()) return { ok: false, reason: "bad" };
+    if (C.d.indexOf(day) >= 0) return { ok: false, reason: "claimed" }; if (day > cbDayNow()) return { ok: false, reason: "locked" }; if (evNeedNet(r.items)) return { ok: false, reason: "offline" };
+    C.d.push(day); log("🎁 Welcome Back: day " + day + "."); return { ok: true, got: evPay("cb", C.k, "d:" + day, r.items) }; }
+  function cbReady() { if (!cbActive()) return 0; var C = cbSync(), n = 0, dn = cbDayNow(); ((LIVEOPS.cb || {}).rewards || []).forEach(function (r) { if (r.day <= dn && C.d.indexOf(r.day) < 0) n++; }); return n; }
   function evReady() { /* rewards waiting (red dots) */
-    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady(), cs: csReady(), sp: spReady() };
+    var E = evSync(), F = LIVEOPS.fhw, n = { fhw: 0, daily: dailyClaimable(), arena: 0, np: npReady(), cs: csReady(), sp: spReady(), cb: cbReady() };
     ((LIVEOPS.arena || {}).ms || []).forEach(function (m, i) { if (E.ad.pts >= m.at && E.ad.ms.indexOf(i) < 0) n.arena++; });
     n.br = 0; var brs = evBRSync(); if (brs) ((LIVEOPS.br || {}).ms || []).forEach(function (m, i) { if (brs.pts >= m.at && brs.ms.indexOf(i) < 0) n.br++; });
     n.ff = 0; var ffs = evFFSync(); if (ffs) ((LIVEOPS.ff || {}).ms || []).forEach(function (m, i) { if (ffs.pts >= m.at && ffs.ms.indexOf(i) < 0) n.ff++; });
@@ -10546,7 +10560,7 @@ function createGame(opts) {
     return sum;
   }
   function idleDamageMult() { return 1 + idleConquestSkillSum("conquestDamageMult"); }
-  function idleValorMult() { return 1 + idleConquestSkillSum("conquestValorMult"); }
+  function idleValorMult() { return 1 + idleConquestSkillSum("conquestValorMult") + (typeof cbBoostPct === "function" ? cbBoostPct("valor") / 100 : 0); } /* v1631 Welcome Back boost */
   // Ranged pool: any equipped Archer/Cavalry-class hero. Can hit any enemy
   // that has arrived, any range. (Used to also include a flat "garrison"
   // base contribution so a 0-hero player was never fully stuck — that's now
@@ -11742,7 +11756,7 @@ function createGame(opts) {
     var investedTotal = 0; for (var ii in invested) investedTotal += invested[ii];
     return { held: held, heldTotal: heldTotal, invested: invested, investedTotal: investedTotal, total: heldTotal + investedTotal };
   }
-  return { evPayUndo: evPayUndo, evSrvItem: evSrvItem, takeCat: takeCat, evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, spKey: spKey, spMsLeft: spMsLeft, spSync: spSync, spLevel: spLevel, spClaim: spClaim, spClaimAll: spClaimAll, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
+  return { cbActive: cbActive, cbDayNow: cbDayNow, cbMsLeft: cbMsLeft, cbSync: cbSync, cbClaim: cbClaim, evPayUndo: evPayUndo, evSrvItem: evSrvItem, takeCat: takeCat, evBRKey: evBRKey, evBRMsLeft: evBRMsLeft, evBRSync: evBRSync, evBRTriesLeft: evBRTriesLeft, evBRStart: evBRStart, evBRScore: evBRScore, evBRClaim: evBRClaim, state: state, tick: tick, evSync: evSync, evAct: evAct, evClaimMs: evClaimMs, evClaimCheck: evClaimCheck, evBuy: evBuy, evClaimWeek: evClaimWeek, evDayCount: evDayCount, evReady: evReady, evWeekMsLeft: evWeekMsLeft, spKey: spKey, spMsLeft: spMsLeft, spSync: spSync, spLevel: spLevel, spClaim: spClaim, spClaimAll: spClaimAll, csKey: csKey, csSync: csSync, csClaimTask: csClaimTask, csAllDone: csAllDone, csClaimFin: csClaimFin, npActive: npActive, npDayNow: npDayNow, npMsLeft: npMsLeft, npSync: npSync, npHave: npHave, npTasks: npTasks, npClaimTask: npClaimTask, npDayDone: npDayDone, npClaimDay: npClaimDay, evArenaWin: evArenaWin, evFFKey: evFFKey, evFFSync: evFFSync, evFFClaim: evFFClaim, evFFMsLeft: evFFMsLeft, evArenaClaimMs: evArenaClaimMs, evArenaBuy: evArenaBuy, evWeekNow: evWeekNow, dailyDayNow: dailyDayNow, grantCat: grantCat, useSpeedup: useSpeedup, useGear: useGear, giTake: giTake, giCount: giCount, shieldLeftSec: shieldLeftSec, giSelectHeroes: giSelectHeroes, giSelectWeapons: giSelectWeapons, marchSpeedUp: marchSpeedUp, marchRecall: marchRecall, speedupTargets: speedupTargets, speedupLabel: speedupLabel, SPEEDUP_SEC: SPEEDUP_SEC, startUpgrade: startUpgrade, buildQueueSlots: buildQueueSlots, buildQueueUsed: buildQueueUsed, instantFinish: instantFinish, queueTraining: queueTraining,
     sendMarch: sendMarch, resolveArrival: resolveArrival, monsterEnergy: monsterEnergy, monsterEnergyNextSec: monsterEnergyNextSec, formSync: formSync, setFormationHeroSlot: setFormationHeroSlot, formMixSet: formMixSet, reserveOf: reserveOf, reserveAll: reserveAll, formationArmy: formationArmy, formAssign: formAssign, releaseFormation: releaseFormation, equaliseFormation: equaliseFormation, formPresets: formPresets, savePreset: savePreset, applyPreset: applyPreset, formOut: formOut, FORM_PRESET_COUNT: FORM_PRESET_COUNT, marchCapacity: marchCapacity, fitArmyToCap: fitArmyToCap, DAILY_TASKS: DAILY_TASKS, DAILY_TASK_REWARD: DAILY_TASK_REWARD, dailySync: dailySync, dailyBump: dailyBump, dailyPoints: dailyPoints, dailyList: dailyList, dailyChests: dailyChests, dailyClaimable: dailyClaimable, dailyMsLeft: dailyMsLeft, dailyClaimTask: dailyClaimTask, dailyClaimChest: dailyClaimChest, monsterLevelOpen: monsterLevelOpen, previewBattle: function (a, d, hk) { return resolveBattle(a, d, 0, hk); }, setHomeTile: setHomeTile, setWorldVersion: setWorldVersion,
     setServerId: setServerId, regenerateMap: regenerateMap, researchTech: researchTech, researchFortress: researchFortress, costFor: costFor, timeFor: timeFor, troopCost: troopCost,
     WEAPON_LEGEND_PITY: WEAPON_LEGEND_PITY, protectedReserve: protectedReserve, storageCap: protectedReserve, meetsRequirements: meetsRequirements, loadState: loadState, log: log,
@@ -13914,7 +13928,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1630"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1631"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19472,7 +19486,7 @@ var KSW = { lvl: 0, gems: 0, loaded: false, unsub: null, claiming: false, retryT
 function ksStartWallet() {
   if (!ksFb() || KSW.unsub || !cloudDb) return;
   try { ksStartMail(); } catch (e) { console.error(e); }
-  var touch = function () { KS_BACKEND.call("touch", {}).catch(function () {}); }; touch(); setInterval(touch, 3600000); /* v910: account 'last seen' date (server-side, nothing else recorded) */
+  var touch = function () { KS_BACKEND.call("touch", {}).then(function (r) { try { if (r && r.cb !== undefined) KSE.cb = r.cb; } catch (e) {} }, function () {}); }; touch(); setInterval(touch, 3600000); /* v910: account 'last seen' date (server-side, nothing else recorded) */
   KSW.unsub = cloudDb.doc("players/" + PLAYER_ID + "/wallet/main").onSnapshot(function (s) {
     var d = (s.exists && s.data()) || {}; KSW.topup = d.topup || null; KSW.events = d.events || null; try { ksEvRender(); } catch (e) {} try { ksShopRender(); } catch (e) {} KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
     game.state.gems = KSW.gems; try { render(); } catch (e) {} ksClaimLoop();
@@ -19734,7 +19748,7 @@ function ksEvProgress(goal) { try { if (goal === "townhall") return game.state.b
 function ksEvSubscribe() {
   if (KSE.sub || !window.claude || typeof window.claude.use !== "function") return; KSE.sub = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/events").onSnapshot(function (s) { KSE.list = s.exists ? (s.data().events || []) : []; ksEvRender(); }, function () {}); }).catch(function () {});
-  try { if (window.KS_BACKEND && KS_BACKEND.call) KS_BACKEND.call("touch", {}).then(function (r) { if (r && r.createdAt) { KSE.created = r.createdAt; ksEvRender(); } }, function () {}); } catch (e) {}
+  try { if (window.KS_BACKEND && KS_BACKEND.call) KS_BACKEND.call("touch", {}).then(function (r) { if (r && r.cb !== undefined) KSE.cb = r.cb; if (r && r.createdAt) { KSE.created = r.createdAt; ksEvRender(); } }, function () {}); } catch (e) {}
 }
 function ksEvOpen() { evWinOpen(KSE.tab ? "x:" + KSE.tab : "fhw"); KSE.tab = null; } /* v1593: the Events window */
 function ksEvOpenOld() {
@@ -19805,6 +19819,7 @@ function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
   if (id === "featured_shards") id = "shards_" + LIVEOPS.fhw.hero;
   if (id === "np_shards") id = "shards_" + ((LIVEOPS.np || {}).hero || "roran"); /* v1617 */
   if (id === "sp_shards") id = "shards_" + ((LIVEOPS.sp || {}).hero || "halo7"); /* v1621 */
+  if (id === "cb_shards") id = "shards_" + ((LIVEOPS.cb || {}).hero || "kessa"); /* v1631 */
   if ((m = /^shards_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = HERO_DEFS[k] || {}; return { face: evFace(k), name: (d.name || k) + " shards", rar: d.rarity === "Legendary" ? 4 : d.rarity === "Epic" ? 3 : 2 }; }
   if ((m = /^item_([a-z0-9_]+)$/.exec(id))) { k = m[1]; d = GI_DEFS[k]; if (d) return { art: itemArt(d.art), name: d.name, rar: d.rar, top: d.top || "" };
     d = ITEM_DEFS[k]; if (d) return { art: d.kind === "res" ? ico(d.res) : itemArt(d.kind === "choice" ? "chest_res_custom" : "chest_res_supply"), name: d.name, rar: bagRarity(d), top: d.kind === "choice" ? "Lv." + d.lv : itemAmtLabel(d.amt) }; }
@@ -19817,10 +19832,24 @@ function evItemInfo(id) { /* catalogue id -> { art (html), name, rar, top } */
   return { art: "", name: id, rar: 0 };
 }
 function evTile(id, n, extra) { var I = evItemInfo(id);
-  return '<div class="evw-tile r' + I.rar + (extra || "") + '">' + (I.top ? "<i>" + I.top + "</i>" : "") + (I.face ? '<img class="face" alt="" src="' + I.face + '"><img class="pz" alt="" src="' + ICON_SRC.fragment + '">' : '<span class="art">' + I.art + "</span>") + (n != null ? "<b>" + Math.floor(n).toLocaleString("en-US") + "</b>" : "") + "</div>"; }
+  return '<div class="evw-tile r' + I.rar + (extra || "") + '">' + (I.top ? "<i>" + I.top + "</i>" : "") + (I.face ? '<img class="face" alt="" src="' + I.face + '"><img class="pz" alt="" src="' + ICON_SRC.fragment + '">' : '<span class="art">' + I.art + "</span>") + (n != null ? "<b>" + evNumShort(n) + "</b>" : "") + "</div>"; }
+function evNumShort(n) { n = Math.floor(n); return n >= 1e6 ? (Math.round(n / 1e5) / 10) + "M" : n >= 1e4 ? (Math.round(n / 100) / 10) + "K" : n.toLocaleString("en-US"); } /* v1631: 20,000 -> 20K so it fits a small tile */
 function evGrpN(items) { return Object.keys(items || {}).length; }
 function evGrpLine(items) { /* v1626: list rows show a whole reward group under the task text (single items stay on the right) */ if (evGrpN(items) < 2) return "";
   return '<div class="evw-gi">' + Object.keys(items).map(function (k) { return evTile(k, items[k], " sm"); }).join("") + "</div>"; }
+function cbBoostPct(kind) { try { return game && game.cbActive && game.cbActive() ? (((LIVEOPS.cb || {}).boost || {})[kind] || 0) : 0; } catch (e) { return 0; } } /* v1631 */
+function evCbHtml() { /* v1631: Welcome Back - a reward a day for the first days back + boosts */
+  var P = LIVEOPS.cb || {}, C = game.cbSync() || { d: [] }, dn = game.cbDayNow(), hk = P.hero || "kessa", B = P.boost || {};
+  var h = '<div class="evw-hd2 evw-nphd" style="background-image:url(' + evArt("banner_np") + ')">' + (evFace(hk) ? '<div class="evw-npher"><img alt="" src="' + evFace(hk) + '"><div><span>Day 7: <b>' + escapeHtml((HERO_DEFS[hk] || {}).name || hk) + " shards</b></span></div></div>" : "")
+    + '<div class="tt"><span class="k">WELCOME BACK</span><h1>' + escapeHtml(P.name || "Welcome Back") + '</h1><span class="tm">Day <b>' + Math.min(dn, P.days || 7) + "</b> of " + (P.days || 7) + ' · ⏳ <b data-evend="' + (Date.now() + game.cbMsLeft()) + '">' + evLeft(game.cbMsLeft()) + "</b></span></div></div>";
+  if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
+  var bs = []; if (B.gather > 0) bs.push(["camp", "Gather boost", "+" + B.gather + "% loot from the World map"]); if (B.valor > 0) bs.push(["newlevel", "Valor boost", "+" + B.valor + "% Valor from Conquest"]);
+  if (bs.length) h += '<div class="evw-sec" style="margin-top:12px">Boosts while it lasts</div><div class="evw-list">' + bs.map(function (x) { return '<div class="evw-t"><div class="ti">' + evKindArt(x[0]) + '</div><div class="tx"><b>' + x[1] + "</b>" + x[2] + "</div></div>"; }).join("") + "</div>";
+  h += '<div class="evw-sec" style="margin-top:12px">A reward for each day back</div><div class="evw-list">' + (P.rewards || []).map(function (r) { var got = C.d.indexOf(r.day) >= 0, lock = r.day > dn;
+    return '<div class="evw-t' + (got || lock ? " dim" : "") + '"><div class="ti" style="font:800 15px \'KS Title\',\'Lilita One\',sans-serif;color:#f0c95f">' + r.day + '</div><div class="tx"><b>Day ' + r.day + "</b>" + (lock ? "Opens on day " + r.day : got ? "Claimed" : "Ready") + evGrpLine(r.items) + "</div>" + (evGrpN(r.items) > 1 ? "" : evTileG(r.items, " sm"))
+      + (got ? '<div class="go done">✓</div>' : lock ? '<div class="go done lk">🔒</div>' : '<button type="button" class="go claim" data-evcb="' + r.day + '">Claim</button>') + "</div>"; }).join("") + "</div>";
+  return h + '<div class="evw-foot">For players coming back after ' + (P.away || 7) + " days away. A new day opens every day (UTC).</div>";
+}
 function evTileG(items, extra) { /* v1625: a reward group shows its first item + a "+N" badge; tapping a group that isn't ready lists everything in it */
   var ks = Object.keys(items || {}); if (!ks.length) return ""; var h = evTile(ks[0], items[ks[0]], extra); if (ks.length < 2) return h;
   return h.replace('<div class="evw-tile', '<div data-evgrp="' + ks.map(function (k) { return k + ":" + items[k]; }).join(",") + '" class="evw-tile').replace(/<\/div>$/, '<em class="evw-more">+' + (ks.length - 1) + "</em></div>"); }
@@ -19840,6 +19869,7 @@ function evTabs() {
   if (typeof ALLY !== "undefined" && ALLY.my && sgCfg().on !== false) t.splice(sgActive() ? 0 : 2, 0, { id: "sg", name: "Alliance Siege", icon: evArt("icon_sg") }); /* v1623 (first while a hunt is live) */
   if (game.csKey() != null) t.splice(1, 0, { id: "cs", name: "Conquest Sprint", icon: evArt("icon_cs") }); /* v1618: every second week */
   if (game.npActive()) t.unshift({ id: "np", name: "New Player", icon: evArt("icon_np") }); /* v1617: first 14 days of an account */
+  if (game.cbActive()) t.unshift({ id: "cb", name: "Welcome Back", icon: evArt("icon_np") }); /* v1631: after a long break */
   if (kaijuTestOk()) t.push({ id: "brt", name: "Boss Test", icon: evArt("icon_boss") }); /* v1602: TEST game only */
   if (game.evBRKey() != null || (EVB.prev && !EVB.prev.claimed)) t.splice(1, 0, { id: "br", name: "Boss Rush", icon: evArt("icon_boss") }); /* v1599: Tue-Thu; v1600: stays after the run until the rank reward is claimed */
   try { ksEvLive().forEach(function (ev) { t.push({ id: "x:" + ev.id, name: ev.goal === "signin" ? "Sign-in" : ev.name, icon: evArt(ev.goal === "signin" ? "icon_signin" : "icon_medal"), ev: ev }); }); } catch (e) {}
@@ -19863,7 +19893,7 @@ function evWinRender(force) {
   EVW.sig = sig;
   var tabs = evTabs(); if (!tabs.some(function (t) { return t.id === EVW.tab; })) EVW.tab = tabs[0].id;
   var rd = game.evReady(), body = "", T = tabs.filter(function (t) { return t.id === EVW.tab; })[0];
-  if (EVW.tab === "np") body = evNpHtml(); else if (EVW.tab === "sg") body = evSgHtml(); else if (EVW.tab === "sp") body = evSpHtml(); else if (EVW.tab === "cs") body = evCsHtml(); else if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else if (EVW.tab === "arena") body = evArenaHtml(); else if (EVW.tab === "ff") body = evFFHtml(); else if (EVW.tab === "br") body = evBRHtml(); else if (EVW.tab === "brt") body = evBRTestHtml(); else body = evServerHtml(T.ev);
+  if (EVW.tab === "cb") body = evCbHtml(); else if (EVW.tab === "np") body = evNpHtml(); else if (EVW.tab === "sg") body = evSgHtml(); else if (EVW.tab === "sp") body = evSpHtml(); else if (EVW.tab === "cs") body = evCsHtml(); else if (EVW.tab === "fhw") body = evFhwHtml(); else if (EVW.tab === "shop") body = evShopHtml(); else if (EVW.tab === "daily") body = evDailyHtml(); else if (EVW.tab === "arena") body = evArenaHtml(); else if (EVW.tab === "ff") body = evFFHtml(); else if (EVW.tab === "br") body = evBRHtml(); else if (EVW.tab === "brt") body = evBRTestHtml(); else body = evServerHtml(T.ev);
   var keep = ov.querySelector(".evw-body"), st = keep ? keep.scrollTop : 0;
   ov.innerHTML = '<div class="evw-top"><div class="evw-ttl">EVENTS</div><span style="flex:1"></span><button type="button" class="evw-x" data-evx="1" aria-label="Close">✕</button></div>'
     + '<div class="evw-tabs">' + tabs.map(function (t) { var dot = t.id === "np" ? rd.np : t.id === "cs" ? rd.cs : t.id === "sp" ? rd.sp : t.id === "sg" ? sgDot() : t.id === "fhw" ? rd.fhw : t.id === "daily" ? rd.daily : t.id === "ff" ? rd.ff : t.id === "br" ? rd.br + (EVB.prev && !EVB.prev.claimed ? 1 : 0) : t.id === "arena" ? rd.arena + (EVA.prev.d && !EVA.prev.d.claimed ? 1 : 0) + (EVA.prev.w && !EVA.prev.w.claimed ? 1 : 0) : t.ev ? (function () { try { return ksEvReady(t.ev, Date.now()); } catch (e) { return 0; } })() : 0;
@@ -20079,6 +20109,7 @@ function evWinClick(e) {
   if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
   if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
   if ((b = t.closest && t.closest("[data-evgrp]")) && !/\bready\b/.test(b.className)) { var gi = {}; b.getAttribute("data-evgrp").split(",").forEach(function (x) { var p = x.split(":"); gi[p[0]] = +p[1]; }); EVW.note = "🎁 Reward: " + evGotText(gi); evWinRender(true); return; } /* v1625 reward groups */
+  if ((b = t.closest && t.closest("[data-evcb]"))) { var cbr = game.cbClaim(+b.getAttribute("data-evcb")); if (cbr.ok) evDone("Day " + b.getAttribute("data-evcb") + ": " + evGotText(cbr.got)); evWinRender(true); return; } /* v1631 */
   if ((b = t.closest && t.closest("[data-galogin]"))) { gemAct("login"); if (!ksFb()) { persist(); evWinRender(true); } return; } /* v1628 */
   if (t.closest && evArenaClick(t)) return; /* v1594 */
   if ((b = t.closest && t.closest("[data-sgrally]"))) { if (sgActive()) sgCall("siegeRally", { hid: SG.hid }); return; } /* v1623 Alliance Siege */
@@ -20222,7 +20253,7 @@ setInterval(function () { try { evPaySync(); } catch (e) {} }, 60000);
 function evLiveopsSubscribe() {
   if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
-    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */, sg: d.sg && d.sg.personal ? d.sg : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sg)) /* v1623 */, ga: d.ga && d.ga.monster ? d.ga : null /* v1628 */, items: d.items && typeof d.items === "object" ? d.items : { off: false, phone: [] } /* v1625 who pays each reward item */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */, sg: d.sg && d.sg.personal ? d.sg : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sg)) /* v1623 */, ga: d.ga && d.ga.monster ? d.ga : null /* v1628 */, cb: d.cb && d.cb.rewards ? d.cb : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cb)) /* v1631 */, items: d.items && typeof d.items === "object" ? d.items : { off: false, phone: [] } /* v1625 who pays each reward item */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
     evWinRender(true); }, function () {}); }).catch(function () {});
 }
 setTimeout(evLiveopsSubscribe, 4000);

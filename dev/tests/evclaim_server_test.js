@@ -27,5 +27,12 @@ const assert = require("assert");
   out.login = [(await go("claimGemAct", "p3", { act: "login" })).data.added, (await go("claimGemAct", "p3", { act: "login" })).data.added]; assert.deepStrictEqual(out.login, [300, 0]);
   out.rallyDirect = (await go("claimGemAct", "p3", { act: "rally" })).error.message;
   out.p3wallet = store[R + "players/p3/wallet/main"].gems; assert.strictEqual(out.p3wallet, 600);
+  // v1631 Welcome Back: back after 8 days -> touch starts it; day 1 pays, day 2 not yet
+  store[R + "players/p4/meta/account"] = { createdAt: Date.now() - 90 * 86400e3, lastSeen: Date.now() - 8 * 86400e3 };
+  const tc = (await go("touch", "p4", {})).data; out.cbStart = tc.cb; assert.ok(tc.cb && tc.cb.start === Math.floor(Date.now() / 86400000));
+  out.cbAgain = (await go("touch", "p4", {})).data.cb; assert.deepStrictEqual(out.cbAgain, tc.cb, "stays on later visits");
+  out.cb1 = (await go("claimEv", "p4", { src: "cb", k: tc.cb.start, ref: "d:1" })).data; assert.strictEqual(out.cb1.added, 300);
+  out.cb2 = (await go("claimEv", "p4", { src: "cb", k: tc.cb.start, ref: "d:2" })).error.message;
+  out.cbNot = (await go("claimEv", "p3", { src: "cb", k: tc.cb.start, ref: "d:1" })).error.message;
   console.log(JSON.stringify(out, null, 1)); console.log("evclaim server test passed");
 })().catch((e) => { console.error(e); process.exit(1); });

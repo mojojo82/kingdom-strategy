@@ -526,11 +526,12 @@ exports.siegeClaim = wrap(async (req, uid, R, d) => {
 // ---- account dates ----
 // "Account created" and "last seen" only. No IPs, devices or sessions. Called by the game once per session (and at most hourly).
 exports.touch = wrap(async (req, uid, R) => {
-  const ref = db.doc(R + "players/" + uid + "/meta/account"), now = Date.now();
+  const ref = db.doc(R + "players/" + uid + "/meta/account"), now = Date.now(), lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
   return db.runTransaction(async (tx) => {
     const s = await tx.get(ref), d = s.exists ? s.data() : {};
-    if (d.lastSeen && now - d.lastSeen < 10 * 60 * 1000) return { createdAt: d.createdAt, lastSeen: d.lastSeen };
-    const out = { createdAt: d.createdAt || now, lastSeen: now }; tx.set(ref, out, { merge: true }); return out;
+    if (d.lastSeen && now - d.lastSeen < 10 * 60 * 1000) return { createdAt: d.createdAt, lastSeen: d.lastSeen, cb: C.comebackCheck(d, lo.cb, now) };
+    const cb = C.comebackCheck(d, lo.cb, now); /* v1631: back after cb.away days -> Welcome Back starts today */
+    const out = { createdAt: d.createdAt || now, lastSeen: now, cb: cb || null }; tx.set(ref, out, { merge: true }); return out;
   });
 });
 
@@ -654,6 +655,7 @@ exports.claimEv = wrap(async (req, uid, R, d) => {
   const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted");
   const lo = (await liveopsConfig(R)) || C.normalizeLiveops({});
   let createdAt = null;
+  if (src === "cb") { const mt = await db.doc(base + "meta/account").get(), cb = mt.exists && mt.data().cb; createdAt = cb && cb.start != null ? cb.start : null; } /* v1631: comeback start day */
   if (src === "np") { const mt = await db.doc(base + "meta/account").get(); createdAt = (mt.exists && mt.data().createdAt) || null;
     if (!createdAt) { const sv = await db.doc(base + "save/main").get(); createdAt = (sv.exists && sv.data().startedAt) || null; } }
   return db.runTransaction(async (tx) => {

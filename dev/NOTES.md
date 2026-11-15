@@ -5192,3 +5192,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - The admin's "7-Day Sign-in" template: day 7 is now 30 shards of a picked hero + 1,000 gems. An already-saved sign-in event keeps its own day 7 - change it in the admin event editor.
 - Picker: dark navy panel, gold dashed border, hero cards on their rarity background, flat cyan Claim button.
 - Tests: unit tests 25 pass; dev/tests/pick_hero_game_test.js headless (sign-in day with the hero choice -> picker shows 4 heroes -> pick Kessa -> 1,000 gems in the wallet + 30 Kessa shards by mail, no errors).
+
+## v1631 — Welcome Back (Comeback Bonus)
+- A player who comes back after 7+ days away (server: touch compares meta.account.lastSeen; meta.cb = { start: utc day }) gets a "Welcome Back" tab first in the Events window for 7 days: a reward group for each day back (day n opens on the n-th day; 300-1,000 gems a day, speedups, tickets, books, chests, Kessa shards on days 3 and 7 = 3,600 gems total) and boosts while it runs: +50% gather (World map loot) and +50% Conquest Valor (existing multipliers gatherBonusMult / idleValorMult, nothing new).
+- Rewards are paid through claimEv (src "cb", v1625 rules: server checks the comeback period, the day, once only). "cb_shards" = shards of the Welcome Back hero.
+- Admin > Live events > "Welcome Back (Comeback Bonus)": on/off, name, days away, how long it lasts, hero, the two boosts, the reward per day (groups).
+- Art: reuses the New Player Path banner / icon for now (new art = mockup first).
+- Event tiles show 10,000+ as "20K" / "1.5M" so big amounts fit the small tiles.
+- Tests: unit tests 26 pass; server flow (back after 8 days -> touch starts it and keeps it; day 1 pays 300 gems, day 2 not yet; a player who didn't come back can't claim); dev/tests/comeback_game_test.js headless (tab first, boosts 50/50, day 1 claim = 2 speedups + 300 gems, day 2 locked, no errors); admin round trip.

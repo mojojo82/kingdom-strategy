@@ -356,4 +356,13 @@ t("v1630 hero of your choice (pick_shards) in events: allowed alone or with item
   assert.throws(() => C.resolvePickShards(ev.milestones[1].items, "", C.WK_HEROES_DEFAULT), /pick a hero/); assert.throws(() => C.resolvePickShards(ev.milestones[1].items, "gareth", C.WK_HEROES_DEFAULT), /can't be picked/);
   assert.deepStrictEqual(C.resolvePickShards({ gems: 1 }, null, []), { gems: 1 }, "no pick needed");
 });
+t("v1631 Welcome Back: detected after `away` days, day n opens on the n-th day back, cb_shards = the Welcome Back hero", () => {
+  const L = C.normalizeLiveops({}), day = 20800, now = day * 86400000 + 5000;
+  assert.deepStrictEqual(C.comebackCheck({ lastSeen: now - 8 * 86400000 }, L.cb, now), { start: day }); assert.strictEqual(C.comebackCheck({ lastSeen: now - 3 * 86400000 }, L.cb, now), null);
+  assert.strictEqual(C.comebackCheck({}, L.cb, now), null, "new account"); assert.deepStrictEqual(C.comebackCheck({ lastSeen: now, cb: { start: day - 2 } }, L.cb, now), { start: day - 2 }, "still running");
+  assert.strictEqual(C.comebackCheck({ lastSeen: now, cb: { start: day - 9 } }, L.cb, now), null, "over");
+  assert.ok(C.evClaimPlan(L, "cb", day, "d:1", { now, createdAt: day })); assert.throws(() => C.evClaimPlan(L, "cb", day, "d:2", { now, createdAt: day }), /no such reward/);
+  assert.deepStrictEqual(C.evClaimPlan(L, "cb", day, "d:7", { now: now + 6 * 86400000, createdAt: day }).items, { gems: 1000, shards_kessa: 30, item_chest_weapon: 1 });
+  assert.throws(() => C.evClaimPlan(L, "cb", day, "d:1", { now: now + 10 * 86400000, createdAt: day }), /not running/); assert.throws(() => C.evClaimPlan(L, "cb", day, "d:1", { now, createdAt: null }), /not running/);
+});
 console.log(n + " tests passed");

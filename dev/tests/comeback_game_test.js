@@ -1,0 +1,33 @@
+// v1631: Welcome Back (comeback bonus), in the real TEST game (headless, fake Firebase + local functions). node dev/tests/pick_hero_game_test.js
+const fs = require("fs"), path = require("path"), assert = require("assert");
+const ROOT = path.join(__dirname, "../..");
+const { chromium } = require(process.env.PW_PATH || "playwright");
+const C = require(path.join(ROOT, "functions/core.js")), R = C.envRoot("test");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+(async () => {
+  const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), errs = [];
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: process.env.SHOT ? 2 : 1 });
+  await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
+  await ctx.exposeFunction("__fbcall", call);
+  await ctx.route(/mojojo82\.github\.io/, require(path.join(__dirname, "siteroute.js"))(GAME));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*firebase-app-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: FAKE }));
+  await ctx.route(/gstatic\.com\/firebasejs\/.*(auth|firestore|functions)-compat\.js/, (r) => r.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+    const P = await ctx.newPage(); P.on("pageerror", (e) => errs.push(e.message));
+  await P.goto("https://mojojo82.github.io/kingdom-strategy/test/"); await P.waitForSelector("#ksAuth .box");
+  await P.fill("#ksE", "cb@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
+  await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "cb"); await P.click("#ksGo"); await P.waitForTimeout(8000);
+  const uid = await P.evaluate(() => KS_BACKEND.uid); const out = {};
+  store[R + "players/" + uid + "/meta/account"] = Object.assign({}, store[R + "players/" + uid + "/meta/account"], { lastSeen: Date.now() - 9 * 86400e3 });
+  out.cb = await P.evaluate(() => KS_BACKEND.call("touch", {}).then((r) => { KSE.cb = r.cb; return r.cb; }));
+  assert.ok(out.cb && out.cb.start > 0, "comeback detected");
+  const sp0 = await P.evaluate(() => game.state.speedups.general_1h || 0), w0 = (store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0;
+  out.tabs = await P.evaluate(() => { evWinOpen("cb"); return evTabs().map((t) => t.id).slice(0, 3); }); assert.strictEqual(out.tabs[0], "cb");
+  out.boost = await P.evaluate(() => [cbBoostPct("gather"), cbBoostPct("valor")]); assert.deepStrictEqual(out.boost, [50, 50]);
+  await P.waitForTimeout(600); if (process.env.SHOT) await P.screenshot({ path: process.env.SHOT });
+  await P.evaluate(() => document.querySelector('#evWin [data-evcb="1"]').click()); await P.waitForTimeout(2500);
+  out.sp = (await P.evaluate(() => game.state.speedups.general_1h || 0)) - sp0; out.gems = ((store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0) - w0;
+  assert.strictEqual(out.sp, 2); assert.strictEqual(out.gems, 300); out.day2 = await P.evaluate(() => !!document.querySelector('#evWin [data-evcb="2"]')); assert.strictEqual(out.day2, false, "day 2 locked");
+  out.errors = errs; console.log(JSON.stringify(out, null, 1)); assert.deepStrictEqual(errs, []); console.log("welcome back game test passed"); await b.close();
+})().catch((e) => { console.error(e); process.exit(1); });
