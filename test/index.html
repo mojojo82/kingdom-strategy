@@ -2260,6 +2260,9 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #govProfileOverlay.gp2 .gp-col.l > div:nth-child(2) { left:calc(var(--gpd)*32); top:calc(var(--gpd)*321); } #govProfileOverlay.gp2 .gp-col.l > div:nth-child(3) { left:calc(var(--gpd)*32); top:calc(var(--gpd)*461); }
   #govProfileOverlay.gp2 .gp-col.r > div:nth-child(2) { left:calc(var(--gpd)*738); top:calc(var(--gpd)*321); } #govProfileOverlay.gp2 .gp-col.r > div:nth-child(3) { left:calc(var(--gpd)*738); top:calc(var(--gpd)*461); }
   #govProfileOverlay.gp2 .gp-cards { z-index:7; }
+  #govProfileOverlay .gp-showbtn { color:#fff !important; -webkit-text-stroke:1.2px #143847; paint-order:stroke fill; } /* v1652: white text */
+  #govProfileOverlay .gp-card .art.gp-q { display:flex; align-items:center; justify-content:center; color:#fff; opacity:.25; font-family:"Lilita One",var(--bodyfont); font-size:calc(var(--gpd)*96); }
+
   #govProfileOverlay.gp2 .gp-showbtn { pointer-events:auto !important; left:auto; right:calc(var(--gpd)*30); top:calc(var(--gpd)*655); bottom:auto; font-size:calc(var(--gpd)*27); padding:calc(var(--gpd)*7) calc(var(--gpd)*18); border-radius:calc(var(--gpd)*16); z-index:8; } /* v1651 */
   #govProfileOverlay.gp2 .gp-card, #govProfileOverlay.gp2 .gp-card.empty { position:absolute; top:calc(var(--gpd)*719); width:calc(var(--gpd)*154); height:calc(var(--gpd)*162); margin:0; border:0; border-radius:0; box-shadow:none; overflow:visible; background:var(--gp2-card-frame) 0 0/100% 100% no-repeat; pointer-events:auto; }
   #govProfileOverlay.gp2 .gp-card:nth-child(1) { left:calc(var(--gpd)*70); } #govProfileOverlay.gp2 .gp-card:nth-child(2) { left:calc(var(--gpd)*226); } #govProfileOverlay.gp2 .gp-card:nth-child(3) { left:calc(var(--gpd)*382); } #govProfileOverlay.gp2 .gp-card:nth-child(4) { left:calc(var(--gpd)*538); } #govProfileOverlay.gp2 .gp-card:nth-child(5) { left:calc(var(--gpd)*694); }
@@ -3542,7 +3545,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     <div id="gpGovWrap"></div>
     <div class="gp-cards" id="gpCards"></div>
     <button class="gp-skinbtn" id="gpSkinBtn">Fortress Skin</button>
-    <button class="gp-showbtn" id="gpShowBtn" type="button">🃏 Cards</button>
+    <button class="gp-showbtn" id="gpShowBtn" type="button">Cards</button>
   </div>
   <div class="gp-panel">
     <div class="gp-row">
@@ -14142,7 +14145,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1651"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1652"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -34245,13 +34248,13 @@ function renderGovProfile() {
   if (cardsEl) {
     cardsEl.innerHTML = "";
     var eq = Array.isArray(st.equippedCards) ? st.equippedCards : [], showM = st.profileShow || "cards"; /* v1651: cards / heroes / hidden */
-    var sb = document.getElementById("gpShowBtn"); if (sb) sb.textContent = showM === "heroes" ? "🦸 Heroes" : showM === "hidden" ? "🙈 Hidden" : "🃏 Cards";
+    var sb = document.getElementById("gpShowBtn"); if (sb) sb.textContent = showM === "heroes" ? "Heroes" : showM === "hidden" ? "Hidden" : "Cards";
     if (showM === "heroes") eq = (st.conquestRoster || []).slice(0, 5).map(function (k) { return { hero: k }; }); else if (showM === "hidden") eq = [];
     for (var ci = 0; ci < CARD_EQUIP_MAX; ci++) {
       var cd = document.createElement("div");
       if (ci < eq.length && eq[ci] && eq[ci].hero) {
-        var hArt = getHeroArt(eq[ci].hero); cd.className = "gp-card gp-hero";
-        var hEl = document.createElement("div"); hEl.className = "art"; if (hArt) hEl.style.backgroundImage = "url('" + hArt + "')"; else hEl.textContent = (HERO_DEFS[eq[ci].hero] || {}).icon || "🦸";
+        var hArt = getHeroArt(eq[ci].hero); cd.className = "gp-card gp-hero r-" + ((HERO_DEFS[eq[ci].hero] || {}).rarity || "Rare"); /* v1652: rarity colour behind the portrait */
+        var hEl = document.createElement("div"); hEl.className = "art"; var hBg = (typeof HC_RARITY_BG !== "undefined" && HC_RARITY_BG[(HERO_DEFS[eq[ci].hero] || {}).rarity]) || "linear-gradient(180deg,#4f8fd9,#2f5fa3)"; hEl.style.backgroundImage = hArt ? "url('" + hArt + "'), " + hBg : hBg; if (!hArt) hEl.textContent = (HERO_DEFS[eq[ci].hero] || {}).icon || "🦸";
         cd.appendChild(hEl);
       } else if (ci < eq.length) {
         var cIdx = eq[ci], cArt = getCardArt(cIdx);
@@ -34259,7 +34262,7 @@ function renderGovProfile() {
         var artEl = document.createElement("div"); artEl.className = "art";
         if (cArt) artEl.style.backgroundImage = "url('" + cArt + "')"; else artEl.textContent = "🃏";
         cd.appendChild(artEl);
-      } else cd.className = "gp-card empty";
+      } else { cd.className = "gp-card empty"; if (showM === "hidden") { var qm = document.createElement("div"); qm.className = "art gp-q"; qm.textContent = "?"; cd.appendChild(qm); } } /* v1652: hidden = a faint ? in each slot */
       cardsEl.appendChild(cd);
     }
   }

@@ -5304,3 +5304,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Overlord profile: a small cyan button above the 5 slots cycles what they show - 🃏 Cards (equipped cards, as before) -> 🦸 Heroes (your Conquest heroes' portraits) -> 🙈 Hidden (5 empty slots). Saved per player (state.profileShow).
 - Crawler B / C were missing their treads in the Fortress Skin list (and on the profile ship): those skins keep the treads as a separate moving layer. skinStillImg() bakes hull + treads (frame 0) into one still picture once, used by the skin list and the profile.
 - Headless: all three modes, button taps reach it (elementFromPoint), skin list shows the treads, no errors. art/originals/screens/profile_show_modes_v1651.png, skin_list_crawler_v1651.png.
+
+## v1652 — profile slot toggle polish
+- Harley: toggle button text is white (dark outline), no emoji icons ("Cards / Heroes / Hidden"); Hidden shows a faint ? in each slot; hero portraits sit on their rarity colour (the hero card gradients: Rare blue, Epic purple, Legendary gold) instead of the bare slot.
