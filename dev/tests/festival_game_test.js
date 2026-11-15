@@ -20,7 +20,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForSelector("#ksN", { timeout: 15000 }); await P.fill("#ksN", "fs"); await P.click("#ksGo"); await P.waitForTimeout(8000);
   const uid = await P.evaluate(() => KS_BACKEND.uid); const out = {};
   const today = Math.floor(Date.now() / 86400000);
-  const FS = { on: true, list: [{ id: "testfest", name: "Test Festival", start: today - 1, end: today + 5, pts: { kill: 2, arena: 20, camp: 15, monster: 15, ticket: 3, build: 10, newlevel: 30 }, ms: [{ at: 30, items: { gems: 200, speedup_general_1h: 2 } }, { at: 5000, items: { gems: 2500 } }] }] };
+  const FS = { on: true, list: [{ id: "testfest", name: "Winter Festival", art: "winter", start: today - 1, end: today + 5, pts: { kill: 2, arena: 20, camp: 15, monster: 15, ticket: 3, build: 10, newlevel: 30 }, ms: [{ at: 30, items: { gems: 200, speedup_general_1h: 2 } }, { at: 5000, items: { gems: 2500 } }] }] };
   store[R + "config/liveops"] = C.normalizeLiveops({ fs: FS });
   await P.evaluate((FS) => { LIVEOPS.fs = FS; game.evAct("arena", 2); evWinOpen("fs"); }, FS); await P.waitForTimeout(800);
   out.tab = await P.evaluate(() => evTabs()[0].id); assert.strictEqual(out.tab, "fs", "festival tab first while it runs");

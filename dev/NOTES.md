@@ -5239,3 +5239,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1638 — server deploy fix (account dates)
 - The server deploy for v1631-v1637 stopped at its end-to-end test "account dates: only the two dates are stored": touch (v1631 Welcome Back) wrote cb: null into players/<uid>/meta/account for everyone. Now cb is only written while a player has a comeback running; touch still returns cb (null when none). Nothing else changed - all the v1631-v1637 server functions go out with this deploy.
 - Also banked the art candidates (art/originals/events/welcomeback, festival) - not in the game until Harley picks.
+
+## v1639 — new banners in (Harley: "Good to go")
+- Welcome Back tab: new banner art/events/banner_wb.webp (option A, the gate with the red carpet; option B kept in art/originals/events/welcomeback/).
+- Seasonal Festivals: each festival can have a banner (admin > Seasonal Festivals > Banner: none / Winter / Lunar; server field fs.list[].art). Winter Festival and Lunar Festival use art/events/banner_fs_winter.webp / banner_fs_lunar.webp (title on the banner like the other events); none = the plain box as before.
+- Originals (1536x1024) in art/originals/events/welcomeback and festival; game copies 1000x667 WebP.
+- Tests: unit tests 30 pass; headless Welcome Back and festival tabs show the banners, no errors.
