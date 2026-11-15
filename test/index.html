@@ -5833,6 +5833,7 @@ var TROOP_TIER_TIME_MULT = 1.19; /* v1181: no longer used for training (Kingshot
 /* v1181 (Harley): Kingshot's base training time per troop by tier, the same for all three types (kingshotlab.com database, from kingshotcalculator.net;
    matches Harley's screenshot: 300 Tier VI archers = 5:00:00 before bonuses). Building level / research bonuses still apply on top as before. */
 var TROOP_TIER_TRAIN_SEC = [0, 12, 17, 24, 32, 44, 60, 60, 60, 120, 120];
+var ARENA_MELEE_BASIC_SKIPS_RANGED = false; /* what-if switch (off): melee basic attacks skip ranged heroes */
 var PROMOTE_MIN_TIME_SHARE = 0.3; /* v1640: promoting always takes at least 30% of the new tier's training time */
 var PROMOTE_UNLOCK_LEVEL = 13; /* v1182: Kingshot - troop promotion unlocks with Barracks/Range/Stable Lv 13 */
 function troopKey(type, tier) { return tier <= 1 ? type : type + "_t" + tier; }
@@ -38016,9 +38017,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // all the way over if there is none; a KO'd hero is parked back home (d = 0).
   var posMode = !!(pHH && aHH && shared), ARENA_REACH = 0.04, infStep = 0.5 / (ARENA_ENGAGE_TICKS * dtS) * dtS;
   var skTgt = {}, hitTgt = {}, rangedPctLocal = (opts.rangedPct != null ? opts.rangedPct : koCfg.rangedPct), ARENA_RANGED_RANGE = 0.62, rAcc = {};
-  function pickMeleeTarget(me, oh) {
+  function pickMeleeTarget(me, oh, basic) {
     var best = null;
-    oh.list.forEach(function (o) { if (o.ko || o.air) return; /* v1514: a hero in the air can't be reached by a sword */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
+    oh.list.forEach(function (o) { if (o.ko || o.air) return; /* v1514: a hero in the air can't be reached by a sword */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
     if (best) return { hero: best };
     return me.d >= 1 - ARENA_REACH ? { fort: true } : null;
   }
@@ -38060,7 +38061,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     o.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
     if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); return blocked; }
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
-    var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh); }) : null;
+    var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh, !tag); }) : null; /* no tag = a basic attack */
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
     var e = t.hero; if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
