@@ -78,6 +78,10 @@ const KINGDOM = `
       match /world/{d} { allow read, write: if signedIn(); }
       // ---- v1080: bases by map patch (50x50 tiles), kept in step with cities by the server only ----
       match /patches/{d} { allow read: if signedIn(); allow write: if false; }
+      match /arenalb/{per}/p/{pid} { allow read: if signedIn(); allow write: if false; } // v1594 Arena leaderboards (server writes)
+      match /bosslb/{per}/p/{pid} { allow read: if signedIn(); allow write: if false; } // v1600 Boss Rush leaderboard (server writes)
+      match /siege/{aid} { allow read: if signedIn(); allow write: if false; } // v1623 Alliance Siege (server writes)
+      match /siege/{aid}/{sub}/{d} { allow read: if signedIn(); allow write: if false; }
 `;
 const KBODY = KINGDOM + "\n      match /servers/{sid} {" + KINGDOM.replace(/^      /gm, "        ") + "      }\n";
 
