@@ -21,12 +21,12 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   await P.waitForTimeout(3000);
   if (process.env.SKIPR) await P.evaluate(() => { ARENA_MELEE_BASIC_SKIPS_RANGED = true; });
   if (process.env.NOCRIT) await P.evaluate(() => { fortressCritRoll = function () { return 1; }; }); if (process.env.NOSTAGGER) await P.evaluate(() => { worldPvpSeededRng = function () { return function () { return 0; }; }; });
-  await P.evaluate((p) => { window.__POOL = p; }, process.env.POOL || ""); await P.evaluate((ex) => { window.__EXCL = ex; }, process.env.EXCL || "hanzo,ironlily"); if (process.env.OLDARENA) await P.evaluate(() => { ARENA_BASIC_MULT_ON = false; });
+  await P.evaluate((f) => { window.__FORT = f; }, +(process.env.FORT || 1)); await P.evaluate((p) => { window.__POOL = p; }, process.env.POOL || ""); await P.evaluate((ex) => { window.__EXCL = ex; }, process.env.EXCL || "hanzo,ironlily"); if (process.env.OLDARENA) await P.evaluate(() => { ARENA_BASIC_MULT_ON = false; });
   if (process.env.MULT) await P.evaluate((m) => { ARENA_MELEE_ATK_MULT = m; }, +process.env.MULT);
   const r = await P.evaluate(() => {
     const EX = (window.__EXCL || "hanzo,ironlily").split(","), H = Object.keys(HERO_DEFS).filter((k) => !HERO_DEFS[k].comingSoon && EX.indexOf(k) < 0), hs = {};
     H.forEach((k) => { hs[k] = { owned: true, level: 80, stars: 25, skillLevels: { conquest: [5, 5, 5], expedition: [5, 5, 5] } }; });
-    const T = FORTRESS1_TREE, F1 = {}; Object.keys(T).forEach((k) => { F1[k] = T[k].maxLevel; });
+    const FT = window.__FORT || 1, T = FT === 3 ? FORTRESS3_TREE : FT === 2 ? FORTRESS2_TREE : FORTRESS1_TREE, F1 = FT > 1 ? { _type: FT } : {}; Object.keys(T).forEach((k) => { F1[k] = T[k].maxLevel; });
     const mk = (ros, isP, bx) => { const st = arenaSideStats(ros, hs, 20, arenaBaseHpPlayer, false, null, F1, undefined, bx ? { atk: bx, hp: bx, def: 0, skill: bx } : ZERO_BONUS); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, ros.indexOf(e.id), isP); }); return st; };
     const kit = (lv) => { if (!lv) return { specs: [], shieldPct: 0, salvo: null }; const m = {}; ["missile_barrage", "laser_beam", "railgun"].forEach((id) => { m[id] = lv; }); return botWeaponsToSim(m); };
     const fight = (a, b, ka, kb, seed, xa, xb) => { const sim = arenaMakeSim(mk(a, true, xa), mk(b, false, xb), { rng: worldPvpSeededRng(seed), critSeed: seed, weapons: ka.specs, aiWeapons: kb.specs, shieldPct: ka.shieldPct, aiShieldPct: kb.shieldPct, salvoP: ka.salvo, salvoA: kb.salvo }); const w = sim.runToEnd(); return w === "player" ? 1 : w === "ai" ? 0 : 0.5; };
