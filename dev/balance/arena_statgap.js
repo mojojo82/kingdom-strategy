@@ -34,9 +34,9 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     let rs = 12345; const rnd = () => { rs = (rs * 1103515245 + 12345) % 2147483648; return rs / 2147483648; };
     const probe = arenaSideStats(H, hs, 20, arenaBaseHpPlayer, false, null, null, undefined, ZERO_BONUS), inf = {}; (probe.heroHp || []).forEach((e) => { inf[e.id] = !!e.infantry; }); const POOL = window.__POOL === "melee" ? H.filter((k) => inf[k]) : window.__POOL === "ranged" ? H.filter((k) => !inf[k]) : H;
     const team = () => { const a = POOL.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, 5); };
-    const out = {}, T = []; for (let i = 0; i < 30; i++) T.push(team());
-    [0, 5, 10, 15, 20, 25, 30, 40, 50].forEach((x) => { let w = 0, n = 0, teams90 = 0; T.forEach((t, i) => { let tw = 0; for (let sd = 0; sd < 10; sd++) { tw += fight(t, t, kit(0), kit(0), "G" + i + "_" + sd, x, 0); tw += 1 - fight(t, t, kit(0), kit(0), "H" + i + "_" + sd, 0, x); } w += tw; n += 20; if (tw >= 18) teams90++; });
-      out["plus" + x + "pct"] = { strongerSideWins: Math.round(100 * w / n), teamsAt90plus: Math.round(100 * teams90 / T.length) }; });
+    const out = {}, TM = []; for (let i = 0; i < 30; i++) TM.push(team());
+    [0, 5, 10, 15, 20, 25, 30, 40, 50].forEach((x) => { let w = 0, n = 0, teams90 = 0; TM.forEach((t, i) => { let tw = 0; for (let sd = 0; sd < 10; sd++) { tw += fight(t, t, kit(0), kit(0), "G" + i + "_" + sd, x, 0); tw += 1 - fight(t, t, kit(0), kit(0), "H" + i + "_" + sd, 0, x); } w += tw; n += 20; if (tw >= 18) teams90++; });
+      out["plus" + x + "pct"] = { strongerSideWins: Math.round(100 * w / n), teamsAt90plus: Math.round(100 * teams90 / TM.length) }; });
     return out;
   });
   console.log(JSON.stringify(r, null, 1), "\nerrs", JSON.stringify(errs.slice(0, 3)));
