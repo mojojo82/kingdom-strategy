@@ -27,3 +27,7 @@ All Atlas clips: art/originals/heroes/ironlily/redo/clips/ (H3 Max, 5 s, Image =
 - Animation: clip A itself can't be used (its baked trails can't be made to match). Best so far: A-redo 2 (lily_flurryA2_2) played 1.5x and twice ("previous one was better" than 2x / 3 times).
 - measure_swings.py now also TRACKS the blade tip and fits each swing's own arc (SWINGS_A22T): slashes sit on her real blade path, not round her chest.
 - **PICKED (Harley 15 Nov): the TRACKED version** (lily_skill_fx_v9_tracked.mp4, right side): A-redo 2 at 1.5x played twice, painted slashes on her real blade path (SWINGS_A22T). v10 = same with all 19 shapes from 3 sheets.
+
+## Balance verdict (Harley 15 Nov, v1615): "Lily is an absolute monster but Hanzo still dices her" - OK as is for now.
+- Best melee teams with Lily vs the 3 best ranged teams: 100% (without her 40-80%). 5 ranged vs 5 melee with her: melee 98%.
+- Hanzo + 4 vs Lily + the same 4 (all 15 teammate sets, 300 fights): Hanzo's team 300-0. Duels: Hanzo 100, Lily 87, Roran 78, Kessa 68.
