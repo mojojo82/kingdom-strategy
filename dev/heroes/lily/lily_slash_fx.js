@@ -34,6 +34,9 @@
     [44, 48, 159, 359, 370], [52, 58, 12, -191, 320], [61, 63, -96, -147, 180], [64, 67, -73, 21, 430], [69, 74, 21, -198, 390], [76, 81, 170, 376, 370]];
   var SWINGS_L2 = [[19, 23, -171, 35, 290], [28, 32, 22, -192, 330], [38, 42, 165, 383, 350], [46, 51, 11, -203, 320], [57, 60, 158, 345, 370], [60, 63, 345, 529, 280],
     [63, 67, 529, 727, 330], [67, 69, 727, 780, 250], [72, 75, 5, -182, 340], [75, 76, -182, -218, 290], [80, 81, -104, -185, 160], [82, 85, -152, 11, 350]];
+  /* A-redo 2 TRACKED: each swing on her real blade path - [f0, f1, a0, a1, r, centreX, centreY] (centre = offset from her chest, clip px) */
+  var SWINGS_A22T = [[3, 6, 144, -31, 350, -28, -69], [6, 10, -31, -229, 320, -17, -76], [12, 15, 144, 349, 310, 51, -57], [15, 16, 344, 382, 390, 0, 0], [18, 23, 3, -202, 360, -27, 39],
+    [23, 26, 133, -30, 380, -57, -126], [26, 30, -44, -225, 340, 4, -74], [32, 35, -61, -220, 310, -83, -44], [38, 41, -9, 119, 270, 52, -151], [41, 45, 155, 306, 280, 169, -41]];
   var SWINGS = SWINGS_A;
   var OVER = 1.18;    /* oversize the measured radius */
   var WIDTH = 0.30;   /* max crescent thickness as a share of its radius */
@@ -218,8 +221,8 @@
   var USE = [0, 1, 2, 3, 5, 6];
   function pickSprite(sw, idx, sprites) {
     var span = Math.abs(sw[3] - sw[2]), best = -1, bd = 1e9;
-    for (var j = 0; j < USE.length; j++) { var m = sprites[USE[j]] && sprites[USE[j]].meta; if (!m) continue;
-      var d = Math.abs(m.span - span) + 40 * rnd(idx * 17 + j); if (d < bd) { bd = d; best = USE[j]; } }   /* a little variety */
+    for (var j = 0; j < sprites.length; j++) { var m = sprites[j] && sprites[j].meta; if (!m || m.ok === false) continue;   /* ok = clean arc (cut_slashes.py) */
+      var d = Math.abs(m.span - span) + 40 * rnd(idx * 17 + j); if (d < bd) { bd = d; best = j; } }   /* closest length, a little variety */
     return sprites[best];
   }
   function slashSprite(ctx, sw, idx, t, ox, oy, k, st, sprites) {
@@ -237,7 +240,8 @@
     var dx = st.detach ? Math.cos(mid) * (off - Rt * 0.45) : 0, dy = st.detach ? Math.sin(mid) * (off - Rt * 0.45) : 0;
     var A = 1 - sm(0.3, 1, fade), rev = easeOut(p);
     var tailA = endA - dir * sspan, headA = tailA + dir * sspan * rev;       /* revealed part: tail .. current head */
-    ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * 0.9); ctx.translate(dx, dy);
+    var trk = sw.length > 5;                                                   /* tracked swing: its own arc centre (offset from her chest), real shape */
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(k, k * (trk ? 1 : 0.9)); if (trk) ctx.translate(sw[5], sw[6]); ctx.translate(dx, dy);
     ctx.globalAlpha = A;
     if (rev < 0.999) {                                                         /* angular wipe (wedge from the tail to the head) */
       var big = Rt * 3, n = 24; ctx.beginPath(); ctx.moveTo(0, 0);
@@ -250,7 +254,7 @@
   }
   /* seed: shifts which painted slash / tilt each swing gets (used when the flurry is replayed, so the 2nd pass looks different) */
   function draw(ctx, t, ox, oy, k, swings, st, seed) { swings = swings || SWINGS; seed = seed || 0; for (var i = 0; i < swings.length; i++) { if (st && st.painted) slashSprite(ctx, swings[i], i + seed, t, ox, oy, k, st, st.sprites || api.sprites); else (st && st.flat ? slashFlat : slash)(ctx, swings[i], i + seed, t, ox, oy, k, st); } }
-  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], SWINGS_A21: SWINGS_A21, CHEST_A21: [610, 506], SWINGS_A22: SWINGS_A22, CHEST_A22: [610, 506], SWINGS_L1: SWINGS_L1, CHEST_L1: [610, 506], SWINGS_L2: SWINGS_L2, CHEST_L2: [610, 506], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
+  var api = { draw: draw, SWINGS: SWINGS, SWINGS_A: SWINGS_A, SWINGS_C: SWINGS_C, CHEST_A: [570, 510], CHEST_C: [610, 505], SWINGS_C2: SWINGS_C2, CHEST_C2: [610, 505], SWINGS_A21: SWINGS_A21, CHEST_A21: [610, 506], SWINGS_A22: SWINGS_A22, CHEST_A22: [610, 506], SWINGS_L1: SWINGS_L1, CHEST_L1: [610, 506], SWINGS_A22T: SWINGS_A22T, CHEST_A22T: [610, 506], SWINGS_L2: SWINGS_L2, CHEST_L2: [610, 506], ATTACHED: ATTACHED, DETACHED: DETACHED, FLAT: FLAT, FLAT_DETACHED: FLAT_DETACHED, PAINTED: PAINTED, PAINTED_DETACHED: PAINTED_DETACHED, sprites: [] };
   if (typeof window !== "undefined") window.LILY_SLASH = api;
   if (typeof module !== "undefined") module.exports = api;
 })();

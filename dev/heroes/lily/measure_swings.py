@@ -9,7 +9,7 @@ def load(p): return np.asarray(Image.open(p).convert('RGB')).astype(int)
 a0 = load(fr[0]); fg = ~((a0[..., 1] > a0[..., 0] + 50) & (a0[..., 1] > a0[..., 2] + 50)); ys, xs = np.nonzero(fg)
 cx, cy = (xs.min() + xs.max()) / 2 + 40, (ys.min() + ys.max()) / 2 - 25
 print('chest', round(cx), round(cy))
-prev, seq = None, []
+prev, seq, tips = None, [], {}
 for i, p in enumerate(fr[:F1 + 1]):
     a = load(p); r, g, b = a[..., 0], a[..., 1], a[..., 2]; fx = (r > 150) & (r > g + 30) & (b < 150)
     if prev is not None and i >= F0:
@@ -18,6 +18,7 @@ for i, p in enumerate(fr[:F1 + 1]):
             rad = np.hypot(yy - cy, xx - cx); k = rad > np.percentile(rad, 75); ang = np.arctan2(yy[k] - cy, xx[k] - cx)
             m = np.degrees(np.arctan2(np.sin(ang).mean(), np.cos(ang).mean())); conc = np.cos(ang - np.radians(m)).mean()
             if conc > 0.75: seq.append((i, float(m), float(np.percentile(rad[k], 60))))
+            k2 = rad > np.percentile(rad, 85); tips[i] = (float(xx[k2].mean()), float(yy[k2].mean()))   # blade tip = leading edge, far end
     prev = fx
 # group into swings: unwrap, same turning direction, steps 6..140 deg, no frame gaps > 2
 sw, cur = [], []
@@ -36,3 +37,22 @@ for (f, ang, rr) in seq:
     else: cur = [(f, ang, rr)]
 close()
 print('swings', len(sw)); print(sw)
+# TRACKED: refit every swing on her real blade path - circle through the tip positions of its frames (own centre + radius)
+def fit(pts):
+    P = np.array(pts); M = np.c_[P[:, 0], P[:, 1], np.ones(len(P))]; bb = (P ** 2).sum(1)
+    sol = np.linalg.lstsq(M, bb, rcond=None)[0]; x0, y0 = sol[0] / 2, sol[1] / 2; return x0, y0, float(np.sqrt(max(1, sol[2] + x0 ** 2 + y0 ** 2)))
+out = []
+for f0, f1, a0_, a1_, r_ in sw:
+    pts = [tips[f] for f in range(f0, f1 + 1) if f in tips]
+    row = [f0, f1, a0_, a1_, r_, 0, 0]
+    if len(pts) >= 3:
+        x0, y0, R = fit(pts)
+        if 140 <= R <= 650 and np.hypot(x0 - cx, y0 - cy) <= 260:
+            dirn = 1 if a1_ > a0_ else -1
+            angs = [np.degrees(np.arctan2(py - y0, px - x0)) for px, py in pts]
+            un = [angs[0]]
+            for v in angs[1:]: un.append(un[-1] + ((v - un[-1] + 180) % 360 - 180))
+            if (un[-1] - un[0]) * dirn > 25:      # the fit turns the same way and far enough
+                row = [f0, f1, round(un[0]), round(un[-1]), int(round(R * 1.05 / 10) * 10), round(x0 - cx), round(y0 - cy)]
+    out.append(row)
+print('tracked', len(out)); print(out)

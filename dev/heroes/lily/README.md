@@ -20,3 +20,9 @@ All Atlas clips: art/originals/heroes/ironlily/redo/clips/ (H3 Max, 5 s, Image =
   wisps, tip flare, sparks (Harley: realistic like his reference, not flat 2D).
 - Mockups: dev/heroes/lily/skill_mock.js (+ key_soft.py for see-through glow); videos lily_skill_fx_v1_AC.mp4, lily_skill_fx_v2.mp4.
 - Crimson Oath: either becomes skill 2 or gets replaced (Harley, undecided).
+
+## Painted slashes (picked look, 15 Nov)
+- Harley: "this is the exact look" - ChatGPT hand-drawn anime slashes: sheets art/originals/heroes/ironlily/redo/fx/lily_slash_sheet_v1.png (mixed), v2 (wide/flat + tight half-moons). Sheet 3 (quick flicks + near-full circles) is drawn in the same ChatGPT chat ("Game VFX Sprite Sheet") but not downloaded yet (computer went offline).
+- cut_slashes.py OUT sheet1 sheet2 ... -> slashes/ (16 cut, 13 usable; hooks rejected automatically by the arc-fit check).
+- Animation: clip A itself can't be used (its baked trails can't be made to match). Best so far: A-redo 2 (lily_flurryA2_2) played 1.5x and twice ("previous one was better" than 2x / 3 times).
+- measure_swings.py now also TRACKS the blade tip and fits each swing's own arc (SWINGS_A22T): slashes sit on her real blade path, not round her chest.
