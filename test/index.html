@@ -6310,7 +6310,7 @@ var I18N_HERO = { ru: {
   sera: ["Сера", "Целительный свет", "Каждые 12 с лечит крепость на 8% макс. ОЗ (16% на ур. 5)."],
   torvald: ["Торвальд", "Защитная стойка", "На 5-й секунде, затем каждые 8 с даёт крепости щит в 6% макс. ОЗ (10% на ур. 5). Не суммируется."],
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
-  ironlily: ["Железная Лили", "Багровая буря", "Каждые 12 с — яростный вихрь ударов меча: тяжёлый урон всем, кто рядом (враг перед ней и ещё до 4 врагов рядом, крепости и боссы тоже) — 120%, 400% на ур. 5."],
+  ironlily: ["Железная Лили", "Багровая буря", "Каждые 12 с — яростный вихрь ударов меча: тяжёлый урон всему, до чего достаёт её меч в радиусе ударов — враги, бойцы ближнего боя, крепости и боссы (120%, 400% на ур. 5)."],
   vesper: ["Веспер Квилл", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
   aurek: ["Аурек Солмейн", "Удар солнечной кузни", "Каждые 12 с вонзает меч в землю: столбы священного огня бегут по земле в обе стороны и бьют всех врагов, включая крепость. Проекционная стена защищает от них стрелков."],
   seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
@@ -6503,10 +6503,12 @@ var HERO_DEFS = {
     /* v1410 (Harley): her kit = a melee fighter that is extremely hard to remove + team ATK leader. Text only until she is built
        (comingSoon). Blade Wall = BULLETS only (fortress cannon now, future bullet enemies/heroes), evenly spread like Shadow Step (no dice). */
     conquestSkills: [
-      /* v1614 (Harley): NEW main skill - the sword flurry ("ball of death"). Hits what is in front of her AND everything caught round her
-         (up to 4 more enemies / enemy front-line heroes) for the SAME full damage - fortresses, bosses, enemies, enemy melee heroes.
-         Existing mechanics only (Piston Slam's splash, pct 1). Visuals (painted slashes on her real swings) come with her new frames. Name is a placeholder. */
-      { name: "Crimson Tempest", icon: "🌺⚔️", kind: "active", cooldown: 12, splash: { n: 4, pct: 1.0 }, pctByLevel: [1.2, 1.7, 2.3, 3.0, 4.0], desc: "Every 12s, a chaotic, blinding flurry of sword slashes: everything caught around her takes heavy damage - the enemy she faces and up to 4 more nearby, fortress and bosses included (120%, 400% at Lv 5)." },
+      /* v1614 (Harley): NEW main skill - the sword flurry ("ball of death"). v1615 (Harley: "not enemies near - whatever is caught in the slash
+         radius from legal targets"): splash.around = NO target count - every legal target inside the slash radius takes the same full hit.
+         Arena: real positions - ground heroes (and deck heroes / the fortress) whose gap to her is within radiusPx (36 arena px ~ 1.5x her height,
+         the slash size in the picked mockup). Conquest: every enemy in melee contact at the front (bosses included); shooters at range are not caught.
+         Visuals (painted slashes on her real swings) come with her new frames. Name is a placeholder. */
+      { name: "Crimson Tempest", icon: "🌺⚔️", kind: "active", cooldown: 12, splash: { around: true, pct: 1.0, radiusPx: 36 }, pctByLevel: [1.2, 1.7, 2.3, 3.0, 4.0], desc: "Every 12s, a chaotic, blinding flurry of sword slashes: everything her sword can reach inside the slash radius takes heavy damage - enemies, enemy melee heroes, fortresses and bosses (120%, 400% at Lv 5)." },
       { disabled: true /* v1614 (Harley): switched OFF - was her main skill; may come back as skill 2 or be replaced */, name: "Crimson Oath", icon: "🌺📣", kind: "active", support: "oath", cooldown: 12, buffPctByLevel: [0.20, 0.25, 0.30, 0.35, 0.40], buffSec: 4, desc: "Every 12s, rallies the team: all heroes get +20% ATK for 4s (+40% at Lv 5)." },
       { disabled: true /* v1614 (Harley): switched OFF */, name: "Blade Wall", icon: "🗡️🛡️", kind: "passive", blockPctByLevel: [0, 0, 0, 0, 0], desc: "Parries bullets fired at her in a flurry of sword blocks: blocks 20% of them (60% at Lv 5), evenly - every 5th bullet at 20%, every 2nd at 50%." }
       /* v1614 (Harley): Iron Will (own DEF +8..25% - a skill a stat could do) DELETED */
@@ -9748,7 +9750,11 @@ function createGame(opts) {
           (state.idle.skillHitLog || (state.idle.skillHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.skillHitLog.push({ key: key, id: front.id }); // which enemy the skill hit, for the visuals
           var skHit = front; front = front0;
           if (skill1.splash) { /* v1476: Juno's Scrap Cannon - the next enemies in the line behind the one it hit take pct of the hit; Salvage: each enemy it finishes off brings her next shot sooner */
-            var spl = state.idle.enemies.filter(function (e0) { return e0 !== skHit && e0.hp > 0; }).slice(0, skill1.splash.n), spKill = skHit.hp <= 0 ? 1 : 0;
+            var rxm = skill1.splash.around && Date.now() - idleMeleeReach.t < 1500 && idleMeleeReach.map ? idleMeleeReach.map["#x"] : null, rx0 = rxm ? rxm[skHit.id] : null;
+            var rRad = (skill1.splash.radiusPx || 36) * ((idleMeleeReach.map && idleMeleeReach.map["#k"]) || 1);
+            var spl = skill1.splash.around /* v1615: Crimson Tempest - every enemy inside the slash radius around the one she strikes (screen positions from the drawing); no report = enemies in melee contact */
+              ? state.idle.enemies.filter(function (e0) { return e0 !== skHit && e0.hp > 0 && (rx0 != null ? rxm[e0.id] != null && Math.abs(rxm[e0.id] - rx0) <= rRad : e0.arrived && (e0.engaged || e0.type === "boss")); })
+              : state.idle.enemies.filter(function (e0) { return e0 !== skHit && e0.hp > 0; }).slice(0, skill1.splash.n), spKill = skHit.hp <= 0 ? 1 : 0;
             spl.forEach(function (e0) { var sd = skDmgE * skill1.splash.pct; e0.hp -= sd * idleMarkMult(e0, key) * idleEnemyDefTake(e0, sd); if (e0.hp <= 0) spKill++; (state.idle.splashHitLog || (state.idle.splashHitLog = [])).length < IDLE_PROJECTILE_QUEUE_CAP && state.idle.splashHitLog.push({ key: key, id: e0.id, dmg: sd }); });
             var svS = def.conquestSkills[1]; if (svS && svS.effectType === "salvage" && spKill) state.heroCooldowns[key] -= spKill * svS.perLevel * heroSkillLevel(key, "conquest", 1);
             spl.forEach(function (e0) { if (e0.hp <= 0 && e0 !== front0) idleRemoveDeadEnemyAt(state.idle.enemies.indexOf(e0)); });
@@ -13673,7 +13679,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1614"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1615"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -25459,6 +25465,10 @@ function stepIdleAnim(dtSec, w, h) {
       });
       rm[rk] = bestId;
     });
+    /* v1615: Crimson Tempest - where every enemy really stands on screen (x) + the slash radius in screen px, so the engine can catch every
+       enemy inside the radius around the spot she strikes (a melee skill in Conquest charges at any enemy, v845) */
+    var rxs = {}; (game.state.idle.enemies || []).forEach(function (re3) { var ev3 = idleAnim.enemyById[re3.id]; if (ev3) rxs[re3.id] = ev3.x; });
+    rm["#x"] = rxs; rm["#k"] = lilySizePct / 100;
     game.setIdleMeleeTargets(rm);
   })();
   game.setIdleFrontOnScreen(!!frontVis && frontVis.x <= w - 2, game.state.idle.enemies[0] ? game.state.idle.enemies[0].id : null); // v563: lets "any range" shooters (Kessa) hold fire until the enemy is on the canvas
@@ -37432,12 +37442,18 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   }
   /* v1476: Juno's Scrap Cannon in Arena / World PvP - after the main hit (a front-line enemy hero or the fortress), up to n other standing front-line enemy heroes nearest to it
      take pct of the hit (dodge, Projection Wall, Orbit / Dome and DEF apply as for any ranged hit). Returns how many enemy heroes the shot knocked out (Salvage). */
+  var splashFort = 0; /* v1615: fortress damage from a radius splash, added by the caller */
   function splashHit(a, oh, oppStats, dmg, mainId, wasKo) {
     var kos = 0, main = mainId && mainId !== "fort" ? oh.by[mainId] : null; if (main && main.ko && !wasKo) kos++;
     if (!a.splash || !oh) return kos;
     var SX = oh === aHH ? FXS.A : FXS.P, fR = 1 - (SX.orbit || 0); SX.inst.forEach(function (i) { if (i.k === 'dome' && i.up > 0) fR *= 1 - (i.red || 0); });
-    var md = main ? main.d : 0;
-    oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry && !o.air; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n).forEach(function (o) {
+    var md = main ? main.d : 0, caught;
+    if (a.splash.around) { /* v1615: Iron Lily's Crimson Tempest - every legal target inside the slash radius, no count (ground heroes; deck heroes and the fortress when she is that close) */
+      var own = oh === aHH ? pHH : aHH, me = own && own.by[a.key], hl = me && me.runL ? me.runL[1] : 100, Rd = (a.splash.radiusPx || 36) / (2 * hl), myD = me ? me.d : 0;
+      caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && !o.air && 1 - (myD + o.d) <= Rd; });
+      if (mainId !== "fort" && 1 - myD <= Rd) splashFort += dmg * a.splash.pct;   /* the fortress front is inside the radius too */
+    } else caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry && !o.air; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n);
+    caught.forEach(function (o) {
       if (dodgePort(o)) return;
       o.hp -= dmg * a.splash.pct * fR * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1) * (o.rt != null ? o.rt : 1); /* v1521 */
       if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; kos++; }
@@ -37569,7 +37585,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.dive) { diveStart('P', a, av); return; } /* v1514: Skybreaker Slam */
         if (a.aoe && a.wave) { castEv.push('p_' + a.key); waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'P', key: a.key, name: a.name, v: av, hit: {}, fort: false, ground: a.wave.ground !== false, spd: a.wave.spd || WAVE_SPEED_FR }); return; } /* v1507: Sunforge Slam - hits what the fire reaches */
         if (a.aoe) { castEv.push('p_' + a.key); stormQ.push({ at: tick + aoeTicks(a), sd: 'P', key: a.key, name: a.name, v: av }); return; } /* v993: Shuriken Storm - he leaps first; lands HANZO_LEAP_SEC later (stormLand) */
-        if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; if (a.splash) { var kMp = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kMp && a.salvage) playerCd[a.key] -= kMp * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['p_' + a.key]; } if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } if (a.splash) { if (skTgt['p_' + a.key] == null) skTgt['p_' + a.key] = "fort"; var kP = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kP && a.salvage) playerCd[a.key] -= kP * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
+        if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) playerDmg += av; if (a.splash) { splashFort = 0; var kMp = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (splashFort) { playerDmg += splashFort; splashFort = 0; } if (kMp && a.salvage) playerCd[a.key] -= kMp * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['p_' + a.key]; } if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } if (a.splash) { if (skTgt['p_' + a.key] == null) skTgt['p_' + a.key] = "fort"; var kP = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kP && a.salvage) playerCd[a.key] -= kP * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
       }
     });
     aiStats.actives.forEach(function (a) {
@@ -37583,7 +37599,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (a.dive) { diveStart('A', a, avA); return; } /* v1514 */
         if (a.aoe && a.wave) { castEv.push('a_' + a.key); waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'A', key: a.key, name: a.name, v: avA, hit: {}, fort: false, ground: a.wave.ground !== false, spd: a.wave.spd || WAVE_SPEED_FR }); return; } /* v1507 */
         if (a.aoe) { castEv.push('a_' + a.key); stormQ.push({ at: tick + aoeTicks(a), sd: 'A', key: a.key, name: a.name, v: avA }); return; } /* v993 */
-        if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; if (a.splash) { var kMa = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kMa && a.salvage) aiCd[a.key] -= kMa * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['a_' + a.key]; } if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } if (a.splash) { if (skTgt['a_' + a.key] == null) skTgt['a_' + a.key] = "fort"; var kA = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kA && a.salvage) aiCd[a.key] -= kA * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
+        if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; if (a.splash) { splashFort = 0; var kMa = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (splashFort) { aiDmg += splashFort; splashFort = 0; } if (kMa && a.salvage) aiCd[a.key] -= kMa * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['a_' + a.key]; } if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } if (a.splash) { if (skTgt['a_' + a.key] == null) skTgt['a_' + a.key] = "fort"; var kA = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kA && a.salvage) aiCd[a.key] -= kA * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }
       }
     });
     // v954: limit skills (Death Strike), same rule as Conquest: full bar + an enemy in sword reach -> cleave the nearest N standing enemy heroes

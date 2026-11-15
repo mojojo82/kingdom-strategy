@@ -5092,3 +5092,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Fix: in Arena a switched-off ACTIVE or SUPPORT skill still fired (only limit skills were skipped); now `!skill.disabled` there too, and switched-off DEF / block passives do nothing.
 - Tests (headless, she is still comingSoon - un-hidden in the test page only): Conquest - 2 casts in 42 s, 4 splash hits (6,144 dmg). Arena - same fight does more damage with the splash than without.
 - Balance (Lv80 5*, skills 5, no weapons): 1v1 duels Hanzo 100, **Lily 87**, Roran 78, Kessa 68 (her skill off: 49; at half: 84). 5 ranged vs 5 melee with Lily in the melee team: **melee 91%** (skill at half: 90%, skill off: 67%; melee without her: 69%). Not tuned yet - Harley to decide.
+
+## v1615 — Crimson Tempest: slash RADIUS, no target count (Harley: "not enemies near - whatever is caught in the slash radius from legal targets")
+- `splash: { around: true, pct: 1.0, radiusPx: 36 }` (36 px ~ 1.5x her height = the slash size in the picked mockup). Every legal target inside the radius takes the same full hit; no limit.
+- Arena (real positions): ground heroes whose gap to her is within the radius; deck heroes and the fortress too when she is that close to the enemy fortress (the same targets her sword can legally reach). New `splashFort` adds the fortress hit to that side's damage.
+- Conquest: a melee skill there charges at ANY enemy on the field (v845 rule), so the flurry happens at the enemy she strikes - every enemy within the radius of that spot (screen positions reported by the drawing each frame, `#x` in the melee-reach report). Test: 2 casts each - chapter 2: 2 extra hits, chapter 8: 7, chapter 14: 1. No page errors.
+- Balance (5 ranged vs 5 melee, Lily in the melee team): **melee 98%** (v1614 "up to 4 nearest front-line" was 91%) - at the enemy fortress the radius catches the whole deck + the fortress in one flurry. Not tuned yet - Harley to decide.
