@@ -49,7 +49,7 @@
     <label for="spd"><span>Orbit speed <b id="spdV">1.0</b></span><input id="spd" type="range" min="0" max="30" value="10"></label>
     <label for="tilt"><span>Ring tilt <b id="tiltV">0.30</b></span><input id="tilt" type="range" min="5" max="80" value="30"></label>
     <label for="rad"><span>Ring size <b id="radV">1.0</b></span><input id="rad" type="range" min="60" max="140" value="100"></label>
-    <label for="mode"><span>Sword pose</span><select id="mode"><option value="up">Upright, turning (art)</option><option value="down">Tip down, turning (art)</option><option value="tan">Along the ring (art)</option><option value="shape">Plain code shape</option></select></label>
+    <label for="mode"><span>Sword pose</span><select id="mode"><option value="up">Upright, turning (art)</option><option value="flat">Upright, old flat squeeze</option><option value="down">Tip down, turning (art)</option><option value="tan">Along the ring (art)</option><option value="shape">Plain code shape</option></select></label>
     <label class="chk" for="dbg"><input id="dbg" type="checkbox"> Tint swords that are behind</label>
     <label class="chk" for="slow"><input id="slow" type="checkbox"> Slow motion (watch the turn)</label>
   </div>
@@ -119,6 +119,9 @@
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
   // Art sword: how much of its face we see = |sin| of its ring angle (face-on at front/back, edge-on at the sides). Face sprite is squeezed
   // by that amount and fades out near edge-on, where the edge sprite fades in - a cheap 3D turn from two flat pictures.
+  var OFF = document.createElement("canvas"), octx = OFF.getContext("2d");
+  function offBegin(len) { var S = Math.ceil(len * 2.6 * dpr); if (OFF.width !== S) { OFF.width = S; OFF.height = S; } octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, S, S); octx.setTransform(dpr, 0, 0, dpr, S / 2, S / 2); return octx; }
+  function offEnd(len, a) { var S = OFF.width / dpr; ctx.globalAlpha = a; ctx.drawImage(OFF, -S / 2, -S / 2, S, S); }
   function drawArtSword(p, h) {
     if (!FACE.naturalWidth || !EDGE.naturalWidth) return;
     var depth = (p.z + 1) / 2, sc = h.s * (0.78 + 0.32 * depth), alpha = 0.6 + 0.4 * depth, len = 88 * sc, behind = cfg.dbg && p.z < 0;
@@ -128,9 +131,36 @@
     var rot = p.fly ? p.rot : cfg.mode === "down" ? Math.PI : cfg.mode === "tan" ? p.rot : 0; ctx.rotate(rot);
     if (behind) ctx.filter = "hue-rotate(150deg)";
     ctx.globalCompositeOperation = "lighter";
-    var fa = alpha * smooth(0.12, 0.45, face), ea = alpha * (1 - smooth(0.2, 0.55, face));
-    if (fa > 0.01) { ctx.save(); ctx.globalAlpha = fa; ctx.scale(Math.max(0.06, face), 1); ctx.drawImage(FACE, -fw / 2, -len * 0.78, fw, len); ctx.restore(); }
-    if (ea > 0.01) { ctx.globalAlpha = ea; ctx.drawImage(EDGE, -ew / 2, -len * 0.78, ew, len); }
+    var D = len * 2.4, a = p.ang, fh = FACE.naturalHeight, fwid = FACE.naturalWidth, N = 28;
+    if (p.fly || cfg.mode === "flat") { // old flat squeeze (for comparison) / flying swords
+      var fa = alpha * smooth(0.12, 0.45, face), ea = alpha * (1 - smooth(0.2, 0.55, face));
+      if (fa > 0.01) { ctx.save(); ctx.globalAlpha = fa; ctx.scale(Math.max(0.06, face), 1); ctx.drawImage(FACE, -fw / 2, -len * 0.78, fw, len); ctx.restore(); }
+      if (ea > 0.01) { ctx.globalAlpha = ea; ctx.drawImage(EDGE, -ew / 2, -len * 0.78, ew, len); }
+    } else if (cfg.mode === "tan") { // sword lies along the ring: it points at / away from you at the sides -> shorter, tip end smaller or bigger
+      var dx = -Math.sin(a), dy = Math.cos(a) * cfg.tilt, dz = Math.cos(a) * Math.sqrt(1 - cfg.tilt * cfg.tilt), ls = Math.max(0.12, Math.hypot(dx, dy));
+      var o = offBegin(len);
+      for (var i = 0; i < N; i++) { // slices along the length, each at its own distance
+        var t0 = i / N, t1 = (i + 1) / N, q0 = (0.78 - t0) * len, q1 = (0.78 - t1) * len;
+        var f0 = D / (D - q0 * dz), f1 = D / (D - q1 * dz), fm = (f0 + f1) / 2, wq = fw * fm;
+        var y0 = -q0 * ls * f0, y1 = -q1 * ls * f1;
+        o.drawImage(FACE, 0, t0 * fh, fwid, fh / N + 0.5, -wq / 2, y0, wq, y1 - y0 + 0.6);
+      }
+      offEnd(len, alpha);
+    } else { // upright: the blade spins about its own long axis as it goes round - the side turning toward you grows, the far side shrinks
+      var w = Math.sin(a), zc = Math.cos(a) * (cfg.mode === "down" ? -1 : 1), aw = Math.abs(w);
+      var fa2 = alpha * smooth(0.04, 0.16, aw), ea2 = alpha * (1 - smooth(0.06, 0.2, aw));
+      if (fa2 > 0.01) { var o2 = offBegin(len);
+        for (var j = 0; j < N; j++) { // slices across the width
+          var u0 = (j / N - 0.5) * fw, u1 = ((j + 1) / N - 0.5) * fw, g0 = D / (D - u0 * zc), g1 = D / (D - u1 * zc), gm = (g0 + g1) / 2;
+          var x0 = u0 * w * g0, x1 = u1 * w * g1, xl = Math.min(x0, x1), xw = Math.abs(x1 - x0) + 0.6;
+          o2.save(); if (x1 < x0) { o2.translate(xl * 2 + xw, 0); o2.scale(-1, 1); }
+          o2.drawImage(FACE, j / N * fwid, 0, fwid / N + 0.5, fh, xl, -len * 0.78 * gm, xw, len * gm);
+          o2.restore();
+        }
+        offEnd(len, fa2);
+      }
+      if (ea2 > 0.01) { ctx.globalAlpha = ea2; ctx.drawImage(EDGE, -ew / 2, -len * 0.78, ew, len); }
+    }
     ctx.restore();
   }
   function drawSword(p, h) {
