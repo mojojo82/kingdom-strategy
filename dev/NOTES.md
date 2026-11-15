@@ -5121,3 +5121,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1618 — skill numbers on heroes you don't own yet + Conquest Sprint (built, switched off)
 - Harley: Lily's skill showed no damage number. The Skills tab only wrote the number ("192 burst dmg / 12s (120% of basic attack)") for heroes you own - Lily isn't recruited on his account. Now heroes you don't own show it too, worked out for a level 1 hero ("· at hero Lv 1"), for every hero.
 - Conquest Sprint (event 6): built and in the admin console, but `cs.on` is false in the game until Harley approves the mockup. Mon-Sun every second week (parity, default odd weeks = this week), 8 one-time tasks (new kind `heroup` = hero level-ups, hooked in levelUpHero), final chest (3x 1h speedup, 25 Event Tokens, 20 Books, 3 featured shards). Server LIVE_CS_DEFAULT / normalizeCS + unit test (19 pass). ChatGPT banner + hourglass icon (art/originals/events/sprint/).
+
+## v1619 — Conquest Sprint switched on (Harley: "Finish the conquest sprint")
+- `cs.on` true in the game. Runs Mon-Sun UTC on odd weeks (this week, 16-22 Nov is week 2967 → on); even weeks are kept for Alliance Siege. Everything editable in admin console > Live events > 🏁 Conquest Sprint.
+- Retested headless: task counting / claims / final chest, no errors.
