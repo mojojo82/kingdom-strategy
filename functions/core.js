@@ -411,7 +411,24 @@ function normalizeLiveops(c) {
     return { id, item, qty: num(x && x.qty, 1, 1e6, 1), price: num(x && x.price, 1, 1e7, 100), limit: num(x && x.limit, 1, 9999, 1) }; });
   const heroes = (Array.isArray(wk.heroes) ? wk.heroes : []).slice(0, 6).map(heroKey);
   const tok = (Array.isArray(c.dailyTok) ? c.dailyTok : []).slice(0, 5).map((v) => num(v, 0, 1e5, 0)); while (tok.length < 5) tok.push(0);
-  return { items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+  return { ga: normalizeGA(c.ga), items: normalizeItemModes(c.items), sg: normalizeSG(c.sg), sp: normalizeSP(c.sp), cs: normalizeCS(c.cs), np: normalizeNP(c.np), br: normalizeBR(c.br), ff: normalizeFF(c.ff), arena: normalizeArena(c.arena), fhw: { hero: heroKey(f.hero || "caelum"), killsPer: num(f.killsPer, 1, 1e6, 100), pts, ms, check }, shop: { items }, wk: { heroes, shards: num(wk.shards, 0, 1e5, 10), days: num(wk.days, 1, 7, 7), act: num(wk.act, 1, 100, 60) }, dailyTok: tok };
+}
+/* v1628: activity gems - gems for everyday play, paid by the server with a cap per day for each activity (Harley: an active player ~5,000 gems a
+   day from all sources). The game reports each activity (claimGemAct; the server trusts the report like Daily Tasks, the daily caps limit it);
+   Alliance Siege rallies are paid inside siegeRally / siegeJoin (server-checked). ga = { <act>: { g: gems each, n: times a day } }. */
+const GEM_ACTS = ["monster", "camp", "arena", "rally", "login"];
+const LIVE_GA_DEFAULT = { on: true, monster: { g: 20, n: 20 }, camp: { g: 10, n: 20 }, arena: { g: 30, n: 10 }, rally: { g: 50, n: 10 }, login: { g: 300, n: 1 } };
+function normalizeGA(p) {
+  p = p || {}; const out = { on: p.on !== false };
+  GEM_ACTS.forEach((a) => { const x = p[a] || {}, d = LIVE_GA_DEFAULT[a]; out[a] = { g: num(x.g, 0, 100000, d.g), n: num(x.n, 0, 1000, d.n) }; });
+  return out;
+}
+/* rec = wallet.ga { d: utc day, c: { act: times paid today } }. Over the cap or switched off = nothing paid (not an error). */
+function decideGemAct(rec, act, GA, now) {
+  if (GEM_ACTS.indexOf(act) < 0) throw new GameError("invalid-argument", "bad activity");
+  const d = utcDay(now), cur = rec && rec.d === d ? { d, c: Object.assign({}, rec.c || {}) } : { d, c: {} }, A = (GA || LIVE_GA_DEFAULT)[act] || { g: 0, n: 0 };
+  if ((GA && GA.on === false) || !(A.g > 0) || (cur.c[act] || 0) >= A.n) return { gems: 0, ga: cur, left: Math.max(0, A.n - (cur.c[act] || 0)) };
+  cur.c[act] = (cur.c[act] || 0) + 1; return { gems: A.g, ga: cur, left: A.n - cur.c[act] };
 }
 /* v1625: who pays each event-reward item. Default: the server records + checks every event claim (claimEv). Gems are always the server's.
    items = { off: true = master switch, everything back to the phone (gems still server), phone: [ids paid by the phone only], gemDay: gems a
@@ -726,7 +743,7 @@ function buildPatches(cities) { /* cities: [{id, data}] -> { pid: { cid: entry }
 /* v1231: Daily Tasks. The game pays everything except gems; gems come from here: 20 per task (each task once per UTC day) and 300 for the
    last chest (once per day, only after the server has paid tasks worth 100 activity points). wallet.daily = { d: utc day, t: [task ids], c: true } */
 const DAILY_TASK_PTS = { login: 5, chest: 5, arena: 10, monster: 10, gather: 10, recon: 5, train: 10, build: 10, research: 10, tickets: 5, levelup: 10, speedup: 10 };
-const DAILY_TASK_GEMS = 20, DAILY_CHEST_GEMS = 300, DAILY_CHEST_PTS = 100;
+const DAILY_TASK_GEMS = 40, DAILY_CHEST_GEMS = 500, DAILY_CHEST_PTS = 100; /* v1628: 20 / 300 -> 40 / 500 (toward ~5,000 gems a day) */
 function decideDailyClaim(rec, kind, id, now) {
   const d = utcDay(now), cur = rec && rec.d === d ? { d, t: (rec.t || []).slice(), c: !!rec.c } : { d, t: [], c: false };
   if (kind === "task") {
@@ -743,5 +760,5 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+module.exports = { GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

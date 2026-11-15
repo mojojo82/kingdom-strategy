@@ -22,5 +22,10 @@ const assert = require("assert");
   out.ledger = Object.keys(store).filter((k) => k.indexOf("players/p1/ledger/") >= 0).map((k) => store[k].item + " " + store[k].delta + " " + store[k].reason);
   assert.strictEqual(out.ledger.length, 4, "every server-paid item is in the ledger");
   store[R + "acplayers/p2"] = { restricted: true }; out.restricted = (await go("claimEv", "p2", { src: "fhw", k: w, ref: "ms:0" })).error.message;
+  // v1628 activity gems
+  const ga = []; for (let i = 0; i < 12; i++) ga.push((await go("claimGemAct", "p3", { act: "arena" })).data.added); out.arenaGems = ga.join(","); assert.strictEqual(ga.filter((x) => x === 30).length, 10, "10 Arena wins a day pay");
+  out.login = [(await go("claimGemAct", "p3", { act: "login" })).data.added, (await go("claimGemAct", "p3", { act: "login" })).data.added]; assert.deepStrictEqual(out.login, [300, 0]);
+  out.rallyDirect = (await go("claimGemAct", "p3", { act: "rally" })).error.message;
+  out.p3wallet = store[R + "players/p3/wallet/main"].gems; assert.strictEqual(out.p3wallet, 600);
   console.log(JSON.stringify(out, null, 1)); console.log("evclaim server test passed");
 })().catch((e) => { console.error(e); process.exit(1); });

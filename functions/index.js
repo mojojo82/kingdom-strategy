@@ -461,28 +461,32 @@ exports.siegeCancel = wrap(async (req, uid, R, d) => {
   });
 });
 exports.siegeRally = wrap(async (req, uid, R, d) => {
-  const K = kingdomRoot(R, d.srv), now = Date.now(), hid = sgId(d.hid), { SG } = await sgConfig(R);
+  const K = kingdomRoot(R, d.srv), now = Date.now(), hid = sgId(d.hid), { SG, lo } = await sgConfig(R);
   return db.runTransaction(async (tx) => {
     const me = await sgMember(tx, K, uid), href = db.doc(sgRoot(K, me.aid) + "/h/" + hid), hs = await tx.get(href); if (!hs.exists) throw new C.GameError("not-found", "no such hunt");
     const h = hs.data(); if (!(now >= h.start && now + SG.wait * 1000 <= h.end)) throw new C.GameError("failed-precondition", now < h.start ? "the hunt hasn't started" : "too late for a new rally");
     if (h.busy && h.busy[uid]) throw new C.GameError("failed-precondition", "your march is already in a rally");
+    const ws = await tx.get(walletRef(R, uid)); /* v1628: rally gems (read before any write) */
     const rid = now + "_" + uid.slice(0, 8), name = lbName(d.name);
     tx.set(db.doc(sgRoot(K, me.aid) + "/r/" + rid), { hid, leader: uid, lname: name, launch: now + SG.wait * 1000, members: { [uid]: name }, done: false, at: now });
     const busy = Object.assign({}, h.busy || {}); busy[uid] = rid; tx.update(href, { busy });
-    return { ok: true, rid, launch: now + SG.wait * 1000 };
+    const gp = payGemAct(tx, R, uid, ws, "rally", lo.ga, rid, now);
+    return { ok: true, rid, launch: now + SG.wait * 1000, gems: gp.gems, added: gp.added };
   });
 });
 exports.siegeJoin = wrap(async (req, uid, R, d) => {
-  const K = kingdomRoot(R, d.srv), now = Date.now(), rid = sgId(d.rid), { SG } = await sgConfig(R);
+  const K = kingdomRoot(R, d.srv), now = Date.now(), rid = sgId(d.rid), { SG, lo } = await sgConfig(R);
   return db.runTransaction(async (tx) => {
     const me = await sgMember(tx, K, uid), rref = db.doc(sgRoot(K, me.aid) + "/r/" + rid), rs = await tx.get(rref); if (!rs.exists) throw new C.GameError("not-found", "no such rally");
     const r = rs.data(); if (r.done || now >= r.launch) throw new C.GameError("failed-precondition", "that rally has already marched");
     if (r.members[uid]) return { ok: true, dup: true };
     if (Object.keys(r.members).length >= SG.maxRally) throw new C.GameError("resource-exhausted", "that rally is full");
     const href = db.doc(sgRoot(K, me.aid) + "/h/" + r.hid), h = (await tx.get(href)).data() || {}; if (h.busy && h.busy[uid]) throw new C.GameError("failed-precondition", "your march is already in a rally");
+    const ws = await tx.get(walletRef(R, uid)); /* v1628: rally gems */
     const members = Object.assign({}, r.members); members[uid] = lbName(d.name); tx.update(rref, { members });
     const busy = Object.assign({}, h.busy || {}); busy[uid] = rid; tx.update(href, { busy });
-    return { ok: true };
+    const gp = payGemAct(tx, R, uid, ws, "rally", lo.ga, rid, now);
+    return { ok: true, gems: gp.gems, added: gp.added };
   });
 });
 exports.siegeHit = wrap(async (req, uid, R, d) => {
@@ -625,6 +629,18 @@ exports.claimEvent = wrap(async (req, uid, R, d) => {
     tx.set(walletRef(R, uid), patch, { merge: true });
     return { dup: false, events: patchEvents, gems: g, items: r.items, progress };
   });
+});
+/* v1628: activity gems (C.decideGemAct). payGemAct runs inside a transaction after its reads; claimGemAct is the game's report of a monster / camp /
+   Arena win / the daily login. Over the day's cap it just pays nothing. */
+function payGemAct(tx, R, uid, ws, act, GA, ref, now) {
+  const wd = (ws && ws.data && ws.data()) || {}, r = C.decideGemAct(wd.ga, act, GA, now), patch = { ga: r.ga };
+  let g = wd.gems || 0; if (r.gems > 0) { g += r.gems; patch.gems = g; ledger(tx, R, uid, "gems", r.gems, g, "act_" + act, ref || ""); }
+  tx.set(walletRef(R, uid), patch, { merge: true }); return { gems: g, added: r.gems, left: r.left };
+}
+exports.claimGemAct = wrap(async (req, uid, R, d) => {
+  const act = String(d.act || ""); if (act === "rally") throw new C.GameError("invalid-argument", "rallies pay by themselves");
+  const lo = (await liveopsConfig(R)) || C.normalizeLiveops({}), now = Date.now();
+  return db.runTransaction(async (tx) => { const ws = await tx.get(walletRef(R, uid)); return payGemAct(tx, R, uid, ws, act, lo.ga, "", now); });
 });
 /* v1625: an event-reward claim from the game (Featured Hero Week, Arena milestones, Forge Frenzy, Boss Rush, Weekly Chest, New Player Path, Conquest
    Sprint, Season Pass). The game shows the reward at once and queues this call; the server works out the reward from the live config (the game

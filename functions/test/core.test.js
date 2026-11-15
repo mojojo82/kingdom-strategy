@@ -235,9 +235,9 @@ t("security panel (v995): tunable limits, config, ban state, summary", () => {
 });
 t("v1231 daily tasks gems: 20 per task once a day, 300 chest only after 100 server-paid points, new day resets", () => {
   const T = Date.UTC(2026, 9, 17, 5), ids = Object.keys(C.DAILY_TASK_PTS); let rec = null;
-  ids.forEach((id, i) => { const r = C.decideDailyClaim(rec, "task", id, T); assert.strictEqual(r.gems, 20); rec = r.daily; if (i === 0) assert.strictEqual(C.decideDailyClaim(rec, "task", id, T).dup, true); if (i === ids.length - 2) assert.throws(() => C.decideDailyClaim(rec, "chest", "", T), /not reached/); });
-  const c = C.decideDailyClaim(rec, "chest", "", T); assert.strictEqual(c.gems, 300); assert.strictEqual(C.decideDailyClaim(c.daily, "chest", "", T).dup, true);
-  assert.strictEqual(C.decideDailyClaim(c.daily, "task", "login", T + 86400000).gems, 20, "next UTC day: free again");
+  ids.forEach((id, i) => { const r = C.decideDailyClaim(rec, "task", id, T); assert.strictEqual(r.gems, C.DAILY_TASK_GEMS); rec = r.daily; if (i === 0) assert.strictEqual(C.decideDailyClaim(rec, "task", id, T).dup, true); if (i === ids.length - 2) assert.throws(() => C.decideDailyClaim(rec, "chest", "", T), /not reached/); });
+  const c = C.decideDailyClaim(rec, "chest", "", T); assert.strictEqual(c.gems, C.DAILY_CHEST_GEMS); assert.strictEqual(C.decideDailyClaim(c.daily, "chest", "", T).dup, true);
+  assert.strictEqual(C.decideDailyClaim(c.daily, "task", "login", T + 86400000).gems, C.DAILY_TASK_GEMS, "next UTC day: free again");
   assert.throws(() => C.decideDailyClaim(null, "task", "nope", T), /no such task/); assert.throws(() => C.decideDailyClaim(null, "x", "", T), /bad kind/);
   assert.strictEqual(ids.reduce((a, k) => a + C.DAILY_TASK_PTS[k], 0), 100);
 });
@@ -331,5 +331,13 @@ t("v1625 event rewards on the server: gems allowed in rewards, never in shops; i
   assert.strictEqual(C.decideEvClaim(r1.rec, p, "t:a", M, r1.gd, now).dup, true, "once only");
   const r2 = C.decideEvClaim(null, { items: { gems: 500, wood: 9 } }, "z", M, r1.gd, now); assert.strictEqual(r2.gems, 200); assert.strictEqual(r2.capped, 300); assert.deepStrictEqual(r2.save, { wood: 9 });
   assert.strictEqual(C.decideEvClaim(null, { items: { gems: 500 } }, "z", M, r2.gd, now + 86400000).gems, 300, "cap resets next UTC day");
+});
+t("v1628 activity gems: defaults, caps per day, switch, daily task gems raised", () => {
+  const L = C.normalizeLiveops({}); assert.deepStrictEqual(L.ga.monster, { g: 20, n: 20 }); assert.strictEqual(L.ga.login.n, 1);
+  assert.strictEqual(C.normalizeGA({ arena: { g: -5, n: 3 } }).arena.g, 30, "bad number falls back"); assert.strictEqual(C.normalizeGA({ arena: { g: 7, n: 3 } }).arena.n, 3);
+  const now = 20800 * 86400000; let rec = null, tot = 0; for (let i = 0; i < 25; i++) { const r = C.decideGemAct(rec, "monster", L.ga, now); rec = r.ga; tot += r.gems; } assert.strictEqual(tot, 400, "20 x 20 then nothing");
+  assert.strictEqual(C.decideGemAct(rec, "monster", L.ga, now + 86400000).gems, 20, "new day"); assert.strictEqual(C.decideGemAct(rec, "camp", L.ga, now).gems, 10, "own cap per activity");
+  assert.strictEqual(C.decideGemAct(null, "arena", Object.assign({}, L.ga, { on: false }), now).gems, 0); assert.throws(() => C.decideGemAct(null, "nope", L.ga, now), /bad activity/);
+  assert.strictEqual(C.DAILY_TASK_GEMS, 40); assert.strictEqual(C.DAILY_CHEST_GEMS, 500);
 });
 console.log(n + " tests passed");

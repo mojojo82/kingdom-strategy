@@ -8497,7 +8497,7 @@ function createGame(opts) {
       var garrisonLeft = totalTroops(tile.garrison);
       if (report.win) {
         if (garrisonLeft <= 0) tile.garrison = null;
-        if (tile.type === "npc") evAct("camp"); /* v1593 */
+        if (tile.type === "npc") { evAct("camp"); try { if (typeof gemAct === "function") gemAct("camp"); } catch (e) {} } /* v1593; v1628 activity gems */
         if (tile.type === "npc") {
           loot = {}; for (var lr in tile.loot) loot[lr] = Math.round(tile.loot[lr] * gatherBonusMult());
           log("March #" + march.id + " defeated the level " + tile.level + " camp and looted resources.");
@@ -8547,7 +8547,7 @@ function createGame(opts) {
       if (Math.random() < rw.extraChance) for (var r2 in rw.extra) loot[r2] = (loot[r2] || 0) + Math.round(rw.extra[r2] * gm);
       valor = Math.round(rw.valor * idleValorMult());
       if (Math.random() < rw.fragChance) frags = { n: 1 + Math.floor(Math.random() * 2) };
-      state.monsters.kills[mo.id] = now(); dailyBump("monster"); evAct("monster");
+      state.monsters.kills[mo.id] = now(); dailyBump("monster"); evAct("monster"); try { if (typeof gemAct === "function") gemAct("monster"); } catch (e) {} /* v1628 */
       if (L > (state.monsters.maxBeat | 0)) state.monsters.maxBeat = Math.min(MONSTER_MAX_LEVEL, L);
       if (state.monsters.summon && state.monsters.summon.id === mo.id) state.monsters.summon = null;
       log("March #" + march.id + " defeated the level " + L + " " + def.name + ".");
@@ -9365,14 +9365,14 @@ function createGame(opts) {
     { id: "levelup", name: "Level up a weapon or hero", need: 1, pts: 10 },
     { id: "speedup", name: "Use a speedup", need: 1, pts: 10 }
   ];
-  var DAILY_TASK_REWARD = { gems: 20, valor: 100, tickets: 5 };
+  var DAILY_TASK_REWARD = { gems: 40, valor: 100, tickets: 5 }; /* v1628: gems 20 -> 40 (server: DAILY_TASK_GEMS) */
   var DAILY_CHESTS = [{ at: 20 }, { at: 40 }, { at: 60 }, { at: 80 }, { at: 100 }];
   function dailyChestReward(i) { /* resources scale with the player's own production (2 h of farms / sawmills) */
     if (i === 0) return { speedups: { general_5m: 2 } };
     if (i === 1) return { tickets: 20 };
     if (i === 2) return { shards: 3, books: 1 };
     if (i === 3) return { speedups: { general_5m: 2 }, res: { food: Math.max(5000, Math.round(bucketResHr("food") * 2 / 100) * 100), wood: Math.max(5000, Math.round(bucketResHr("wood") * 2 / 100) * 100) } };
-    return { gems: 300 };
+    return { gems: 500 }; /* v1628: 300 -> 500 (server: DAILY_CHEST_GEMS) */
   }
   function dailyDayNow() { return Math.floor(Date.now() / 86400000); }
   function dailySync() {
@@ -13892,7 +13892,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1627"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1628"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19868,7 +19868,7 @@ function sgHitFx(prev, cur) { if (!prev || !cur || !cur.last || !cur.last.length
 function sgRefresh() { try { if (document.getElementById("evWin") && document.getElementById("evWin").style.display !== "none" && EVW.tab === "sg" && !(document.activeElement && document.activeElement.hasAttribute && document.activeElement.hasAttribute("data-sgwhen"))) evWinRender(true); } catch (e) {} try { sgMapRender(); } catch (e) {} }
 function sgCall(name, data, ok) {
   if (SG.busy) return; SG.busy = true; EVW.note = "";
-  KS_BACKEND.call(name, Object.assign({ name: (typeof getPlayerName === "function" ? getPlayerName() : "") || "" }, data)).then(function (r) { SG.busy = false; if (ok) ok(r || {}); sgRefresh(); try { evWinRender(true); } catch (e) {} },
+  KS_BACKEND.call(name, Object.assign({ name: (typeof getPlayerName === "function" ? getPlayerName() : "") || "" }, data)).then(function (r) { SG.busy = false; gemActShow(r, r && r.added != null ? "rally" : null); if (ok) ok(r || {}); sgRefresh(); try { evWinRender(true); } catch (e) {} },
     function (e) { SG.busy = false; EVW.note = '<span class="bad">' + escapeHtml((e && e.message) || "Couldn't reach the server") + "</span>"; try { evWinRender(true); } catch (e2) {} });
 }
 function sgSpot() { /* the boss stands a short way from the scheduler's city, on a patch of open water (no resource fields / camps under it) */
@@ -20023,6 +20023,10 @@ function evDailyHtml() {
   h += '</div><div class="pick">' + (W.heroes || []).map(function (k) { return '<button type="button" class="tile r4' + (EVW.pick === k ? " sel" : "") + '" data-evpick="' + k + '"><img alt="" src="' + evFace(k) + '"><b>' + W.shards + "</b></button>"; }).join("")
     + '<span>A day counts at ' + W.act + ' Activity. At ' + W.days + ' days: choose ' + W.shards + " shards of one of these heroes.</span></div>"
     + (!E.wkc && days >= W.days ? '<button type="button" class="evw-wkbtn" data-evwk="1">' + (EVW.pick ? "Claim " + W.shards + " " + escapeHtml((HERO_DEFS[EVW.pick] || {}).name || "") + " shards" : "Pick a hero above") + "</button>" : "") + "</div>";
+  var gaOn = !(LIVEOPS.ga && LIVEOPS.ga.on === false), gaL = (LIVEOPS.ga && LIVEOPS.ga.login) || GA_DEF.login, gaGot = gemActToday("login") >= gaL.n; /* v1628 activity gems */
+  if (gaOn) { h += '<div class="evw-sec" style="margin-top:14px">Gems today <small>paid by the server, limits reset daily</small></div><div class="evw-list"><div class="evw-t' + (gaGot ? " dim" : "") + '"><div class="ti">' + ico("gems") + '</div><div class="tx"><b>Daily login gift</b>' + gaL.g + " gems, once a day</div>"
+      + (gaGot ? '<div class="go done">✓ Done</div>' : '<button type="button" class="go claim" data-galogin="1">Claim</button>') + "</div>"
+      + '<div class="evw-t"><div class="ti">' + evKindArt("monster") + '</div><div class="tx"><b>Gems for playing</b>' + ["monster", "camp", "arena", "rally"].map(function (a) { var x = (LIVEOPS.ga && LIVEOPS.ga[a]) || GA_DEF[a]; return x.g > 0 && x.n > 0 ? '<span style="white-space:nowrap">' + { monster: "Monsters", camp: "Camps", arena: "Arena wins", rally: "Siege rallies" }[a] + " <em>" + Math.min(x.n, gemActToday(a)) + "/" + x.n + "</em> (" + x.g + " each)</span>" : ""; }).filter(Boolean).join(" · ") + "</div></div></div>"; }
   h += '<div class="evw-sec" style="margin-top:14px">Today <small>each task: ' + (R.gems ? R.gems + " gems, " : "") + R.valor + " Valor, " + R.tickets + ' tickets</small></div><div class="evw-list">';
   var order = list.filter(function (t) { return t.done && !t.claimed; }).concat(list.filter(function (t) { return !t.done; }), list.filter(function (t) { return t.claimed; }));
   order.forEach(function (t) { var have = Math.min(t.have, t.need);
@@ -20039,6 +20043,7 @@ function evWinClick(e) {
   if (t === e.currentTarget || (t.closest && t.closest("[data-evx]"))) { evWinClose(); return; }
   if ((b = t.closest && t.closest("[data-evt]"))) { EVW.tab = b.getAttribute("data-evt"); EVW.note = ""; evWinRender(true); var ns = document.querySelector("#evWin .evw-body"); if (ns) ns.scrollTop = 0; return; }
   if ((b = t.closest && t.closest("[data-evgrp]")) && !/\bready\b/.test(b.className)) { var gi = {}; b.getAttribute("data-evgrp").split(",").forEach(function (x) { var p = x.split(":"); gi[p[0]] = +p[1]; }); EVW.note = "🎁 Reward: " + evGotText(gi); evWinRender(true); return; } /* v1625 reward groups */
+  if ((b = t.closest && t.closest("[data-galogin]"))) { gemAct("login"); if (!ksFb()) { persist(); evWinRender(true); } return; } /* v1628 */
   if (t.closest && evArenaClick(t)) return; /* v1594 */
   if ((b = t.closest && t.closest("[data-sgrally]"))) { if (sgActive()) sgCall("siegeRally", { hid: SG.hid }); return; } /* v1623 Alliance Siege */
   if ((b = t.closest && t.closest("[data-sgjoin]"))) { sgCall("siegeJoin", { rid: b.getAttribute("data-sgjoin") }); return; }
@@ -20155,12 +20160,33 @@ function evPaySync() {
     persist(); try { render(); } catch (x) {} evPayRedraw(); evPaySync();
   });
 }
+/* v1628: activity gems - each monster / camp win / Arena win (and the first visit of the day) asks the server for its gems (claimGemAct; a daily
+   cap per activity, admin > Live events > Activity gems). Siege rallies pay inside siegeRally / siegeJoin. No connection -> kept and retried.
+   Local (no-Firebase) game: same amounts and caps, into the save. */
+var GA_DEF = { monster: { g: 20, n: 20 }, camp: { g: 10, n: 20 }, arena: { g: 30, n: 10 }, rally: { g: 50, n: 10 }, login: { g: 300, n: 1 } };
+var GA_NAME = { monster: "monster", camp: "camp win", arena: "Arena win", rally: "rally", login: "daily login" };
+function gemActCount(act, left) { var S = game.state, d = Math.floor(Date.now() / 86400000), GA = (LIVEOPS.ga && LIVEOPS.ga[act]) || GA_DEF[act]; if (!S.gaC || S.gaC.d !== d) S.gaC = { d: d, c: {} }; if (left != null && GA) S.gaC.c[act] = Math.max(0, GA.n - left); }
+function gemActToday(act) { var S = game.state, d = Math.floor(Date.now() / 86400000), C = ksFb() ? S.gaC : S.gaL; return C && C.d === d ? (C.c[act] || 0) : 0; }
+function gemActShow(r, act) { if (r && act && r.left != null) gemActCount(act, r.left); if (!r || !(r.added > 0)) return; if (typeof r.gems === "number") { KSW.gems = r.gems; game.state.gems = r.gems; } try { miniToast("+" + r.added + " 💎" + (act ? " (" + GA_NAME[act] + ")" : "")); } catch (e) {} try { render(); } catch (e) {} }
+function gemAct(act) {
+  var S = game.state;
+  if (!ksFb()) { var GA = (LIVEOPS.ga && LIVEOPS.ga[act]) || GA_DEF[act], d = Math.floor(Date.now() / 86400000); if (!GA || (LIVEOPS.ga && LIVEOPS.ga.on === false)) return;
+    if (!S.gaL || S.gaL.d !== d) S.gaL = { d: d, c: {} }; if ((S.gaL.c[act] || 0) >= GA.n || !(GA.g > 0)) return; S.gaL.c[act] = (S.gaL.c[act] || 0) + 1; S.gems = (S.gems || 0) + GA.g; try { miniToast("+" + GA.g + " 💎 (" + GA_NAME[act] + ")"); } catch (e) {} return; }
+  KS_BACKEND.call("claimGemAct", { act: act }).then(function (r) { gemActShow(r, act); persist(); try { evPayRedraw(); } catch (e) {} },
+    function (e) { var code = String((e && e.code) || "").replace(/^functions\//, ""); if (["invalid-argument", "permission-denied"].indexOf(code) >= 0) return; if (act === "login") return; if (!Array.isArray(S.gq)) S.gq = []; if (S.gq.length < 60) S.gq.push(act); });
+}
+function gemActSync() { /* retry the ones that didn't reach the server */
+  if (!ksFb()) return; var S = game.state, d = Math.floor(Date.now() / 86400000);
+  if (Array.isArray(S.gq) && S.gq.length) { var q = S.gq.splice(0, S.gq.length); q.forEach(function (a) { gemAct(a); }); }
+}
+setTimeout(function () { try { gemActSync(); } catch (e) {} }, 9000);
+setInterval(function () { try { gemActSync(); } catch (e) {} }, 60000);
 function evPayRedraw() { try { var w = document.getElementById("evWin"); if (w && w.style.display !== "none") evWinRender(true); } catch (e) {} }
 setInterval(function () { try { evPaySync(); } catch (e) {} }, 60000);
 function evLiveopsSubscribe() {
   if (EVW.sub2 || !window.claude || typeof window.claude.use !== "function") return; EVW.sub2 = true;
   window.claude.use("db").then(function (db) { if (!db || !db.doc) return; db.doc("config/liveops").onSnapshot(function (s) { var d = s.exists ? s.data() : null;
-    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */, sg: d.sg && d.sg.personal ? d.sg : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sg)) /* v1623 */, items: d.items && typeof d.items === "object" ? d.items : { off: false, phone: [] } /* v1625 who pays each reward item */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
+    LIVEOPS = d && d.fhw && d.shop && d.wk ? { fhw: Object.assign({}, LIVEOPS_DEFAULT.fhw, d.fhw), shop: d.shop, wk: Object.assign({}, LIVEOPS_DEFAULT.wk, d.wk), dailyTok: d.dailyTok || LIVEOPS_DEFAULT.dailyTok, br: d.br && d.br.ms ? Object.assign({}, LIVEOPS_DEFAULT.br, d.br) : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.br)), ff: d.ff && d.ff.ms ? d.ff : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.ff)), arena: d.arena && d.arena.shop ? d.arena : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.arena)), np: d.np && d.np.tasks ? d.np : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.np)) /* v1617 */, cs: d.cs && d.cs.tasks ? d.cs : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.cs)) /* v1618 */, sp: d.sp && d.sp.levels ? d.sp : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sp)) /* v1621 */, sg: d.sg && d.sg.personal ? d.sg : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT.sg)) /* v1623 */, ga: d.ga && d.ga.monster ? d.ga : null /* v1628 */, items: d.items && typeof d.items === "object" ? d.items : { off: false, phone: [] } /* v1625 who pays each reward item */ } : JSON.parse(JSON.stringify(LIVEOPS_DEFAULT));
     evWinRender(true); }, function () {}); }).catch(function () {});
 }
 setTimeout(evLiveopsSubscribe, 4000);
@@ -37446,7 +37472,7 @@ function recordArenaResult(winner, opponentPoints) {
   var arena = game.state.arena;
   var r = arena.record;
   try { game.dailyBump("arena"); } catch (e) {} /* v1231: any arena fight counts (win or lose) */
-  if (winner === "player") { r.wins++; game.grantRandomFragments(1 + Math.floor(Math.random() * 2)); try { game.evAct("arena"); } catch (e) {} /* v1593 */
+  if (winner === "player") { r.wins++; game.grantRandomFragments(1 + Math.floor(Math.random() * 2)); try { game.evAct("arena"); } catch (e) {} try { gemAct("arena"); } catch (e) {} /* v1593; v1628 */
     try { var ag = game.evArenaWin((typeof opponentPoints === "number" ? opponentPoints : 1000) > arena.points); if (ag > 0) evArenaReport(ag); } catch (e) {} } /* v1594 Arena event */
   else if (winner === "ai") r.losses++;
   else r.draws++;

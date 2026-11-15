@@ -27,5 +27,6 @@ const go = async (fn, uid, data) => JSON.parse(await call(fn, JSON.stringify(Obj
   out.claimNoDmg = (await go("siegeClaim", "member02", { hid })).error.message;
   out.mail = Object.keys(store).filter((k) => k.indexOf("players/leader01/mail") >= 0).map((k) => store[k].title);
   out.chat = Object.keys(store).filter((k) => k.indexOf("/chat/") >= 0).map((k) => store[k].text);
+  out.rallyGems = { member01: (store[R + "players/member01/wallet/main"] || {}).gems, leader01: (store[R + "players/leader01/wallet/main"] || {}).gems, officer1: (store[R + "players/officer1/wallet/main"] || {}).gems }; /* v1628: 50 per rally started / joined */
   console.log(JSON.stringify(out, null, 1));
 })();

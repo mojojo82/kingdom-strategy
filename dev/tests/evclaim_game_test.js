@@ -7,7 +7,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GA
 const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), errs = [];
-  const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
+  const ctx = await b.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: process.env.SHOT ? 2 : 1 });
   await ctx.exposeFunction("__fbstore", (op, k, v) => { if (op === "set") store[k] = JSON.parse(v); else if (op === "del") delete store[k]; return JSON.stringify(store); });
   await ctx.exposeFunction("__fbcall", call);
   await ctx.route(/mojojo82\.github\.io/, require(path.join(__dirname, "siteroute.js"))(GAME));
@@ -43,6 +43,13 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   out.phone = await P.evaluate(() => { Object.defineProperty(navigator, "onLine", { configurable: true, get: function () { return true; } }); LIVEOPS.items = { off: false, phone: ["speedup_general_5m"] };
     LIVEOPS.fhw.ms = [{ at: 1, items: { speedup_general_5m: 1 } }, { at: 1, items: { wood: 5 } }]; game.evSync().ms = []; var r = game.evClaimMs(0); var q1 = game.evSync().pq.length; LIVEOPS.items = { off: true, phone: [] }; var r2 = game.evClaimMs(1); return { ok: r.ok && r2.ok, queuedPhone: q1, queuedMaster: game.evSync().pq.length }; });
   assert.ok(out.phone.ok); assert.strictEqual(out.phone.queuedPhone, 0); assert.strictEqual(out.phone.queuedMaster, 0);
+  // v1628 activity gems: two monster kills + the login gift (button in Daily Missions)
+  const w0 = (store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0;
+  await P.evaluate(() => { gemAct("monster"); gemAct("monster"); evWinOpen("daily"); }); await P.waitForTimeout(1500);
+  await P.evaluate(() => document.querySelector("#evWin [data-galogin]").click()); await P.waitForTimeout(1500);
+  out.actGems = ((store[R + "players/" + uid + "/wallet/main"] || {}).gems || 0) - w0; assert.strictEqual(out.actGems, 340, "2 x 20 + 300");
+  out.dailyText = await P.evaluate(() => document.querySelector("#evWin .evw-list").textContent.slice(0, 200)); assert.ok(/Monsters 2\/20/.test(out.dailyText), out.dailyText);
+  if (process.env.SHOT) await P.screenshot({ path: process.env.SHOT });
   out.ledger = Object.keys(store).filter((k) => k.indexOf("players/" + uid + "/ledger/") >= 0).map((k) => store[k].item + " " + store[k].delta + " " + store[k].reason).filter((x) => /ev_/.test(x));
   out.errors = errs; console.log(JSON.stringify(out, null, 1));
   assert.deepStrictEqual(errs, []); console.log("evclaim game test passed"); await b.close();
