@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 R = "/home/claude/kingdom-strategy/"; FD = sys.argv[3] if len(sys.argv) > 3 else R + "art/originals/cards/frames"
 FB = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"; FR = "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"
 FI = "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf"; FRB = "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf"
-L = dict(art=(64, 70, 960, 905), sock=(512, 797, 62), name=950, type=1043, eff=1165, flav=1268, plate=1420)
+L = dict(art=(64, 70, 960, 905), sock=(512, 824, 66), name=950, type=1043, eff=1165, flav=1268, plate=1420)
 COL = dict(common="#d8d8d8", rare="#d6e8ff", epic="#efe0ff", legendary="#ffe9a8")
 def wrap(d, s, F, maxw):
     words, lines, cur = s.split(), [], ""
@@ -17,6 +17,15 @@ def wrap(d, s, F, maxw):
         else: lines.append(cur); cur = w
     if cur: lines.append(cur)
     return lines
+_OV = {}
+def socket_overlay(rarity):
+    """Frame pixels around the icon socket that are metal (bright: ring, spike), so they can be drawn over the icon. The dark recess stays under it."""
+    if rarity not in _OV:
+        import numpy as np
+        fr = np.asarray(Image.open(f"{FD}/frame_{rarity}_keyed.png").convert("RGBA")).copy(); lum = fr[..., :3].mean(2)
+        m = np.zeros(lum.shape, bool); m[720:940, 410:614] = True; m &= lum > 85
+        fr[..., 3] = np.where(m, fr[..., 3], 0); _OV[rarity] = Image.fromarray(fr, "RGBA")
+    return _OV[rarity]
 def card(c):
     W, H = 1024, 1536; out = Image.new("RGBA", (W, H), (0, 0, 0, 0)); art = Image.open(R + "art/originals/cards/art/" + c["slug"] + "_v" + str(c.get("v", 1)) + ".png").convert("RGBA")
     x0, y0, x1, y1 = L["art"]; aw, ah = x1 - x0, y1 - y0; s = max(aw / art.width, ah / art.height)
@@ -26,6 +35,7 @@ def card(c):
     if c.get("icon"):
         cx, cy, r = L["sock"]; ic = Image.open(R + f"art/originals/cards/icons/icon_{c['icon']}.png").convert("RGBA"); k = (r * 1.75) / max(ic.size)
         ic = ic.resize((round(ic.width * k), round(ic.height * k)), Image.LANCZOS); out.alpha_composite(ic, (cx - ic.width // 2, cy - ic.height // 2))
+        out.alpha_composite(socket_overlay(c["rarity"]))  # the socket's metal ring + the little spike below it sit ON TOP of the icon
     d = ImageDraw.Draw(out)
     def t(y, s, f, size, fill, stroke=0, sc=None, maxw=640):
         F = ImageFont.truetype(f, size)
