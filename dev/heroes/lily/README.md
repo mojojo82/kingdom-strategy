@@ -26,3 +26,4 @@ All Atlas clips: art/originals/heroes/ironlily/redo/clips/ (H3 Max, 5 s, Image =
 - cut_slashes.py OUT sheet1 sheet2 ... -> slashes/ (16 cut, 13 usable; hooks rejected automatically by the arc-fit check).
 - Animation: clip A itself can't be used (its baked trails can't be made to match). Best so far: A-redo 2 (lily_flurryA2_2) played 1.5x and twice ("previous one was better" than 2x / 3 times).
 - measure_swings.py now also TRACKS the blade tip and fits each swing's own arc (SWINGS_A22T): slashes sit on her real blade path, not round her chest.
+- **PICKED (Harley 15 Nov): the TRACKED version** (lily_skill_fx_v9_tracked.mp4, right side): A-redo 2 at 1.5x played twice, painted slashes on her real blade path (SWINGS_A22T). v10 = same with all 19 shapes from 3 sheets.
