@@ -2231,6 +2231,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   /* v855: profile buttons match the tile-card / Upgrade shape - flat cyan, thin dark border, light inner ring, small bottom edge (no gloss bubble) */
   #govProfileOverlay .gp-btns button { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; -webkit-text-stroke:0; text-shadow:none; font-size:15px; box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 2px 0 #1f6c80; }
   #govProfileOverlay .gp-btns button:active { transform:translateY(1px); box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 1px 0 #1f6c80; }
+  #govProfileOverlay .gp-showbtn { pointer-events:auto; position:absolute; right:10px; bottom:92px; z-index:8; padding:4px 10px; font-family:var(--bodyfont); font-weight:800; font-size:11px; background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 2px 0 #1f6c80; cursor:pointer; }
+  #govProfileOverlay .gp-card.gp-hero .art { background-position:center 20%; }
   #govProfileOverlay .gp-skinbtn { background:#57cfdf; color:#0e3440; border:1.5px solid #1f6c80; border-radius:10px; -webkit-text-stroke:0; text-shadow:none; box-shadow:inset 0 0 0 2px #57cfdf, inset 0 0 0 3px #a8eef6, 0 2px 0 #1f6c80; }
 
   /* v1359: Overlord Profile "GPT" look - a 1:1 rebuild of GPT's composite (918x1713 design units; 1 unit = --gpd). Classic look = class off. */
@@ -2258,6 +2260,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #govProfileOverlay.gp2 .gp-col.l > div:nth-child(2) { left:calc(var(--gpd)*32); top:calc(var(--gpd)*321); } #govProfileOverlay.gp2 .gp-col.l > div:nth-child(3) { left:calc(var(--gpd)*32); top:calc(var(--gpd)*461); }
   #govProfileOverlay.gp2 .gp-col.r > div:nth-child(2) { left:calc(var(--gpd)*738); top:calc(var(--gpd)*321); } #govProfileOverlay.gp2 .gp-col.r > div:nth-child(3) { left:calc(var(--gpd)*738); top:calc(var(--gpd)*461); }
   #govProfileOverlay.gp2 .gp-cards { z-index:7; }
+  #govProfileOverlay.gp2 .gp-showbtn { pointer-events:auto !important; left:auto; right:calc(var(--gpd)*30); top:calc(var(--gpd)*655); bottom:auto; font-size:calc(var(--gpd)*27); padding:calc(var(--gpd)*7) calc(var(--gpd)*18); border-radius:calc(var(--gpd)*16); z-index:8; } /* v1651 */
   #govProfileOverlay.gp2 .gp-card, #govProfileOverlay.gp2 .gp-card.empty { position:absolute; top:calc(var(--gpd)*719); width:calc(var(--gpd)*154); height:calc(var(--gpd)*162); margin:0; border:0; border-radius:0; box-shadow:none; overflow:visible; background:var(--gp2-card-frame) 0 0/100% 100% no-repeat; pointer-events:auto; }
   #govProfileOverlay.gp2 .gp-card:nth-child(1) { left:calc(var(--gpd)*70); } #govProfileOverlay.gp2 .gp-card:nth-child(2) { left:calc(var(--gpd)*226); } #govProfileOverlay.gp2 .gp-card:nth-child(3) { left:calc(var(--gpd)*382); } #govProfileOverlay.gp2 .gp-card:nth-child(4) { left:calc(var(--gpd)*538); } #govProfileOverlay.gp2 .gp-card:nth-child(5) { left:calc(var(--gpd)*694); }
   #govProfileOverlay.gp2 .gp-card .art { position:absolute; left:calc(var(--gpd)*16); top:calc(var(--gpd)*16); width:calc(var(--gpd)*121); height:calc(var(--gpd)*125); border-radius:0; font-size:calc(var(--gpd)*40); }
@@ -3539,6 +3542,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     <div id="gpGovWrap"></div>
     <div class="gp-cards" id="gpCards"></div>
     <button class="gp-skinbtn" id="gpSkinBtn">Fortress Skin</button>
+    <button class="gp-showbtn" id="gpShowBtn" type="button">🃏 Cards</button>
   </div>
   <div class="gp-panel">
     <div class="gp-row">
@@ -7968,6 +7972,7 @@ function createGame(opts) {
     walkerCar: false, // v1542: Walker skin lowered into "car mode" (tap the ship to switch) - visual only
     avatarFrame: "none", // v485: see AVATAR_FRAMES (More > Skins)
     equippedCards: [], // up to CARD_EQUIP_MAX card indices (into state.cards), shown on the Overlord Profile
+    profileShow: "cards", // v1651: what the profile's 5 slots show - "cards" | "heroes" | "hidden"
     duplicateTarget: null, // v777: weapon id the Duplicate weapon copies (must be another equipped weapon; falls back to the first eligible one)
     equippedWeapons: [], // up to WEAPON_EQUIP_MAX ids (into WEAPON_DEFS), equipped from the Weapons tab (More ▸ Weapons)
     conquestOpened: !opts.deferConquest, // v806: the live game holds Conquest back until the player first opens the Conquest screen (see openConquest); sims/bots default to running
@@ -11642,6 +11647,7 @@ function createGame(opts) {
       });
       state.equippedCards = eqList;
     }
+    if (saved.profileShow === "cards" || saved.profileShow === "heroes" || saved.profileShow === "hidden") state.profileShow = saved.profileShow; /* v1651 */
     if (Array.isArray(saved.equippedWeapons)) {
       var eqwSeen = {}, eqwList = [];
       saved.equippedWeapons.forEach(function (v) {
@@ -13542,7 +13548,21 @@ function fortressSkin() {
 }
 function fortressCqImg() { return fortressSkin().cq; }
 function fortressCqScale() { return FORTRESS_SHIP_SCALE * fortressSkin().cqScale; }
-function fortressGovImg() { return fortressSkin().gov; }
+function fortressGovImg() { return skinStillImg(fortressSkin()); }
+/* v1651 (Harley: "the 2 crawler skins are missing their wheels in the ship skin selection"): a skin whose moving part sits under the hull (crawler treads)
+   only had its hull picture for the skin list and the Overlord profile. This bakes hull + treads (frame 0) into one still picture, once. */
+var SKIN_STILL = {};
+function skinStillImg(sk) {
+  var a = sk && sk.anim; if (!a || !a.under || a.rig || sk.parts || !a.sheet) return sk.gov;
+  if (SKIN_STILL[sk.id]) return SKIN_STILL[sk.id];
+  var pic = sk.cq;
+  if (!(pic.naturalWidth && a.sheet.naturalWidth && a.back.naturalWidth)) {
+    [pic, a.sheet, a.back].forEach(function (im) { if (im._stillHook) return; im._stillHook = 1; im.addEventListener("load", function () { try { if (document.getElementById("fortressSkinOverlay").style.display === "flex") renderFortressSkinList(); drawGovScene(); } catch (e) {} }); });
+    return sk.gov;
+  }
+  try { var cv = document.createElement("canvas"); cv.width = pic.naturalWidth; cv.height = pic.naturalHeight; var cx = cv.getContext("2d"), b0 = a.bob; a.bob = 0; drawSkinPart(cx, sk, "back", 0, 0, cv.width, cv.height, true); a.bob = b0;
+    var img = new Image(); img.src = cv.toDataURL("image/webp", 0.9); img.addEventListener("load", function () { try { drawGovScene(); } catch (e) {} }); SKIN_STILL[sk.id] = img; return img; } catch (e) { return sk.gov; }
+}
 // The fortress's "nose" — its right edge, since it's drawn centered on the
 // squad's formation anchor (w*0.16) and enemies always approach from the
 // right (see idleSpawnEnemy: vis.x starts at w + 20). Falls back to the
@@ -14122,7 +14142,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1650"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1651"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -34224,10 +34244,16 @@ function renderGovProfile() {
   var cardsEl = document.getElementById("gpCards");
   if (cardsEl) {
     cardsEl.innerHTML = "";
-    var eq = Array.isArray(st.equippedCards) ? st.equippedCards : [];
+    var eq = Array.isArray(st.equippedCards) ? st.equippedCards : [], showM = st.profileShow || "cards"; /* v1651: cards / heroes / hidden */
+    var sb = document.getElementById("gpShowBtn"); if (sb) sb.textContent = showM === "heroes" ? "🦸 Heroes" : showM === "hidden" ? "🙈 Hidden" : "🃏 Cards";
+    if (showM === "heroes") eq = (st.conquestRoster || []).slice(0, 5).map(function (k) { return { hero: k }; }); else if (showM === "hidden") eq = [];
     for (var ci = 0; ci < CARD_EQUIP_MAX; ci++) {
       var cd = document.createElement("div");
-      if (ci < eq.length) {
+      if (ci < eq.length && eq[ci] && eq[ci].hero) {
+        var hArt = getHeroArt(eq[ci].hero); cd.className = "gp-card gp-hero";
+        var hEl = document.createElement("div"); hEl.className = "art"; if (hArt) hEl.style.backgroundImage = "url('" + hArt + "')"; else hEl.textContent = (HERO_DEFS[eq[ci].hero] || {}).icon || "🦸";
+        cd.appendChild(hEl);
+      } else if (ci < eq.length) {
         var cIdx = eq[ci], cArt = getCardArt(cIdx);
         cd.className = "gp-card";
         var artEl = document.createElement("div"); artEl.className = "art";
@@ -36521,7 +36547,7 @@ function renderFortressSkinList() {
   FORTRESS_SKINS.forEach(function (sk) {
     var d = document.createElement("div");
     d.className = "fs-opt" + (sk.id === cur ? " sel" : "");
-    d.innerHTML = '<img src="' + sk.gov.src + '" alt="">' + sk.name;
+    d.innerHTML = '<img src="' + skinStillImg(sk).src + '" alt="">' + sk.name; /* v1651: crawlers with their treads */
     d.onclick = function () {
       game.state.fortressSkin = sk.id; persist();
       renderFortressSkinList(); drawGovScene();
@@ -36529,6 +36555,7 @@ function renderFortressSkinList() {
     el.appendChild(d);
   });
 }
+document.getElementById("gpShowBtn").onclick = function () { var o = ["cards", "heroes", "hidden"], c = game.state.profileShow || "cards"; game.state.profileShow = o[(o.indexOf(c) + 1) % o.length]; persist(); renderGovProfile(); }; /* v1651 */
 document.getElementById("gpSkinBtn").onclick = function () { renderFortressSkinList(); document.getElementById("fortressSkinOverlay").style.display = "flex"; };
 document.getElementById("fortressSkinCloseBtn").onclick = function () { document.getElementById("fortressSkinOverlay").style.display = "none"; };
 document.getElementById("fortressSkinOverlay").onclick = function (e) { if (e.target.id === "fortressSkinOverlay") this.style.display = "none"; };

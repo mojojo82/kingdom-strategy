@@ -5299,3 +5299,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley ("sounds good"): ARENA_RANGED_DECK_AFTER_FRONT is now on. Arena / World PvP: once every enemy ground (Infantry) hero is down, ranged shots (the 50% hero share) go at the enemy deck heroes, front seat first; Projection Wall blocks them. Before, deck heroes were never targets (10 Nov rule).
 - Numbers (Lv80, Hanzo + Lily out): random mixed teams barely change (1-4 ranged: 40 / 51 / 49 / 54% win); all-ranged teams 55% -> 42% (no front line = exposed from the start); 1v1 duels Pip 78 -> 86, Kessa 87 -> 81, Lyra 81 -> 79, rest same; all-melee vs all-ranged unchanged (65 / 35) - no deck heroes on the melee side. Meta check: same top builds, known warning.
 - Headless Arena with an all-ranged team: no errors.
+
+## v1651 — profile slots: cards / heroes / hidden; crawler treads in the skin list
+- Overlord profile: a small cyan button above the 5 slots cycles what they show - 🃏 Cards (equipped cards, as before) -> 🦸 Heroes (your Conquest heroes' portraits) -> 🙈 Hidden (5 empty slots). Saved per player (state.profileShow).
+- Crawler B / C were missing their treads in the Fortress Skin list (and on the profile ship): those skins keep the treads as a separate moving layer. skinStillImg() bakes hull + treads (frame 0) into one still picture once, used by the skin list and the profile.
+- Headless: all three modes, button taps reach it (elementFromPoint), skin list shows the treads, no errors. art/originals/screens/profile_show_modes_v1651.png, skin_list_crawler_v1651.png.
