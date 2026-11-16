@@ -5342,3 +5342,12 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - With the basic halved, Colossus Blade went back up: 0.03-0.07 -> 0.12 / 0.15 / 0.19 / 0.23 / 0.27 (Halo-7's beam is 0.28-0.66).
 - Arena (Zarek first): Lv40 w/o zarek 50 wins vs w/o kessa 22, Lv80 38 vs 25 - below Kessa. Tested on the way: full Halo numbers (0.28-0.66) still beat Kessa (w/o zarek 21/18 vs w/o kessa 41/31); half of them (0.14-0.33) about Kessa level at Lv80.
 - Conquest (gareth, lyra, sera, torvald + zarek): Lv40 stuck at 6-9 (Kessa's team 6-12), Lv80 10-1.
+
+## v1656 — Zarek: no earpiece on the card + card animation
+- Harley: remove the thing from his ear on the hero card, and do the card animation without it.
+- Static card: new ChatGPT edit with bare ears (art/originals/heroes/zarek/zarek_card_gpt_v2.png -> keyed -> 360x480 into HERO_CARD_ART2.zarek).
+- Card video (card loop standard): Atlas H3 Max 8 s from zarek_cardvid_start_v1.png (no earpiece) - unfolds his arms, a green energy sword forms over his palm, breaks into sparks, arms fold again (clips/card_v1.mp4). Then a seamless idle loop from its last frame (clips/card_loop_v2.mp4). Built with build_card_video.py (Legendary gold, ZOOM 1.0, CX 550 - the held pose fills the full height) -> art/heroes/zarek/zarek_card_v1.mp4 (1.2 MB), HERO_CARD_VIDEO.zarek loopStart 7.9583.
+- Lesson: loop v1 had "no earpiece" in the prompt and H3 Max ADDED earpieces on both ears. Never name a thing you don't want in an Atlas prompt - v2 just said "nothing is added to him" and came out clean.
+- Still has the earpiece: the in-battle idle sprite (Harley only asked about the card).
+- Atlas: 3 runs x $0.61 = about $1.82.
+- Headless: hero card plays the sword moment once, then stays on the idle loop (checked at ~3 s, ~10 s, ~22 s); no console errors.
