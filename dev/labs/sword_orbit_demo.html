@@ -47,6 +47,7 @@
     <label for="rad"><span>Ring size <b id="radV">1.0</b></span><input id="rad" type="range" min="60" max="160" value="100"></label>
     <label for="gs"><span>Giant sword size <b id="gsV">1.0</b></span><input id="gs" type="range" min="60" max="160" value="100"></label>
     <label for="slstyle"><span>Swipe look</span><select id="slstyle"><option value="cel">Cel-shaded (Lily style)</option><option value="paint">Soft painted glow</option></select></label>
+    <label for="eb"><span>Energy sword brightness <b id="ebV">0.50</b></span><input id="eb" type="range" min="10" max="130" value="50"></label>
     <label for="gstyle"><span>Giant sword look</span><select id="gstyle"><option value="energy">Pure energy (new)</option><option value="crystal">Crystal (first)</option></select></label>
     <label for="mode"><span>Sword pose</span><select id="mode"><option value="up">Upright, turning</option><option value="tan">Along the ring</option></select></label>
     <label class="chk" for="slow"><input id="slow" type="checkbox"> Slow motion</label>
@@ -64,9 +65,9 @@
   function img(src) { var i = new Image(); i.src = src; return i; }
   var HERO = img(AS.hero), FACE = img(AS.face), EDGE = img(AS.edge), GIANT = img(AS.giant), SHIP = img(AS.ship), BG = img(AS.bg), GAR = img(AS.gareth), HAL = img(AS.halo), SLASH = img(AS.slash), SLASHC = img(AS.slashCel), GIANTE = img(AS.giantE), HM = AS.heroMeta, GM = AS.giantMeta;
 
-  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false, gstyle: "energy", slstyle: "cel" };
+  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false, gstyle: "energy", slstyle: "cel", eb: 0.5 };
   function GIM() { return cfg.gstyle === "energy" ? GIANTE : GIANT; } function GMM() { return cfg.gstyle === "energy" ? AS.giantEMeta : GM; }
-  [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1]].forEach(function (c) {
+  [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1], ["eb", 0.01, 2]].forEach(function (c) {
     var el = $(c[0]); el.addEventListener("input", function () { cfg[c[0]] = +el.value * c[1]; $(c[0] + "V").textContent = cfg[c[0]].toFixed(c[2]); if (c[0] === "n") build(); });
   });
   $("mode").addEventListener("change", function () { cfg.mode = $("mode").value; });
@@ -238,10 +239,10 @@
       var top = g.tip - g.L, tipPx = GMM().tip / GMM().h; top = g.tip - g.L * tipPx; var drawH = g.L, drawW = g.Wd;
       ctx.save(); ctx.beginPath(); ctx.rect(-50, -400, UW + 100, FLOOR + 6 + 400); ctx.clip();
       if (g.k < 1) { ctx.globalCompositeOperation = "lighter"; for (var s2 = 1; s2 <= 4; s2++) { ctx.globalAlpha = 0.18 / s2; ctx.drawImage(GI, g.x - drawW / 2, top - s2 * 22, drawW, drawH); } }
-      ctx.globalCompositeOperation = EN ? "lighter" : "source-over"; ctx.globalAlpha = g.a;
+      ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = g.a; if (EN) ctx.filter = "brightness(" + (0.45 + 0.55 * cfg.eb).toFixed(2) + ") saturate(" + (1.25 - 0.25 * cfg.eb).toFixed(2) + ")";
       var rise = g.tf > 0 ? g.tf * 10 : 0, spread = g.tf > 0 ? 1 + g.tf * 0.12 : 1;
-      ctx.drawImage(GI, g.x - drawW * spread / 2, top - rise, drawW * spread, drawH);
-      var pulse = g.tf <= 0 && g.k >= 1 ? (EN ? 0.3 + 0.25 * Math.sin(T * 13) * Math.sin(T * 5.3) : 0.25 + 0.2 * Math.sin(T * 9)) : (g.tf > 0 ? 0.6 * g.a : 0);
+      ctx.drawImage(GI, g.x - drawW * spread / 2, top - rise, drawW * spread, drawH); ctx.filter = "none";
+      var pulse = g.tf <= 0 && g.k >= 1 ? (EN ? cfg.eb * (0.22 + 0.18 * Math.sin(T * 13) * Math.sin(T * 5.3)) : 0.25 + 0.2 * Math.sin(T * 9)) : (g.tf > 0 ? (EN ? 0.6 * cfg.eb : 0.6) * g.a : 0);
       if (pulse > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = pulse * g.a; ctx.drawImage(GI, g.x - drawW * spread / 2, top - rise, drawW * spread, drawH); }
       ctx.restore();
       if (g.k >= 1) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + g.a); ctx.fillStyle = "rgba(10,6,20,0.85)"; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 5, g.Wd * 0.34, 3.2, 0, 0, Math.PI * 2); ctx.fill();
