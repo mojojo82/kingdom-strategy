@@ -5373,3 +5373,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - The impact still uses the generic skill sound until Harley picks one for the giant sword.
 - Sword demo artifact (v19): same clip on the skill, "Sound" tick box (browsers need one tap first).
 - Headless Arena: one launch sound per skill, the clip decodes (1.25 s); no console errors. (Can't hear it headless - the timing is from the clip's loudness curve.)
+
+## v1660 — Zarek: gentler launch sound
+- Harley: "try this one instead. a bit less intrusive". sfx/zarek_launch.mp3 = wind magic 5, first 1.2 s, 0.3 s fade out, mono, volume as supplied (mean -18 dB vs the first pick's -16). Peaks ~0.3 s in. First pick kept as sfx/zarek_launch_v1.mp3; original in sfx/originals/zarek_launch_wind_magic5_original.mp3.
+- Sword demo artifact v20 uses the same clip.
