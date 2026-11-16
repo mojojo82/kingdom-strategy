@@ -14171,7 +14171,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1656"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1657"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29011,6 +29011,20 @@ function arenaEnemyTargets(w, h, isP) { /* every standing enemy hero on screen +
    Store M = idleAnim (key "cq") or arenaAnim (key "p_zarek" / "a_zarek"). Sizes are CSS px x hs (heroSpriteVisualScale / 100). */
 var ZK = { n: 5, ringR: 27, tilt: 0.3, len: 17, lean: 0.5, bend: 0.6, eb: 0.5, spd: 1.4, hoverLo: 38, hoverHi: 72, bodyH: 40, giantL: 235, launch: 0.06, rise: 0.55 };
 var ZK_IMG = {};
+/* v1657 (Harley): the rocks thrown up by the giant sword take the ground colour of the level he's on - a few palettes, not one per level.
+   Picked from each level's measured road colour; Arena = its dark purple-slate bridge. */
+var ZK_ROCK_PAL = {
+  dark:  ["#3a3550", "#4a4466", "#2c283e", "#5a5478", "#231f30"],
+  earth: ["#5c4b3d", "#6e5c49", "#47392e", "#7e6b56", "#3a2f27"],
+  sand:  ["#b08a5a", "#c29b68", "#977449", "#d2ae7e", "#7e5f3e"],
+  stone: ["#6e6862", "#837c74", "#55504b", "#9a928a", "#403c39"],
+  ice:   ["#8f9ccb", "#adb9e2", "#6f7cae", "#cdd6f2", "#55608f"],
+  lava:  ["#6a2e28", "#84392f", "#4a221e", "#2c1a18", "#a04a34"]
+};
+var ZK_ROCK_ENV = { rain: "earth", cave: "earth", swamp: "earth", jungle: "earth", day: "earth",
+  desert: "sand", stream: "sand", foundry: "sand", pineforest: "sand", skydocks: "sand", throneroom: "sand", greathall: "sand",
+  castlegate: "stone", armoury: "stone", night: "stone", snow: "ice", crystal: "ice", volcano: "lava" };
+function zkRockPal(env) { return ZK_ROCK_PAL[env === "arena" ? "dark" : (ZK_ROCK_ENV[env] || "earth")]; }
 function zkImg(n) { var i = ZK_IMG[n]; if (!i) { i = ZK_IMG[n] = new Image(); i.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/zarek/" + n + ".webp"; } return i.complete && i.naturalWidth ? i : null; }
 function zkState(M, fk) { var Z = (M.zk || (M.zk = {}))[fk]; if (!Z) Z = M.zk[fk] = { x: null, h: 0, vx: 0, vh: 0, vs: 0, tx: 0, th: 0, wait: 0.6, last: 0, ring: Math.random() * 6, out: 0, warpAt: 0, sk: null, fx: [], feet: 0, chest: 0 }; return Z; }
 function zkStep(Z, area, hs, now) {
@@ -29086,12 +29100,12 @@ function zkDrawGiant(ctx, Z, sk, e, hs, tgt) {
   var tip = k >= 1 ? tipEnd : -40 * hs + (tipEnd + 40 * hs) * k * k * k, HOLD = 950, FADE = 850, tf = e - sk.land - HOLD, a = tf <= 0 ? 1 : Math.max(0, 1 - tf / FADE);
   if (!sk.hit && k >= 1) { sk.hit = true; Z.fx.push({ k: "r", x: tgt.x, y: entry, t: 0, max: 0.55, R: 70 * hs }); Z.fx.push({ k: "r", x: tgt.x, y: entry, t: -0.08, max: 0.5, R: 40 * hs });
     zkBurst(Z, tgt.x, entry - 3 * hs, 46, 90, "180,255,120", hs); zkBurst(Z, tgt.x, entry - 2 * hs, 24, 55, "255,240,170", hs); Z.fx.push({ k: "f", t: 0 });
-    var cols = ["#8a7258", "#9c8466", "#76614c", "#a8957a", "#6a5644"]; for (var ri = 0; ri < 11; ri++) { var dir = ri % 2 ? 1 : -1, an = -Math.PI / 2 + dir * (0.25 + Math.random() * 0.85), v = (95 + Math.random() * 85) * hs, n = 5 + ri % 3, pts = [];
+    var cols = tgt.rocks || ZK_ROCK_PAL.earth; for (var ri = 0; ri < 11; ri++) { var dir = ri % 2 ? 1 : -1, an = -Math.PI / 2 + dir * (0.25 + Math.random() * 0.85), v = (95 + Math.random() * 85) * hs, n = 5 + ri % 3, pts = [];
       for (var j = 0; j < n; j++) { var t = j / n * Math.PI * 2; pts.push([Math.cos(t) * (0.7 + Math.random() * 0.5), Math.sin(t) * (0.6 + Math.random() * 0.5)]); }
       Z.fx.push({ k: "rock", x: tgt.x + dir * (4 + Math.random() * 10) * hs, y: entry - 2 * hs, vx: Math.cos(an) * v, vy: Math.sin(an) * v, r: (2.6 + Math.random() * 3.4) * hs, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, pts: pts, col: cols[ri % 5], life: 0, max: 1.3 + Math.random() * 0.5, floor: entry - 1 * hs, b: false }); }
     try { sfxSkillShot(); } catch (eS) {} }
   if (a <= 0) { if (!sk.warped) { sk.warped = true; Z.warpAt = performance.now(); Z.sk = null; } return; }
-  var top = tip - L * (1525 / 1533), rise = tf > 0 ? tf / 1000 * 10 * hs : 0, spread = tf > 0 ? 1 + tf / 1000 * 0.12 : 1;
+  var top = tip - L * (1525 / 1533), rise = 0, spread = 1; /* v1657 (Harley): it no longer grows (widens / lifts more blade out of the ground) while it dissolves */
   ctx.save(); ctx.beginPath(); ctx.rect(-1000, -2000, 4000, entry + 2000); ctx.clip();
   if (k < 1) { ctx.globalCompositeOperation = "lighter"; for (var s2 = 1; s2 <= 4; s2++) { ctx.globalAlpha = 0.18 / s2; ctx.drawImage(G, tgt.x - Wd / 2, top - s2 * 22 * hs, Wd, L); } }
   ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = a; ctx.filter = "brightness(" + (0.45 + 0.55 * ZK.eb).toFixed(2) + ") saturate(" + (1.25 - 0.25 * ZK.eb).toFixed(2) + ")";
@@ -29127,7 +29141,7 @@ function zkDrawConquest(ctx, w, h, vis, hScale) {
   var fl = idleAnim.skillFlash && idleAnim.skillFlash.zarek > 0; if (fl && !Z.flPrev && !Z.sk) { var skd = HERO_DEFS.zarek.conquestSkills[0]; zkSkillStart(idleAnim, "cq", skd.aoeDelay); } Z.flPrev = fl;
   var tx = w * 0.72, best = null; Object.keys(idleAnim.enemyById || {}).forEach(function (id) { var en = idleAnim.enemyById[id]; if (!en || en.dying || en.x > w) return; if (!best || en.x < best) best = en.x; }); if (best != null) tx = Math.min(w * 0.86, best + 30 * hScale);
   if (Z.sk && Z.sk.tx == null) Z.sk.tx = tx;
-  zkDraw(ctx, idleAnim, "cq", hScale, false, { x: Z.sk && Z.sk.tx != null ? Z.sk.tx : tx, ground: groundYFor(h) + 7 * hScale });
+  zkDraw(ctx, idleAnim, "cq", hScale, false, { x: Z.sk && Z.sk.tx != null ? Z.sk.tx : tx, ground: groundYFor(h) + 7 * hScale, rocks: zkRockPal(game.idleEnvironment()) });
 }
 function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
   if (key === "zarek" && HERO_ANIMS.zarek) { var zvis = idleAnim.heroVis[key] || idleSquadSlotPos(w, h, i, key); zkDrawConquest(ctx, w, h, zvis, heroSpriteVisualScale / 100); return; } /* v1654 */
@@ -39641,7 +39655,7 @@ function drawArenaFrame(ctx, w, h) {
         var zA = zkState(arenaAnim, flashKey), fcz = fortLayoutPoint(w, h, "arena", !isPlayerSide, "h0", false), deckZ = slot.y + 13;
         zkStep(zA, isPlayerSide ? { x0: w * 0.08, x1: w * 0.42, deck: deckZ } : { x0: w * 0.58, x1: w * 0.92, deck: deckZ }, hsA, performance.now());
         arenaAnim.heroScreen[flashKey] = { x: zA.x, y: zA.feet - 13 };
-        zkDraw(ctx, arenaAnim, flashKey, hsA, !isPlayerSide, { x: isPlayerSide ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, ground: fcz ? fcz.y + 4 * hsA : groundYFor(h) });
+        zkDraw(ctx, arenaAnim, flashKey, hsA, !isPlayerSide, { x: isPlayerSide ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, ground: fcz ? fcz.y + 4 * hsA : groundYFor(h), rocks: zkRockPal("arena") });
         ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), zA.x, zA.feet + 9);
         return;
       }

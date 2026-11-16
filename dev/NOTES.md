@@ -5351,3 +5351,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Still has the earpiece: the in-battle idle sprite (Harley only asked about the card).
 - Atlas: 3 runs x $0.61 = about $1.82.
 - Headless: hero card plays the sword moment once, then stays on the idle loop (checked at ~3 s, ~10 s, ~22 s); no console errors.
+
+## v1657 — Zarek: level-coloured rocks, giant sword no longer grows as it fades
+- Harley: the rocks thrown up by Colossus Blade should match the level's ground colour ("just a few palettes"), and the giant sword must not grow when it disappears.
+- ZK_ROCK_PAL: 6 palettes picked from each level's measured road colour - dark (Arena's purple-slate bridge), earth (rain, cave, swamp, jungle, day), sand (desert, stream, foundry, pineforest, skydocks, throneroom, greathall), stone (castlegate, armoury, night), ice (snow, crystal), lava (volcano). ZK_ROCK_ENV maps level -> palette; unknown levels use earth. Conquest uses the current level; Arena always uses dark (its own bridge backdrop).
+- Fade: removed the widening (spread) and the lift (it pulled more blade out of the ground, which also read as growing). It now dissolves in place.
+- Sword demo artifact updated the same way (v18) and saved in dev/labs.
+- Headless Arena: rocks come out dark slate, the sword dissolves at its landed size; no console errors.
