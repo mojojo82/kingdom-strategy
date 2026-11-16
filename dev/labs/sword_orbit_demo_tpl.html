@@ -157,9 +157,10 @@
   var SK = null; // { t0 }
   var LAUNCH = 0.06, RISE = 0.55, DROP0 = 1.0, DROPD = 0.26, HOLD = 0.95, FADE = 0.85;
   /* sound: the game's launch clip (sfx/zarek_launch.mp3). Browsers only allow sound after a tap, so the first tap anywhere turns it on. */
-  var AC = null, LAUNCH_BUF = null;
-  function audioOn() { if (AC) { if (AC.state === "suspended") AC.resume(); return; } try { AC = new (window.AudioContext || window.webkitAudioContext)(); var bin = atob(AS.sfxLaunch.split(",")[1]), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); AC.decodeAudioData(u.buffer, function (b) { LAUNCH_BUF = b; var n = $("sndNote"); if (n) n.textContent = "Sound on"; }); } catch (e) {} }
+  var AC = null, LAUNCH_BUF = null, IMPACT_BUF = null;
+  function audioOn() { if (AC) { if (AC.state === "suspended") AC.resume(); return; } try { AC = new (window.AudioContext || window.webkitAudioContext)(); var bin = atob(AS.sfxLaunch.split(",")[1]), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); AC.decodeAudioData(u.buffer, function (b) { LAUNCH_BUF = b; var n = $("sndNote"); if (n) n.textContent = "Sound on"; }); var bin2 = atob(AS.sfxImpact.split(",")[1]), u2 = new Uint8Array(bin2.length); for (var j = 0; j < bin2.length; j++) u2[j] = bin2.charCodeAt(j); AC.decodeAudioData(u2.buffer, function (b) { IMPACT_BUF = b; }); } catch (e) {} }
   document.addEventListener("pointerdown", audioOn);
+  function playBuf(B) { if (!AC || !B || !$("snd").checked) return; var s = AC.createBufferSource(), g = AC.createGain(); g.gain.value = 0.85; s.buffer = B; s.connect(g); g.connect(AC.destination); s.start(0); }
   function playLaunch() { if (!AC || !LAUNCH_BUF || !$("snd").checked) return; var s = AC.createBufferSource(), g = AC.createGain(); g.gain.value = 0.85; s.buffer = LAUNCH_BUF; s.connect(g); g.connect(AC.destination); s.start(0); }
   $("skill").onclick = function () { if (SK || ATK) return; SK = { t0: T, hit: false, warped: false }; playLaunch(); swords.forEach(function (s, i) { s.state = "launch"; s.t = T + i * LAUNCH; s.from = null; }); };
   var ATK = null; // basic attack in progress
@@ -233,7 +234,7 @@
 
   function frame(now) {
     var real = Math.min(0.05, (now - (frame.last || now)) / 1000); frame.last = now;
-    var dt = paused ? 0 : real * (cfg.slow ? 0.25 : 1); T += dt; ring += dt * cfg.spd * 1.4; autoStep();
+    var dt = paused ? 0 : real * (cfg.slow ? 0.25 : 1); T += dt; ring += dt * cfg.spd * 1.4; autoStep(); if (SK && !SK.snd && T - SK.t0 >= DROP0) { SK.snd = true; if (!cfg.slow) playBuf(IMPACT_BUF); } /* boom lands on the impact: the clip starts as the sword starts to fall */
     wanderStep(dt); stepSkill(dt); if (ATK && ATK.end && T > ATK.end) { swords.forEach(function (s) { s.state = "orbit"; s.done = false; s.hit = false; }); ATK = null; }
     // camera
     var k = W / UW, cx = 0, cy = 0, h = heroPos();

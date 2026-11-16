@@ -5377,3 +5377,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1660 — Zarek: gentler launch sound
 - Harley: "try this one instead. a bit less intrusive". sfx/zarek_launch.mp3 = wind magic 5, first 1.2 s, 0.3 s fade out, mono, volume as supplied (mean -18 dB vs the first pick's -16). Peaks ~0.3 s in. First pick kept as sfx/zarek_launch_v1.mp3; original in sfx/originals/zarek_launch_wind_magic5_original.mp3.
 - Sword demo artifact v20 uses the same clip.
+
+## v1661 — Zarek: giant sword impact sound
+- Harley's "earth spell impact 2" -> sfx/zarek_impact.mp3: 0.44-2.34 s of the original (its boom is at 0.70 s, so it lands 0.26 s into the cut), 0.45 s fade out, mono, volume as supplied (mean -13 dB). Original in sfx/originals/zarek_impact_earth_spell2_original.mp3.
+- Played as the giant sword starts to fall (zkDrawGiant, first frame with k >= 0); the fall takes 0.26 s, so the boom hits on the impact frame and the short rush before it covers the fall. Replaces the generic sfxSkillShot at impact. Overridable as "zarekImpact"; Sound FX toggle respected.
+- Sword demo v21: same clip, same timing (muted in slow motion so it doesn't drift).
+- Headless Arena: impact sound started 255 ms before landing (land at 1350 ms) -> boom within ~5 ms of the hit; clip decodes (1.90 s); no console errors.
