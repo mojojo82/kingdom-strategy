@@ -61,7 +61,13 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        # v1616 Iron Lily redo (pale silver-grey ninja, red blade -> GREEN screen): one start frame (redo/lily_start_v1) for idle / run / three attacks
        "ironlily": {"bg": "green", "clips": {"idle": ("lily_idle_v1.mp4", 0, 0), "run": ("lily_run_v1.mp4", 0, 0), "attack": ("lily_atk1_v1.mp4", 0, 0),
                             "attack2": ("lily_spin_v1.mp4", 0, 0), "attack3": ("lily_chop_v1.mp4", 0, 0)},
-                 "stand_src": 347, "feet_y": 677}}[HERO]
+                 "stand_src": 347, "feet_y": 677},
+       # v1678 Tom (working name, Legendary melee swordsman, Harley 17 Nov): one start frame (tom_start = silverblade_start_v1) for idle / run / both slashes / leap / block-in;
+       # the high-guard block (hold) starts from silverblade_hblock_v3_fit, drawn at the same scale and feet spot
+       "tom": {"clips": {"idle": ("silverblade_idle_v1.mp4", 0, 0), "run": ("silverblade_run_v1.mp4", 0, 0), "attack": ("silverblade_attack_rising_v1.mp4", 0, 0),
+                         "attack2": ("silverblade_attack2_v1.mp4", 0, 0), "skill": ("silverblade_skill_v2.mp4", 0, 0),
+                         "blockin": ("silverblade_hblock_in_v1.mp4", 0, 0), "blockhold": ("silverblade_hblock_hold_v1.mp4", 0, 0)},
+                 "stand_src": 465, "feet_y": 721}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
