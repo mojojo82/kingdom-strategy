@@ -106,12 +106,12 @@
 
   /* Ally blades idea: one green sword conjured for each teammate, orbiting them (they fly out from Zarek, and back when switched off) */
   var LYR = img(AS.lyra), AUR = img(AS.aurek);
-  var ALLIES = [{ im: HAL, M: AS.haloMeta, x: 52 }, { im: LYR, M: AS.lyraMeta, x: 98 }, { im: AUR, M: AS.aurekMeta, x: 146 }, { im: GAR, M: AS.garethMeta, x: 196 }];
+  var ALLIES = [{ im: HAL, M: AS.haloMeta, x: 52 }, { im: LYR, M: AS.lyraMeta, x: 98, sh: 0.82 }, { im: AUR, M: AS.aurekMeta, x: 146, sh: 0.77 }, { im: GAR, M: AS.garethMeta, x: 196, sh: 0.92 }]; /* sh: shield size, tighter round the head (Harley) */
   var AB = null;
   function allyBladePos(i, A) { var feet = FLOOR + 1, hh = A.M.dispH, chest = feet - hh * 0.42, R = Math.max(12, hh * 0.3), a = T * 2.2 + i * 1.7;
     return { x: A.x + Math.cos(a) * R, y: chest + Math.sin(a) * R * 0.3 + Math.sin(T * 2.4 + i) * 0.6, z: Math.sin(a), a: a }; }
   var ABMODE = "orbit";
-  function shieldGeom(A) { var hh = A.M.dispH, r = Math.max(19, hh * 0.52); return { cx: A.x, cy: FLOOR + 3 - r, rx: r, ry: r }; } /* a perfect circle (Harley) */
+  function shieldGeom(A) { var hh = A.M.dispH, r = Math.max(16, hh * 0.52) * (A.sh || 1); return { cx: A.x, cy: FLOOR + 3 - r, rx: r, ry: r }; } /* a perfect circle (Harley) */
   function drawBubble(g, s, back, i) { if (s <= 0.01) return; var rx = g.rx * s, ry = g.ry * s, pu = 1 + Math.sin(T * 3.1 + i) * 0.025; rx *= pu; ry *= pu;
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     if (back) { var gr = ctx.createRadialGradient(g.cx, g.cy, 0, g.cx, g.cy, Math.max(rx, ry)); gr.addColorStop(0, "rgba(90,255,120,0.04)"); gr.addColorStop(0.75, "rgba(90,255,120,0.10)"); gr.addColorStop(1, "rgba(150,255,150,0.28)");
