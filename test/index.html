@@ -13925,7 +13925,8 @@ function arenaFoeFrontX(isP) {
 function arenaMeleeApproach(id, isP, wantX, reach, spd, hs) {
   var M = arenaAnim.meleeApr || (arenaAnim.meleeApr = {}), st = M[id], now = performance.now(), dir = isP ? 1 : -1;
   var dt = st ? Math.min(0.1, (now - st.t) / 1000) : 0;
-  if (!st || now - st.t > 400 || arenaAnim.battleEnded) st = M[id] = { x: wantX, t: now, hold: 0 };
+  if (st && arenaAnim.battleEnded) { st.t = now; return { x: st.x, run: false, hold: false, flip: st.flip != null ? st.flip : !isP }; } /* v1676 (Harley bug): when the fight ends everyone stays where they are (gerbils jumped back to their fight spots) */
+  if (!st || now - st.t > 400) st = M[id] = { x: wantX, t: now, hold: 0 };
   var des = wantX;
   if (reach && !arenaAnim.battleEnded) { var fx = arenaFoeFrontX(isP); if (fx != null) { var ap = fx - dir * 26 * hs; if (dir * (ap - wantX) > 20 * hs) des = ap; /* 26 = the normal meeting gap; only when he is clearly short of the enemy */ } }
   var dx = des - st.x, step = spd * dt, moved = 0;
@@ -14286,7 +14287,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1675"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1676"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -40134,11 +40135,11 @@ function drawArenaFrame(ctx, w, h) {
         var wdt = Math.min(0.1, (wNow - W.t) / 1000), lo = isP ? mX - 20 * hsC : endX - oswN * 0.7, hi = isP ? endX + oswN * 0.7 : mX + 20 * hsC;
         if (W.wx == null) { W.wx = W.x; W.wait = 0; }
         if (Math.abs(W.wx - W.x) < 0.5) { W.wait -= wdt; if (W.wait <= 0) { var nx = W.x, tries = 0; while (Math.abs(nx - W.x) < 60 * hsC && tries++ < 8) nx = lo + Math.random() * (hi - lo); W.wx = nx; W.wait = 0.3 + Math.random() * 0.9; } }
-        var wd = W.wx - W.x, ws = GERBIL_RUN_PX_PER_SEC * wdt; if (Math.abs(wd) > 0.5) { W.x += Math.abs(wd) <= ws ? wd : Math.sign(wd) * ws; st = "run"; cFlip = wd < 0; } else st = "idle";
+        var wd = W.wx - W.x, ws = GERBIL_RUN_PX_PER_SEC * wdt; if (Math.abs(wd) > 0.5) { W.x += Math.abs(wd) <= ws ? wd : Math.sign(wd) * ws; st = "run"; cFlip = wd < 0; } else st = "idle"; W.flip = cFlip;
         W.t = wNow; W.free = true; W.lw = null; x = W.x;
       } else {
         var cAp = arenaMeleeApproach("c_" + kk, isP, x, c.reach, c.g ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(tk), hsC); x = cAp.x; if (cAp.run) st = "run"; else if (cAp.hold && st === "run") st = "idle"; /* v1672: run up to an enemy already at the fortress front */
-        if (cAp.run) cFlip = cAp.flip;
+        if (cAp.run || arenaAnim.battleEnded) cFlip = cAp.flip;
         var MA2 = arenaAnim.meleeApr && arenaAnim.meleeApr["c_" + kk]; if (MA2) MA2.wx = null;
       }
       c.sx = x;

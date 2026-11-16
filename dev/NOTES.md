@@ -5479,3 +5479,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   - Lily instead of Zarek, with vs without gerbils: Lv40 vs G/S/T/L/Aurek 32 vs 26, vs Hanzo team 5 vs 2; Lv80 12 vs 2, 0 vs 0.
   - Crawler enemy (gerbils bite the ship): Lv40 40/40 vs G/S/T/L/Aurek, Lv80 36/40 - about the same as a normal ship.
 - Takeaway: gerbils are still a big swing at Lv40 (the decoy effect), smaller at Lv80; they never beat the Hanzo team.
+
+## v1676 — Gerbils no longer jump back when an Arena fight ends (17 Nov 2026)
+- Harley bug: winning an Arena match made the gerbils teleport. At the end the drawing dropped their roaming / run-up positions and snapped them back to their fight spots. Now everyone (gerbils, clones, heroes using the run-up) stays exactly where they are when the fight ends.
+- Repro headless (immortal test gerbils, strong team so it wins): before, roaming gerbils at x 280-390 snapped to 182-242 on the win; after, positions unchanged across the end. No console errors.
