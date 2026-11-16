@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1664"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1665"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29071,7 +29071,7 @@ function zkStep(Z, area, hs, now) {
   Z.vs += (Z.vx - Z.vs) * Math.min(1, dt * 1.6); Z.ring += dt * ZK.spd;
   Z.feet = area.deck - Z.h * hs + Math.sin(now / 1000 * 2 * Math.PI / 2.4) * 2.5 * hs; Z.chest = Z.feet - ZK.bodyH * hs * 0.62; Z.hs = hs;
 }
-var ZK_OFF = null;
+var ZK_OFF = null, ZK_TURN = {}, ZK_GIANT_BAKED = null; /* v1665 caches */
 function zkSword(ctx, x, y, rot, len, faceAng, alpha, plain) { /* one energy sword; turning swords are drawn in slices (the side turning toward you grows) */
   var F = zkImg("zarek_sword_face"), E = zkImg("zarek_sword_edge"); if (!F || alpha <= 0.01) return;
   var fw = len * F.naturalWidth / F.naturalHeight, ew = E ? len * E.naturalWidth / E.naturalHeight : fw * 0.2;
@@ -29079,14 +29079,19 @@ function zkSword(ctx, x, y, rot, len, faceAng, alpha, plain) { /* one energy swo
   if (plain) { ctx.globalAlpha = alpha; ctx.drawImage(F, -fw / 2, -len * 0.78, fw, len); ctx.restore(); return; }
   var w = Math.sin(faceAng), zc = Math.cos(faceAng), aw = Math.abs(w), sm = function (a, b, v) { var t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
   var fa = alpha * sm(0.04, 0.16, aw), ea = alpha * (1 - sm(0.06, 0.2, aw));
-  if (fa > 0.01) {
-    var tr = ctx.getTransform ? ctx.getTransform() : { a: 2 }, px = Math.max(1, Math.min(6, Math.hypot(tr.a, tr.b))), S = Math.max(8, Math.ceil(len * 2.6 * px));
-    if (!ZK_OFF) ZK_OFF = document.createElement("canvas"); if (ZK_OFF.width !== S) { ZK_OFF.width = S; ZK_OFF.height = S; }
-    var o = ZK_OFF.getContext("2d"); o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, S, S); o.setTransform(px, 0, 0, px, S / 2, S / 2);
-    var N = 18, D = len * 2.4, fh = F.naturalHeight, fwid = F.naturalWidth;
-    for (var j = 0; j < N; j++) { var u0 = (j / N - 0.5) * fw, u1 = ((j + 1) / N - 0.5) * fw, g0 = D / (D - u0 * zc), g1 = D / (D - u1 * zc), gm = (g0 + g1) / 2, x0 = u0 * w * g0, x1 = u1 * w * g1, xl = Math.min(x0, x1), xw = Math.abs(x1 - x0) + 0.4;
-      o.save(); if (x1 < x0) { o.translate(xl * 2 + xw, 0); o.scale(-1, 1); } o.drawImage(F, j / N * fwid, 0, fwid / N + 0.5, fh, xl, -len * 0.78 * gm, xw, len * gm); o.restore(); }
-    ctx.globalAlpha = fa; ctx.drawImage(ZK_OFF, -S / px / 2, -S / px / 2, S / px, S / px);
+  if (fa > 0.01) { /* v1665 (Harley: Arena slowdown with Zarek): each turn angle is built from slices ONCE (96 angles, cached per screen sharpness) and reused -
+       it used to rebuild every sword from 18 slices on a re-sized scratch canvas every frame (~200 draws + canvas re-allocations per frame per Zarek) */
+    var tr = ctx.getTransform ? ctx.getTransform() : { a: 2 }, px = Math.max(1, Math.min(4, Math.round(Math.hypot(tr.a, tr.b)))), LR = Math.max(20, Math.ceil(len / 5) * 5);
+    var B = 96, bi = ((Math.round(faceAng / (Math.PI * 2) * B) % B) + B) % B, ck = px + "|" + LR, cs = ZK_TURN[ck] || (ZK_TURN[ck] = []), C = cs[bi];
+    if (!C) {
+      var S = Math.max(8, Math.ceil(LR * 2.6 * px)), ang = bi / B * Math.PI * 2, cw = Math.sin(ang), czc = Math.cos(ang), cfw = LR * F.naturalWidth / F.naturalHeight;
+      C = cs[bi] = document.createElement("canvas"); C.width = C.height = S; var o = C.getContext("2d"); o.setTransform(px, 0, 0, px, S / 2, S / 2);
+      var N = 18, D = LR * 2.4, fh = F.naturalHeight, fwid = F.naturalWidth;
+      for (var j = 0; j < N; j++) { var u0 = (j / N - 0.5) * cfw, u1 = ((j + 1) / N - 0.5) * cfw, g0 = D / (D - u0 * czc), g1 = D / (D - u1 * czc), gm = (g0 + g1) / 2, x0 = u0 * cw * g0, x1 = u1 * cw * g1, xl = Math.min(x0, x1), xw = Math.abs(x1 - x0) + 0.4;
+        o.save(); if (x1 < x0) { o.translate(xl * 2 + xw, 0); o.scale(-1, 1); } o.drawImage(F, j / N * fwid, 0, fwid / N + 0.5, fh, xl, -LR * 0.78 * gm, xw, LR * gm); o.restore(); }
+      C._s = S / px;
+    }
+    var k = len / LR, Sd = C._s * k; ctx.globalAlpha = fa; ctx.drawImage(C, -Sd / 2, -Sd / 2, Sd, Sd);
   }
   if (ea > 0.01 && E) { ctx.globalAlpha = ea; ctx.drawImage(E, -ew / 2, -len * 0.78, ew, len); }
   ctx.restore();
@@ -29158,8 +29163,11 @@ function zkDrawGiant(ctx, Z, sk, e, hs, tgt) {
   var top = tip - L * (1525 / 1533), rise = 0, spread = 1; /* v1657 (Harley): it no longer grows (widens / lifts more blade out of the ground) while it dissolves */
   ctx.save(); ctx.beginPath(); ctx.rect(-1000, -2000, 4000, entry + 2000); ctx.clip();
   if (k < 1) { ctx.globalCompositeOperation = "lighter"; for (var s2 = 1; s2 <= 4; s2++) { ctx.globalAlpha = 0.18 / s2; ctx.drawImage(G, tgt.x - Wd / 2, top - s2 * 22 * hs, Wd, L); } }
-  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = a; ctx.filter = "brightness(" + (0.45 + 0.55 * ZK.eb).toFixed(2) + ") saturate(" + (1.25 - 0.25 * ZK.eb).toFixed(2) + ")";
-  ctx.drawImage(G, tgt.x - Wd * spread / 2, top - rise, Wd * spread, L); ctx.filter = "none";
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = a;
+  if (!ZK_GIANT_BAKED || ZK_GIANT_BAKED._src !== G) { /* v1665: the darkening filter is baked once into a copy - a live canvas filter on a picture this big every frame is slow on phones */
+    var gb = document.createElement("canvas"); gb.width = G.naturalWidth; gb.height = G.naturalHeight; var gx = gb.getContext("2d");
+    gx.filter = "brightness(" + (0.45 + 0.55 * ZK.eb).toFixed(2) + ") saturate(" + (1.25 - 0.25 * ZK.eb).toFixed(2) + ")"; gx.drawImage(G, 0, 0); gb._src = G; ZK_GIANT_BAKED = gb; }
+  ctx.drawImage(ZK_GIANT_BAKED, tgt.x - Wd * spread / 2, top - rise, Wd * spread, L);
   var pulse = tf <= 0 && k >= 1 ? ZK.eb * (0.22 + 0.18 * Math.sin(e / 1000 * 13) * Math.sin(e / 1000 * 5.3)) : (tf > 0 ? 0.6 * ZK.eb * a : 0);
   if (pulse > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = pulse * a; ctx.drawImage(G, tgt.x - Wd * spread / 2, top - rise, Wd * spread, L); }
   ctx.restore();

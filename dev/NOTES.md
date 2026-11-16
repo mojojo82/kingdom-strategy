@@ -5400,3 +5400,12 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - The button shows the live FPS ("PERF 44"). Switches (a hidden part draws into a 1x1 canvas, the fight still runs): Background, HP bars + names, Fortresses + guns, Heroes, Hero shots + effects, Missile smoke, Missile rockets, Missile explosions, Rain / snow (also the sky strip).
 - Position / FPS text updated twice a second (reading the layout every frame would cost frames itself).
 - Headless: button mounts, panel toggles keys (PT.a_*), no console errors. Delete with the Conquest one once we know the culprit.
+
+## v1664 — PERF test button in Arena
+- Harley: slowdown in Arena. Same TEMPORARY PERF test as Conquest (v1582), top left of the Arena battle under the player's HP bar. The button shows the live FPS. Switches: Background, HP bars + names, Fortresses + guns, Heroes, Hero shots + effects, Missile smoke, Missile rockets, Missile explosions, Rain / snow. Position / FPS text updated twice a second.
+
+## v1665 — Zarek: much cheaper to draw (the Arena slowdown)
+- Harley: "main difference is I've got Zarek equipped now". Measured: Arena frames ~30-40% slower with a Zarek on the field (bots can have him too).
+- Cause: every orbiting sword was rebuilt from 18 slices on a scratch canvas every frame, and the scratch canvas was re-sized (= re-allocated) ~2x per frame because each sword's size differs with depth. ~200 draws + canvas re-allocations per frame per Zarek.
+- Fix: each turn angle is built once (96 angles, cached per screen sharpness and size step) and reused - one draw per sword. The giant sword's darkening filter is baked once into a copy instead of a live canvas filter on an 862x1533 picture every frame of the skill.
+- Benchmark (same page, same 400 frames, x3 canvas): zkDraw 1.42-1.56 ms -> 0.61-0.65 ms per frame (~2.3x), not counting the GPU cost of the removed re-allocations. Look unchanged (old vs new side by side).
