@@ -54,6 +54,7 @@
     <label for="lean"><span>Lean <b id="leanV">0.5</b></span><input id="lean" type="range" min="0" max="25" value="5"></label>
     <label for="bend"><span>Bend <b id="bendV">0.6</b></span><input id="bend" type="range" min="0" max="25" value="6"></label>
     <label class="chk" for="auto"><input id="auto" type="checkbox" checked> Auto attack like the game (volley every 2 s, skill every 13 s)</label>
+    <label class="chk" for="snd"><input id="snd" type="checkbox" checked> Sound (<span id="sndNote">tap anywhere to turn on</span>)</label>
     <label class="chk" for="slow"><input id="slow" type="checkbox"> Slow motion</label>
   </div>
   <p class="note"><b>How it would work in the game:</b> the hero is his Atlas idle sheet; the orbit, the flying swords, the giant sword, the impact and the dissolve are all code drawing a few pictures, so it works the same in Conquest and Arena. Close-up zooms the camera on him to inspect the swords.</p>
@@ -155,7 +156,12 @@
   // ---- Skill state ----
   var SK = null; // { t0 }
   var LAUNCH = 0.06, RISE = 0.55, DROP0 = 1.0, DROPD = 0.26, HOLD = 0.95, FADE = 0.85;
-  $("skill").onclick = function () { if (SK || ATK) return; SK = { t0: T, hit: false, warped: false }; swords.forEach(function (s, i) { s.state = "launch"; s.t = T + i * LAUNCH; s.from = null; }); };
+  /* sound: the game's launch clip (sfx/zarek_launch.mp3). Browsers only allow sound after a tap, so the first tap anywhere turns it on. */
+  var AC = null, LAUNCH_BUF = null;
+  function audioOn() { if (AC) { if (AC.state === "suspended") AC.resume(); return; } try { AC = new (window.AudioContext || window.webkitAudioContext)(); var bin = atob(AS.sfxLaunch.split(",")[1]), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); AC.decodeAudioData(u.buffer, function (b) { LAUNCH_BUF = b; var n = $("sndNote"); if (n) n.textContent = "Sound on"; }); } catch (e) {} }
+  document.addEventListener("pointerdown", audioOn);
+  function playLaunch() { if (!AC || !LAUNCH_BUF || !$("snd").checked) return; var s = AC.createBufferSource(), g = AC.createGain(); g.gain.value = 0.85; s.buffer = LAUNCH_BUF; s.connect(g); g.connect(AC.destination); s.start(0); }
+  $("skill").onclick = function () { if (SK || ATK) return; SK = { t0: T, hit: false, warped: false }; playLaunch(); swords.forEach(function (s, i) { s.state = "launch"; s.t = T + i * LAUNCH; s.from = null; }); };
   var ATK = null; // basic attack in progress
   /* like the game: the volley fires every 2 s, Colossus Blade every 13 s (first one 3 s in) */
   var AUTO = { atk: 1.5, sk: 3 };

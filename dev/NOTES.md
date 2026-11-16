@@ -5366,3 +5366,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Owned hero: the buttons under the card are full (and the row would fall below the screen), so they sit small in the top bar between the arrows and the close button ("+1 fragment", "Reset ★").
 - Reset needs a second tap within 3 s ("Tap again"). It sets stars 0, fragments 0, owned false, level 0, clears skill levels and takes the hero out of the Conquest roster (game.unequipConquestHero).
 - Headless: +1 x12 -> recruit -> star up -> equip -> reset -> back to locked with 0 fragments and off the roster; buttons hidden for non-admins; no console errors.
+
+## v1659 — Zarek: sound when the swords shoot up
+- Harley's clip (wind magic, 8 s, quiet) -> sfx/zarek_launch.mp3: 0.15-1.4 s of the original (the rest was silence), 0.3 s fade out, mono, +6 dB (mean -16 dB, in line with the slam / teleport). Original kept in sfx/originals/zarek_launch_wind_magic_original.mp3.
+- Embedded like Gareth's slam (ZAREK_LAUNCH_SFX, decoded once, gain 0.85); sfxZarekLaunch() plays at zkSkillStart, so Conquest and Arena both get it. It peaks ~0.45 s in, as the swords leave the ring. Sound FX toggle respected; overridable as "zarekLaunch".
+- The impact still uses the generic skill sound until Harley picks one for the giant sword.
+- Sword demo artifact (v19): same clip on the skill, "Sound" tick box (browsers need one tap first).
+- Headless Arena: one launch sound per skill, the clip decodes (1.25 s); no console errors. (Can't hear it headless - the timing is from the clip's loudness curve.)
