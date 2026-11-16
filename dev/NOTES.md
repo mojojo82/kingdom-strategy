@@ -5358,3 +5358,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Fade: removed the widening (spread) and the lift (it pulled more blade out of the ground, which also read as growing). It now dissolves in place.
 - Sword demo artifact updated the same way (v18) and saved in dev/labs.
 - Headless Arena: rocks come out dark slate, the sword dissolves at its landed size; no console errors.
+
+## v1658 — Admin test buttons on the hero card
+- Harley: for admin accounts, a +1 button that gives that hero's fragments, and a "Reset star level" button that puts the hero back to 0 stars and locks them again.
+- Only shown when the signed-in account is admin (KS_BACKEND.isAdmin, the same check as the art tools). Not on the Overlord (governor) cards.
+- Locked hero: two tiles right under "Needs 1 fragment" ("Admin +1 fragment", "Admin Reset star level").
+- Owned hero: the buttons under the card are full (and the row would fall below the screen), so they sit small in the top bar between the arrows and the close button ("+1 fragment", "Reset ★").
+- Reset needs a second tap within 3 s ("Tap again"). It sets stars 0, fragments 0, owned false, level 0, clears skill levels and takes the hero out of the Conquest roster (game.unequipConquestHero).
+- Headless: +1 x12 -> recruit -> star up -> equip -> reset -> back to locked with 0 fragments and off the roster; buttons hidden for non-admins; no console errors.

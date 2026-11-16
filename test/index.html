@@ -1784,6 +1784,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #heroDetailOverlay .hd-name { background:none; padding:0; margin:0; flex:1; text-align:center; font-family:var(--bodyfont); font-weight:700; font-size:20px; color:#f0d98c; text-shadow:0 1px 3px #000a; letter-spacing:.02em; }
   #heroDetailOverlay .hd-close, #heroDetailOverlay .hd-nav { width:36px; height:34px; border-radius:8px; border:1.5px solid #b3985f; background:#2c4a5e; color:#f2ece0; font-size:16px; padding:0; box-shadow:inset 0 0 0 2px #2c4a5e, inset 0 0 0 3px #5f86a0; }
   #heroDetailOverlay .hd-close:hover, #heroDetailOverlay .hd-nav:hover { background:#34566d; }
+  #hcAdminBar { display:flex; gap:6px; margin-left:8px; } #heroDetailOverlay .hd-nav.hc-admbtn { width:auto; padding:0 9px; font-size:12px; font-weight:700; white-space:nowrap; } #heroDetailOverlay .hd-nav.hc-admbtn img { height:14px; vertical-align:-2px; } /* v1658 admin-only */
   #heroDetailOverlay .hd-badges { margin:10px 0 4px; }
   #heroDetailOverlay .hd-badge { border-radius:8px; border:1.5px solid #6b5730; }
   #heroDetailOverlay .hd-rarity-tag { font-family:var(--bodyfont); }
@@ -14171,7 +14172,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1657"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1658"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -34173,7 +34174,7 @@ function renderHeroDetailReal() {
     content.innerHTML = html;
   }
   /* v1143 (Harley): the buttons live under the card (outside the frame), on every tab: Level Up + Star Up as two tiles, Equip / Overlord / Recruit as one long button */
-  var btnWrap = document.getElementById("hcActions"); btnWrap.innerHTML = "";
+  var btnWrap = document.getElementById("hcActions"); btnWrap.innerHTML = ""; var oldAB = document.getElementById("hcAdminBar"); if (oldAB) oldAB.remove();
   var tileRow = document.createElement("div"); tileRow.className = "hc-tiles";
   {
     if (!h.owned) {
@@ -34221,6 +34222,27 @@ function renderHeroDetailReal() {
         equipBtn.disabled = !isEquipped && rosterFull;
         equipBtn.onclick = function () { (isEquipped ? game.unequipConquestHero(key) : game.equipConquestHero(key)); persist(); render(); renderHeroDetail(); };
         btnWrap.appendChild(equipBtn);
+      }
+    }
+    if (assetIsAdmin() && def.class !== "governor") { /* v1658 (Harley): admin-only test buttons - +1 of this hero's fragments, and reset the hero to 0 stars + locked */
+      var admRow = document.createElement("div"); admRow.className = "hc-tiles hc-admin";
+      var addF = document.createElement("button"); addF.className = "hd-actionbtn hc-tile secondary";
+      addF.innerHTML = "<span>Admin</span><b>+1 " + FRAGMENT_ICON + "</b>";
+      addF.onclick = function () { h.fragments = (h.fragments | 0) + 1; persist(); render(); renderHeroDetail(); };
+      var rstB = document.createElement("button"); rstB.className = "hd-actionbtn hc-tile secondary";
+      rstB._lb = ["<span>Admin</span><b>Reset star level</b>", "<span>Admin</span><b>Tap again to reset</b>"]; rstB.innerHTML = rstB._lb[0];
+      rstB.onclick = function () {
+        if (!rstB._armed) { rstB._armed = true; rstB.innerHTML = rstB._lb[1]; setTimeout(function () { if (rstB._armed) { rstB._armed = false; rstB.innerHTML = rstB._lb[0]; } }, 3000); return; }
+        h.stars = 0; h.fragments = 0; h.owned = false; h.level = 0; delete h.skillLevels;
+        if (game.state.conquestRoster.indexOf(key) !== -1) game.unequipConquestHero(key);
+        persist(); render(); renderHeroDetail();
+      };
+      if (!h.owned) { admRow.appendChild(addF); admRow.appendChild(rstB); btnWrap.appendChild(admRow); }
+      else { /* owned: the buttons under the card are already full, so the two admin buttons sit small in the top bar between the arrows and the close button */
+        var bar = document.querySelector("#heroDetailOverlay .hc-bar"), sp = bar && bar.querySelector(".hc-sp");
+        if (sp) { var ab = document.createElement("div"); ab.id = "hcAdminBar"; addF.className = rstB.className = "hd-nav hc-admbtn";
+          addF.innerHTML = "+1 " + FRAGMENT_ICON; rstB._lb = ["Reset ★", "Tap again"]; rstB.innerHTML = rstB._lb[0];
+          ab.appendChild(addF); ab.appendChild(rstB); bar.insertBefore(ab, sp); }
       }
     }
   }
