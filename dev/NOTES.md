@@ -5389,3 +5389,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Volley: same as the demo now - zkOnVolley(M, fk, tx, ty) records each sword's spot on the ring; zkDrawDarts (in zkLate, over the enemies) flies them 50 ms apart, 0.2 s each, with their own little hit bursts, then they warp back. Swords not yet launched stay on the ring. The game projectile still carries the damage but is invisible (zkDrawVolley / zkVolleyHit skip it).
 - Arena giant sword: ground = groundYFor(h) + 7 (the bridge floor), was the enemy fortress's hero deck spot (fortLayoutPoint h0), which put the impact on the hull.
 - Headless Arena (art/originals/heroes/zarek/ingame_arena_v1662.png): swords strung out between him and the target mid-volley; giant sword impact on the bridge floor in front of the ship; no console errors.
+
+## v1663 — Zarek: the landed giant sword stays put in Conquest
+- Harley: once the big sword is in the ground it should stay at that spot of the level, so the fortress slowly comes up to it while the level scrolls (it was fixed on screen).
+- zkDrawConquest: after landing, Z.sk.tx moves back by the road's scroll each frame (idleAnim.bgOffsetFar, the same offset the level road uses, 1:1; wrap at 300000 handled). Its rings, rocks and sparks shift with it. When the march halts (enemy up close) the scroll stops and so does the sword. Arena doesn't scroll - unchanged.
+- Headless Conquest: sword x fixed until it lands (~1.3 s), then 364 -> 274 while the road moved 361 -> 450 (90 px each); no console errors.

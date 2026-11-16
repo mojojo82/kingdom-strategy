@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1662"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1663"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29191,6 +29191,11 @@ function zkDrawConquest(ctx, w, h, vis, hScale) {
   var fl = idleAnim.skillFlash && idleAnim.skillFlash.zarek > 0; if (fl && !Z.flPrev && !Z.sk) { var skd = HERO_DEFS.zarek.conquestSkills[0]; zkSkillStart(idleAnim, "cq", skd.aoeDelay); } Z.flPrev = fl;
   var tx = w * 0.72, best = null; Object.keys(idleAnim.enemyById || {}).forEach(function (id) { var en = idleAnim.enemyById[id]; if (!en || en.dying || en.x > w) return; if (!best || en.x < best) best = en.x; }); if (best != null) tx = Math.min(w * 0.86, best + 30 * hScale);
   if (Z.sk && Z.sk.tx == null) Z.sk.tx = tx;
+  /* v1663 (Harley): once the giant sword is in the ground it stays at that spot of the level - while the level scrolls it slides back toward the fortress
+     at the road's speed (bgOffsetFar, wraps at 300000). Its rings, rocks and sparks ride along too. */
+  var off = idleAnim.bgOffsetFar || 0, dOff = Z.lastOff == null ? 0 : (off - Z.lastOff + 300000) % 300000; Z.lastOff = off; if (dOff > 200) dOff = 0;
+  if (dOff) Z.fx.forEach(function (q) { if (q.k !== "f") q.x -= dOff; });
+  if (Z.sk && Z.sk.tx != null && performance.now() - Z.sk.t0 >= Z.sk.land) Z.sk.tx -= dOff;
   zkDraw(ctx, idleAnim, "cq", hScale, false, { x: Z.sk && Z.sk.tx != null ? Z.sk.tx : tx, ground: groundYFor(h) + 7 * hScale, rocks: zkRockPal(game.idleEnvironment()) });
 }
 function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
