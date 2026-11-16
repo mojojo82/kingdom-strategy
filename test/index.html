@@ -4678,7 +4678,8 @@ try { heroAttackTimingOn = localStorage.getItem(HERO_ATTACK_TIMING_KEY) !== "0";
 var COMBAT_TIMING = { basicAttackSec: 1, cannonCycleSec: 10, cannonBurstSec: 4, cannonBulletIntervalSec: 0.15 };
 // Per-hero basic-attack interval (seconds). Anything not listed uses basicAttackSec. Damage PER HIT scales by interval/basicAttackSec so DPS stays the same
 // (Gareth: swings every 0.5s for half damage). Skills still scale off the FULL (1s-equivalent) basic hit — see idleAttackerDamage / arenaSideStats.
-COMBAT_TIMING.heroAttackSec = { gareth: 0.5, zarek: 2 }; /* v1654: Zarek volleys every 2 s for double damage (Harley) */
+COMBAT_TIMING.heroAttackSec = { gareth: 0.5, zarek: 2 }; /* v1654: Zarek volleys every 2 s */
+COMBAT_TIMING.heroNoHitScale = { zarek: true }; /* v1655 (Harley): Zarek's 2 s volley is NOT double damage - normal hit, half the basic DPS */
 /* v1344 (Harley: "base atk 1 has its own animation and base atk 2 has its own animation"; "it needs to appear random (although its not)"): attack
    SLOTS. Each swing the engine draws the next slot from a shuffled BAG (combatRng, seeded per level -> deterministic, sims reproducible). A slot
    with secMult 2 takes twice as long and hits twice as hard, so DPS never changes (same as heroAttackSec's interval/damage scaling). Slot 2 for
@@ -4690,7 +4691,7 @@ try { heroAtkSlotsOn = localStorage.getItem(HERO_ATK_SLOTS_KEY) !== "0"; } catch
 COMBAT_TIMING.skillStartsFull = { gareth: true };
 function skillStartsFull(key) { return skillFullCdOn && !!COMBAT_TIMING.skillStartsFull[key]; }
 function heroAttackSec(key) { var v = heroAttackTimingOn && COMBAT_TIMING.heroAttackSec[key]; return v > 0 ? v : COMBAT_TIMING.basicAttackSec; }
-function heroHitDmgMult(key) { return heroAttackSec(key) / COMBAT_TIMING.basicAttackSec; }
+function heroHitDmgMult(key) { if (COMBAT_TIMING.heroNoHitScale && COMBAT_TIMING.heroNoHitScale[key]) return 1; return heroAttackSec(key) / COMBAT_TIMING.basicAttackSec; }
 // ---- Cross-device asset sync (via the `db` runtime capability) ----
 // Every uploaded image/sound override in this file (ground tile, grass
 // overlay, tree sprites, enemy sprites, boss sprite, hero art, skill icons,
@@ -6742,7 +6743,7 @@ var HERO_DEFS = {
   zarek: { name: "Zarek", title: "The Blade Architect", class: "archer", dualClass: "infantry", icon: "🗡️", rarity: "Legendary", basicAnyTarget: true, noRangeLimit: true, /* v1654 (Harley 16 Nov): built - a very tall floating tech-mage who BUILDS weapons out of green energy. Caster for now (Harley may make him Infantry later: the crescent swipe is ready in dev/labs/sword_orbit_demo.html). Same base stats as other heroes; basic = sword volley every 2 s for double damage (COMBAT_TIMING.heroAttackSec). */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Colossus Blade", icon: "🗡️💥", kind: "active", aoeAll: true, aoeDelay: 1.3, cooldown: 13, pctByLevel: [0.03, 0.04, 0.05, 0.06, 0.07], desc: "Every 13s, his orbiting blades shoot into the sky - then a colossal energy sword crashes down onto the enemy side and sticks in the ground. The impact hits every enemy, fortress included. Projection Wall shields ranged heroes from it." }
+      { name: "Colossus Blade", icon: "🗡️💥", kind: "active", aoeAll: true, aoeDelay: 1.3, cooldown: 13, pctByLevel: [0.12, 0.15, 0.19, 0.23, 0.27], desc: "Every 13s, his orbiting blades shoot into the sky - then a colossal energy sword crashes down onto the enemy side and sticks in the ground. The impact hits every enemy, fortress included. Projection Wall shields ranged heroes from it." }
     ],
     expeditionSkills: [
       { name: "Blade Sight", icon: "🗡️", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
@@ -14170,7 +14171,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1654"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1655"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {

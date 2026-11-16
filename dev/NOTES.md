@@ -5336,3 +5336,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   - Conquest (gareth, lyra, sera, torvald + zarek vs + kessa): Lv40 both stuck at 6-12, Lv80 both 10-1.
   - Meta check: same order as before, known warning.
 - Headless: Conquest (floats over the fortress, volleys, Colossus Blade lands with rocks + flash), Arena both sides (incl. a bot Zarek), hero screen (card + skill text), no console errors.
+
+## v1655 — Zarek: volley is not double damage
+- Harley: "dont do double damage on the volley". New COMBAT_TIMING.heroNoHitScale { zarek: true }: heroHitDmgMult() returns 1 for him, so the 2 s volley hits for a normal hit (his basic DPS is half of other heroes'). Gareth's half-damage fast swings unchanged.
+- With the basic halved, Colossus Blade went back up: 0.03-0.07 -> 0.12 / 0.15 / 0.19 / 0.23 / 0.27 (Halo-7's beam is 0.28-0.66).
+- Arena (Zarek first): Lv40 w/o zarek 50 wins vs w/o kessa 22, Lv80 38 vs 25 - below Kessa. Tested on the way: full Halo numbers (0.28-0.66) still beat Kessa (w/o zarek 21/18 vs w/o kessa 41/31); half of them (0.14-0.33) about Kessa level at Lv80.
+- Conquest (gareth, lyra, sera, torvald + zarek): Lv40 stuck at 6-9 (Kessa's team 6-12), Lv80 10-1.
