@@ -59,7 +59,7 @@
   window.addEventListener("resize", fit); fit();
   var $ = function (id) { return document.getElementById(id); };
   function img(src) { var i = new Image(); i.src = src; return i; }
-  var HERO = img(AS.hero), FACE = img(AS.face), EDGE = img(AS.edge), GIANT = img(AS.giant), SHIP = img(AS.ship), BG = img(AS.bg), HM = AS.heroMeta, GM = AS.giantMeta;
+  var HERO = img(AS.hero), FACE = img(AS.face), EDGE = img(AS.edge), GIANT = img(AS.giant), SHIP = img(AS.ship), BG = img(AS.bg), GAR = img(AS.gareth), HAL = img(AS.halo), HM = AS.heroMeta, GM = AS.giantMeta;
 
   var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false };
   [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1]].forEach(function (c) {
@@ -78,6 +78,8 @@
   var T = 0; // game clock (s), slows in slow motion
   function heroPos() { var bob = Math.sin(T * 2 * Math.PI / 2.4) * 2.5; var feet = FLOOR - 13 + bob; return { x: HX, feet: feet, chest: feet - HEROH * 0.62, s: HEROH / 105 }; }
 
+  function drawAlly(im, M, x, feet) { if (!im.naturalWidth) return; var fi = Math.floor(T * M.fps) % M.n, sc = M.dispH / M.ch;
+    ctx.drawImage(im, (fi % M.cols) * M.cw, Math.floor(fi / M.cols) * M.ch, M.cw, M.ch, x - M.ax * sc, feet - M.ay * sc, M.cw * sc, M.ch * sc); }
   // ---- Swords ----
   var swords = [], ring = 0;
   function build() { swords = []; for (var i = 0; i < cfg.n; i++) swords.push({ off: i / cfg.n * Math.PI * 2, state: "orbit", t: 0 }); }
@@ -125,7 +127,7 @@
   $("atk").onclick = function () { if (SK) return; var best = null, bz = -9; swords.forEach(function (s) { if (s.state !== "orbit") return; var z = Math.sin(ring + s.off); if (z > bz) { bz = z; best = s; } }); if (best) { best.state = "strike"; best.t = T; best.hit = false; } };
 
   function giantGeom() { // tip x/y, length, width, alpha
-    var L = 235 * cfg.gs, Wd = L * GM.w / GM.h, tipEnd = FLOOR + 16, k = (T - SK.t0 - DROP0) / DROPD;
+    var L = 235 * cfg.gs, Wd = L * GM.w / GM.h, tipEnd = FLOOR + 6 + L * 0.3, k = (T - SK.t0 - DROP0) / DROPD;
     if (k < 0) return null; var tip = k >= 1 ? tipEnd : -14 + (tipEnd + 14) * Math.pow(k, 3) + 0;
     var start = -14 - 0; tip = k >= 1 ? tipEnd : start + (tipEnd - start) * (k * k * k);
     var tf = T - SK.t0 - DROP0 - DROPD - HOLD, a = tf <= 0 ? 1 : Math.max(0, 1 - tf / FADE);
@@ -182,6 +184,8 @@
     if (SHIP.naturalWidth) { var kx = shipHit > 0 ? Math.sin(T * 70) * 2.2 * shipHit : 0, hov = Math.sin(T * 1.7) * 1.2;
       ctx.drawImage(SHIP, SHIPX + kx, SHIPBOT - SHIPH + hov, SHIPW, SHIPH);
       if (shipHit > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = shipHit * 0.5; ctx.drawImage(SHIP, SHIPX + kx, SHIPBOT - SHIPH + hov, SHIPW, SHIPH); ctx.restore(); shipHit = Math.max(0, shipHit - dt * 2.2); } }
+    // teammates (their in-game idle sheets, in-game size)
+    drawAlly(HAL, AS.haloMeta, 52, FLOOR + 1); drawAlly(GAR, AS.garethMeta, 190, FLOOR + 1);
     // swords + hero, split by depth
     var list = []; swords.forEach(function (s) { swordDraw(s, h, list); });
     list.filter(function (p) { return p.z < 0; }).sort(function (a, b) { return a.z - b.z; }).forEach(function (p) { p.f(); });
@@ -201,6 +205,8 @@
       var pulse = g.tf <= 0 && g.k >= 1 ? 0.25 + 0.2 * Math.sin(T * 9) : (g.tf > 0 ? 0.6 * g.a : 0);
       if (pulse > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = pulse * g.a; ctx.drawImage(GIANT, g.x - drawW * spread / 2, top - rise, drawW * spread, drawH); }
       ctx.restore();
+      if (g.k >= 1) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + g.a); ctx.fillStyle = "rgba(10,6,20,0.85)"; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 5, g.Wd * 0.34, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(10,6,20,0.8)"; ctx.lineWidth = 0.9; ctx.beginPath(); [[-1, -0.2], [1, 0.25], [-0.6, 0.5], [0.7, -0.45]].forEach(function (c) { ctx.moveTo(g.x + c[0] * g.Wd * 0.25, FLOOR + 5); ctx.lineTo(g.x + c[0] * g.Wd * 0.62, FLOOR + 5 + c[1] * 6); }); ctx.stroke(); ctx.restore(); }
       if (g.k >= 1 && g.a > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; var gl = ctx.createRadialGradient(g.x, FLOOR + 2, 0, g.x, FLOOR + 2, 26); gl.addColorStop(0, "rgba(170,255,120," + 0.55 * g.a + ")"); gl.addColorStop(1, "rgba(170,255,120,0)"); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 2, 30, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     } }
     // rings, particles, damage numbers
