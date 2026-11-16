@@ -6746,7 +6746,7 @@ var HERO_DEFS = {
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       { name: "Colossus Blade", icon: "🗡️💥", kind: "active", aoeAll: true, aoeDelay: 1.3, cooldown: 13, pctByLevel: [0.12, 0.15, 0.19, 0.23, 0.27], desc: "Every 13s, his orbiting blades shoot into the sky - then a colossal energy sword crashes down onto the enemy side and sticks in the ground. The impact hits every enemy, fortress included. Projection Wall shields ranged heroes from it." },
-      { name: "Blade Aegis", icon: "🗡️🛡️", kind: "active", support: "aegis", unlockStars: 1, cooldown: 8, firstCd: 5, aegisPctByLevel: [0.15, 0.175, 0.20, 0.225, 0.25], desc: "Unlocks at 1★. At 5s, then every 8s, he sends a blade to every other hero; it becomes an energy shield worth 15% of that hero's max HP (25% at Lv 5). Doesn't stack." } /* v1670 (Harley): Torvald's Guard Stance for heroes - its own timer (2nd skill) */
+      { name: "Blade Aegis", icon: "🗡️🛡️", kind: "active", support: "aegis", unlockStars: 1, cooldown: 8, firstCd: 5, aegisPctByLevel: [0.15, 0.175, 0.20, 0.225, 0.25], desc: "Unlocks at 1★. At 5s, then every 8s, he sends a blade to every other hero and every Death Gerbil on the field; it becomes an energy shield worth 15% of its max HP (25% at Lv 5). Doesn't stack." } /* v1670 (Harley): Torvald's Guard Stance for heroes - its own timer (2nd skill) */
     ],
     expeditionSkills: [
       { name: "Blade Sight", icon: "🗡️", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
@@ -10150,6 +10150,7 @@ function createGame(opts) {
       if (s2.support === "aegis") { var pctA = ksPickL(s2.aegisPctByLevel, heroSkillLevel(key, "conquest", 1));
         state.conquestRoster.forEach(function (ak) { if (ak === key || !state.heroes[ak] || !state.heroes[ak].owned || idleHeroIsKo(ak) || (HERO_DEFS[ak] && HERO_DEFS[ak].floats)) return;
           var ae = idleHeroEntry(ak), amt = idleHeroMaxHp(ak) * pctA; ae.sh = Math.max(ae.sh || 0, amt); ae.shMax = ae.sh; });
+        var aC = state.idle.clones; if (aC) Object.keys(aC).forEach(function (gk) { var g = aC[gk]; if (!g || !g.gerbil || !(g.hp > 0)) return; g.sh = Math.max(g.sh || 0, g.max * pctA); g.shMax = g.sh; }); /* v1673 (Harley): gerbils on the field when he casts get a shield too */
         state.idle.aegisCasts = (state.idle.aegisCasts || 0) + 1; }
     });
     state.conquestRoster.forEach(function (key) {
@@ -11045,7 +11046,9 @@ function createGame(opts) {
     var hitDmg = rawDmg;
     if (tgtHeroKey && String(tgtHeroKey).indexOf("__clone:") === 0) { /* v974: a hit on a Clone Task clone (DEF = its template hero's) */
       var ck0 = tgtHeroKey.slice(8), cl0 = state.idle.clones && state.idle.clones[ck0]; if (!cl0 || cl0.hp <= 0) return;
-      cl0.hp -= hitDmg * (cl0.flat ? 1 : idleHeroDefMult(cl0.tpl, idleEnemyAtk(type))) * idleHeroHitMult(type); /* v1671: flat gerbils have no DEF */
+      var cDmg = hitDmg * (cl0.flat ? 1 : idleHeroDefMult(cl0.tpl, idleEnemyAtk(type))) * idleHeroHitMult(type); /* v1671: flat gerbils have no DEF */
+      if (cl0.sh > 0) { var cSoak = Math.min(cl0.sh, cDmg); cl0.sh -= cSoak; cDmg -= cSoak; state.idle.aegisSoak = (state.idle.aegisSoak || 0) + cSoak; } /* v1673: Blade Aegis on a gerbil */
+      cl0.hp -= cDmg;
       if (cl0.hp <= 0) idleCloneFall(ck0);
       return;
     }
@@ -13926,6 +13929,7 @@ function arenaMeleeApproach(id, isP, wantX, reach, spd, hs) {
   var des = wantX;
   if (reach && !arenaAnim.battleEnded) { var fx = arenaFoeFrontX(isP); if (fx != null) { var ap = fx - dir * 26 * hs; if (dir * (ap - wantX) > 20 * hs) des = ap; /* 26 = the normal meeting gap; only when he is clearly short of the enemy */ } }
   var dx = des - st.x, step = spd * dt, moved = 0;
+  if (st.free) { if (Math.abs(dx) <= step + 0.5) { st.x = des; st.free = false; } else { st.x += Math.sign(dx) * step; moved = Math.sign(dx) * dir; } st.lw = wantX; st.t = now; return { x: st.x, run: moved !== 0, hold: false, flip: moved !== 0 ? Math.sign(dx) < 0 : !isP }; } /* v1673: coming back from roaming - run straight to his spot, either way */
   if (dir * dx > 0) { if (dir * dx > step * 2.5 + 1) { st.x += dir * step; moved = dir; } else st.x = des; st.hold = 0; } /* small steps = the fight's own walk (follow exactly); a big jump = run there */
   else if (dir * dx < 0) { /* he is ahead of his spot in the fight (the enemy fell or moved back): wait there while the fight's walk catches up; only if it doesn't, walk back */
     var comingUp = st.lw != null && dir * (wantX - st.lw) > 0.05; st.hold = comingUp ? 0 : st.hold + dt;
@@ -14282,7 +14286,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1673"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1674"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29314,7 +29318,7 @@ function zkDrawConquest(ctx, w, h, vis, hScale) {
    green energy shield with plasma-lamp arcs inside (back layer behind the hero, rim + sheen in front). It shrinks away when the shield is used up.
    store = idleAnim / arenaAnim; positions come from the frame before (heroVis / heroScreen) - one frame behind is invisible. */
 var AEGIS_R = { aurek: 0.40, lyra: 0.43, gareth: 0.48, ironlily: 0.45 }; /* shield radius as a share of the hero's drawn height (Harley: snug round the head) */
-function aegisR(key, hs) { var a = HERO_ANIMS[key], H = a ? a.dispH * (a.sizeMul || 1) * hs : 30 * hs; return Math.max(12 * hs, H * (AEGIS_R[key] || 0.5)); }
+function aegisR(key, hs) { if (key === "gerbil") return GERBIL_H * hs * 0.62; /* v1673 */ var a = HERO_ANIMS[key], H = a ? a.dispH * (a.sizeMul || 1) * hs : 30 * hs; return Math.max(12 * hs, H * (AEGIS_R[key] || 0.5)); }
 function aegisPlasma(ctx, cx, cy, R, s, seed) { if (s < 0.35) return; var aS = Math.min(1, (s - 0.35) / 0.4), T = performance.now() / 1000, bucket = Math.floor(T * 16);
   var rnd = function (n) { var x = Math.sin((bucket * 7.13 + n * 13.7 + seed * 91.3) * 12.9898) * 43758.5453; return x - Math.floor(x); };
   var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.32); core.addColorStop(0, "rgba(200,255,190," + (0.5 * aS).toFixed(2) + ")"); core.addColorStop(1, "rgba(90,255,120,0)");
@@ -30697,6 +30701,7 @@ function drawIdleAnim(ctx, w, h) {
     if (sk.anim.rig) { var _pdW = game.state.idle.pending; walkerCar.v = (!game.idleIsBossLevel() && !(_pdW && _pdW.type === "defeat")) ? 55 * (idleAnim.scrollK == null ? 1 : idleAnim.scrollK) / (sk.anim.rig.drumR * bw / 1000) : 0; walkerCar.gv = walkerCar.v * sk.anim.rig.drumR; walkerCar.vAt = performance.now() / 1000; } /* v1543: gv = ground speed in hull px/s - the legs step exactly that far */ /* v1542: car-mode wheels roll at the scenery's speed */
   })();
   var aegL = []; try { (game.state.conquestRoster || []).slice(0, 5).forEach(function (k) { var v = idleAnim.heroVis[k], en = game.state.idle.heroHp && game.state.idle.heroHp[k]; if (!v || HERO_DEFS[k].floats || game.idleHeroIsKo(k)) return; aegL.push({ k: k, key: k, x: v.x, feet: v.y + 12 * (heroSpriteVisualScale / 100), hs: heroSpriteVisualScale / 100, frac: en && en.sh > 0 && en.shMax ? en.sh / en.shMax : 0 }); });
+    var gCl = game.state.idle.clones || {}, gVm = idleAnim.cloneVis || {}; Object.keys(gCl).forEach(function (gk) { var g = gCl[gk], m = gVm[gk]; if (!g || !g.gerbil || !(g.hp > 0) || !m || m.x == null) return; aegL.push({ k: "g_" + gk, key: "gerbil", x: m.x + 1, feet: m.y, hs: heroSpriteVisualScale / 100, frac: g.sh > 0 && g.shMax ? g.sh / g.shMax : 0 }); }); /* v1673: gerbil shields */
     var aegN = game.state.idle.aegisCasts || 0; if (idleAnim.aegisN == null) idleAnim.aegisN = aegN; if (aegN !== idleAnim.aegisN) { idleAnim.aegisN = aegN; aegisCast(idleAnim, idleAnim.zk && idleAnim.zk.cq, aegL.filter(function (o) { return o.frac > 0; }).map(function (o) { return o.k; })); }
     aegisPass(ctx, idleAnim, aegL, true); } catch (eAg) {} /* v1670: Blade Aegis, back layer */
   earlyRoster.slice(0, 5).forEach(function (key, i) {
@@ -34496,6 +34501,7 @@ function renderHeroDetailReal() {
 function skillValueText(skill, level, heroKey, group, idx) {
   var ov = (group === "conquest" && heroKey != null && idx != null) ? getSkillOverride(heroKey, idx, level) : null;
   if (skill.kind === "active" && skill.support && skill.buffPctByLevel) return "All heroes +" + Math.round(ksPickL(skill.buffPctByLevel, level) * 100) + "% ATK for " + skill.buffSec + "s / " + skill.cooldown + "s"; /* v1413: Crimson Oath */
+  if (skill.kind === "active" && skill.support === "aegis") return t("Shields allies + gerbils for ") + Math.round(ksPickL(skill.aegisPctByLevel, level) * 1000) / 10 + t("% of their max HP / ") + skill.cooldown + t("s"); /* v1673: Blade Aegis (it broke the Skills tab - no heal/guard numbers) */
   if (skill.kind === "active" && skill.support) {
     var arrS = skill.healPctByLevel || skill.guardPctByLevel, pS = arrS[Math.max(1, Math.min(arrS.length, level)) - 1] || 0;
     return (skill.support === "heal" ? t("Heals ") : t("Guard shield ")) + Math.round(pS * 1000) / 10 + t("% max HP / ") + skill.cooldown + t("s"); /* v1643: translated */
@@ -38919,7 +38925,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           if (u.ward > 0 && amt - did > 0) { setG(Math.min(maxHp * u.ward, getG() + (amt - did))); if (hhh === pHH) pGuardMax = Math.max(pGuardMax, getG()); else aGuardMax = Math.max(aGuardMax, getG()); }
           if (u.rally > 0) { Object.keys(actCd).forEach(function (k) { if (k !== u.key) actCd[k] -= u.rally; }); Object.keys(cdMap).forEach(function (k) { if (k !== u.key) cdMap[k] -= u.rally; }); } /* v1523: Rally also cuts the other support heroes' timers (Torvald), as in Conquest */
         } else if (u.kind === "aegis") { /* v1670: Zarek's Blade Aegis - a shield on every other standing hero of his side (not on floaters), max(current, pct x his max HP); same rule as Conquest */
-          if (hhh) hhh.list.forEach(function (e) { if (e.id === u.key || e.ko || e.dead || e.droid || e.float) return; e.sh = Math.max(e.sh || 0, e.max * u.pct); e.shMax = e.sh; });
+          if (hhh) hhh.list.forEach(function (e) { if (e.id === u.key || e.ko || e.dead || (e.droid && !e.gerbil) || e.float) return; /* v1673: gerbils on the field get one too */ e.sh = Math.max(e.sh || 0, e.max * u.pct); e.shMax = e.sh; });
           if (hhh === pHH) pAegisN++; else aAegisN++;
         } else if (u.kind === "oath") { /* v1413: Crimson Oath - same rule as Conquest */
           if (hhh === pHH) { if (!(oathTP > 0) || u.pct >= oathPP) oathPP = u.pct; oathTP = u.sec || 4; }
@@ -39233,7 +39239,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     }
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
-    var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach, g: !!e.gerbil }; }) : []; }; /* v975: clones for the visuals */
+    var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach, g: !!e.gerbil, sh: e.sh > 0.5 && e.shMax ? e.sh / e.shMax : 0 }; }) : []; }; /* v975: clones for the visuals; v1673: sh = Blade Aegis left */
     var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerGuard: playerGuard, aiGuard: aiGuard, playerGuardMax: pGuardMax, aiGuardMax: aGuardMax, playerGuardN: pGuardN, aiGuardN: aGuardN, playerAegisN: pAegisN, aiAegisN: aAegisN, aegisSoak: aegisSoak /* v1667 / v1670 */, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
       firePMult: playerCannonBullets ? playerCannonMult : 1, fireAMult: aiCannonBullets ? aiCannonMult : 1, /* v1642: super burst bullets fired this tick look different */ landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     info.bossAct = bossAct;
@@ -40095,6 +40101,7 @@ function drawArenaFrame(ctx, w, h) {
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju && kaijuState.water) kaijuDrawWater(ctx, w, h); /* v1598: shallow sea over his claws, under the heroes and their bars */
   ctx = ptCtx("a_fx", ptRealA); drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
   var aegLA = []; try { var hsAg = heroSpriteVisualScale / 100; Object.keys(arenaAnim.heroScreen || {}).forEach(function (k) { var en = arenaAnim.heroHp && arenaAnim.heroHp[k], key = k.slice(2), pos = arenaAnim.heroScreen[k]; if (!en || en.ko || !HERO_DEFS[key] || HERO_DEFS[key].floats) return; aegLA.push({ k: k, key: key, x: pos.x, feet: pos.y + 13, hs: hsAg, frac: en.sh || 0 }); });
+    var cdA = arenaAnim.cloneD || {}; Object.keys(cdA).forEach(function (kk) { var c = cdA[kk]; if (!c.g || c.sx == null) return; aegLA.push({ k: kk.charAt(0) + "_g" + kk, key: "gerbil", x: c.sx + 1, feet: c.sy, hs: hsAg, frac: c.sh || 0 }); }); /* v1673: gerbil shields */
     [["p", arenaAnim.aegisPN || 0, "playerAegisN"], ["a", arenaAnim.aegisAN || 0, "aiAegisN"]].forEach(function (sd) { var n = arenaAnim[sd[2]] || 0, mk = "aegisSeen_" + sd[0]; if (arenaAnim[mk] == null) arenaAnim[mk] = n; if (n !== arenaAnim[mk]) { arenaAnim[mk] = n; aegisCast(arenaAnim, arenaAnim.zk && arenaAnim.zk[sd[0] + "_zarek"], aegLA.filter(function (o) { return o.k.charAt(0) === sd[0] && o.frac > 0; }).map(function (o) { return o.k; })); } });
     aegisPass(ctx, arenaAnim, aegLA, true); } catch (eAgA) {} /* v1670: Blade Aegis, back layer */
   ctx = ptCtx("a_heroes", ptRealA);
@@ -40121,10 +40128,19 @@ function drawArenaFrame(ctx, w, h) {
       var mapDx = function (dv) { return dv <= 0.5 ? slot.x + (mX - slot.x) * (dv / 0.5) : mX + (endX - mX) * ((dv - 0.5) / 0.5); };
       var x = mapDx(c.prev) + (mapDx(c.cur) - mapDx(c.prev)) * frD + (isP ? -1 : 1) * (14 + n[c.side] * 10), y = slot.y; n[c.side]++; /* v976: same ground line as the heroes, a step behind the template hero so both stay visible */
       var st = (c.cur !== c.prev && frD < 1 && !arenaAnim.battleEnded) ? "run" : (c.reach && !arenaAnim.battleEnded ? "attack" : "idle");
-      var cAp = arenaMeleeApproach("c_" + kk, isP, x, c.reach, c.g ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(tk), heroSpriteVisualScale / 100); x = cAp.x; if (cAp.run) st = "run"; else if (cAp.hold && st === "run") st = "idle"; /* v1672: run up to an enemy already at the fortress front */
-      var cFlip = cAp.run ? cAp.flip : !isP;
-      if (c.g && !c.reach && c.cur >= 0.97 && c.cur === c.prev && !arenaAnim.battleEnded) { /* v1672: at a fortress gerbils can't bite (not a crawler) - they scamper back and forth */
-        var wT = (performance.now() / 1000 + (n[c.side] % 7) * 0.53) * GERBIL_RUN_PX_PER_SEC / 28, wPh = wT % 2, wU = wPh < 1 ? wPh : 2 - wPh; x -= (isP ? 1 : -1) * 28 * wU * (heroSpriteVisualScale / 100); st = "run"; cFlip = isP ? wPh >= 1 : wPh < 1; }
+      var cFlip = !isP, hsC = heroSpriteVisualScale / 100;
+      if (c.g && !c.reach && c.cur >= 0.97 && !arenaAnim.battleEnded) { /* v1673 (Harley): no legal target (a ship they can't bite) - the gerbil roams wherever it likes, under the ship too: long runs one way, a short stop, then off somewhere else */
+        var MA = arenaAnim.meleeApr || (arenaAnim.meleeApr = {}), W = MA["c_" + kk], wNow = performance.now(); if (!W || wNow - W.t > 400) W = MA["c_" + kk] = { x: x, t: wNow, hold: 0 };
+        var wdt = Math.min(0.1, (wNow - W.t) / 1000), lo = isP ? mX - 20 * hsC : endX - oswN * 0.7, hi = isP ? endX + oswN * 0.7 : mX + 20 * hsC;
+        if (W.wx == null) { W.wx = W.x; W.wait = 0; }
+        if (Math.abs(W.wx - W.x) < 0.5) { W.wait -= wdt; if (W.wait <= 0) { var nx = W.x, tries = 0; while (Math.abs(nx - W.x) < 60 * hsC && tries++ < 8) nx = lo + Math.random() * (hi - lo); W.wx = nx; W.wait = 0.3 + Math.random() * 0.9; } }
+        var wd = W.wx - W.x, ws = GERBIL_RUN_PX_PER_SEC * wdt; if (Math.abs(wd) > 0.5) { W.x += Math.abs(wd) <= ws ? wd : Math.sign(wd) * ws; st = "run"; cFlip = wd < 0; } else st = "idle";
+        W.t = wNow; W.free = true; W.lw = null; x = W.x;
+      } else {
+        var cAp = arenaMeleeApproach("c_" + kk, isP, x, c.reach, c.g ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(tk), hsC); x = cAp.x; if (cAp.run) st = "run"; else if (cAp.hold && st === "run") st = "idle"; /* v1672: run up to an enemy already at the fortress front */
+        if (cAp.run) cFlip = cAp.flip;
+        var MA2 = arenaAnim.meleeApr && arenaAnim.meleeApr["c_" + kk]; if (MA2) MA2.wx = null;
+      }
       c.sx = x;
       if (c.g) { /* v1672: Death Gerbils - own animated sprite; bites once per second (their attack speed) while in reach */
         var gm = c.vis || (c.vis = {}), gNow = performance.now(), gHs = heroSpriteVisualScale / 100, gdt = gm.lt ? (gNow - gm.lt) / 1000 : 0, gv = (gm.lx != null && gdt > 0 && gdt < 0.2) ? Math.abs(x - gm.lx) / gdt : 0;
@@ -41044,7 +41060,7 @@ function renderArenaBattleScreen() {
       if (playerFiredFlat || aiFiredFlat) sfxShoot();
       (function () { /* v975: clone positions, same prev/cur glide as the heroes */
         var cdm = arenaAnim.cloneD || (arenaAnim.cloneD = {}), seen = {};
-        [["p", state.pClones], ["a", state.aClones]].forEach(function (pr) { (pr[1] || []).forEach(function (c) { var kk = pr[0] + c.id, r0 = cdm[kk]; seen[kk] = 1; if (!r0) cdm[kk] = { prev: 0, cur: c.d, hp: c.hp, max: c.max, reach: c.reach, side: pr[0], g: c.g }; else { r0.prev = r0.cur; r0.cur = c.d; r0.hp = c.hp; r0.max = c.max; r0.reach = c.reach; } }); });
+        [["p", state.pClones], ["a", state.aClones]].forEach(function (pr) { (pr[1] || []).forEach(function (c) { var kk = pr[0] + c.id, r0 = cdm[kk]; seen[kk] = 1; if (!r0) cdm[kk] = { prev: 0, cur: c.d, hp: c.hp, max: c.max, reach: c.reach, sh: c.sh, side: pr[0], g: c.g }; else { r0.prev = r0.cur; r0.cur = c.d; r0.hp = c.hp; r0.max = c.max; r0.reach = c.reach; r0.sh = c.sh; } }); });
         Object.keys(cdm).forEach(function (kk) { if (!seen[kk]) { var dg = cdm[kk]; if (dg.g && dg.sx != null && !arenaAnim.battleEnded) (arenaAnim.gerbDeaths || (arenaAnim.gerbDeaths = [])).push({ x: dg.sx, y: dg.sy, right: dg.right, t0: performance.now() }); delete cdm[kk]; } }); /* v1672: a gerbil that dies melts where it stood */
         arenaAnim.cloneTickT = performance.now();
       })();

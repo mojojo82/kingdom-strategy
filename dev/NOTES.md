@@ -5464,3 +5464,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Gerbils only bite crawler fortresses (crawlerb / crawlerc) for now: against any other ship they can't hit the fortress or its deck heroes (opts.gerbFortP / gerbFortA -> pickMeleeTarget), and scamper back and forth at the ship's front instead. Enemy ground heroes and summons are still bitten.
 - Found while testing: Arena bots could have up to EVERY hero (botCore picked 1..all); only 5 were drawn and the rest fought invisibly (e.g. Lady Fenmoor had 8, invisible Torvald/Aurek standing at your fortress). Bots now get 1-5 heroes, and older saved bots are cut to their first 5 at fight start. Bots are weaker where they had more than 5.
 - Meta check unchanged (known warning). Headless only.
+
+## v1674 — Gerbils roam freely, Blade Aegis shields gerbils, Zarek Skills tab fixed (17 Nov 2026)
+- Arena: a gerbil with no legal target (a ship it can't bite) now roams instead of flipping back and forth: long runs one way at 80 px/s to a random spot between the middle of the field and under the enemy ship (70% of its length), a 0.3-1.2 s stop, then off again. When a real target appears it runs straight to it from wherever it is (arenaMeleeApproach "free" mode).
+- Zarek's Blade Aegis also shields every Death Gerbil alive at the moment he casts (same % of the gerbil's max HP: 15-25 HP on a 100 HP gerbil). Conquest (idle clones, enemy hits soak the shield first) and Arena (gerbil droids). Bubble drawn on the gerbil in both modes. Skill text updated.
+- Bug: Zarek's Skills tab was blank - skillValueText had no case for the aegis support skill and threw. Fixed ("Shields allies + gerbils for 15% of their max HP / 8s").
+- Tests headless: Skills tab renders; Conquest gerbils got 15 HP shields on the cast; Arena 4/4 gerbils shielded, roaming seen; no console errors. Meta check unchanged.
