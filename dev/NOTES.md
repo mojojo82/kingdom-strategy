@@ -5451,3 +5451,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - For scale (Zarek's team, avg hero): Lv20 266 HP / 65 per hit, Lv40 446 / 135, Lv80 868 / 300.
 - Arena tests (Zarek, Gareth, Sera, Torvald, Lyra; 40 fights, sides swapped; was -> now): mirror Lv40 40/40 -> 40/40 (enemy fort left 0% -> 27%), Lv80 40/40 -> 24/40; vs G/S/T/L/Aurek Lv40 40 -> 40, Lv80 40 -> 32 (no card: 38). Still decisive at Lv40 because any gerbil absorbs a whole enemy hit (the left-over damage is lost) - Harley knows, not fixing yet.
 - Conquest headless: 2 gerbils after ~10 s at 100/100 HP, 20 dmg, 1 s; card shows the new text. No console errors.
+
+## v1672 — Death Gerbils get real animations (17 Nov 2026)
+- New gerbil sprite from the card art (ChatGPT base frame, top-left concept turned more side-on) animated with Atlas H3 Max: idle, run, bite (chomp), and NEW death melt into an ooze puddle. 4 clips × $0.608 = $2.43; Atlas balance now about $0.18 (needs a top-up for any reruns).
+- Frames: `dev/summons/gerbil_frames.py` (custom slime key - see-through edges stay green). LARGE keep-set in art/originals/summons/gerbil/large/, game sheet art/summons/gerbil/gerbil_anim_v1.webp (691 KB). Bite trimmed to the lunge+snap (14 frames), death skips the clip's opening shiver.
+- Size: 65% of Gareth's height (GERBIL_H 16.4 px at hero scale 1). Run speed: 80 px/s (heroes 150) — Arena sim now moves gerbils at GERBIL_RUN_PX_PER_SEC. Run frames play at speed ÷ measured foot push-back, so the legs match the real ground speed in both modes (Conquest counts the level scroll).
+- Conquest: bite plays on each real gerbil hit (g.bites); stands a little further ahead of the hero so the tail clears him; puddle stays on the ground spot as the level scrolls, holds 1.2 s, fades 0.8 s. Arena: bites once a second while in reach; puddle where it died.
+- Tests (headless): Conquest + Arena captures - idle, bite, run, melt all show, no console errors. Meta check unchanged (known pre-existing warning).
