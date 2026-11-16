@@ -38,6 +38,7 @@
     <button id="skill" type="button">Skill: Colossus Blade</button>
     <button id="atkR" type="button">Caster attack: Volley</button>
     <button id="atkM" type="button">Infantry attack: Crescent</button>
+    <button id="ally" type="button">Ally blades</button>
     <button id="pause" type="button" class="ghost">Pause</button>
   </div>
   <div class="ctl">
@@ -102,6 +103,20 @@
   }
   function heroPos() { var bob = Math.sin(T * 2 * Math.PI / 2.4) * 2.5; var feet = FLOOR - 13 - WD.h + bob; return { x: WD.x, feet: feet, chest: feet - HEROH * 0.62, s: HEROH / 105, base: FLOOR - 13 - WD.h }; }
 
+  /* Ally blades idea: one green sword conjured for each teammate, orbiting them (they fly out from Zarek, and back when switched off) */
+  var LYR = img(AS.lyra), AUR = img(AS.aurek);
+  var ALLIES = [{ im: HAL, M: AS.haloMeta, x: 52 }, { im: LYR, M: AS.lyraMeta, x: 98 }, { im: AUR, M: AS.aurekMeta, x: 146 }, { im: GAR, M: AS.garethMeta, x: 196 }];
+  var AB = null;
+  function allyBladePos(i, A) { var feet = FLOOR + 1, hh = A.M.dispH, chest = feet - hh * 0.42, R = Math.max(12, hh * 0.3), a = T * 2.2 + i * 1.7;
+    return { x: A.x + Math.cos(a) * R, y: chest + Math.sin(a) * R * 0.3 + Math.sin(T * 2.4 + i) * 0.6, z: Math.sin(a), a: a }; }
+  function allyBlades(back) { if (!AB) return; var h = heroPos();
+    ALLIES.forEach(function (A, i) { var p = allyBladePos(i, A), t0 = AB.t0 + i * 0.12, k, x = p.x, y = p.y, z = p.z, al = 1;
+      if (AB.on) { k = (T - t0) / 0.4; if (k < 0) return; if (k < 1) { var e = k * k * (3 - 2 * k); x = h.x + (p.x - h.x) * e; y = h.chest + (p.y - h.chest) * e - Math.sin(k * Math.PI) * 18; z = 1; al = Math.min(1, k * 3); } else if (!AB.arr[i]) { AB.arr[i] = 1; rings.push({ x: p.x, y: p.y, t: 0, max: 0.22, R: 7, warp: true }); } }
+      else { k = (T - (AB.off + i * 0.08)) / 0.35; if (k >= 1) return; if (k > 0) { var e2 = k * k; x = p.x + (h.x - p.x) * e2; y = p.y + (h.chest - p.y) * e2 - Math.sin(k * Math.PI) * 14; z = 1; al = 1 - k * 0.6; } }
+      if ((z < 0) !== back) return; var d = (z + 1) / 2;
+      drawSwordArt(x, y, 0, SLEN * 0.9 * (0.82 + 0.28 * d), 0, p.a, (0.7 + 0.3 * d) * al); });
+    if (!AB.on && T - AB.off > 1.2) AB = null; }
+  $("ally").onclick = function () { if (!AB || !AB.on) { AB = { on: true, t0: T, arr: {} }; this.textContent = "Ally blades: ON"; } else { AB.on = false; AB.off = T; this.textContent = "Ally blades"; } };
   function drawAlly(im, M, x, feet) { if (!im.naturalWidth) return; var fi = Math.floor(T * M.fps) % M.n, sc = M.dispH / M.ch;
     ctx.drawImage(im, (fi % M.cols) * M.cw, Math.floor(fi / M.cols) * M.ch, M.cw, M.ch, x - M.ax * sc, feet - M.ay * sc, M.cw * sc, M.ch * sc); }
   // ---- Swords ----
@@ -251,7 +266,7 @@
       ctx.drawImage(SHIP, SHIPX + kx, SHIPBOT - SHIPH + hov, SHIPW, SHIPH);
       if (shipHit > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = shipHit * 0.5; ctx.drawImage(SHIP, SHIPX + kx, SHIPBOT - SHIPH + hov, SHIPW, SHIPH); ctx.restore(); shipHit = Math.max(0, shipHit - dt * 2.2); } }
     // teammates (their in-game idle sheets, in-game size)
-    drawAlly(HAL, AS.haloMeta, 52, FLOOR + 1); drawAlly(GAR, AS.garethMeta, 190, FLOOR + 1);
+    allyBlades(true); ALLIES.forEach(function (A) { drawAlly(A.im, A.M, A.x, FLOOR + 1); }); allyBlades(false);
     // swords + hero, split by depth
     var list = []; swords.forEach(function (s) { swordDraw(s, h, list); });
     list.filter(function (p) { return p.z < 0; }).sort(function (a, b) { return a.z - b.z; }).forEach(function (p) { p.f(); });
