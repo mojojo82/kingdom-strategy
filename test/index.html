@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1667"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1668"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29368,7 +29368,8 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
       dvL.done = true; vis.x = dvL.landX != null ? dvL.landX : vis.x; idleAnim.skLeap[key].x = vis.x;
     }
     var hzL = idleAnim.skLeap && idleAnim.skLeap[key] && !idleAnim.skLeap[key].dive && HERO_ANIMS[key + "_skill"] && performance.now() - idleAnim.skLeap[key].t0 < HERO_ANIMS[key + "_skill"].rows.skill[1] / HERO_ANIMS[key + "_skill"].fps.skill * 1000 ? idleAnim.skLeap[key] : null; /* v1502/v1506: the skill sheet plays on the spot (Hanzo's leap, Aurek's slam) */
-    if (hzL) { vis.x = hzL.x; drawHeroAnim(ctx, key + "_skill", hzL.x, vis.y + 12 * hScale, "skill", hScale, false, 0, 1); hzL.hand = { x: hzL.x, y: vis.y + 12 * hScale }; return; }
+    if (hzL) { var hzOff = idleAnim.bgOffsetFar || 0; if (hzL.off != null) { var hzD = (hzOff - hzL.off + 300000) % 300000; if (hzD < 200) hzL.x -= hzD; } hzL.off = hzOff; hzL.x = Math.max(hzL.x, 22 * hScale); /* the screen edge pushes him along - never carried off the left */ /* v1668 (Harley): while the skill plays he stands on that spot of the ground - the level scrolling carries him back (was pinned to the screen = sliding); afterwards he runs back to his place */
+      vis.x = hzL.x; drawHeroAnim(ctx, key + "_skill", hzL.x, vis.y + 12 * hScale, "skill", hScale, false, 0, 1); hzL.hand = { x: hzL.x, y: vis.y + 12 * hScale }; return; }
     var heroFlip = (st === "attack" || st === "attack2" || slowRunSpd < 1) ? !!((st === "attack" || st === "attack2") && vis.flank && vis.flank.mode === "back" && !moving) : !!hf[key];
     var swSl = idleAnim.swingRun && idleAnim.swingRun[key], slamOn = st === "attack" && !flashing && swSl && swSl.slam && performance.now() < swSl.until && garethSlamReady();
     var animRes = slamOn ? drawGarethSlam(ctx, vis.x + hurtDx, vis.y + 12 * hScale, hScale, heroFlip, performance.now() - swSl.t0, swSl) /* v1344 */

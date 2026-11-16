@@ -5421,3 +5421,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Conquest: a thin gold bar right under the fortress HP bar = what's left of the guard shield / its size when cast (state.idle.guardShieldMax). Sera's overheal ward uses the same shield and bar.
 - Arena: the same bar under each side's HP bar (both you and the opponent). The sim now reports playerGuard / aiGuard, their size and a cast counter. Bot weapons usually eat the shield in the same instant it goes up, so on each cast the bar shows full and drains to what's really left within 0.6 s (otherwise it would never be seen).
 - Headless: Conquest bar shows after Torvald's first cast (shield 9/9); Arena drawing checked with set values (65% / 95%); the sim's guard + counter checked by stepping a fight (shield 975 from tick 45). No console errors.
+
+## v1668 — Conquest: heroes don't slide while their skill animation plays
+- Harley: Lily and Torvald kept travelling while their skill animated (same problem the giant sword had). The skill sheet was pinned to one spot on the screen while the level scrolled under it.
+- Now the hero stays on that spot of the ground while the skill plays (moves back with the road's scroll, idleAnim.bgOffsetFar, 1:1), then runs back to his place. Applies to every hero with a skill sheet (Lily, Torvald, Aurek, Hanzo, Halo-7, Caelum). The screen edge pushes them along (x >= 22) so Lily's 3.5 s cast can't carry her off the left.
+- Headless (skill triggered directly): Torvald moved -0.8 while the ground scrolled 0.8; Lily stopped at the edge (22) and ran back afterwards; no console errors.
+- dev/labs/lily_skill_timing.html: demo for Harley - Lily's skill now (3.5 s) vs A: cut at 2 s vs B: whole skill sped up into 2 s.
