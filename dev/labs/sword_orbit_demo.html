@@ -180,10 +180,10 @@
           if (ATK.left <= 0) { warpBack(swords, 0.25); ATK.end = T + 0.25 + swords.length * 0.035 + 0.3; } } return; }
       var e = kd * kd * (3 - 2 * kd) * 0.4 + kd * 0.6, dx = s.to.x - s.from.x, dy = s.to.y - s.from.y, rot = Math.atan2(dy, dx) + Math.PI / 2;
       list.push({ z: 2, f: function () { for (var g = 3; g >= 0; g--) { var ee = Math.max(0, e - g * 0.06); drawSwordArt(s.from.x + dx * ee, s.from.y + dy * ee, rot, SLEN * 1.05, 0, 0, g ? 0.25 / g : 1, true); } } }); return; }
-    if (s.state === "swipe") { var ks = (T - s.t) / 0.24, A0 = -1.25, A1 = 1.45, R = 15, px0 = h.x + 3, py0 = h.chest + 6;
+    if (s.state === "swipe") { var SW = 0.11, ks = (T - s.t) / SW, ft = (T - s.t - SW) / 0.18, A0 = -1.25, A1 = 1.45, R = 15, px0 = h.x + 3, py0 = h.chest + 6;
       if (ks >= 0.7 && !s.hit) { s.hit = true; var sa = A0 + (A1 - A0) * 0.8; burst(px0 + Math.cos(sa) * (R + 10), py0 + Math.sin(sa) * (R + 10), 10, 40, "190,255,140"); }
-      if (ks >= 1.6) { if (!s.done) { s.done = true; warpBack([s], 0); ATK.end = T + 0.45; } return; }
-      var kk = Math.min(1, ks), e2 = 1 - Math.pow(1 - kk, 3), ang = A0 + (A1 - A0) * e2, fade = ks <= 1 ? 1 : Math.max(0, 1 - (ks - 1) / 0.6);
+      if (ft >= 1) { if (!s.done) { s.done = true; warpBack([s], 0); ATK.end = T + 0.45; } return; }
+      var kk = Math.min(1, ks), e2 = 1 - Math.pow(1 - kk, 3), ang = A0 + (A1 - A0) * e2, fade = ks <= 1 ? 1 : Math.max(0, 1 - ft);
       list.push({ z: 2, f: function () {
         ctx.save(); ctx.globalCompositeOperation = "lighter"; var a1 = ang, a0 = Math.max(A0, ang - 2.2), Ro = R + SLEN * 0.75, TH = 7.5, NP = 28;
         // moon crescent: outer edge is a clean arc, inner edge bulges in the middle and tapers to points at both ends
