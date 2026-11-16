@@ -6741,7 +6741,7 @@ var HERO_DEFS = {
       { name: "Fallen Watch", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.025 },
       { name: "On Wings", icon: "🪶", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
     ] },
-  zarek: { name: "Zarek", title: "The Blade Architect", class: "archer", dualClass: "infantry", icon: "🗡️", rarity: "Legendary", basicAnyTarget: true, noRangeLimit: true, /* v1654 (Harley 16 Nov): built - a very tall floating tech-mage who BUILDS weapons out of green energy. Caster for now (Harley may make him Infantry later: the crescent swipe is ready in dev/labs/sword_orbit_demo.html). Same base stats as other heroes; basic = sword volley every 2 s for double damage (COMBAT_TIMING.heroAttackSec). */
+  zarek: { name: "Zarek", title: "The Blade Architect", floats: true /* v1669 (Harley): he hovers high, off the fortress - melee and ground skills can't reach him */, class: "archer", dualClass: "infantry", icon: "🗡️", rarity: "Legendary", basicAnyTarget: true, noRangeLimit: true, /* v1654 (Harley 16 Nov): built - a very tall floating tech-mage who BUILDS weapons out of green energy. Caster for now (Harley may make him Infantry later: the crescent swipe is ready in dev/labs/sword_orbit_demo.html). Same base stats as other heroes; basic = sword volley every 2 s for double damage (COMBAT_TIMING.heroAttackSec). */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       { name: "Colossus Blade", icon: "🗡️💥", kind: "active", aoeAll: true, aoeDelay: 1.3, cooldown: 13, pctByLevel: [0.12, 0.15, 0.19, 0.23, 0.27], desc: "Every 13s, his orbiting blades shoot into the sky - then a colossal energy sword crashes down onto the enemy side and sticks in the ground. The impact hits every enemy, fortress included. Projection Wall shields ranged heroes from it." }
@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1668"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1669"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38482,7 +38482,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // infantry hero instead of the fortress; ranged damage goes to the fortress (except HERO_KO_CFG.rangedPct); a hero at 0 HP is KO'd (stops attacking,
   // skill timer reset and frozen) and revives after reviveSec. The fortress pool is still the lose condition.
   var koCfg = game.heroKoCfg;
-  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, max: h.max, def: h.def || 0, dodge: h.dodge || 0, rt: h.rt != null ? h.rt : 1, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0, limOnHit: lf ? lf.onHit : false, limKeep: lf ? lf.keep : false, limVal: lf ? lf.value : 0, limSwing: lf ? lf.swing : 1 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
+  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, float: !!(HERO_DEFS[h.id] && HERO_DEFS[h.id].floats), max: h.max, def: h.def || 0, dodge: h.dodge || 0, rt: h.rt != null ? h.rt : 1, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0, limOnHit: lf ? lf.onHit : false, limKeep: lf ? lf.keep : false, limVal: lf ? lf.value : 0, limSwing: lf ? lf.swing : 1 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
   var pHH = mkHeroHp(playerStats, aRefA), aHH = mkHeroHp(aiStats, pRefA);
   // v969: both sides act at the same moment. A hero knocked out during this tick still makes this tick's attacks / skills (from where he stood,
   // with the limit bar he had) - it no longer matters which side's hits are worked out first. isKo = "was already down when this tick began".
@@ -38513,7 +38513,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var skTgt = {}, hitTgt = {}, rangedPctLocal = (opts.rangedPct != null ? opts.rangedPct : koCfg.rangedPct), ARENA_RANGED_RANGE = 0.62, rAcc = {};
   function pickMeleeTarget(me, oh, basic) {
     var best = null;
-    oh.list.forEach(function (o) { if (o.ko || o.air) return; /* v1514: a hero in the air can't be reached by a sword */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
+    oh.list.forEach(function (o) { if (o.ko || o.air || o.float) return; /* v1514: a hero in the air can't be reached by a sword (v1669: nor Zarek, always floating) */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
     if (best) return { hero: best };
     return me.d >= 1 - ARENA_REACH ? { fort: true } : null;
   }
@@ -38598,7 +38598,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var md = main ? main.d : 0, caught;
     if (a.splash.around) { /* v1615: Iron Lily's Crimson Tempest - every legal target inside the slash radius, no count (ground heroes; deck heroes and the fortress when she is that close) */
       var own = oh === aHH ? pHH : aHH, me = own && own.by[a.key], hl = me && me.runL ? me.runL[1] : 100, Rd = (a.splash.radiusPx || 36) / (2 * hl), myD = me ? me.d : 0;
-      caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && !o.air && 1 - (myD + o.d) <= Rd; });
+      caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && !o.air && !o.float && 1 - (myD + o.d) <= Rd; }); /* v1669: not floating Zarek */
       if (mainId !== "fort" && 1 - myD <= Rd) splashFort += dmg * a.splash.pct;   /* the fortress front is inside the radius too */
     } else caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry && !o.air; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n);
     caught.forEach(function (o) {
@@ -38703,7 +38703,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var front = (tick - q.impact + 1) * dtS * q.spd * 400, dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0, left = false, blk = 0;
       var dist = function (od) { return posMode && lane ? Math.max(0, 1 - md - od) * lane : 0; };
       if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (dist(o.infantry ? o.d : 0) > front) { left = true; return; } q.hit[o.id] = 1;
-        if (o.ko) return; if (q.ground && (o.air || stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; }))) return; /* in the air - ground effects (pillars) pass under him; effects from the sky (ground:false) still hit */
+        if (o.ko) return; if (q.ground && (o.air || o.float || stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; }))) return; /* in the air - ground effects (pillars) pass under him; effects from the sky (ground:false) still hit */
         var dmg = q.v * (1 - red); if (wallUp && !o.infantry) { blk += dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } if (dodgePort(o)) return;
         o.hp -= dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); });
       var mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0;

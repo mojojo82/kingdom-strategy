@@ -5427,3 +5427,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Now the hero stays on that spot of the ground while the skill plays (moves back with the road's scroll, idleAnim.bgOffsetFar, 1:1), then runs back to his place. Applies to every hero with a skill sheet (Lily, Torvald, Aurek, Hanzo, Halo-7, Caelum). The screen edge pushes them along (x >= 22) so Lily's 3.5 s cast can't carry her off the left.
 - Headless (skill triggered directly): Torvald moved -0.8 while the ground scrolled 0.8; Lily stopped at the edge (22) and ran back afterwards; no console errors.
 - dev/labs/lily_skill_timing.html: demo for Harley - Lily's skill now (3.5 s) vs A: cut at 2 s vs B: whole skill sped up into 2 s.
+
+## v1669 — Zarek floats: melee and ground skills can't reach him (Arena)
+- Harley: Zarek doesn't ride the fortress (he hovers high), so standard melee attacks can't hit him - nor Aurek's / Halo-7's skills, which travel along the ground.
+- HERO_DEFS.zarek.floats = true -> the Arena sim's hero entry gets float: true, which uses the same checks as a hero mid-dive (o.air): melee targeting (basic + melee skills), ground waves (Aurek's Sunforge Slam, Halo-7's Core Beam - wave.ground), Iron Lily's slash radius. Still hit by: ranged shots, sky skills (Seraphine's Crystal Rain, Orbital Patch - ground:false), hit-everything storms (Hanzo, Kessa's chains etc.), Caelum's dive (a flying leap). Conquest needed nothing: enemy melee only ever hits infantry heroes.
+- Sim test (Zarek, Kessa, Lyra, Sera, Gareth vs Aurek, Halo-7, Lily, Torvald, Bram; 20 fights): Zarek took 384 damage / 0.40 KOs per fight before -> 0 now (the hits go to Kessa etc. instead).
+- Arena balance, he stays well below Kessa: group "zarek,gareth,sera,torvald,kessa,ironlily" w/o zarek 33/29 wins (was 29/28), w/o kessa 0/0; group "zarek,halo7,aurek,caelum,seraphine,juno" w/o zarek 63/72 (was 66/78). Meta check: the known pre-existing warning only.
