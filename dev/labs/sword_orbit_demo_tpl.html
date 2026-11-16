@@ -1,0 +1,219 @@
+<title>Orbiting Swords Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Game palette (dark navy, gold trim, flat cyan buttons). Single dark look on purpose. */
+  :root { --bg:#0b1220; --panel:#131d31; --line:#2b3a58; --gold:#f0c95f; --text:#e8e0cc; --muted:#94a0b8; --cyan:#57cfdf; --cyanDark:#1f6c80; color-scheme:dark;
+    --display:'Lilita One', 'Trebuchet MS', sans-serif; --body:Inter, system-ui, sans-serif; }
+  html, body { background:var(--bg); color:var(--text); font-family:var(--body); }
+  body { padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:14px 24px; }
+  .wrap { max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:12px; }
+  h1 { font-family:var(--display); font-weight:400; color:var(--gold); font-size:24px; margin:0; letter-spacing:.02em; text-wrap:balance; }
+  p.lede { margin:0; color:var(--muted); font-size:13.5px; line-height:1.5; }
+  .stage { position:relative; width:100%; max-width:100%; aspect-ratio:430/300; border:1.5px dashed #b3985f; border-radius:12px; overflow:hidden; background:#0e1628; }
+  .stage.game { max-width:430px; margin:0 auto; border-style:dotted; }
+  canvas { display:block; width:100%; height:100%; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  button { font-family:var(--display); font-size:16px; letter-spacing:.02em; padding:9px 16px; border-radius:10px; border:1.5px solid var(--cyanDark); background:var(--cyan); color:#0e3440; box-shadow:0 2px 0 var(--cyanDark); cursor:pointer; }
+  button:active { transform:translateY(2px); box-shadow:none; }
+  button.ghost, .viewsw button[aria-pressed=false] { background:transparent; color:var(--cyan); }
+  .viewsw { display:flex; gap:6px; } .viewsw button { font-size:14px; padding:7px 12px; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .ctl { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px 16px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .ctl label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); min-width:0; }
+  .ctl label span b { color:var(--text); font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--gold); }
+  select { font:inherit; font-size:13px; color:var(--text); background:#0e1628; border:1px solid var(--line); border-radius:8px; padding:6px; }
+  .chk { flex-direction:row !important; align-items:center; gap:8px !important; }
+  .note { font-size:12.5px; color:var(--muted); line-height:1.5; margin:0; } .note b { color:var(--text); }
+  @media (prefers-reduced-motion: reduce) { button:active { transform:none; } }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Inter:wght@400;600&display=swap">
+
+<div class="wrap">
+  <h1>Orbiting Swords</h1>
+  <p class="lede">The new hero at real game size in Arena: his Atlas idle (the hover bob is code), green energy swords orbiting him, and his skill. <b>Skill:</b> the swords fly skyward, a giant energy sword drops onto the enemy ship and sticks in the deck, dissolves, and the swords warp back in.</p>
+  <div class="viewsw" role="group" aria-label="View"><button id="vGame" type="button" aria-pressed="true">Game size</button><button id="vClose" type="button" aria-pressed="false">Close-up</button></div>
+  <div class="stage game" id="stage"><canvas id="cv" aria-label="Hero with orbiting energy swords and an enemy ship"></canvas></div>
+  <div class="row">
+    <button id="skill" type="button">Skill: Colossus Blade</button>
+    <button id="atk" type="button">Attack</button>
+    <button id="pause" type="button" class="ghost">Pause</button>
+  </div>
+  <div class="ctl">
+    <label for="n"><span>Swords <b id="nV">5</b></span><input id="n" type="range" min="2" max="8" value="5"></label>
+    <label for="spd"><span>Orbit speed <b id="spdV">1.0</b></span><input id="spd" type="range" min="0" max="30" value="10"></label>
+    <label for="tilt"><span>Ring tilt <b id="tiltV">0.30</b></span><input id="tilt" type="range" min="5" max="80" value="30"></label>
+    <label for="rad"><span>Ring size <b id="radV">1.0</b></span><input id="rad" type="range" min="60" max="160" value="100"></label>
+    <label for="gs"><span>Giant sword size <b id="gsV">1.0</b></span><input id="gs" type="range" min="60" max="160" value="100"></label>
+    <label for="mode"><span>Sword pose</span><select id="mode"><option value="up">Upright, turning</option><option value="tan">Along the ring</option></select></label>
+    <label class="chk" for="slow"><input id="slow" type="checkbox"> Slow motion</label>
+  </div>
+  <p class="note"><b>How it would work in the game:</b> the hero is his Atlas idle sheet; the orbit, the flying swords, the giant sword, the impact and the dissolve are all code drawing a few pictures, so it works the same in Conquest and Arena. Close-up zooms the camera on him to inspect the swords.</p>
+</div>
+
+<script>
+(function () {
+  var AS = __ASSETS__;
+  var cv = document.getElementById("cv"), ctx = cv.getContext("2d"), W = 0, H = 0, dpr = 1;
+  function fit() { var r = cv.getBoundingClientRect(); dpr = Math.min(3, window.devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  window.addEventListener("resize", fit); fit();
+  var $ = function (id) { return document.getElementById(id); };
+  function img(src) { var i = new Image(); i.src = src; return i; }
+  var HERO = img(AS.hero), FACE = img(AS.face), EDGE = img(AS.edge), GIANT = img(AS.giant), SHIP = img(AS.ship), BG = img(AS.bg), HM = AS.heroMeta, GM = AS.giantMeta;
+
+  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false };
+  [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1]].forEach(function (c) {
+    var el = $(c[0]); el.addEventListener("input", function () { cfg[c[0]] = +el.value * c[1]; $(c[0] + "V").textContent = cfg[c[0]].toFixed(c[2]); if (c[0] === "n") build(); });
+  });
+  $("mode").addEventListener("change", function () { cfg.mode = $("mode").value; });
+  $("slow").addEventListener("change", function () { cfg.slow = $("slow").checked; });
+  var CLOSE = false;
+  function setView(c) { CLOSE = c; $("stage").classList.toggle("game", !c); $("vGame").setAttribute("aria-pressed", !c); $("vClose").setAttribute("aria-pressed", c); requestAnimationFrame(fit); }
+  $("vGame").onclick = function () { setView(false); }; $("vClose").onclick = function () { setView(true); };
+  var paused = false; $("pause").onclick = function () { paused = !paused; this.textContent = paused ? "Play" : "Pause"; };
+
+  // ---- World in game units: 430 x 300 = phone CSS px. ----
+  var UW = 430, UH = 300, FLOOR = 246, HX = 118, HEROH = 39;
+  var SHIPW = 178, SHIPX = 268, SHIPH = SHIPW * 285 / 400, SHIPBOT = FLOOR - 4, HITX = SHIPX + SHIPW * 0.5;
+  var T = 0; // game clock (s), slows in slow motion
+  function heroPos() { var bob = Math.sin(T * 2 * Math.PI / 2.4) * 2.5; var feet = FLOOR - 13 + bob; return { x: HX, feet: feet, chest: feet - HEROH * 0.62, s: HEROH / 105 }; }
+
+  // ---- Swords ----
+  var swords = [], ring = 0;
+  function build() { swords = []; for (var i = 0; i < cfg.n; i++) swords.push({ off: i / cfg.n * Math.PI * 2, state: "orbit", t: 0 }); }
+  build();
+  function onRing(h, a) { var R = 17 * cfg.rad; return { x: h.x + Math.cos(a) * R, y: h.chest + Math.sin(a) * R * cfg.tilt, z: Math.sin(a), ang: a }; }
+  var SLEN = 17; // sword length (game units)
+
+  // offscreen buffer for sliced perspective drawing
+  var OFF = document.createElement("canvas"), octx = OFF.getContext("2d");
+  function offBegin(len, sc) { var S = Math.ceil(len * 2.6 * sc); S = Math.max(8, S); if (OFF.width !== S) { OFF.width = S; OFF.height = S; } octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, S, S); octx.setTransform(sc, 0, 0, sc, S / 2, S / 2); return octx; }
+  function offEnd(len, sc, a) { var S = OFF.width / sc; ctx.globalAlpha = a; ctx.drawImage(OFF, -S / 2, -S / 2, S, S); }
+  function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  var PX = 1; // device px per game unit (set each frame), for buffer resolution
+
+  function drawSwordArt(x, y, rot, len, a, faceAng, alpha, plain) {
+    if (!FACE.naturalWidth) return;
+    var fw = len * FACE.naturalWidth / FACE.naturalHeight, ew = len * EDGE.naturalWidth / EDGE.naturalHeight, fh = FACE.naturalHeight, fwid = FACE.naturalWidth, N = 22, D = len * 2.4;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalCompositeOperation = "lighter";
+    if (plain) { ctx.globalAlpha = alpha; ctx.drawImage(FACE, -fw / 2, -len * 0.78, fw, len); ctx.restore(); return; }
+    if (cfg.mode === "tan") {
+      var dx = -Math.sin(faceAng), dy = Math.cos(faceAng) * cfg.tilt, dz = Math.cos(faceAng) * Math.sqrt(1 - cfg.tilt * cfg.tilt), ls = Math.max(0.12, Math.hypot(dx, dy));
+      var o = offBegin(len, PX);
+      for (var i = 0; i < N; i++) { var t0 = i / N, t1 = (i + 1) / N, q0 = (0.78 - t0) * len, q1 = (0.78 - t1) * len, f0 = D / (D - q0 * dz), f1 = D / (D - q1 * dz), wq = fw * (f0 + f1) / 2, y0 = -q0 * ls * f0, y1 = -q1 * ls * f1;
+        o.drawImage(FACE, 0, t0 * fh, fwid, fh / N + 0.5, -wq / 2, y0, wq, y1 - y0 + 0.4); }
+      offEnd(len, PX, alpha);
+    } else {
+      var w = Math.sin(faceAng), zc = Math.cos(faceAng), aw = Math.abs(w), fa = alpha * smooth(0.04, 0.16, aw), ea = alpha * (1 - smooth(0.06, 0.2, aw));
+      if (fa > 0.01) { var o2 = offBegin(len, PX);
+        for (var j = 0; j < N; j++) { var u0 = (j / N - 0.5) * fw, u1 = ((j + 1) / N - 0.5) * fw, g0 = D / (D - u0 * zc), g1 = D / (D - u1 * zc), gm = (g0 + g1) / 2, x0 = u0 * w * g0, x1 = u1 * w * g1, xl = Math.min(x0, x1), xw = Math.abs(x1 - x0) + 0.4;
+          o2.save(); if (x1 < x0) { o2.translate(xl * 2 + xw, 0); o2.scale(-1, 1); } o2.drawImage(FACE, j / N * fwid, 0, fwid / N + 0.5, fh, xl, -len * 0.78 * gm, xw, len * gm); o2.restore(); }
+        offEnd(len, PX, fa); }
+      if (ea > 0.01) { ctx.globalAlpha = ea; ctx.drawImage(EDGE, -ew / 2, -len * 0.78, ew, len); }
+    }
+    ctx.restore();
+  }
+
+  // ---- Effects ----
+  var parts = [], rings = [], shake = 0, flash = 0, shipHit = 0, dmg = [];
+  function burst(x, y, n, spd, col, up) { for (var i = 0; i < n; i++) { var a = Math.random() * Math.PI * 2, v = spd * (0.3 + Math.random()); parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * (up ? 0.5 : 1) - (up ? spd * 0.6 : 0), life: 0, max: 0.4 + Math.random() * 0.5, r: 0.6 + Math.random() * 1.4, col: col }); } }
+
+  // ---- Skill state ----
+  var SK = null; // { t0 }
+  var LAUNCH = 0.06, RISE = 0.55, DROP0 = 1.0, DROPD = 0.26, HOLD = 0.95, FADE = 0.85;
+  $("skill").onclick = function () { if (SK) return; SK = { t0: T, hit: false, warped: false }; swords.forEach(function (s, i) { s.state = "launch"; s.t = T + i * LAUNCH; s.from = null; }); };
+  $("atk").onclick = function () { if (SK) return; var best = null, bz = -9; swords.forEach(function (s) { if (s.state !== "orbit") return; var z = Math.sin(ring + s.off); if (z > bz) { bz = z; best = s; } }); if (best) { best.state = "strike"; best.t = T; best.hit = false; } };
+
+  function giantGeom() { // tip x/y, length, width, alpha
+    var L = 235 * cfg.gs, Wd = L * GM.w / GM.h, tipEnd = FLOOR + 16, k = (T - SK.t0 - DROP0) / DROPD;
+    if (k < 0) return null; var tip = k >= 1 ? tipEnd : -14 + (tipEnd + 14) * Math.pow(k, 3) + 0;
+    var start = -14 - 0; tip = k >= 1 ? tipEnd : start + (tipEnd - start) * (k * k * k);
+    var tf = T - SK.t0 - DROP0 - DROPD - HOLD, a = tf <= 0 ? 1 : Math.max(0, 1 - tf / FADE);
+    return { x: HITX, tip: tip, L: L, Wd: Wd, k: Math.min(1, k), a: a, tf: tf };
+  }
+
+  function stepSkill(dt) {
+    if (!SK) return; var e = T - SK.t0;
+    if (!SK.hit && e >= DROP0 + DROPD) { SK.hit = true; shake = 1; flash = 1; shipHit = 1; rings.push({ x: HITX, y: FLOOR - 2, t: 0, max: 0.55, R: 70 }); rings.push({ x: HITX, y: FLOOR - 2, t: -0.08, max: 0.5, R: 40 });
+      burst(HITX, FLOOR - 6, 46, 90, "180,255,120"); burst(HITX, FLOOR - 4, 24, 55, "255,240,170"); dmg.push({ x: HITX - 52, y: SHIPBOT - SHIPH * 0.55, t: 0, txt: "-18,420" }); }
+    var g = giantGeom();
+    if (g && g.tf > 0 && g.a > 0) { for (var i = 0; i < 3; i++) { var yy = g.tip - g.L * Math.random() * 0.98; parts.push({ x: g.x + (Math.random() - 0.5) * g.Wd * 0.5, y: yy, vx: (Math.random() - 0.5) * 8, vy: -14 - Math.random() * 18, life: 0, max: 0.7 + Math.random() * 0.6, r: 0.5 + Math.random() * 1.4, col: Math.random() < 0.3 ? "230,255,200" : "120,255,90" }); } }
+    if (!SK.warped && e >= DROP0 + DROPD + HOLD + FADE) { SK.warped = true; var h = heroPos();
+      swords.forEach(function (s, i) { s.state = "warp"; s.t = T + i * 0.035; var p = onRing(h, ring + s.off); rings.push({ x: p.x, y: p.y, t: -i * 0.035, max: 0.32, R: 9, warp: true }); });
+      SK.end = T + 0.5; }
+    if (SK.end && T > SK.end) { SK = null; swords.forEach(function (s) { s.state = "orbit"; }); }
+  }
+
+  function swordDraw(s, h, list) {
+    var a = ring + s.off, home = onRing(h, a), rotRing = 0, sc = 1;
+    if (cfg.mode === "tan") rotRing = Math.atan2(Math.cos(a) * cfg.tilt, -Math.sin(a)) + Math.PI / 2;
+    var bob = Math.sin(T * 2.4 + a * 3) * 0.6;
+    if (s.state === "orbit") { list.push({ z: home.z, f: function () { var d = (home.z + 1) / 2; drawSwordArt(home.x, home.y + bob, rotRing, SLEN * (0.82 + 0.28 * d), 0, a, 0.62 + 0.38 * d); } }); return; }
+    if (s.state === "launch") { var k = (T - s.t) / RISE;
+      if (k < 0) { list.push({ z: home.z, f: function () { var d = (home.z + 1) / 2; drawSwordArt(home.x, home.y, rotRing, SLEN * (0.82 + 0.28 * d), 0, a, 0.62 + 0.38 * d); } }); return; }
+      if (!s.from) s.from = { x: home.x, y: home.y };
+      if (k > 1) return; var y = s.from.y - 330 * k * k - 6 * k, x = s.from.x + (s.from.x - h.x) * 0.6 * k;
+      list.push({ z: 2, f: function () { for (var g = 3; g >= 0; g--) { var kk = Math.max(0, k - g * 0.05); var yy = s.from.y - 330 * kk * kk - 6 * kk, xx = s.from.x + (s.from.x - h.x) * 0.6 * kk; drawSwordArt(xx, yy, 0, SLEN * 1.05, 0, 0, g ? 0.22 / g : 1, true); } } });
+      if (Math.random() < 0.5) parts.push({ x: x, y: y + SLEN * 0.3, vx: (Math.random() - 0.5) * 6, vy: 10, life: 0, max: 0.35, r: 0.7, col: "140,255,100" }); return; }
+    if (s.state === "warp") { var k2 = (T - s.t) / 0.25; if (k2 < 0) return; var o = k2 >= 1 ? 1 : 1 + Math.sin(k2 * Math.PI) * 0.35 * (1 - k2); sc = Math.min(1, k2) * o;
+      list.push({ z: home.z, f: function () { var d = (home.z + 1) / 2; drawSwordArt(home.x, home.y, rotRing, SLEN * (0.82 + 0.28 * d) * sc, 0, a, Math.min(1, k2 * 2) * (0.62 + 0.38 * d) + (k2 < 1 ? 0.4 * (1 - k2) : 0)); } }); return; }
+    if (s.state === "strike") { var k3 = (T - s.t) / 0.85; if (k3 >= 1) { s.state = "orbit"; return swordDraw(s, h, list); }
+      var tg = { x: SHIPX + 26, y: SHIPBOT - SHIPH * 0.32 }, out = k3 < 0.45 ? 1 - Math.pow(1 - k3 / 0.45, 3) : 1 - Math.pow((k3 - 0.45) / 0.55, 3);
+      var px = home.x + (tg.x - home.x) * out, py = home.y + (tg.y - home.y) * out - Math.sin(out * Math.PI) * 14, rot = Math.atan2(tg.y - home.y, tg.x - home.x) + Math.PI / 2 + (k3 < 0.45 ? 0 : Math.PI);
+      if (k3 > 0.43 && !s.hit) { s.hit = true; shipHit = 0.6; burst(tg.x, tg.y, 14, 50, "170,255,120"); }
+      list.push({ z: 2, f: function () { drawSwordArt(px, py, out > 0.05 ? rot : rotRing, SLEN * 1.05, 0, a, 1, out > 0.05); } }); }
+  }
+
+  function frame(now) {
+    var real = Math.min(0.05, (now - (frame.last || now)) / 1000); frame.last = now;
+    var dt = paused ? 0 : real * (cfg.slow ? 0.25 : 1); T += dt; ring += dt * cfg.spd * 1.4;
+    stepSkill(dt);
+    // camera
+    var k = W / UW, cx = 0, cy = 0, h = heroPos();
+    if (CLOSE) { k = W / UW * 2.7; cx = h.x - (W / k) / 2; cy = h.chest - (H / k) / 2; }
+    var sx = 0, sy = 0; if (shake > 0) { sx = (Math.random() - 0.5) * 7 * shake; sy = (Math.random() - 0.5) * 7 * shake; shake = Math.max(0, shake - dt * 2.6); }
+    PX = k * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.setTransform(k * dpr, 0, 0, k * dpr, (-cx + sx) * k * dpr, (-cy + sy) * k * dpr);
+    ctx.imageSmoothingQuality = "high";
+    // background: Arena art, deck surface at FLOOR
+    if (BG.naturalWidth) { var bw = UW + 20, bh = bw * BG.naturalHeight / BG.naturalWidth; ctx.drawImage(BG, -10, FLOOR - bh * 0.79, bw, bh); }
+    // enemy ship (hovers over the deck)
+    if (SHIP.naturalWidth) { var kx = shipHit > 0 ? Math.sin(T * 70) * 2.2 * shipHit : 0, hov = Math.sin(T * 1.7) * 1.2;
+      ctx.drawImage(SHIP, SHIPX + kx, SHIPBOT - SHIPH + hov, SHIPW, SHIPH);
+      if (shipHit > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = shipHit * 0.5; ctx.drawImage(SHIP, SHIPX + kx, SHIPBOT - SHIPH + hov, SHIPW, SHIPH); ctx.restore(); shipHit = Math.max(0, shipHit - dt * 2.2); } }
+    // swords + hero, split by depth
+    var list = []; swords.forEach(function (s) { swordDraw(s, h, list); });
+    list.filter(function (p) { return p.z < 0; }).sort(function (a, b) { return a.z - b.z; }).forEach(function (p) { p.f(); });
+    if (HERO.naturalWidth) { var fi = Math.floor(T * HM.fps) % HM.n, sc = HEROH / (HM.feet - HM.top), dw = HM.fw * sc, dh = HM.fh * sc;
+      ctx.globalAlpha = 0.35; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(h.x, FLOOR, 9 - (h.feet - (FLOOR - 13)) * 0.6, 2.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.drawImage(HERO, (fi % HM.cols) * HM.fw, Math.floor(fi / HM.cols) * HM.fh, HM.fw, HM.fh, h.x - HM.cx * sc, h.feet - HM.feet * sc, dw, dh); }
+    list.filter(function (p) { return p.z >= 0 && p.z <= 1; }).sort(function (a, b) { return a.z - b.z; }).forEach(function (p) { p.f(); });
+    list.filter(function (p) { return p.z > 1; }).forEach(function (p) { p.f(); });
+    // giant sword: falls tip-down, buried in the deck (clipped at the deck surface)
+    if (SK && GIANT.naturalWidth) { var g = giantGeom(); if (g && g.a > 0) {
+      var top = g.tip - g.L, tipPx = GM.tip / GM.h; top = g.tip - g.L * tipPx; var drawH = g.L, drawW = g.Wd;
+      ctx.save(); ctx.beginPath(); ctx.rect(-50, -400, UW + 100, FLOOR + 6 + 400); ctx.clip();
+      if (g.k < 1) { ctx.globalCompositeOperation = "lighter"; for (var s2 = 1; s2 <= 4; s2++) { ctx.globalAlpha = 0.18 / s2; ctx.drawImage(GIANT, g.x - drawW / 2, top - s2 * 22, drawW, drawH); } }
+      ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = g.a;
+      var rise = g.tf > 0 ? g.tf * 10 : 0, spread = g.tf > 0 ? 1 + g.tf * 0.12 : 1;
+      ctx.drawImage(GIANT, g.x - drawW * spread / 2, top - rise, drawW * spread, drawH);
+      var pulse = g.tf <= 0 && g.k >= 1 ? 0.25 + 0.2 * Math.sin(T * 9) : (g.tf > 0 ? 0.6 * g.a : 0);
+      if (pulse > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = pulse * g.a; ctx.drawImage(GIANT, g.x - drawW * spread / 2, top - rise, drawW * spread, drawH); }
+      ctx.restore();
+      if (g.k >= 1 && g.a > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; var gl = ctx.createRadialGradient(g.x, FLOOR + 2, 0, g.x, FLOOR + 2, 26); gl.addColorStop(0, "rgba(170,255,120," + 0.55 * g.a + ")"); gl.addColorStop(1, "rgba(170,255,120,0)"); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 2, 30, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+    } }
+    // rings, particles, damage numbers
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    rings = rings.filter(function (r) { r.t += dt; if (r.t < 0) return true; var q = r.t / r.max; if (q >= 1) return false; ctx.globalAlpha = (1 - q) * (r.warp ? 0.9 : 0.8); ctx.strokeStyle = r.warp ? "#c8ffb0" : "#b4ff8a"; ctx.lineWidth = (r.warp ? 1.4 : 3) * (1 - q) + 0.4;
+      ctx.beginPath(); if (r.warp) ctx.arc(r.x, r.y, r.R * (0.2 + q), 0, Math.PI * 2); else ctx.ellipse(r.x, r.y, r.R * q, r.R * q * 0.22, 0, 0, Math.PI * 2); ctx.stroke(); return true; });
+    parts = parts.filter(function (p) { p.life += dt; if (p.life > p.max) return false; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 20 * dt; var q = 1 - p.life / p.max; ctx.globalAlpha = q; ctx.fillStyle = "rgba(" + p.col + ",1)"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.5 + q * 0.5), 0, Math.PI * 2); ctx.fill(); return true; });
+    ctx.restore();
+    dmg = dmg.filter(function (d) { d.t += dt; if (d.t > 1.3) return false; ctx.save(); ctx.globalAlpha = Math.min(1, (1.3 - d.t) * 2); ctx.font = "13px 'Lilita One', 'Trebuchet MS', sans-serif"; ctx.textAlign = "center"; ctx.lineWidth = 3; ctx.strokeStyle = "#1b0d00"; var yy = d.y - d.t * 16;
+      ctx.strokeText(d.txt, d.x, yy); ctx.fillStyle = "#ffe27a"; ctx.fillText(d.txt, d.x, yy); ctx.restore(); return true; });
+    if (flash > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = flash * 0.45; ctx.fillStyle = "#d9ffc4"; ctx.fillRect(0, 0, cv.width, cv.height); ctx.globalAlpha = 1; flash = Math.max(0, flash - dt * 4); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
