@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1665"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1666"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29161,33 +29161,48 @@ function zkDrawGiant(ctx, Z, sk, e, hs, tgt) {
   }
   if (a <= 0) { if (!sk.warped) { sk.warped = true; Z.warpAt = performance.now(); Z.sk = null; } return; }
   var top = tip - L * (1525 / 1533), rise = 0, spread = 1; /* v1657 (Harley): it no longer grows (widens / lifts more blade out of the ground) while it dissolves */
-  ctx.save(); ctx.beginPath(); ctx.rect(-1000, -2000, 4000, entry + 2000); ctx.clip();
-  if (k < 1) { ctx.globalCompositeOperation = "lighter"; for (var s2 = 1; s2 <= 4; s2++) { ctx.globalAlpha = 0.18 / s2; ctx.drawImage(G, tgt.x - Wd / 2, top - s2 * 22 * hs, Wd, L); } }
+  ctx.save(); /* v1666: no clip mask - only the part above the ground is drawn (source cropped) */
+  if (k < 1) { ctx.globalCompositeOperation = "lighter"; for (var s2 = 1; s2 <= 4; s2++) { var gy = top - s2 * 22 * hs, vh = Math.min(L, entry - gy); if (vh <= 0) continue; ctx.globalAlpha = 0.18 / s2; ctx.drawImage(G, 0, 0, G.naturalWidth, G.naturalHeight * vh / L, tgt.x - Wd / 2, gy, Wd, vh); } }
   ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = a;
-  if (!ZK_GIANT_BAKED || ZK_GIANT_BAKED._src !== G) { /* v1665: the darkening filter is baked once into a copy - a live canvas filter on a picture this big every frame is slow on phones */
-    var gb = document.createElement("canvas"); gb.width = G.naturalWidth; gb.height = G.naturalHeight; var gx = gb.getContext("2d");
-    gx.filter = "brightness(" + (0.45 + 0.55 * ZK.eb).toFixed(2) + ") saturate(" + (1.25 - 0.25 * ZK.eb).toFixed(2) + ")"; gx.drawImage(G, 0, 0); gb._src = G; ZK_GIANT_BAKED = gb; }
-  ctx.drawImage(ZK_GIANT_BAKED, tgt.x - Wd * spread / 2, top - rise, Wd * spread, L);
+  /* v1665/v1666: ready-made copies at the exact screen size (darkened + plain for the glow) - shrinking the 862x1533 picture with a live filter every frame was the cost */
+  var trG = ctx.getTransform ? ctx.getTransform() : { a: 2, b: 0 }, pxG = Math.max(1, Math.min(4, Math.hypot(trG.a, trG.b))), gw = Math.max(1, Math.round(Wd * pxG)), gh = Math.max(1, Math.round(L * pxG)), gk = gw + "x" + gh;
+  if (!ZK_GIANT_BAKED || ZK_GIANT_BAKED._src !== G || ZK_GIANT_BAKED._k !== gk) {
+    var gb = document.createElement("canvas"); gb.width = gw; gb.height = gh; var gx = gb.getContext("2d"); gx.imageSmoothingQuality = "high";
+    gx.filter = "brightness(" + (0.45 + 0.55 * ZK.eb).toFixed(2) + ") saturate(" + (1.25 - 0.25 * ZK.eb).toFixed(2) + ")"; gx.drawImage(G, 0, 0, gw, gh);
+    var gp = document.createElement("canvas"); gp.width = gw; gp.height = gh; var gpx = gp.getContext("2d"); gpx.imageSmoothingQuality = "high"; gpx.drawImage(G, 0, 0, gw, gh);
+    gb._src = G; gb._k = gk; gb._plain = gp; ZK_GIANT_BAKED = gb; }
+  var Gp = ZK_GIANT_BAKED._plain;
+  var gY = top - rise, gVis = Math.min(L, entry - gY), gSrc = gh * gVis / L; if (gVis <= 0) { ctx.restore(); return; }
+  ctx.drawImage(ZK_GIANT_BAKED, 0, 0, gw, gSrc, tgt.x - Wd * spread / 2, gY, Wd * spread, gVis);
   var pulse = tf <= 0 && k >= 1 ? ZK.eb * (0.22 + 0.18 * Math.sin(e / 1000 * 13) * Math.sin(e / 1000 * 5.3)) : (tf > 0 ? 0.6 * ZK.eb * a : 0);
-  if (pulse > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = pulse * a; ctx.drawImage(G, tgt.x - Wd * spread / 2, top - rise, Wd * spread, L); }
+  if (pulse > 0) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = pulse * a; ctx.drawImage(Gp, 0, 0, gw, gSrc, tgt.x - Wd * spread / 2, gY, Wd * spread, gVis); }
   ctx.restore();
   if (k >= 1) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + a); ctx.fillStyle = "rgba(10,6,20,0.85)"; ctx.beginPath(); ctx.ellipse(tgt.x, entry - 1 * hs, Wd * 0.34, 3.2 * hs, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     ctx.save(); ctx.globalCompositeOperation = "lighter"; var gl = ctx.createRadialGradient(tgt.x, entry, 0, tgt.x, entry, 26 * hs); gl.addColorStop(0, "rgba(170,255,120," + 0.55 * a + ")"); gl.addColorStop(1, "rgba(170,255,120,0)"); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(tgt.x, entry, 30 * hs, 7 * hs, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
   if (tf > 0 && a > 0) { var gTop = top - rise; for (var pi = 0; pi < 3; pi++) { var yy = gTop + (entry - gTop) * Math.random(), rel = (yy - top) / L, ww = rel < 0.12 ? 0.18 : rel < 0.3 ? 0.85 : 0.36; Z.fx.push({ k: "p", x: tgt.x + (Math.random() - 0.5) * Wd * ww, y: yy, vx: (Math.random() - 0.5) * 8 * hs, vy: (-14 - Math.random() * 18) * hs, life: 0, max: 0.7 + Math.random() * 0.6, r: (0.5 + Math.random() * 1.4) * hs, col: Math.random() < 0.3 ? "230,255,200" : "120,255,90" }); } }
 }
-function zkDrawFx(ctx, Z, hs) {
+function zkDrawFx(ctx, Z, hs) { /* v1666: batched - rocks in one pass, then every glow item under one "lighter" setting (was a save/restore + colour string per spark, ~160 at the impact) */
   var dt = Z.dt || 0.016; if (Z.fx.length > 400) Z.fx.splice(0, Z.fx.length - 400);
-  Z.fx = Z.fx.filter(function (q) {
-    if (q.k === "rock") { q.life += dt; if (q.life > q.max) return false; q.vy += 260 * hs * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt;
+  var keep = [], rocks = [], rings = [], dots = [], i, q;
+  for (i = 0; i < Z.fx.length; i++) { q = Z.fx[i];
+    if (q.k === "rock") { q.life += dt; if (q.life > q.max) continue; q.vy += 260 * hs * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt;
       if (q.y > q.floor && q.vy > 0) { if (!q.b) { q.b = true; q.vy *= -0.35; q.vx *= 0.5; q.vr *= 0.5; q.y = q.floor; } else { q.y = q.floor; q.vy = 0; q.vx *= 0.9; q.vr *= 0.8; } }
-      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.globalAlpha = Math.min(1, (q.max - q.life) * 3); ctx.fillStyle = q.col; ctx.beginPath(); q.pts.forEach(function (pp, i) { if (i) ctx.lineTo(pp[0] * q.r, pp[1] * q.r); else ctx.moveTo(pp[0] * q.r, pp[1] * q.r); }); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = "rgba(30,20,12,0.9)"; ctx.lineWidth = 0.6 * hs; ctx.stroke(); ctx.restore(); return true; }
-    if (q.k === "f") { q.t += dt; return q.t < 0.25; }
-    ctx.save(); ctx.globalCompositeOperation = "lighter";
-    if (q.k === "r") { q.t += dt; if (q.t < 0) { ctx.restore(); return true; } var u = q.t / q.max; if (u >= 1) { ctx.restore(); return false; } ctx.globalAlpha = (1 - u) * (q.warp ? 0.9 : 0.8); ctx.strokeStyle = q.warp ? "#c8ffb0" : "#b4ff8a"; ctx.lineWidth = ((q.warp ? 1.4 : 3) * (1 - u) + 0.4) * hs;
-      ctx.beginPath(); if (q.warp) ctx.arc(q.x, q.y, q.R * (0.2 + u), 0, Math.PI * 2); else ctx.ellipse(q.x, q.y, q.R * u, q.R * u * 0.22, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return true; }
-    q.life += dt; if (q.life > q.max) { ctx.restore(); return false; } q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 20 * hs * dt; var qq = 1 - q.life / q.max; ctx.globalAlpha = qq; ctx.fillStyle = "rgba(" + q.col + ",1)"; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (0.5 + qq * 0.5), 0, Math.PI * 2); ctx.fill(); ctx.restore(); return true;
-  });
+      keep.push(q); rocks.push(q); continue; }
+    if (q.k === "f") { q.t += dt; if (q.t < 0.25) keep.push(q); continue; }
+    if (q.k === "r") { q.t += dt; if (q.t >= q.max) continue; keep.push(q); if (q.t >= 0) rings.push(q); continue; }
+    q.life += dt; if (q.life > q.max) continue; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 20 * hs * dt; keep.push(q); dots.push(q);
+  }
+  Z.fx = keep;
+  if (rocks.length) { ctx.save(); ctx.strokeStyle = "rgba(30,20,12,0.9)"; ctx.lineWidth = 0.6 * hs;
+    for (i = 0; i < rocks.length; i++) { q = rocks[i]; var c = Math.cos(q.rot), sn = Math.sin(q.rot), P = q.pts; ctx.globalAlpha = Math.min(1, (q.max - q.life) * 3); ctx.fillStyle = q.col; ctx.beginPath();
+      for (var j = 0; j < P.length; j++) { var px = P[j][0] * q.r, py = P[j][1] * q.r, X = q.x + px * c - py * sn, Y = q.y + px * sn + py * c; if (j) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
+      ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.restore(); }
+  if (rings.length || dots.length) { ctx.save(); ctx.globalCompositeOperation = "lighter";
+    for (i = 0; i < rings.length; i++) { q = rings[i]; var u = q.t / q.max; ctx.globalAlpha = (1 - u) * (q.warp ? 0.9 : 0.8); ctx.strokeStyle = q.warp ? "#c8ffb0" : "#b4ff8a"; ctx.lineWidth = ((q.warp ? 1.4 : 3) * (1 - u) + 0.4) * hs;
+      ctx.beginPath(); if (q.warp) ctx.arc(q.x, q.y, q.R * (0.2 + u), 0, Math.PI * 2); else ctx.ellipse(q.x, q.y, q.R * u, q.R * u * 0.22, 0, 0, Math.PI * 2); ctx.stroke(); }
+    for (i = 0; i < dots.length; i++) { q = dots[i]; var qq = 1 - q.life / q.max; ctx.globalAlpha = qq; if (q._fs === undefined) q._fs = "rgb(" + q.col + ")"; ctx.fillStyle = q._fs; ctx.beginPath(); ctx.arc(q.x, q.y, q.r * (0.5 + qq * 0.5), 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore(); }
 }
 function zkFlashOverlay(ctx, M, w, h) { /* the impact flash over the whole battle (drawn after everything) */
   if (!M.zk) return; Object.keys(M.zk).forEach(function (k) { var Z = M.zk[k]; Z.fx.forEach(function (q) { if (q.k === "f") { ctx.save(); ctx.globalAlpha = Math.max(0, 1 - q.t / 0.25) * 0.35; ctx.fillStyle = "#d9ffc4"; ctx.fillRect(0, 0, w, h); ctx.restore(); } }); });

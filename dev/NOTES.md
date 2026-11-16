@@ -5409,3 +5409,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Cause: every orbiting sword was rebuilt from 18 slices on a scratch canvas every frame, and the scratch canvas was re-sized (= re-allocated) ~2x per frame because each sword's size differs with depth. ~200 draws + canvas re-allocations per frame per Zarek.
 - Fix: each turn angle is built once (96 angles, cached per screen sharpness and size step) and reused - one draw per sword. The giant sword's darkening filter is baked once into a copy instead of a live canvas filter on an 862x1533 picture every frame of the skill.
 - Benchmark (same page, same 400 frames, x3 canvas): zkDraw 1.42-1.56 ms -> 0.61-0.65 ms per frame (~2.3x), not counting the GPU cost of the removed re-allocations. Look unchanged (old vs new side by side).
+
+## v1666 — Zarek: giant sword + debris cheaper to draw
+- Harley: slowdown also when the giant sword and debris appear.
+- Benchmark of the whole skill (same page, art loaded, x3 canvas, 3 runs): v1664 fall 2.2-2.4 ms / hold 8.6 ms / fade 8.5 ms per frame -> now fall ~0.9 ms / hold ~1.9 ms / fade ~1.7 ms. The big one was the live brightness/saturate filter on the 862x1533 picture every frame (removed in v1665).
+- Also: the giant sword is kept as ready-made copies at its exact screen size (darkened + plain for the glow pulse) instead of shrinking the full picture twice a frame; no clip mask (only the part above ground is drawn); sparks / rings / rocks drawn in batches (one composite setting, no save/restore per spark).
+- Switching parts off in the benchmark: what's left (~1.6 ms in headless software drawing) is just painting the big sword - cheap on a phone's graphics chip. Look unchanged (old vs new frames side by side).
