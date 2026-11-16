@@ -5443,3 +5443,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Tests (headless): Arena sim 10 fights - 7 casts/fight, ~400-470 damage soaked/fight, nothing below 1★. Conquest - cast at 5 s, every hero 99 shield, blades fly, bubbles show; no console errors.
 - Zarek vs Iron Lily (Arena leave-one-out; "w/o ironlily" = the team WITH Zarek): group gareth/sera/torvald/lyra Zarek-team 73/64 wins vs Lily-team 46/27; aurek/halo7/kessa/juno 95/93 vs 37/22; bram/roran/pip/seraphine 78/78 vs 33/32 (Lv40/Lv80). Conquest (gareth, lyra, sera, torvald + X): Lv40 both 6-11; max Zarek 10-1 vs Lily 10-4.
 - vs Kessa: group with Kessa - w/o kessa 0/0, w/o zarek 29/22 (Zarek below her). But in aurek/halo7/kessa/juno at Lv80: w/o kessa 37 vs w/o zarek 22 -> Zarek matters MORE than Kessa there. Flagged to Harley (rule: new heroes well below Kessa). Meta check: the known pre-existing warning only.
+
+## v1671 — Death Gerbils: flat, weaker stats written on the card
+- Harley: weaker gerbils, flat numbers that don't grow with the player, and the card should say the stats in plain words. (Not "fixing" them yet.)
+- Card #14: every 5 s, a gerbil with 100 HP that bites for 20 once a second, no DEF (was 50% of your average hero's HP / hit / DEF). Conquest (idleGerbilTick, hits on it skip DEF) and Arena (S.gerbTpl) both read hp / dmg / sec; the old pct path stays as a fallback. Dev Mod fields updated.
+- Card text: "Every 5 seconds, summons a Death Gerbil to fight beside you. Each one has 100 HP and bites for 20 damage once a second. They keep coming until the battle ends." The online card catalog overrides the code's text, so cardCatalogSettle swaps the old "Every 5 seconds summon a Death Gerbil" for the new text; the admin's game saves it to the catalog once.
+- For scale (Zarek's team, avg hero): Lv20 266 HP / 65 per hit, Lv40 446 / 135, Lv80 868 / 300.
+- Arena tests (Zarek, Gareth, Sera, Torvald, Lyra; 40 fights, sides swapped; was -> now): mirror Lv40 40/40 -> 40/40 (enemy fort left 0% -> 27%), Lv80 40/40 -> 24/40; vs G/S/T/L/Aurek Lv40 40 -> 40, Lv80 40 -> 32 (no card: 38). Still decisive at Lv40 because any gerbil absorbs a whole enemy hit (the left-over damage is lost) - Harley knows, not fixing yet.
+- Conquest headless: 2 gerbils after ~10 s at 100/100 HP, 20 dmg, 1 s; card shows the new text. No console errors.
