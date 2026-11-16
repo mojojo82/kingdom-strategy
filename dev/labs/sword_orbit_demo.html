@@ -120,6 +120,15 @@
   var parts = [], rings = [], shake = 0, flash = 0, shipHit = 0, dmg = [];
   function burst(x, y, n, spd, col, up) { for (var i = 0; i < n; i++) { var a = Math.random() * Math.PI * 2, v = spd * (0.3 + Math.random()); parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * (up ? 0.5 : 1) - (up ? spd * 0.6 : 0), life: 0, max: 0.4 + Math.random() * 0.5, r: 0.6 + Math.random() * 1.4, col: col }); } }
 
+  var rocks = [];
+  function rocksOut(x, y) { var cols = ["#8a7258", "#9c8466", "#76614c", "#a8957a", "#6a5644"]; for (var i = 0; i < 11; i++) { var dir = (i % 2 ? 1 : -1), a = -Math.PI / 2 + dir * (0.25 + Math.random() * 0.85), v = 95 + Math.random() * 85, n = 5 + (i % 3), pts = [];
+      for (var j = 0; j < n; j++) { var t = j / n * Math.PI * 2; pts.push([Math.cos(t) * (0.7 + Math.random() * 0.5), Math.sin(t) * (0.6 + Math.random() * 0.5)]); }
+      rocks.push({ x: x + dir * (4 + Math.random() * 10), y: y - 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 2.6 + Math.random() * 3.4, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, pts: pts, col: cols[i % cols.length], life: 0, max: 1.3 + Math.random() * 0.5, bounced: false }); } }
+  function drawRocks(dt) { rocks = rocks.filter(function (r) { r.life += dt; if (r.life > r.max) return false; r.vy += 260 * dt; r.x += r.vx * dt; r.y += r.vy * dt; r.rot += r.vr * dt;
+      if (r.y > FLOOR + 4 && r.vy > 0) { if (!r.bounced) { r.bounced = true; r.vy *= -0.35; r.vx *= 0.5; r.vr *= 0.5; r.y = FLOOR + 4; } else { r.y = FLOOR + 4; r.vy = 0; r.vx *= 0.9; r.vr *= 0.8; } }
+      ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.rot); ctx.globalAlpha = Math.min(1, (r.max - r.life) * 3); ctx.fillStyle = r.col; ctx.beginPath();
+      r.pts.forEach(function (p, i) { if (i) ctx.lineTo(p[0] * r.r, p[1] * r.r); else ctx.moveTo(p[0] * r.r, p[1] * r.r); }); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "rgba(30,20,12,0.9)"; ctx.lineWidth = 0.6; ctx.stroke();
+      ctx.fillStyle = "rgba(255,240,210,0.25)"; ctx.beginPath(); ctx.arc(-r.r * 0.25, -r.r * 0.25, r.r * 0.35, 0, Math.PI * 2); ctx.fill(); ctx.restore(); return true; }); }
   // ---- Skill state ----
   var SK = null; // { t0 }
   var LAUNCH = 0.06, RISE = 0.55, DROP0 = 1.0, DROPD = 0.26, HOLD = 0.95, FADE = 0.85;
@@ -136,10 +145,10 @@
 
   function stepSkill(dt) {
     if (!SK) return; var e = T - SK.t0;
-    if (!SK.hit && e >= DROP0 + DROPD) { SK.hit = true; shake = 1; flash = 1; shipHit = 1; rings.push({ x: HITX, y: FLOOR - 2, t: 0, max: 0.55, R: 70 }); rings.push({ x: HITX, y: FLOOR - 2, t: -0.08, max: 0.5, R: 40 });
-      burst(HITX, FLOOR - 6, 46, 90, "180,255,120"); burst(HITX, FLOOR - 4, 24, 55, "255,240,170"); dmg.push({ x: HITX - 52, y: SHIPBOT - SHIPH * 0.55, t: 0, txt: "-18,420" }); }
+    if (!SK.hit && e >= DROP0 + DROPD) { SK.hit = true; shake = 1; flash = 1; shipHit = 1; rings.push({ x: HITX, y: FLOOR + 5, t: 0, max: 0.55, R: 70 }); rings.push({ x: HITX, y: FLOOR + 5, t: -0.08, max: 0.5, R: 40 }); rocksOut(HITX, FLOOR + 5);
+      burst(HITX, FLOOR + 3, 46, 90, "180,255,120", true); burst(HITX, FLOOR + 4, 24, 55, "255,240,170", true); dmg.push({ x: HITX - 52, y: SHIPBOT - SHIPH * 0.55, t: 0, txt: "-18,420" }); }
     var g = giantGeom();
-    if (g && g.tf > 0 && g.a > 0) { for (var i = 0; i < 3; i++) { var yy = g.tip - g.L * Math.random() * 0.98; parts.push({ x: g.x + (Math.random() - 0.5) * g.Wd * 0.5, y: yy, vx: (Math.random() - 0.5) * 8, vy: -14 - Math.random() * 18, life: 0, max: 0.7 + Math.random() * 0.6, r: 0.5 + Math.random() * 1.4, col: Math.random() < 0.3 ? "230,255,200" : "120,255,90" }); } }
+    if (g && g.tf > 0 && g.a > 0) { var gTop = g.tip - g.L * (GM.tip / GM.h) - g.tf * 10, gBot = FLOOR + 5; for (var i = 0; i < 3; i++) { var q = Math.random(), yy = gTop + (gBot - gTop) * q, rel = (yy - (g.tip - g.L * (GM.tip / GM.h))) / g.L, ww = rel < 0.12 ? 0.18 : rel < 0.3 ? 0.85 : 0.36; parts.push({ x: g.x + (Math.random() - 0.5) * g.Wd * ww, y: yy, vx: (Math.random() - 0.5) * 8, vy: -14 - Math.random() * 18, life: 0, max: 0.7 + Math.random() * 0.6, r: 0.5 + Math.random() * 1.4, col: Math.random() < 0.3 ? "230,255,200" : "120,255,90" }); } }
     if (!SK.warped && e >= DROP0 + DROPD + HOLD + FADE) { SK.warped = true; var h = heroPos();
       swords.forEach(function (s, i) { s.state = "warp"; s.t = T + i * 0.035; var p = onRing(h, ring + s.off); rings.push({ x: p.x, y: p.y, t: -i * 0.035, max: 0.32, R: 9, warp: true }); });
       SK.end = T + 0.5; }
@@ -207,8 +216,9 @@
       ctx.restore();
       if (g.k >= 1) { ctx.save(); ctx.globalAlpha = Math.min(1, 0.4 + g.a); ctx.fillStyle = "rgba(10,6,20,0.85)"; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 5, g.Wd * 0.34, 3.2, 0, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = "rgba(10,6,20,0.8)"; ctx.lineWidth = 0.9; ctx.beginPath(); [[-1, -0.2], [1, 0.25], [-0.6, 0.5], [0.7, -0.45]].forEach(function (c) { ctx.moveTo(g.x + c[0] * g.Wd * 0.25, FLOOR + 5); ctx.lineTo(g.x + c[0] * g.Wd * 0.62, FLOOR + 5 + c[1] * 6); }); ctx.stroke(); ctx.restore(); }
-      if (g.k >= 1 && g.a > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; var gl = ctx.createRadialGradient(g.x, FLOOR + 2, 0, g.x, FLOOR + 2, 26); gl.addColorStop(0, "rgba(170,255,120," + 0.55 * g.a + ")"); gl.addColorStop(1, "rgba(170,255,120,0)"); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 2, 30, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      if (g.k >= 1 && g.a > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; var gl = ctx.createRadialGradient(g.x, FLOOR + 5, 0, g.x, FLOOR + 5, 26); gl.addColorStop(0, "rgba(170,255,120," + 0.55 * g.a + ")"); gl.addColorStop(1, "rgba(170,255,120,0)"); ctx.fillStyle = gl; ctx.beginPath(); ctx.ellipse(g.x, FLOOR + 5, 30, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     } }
+    drawRocks(dt);
     // rings, particles, damage numbers
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     rings = rings.filter(function (r) { r.t += dt; if (r.t < 0) return true; var q = r.t / r.max; if (q >= 1) return false; ctx.globalAlpha = (1 - q) * (r.warp ? 0.9 : 0.8); ctx.strokeStyle = r.warp ? "#c8ffb0" : "#b4ff8a"; ctx.lineWidth = (r.warp ? 1.4 : 3) * (1 - q) + 0.4;
