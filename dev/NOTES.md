@@ -5307,3 +5307,17 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1652 — profile slot toggle polish
 - Harley: toggle button text is white (dark outline), no emoji icons ("Cards / Heroes / Hidden"); Hidden shows a faint ? in each slot; hero portraits sit on their rarity colour (the hero card gradients: Rare blue, Epic purple, Legendary gold) instead of the bare slot.
+
+## v1653 — Universal fragments (Rare / Epic / Legendary)
+- Harley: start giving out universal fragments. Like Kingshot's General Hero Shards: one kind per tier, 1 = 1 fragment of any hero of that tier the player picks; heroes flagged `noUniversal` (Hanzo) and VIP / governor heroes only take their own fragments.
+- Items (GI_DEFS, Heroes tab of the backpack): ufrag_rare / ufrag_epic / ufrag_legendary (fragment icon on the tier colour, "Rare / Epic / Legend" label). Use: pick a hero of that tier (owned or not - 1 fragment recruits), then Use / Use 10 / Use all; capped at what the hero still needs for 5 stars ("maxed" otherwise). Engine: ufragHeroes(tier), heroFragsToMax(key), useGear handles d.tier.
+- Kingshot research: their Mythic General Shards come from a daily coin-shop buy (2 a day), event shops, milestones and paid packs; lower tiers from everyday play. Harley: "stingier" (half of my first proposal). Starting sources:
+  - Hero Shop (gems, weekly stock): Universal Legendary 80 gems x7, Universal Epic 40 gems x10 (game, admin, functions/core.js LIVE_HS_DEFAULT).
+  - Event Shop: Universal Legendary 60 tokens, limit 1 a week.
+  - Featured Hero Week top milestone (1,600): + 3 Universal Legendary.
+  - Arena weekly rank reward (every row): + 3 Universal Legendary (server LIVE_ARENA_DEFAULT).
+  - Conquest chapter bosses: 2-3 Universal Rare (60%) or Epic (40%).
+  - Daily Missions top chest (100 Activity): + 1 Universal Epic.
+  - Paid packs: any pack / mail / reward can now give them (server catalogue items.json: item_ufrag_rare / _epic / _legendary -> items.ufrag_*).
+- Admin-saved live events keep what was saved: "Load the game's starting numbers" in the admin page brings the new shop rows / milestone in.
+- Tests: functions unit tests 30 pass (+ normalizeHS / normalizeLiveops accept the new items); headless: lists (Legendary = Roran, Kessa, Iron Lily, Halo-7, Caelum; no Hanzo), Hanzo and Epic-on-Kessa refused, 10 used on Kessa, capped at 6 for a nearly-maxed Roran, backpack Use 10 button works (buttons kept in view above the hero chips), daily chest text, no errors.

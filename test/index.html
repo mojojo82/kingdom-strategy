@@ -2706,7 +2706,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #bagPop .bg-it small { display:block; font-size:9px; color:#d8c29a; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #bagPop .bg-it b { position:absolute; right:3px; bottom:16px; font-size:11px; color:#fff; text-shadow:0 1px 2px #000; }
   #bagPop .bg-empty { grid-column:1/-1; font-size:12px; color:#d8c29a; padding:24px 6px; text-align:center; }
-  #bagPop .bg-use { flex:none; margin-top:9px; font-size:12px; min-height:44px; max-height:31%; overflow-y:auto; color:#3a2a16; background:rgba(74,52,26,.14); border:1px solid rgba(154,116,66,.45); border-radius:9px; padding:7px 9px; } #bagPop .bg-use .bg-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+  #bagPop .bg-use { flex:none; margin-top:9px; font-size:12px; min-height:44px; max-height:31%; overflow-y:auto; color:#3a2a16; background:rgba(74,52,26,.14); border:1px solid rgba(154,116,66,.45); border-radius:9px; padding:7px 9px; }
+#bagPop .bg-use:has(.bg-ufrag) { max-height:46%; } /* v1653: universal fragments need room for the buttons + hero chips */ #bagPop .bg-use .bg-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
   #bagPop .bg-use button.bg-go { background:#2bb3d9; color:#06131c; border:0; border-radius:8px; font-weight:800; padding:8px 18px; cursor:pointer; flex:none; }
   #bagPop .bg-it.r0 { background:linear-gradient(#77706a,#4a4540); } #bagPop .bg-it.r1 { background:linear-gradient(#5f9a3e,#36621f); } #bagPop .bg-it.r2 { background:linear-gradient(#3f7fc4,#1f4f86); } #bagPop .bg-it.r3 { background:linear-gradient(#8a55c4,#552f86); } #bagPop .bg-it.r4 { background:linear-gradient(#d39a2c,#8a5a12); }
   #bagPop .bg-it i { position:absolute; left:0; right:0; top:1px; font-style:normal; font-size:9.5px; font-weight:800; color:#fff; text-shadow:0 1px 2px #000; }
@@ -6649,7 +6650,7 @@ var HERO_DEFS = {
   // Skill 1 Shuriken Storm: leaps up and hits EVERY enemy on screen (Conquest: all live enemies; Arena: every enemy hero/summon AND the enemy fortress),
   // no range limit. Tuned so level 3 is worrying, 4 dominant, 5 a force of nature. Skill 2 Shadow Step: dodges 10% of attacks per level (no dice -
   // an even spread, 50% = every 2nd hit misses). Same rules in Conquest and Arena. No art yet (placeholder like Torvald) - mockup first.
-  hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true,
+  hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true, noUniversal: true /* v1653: only his own fragments */,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at Lv 5), Hanzo leaps and rains shuriken on every enemy, fortress included. Projectile shields block them." },
@@ -7702,7 +7703,12 @@ var GI_DEFS = {
   chest_eq_2: { name: "Elite Equipment Chest", art: "chest_equipment", rar: 2, top: "Elite", eqR: 2, desc: "Gives one Elite equipment piece." },
   chest_eq_3: { name: "Super Rare Equipment Chest", art: "chest_equipment", rar: 3, top: "S.Rare", eqR: 3, desc: "Gives one Super Rare equipment piece." },
   chest_eq_4: { name: "Epic Equipment Chest", art: "chest_equipment", rar: 4, top: "Epic", eqR: 4, desc: "Gives one Epic equipment piece." },
-  enhance_stone: { name: "Enhance Stone", art: "enhance_stone", rar: 2, later: "Enhancing equipment comes later - keep these for then.", desc: "Used to enhance equipment." }
+  enhance_stone: { name: "Enhance Stone", art: "enhance_stone", rar: 2, later: "Enhancing equipment comes later - keep these for then.", desc: "Used to enhance equipment." },
+  /* v1653 (Harley): universal fragments, one kind per hero tier. 1 = 1 fragment of any hero of that tier (pick the hero and how many);
+     heroes with noUniversal (Hanzo, VIP heroes) only take their own fragments. Like Kingshot's General Hero Shards. */
+  ufrag_rare: { name: "Universal Rare Fragment", art: "fragment", rar: 2, top: "Rare", cat: "heroes", tier: "Rare", desc: "Turns into a fragment of any Rare hero you pick." },
+  ufrag_epic: { name: "Universal Epic Fragment", art: "fragment", rar: 3, top: "Epic", cat: "heroes", tier: "Epic", desc: "Turns into a fragment of any Epic hero you pick." },
+  ufrag_legendary: { name: "Universal Legendary Fragment", art: "fragment", rar: 4, top: "Legend", cat: "heroes", tier: "Legendary", desc: "Turns into a fragment of any Legendary hero you pick (not Hanzo)." }
 };
 var GI_ORDER = Object.keys(GI_DEFS);
 /* v1593: live events config (Featured Hero Week, Event Shop, Weekly Chest, Event Tokens on the daily chests). The admin console saves it to
@@ -7711,12 +7717,12 @@ var GI_ORDER = Object.keys(GI_DEFS);
    Reward / stock ids are the server catalogue ids (functions/items.json) + "featured_shards" (this week's featured hero). */
 var LIVEOPS_DEFAULT = {
   fhw: { hero: "caelum", killsPer: 100, pts: { kill: 5, arena: 20, camp: 15, monster: 15, ticket: 3 },
-    ms: [{ at: 100, items: { event_tokens: 10 } }, { at: 300, items: { speedup_general_5m: 3 } }, { at: 600, items: { event_tokens: 20 } }, { at: 1000, items: { item_stamina_10: 1 } }, { at: 1600, items: { featured_shards: 10 } }],
+    ms: [{ at: 100, items: { event_tokens: 10 } }, { at: 300, items: { speedup_general_5m: 3 } }, { at: 600, items: { event_tokens: 20 } }, { at: 1000, items: { item_stamina_10: 1 } }, { at: 1600, items: { featured_shards: 10, item_ufrag_legendary: 3 } }],
     check: [{ id: "newlvl", kind: "newlevel", name: "Clear 1 new Conquest level", need: 1, pts: 150 }, { id: "boss", kind: "boss", name: "Beat your next chapter boss", need: 1, pts: 300 },
       { id: "tix", kind: "ticket", name: "Use 20 weapon draw tickets", need: 20, pts: 150 }, { id: "bld", kind: "build", name: "Upgrade any building", need: 1, pts: 100 }, { id: "mon", kind: "monster", name: "Defeat 3 monsters on the World map", need: 3, pts: 150 }] },
   shop: { items: [{ id: "feat", item: "featured_shards", qty: 1, price: 50, limit: 5 }, { id: "halo7", item: "shards_halo7", qty: 1, price: 50, limit: 5 }, { id: "roran", item: "shards_roran", qty: 1, price: 50, limit: 5 } /* v1616: was Iron Lily (now a normal hero) */,
     { id: "wsel", item: "item_chest_weapon", qty: 1, price: 200, limit: 2 }, { id: "tix", item: "weapon_tickets", qty: 1, price: 60, limit: 10 }, { id: "books", item: "conquest_books", qty: 10, price: 40, limit: 10 },
-    { id: "su1h", item: "speedup_general_1h", qty: 1, price: 50, limit: 10 }, { id: "stam", item: "item_stamina_50", qty: 1, price: 80, limit: 5 }, { id: "eq3", item: "item_chest_eq_3", qty: 1, price: 300, limit: 1 }] },
+    { id: "su1h", item: "speedup_general_1h", qty: 1, price: 50, limit: 10 }, { id: "stam", item: "item_stamina_50", qty: 1, price: 80, limit: 5 }, { id: "eq3", item: "item_chest_eq_3", qty: 1, price: 300, limit: 1 }, { id: "ulegend", item: "item_ufrag_legendary", qty: 1, price: 60, limit: 1 } /* v1653 */] },
   /* v1617: New Player Path (functions/core.js LIVE_NP_DEFAULT) - the first `days` days of an account. Each task unlocks on its day and pays once; finishing all of a
      day's tasks opens that day's chest. "np_shards" = shards of np.hero (day 3 recruits them, day 14 gives 20 more). Task kinds: th / cq / heroes / hlv / eq / ally are
      checked against the save; arena / camp / monster / ticket / build / forge / kill count from the moment the path starts. */
@@ -7775,7 +7781,7 @@ var LIVEOPS_DEFAULT = {
   sg: {"on": true, "perWeek": 3, "mins": 30, "wait": 60, "maxRally": 15, "dpp": 1.0, "bonusPer": 0.04, "bonusCap": 0.5, "personal": [{"dmg": 1, "items": {"speedup_general_5m": 5, "conquest_books": 5}}, {"dmg": 100000, "items": {"speedup_general_5m": 10, "conquest_books": 10}}, {"dmg": 1000000, "items": {"speedup_general_1h": 2, "conquest_books": 20, "weapon_tickets": 1}}, {"dmg": 5000000, "items": {"speedup_general_1h": 4, "conquest_books": 40, "weapon_tickets": 2, "event_tokens": 15}}, {"dmg": 20000000, "items": {"speedup_general_1h": 6, "conquest_books": 60, "weapon_tickets": 3, "event_tokens": 25}}, {"dmg": 60000000, "items": {"speedup_general_1h": 10, "conquest_books": 100, "weapon_tickets": 5, "event_tokens": 40, "item_chest_eq_3": 1}}, {"dmg": 150000000, "items": {"speedup_general_1h": 15, "conquest_books": 150, "weapon_tickets": 8, "event_tokens": 60, "item_chest_eq_4": 1}}], "alliance": [{"dmg": 1, "items": {"speedup_general_5m": 5}}, {"dmg": 10000000, "items": {"speedup_general_1h": 2, "research": 500}}, {"dmg": 100000000, "items": {"speedup_general_1h": 4, "research": 1500, "weapon_tickets": 1}}, {"dmg": 500000000, "items": {"speedup_general_1h": 6, "research": 3000, "weapon_tickets": 2, "event_tokens": 20}}, {"dmg": 1500000000, "items": {"speedup_general_1h": 10, "research": 6000, "weapon_tickets": 3, "event_tokens": 30, "featured_shards": 3}}, {"dmg": 4000000000, "items": {"speedup_general_1h": 15, "research": 10000, "weapon_tickets": 5, "event_tokens": 50, "featured_shards": 5}}]},
   wk: { heroes: ["roran", "kessa", "halo7", "caelum"] /* v1616: Caelum replaces Iron Lily */, shards: 10, days: 7, act: 60 },
   /* v1636: Hero Shop (functions/core.js LIVE_HS_DEFAULT) */
-  hs: {"on": true, "items": [{"id": "feat", "item": "featured_shards", "qty": 1, "price": 60, "stock": 50}, {"id": "kessa", "item": "shards_kessa", "qty": 1, "price": 100, "stock": 20}, {"id": "roran", "item": "shards_roran", "qty": 1, "price": 100, "stock": 20}, {"id": "halo7", "item": "shards_halo7", "qty": 1, "price": 100, "stock": 20}, {"id": "pip", "item": "shards_pip", "qty": 1, "price": 100, "stock": 20}, {"id": "ironlily", "item": "shards_ironlily", "qty": 1, "price": 100, "stock": 20}, {"id": "hchest", "item": "item_chest_hero", "qty": 1, "price": 500, "stock": 3}, {"id": "tix", "item": "weapon_tickets", "qty": 1, "price": 50, "stock": 20}]},
+  hs: {"on": true, "items": [{"id": "feat", "item": "featured_shards", "qty": 1, "price": 60, "stock": 50}, {"id": "kessa", "item": "shards_kessa", "qty": 1, "price": 100, "stock": 20}, {"id": "roran", "item": "shards_roran", "qty": 1, "price": 100, "stock": 20}, {"id": "halo7", "item": "shards_halo7", "qty": 1, "price": 100, "stock": 20}, {"id": "pip", "item": "shards_pip", "qty": 1, "price": 100, "stock": 20}, {"id": "ironlily", "item": "shards_ironlily", "qty": 1, "price": 100, "stock": 20}, {"id": "hchest", "item": "item_chest_hero", "qty": 1, "price": 500, "stock": 3}, {"id": "ulegend", "item": "item_ufrag_legendary", "qty": 1, "price": 80, "stock": 7}, {"id": "uepic", "item": "item_ufrag_epic", "qty": 1, "price": 40, "stock": 10}, {"id": "tix", "item": "weapon_tickets", "qty": 1, "price": 50, "stock": 20}]},
   /* v1635: Weekly / Monthly Cards (functions/core.js LIVE_CD_DEFAULT) */
   cd: {"on": true, "cards": [{"id": "weekly", "name": "Weekly Card", "days": 7, "tier": 4, "now": {"gems": 2500}, "daily": {"gems": 600, "speedup_general_1h": 1, "weapon_tickets": 1}}, {"id": "monthly", "name": "Monthly Card", "days": 30, "tier": 5, "now": {"gems": 5000}, "daily": {"gems": 800, "speedup_general_1h": 2, "item_stamina_10": 1}}], "pts": {"kill": 2, "arena": 20, "camp": 15, "monster": 15, "ticket": 3, "build": 10, "newlevel": 30}, "track": [{"at": 300, "opts": [{"gems": 500}, {"speedup_general_1h": 5}, {"weapon_tickets": 5}]}, {"at": 600, "opts": [{"gems": 800}, {"featured_shards": 5}, {"item_chest_eq_3": 1}]}, {"at": 1200, "opts": [{"gems": 1200}, {"featured_shards": 10}, {"item_chest_weapon": 1}]}, {"at": 2500, "opts": [{"gems": 2000}, {"featured_shards": 20}, {"item_chest_eq_4": 1}]}]},
   /* v1633: Seasonal Festivals (functions/core.js LIVE_FS_DEFAULT) */
@@ -8199,9 +8205,14 @@ function createGame(opts) {
   function giTake(id, n) { n = n || 1; if (giCount(id) < n) return false; state.items[id] -= n; if (state.items[id] <= 0) delete state.items[id]; return true; }
   function shieldLeftSec() { return Math.max(0, Math.round(((state.shieldUntil || 0) - Date.now()) / 1000)); }
   function giSelectHeroes() { return Object.keys(state.heroes).filter(function (k) { var d = HERO_DEFS[k], h = state.heroes[k]; return d && h && !d.vipOnly && d.class !== "governor" && heroStarArms(h) < STAR_MAX_ARMS; }); }
+  /* v1653: universal fragments - heroes of that tier that can still use fragments (owned or not: 1 fragment recruits), never noUniversal / VIP / governor / coming soon */
+  function ufragHeroes(tier) { return Object.keys(state.heroes).filter(function (k) { var d = HERO_DEFS[k], h = state.heroes[k]; return d && h && d.rarity === tier && !d.noUniversal && !d.vipOnly && d.class !== "governor" && (!d.comingSoon || h.devUnlocked) && heroFragsToMax(k) > 0; }); }
+  function heroFragsToMax(k) { var h = state.heroes[k]; if (!h) return 0; var need = 0; for (var a = heroStarArms(h) + 1; a <= STAR_MAX_ARMS; a++) need += heroStarCost(a); return Math.max(0, need - (h.fragments | 0) + (h.owned ? 0 : 1)); }
   function giSelectWeapons() { return WEAPON_DEFS.filter(function (w) { return !w.visualOnly; }).map(function (w) { return w.id; }); }
   function useGear(id, n, pick) {
     var d = GI_DEFS[id]; n = Math.max(1, Math.floor(n || 1));
+    if (d && d.tier) { if (ufragHeroes(d.tier).indexOf(pick) < 0) return { ok: false, reason: "pick" }; n = Math.min(n, giCount(id), heroFragsToMax(pick)); if (n < 1) return { ok: false, reason: giCount(id) < 1 ? "not_enough" : "maxed" };
+      giTake(id, n); state.heroes[pick].fragments = (state.heroes[pick].fragments | 0) + n; log("🧩 " + n + " " + d.name + (n > 1 ? "s" : "") + " -> " + HERO_DEFS[pick].name + " fragments."); return { ok: true, msg: "+" + n + " " + HERO_DEFS[pick].name + " fragments" }; }
     if (!d) return { ok: false, reason: "bad_item" };
     if (d.later) return { ok: false, reason: "not_yet" };
     if (giCount(id) < n) return { ok: false, reason: "not_enough" };
@@ -9444,7 +9455,8 @@ function createGame(opts) {
   }
   // reward drop: Energon every kill (boss bigger); valor as before. Live earnings feed the rate used for the offline bucket.
   var BOSS_MINOR_FRAC = 0.4, BOSS_EASE_HP_FLOOR = 0.5;
-  function idleBossFragments() { var n = idleIsChapterBossLevel() ? 3 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 2); var fk = grantRandomFragments(n); var lr = state.idle.levelRewards || (state.idle.levelRewards = { valor: 0, energon: 0, fragments: 0, fragHero: null }); lr.fragments += n; if (fk) lr.fragHero = fk; }
+  function idleBossFragments() { var n = idleIsChapterBossLevel() ? 3 + Math.floor(Math.random() * 4) : 1 + Math.floor(Math.random() * 2); var fk = grantRandomFragments(n);
+    if (idleIsChapterBossLevel()) { var uk = Math.random() < 0.6 ? "ufrag_rare" : "ufrag_epic", un = 2 + Math.floor(Math.random() * 2); addItem(uk, un); log("🧩 Chapter boss: +" + un + " " + GI_DEFS[uk].name + "s."); } /* v1653: 2-3 universal Rare (60%) or Epic (40%) */ var lr = state.idle.levelRewards || (state.idle.levelRewards = { valor: 0, energon: 0, fragments: 0, fragHero: null }); lr.fragments += n; if (fk) lr.fragHero = fk; }
   function idleGrantKill(isBoss) {
     var bs = isBoss ? (idleIsChapterBossLevel() ? 1 : BOSS_MINOR_FRAC) : 1; // v748: a boss ends every level; the chapter-end boss keeps the full payout, the others pay a fraction
     var v, n, b = state.bucket;
@@ -9541,7 +9553,7 @@ function createGame(opts) {
     if (i === 1) return { tickets: 20 };
     if (i === 2) return { shards: 3, books: 1 };
     if (i === 3) return { speedups: { general_5m: 2 }, res: { food: Math.max(5000, Math.round(bucketResHr("food") * 2 / 100) * 100), wood: Math.max(5000, Math.round(bucketResHr("wood") * 2 / 100) * 100) } };
-    return { gems: 500 }; /* v1628: 300 -> 500 (server: DAILY_CHEST_GEMS) */
+    return { gems: 500, ufrag: { ufrag_epic: 1 } }; /* v1628: 300 -> 500 (server: DAILY_CHEST_GEMS); v1653: + 1 Universal Epic Fragment */
   }
   function dailyDayNow() { return Math.floor(Date.now() / 86400000); }
   function dailySync() {
@@ -9565,6 +9577,7 @@ function createGame(opts) {
     if (r.res) addResources(r.res);
     if (r.books) state.idle.conquestBooks = (state.idle.conquestBooks || 0) + r.books;
     if (r.shards) grantRandomFragments(r.shards);
+    if (r.ufrag) Object.keys(r.ufrag).forEach(function (k) { addItem(k, r.ufrag[k]); }); /* v1653 */
     /* gems: added by the UI (server claimDaily on Firebase, or state.gems offline) */
   }
   function dailyClaimTask(id) {
@@ -11944,7 +11957,7 @@ function createGame(opts) {
     gatherBonusMult: gatherBonusMult, lossReductionAmt: lossReductionAmt, resourceMult: resourceMult,
     troopAtkMult: troopAtkMult, maxTrainableTier: maxTrainableTier, trainCap: trainCap, maxTrainNow: maxTrainNow, promoteInfo: promoteInfo, promoteTroops: promoteTroops, governorBonus: governorBonus,
     accountUsdValue: accountUsdValue,
-    heroLevelCost: heroLevelCost, recruitHero: recruitHero, levelUpHero: levelUpHero, starUpHero: starUpHero, grantFragments: grantFragments, grantRandomFragments: grantRandomFragments, heroCanAffordLevel: heroCanAffordLevel, heroCanAffordStar: heroCanAffordStar, setGovernor: setGovernor,
+    heroLevelCost: heroLevelCost, ufragHeroes: ufragHeroes, heroFragsToMax: heroFragsToMax, recruitHero: recruitHero, levelUpHero: levelUpHero, starUpHero: starUpHero, grantFragments: grantFragments, grantRandomFragments: grantRandomFragments, heroCanAffordLevel: heroCanAffordLevel, heroCanAffordStar: heroCanAffordStar, setGovernor: setGovernor,
     clearGovernor: clearGovernor, attemptConquest: attemptConquest, idlePower: idlePower,
     idleBaseAtk: idleBaseAtk,
     equippedEsperBonusHp: equippedEsperBonusHp,
@@ -14145,7 +14158,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1652"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1653"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21099,7 +21112,7 @@ function dailyRewardHtml(r, pts) {
   if (r.res) Object.keys(r.res).forEach(function (k) { cell(ico(k), fmt(r.res[k])); });
   return h;
 }
-function dailyRewardText(r) { var a = []; if (r.gems) a.push("+" + r.gems + " gems"); if (r.valor) a.push("+" + r.valor + " Valor"); if (r.tickets) a.push("+" + r.tickets + " tickets"); if (r.speedups) a.push("+" + r.speedups.general_5m + " × 5-min speedups"); if (r.shards) a.push("+" + r.shards + " hero fragments"); if (r.books) a.push("+" + r.books + " book"); if (r.res) Object.keys(r.res).forEach(function (k) { a.push("+" + fmt(r.res[k]) + " " + k); }); return a.join(" · "); }
+function dailyRewardText(r) { var a = []; if (r.gems) a.push("+" + r.gems + " gems"); if (r.ufrag) Object.keys(r.ufrag).forEach(function (k) { a.push("+" + r.ufrag[k] + " " + ((GI_DEFS[k] || {}).name || k) + (r.ufrag[k] > 1 ? "s" : "")); }); if (r.valor) a.push("+" + r.valor + " Valor"); if (r.tickets) a.push("+" + r.tickets + " tickets"); if (r.speedups) a.push("+" + r.speedups.general_5m + " × 5-min speedups"); if (r.shards) a.push("+" + r.shards + " hero fragments"); if (r.books) a.push("+" + r.books + " book"); if (r.res) Object.keys(r.res).forEach(function (k) { a.push("+" + fmt(r.res[k]) + " " + k); }); return a.join(" · "); }
 function dailyServerSync() { /* pay any gems the server hasn't paid yet (claimed while offline / a failed call). Server ignores repeats. */
   if (!ksFb()) return; var D = game.dailySync();
   if (dailyServerSync.busy) return; dailyServerSync.busy = true;
@@ -34819,7 +34832,7 @@ var BAG_ITEMS = [
     sp.push({ id: "su_" + kind, cat: "speed", top: tl, rar: z[2], icon: function () { return suArt(f[0]); }, name: tl + " " + (f[1] ? f[1] + " speedup" : "Speedup"),
       count: function () { return (game.state.speedups || {})[kind] || 0; }, desc: "Takes " + (z[1] >= 3600 ? (z[1] / 3600) + (z[1] === 3600 ? " hour" : " hours") : (z[1] / 60) + (z[1] === 60 ? " minute" : " minutes")) + " off " + ({ construction: "a building upgrade", research: "research", training: "troop training", healing: "healing troops" }[f[0]] || "anything: building, research, training or healing") + ".",
       use: function () { return bagSpeedUse(kind); } }); }); });
-  var gi = GI_ORDER.map(function (id) { var d = GI_DEFS[id]; return { id: "gi_" + id, gi: id, cat: "items", top: d.top || "", rar: d.rar, icon: function () { return itemArt(d.art); }, name: d.name, desc: d.desc, count: function () { return game.giCount(id); }, use: function () { return giPanel(id); } }; });
+  var gi = GI_ORDER.map(function (id) { var d = GI_DEFS[id]; return { id: "gi_" + id, gi: id, cat: d.cat || "items", top: d.top || "", rar: d.rar, icon: function () { return itemArt(d.art); }, name: d.name, desc: d.desc, count: function () { return game.giCount(id); }, use: function () { return giPanel(id); } }; });
   BAG_ITEMS = sp.concat(gi, BAG_ITEMS); })();
 function giBtn(label, act, arg, off) { return '<button type="button" class="su-btn" data-bx="' + act + '"' + (arg != null ? ' data-bxa="' + arg + '"' : "") + (off ? " disabled" : "") + ">" + label + "</button>"; }
 function giUseRow(id, n) { return '<div class="bg-btns">' + (n > 1 ? '<button type="button" class="bg-det" data-bx="use" data-bxa="all">Use all (' + n + ')</button>' : "") + '<button type="button" class="bg-usebtn" data-bx="use" data-bxa="1">Use</button></div>'; }
@@ -34841,17 +34854,23 @@ function giPanel(id) { /* the Use area for a GI_DEFS item */
   else if (id === "chest_hero" || id === "chest_weapon") { var opts = id === "chest_hero" ? game.giSelectHeroes() : game.giSelectWeapons();
     h = '<div class="bg-pick wrap">' + opts.map(function (k) { var nm = id === "chest_hero" ? (HERO_DEFS[k].icon || "") + " " + HERO_DEFS[k].name : WEAPON_DEFS_BY_ID[k].name; return '<span data-bx="pick" data-bxa="' + k + '"' + (bagState.pick === k ? ' class="on"' : "") + ">" + escapeHtml(nm) + "</span>"; }).join("") + "</div>" + giUseRow(id, n); }
   else if (d.eqR != null) h = giUseRow(id, n);
+  else if (d.tier) { var uo = game.ufragHeroes(d.tier); h = '<i class="bg-ufrag" hidden></i>'; /* v1653: pick a hero of this tier, then use 1 / 10 / all (capped at what the hero still needs) */
+    if (!uo.length) h += '<div class="bg-note">No ' + d.tier + " hero can use fragments right now.</div>";
+    else { if (uo.indexOf(bagState.pick) < 0) bagState.pick = null; if (!bagState.pick) h += '<div class="bg-note">Pick a hero below, then Use.</div>';
+      var chips = '<div class="bg-pick wrap">' + uo.map(function (k) { var hh = game.state.heroes[k]; return '<span data-bx="pick" data-bxa="' + k + '"' + (bagState.pick === k ? ' class="on"' : "") + ">" + escapeHtml((HERO_DEFS[k].icon || "") + " " + HERO_DEFS[k].name) + " <small style=\"opacity:.8\">" + (hh.owned ? Math.floor(heroStarArms(hh) / STAR_ARMS) + "★" : "new") + "</small></span>"; }).join("") + "</div>";
+      if (bagState.pick) { var ph = game.state.heroes[bagState.pick], left = game.heroFragsToMax(bagState.pick); h += '<div class="bg-note">' + escapeHtml(HERO_DEFS[bagState.pick].name) + ": " + fmt(ph.fragments | 0) + " fragments now · " + fmt(left) + " more to reach 5★</div>"; }
+      h += '<div class="bg-btns">' + (n > 1 ? '<button type="button" class="bg-det" data-bx="use" data-bxa="all">Use all (' + n + ")</button>" : "") + (n >= 10 ? '<button type="button" class="bg-det" data-bx="use" data-bxa="10">Use 10</button>' : "") + '<button type="button" class="bg-usebtn" data-bx="use" data-bxa="1">Use</button></div>' + chips; } } /* buttons first so they stay in view; hero chips under them */
   if (bagState.got) h += '<div class="bg-got">' + bagState.got + "</div>";
   return h;
 }
-var GI_FAIL = { not_yet: "Can't be used yet.", not_enough: "You don't have one.", pick: "Pick one first.", inventory_full: "Your equipment bag is full.", already: "Already sped up on this trip.", not_moving: "That march isn't moving.", not_outbound: "Only a march on its way out can be recalled.", no_march: "That march is gone." };
+var GI_FAIL = { not_yet: "Can't be used yet.", not_enough: "You don't have one.", pick: "Pick one first.", inventory_full: "Your equipment bag is full.", maxed: "That hero already has all the fragments they need.", already: "Already sped up on this trip.", not_moving: "That march isn't moving.", not_outbound: "Only a march on its way out can be recalled.", no_march: "That march is gone." };
 function bagGearAction(act, arg) {
   var it = bagItemsFor(bagState.cat).filter(function (x) { return x.id === bagState.sel; })[0], id = it && it.gi, r = null;
   if (act === "pick") { bagState.pick = arg; bagState.got = ""; bagRender(); return; }
   if (act === "map") { document.getElementById("bagPop").style.display = "none"; setScreen("world"); return; }
   if (act === "tprandom" || act === "tpally") { tpUseItem(act === "tprandom" ? "tp_random" : "tp_alliance"); return; }
   if (act === "mspeed") r = game.marchSpeedUp(+arg); else if (act === "mrecall") r = game.marchRecall(+arg);
-  else if (act === "use" && id) { if (bagState.qtyFor !== id) { bagState.qtyFor = id; } r = game.useGear(id, arg === "all" ? game.giCount(id) : 1, bagState.pick); }
+  else if (act === "use" && id) { if (bagState.qtyFor !== id) { bagState.qtyFor = id; } r = game.useGear(id, arg === "all" ? game.giCount(id) : arg === "10" ? 10 : 1, bagState.pick); }
   if (!r) return;
   if (r.ok) { try { sfxReward(); } catch (e) {} bagState.got = r.msg || "Done"; persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} }
   else bagState.got = '<span style="color:#ff9a8a">' + (GI_FAIL[r.reason] || "Can't use that (" + r.reason + ").") + "</span>";
