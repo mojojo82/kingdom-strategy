@@ -112,10 +112,23 @@
     return { x: A.x + Math.cos(a) * R, y: chest + Math.sin(a) * R * 0.3 + Math.sin(T * 2.4 + i) * 0.6, z: Math.sin(a), a: a }; }
   var ABMODE = "orbit";
   function shieldGeom(A) { var hh = A.M.dispH, r = Math.max(16, hh * 0.52) * (A.sh || 1); return { cx: A.x, cy: FLOOR + 3 - r, rx: r, ry: r }; } /* a perfect circle (Harley) */
+  /* plasma-lamp filaments: jagged green arcs from a glowing core to the rim, wandering slowly and flickering (re-jagged ~16x a second) */
+  function plasma(g, R, s, i) { if (s < 0.35) return; var aS = Math.min(1, (s - 0.35) / 0.4), bucket = Math.floor(T * 16), rnd = function (n) { var x = Math.sin((bucket * 7.13 + n * 13.7 + i * 91.3) * 12.9898) * 43758.5453; return x - Math.floor(x); };
+    var core = ctx.createRadialGradient(g.cx, g.cy, 0, g.cx, g.cy, R * 0.32); core.addColorStop(0, "rgba(200,255,190," + (0.55 * aS).toFixed(2) + ")"); core.addColorStop(1, "rgba(90,255,120,0)");
+    ctx.fillStyle = core; ctx.beginPath(); ctx.arc(g.cx, g.cy, R * 0.32, 0, Math.PI * 2); ctx.fill();
+    for (var f = 0; f < 5; f++) { var ang = f * 1.2566 + Math.sin(T * (0.7 + f * 0.13) + f * 2.1 + i) * 0.9 + T * 0.25, ex = g.cx + Math.cos(ang) * R * 0.97, ey = g.cy + Math.sin(ang) * R * 0.97, N = 7, pts = [];
+      for (var k = 0; k <= N; k++) { var u = k / N, jit = (k && k < N) ? (rnd(f * 10 + k) - 0.5) * R * 0.22 * Math.sin(u * Math.PI) : 0, nx = -Math.sin(ang), ny = Math.cos(ang);
+        pts.push([g.cx + (ex - g.cx) * u + nx * jit, g.cy + (ey - g.cy) * u + ny * jit]); }
+      var fl = (0.55 + 0.45 * rnd(f + 50)) * aS;
+      [[2.6, 0.16], [1.1, 0.45], [0.45, 0.9]].forEach(function (L, li) { ctx.strokeStyle = li === 2 ? "rgba(200,255,175," + (L[1] * fl).toFixed(2) + ")" : "rgba(90,255,110," + (L[1] * fl * 1.15).toFixed(2) + ")"; ctx.lineWidth = L[0];
+        ctx.beginPath(); pts.forEach(function (p, k) { if (k) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); }); ctx.stroke(); });
+      var cg = ctx.createRadialGradient(ex, ey, 0, ex, ey, 4); cg.addColorStop(0, "rgba(220,255,210," + (0.8 * fl).toFixed(2) + ")"); cg.addColorStop(1, "rgba(120,255,130,0)"); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI * 2); ctx.fill(); }
+  }
   function drawBubble(g, s, back, i) { if (s <= 0.01) return; var rx = g.rx * s, ry = g.ry * s, pu = 1 + Math.sin(T * 3.1 + i) * 0.025; rx *= pu; ry *= pu;
     ctx.save(); ctx.globalCompositeOperation = "lighter";
     if (back) { var gr = ctx.createRadialGradient(g.cx, g.cy, 0, g.cx, g.cy, Math.max(rx, ry)); gr.addColorStop(0, "rgba(90,255,120,0.04)"); gr.addColorStop(0.75, "rgba(90,255,120,0.10)"); gr.addColorStop(1, "rgba(150,255,150,0.28)");
-      ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(g.cx, g.cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); return; }
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(g.cx, g.cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+      plasma(g, rx, s, i); ctx.restore(); return; }
     ctx.strokeStyle = "rgba(170,255,150," + (0.55 + 0.15 * Math.sin(T * 5 + i)).toFixed(2) + ")"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.ellipse(g.cx, g.cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
     /* a bright band sweeping round the rim + a soft sheen on the upper left */
     var sw = T * 2.4 + i * 1.3; ctx.strokeStyle = "rgba(230,255,210,0.75)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(g.cx, g.cy, rx, ry, 0, sw, sw + 0.7); ctx.stroke();
