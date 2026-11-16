@@ -5483,3 +5483,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1676 — Gerbils no longer jump back when an Arena fight ends (17 Nov 2026)
 - Harley bug: winning an Arena match made the gerbils teleport. At the end the drawing dropped their roaming / run-up positions and snapped them back to their fight spots. Now everyone (gerbils, clones, heroes using the run-up) stays exactly where they are when the fight ends.
 - Repro headless (immortal test gerbils, strong team so it wins): before, roaming gerbils at x 280-390 snapped to 182-242 on the win; after, positions unchanged across the end. No console errors.
+
+## v1677 — Gerbils bite every ship again, after running to a spot they can reach (17 Nov 2026)
+- Measured headless in a real Arena screen (every skin as the enemy): a biting gerbil reaches ~17 px up / 23 px forward at hero scale 1. From where gerbils stop only Ironclad was in reach, but every ship has some low part: Ironclad hull, crawler treads, Blackwatch II / Sanctum underside, Bonewake bone spikes, Ironclad II thruster pods, Walker legs, the Voidspires' keel spike, the Mecha's staff.
+- Harley: let them bite any ship, but run there first. Fight rule back to before v1673 (gerbils hit any fortress). Drawing: a gerbil biting the ship picks a random spot inside that skin's reachable parts (GERBIL_BITE_SPOTS, fractions of the ship picture from its nose, measured with a 15 px reach) and runs under the ship to it at 80 px/s, then bites there. Unknown skins fall back to the nose.
+- Test: 8 gerbils vs Bonewake 2 spread under the hull and bit the hanging spikes; no console errors. Meta check unchanged.

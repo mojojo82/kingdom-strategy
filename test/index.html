@@ -13938,6 +13938,12 @@ function arenaMeleeApproach(id, isP, wantX, reach, spd, hs) {
   var holding = moved === 0 && dir * (st.x - des) > 0.5;
   st.lw = wantX; st.t = now; return { x: st.x, run: moved !== 0, hold: holding, flip: moved !== 0 ? moved < 0 : !isP };
 }
+/* v1677 (Harley): gerbils can bite every ship again, but first run to a spot low enough to reach (measured in Arena, dev/NOTES v1677): parts of the ship within a gerbil's
+   bite (15 px at hero scale 1) - fractions of the ship picture's width from its nose. Mecha = his staff; Voidspires = the keel spike; Walker = the legs. */
+var GERBIL_BITE_SPOTS = { "default": [[0, 0.93]], "void": [[0.567, 0.64]], serpent: [[0.095, 0.844]], serpent2: [[0.095, 0.844]], ironclad2: [[0.231, 0.407], [0.462, 0.613], [0.693, 0.844]],
+  blackwatch2: [[0.176, 0.844]], void2a: [[0.543, 0.628]], void2b: [[0.548, 0.633]], void3b: [[0.543, 0.608]], mecha: [[0.29, 0.33]], walker: [[0.111, 0.322], [0.683, 0.844]],
+  crawlerb: [[0.075, 0.844]], sanctum: [[0.266, 0.718], [0.774, 0.829]], crawlerc: [[0.07, 0.844]] };
+function gerbilBiteFrac(skinId) { var L = GERBIL_BITE_SPOTS[skinId] || [[0, 0.08]], tot = 0; L.forEach(function (q) { tot += q[1] - q[0]; }); var r = Math.random() * tot; for (var i = 0; i < L.length; i++) { var len = L[i][1] - L[i][0]; if (r <= len) return L[i][0] + r; r -= len; } return L[0][0]; }
 function gerbilCanHitFort(skin) { return !!(skin && (skin.id === "crawlerb" || skin.id === "crawlerc")); } /* v1672 (Harley): for now gerbils only bite tracked (crawler) fortresses - a hovering or floating ship is out of their reach */
 function gerbilSheet() { var G = GERBIL_ANIM; if (!G.img) { G.img = new Image(); G.img.src = G.src; } return (G.img.complete && G.img.naturalWidth) ? G.img : null; }
 // Draws one frame with the feet at (x, feetY). Returns the y of the top of the gerbil (for the HP bar), or null if the sheet isn't loaded yet.
@@ -14287,7 +14293,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1676"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1677"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -39357,7 +39363,7 @@ function runArenaBattle(onTick, onDone) {
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
-  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, gerbFortP: gerbilCanHitFort(arenaAnim.aiFortressSkin || arenaOpponentFortressSkin(arenaOpponent)), gerbFortA: gerbilCanHitFort(fortressSkin()), /* v1672 */ salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), cardMods: cardModsFrom(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), boss: KJ ? kaijuBossCfg() : null, aiCannon: KJ ? false : undefined, maxTicks: KJ ? kaijuTicks() : undefined });
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), cardMods: cardModsFrom(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), boss: KJ ? kaijuBossCfg() : null, aiCannon: KJ ? false : undefined, maxTicks: KJ ? kaijuTicks() : undefined });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one
@@ -40130,7 +40136,13 @@ function drawArenaFrame(ctx, w, h) {
       var x = mapDx(c.prev) + (mapDx(c.cur) - mapDx(c.prev)) * frD + (isP ? -1 : 1) * (14 + n[c.side] * 10), y = slot.y; n[c.side]++; /* v976: same ground line as the heroes, a step behind the template hero so both stay visible */
       var st = (c.cur !== c.prev && frD < 1 && !arenaAnim.battleEnded) ? "run" : (c.reach && !arenaAnim.battleEnded ? "attack" : "idle");
       var cFlip = !isP, hsC = heroSpriteVisualScale / 100;
-      if (c.g && !c.reach && c.cur >= 0.97 && !arenaAnim.battleEnded) { /* v1673 (Harley): no legal target (a ship they can't bite) - the gerbil roams wherever it likes, under the ship too: long runs one way, a short stop, then off somewhere else */
+      if (c.g && c.reach && c.cur >= 0.97 && !arenaAnim.battleEnded && arenaFoeFrontX(isP) == null) { /* v1677 (Harley): biting the ship - first run under it to a spot low enough to reach, then bite there */
+        var MB = arenaAnim.meleeApr || (arenaAnim.meleeApr = {}), WB = MB["c_" + kk], bNow = performance.now(); if (!WB || bNow - WB.t > 400) WB = MB["c_" + kk] = { x: x, t: bNow, hold: 0 };
+        var bdt = Math.min(0.1, (bNow - WB.t) / 1000), sid = oppSkinN.id || "default";
+        if (WB.bSkin !== sid) { WB.bSkin = sid; var bf = gerbilBiteFrac(sid); WB.bx = isP ? ocxN - oswN / 2 + bf * oswN : ocxN + oswN / 2 - bf * oswN; WB.bx = Math.max(8, Math.min(w - 8, WB.bx)); }
+        var bd = WB.bx - WB.x, bs = GERBIL_RUN_PX_PER_SEC * bdt; if (Math.abs(bd) > 0.5) { WB.x += Math.abs(bd) <= bs ? bd : Math.sign(bd) * bs; st = "run"; cFlip = bd < 0; } else { st = "attack"; cFlip = !isP; }
+        WB.flip = cFlip; WB.t = bNow; WB.free = true; WB.wx = null; x = WB.x;
+      } else if (c.g && !c.reach && c.cur >= 0.97 && !arenaAnim.battleEnded) { /* v1673 (Harley): no legal target (a ship they can't bite) - the gerbil roams wherever it likes, under the ship too: long runs one way, a short stop, then off somewhere else */
         var MA = arenaAnim.meleeApr || (arenaAnim.meleeApr = {}), W = MA["c_" + kk], wNow = performance.now(); if (!W || wNow - W.t > 400) W = MA["c_" + kk] = { x: x, t: wNow, hold: 0 };
         var wdt = Math.min(0.1, (wNow - W.t) / 1000), lo = isP ? mX - 20 * hsC : endX - oswN * 0.7, hi = isP ? endX + oswN * 0.7 : mX + 20 * hsC;
         if (W.wx == null) { W.wx = W.x; W.wait = 0; }
@@ -40140,7 +40152,7 @@ function drawArenaFrame(ctx, w, h) {
       } else {
         var cAp = arenaMeleeApproach("c_" + kk, isP, x, c.reach, c.g ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(tk), hsC); x = cAp.x; if (cAp.run) st = "run"; else if (cAp.hold && st === "run") st = "idle"; /* v1672: run up to an enemy already at the fortress front */
         if (cAp.run || arenaAnim.battleEnded) cFlip = cAp.flip;
-        var MA2 = arenaAnim.meleeApr && arenaAnim.meleeApr["c_" + kk]; if (MA2) MA2.wx = null;
+        var MA2 = arenaAnim.meleeApr && arenaAnim.meleeApr["c_" + kk]; if (MA2) { MA2.wx = null; MA2.bSkin = null; }
       }
       c.sx = x;
       if (c.g) { /* v1672: Death Gerbils - own animated sprite; bites once per second (their attack speed) while in reach */
