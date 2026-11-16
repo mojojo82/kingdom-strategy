@@ -5394,3 +5394,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: once the big sword is in the ground it should stay at that spot of the level, so the fortress slowly comes up to it while the level scrolls (it was fixed on screen).
 - zkDrawConquest: after landing, Z.sk.tx moves back by the road's scroll each frame (idleAnim.bgOffsetFar, the same offset the level road uses, 1:1; wrap at 300000 handled). Its rings, rocks and sparks shift with it. When the march halts (enemy up close) the scroll stops and so does the sword. Arena doesn't scroll - unchanged.
 - Headless Conquest: sword x fixed until it lands (~1.3 s), then 364 -> 274 while the road moved 361 -> 450 (90 px each); no console errors.
+
+## v1664 — PERF test button in Arena
+- Harley: slowdown in Arena, noticeable when missiles fire. Same TEMPORARY PERF test as Conquest (v1582), top left of the Arena battle under the player's HP bar.
+- The button shows the live FPS ("PERF 44"). Switches (a hidden part draws into a 1x1 canvas, the fight still runs): Background, HP bars + names, Fortresses + guns, Heroes, Hero shots + effects, Missile smoke, Missile rockets, Missile explosions, Rain / snow (also the sky strip).
+- Position / FPS text updated twice a second (reading the layout every frame would cost frames itself).
+- Headless: button mounts, panel toggles keys (PT.a_*), no console errors. Delete with the Conquest one once we know the culprit.

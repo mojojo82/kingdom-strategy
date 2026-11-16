@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1663"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1664"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -31422,6 +31422,27 @@ function ptMountButton() {
   b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
   host.appendChild(b); host.appendChild(pn);
 }
+/* v1664 (Harley: "add the perf button to arena, slowdown when the missiles fire"): the same PERF test on the Arena battle, top left.
+   The button shows the live FPS; the switches hide one part at a time (missiles split into smoke / rockets / explosions). Delete once we have the answer. */
+var PT_ITEMS_A = [["a_bg", "Background"], ["a_hud", "HP bars + names"], ["a_fort", "Fortresses + guns"], ["a_heroes", "Heroes"], ["a_fx", "Hero shots + effects"], ["a_msmoke", "Missile smoke"], ["a_mrocket", "Missile rockets"], ["a_mboom", "Missile explosions"], ["a_weather", "Rain / snow"]];
+function ptMountArena() {
+  var now = performance.now(); if (ptMountArena._t && now - ptMountArena._t < 500) return; ptMountArena._t = now; /* twice a second - reading the layout every frame would cost frames itself */
+  var cv = document.getElementById("arenaCanvas"); if (!cv || !cv.offsetParent) return; var b = document.getElementById("ptBtnA");
+  var top = cv.offsetTop + (arenaAnim.skyH || 0) + 42, left = cv.offsetLeft + 6;
+  if (!b) {
+    var host = cv.parentNode; if (getComputedStyle(host).position === "static") host.style.position = "relative";
+    b = document.createElement("button"); b.id = "ptBtnA"; b.type = "button"; b.textContent = "PERF";
+    b.style.cssText = "position:absolute;z-index:6;font:bold 10px sans-serif;padding:4px 6px;background:#3ab7d8;color:#06223a;border:none;border-radius:4px;line-height:1;";
+    var pn = document.createElement("div"); pn.id = "ptPanelA";
+    pn.style.cssText = "position:absolute;z-index:6;display:none;background:rgba(8,14,26,.92);border:1px dashed #c9a24a;border-radius:6px;padding:6px;width:150px;line-height:1.2;";
+    var draw = function () { pn.innerHTML = '<div style="color:#f0c95f;font:bold 10px sans-serif;margin-bottom:4px;">Tap to hide (test)</div>' + PT_ITEMS_A.map(function (it) { var off = !!PT[it[0]]; return '<button type="button" data-pt="' + it[0] + '" style="display:block;width:100%;margin:2px 0;padding:5px 6px;font:bold 11px sans-serif;text-align:left;border-radius:4px;border:1px solid ' + (off ? '#e06a5a' : '#3ab7d8') + ';background:' + (off ? '#4a1e1e' : '#12324a') + ';color:' + (off ? '#ffb4a8' : '#cfeeff') + ';">' + (off ? 'HIDDEN · ' : '') + it[1] + '</button>'; }).join(""); };
+    pn.onclick = function (e) { var t = e.target.closest("[data-pt]"); if (!t) return; e.stopPropagation(); var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; draw(); };
+    b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
+    host.appendChild(b); host.appendChild(pn); b._pn = pn;
+  }
+  if (b._top !== top || b._left !== left) { b._top = top; b._left = left; b.style.top = top + "px"; b.style.left = left + "px"; b._pn.style.top = (top + 22) + "px"; b._pn.style.left = left + "px"; }
+  var tx = "PERF " + Math.round(arenaAnim.fpsSmoothed || 60); if (b.textContent !== tx) b.textContent = tx;
+}
 /* v1580 (Harley: Options > Light backgrounds): the Conquest sky and far background layers are drawn on their own canvas behind the battle at 2x
    sharpness (max), which the phone stretches for free when it puts the screen together; everything else (near layer, road, heroes, enemies,
    effects, numbers) stays on the battle canvas at full sharpness. Off = exactly as before. Per device. */
@@ -39591,9 +39612,11 @@ function drawArenaLightningLayer(ctx, w, h, layer) {
 function drawArenaFrame(ctx, w, h) {
   ctx.clearRect(0, 0, w, h);
   var groundY = groundYFor(h);
+  var ptRealA = ctx; ctx = ptCtx("a_bg", ptRealA); /* v1664: Arena PERF test sections (see ptMountArena) */
   drawArenaBackground(ctx, w, h, groundY);
   drawArenaLightningLayer(ctx, w, h, "bg"); // v669: two layers, both behind the fighters — far background (thinnest, strikes the distant bridges) then middleground (strikes at the heroes' feet line)
   drawArenaLightningLayer(ctx, w, h, "mid");
+  ctx = ptCtx("a_hud", ptRealA);
   ctx.strokeStyle = "#4a3018"; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
   // center divider
@@ -39634,6 +39657,7 @@ function drawArenaFrame(ctx, w, h) {
   ctx.fillText(aTxt, w * 0.76, hpBaseY);
   ctx.restore();
 
+  ctx = ptRealA;
   var infantryProgress = 0;
   if (arenaAnim.battleStartTime) {
     infantryProgress = Math.max(0, Math.min(1, (performance.now() - arenaAnim.battleStartTime) / (ARENA_ENGAGE_TICKS * ARENA_TICK_MS)));
@@ -39881,6 +39905,7 @@ function drawArenaFrame(ctx, w, h) {
     });
   }
   // v468: Orbit Shield on the player's fortress — far halves behind the hull, near halves after the heroes are drawn.
+  ctx = ptCtx("a_fort", ptRealA);
   var osSetA = null, osBoxA = orbitShieldActive() ? arenaShieldBox(w, h) : null;
   if (osBoxA) {
     osSetA = orbitShieldSet("arena");
@@ -39896,12 +39921,13 @@ function drawArenaFrame(ctx, w, h) {
   if (hxBoxB) { hxSetB = hexShieldPrepare("arenaAI", hxBoxB.x, hxBoxB.y, hxBoxB.sw, hxBoxB.sh, hexShieldStatusArenaAI); if (hxSetB) hexShieldDrawPass(ctx, hxSetB, false); }
   drawArenaFortress(ctx, w, h, true, osSetA, "back"); drawArenaFortress(ctx, w, h, false, null, "back");
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju && kaijuState.water) kaijuDrawWater(ctx, w, h); /* v1598: shallow sea over his claws, under the heroes and their bars */
-  drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
+  ctx = ptCtx("a_fx", ptRealA); drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
+  ctx = ptCtx("a_heroes", ptRealA);
   drawFormation(arenaAnim.playerRoster, true, "deck");
   drawFormation(arenaAnim.aiRoster, false, "deck");
-  drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
+  ctx = ptCtx("a_fort", ptRealA); drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165; v1556: after the front hull layer - layered skins (crawlers, walker...) covered the guns in Arena
-  drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
+  ctx = ptCtx("a_heroes", ptRealA); drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju) kaijuDrawArenaFx(ctx, w, h); /* v1598: water, stomp surge, beam */
   if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */
   (function drawArenaClones() { /* v975: Clone Task's clone - Gareth's sprite, heavy green tint; runs out and fights where the sim puts it */
@@ -39928,6 +39954,7 @@ function drawArenaFrame(ctx, w, h) {
       ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
     });
   })();
+  ctx = ptCtx("a_fx", ptRealA);
   drawHeroWarps(ctx);
   drawHeroThrows(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: Hanzo's shuriken etc. */
   try { zkLate(ctx, arenaAnim, w, h); } catch (eZk) {} /* v1654: Zarek */
@@ -40015,9 +40042,10 @@ function drawArenaFrame(ctx, w, h) {
   // treatment to Conquest's drawIdleAnim block (same rocket sprite, same
   // billowing exhaust puffs, same instant-disappear-on-impact rule), just
   // reading from arenaAnim.weaponMissiles instead of idleAnim's.
+  ctx = ptCtx("a_mrocket", ptRealA);
   arenaAnim.weaponMissiles.forEach(function (m) {
     if (m.delay > 0) return;
-    drawMissileSmokeTrail(ctx, m.trail); /* v1513 (Harley: lag when both sides fire missiles): pre-drawn puff sprites instead of a new radial gradient per puff per frame */
+    drawMissileSmokeTrail(ptCtx("a_msmoke", ptRealA), m.trail); /* v1513 (Harley: lag when both sides fire missiles): pre-drawn puff sprites instead of a new radial gradient per puff per frame */
     if (m.t < 1) {
       var amttForAngle = Math.min(1, m.t);
       var amdx = m.toX - m.startX;
@@ -40042,7 +40070,8 @@ function drawArenaFrame(ctx, w, h) {
 
   // v453: missile explosions at the enemy fortress + Piercing Volley
   // fireball embers — the same shared drawing Conquest uses.
-  arenaAnim.missileImpacts.forEach(function (fx) { drawMissileImpactFx(ctx, fx); });
+  ctx = ptCtx("a_mboom", ptRealA); arenaAnim.missileImpacts.forEach(function (fx) { drawMissileImpactFx(ctx, fx); });
+  ctx = ptCtx("a_fx", ptRealA);
   if (arenaAnim.bulletSparks) drawBulletSparks(ctx, arenaAnim.bulletSparks); /* v1589 */
   if (arenaAnim.beams.length) {
     var bpg = arenaFortressGeom(w, h, true);
@@ -40111,6 +40140,7 @@ function drawArenaFrame(ctx, w, h) {
     ctx.restore();
   });
 
+  ctx = ptRealA;
   if (arenaAnim.banner) {
     var b = arenaAnim.banner;
     ctx.save();
@@ -40123,6 +40153,7 @@ function drawArenaFrame(ctx, w, h) {
 
   // Weather — falls in front of the whole scene, same technique as Border
   // Skirmish's drawIdleAnim, drawn from arenaAnim's own particle list.
+  ctx = ptCtx("a_weather", ptRealA);
   var arenaEnvDraw = arenaEnvironment();
   if (arenaEnvDraw === "snow") {
     ctx.save();
@@ -40142,7 +40173,7 @@ function drawArenaFrame(ctx, w, h) {
 }
 /* v1260 (Harley: "top part of sky is cut off, look where the rain begins"): the same drops are drawn in the sky strip above the battle canvas */
 function arenaDrawSkyWeather(env) {
-  var fx = document.getElementById("arenaSkyFx"), skyH = arenaAnim.skyH || 0; if (!fx || !fx.width) return;
+  var fx = document.getElementById("arenaSkyFx"), skyH = arenaAnim.skyH || 0; if (!fx || !fx.width) return; if (PT.a_weather) { if (!fx._ptOff) { fx._ptOff = 1; fx.getContext("2d").clearRect(0, 0, fx.width, fx.height); } return; } fx._ptOff = 0;
   var c = fx.getContext("2d"), dp = canvasDPR(); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, fx.width, fx.height); if (skyH < 1 || (env !== "snow" && env !== "rain")) return;
   c.setTransform(dp, 0, 0, dp, 0, skyH * dp); /* drop y is battle-canvas space: -skyH..0 = the strip */
   if (env === "snow") { c.fillStyle = "#ffffff"; c.globalAlpha = 0.8; arenaAnim.weatherParticles.forEach(function (p) { if (p.y < 4) { c.beginPath(); c.arc(p.x, p.y, p.size, 0, Math.PI * 2); c.fill(); } }); c.globalAlpha = 1; }
@@ -40405,6 +40436,7 @@ function startArenaAnimLoop() {
         ctx.scale(dpr, dpr); ctx.translate(0, skyPx);
         drawArenaFrame(ctx, w, h);
         drawArenaFpsCounter(ctx, w);
+        try { ptMountArena(); } catch (ePt) {} /* v1664 */
         ctx.restore();
       } catch (err) {
         console.error("Arena animation frame failed (skipped, loop continues):", err);
