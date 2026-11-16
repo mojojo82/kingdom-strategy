@@ -5415,3 +5415,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Benchmark of the whole skill (same page, art loaded, x3 canvas, 3 runs): v1664 fall 2.2-2.4 ms / hold 8.6 ms / fade 8.5 ms per frame -> now fall ~0.9 ms / hold ~1.9 ms / fade ~1.7 ms. The big one was the live brightness/saturate filter on the 862x1533 picture every frame (removed in v1665).
 - Also: the giant sword is kept as ready-made copies at its exact screen size (darkened + plain for the glow pulse) instead of shrinking the full picture twice a frame; no clip mask (only the part above ground is drawn); sparks / rings / rocks drawn in batches (one composite setting, no save/restore per spark).
 - Switching parts off in the benchmark: what's left (~1.6 ms in headless software drawing) is just painting the big sword - cheap on a phone's graphics chip. Look unchanged (old vs new frames side by side).
+
+## v1667 — Shield bar for Torvald's Guard Stance
+- Harley: Torvald's shield should show as a mini bar under the main HP bar.
+- Conquest: a thin gold bar right under the fortress HP bar = what's left of the guard shield / its size when cast (state.idle.guardShieldMax). Sera's overheal ward uses the same shield and bar.
+- Arena: the same bar under each side's HP bar (both you and the opponent). The sim now reports playerGuard / aiGuard, their size and a cast counter. Bot weapons usually eat the shield in the same instant it goes up, so on each cast the bar shows full and drains to what's really left within 0.6 s (otherwise it would never be seen).
+- Headless: Conquest bar shows after Torvald's first cast (shield 9/9); Arena drawing checked with set values (65% / 95%); the sim's guard + counter checked by stepping a fight (shield 975 from tick 45). No console errors.

@@ -10161,7 +10161,7 @@ function createGame(opts) {
             var room = Math.max(0, maxHpS - state.idle.playerHp), healed = Math.min(room, heal), over = heal - healed;
             state.idle.playerHp += healed;
             var owS = def.conquestSkills[2];
-            if (owS && owS.effectType === "overhealWard" && over > 0) { var capW = maxHpS * owS.perLevel * heroSkillLevel(key, "conquest", 2); state.idle.guardShield = Math.min(capW, (state.idle.guardShield || 0) + over); }
+            if (owS && owS.effectType === "overhealWard" && over > 0) { var capW = maxHpS * owS.perLevel * heroSkillLevel(key, "conquest", 2); var gPrev = state.idle.guardShield || 0; state.idle.guardShield = Math.min(capW, gPrev + over); state.idle.guardShieldMax = gPrev > 0.5 ? Math.max(state.idle.guardShieldMax || 0, state.idle.guardShield) : state.idle.guardShield; }
             var raS = def.conquestSkills[1];
             if (raS && raS.effectType === "rally") { var cut = raS.perLevel * heroSkillLevel(key, "conquest", 1); state.conquestRoster.forEach(function (ok) { if (ok !== key && state.heroCooldowns[ok] != null) state.heroCooldowns[ok] -= cut; }); }
           } else if (skill1.support === "oath") { /* v1413: Crimson Oath - all heroes +pct ATK for buffSec (a recast refreshes, the bigger pct wins) */
@@ -10170,7 +10170,7 @@ function createGame(opts) {
             state.idle.oathT = skill1.buffSec || 4;
           } else if (skill1.support === "guard") {
             var gAmt = maxHpS * (skill1.guardPctByLevel[Math.min(skill1.guardPctByLevel.length, spLvl) - 1] || 0) * (1 + (equipBonus.support || 0) / 100);
-            state.idle.guardShield = Math.max(state.idle.guardShield || 0, gAmt);
+            state.idle.guardShield = Math.max(state.idle.guardShield || 0, gAmt); state.idle.guardShieldMax = state.idle.guardShield; /* v1667: for its mini bar */
           }
           return;
         }
@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1666"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1667"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -31291,6 +31291,8 @@ function drawIdleAnim(ctx, w, h) {
   ctx.textBaseline = "alphabetic";
   ctx.fillText(hpTxt, w * 0.16, barY + barH2 / 2 + (ctx.measureText("0123456789").actualBoundingBoxAscent || 5) / 2);
   ctx.textBaseline = "middle";
+  var gS = game.state.idle.guardShield || 0, gM = Math.max(gS, game.state.idle.guardShieldMax || 0); /* v1667 (Harley): Torvald's Guard Stance (and Sera's ward) - a mini bar under the fortress bar showing what's left of the shield */
+  if (gS > 0.5 && gM > 0) { var gF = Math.max(0, Math.min(1, gS / gM)), gY = barY + barH2 + 1; ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(barX, gY, barW2, 3); ctx.fillStyle = "#e8c25a"; ctx.fillRect(barX, gY, barW2 * gF, 3); ctx.fillStyle = "rgba(255,240,190,0.55)"; ctx.fillRect(barX, gY, barW2 * gF, 1); }
 
   if (idleAnim.bigBanner) {
     var b = idleAnim.bigBanner;
@@ -38419,7 +38421,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   /* v1499: Spotter's Mark - each side's cannon bullets mark the side they hit (up to cap; super bursts lay superMarks each); that side's Pip's next hit spends them */
   var spotOnA = 0, spotOnP = 0; function spotMul(sd, id) { if (id !== 'pip') return 1; var st = sd === 'P' ? playerStats : aiStats; if (!st.spot) return 1; var m = sd === 'P' ? spotOnA : spotOnP; if (!m) return 1; if (sd === 'P') spotOnA = 0; else spotOnP = 0; return 1 + m * st.spot.pct; }
   var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = [], waveQ = [], diveQ = []; /* v1514: Caelum's Skybreaker Slam in flight */ /* v1507: rolling eruptions on the ground */ /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
-  var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {};
+  var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {}, pGuardMax = 0, aGuardMax = 0, pGuardN = 0, aGuardN = 0; /* v1667: size of the last guard shield, for its little bar */
   (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first * cardCdMul('P'); }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first * cardCdMul('A'); }); /* v1523: first cast gets the cooldown bonus too (Conquest does) */
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
   // COMBAT_TIMING / skill / weapon numbers Conquest uses. When off, the old tick-counted behaviour (skills' seconds read as ticks, 3-tick basic attacks).
@@ -38778,12 +38780,12 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (u.kind === "heal") {
           var amt = maxHp * u.pct, room = Math.max(0, maxHp - getHp()), did = Math.min(room, amt);
           if (getHp() > 0) setHp(getHp() + did);
-          if (u.ward > 0 && amt - did > 0) setG(Math.min(maxHp * u.ward, getG() + (amt - did)));
+          if (u.ward > 0 && amt - did > 0) { setG(Math.min(maxHp * u.ward, getG() + (amt - did))); if (hhh === pHH) pGuardMax = Math.max(pGuardMax, getG()); else aGuardMax = Math.max(aGuardMax, getG()); }
           if (u.rally > 0) { Object.keys(actCd).forEach(function (k) { if (k !== u.key) actCd[k] -= u.rally; }); Object.keys(cdMap).forEach(function (k) { if (k !== u.key) cdMap[k] -= u.rally; }); } /* v1523: Rally also cuts the other support heroes' timers (Torvald), as in Conquest */
         } else if (u.kind === "oath") { /* v1413: Crimson Oath - same rule as Conquest */
           if (hhh === pHH) { if (!(oathTP > 0) || u.pct >= oathPP) oathPP = u.pct; oathTP = u.sec || 4; }
           else { if (!(oathTA > 0) || u.pct >= oathPA) oathPA = u.pct; oathTA = u.sec || 4; }
-        } else setG(Math.max(getG(), maxHp * u.pct));
+        } else { var gNew = Math.max(getG(), maxHp * u.pct); setG(gNew); if (hhh === pHH) { pGuardMax = gNew; pGuardN++; } else { aGuardMax = gNew; aGuardN++; } }
       });
     }
     stepSupports(playerStats.supports || [], pSupCd, playerCd, function () { return playerHp; }, function (v) { playerHp = v; }, function () { return playerGuard; }, function (v) { playerGuard = v; }, playerStats.maxHp, pHH);
@@ -39092,7 +39094,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
     var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach, g: !!e.gerbil }; }) : []; }; /* v975: clones for the visuals */
-    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
+    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerGuard: playerGuard, aiGuard: aiGuard, playerGuardMax: pGuardMax, aiGuardMax: aGuardMax, playerGuardN: pGuardN, aiGuardN: aGuardN /* v1667 */, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
       firePMult: playerCannonBullets ? playerCannonMult : 1, fireAMult: aiCannonBullets ? aiCannonMult : 1, /* v1642: super burst bullets fired this tick look different */ landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     info.bossAct = bossAct;
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
@@ -39671,6 +39673,11 @@ function drawArenaFrame(ctx, w, h) {
     ctx.fillStyle = "#63c9ff"; ctx.fillRect(shX, 46, shW * shF, 4);
   }
   drawArenaHpBar(ctx, w * 0.58, 22, w * 0.36, arenaAnim.aiMaxHp ? arenaAnim.aiHp / arenaAnim.aiMaxHp : 1, "#e05a5a", "#a02c2c");
+  /* v1667 (Harley): Torvald's Guard Stance (and Sera's overheal ward) - a mini bar under each side's HP bar showing what's left of the shield */
+  var gDt = Math.min(0.1, Math.max(0, (performance.now() - (arenaAnim.guardT || performance.now())) / 1000)); arenaAnim.guardT = performance.now();
+  ["P", "A"].forEach(function (k) { var real = arenaAnim["guard" + k] || 0, mx = arenaAnim["guard" + k + "Max"] || 0, sh = arenaAnim["guard" + k + "Show"]; if (sh == null || sh < real) sh = real; else sh = Math.max(real, sh - mx * gDt / 0.6); arenaAnim["guard" + k + "Show"] = sh; }); /* drains a full shield in 0.6 s at most */
+  [[arenaAnim.guardPShow, arenaAnim.guardPMax, w * 0.06], [arenaAnim.guardAShow, arenaAnim.guardAMax, w * 0.58]].forEach(function (g) { if (!(g[0] > 0.5) || !(g[1] > 0)) return;
+    var f = Math.max(0, Math.min(1, g[0] / g[1])), bw = w * 0.36; ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(g[2], 34, bw, 4); ctx.fillStyle = "#e8c25a"; ctx.fillRect(g[2], 34, bw * f, 4); ctx.fillStyle = "rgba(255,240,190,0.55)"; ctx.fillRect(g[2], 34, bw * f, 1); });
   // v670: the HP numbers sit INSIDE their bars (vertically centred, no outline)
   ctx.save();
   ctx.font = "9px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.fillStyle = "#f3e8cf"; // same regular weight + cream as Conquest's bars
@@ -40687,6 +40694,7 @@ function renderArenaBattleScreen() {
   arenaAnim.aiFortressSkin = arenaOpponentFortressSkin(arenaOpponent); arenaAiWeaponOrder = Object.keys((arenaOpponent && arenaOpponent.weapons) || {}).slice(0, 3); /* v1167: slots known from the start, so the bot's barrels show before its first shot */ // v1109: the bot's slots start fresh each match
   arenaAnim.playerHp = pStats0.maxHp; arenaAnim.playerMaxHp = pStats0.maxHp;
   arenaAnim.aiHp = aStats0.maxHp; arenaAnim.aiMaxHp = aStats0.maxHp;
+  arenaAnim.guardP = arenaAnim.guardA = arenaAnim.guardPMax = arenaAnim.guardAMax = 0; arenaAnim.guardPShow = arenaAnim.guardAShow = null; arenaAnim.guardPN = arenaAnim.guardAN = 0; /* v1667 */
   arenaAnim.shield = null; arenaAnim.shieldMax = 0; arenaAnim.shieldHits = 0; arenaAnim.shieldBreaks = 0; // v469
   arenaAnim.aiShield = null; arenaAnim.aiShieldMax = 0; arenaAnim.aiShieldHits = 0; arenaAnim.aiShieldBreaks = 0; // v1164: the bot's Hex Shield pool
   arenaAnim.aiActiveDefs = aStats0.actives;
@@ -40777,6 +40785,10 @@ function renderArenaBattleScreen() {
         }
       }
       arenaAnim.playerMaxHp = state.playerMaxHp; arenaAnim.aiMaxHp = state.aiMaxHp;
+      arenaAnim.guardP = state.playerGuard || 0; arenaAnim.guardA = state.aiGuard || 0; arenaAnim.guardPMax = state.playerGuardMax || 0; arenaAnim.guardAMax = state.aiGuardMax || 0; /* v1667 */
+      /* a new cast shows the shield full, then the bar drains to what's left (weapon fire often eats it in the same instant) */
+      if ((state.playerGuardN || 0) !== arenaAnim.guardPN) { arenaAnim.guardPN = state.playerGuardN || 0; if (arenaAnim.guardPN) arenaAnim.guardPShow = arenaAnim.guardPMax; }
+      if ((state.aiGuardN || 0) !== arenaAnim.guardAN) { arenaAnim.guardAN = state.aiGuardN || 0; if (arenaAnim.guardAN) arenaAnim.guardAShow = arenaAnim.guardAMax; }
       arenaAnim.railP = state.railP ? Object.assign({ at: performance.now() }, state.railP) : null; arenaAnim.railA = state.railA ? Object.assign({ at: performance.now() }, state.railA) : null; /* v1167 */
       if (state.playerShieldMax > 0) { // v469: Hex Shield pool, straight from the sim's own per-tick numbers
         var prevSh = arenaAnim.shield;
