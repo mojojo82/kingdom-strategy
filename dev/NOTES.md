@@ -5470,3 +5470,12 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Zarek's Blade Aegis also shields every Death Gerbil alive at the moment he casts (same % of the gerbil's max HP: 15-25 HP on a 100 HP gerbil). Conquest (idle clones, enemy hits soak the shield first) and Arena (gerbil droids). Bubble drawn on the gerbil in both modes. Skill text updated.
 - Bug: Zarek's Skills tab was blank - skillValueText had no case for the aegis support skill and threw. Fixed ("Shields allies + gerbils for 15% of their max HP / 8s").
 - Tests headless: Skills tab renders; Conquest gerbils got 15 HP shields on the cast; Arena 4/4 gerbils shielded, roaming seen; no console errors. Meta check unchanged.
+
+## v1675 — Bigger Blade Aegis bubble on gerbils + Zarek-team gerbil tests (17 Nov 2026)
+- Gerbil shield bubble radius 0.62 -> 0.9 x gerbil height (Harley: a bit larger).
+- Headless sims (40 fights each, both sides swapped; gerbils can't bite the ship unless noted). Zarek team = Zarek/Gareth/Sera/Torvald/Lyra:
+  - Lv40 with vs without gerbils: mirror 40 vs 20; vs G/S/T/L/Aurek 40 vs 34; vs Kessa team 24 vs 6; vs Hanzo/Kessa/Lily/Halo/Juno 0 vs 0.
+  - Lv80: mirror 32 vs 20; vs G/S/T/L/Aurek 36 vs 36; vs Kessa team 12 vs 6; vs Hanzo team 0 vs 0.
+  - Lily instead of Zarek, with vs without gerbils: Lv40 vs G/S/T/L/Aurek 32 vs 26, vs Hanzo team 5 vs 2; Lv80 12 vs 2, 0 vs 0.
+  - Crawler enemy (gerbils bite the ship): Lv40 40/40 vs G/S/T/L/Aurek, Lv80 36/40 - about the same as a normal ship.
+- Takeaway: gerbils are still a big swing at Lv40 (the decoy effect), smaller at Lv80; they never beat the Hanzo team.
