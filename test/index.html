@@ -14205,7 +14205,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1661"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1662"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -27033,7 +27033,7 @@ function stepIdleAnim(dtSec, w, h) {
         var sqm = idleAnim.atkShotSeq || (idleAnim.atkShotSeq = {}); sqm[aid] = (sqm[aid] || 0) + 1; // a shot really left — her animation keys off this
         var ox = p.x, oy = p.y;
           if (aid !== "kessa" && HERO_ANIMS[aid] && HERO_ANIMS[aid].shell) { var lv = idleAnim.heroVis[aid] || p, lh = heroHandPos(aid, lv.x + (fortLife.active ? fortLife.dx : 0), lv.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); ox = lh.x; oy = lh.y; } /* v1512: Lyra's arrow leaves her bow hand */
-          if (aid === "zarek") { var zq = zkState(idleAnim, "cq"); if (zq.x != null) { spawnProjectile(w, h, zq.x, zq.chest, bsVis.x, groundYFor(h) - 16, false, targetEnemyId, dmg, false, "zvolley"); zkOnVolley(idleAnim, "cq"); return; } } /* v1654: Zarek's swords dart at the enemy */
+          if (aid === "zarek") { var zq = zkState(idleAnim, "cq"); if (zq.x != null) { spawnProjectile(w, h, zq.x, zq.chest, bsVis.x, groundYFor(h) - 16, false, targetEnemyId, dmg, false, "zvolley"); var zpc = idleAnim.projectiles[idleAnim.projectiles.length - 1]; if (zpc) zpc._zkOwn = true; zkOnVolley(idleAnim, "cq", bsVis.x, groundYFor(h) - 16); return; } } /* v1654: Zarek's swords dart at the enemy */
           if (aid === "kessa") { var kv = idleAnim.heroVis[aid] || p, hh = kessaHandPos(kv.x + (fortLife.active ? fortLife.dx : 0), kv.y + 12 * (heroSpriteVisualScale / 100) + (fortLife.active ? fortLife.dy : 0), heroSpriteVisualScale / 100, true); ox = hh.x; oy = hh.y; }
           spawnProjectile(w, h, ox, oy, bsVis.x, aid === "kessa" ? groundYFor(h) - 18 : (HERO_ANIMS[aid] && HERO_ANIMS[aid].shell) ? groundYFor(h) - 16 : oy, false, targetEnemyId, dmg, false, aid === "kessa" ? "orb" : (HERO_ANIMS[aid] && HERO_ANIMS[aid].shell) ? heroShotStyle(aid) : SPELL_COLS[aid] ? "spell" : null, SPELL_COLS[aid]); /* v1185: Casters cast spells */ // Kessa's orb angles from her hand down/up to the enemy's body height
         })(); // archer — flat, straight shot (Kessa: small blue energy orb, basic attack only)
@@ -29093,9 +29093,23 @@ function zkSword(ctx, x, y, rot, len, faceAng, alpha, plain) { /* one energy swo
 }
 function zkOnRing(Z, a, hs) { var R = ZK.ringR * hs; return { x: Z.x + Math.cos(a) * R, y: Z.chest + Math.sin(a) * R * ZK.tilt, z: Math.sin(a) }; }
 function zkBurst(Z, x, y, n, spd, col, hs) { for (var i = 0; i < n; i++) { var a = Math.random() * Math.PI * 2, v = spd * hs * (0.3 + Math.random()); Z.fx.push({ k: "p", x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0, max: 0.4 + Math.random() * 0.5, r: (0.6 + Math.random() * 1.4) * hs, col: col }); } }
-function zkOnVolley(M, fk) { var Z = zkState(M, fk); Z.out = performance.now(); Z.warpAt = 0; }
-function zkVolleyHit(M, fk, x, y, hs) { var Z = zkState(M, fk); zkBurst(Z, x, y, 14, 45, "170,255,120", hs); zkBurst(Z, x, y, 5, 25, "235,255,210", hs); Z.fx.push({ k: "r", x: x, y: y, t: 0, max: 0.22, R: 7 * hs, warp: true }); Z.out = 0; Z.warpAt = performance.now() + 250; }
-function zkDrawVolley(ctx, p, hs) { /* the five swords flying as one shot: a fan around the projectile point, pointing along its path, short trails */
+function zkOnVolley(M, fk, tx, ty) { /* v1662 (Harley: "like the demo"): the swords leave one after another, 50 ms apart, each darting 0.2 s from its own spot on the ring; the game projectile only carries the damage */
+  var Z = zkState(M, fk), now = performance.now(), hs = Z.hs || heroSpriteVisualScale / 100; Z.warpAt = 0; Z.out = 0;
+  if (Z.x == null || tx == null) { Z.out = now; return; }
+  var v = { t0: now, from: [], to: [], hit: [], left: ZK.n };
+  for (var i = 0; i < ZK.n; i++) { var hm = zkOnRing(Z, Z.ring + i / ZK.n * Math.PI * 2, hs); v.from.push({ x: hm.x, y: hm.y }); v.to.push({ x: tx + ((i % 3) - 1) * 4 * hs, y: ty + ((i * 7) % 11 - 5) * hs }); v.hit.push(false); }
+  Z.vol = v;
+}
+function zkDrawDarts(ctx, Z, hs) { /* drawn over the enemies (zkLate) */
+  var v = Z.vol; if (!v) return; var now = performance.now();
+  for (var i = 0; i < ZK.n; i++) { var kd = (now - v.t0 - i * 50) / 200; if (kd < 0) continue;
+    if (kd >= 1) { if (!v.hit[i]) { v.hit[i] = true; var t = v.to[i]; zkBurst(Z, t.x, t.y, 12, 45, "170,255,120", hs); zkBurst(Z, t.x, t.y, 5, 25, "235,255,210", hs); Z.fx.push({ k: "r", x: t.x, y: t.y, t: 0, max: 0.22, R: 7 * hs, warp: true });
+        if (--v.left <= 0) { Z.vol = null; Z.warpAt = now + 250; } } continue; }
+    var f = v.from[i], to = v.to[i], e = kd * kd * (3 - 2 * kd) * 0.4 + kd * 0.6, dx = to.x - f.x, dy = to.y - f.y, rot = Math.atan2(dy, dx) + Math.PI / 2;
+    for (var g = 3; g >= 0; g--) { var ee = Math.max(0, e - g * 0.06); zkSword(ctx, f.x + dx * ee, f.y + dy * ee, rot, ZK.len * 1.05 * hs, 0, g ? 0.25 / g : 1, true); } }
+}
+function zkVolleyHit(M, fk, x, y, hs) { var Z = zkState(M, fk); if (Z.vol || !Z.out) return; /* v1662: the darts make their own hits */ zkBurst(Z, x, y, 14, 45, "170,255,120", hs); zkBurst(Z, x, y, 5, 25, "235,255,210", hs); Z.fx.push({ k: "r", x: x, y: y, t: 0, max: 0.22, R: 7 * hs, warp: true }); Z.out = 0; Z.warpAt = performance.now() + 250; }
+function zkDrawVolley(ctx, p, hs) { if (p.owner || p._zkOwn) return; /* v1662: the darts are drawn by zkDrawDarts; the projectile is invisible */ /* the five swords flying as one shot: a fan around the projectile point, pointing along its path, short trails */
   var dx = p.toX - p.startX, dy = p.toY - p.startY, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, rot = Math.atan2(dy, dx) + Math.PI / 2, len = ZK.len * 1.05 * hs;
   for (var i = 0; i < ZK.n; i++) { var lat = (i - (ZK.n - 1) / 2) * 5 * hs, back = Math.abs(i - (ZK.n - 1) / 2) * 7 * hs, bx = p.x - ux * back - uy * lat, by = p.y - uy * back + ux * lat;
     for (var g = 3; g >= 0; g--) zkSword(ctx, bx - ux * g * 7 * hs, by - uy * g * 7 * hs, rot, len, 0, g ? 0.25 / g : 1, true); }
@@ -29111,6 +29125,7 @@ function zkDraw(ctx, M, fk, hs, flip, tgt) {
         if (k < 1) (function (fr, kk) { list.push({ z: 2, f: function () { for (var g = 3; g >= 0; g--) { var q = Math.max(0, kk - g * 0.05); zkSword(ctx, fr.x + (fr.x - Z.x) * 0.6 * q, fr.y - 330 * hs * q * q - 6 * q, 0, ZK.len * 1.05 * hs, 0, g ? 0.22 / g : 1, true); } } }); })(sk.from[i], k);
         continue; } }
     if (Z.out) continue;
+    if (Z.vol && performance.now() - Z.vol.t0 >= i * 50) continue;
     var wk = Z.warpAt ? (now - Z.warpAt - i * 35) / 250 : 1; if (wk < 0) continue;
     var sc = wk >= 1 ? 1 : Math.min(1, wk) * (1 + Math.sin(wk * Math.PI) * 0.35 * (1 - wk)), extra = wk < 1 ? 0.4 * (1 - wk) : 0;
     if (Z.warpAt && wk >= 0 && wk < 0.05 && !Z["wr" + i]) { Z["wr" + i] = 1; Z.fx.push({ k: "r", x: home.x, y: home.y, t: 0, max: 0.32, R: 9 * hs, warp: true }); }
@@ -29127,7 +29142,7 @@ function zkDraw(ctx, M, fk, hs, flip, tgt) {
   list.filter(function (q) { return q.z >= 0; }).sort(function (p1, p2) { return p1.z - p2.z; }).forEach(function (q) { q.f(); });
   Z.tgt = tgt; /* the giant sword + effects draw later, over the enemies (zkLate) */
 }
-function zkLate(ctx, M, w, h) { if (!M || !M.zk) return; Object.keys(M.zk).forEach(function (k) { var Z = M.zk[k], hs = Z.hs || heroSpriteVisualScale / 100; if (Z.sk && Z.tgt) zkDrawGiant(ctx, Z, Z.sk, performance.now() - Z.sk.t0, hs, Z.tgt); zkDrawFx(ctx, Z, hs); }); zkFlashOverlay(ctx, M, w, h); }
+function zkLate(ctx, M, w, h) { if (!M || !M.zk) return; Object.keys(M.zk).forEach(function (k) { var Z = M.zk[k], hs = Z.hs || heroSpriteVisualScale / 100; if (Z.sk && Z.tgt) zkDrawGiant(ctx, Z, Z.sk, performance.now() - Z.sk.t0, hs, Z.tgt); zkDrawDarts(ctx, Z, hs); zkDrawFx(ctx, Z, hs); }); zkFlashOverlay(ctx, M, w, h); }
 function zkDrawGiant(ctx, Z, sk, e, hs, tgt) {
   var G = zkImg("zarek_colossus"); if (!G) return; var L = ZK.giantL * hs, Wd = L * G.naturalWidth / G.naturalHeight, ground = tgt.ground, entry = ground + 6 * hs, tipEnd = entry + L * 0.3, DD = 260;
   var k = (e - (sk.land - DD)) / DD; if (k < 0) return;
@@ -39711,7 +39726,7 @@ function drawArenaFrame(ctx, w, h) {
         var zA = zkState(arenaAnim, flashKey), fcz = fortLayoutPoint(w, h, "arena", !isPlayerSide, "h0", false), deckZ = slot.y + 13;
         zkStep(zA, isPlayerSide ? { x0: w * 0.08, x1: w * 0.42, deck: deckZ } : { x0: w * 0.58, x1: w * 0.92, deck: deckZ }, hsA, performance.now());
         arenaAnim.heroScreen[flashKey] = { x: zA.x, y: zA.feet - 13 };
-        zkDraw(ctx, arenaAnim, flashKey, hsA, !isPlayerSide, { x: isPlayerSide ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, ground: fcz ? fcz.y + 4 * hsA : groundYFor(h), rocks: zkRockPal("arena") });
+        zkDraw(ctx, arenaAnim, flashKey, hsA, !isPlayerSide, { x: isPlayerSide ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X, ground: groundYFor(h) + 7 * hsA, rocks: zkRockPal("arena") }); /* v1662 (Harley): into the bridge floor, not the ship hull */
         ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), zA.x, zA.feet + 9);
         return;
       }
@@ -40741,7 +40756,7 @@ function renderArenaBattleScreen() {
         if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -(spSyX ? spSyX.delay : heroReleaseSec(id)) / 0.4; if (spSyX) jpj.relAt = spSyX.at; } /* v1476: leaves on her release frame */
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "p_" + id; }
         if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
-        if (id === "zarek") { var zpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1], zz = zkState(arenaAnim, "p_zarek"); zpj.style = "zvolley"; zpj.owner = "p_zarek"; if (zz.x != null) { zpj.x = zpj.startX = zz.x; zpj.y = zpj.startY = zz.chest; } zkOnVolley(arenaAnim, "p_zarek"); } /* v1654 */
+        if (id === "zarek") { var zpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1], zz = zkState(arenaAnim, "p_zarek"); zpj.style = "zvolley"; zpj.owner = "p_zarek"; if (zz.x != null) { zpj.x = zpj.startX = zz.x; zpj.y = zpj.startY = zz.chest; } zkOnVolley(arenaAnim, "p_zarek", zpj.toX, zpj.toY); } /* v1654 */
         if (def.class === "cavalry") playerFiredArc = true; else playerFiredFlat = true;
       });
       state.aiHitAttackers.forEach(function (id) {
@@ -40756,7 +40771,7 @@ function renderArenaBattleScreen() {
         if (HERO_ANIMS[id] && HERO_ANIMS[id].shell) { var jpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; jpj.t = -(spSyX ? spSyX.delay : heroReleaseSec(id)) / 0.4; if (spSyX) jpj.relAt = spSyX.at; } /* v1476: leaves on her release frame */
         if (id === "kessa") { var kpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1]; kpj.t = -KESSA_RELEASE_SEC / 0.4; kpj.owner = "a_" + id; }
         if (SPELL_COLS[id]) arenaAnim.projectiles[arenaAnim.projectiles.length - 1].spellCol = SPELL_COLS[id]; /* v1185 */
-        if (id === "zarek") { var zpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1], zz = zkState(arenaAnim, "a_zarek"); zpj.style = "zvolley"; zpj.owner = "a_zarek"; if (zz.x != null) { zpj.x = zpj.startX = zz.x; zpj.y = zpj.startY = zz.chest; } zkOnVolley(arenaAnim, "a_zarek"); } /* v1654 */
+        if (id === "zarek") { var zpj = arenaAnim.projectiles[arenaAnim.projectiles.length - 1], zz = zkState(arenaAnim, "a_zarek"); zpj.style = "zvolley"; zpj.owner = "a_zarek"; if (zz.x != null) { zpj.x = zpj.startX = zz.x; zpj.y = zpj.startY = zz.chest; } zkOnVolley(arenaAnim, "a_zarek", zpj.toX, zpj.toY); } /* v1654 */
         if (def.class === "cavalry") aiFiredArc = true; else aiFiredFlat = true;
       });
       // Fortress cannon streams: this tick's bullets are staggered across the tick at the real bullet interval, muzzle -> enemy fortress.

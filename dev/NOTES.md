@@ -5383,3 +5383,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Played as the giant sword starts to fall (zkDrawGiant, first frame with k >= 0); the fall takes 0.26 s, so the boom hits on the impact frame and the short rush before it covers the fall. Replaces the generic sfxSkillShot at impact. Overridable as "zarekImpact"; Sound FX toggle respected.
 - Sword demo v21: same clip, same timing (muted in slow motion so it doesn't drift).
 - Headless Arena: impact sound started 255 ms before landing (land at 1350 ms) -> boom within ~5 ms of the hit; clip decodes (1.90 s); no console errors.
+
+## v1662 — Zarek: volley fires one sword after another; giant sword lands in the ground in Arena
+- Harley: in game the volley sent all swords at once (demo: rapid one after the other), and the giant sword stopped at the enemy ship's hull instead of going into the ground.
+- Volley: same as the demo now - zkOnVolley(M, fk, tx, ty) records each sword's spot on the ring; zkDrawDarts (in zkLate, over the enemies) flies them 50 ms apart, 0.2 s each, with their own little hit bursts, then they warp back. Swords not yet launched stay on the ring. The game projectile still carries the damage but is invisible (zkDrawVolley / zkVolleyHit skip it).
+- Arena giant sword: ground = groundYFor(h) + 7 (the bridge floor), was the enemy fortress's hero deck spot (fortLayoutPoint h0), which put the impact on the hull.
+- Headless Arena (art/originals/heroes/zarek/ingame_arena_v1662.png): swords strung out between him and the target mid-volley; giant sword impact on the bridge floor in front of the ship; no console errors.
