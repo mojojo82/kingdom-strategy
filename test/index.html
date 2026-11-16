@@ -13910,6 +13910,30 @@ var GERBIL_H = 16.4;              // standing height on screen at hero scale 1 =
 var GERBIL_RUN_PX_PER_SEC = 80;   // gerbils run at about half a hero's pace (heroes 150 px/s)
 var GERBIL_DEATH_HOLD = 1.2, GERBIL_DEATH_FADE = 0.8; // the puddle stays a moment, then fades (s)
 var GERB_DIED = {};               // Conquest: gerbil keys that just died (sim -> drawing; not saved)
+// v1672 (Harley bug): in Arena a melee hero coming back from a KO (or a new gerbil) whose enemy is already standing at his fortress front is "in reach" in the fight
+// (his spot at home overlaps the enemy's), but he was drawn at his home slot and swung at the air. The drawing now runs him up to the nearest enemy on the ground
+// first (at his own pace), then he attacks. Drawing only - the fight itself is unchanged.
+function arenaFoeFrontX(isP) {
+  var pre = isP ? "a_" : "p_", best = null, HS = arenaAnim.heroScreen || {}, HP = arenaAnim.heroHp || {};
+  Object.keys(HS).forEach(function (k) { if (k.indexOf(pre) !== 0) return; var e = HP[k]; if (!e || !e.infantry || e.ko || e.dv) return; var x = HS[k].x; if (best == null || (isP ? x < best : x > best)) best = x; });
+  var C = arenaAnim.cloneD || {}; Object.keys(C).forEach(function (k) { var c = C[k]; if (c.side === (isP ? "p" : "a") || c.sx == null) return; if (best == null || (isP ? c.sx < best : c.sx > best)) best = c.sx; });
+  return best;
+}
+function arenaMeleeApproach(id, isP, wantX, reach, spd, hs) {
+  var M = arenaAnim.meleeApr || (arenaAnim.meleeApr = {}), st = M[id], now = performance.now(), dir = isP ? 1 : -1;
+  var dt = st ? Math.min(0.1, (now - st.t) / 1000) : 0;
+  if (!st || now - st.t > 400 || arenaAnim.battleEnded) st = M[id] = { x: wantX, t: now, hold: 0 };
+  var des = wantX;
+  if (reach && !arenaAnim.battleEnded) { var fx = arenaFoeFrontX(isP); if (fx != null) { var ap = fx - dir * 26 * hs; if (dir * (ap - wantX) > 20 * hs) des = ap; /* 26 = the normal meeting gap; only when he is clearly short of the enemy */ } }
+  var dx = des - st.x, step = spd * dt, moved = 0;
+  if (dir * dx > 0) { if (dir * dx > step * 2.5 + 1) { st.x += dir * step; moved = dir; } else st.x = des; st.hold = 0; } /* small steps = the fight's own walk (follow exactly); a big jump = run there */
+  else if (dir * dx < 0) { /* he is ahead of his spot in the fight (the enemy fell or moved back): wait there while the fight's walk catches up; only if it doesn't, walk back */
+    var comingUp = st.lw != null && dir * (wantX - st.lw) > 0.05; st.hold = comingUp ? 0 : st.hold + dt;
+    if (st.hold > 1.2) { if (-dir * dx > step + 0.5) { st.x -= dir * step; moved = -dir; } else st.x = des; } }
+  var holding = moved === 0 && dir * (st.x - des) > 0.5;
+  st.lw = wantX; st.t = now; return { x: st.x, run: moved !== 0, hold: holding, flip: moved !== 0 ? moved < 0 : !isP };
+}
+function gerbilCanHitFort(skin) { return !!(skin && (skin.id === "crawlerb" || skin.id === "crawlerc")); } /* v1672 (Harley): for now gerbils only bite tracked (crawler) fortresses - a hovering or floating ship is out of their reach */
 function gerbilSheet() { var G = GERBIL_ANIM; if (!G.img) { G.img = new Image(); G.img.src = G.src; } return (G.img.complete && G.img.naturalWidth) ? G.img : null; }
 // Draws one frame with the feet at (x, feetY). Returns the y of the top of the gerbil (for the HP bar), or null if the sheet isn't loaded yet.
 function drawGerbilFrame(ctx, x, feetY, anim, f, faceRight, hs, alpha) {
@@ -14258,7 +14282,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1672"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1673"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38103,7 +38127,7 @@ function botWeapons(lvl, fortType) {
 function botWeaponsToSim(map, atkMult) { return { specs: simWeaponsFromCfg(map || null, atkMult), /* v1190: atkMult = that side's own ATK bonus (1 + atk%/100), like a player's weaponDmgFor */ shieldPct: simShieldPctFromCfg(map || null), salvo: salvoSpec(Object.keys(map || {}), function (wd) { return game.weaponStatsAtLevel(wd, map[wd.id]); }) }; }
 function botCore(p) {
   var tier = p.mult;
-  var count = 1 + Math.floor(Math.random() * ARENA_COMBAT_HERO_KEYS.length);
+  var count = 1 + Math.floor(Math.random() * Math.min(5, ARENA_COMBAT_HERO_KEYS.length)); /* v1672: never more than 5 heroes (bots had up to every hero - only 5 were drawn, the rest fought invisibly) */
   var shuffled = ARENA_COMBAT_HERO_KEYS.slice().sort(function () { return Math.random() - 0.5; });
   var roster = shuffled.slice(0, count), heroes = {};
   roster.forEach(function (key) {
@@ -38623,9 +38647,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var skTgt = {}, hitTgt = {}, rangedPctLocal = (opts.rangedPct != null ? opts.rangedPct : koCfg.rangedPct), ARENA_RANGED_RANGE = 0.62, rAcc = {};
   function pickMeleeTarget(me, oh, basic) {
     var best = null;
-    oh.list.forEach(function (o) { if (o.ko || o.air || o.float) return; /* v1514: a hero in the air can't be reached by a sword (v1669: nor Zarek, always floating) */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
+    var gNoFort = me.gerbil && (me.owner === 'P' ? opts.gerbFortP : opts.gerbFortA) === false; /* v1672: a gerbil can't climb a hovering / floating ship - no fortress, no deck heroes */
+    oh.list.forEach(function (o) { if (o.ko || o.air || o.float) return; if (gNoFort && !o.infantry) return; /* v1514: a hero in the air can't be reached by a sword (v1669: nor Zarek, always floating) */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
     if (best) return { hero: best };
-    return me.d >= 1 - ARENA_REACH ? { fort: true } : null;
+    return me.d >= 1 - ARENA_REACH && !gNoFort ? { fort: true } : null; /* v1672: gerbils only bite a crawler fortress */
   }
   function planMove(hh, oh) {
     var out = [];
@@ -39309,6 +39334,7 @@ function runArenaBattle(onTick, onDone) {
   if (!arenaOpponent.weapons) { var avgL0 = 0, n0 = 0; Object.keys(arenaOpponent.heroes || {}).forEach(function (k) { avgL0 += arenaOpponent.heroes[k].level || 1; n0++; }); arenaOpponent.weapons = botWeapons(Math.max(1, (n0 ? avgL0 / n0 : 1) * 0.6), fortressTypeOf(arenaOpponent.fortressTech || {})); } /* v962: older saved ladders */
   var KJ = !!arenaOpponent.kaiju; /* v1599: Boss Rush */
   var aiKit = KJ ? { specs: [], shieldPct: 0, salvo: null } : botWeaponsToSim(arenaOpponent.weapons, 1 + (((arenaOpponent.bonus || ZERO_BONUS).atk) || 0) / 100); /* v1190: the bot's own ATK bonus */
+  if (!KJ && arenaOpponent.roster && arenaOpponent.roster.length > 5) arenaOpponent.roster = arenaOpponent.roster.slice(0, 5); /* v1672 */
   var aiStats = KJ ? kaijuAiStats(KAIJU_INF) : arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
   // critSeed: without this, fortressCritRoll(opts.critSeed || "arena", side, burstNo) always fell back to the
   // literal string "arena" — the SAME seed every single real Arena battle. fortressCritRoll is a pure function
@@ -39324,7 +39350,7 @@ function runArenaBattle(onTick, onDone) {
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
-  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), cardMods: cardModsFrom(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), boss: KJ ? kaijuBossCfg() : null, aiCannon: KJ ? false : undefined, maxTicks: KJ ? kaijuTicks() : undefined });
+  var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, gerbFortP: gerbilCanHitFort(arenaAnim.aiFortressSkin || arenaOpponentFortressSkin(arenaOpponent)), gerbFortA: gerbilCanHitFort(fortressSkin()), /* v1672 */ salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), cardMods: cardModsFrom(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), boss: KJ ? kaijuBossCfg() : null, aiCannon: KJ ? false : undefined, maxTicks: KJ ? kaijuTicks() : undefined });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one
@@ -39886,7 +39912,8 @@ function drawArenaFrame(ctx, w, h) {
         cur.x = Math.abs(dW) <= stepW ? wantX : cur.x + Math.sign(dW) * stepW; cur.t = nowW; ixm[ixk] = cur;
         infRunning = Math.abs(wantX - cur.x) > 0.5; infRunFlip = (wantX - cur.x) < 0;
         slot = { x: cur.x, y: slot.y };
-        if (posVis) { infRunning = !!(recD && recD.cur !== recD.prev && !arenaAnim.battleEnded && !(koE.reach && frEff >= 1)); infRunFlip = !isPlayerSide; slot = { x: wantX, y: slot.y }; } // (running stops once he is at the target and the final glide is done — no waiting for the next sim tick)
+        if (posVis) { infRunning = !!(recD && recD.cur !== recD.prev && !arenaAnim.battleEnded && !(koE.reach && frEff >= 1)); infRunFlip = !isPlayerSide; slot = { x: wantX, y: slot.y };
+          if (!koE.ko) { var mAp = arenaMeleeApproach((isPlayerSide ? "p_" : "a_") + key, isPlayerSide, wantX, koE.reach, heroMoveSpeed(key), heroSpriteVisualScale / 100); slot.x = mAp.x; if (mAp.run) { infRunning = true; infRunFlip = mAp.flip; } else if (mAp.hold) infRunning = false; } } /* v1672: run up to an enemy already at the fortress front */ // (running stops once he is at the target and the final glide is done — no waiting for the next sim tick)
         if (ipH >= 1 && !arenaAnim.battleEnded && !HERO_ANIMS[key]) {
           var lunge = Math.abs(Math.sin(performance.now() / 110)) * (isPlayerSide ? 4 : -4);
           slot = { x: slot.x + lunge, y: slot.y };
@@ -40094,13 +40121,18 @@ function drawArenaFrame(ctx, w, h) {
       var mapDx = function (dv) { return dv <= 0.5 ? slot.x + (mX - slot.x) * (dv / 0.5) : mX + (endX - mX) * ((dv - 0.5) / 0.5); };
       var x = mapDx(c.prev) + (mapDx(c.cur) - mapDx(c.prev)) * frD + (isP ? -1 : 1) * (14 + n[c.side] * 10), y = slot.y; n[c.side]++; /* v976: same ground line as the heroes, a step behind the template hero so both stay visible */
       var st = (c.cur !== c.prev && frD < 1 && !arenaAnim.battleEnded) ? "run" : (c.reach && !arenaAnim.battleEnded ? "attack" : "idle");
+      var cAp = arenaMeleeApproach("c_" + kk, isP, x, c.reach, c.g ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(tk), heroSpriteVisualScale / 100); x = cAp.x; if (cAp.run) st = "run"; else if (cAp.hold && st === "run") st = "idle"; /* v1672: run up to an enemy already at the fortress front */
+      var cFlip = cAp.run ? cAp.flip : !isP;
+      if (c.g && !c.reach && c.cur >= 0.97 && c.cur === c.prev && !arenaAnim.battleEnded) { /* v1672: at a fortress gerbils can't bite (not a crawler) - they scamper back and forth */
+        var wT = (performance.now() / 1000 + (n[c.side] % 7) * 0.53) * GERBIL_RUN_PX_PER_SEC / 28, wPh = wT % 2, wU = wPh < 1 ? wPh : 2 - wPh; x -= (isP ? 1 : -1) * 28 * wU * (heroSpriteVisualScale / 100); st = "run"; cFlip = isP ? wPh >= 1 : wPh < 1; }
+      c.sx = x;
       if (c.g) { /* v1672: Death Gerbils - own animated sprite; bites once per second (their attack speed) while in reach */
         var gm = c.vis || (c.vis = {}), gNow = performance.now(), gHs = heroSpriteVisualScale / 100, gdt = gm.lt ? (gNow - gm.lt) / 1000 : 0, gv = (gm.lx != null && gdt > 0 && gdt < 0.2) ? Math.abs(x - gm.lx) / gdt : 0;
         gm.sp = gm.sp == null ? gv : gm.sp + (gv - gm.sp) * Math.min(1, gdt * 8); gm.lx = x; gm.lt = gNow; c.sx = x; c.sy = y + 13; c.right = isP;
         var gWant = st === "run" ? "run" : "idle";
         if (st === "attack") { var gPer = 1000, gSl = Math.floor((gNow + (n[c.side] % 7) * 137) / gPer); if (gm.slot !== gSl && gm.biteT0 == null) { gm.slot = gSl; gWant = "bite"; } }
         var gpA = gerbilPick(gm, gNow, gWant, Math.max(gm.sp, st === "run" ? 20 : 0), gHs, (n[c.side] % 7) * 0.37);
-        var gtA = drawGerbilFrame(ctx, x, y + 13, gpA[0], gpA[1], isP, gHs); if (gtA == null) return;
+        var gtA = drawGerbilFrame(ctx, x, y + 13, gpA[0], gpA[1], !cFlip, gHs); if (gtA == null) return;
         ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - 9, gtA - 6, 18, 4.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - 8, gtA - 5, 16 * Math.max(0, Math.min(1, c.hp / c.max)), 2.5); ctx.restore(); return;
       }
       if (st === "attack" && HERO_ANIMS[tk].rows.attack2) st = heroAttackState(tk, 0.83); /* v1503 */
@@ -40756,6 +40788,7 @@ function renderArenaBattleScreen() {
   var el = document.getElementById("arenaCard");
   if (!el) return;
   if (!arenaOpponent) arenaOpponent = generateArenaOpponent();
+  if (arenaOpponent.roster && arenaOpponent.roster.length > 5) arenaOpponent.roster = arenaOpponent.roster.slice(0, 5); /* v1672: older saved bots can have more than 5 heroes - only 5 take the field, like a player */
   var p = arenaPlayerRosterAndHeroes();
   var KJ = !!arenaOpponent.kaiju; /* v1599: Boss Rush fight */
   el.innerHTML =
