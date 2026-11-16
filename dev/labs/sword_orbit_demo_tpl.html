@@ -51,8 +51,8 @@
     <label for="gstyle"><span>Giant sword look</span><select id="gstyle"><option value="energy">Pure energy (new)</option><option value="crystal">Crystal (first)</option></select></label>
     <label for="mode"><span>Sword pose</span><select id="mode"><option value="up">Upright, turning</option><option value="tan">Along the ring</option></select></label>
     <label for="mv"><span>Movement</span><select id="mv"><option value="off">Still</option><option value="a">A: drifting, idle only</option><option value="b" selected>B: drifting + lean and bend</option></select></label>
-    <label for="lean"><span>Lean <b id="leanV">1.0</b></span><input id="lean" type="range" min="0" max="25" value="10"></label>
-    <label for="bend"><span>Bend <b id="bendV">1.0</b></span><input id="bend" type="range" min="0" max="25" value="10"></label>
+    <label for="lean"><span>Lean <b id="leanV">0.5</b></span><input id="lean" type="range" min="0" max="25" value="5"></label>
+    <label for="bend"><span>Bend <b id="bendV">0.6</b></span><input id="bend" type="range" min="0" max="25" value="6"></label>
     <label class="chk" for="slow"><input id="slow" type="checkbox"> Slow motion</label>
   </div>
   <p class="note"><b>How it would work in the game:</b> the hero is his Atlas idle sheet; the orbit, the flying swords, the giant sword, the impact and the dissolve are all code drawing a few pictures, so it works the same in Conquest and Arena. Close-up zooms the camera on him to inspect the swords.</p>
@@ -68,7 +68,7 @@
   function img(src) { var i = new Image(); i.src = src; return i; }
   var HERO = img(AS.hero), FACE = img(AS.face), EDGE = img(AS.edge), GIANT = img(AS.giant), SHIP = img(AS.ship), BG = img(AS.bg), GAR = img(AS.gareth), HAL = img(AS.halo), SLASH = img(AS.slash), SLASHC = img(AS.slashCel), GIANTE = img(AS.giantE), HM = AS.heroMeta, GM = AS.giantMeta;
 
-  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false, gstyle: "energy", slstyle: "cel", eb: 0.5, mv: "b", lean: 1, bend: 1 };
+  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false, gstyle: "energy", slstyle: "cel", eb: 0.5, mv: "b", lean: 0.5, bend: 0.6 }; /* "realistic" for his very slow drift: ~2.4 deg lean when cruising, ~4 deg bend at most while speeding up / slowing */
   function GIM() { return cfg.gstyle === "energy" ? GIANTE : GIANT; } function GMM() { return cfg.gstyle === "energy" ? AS.giantEMeta : GM; }
   [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1], ["eb", 0.01, 2], ["lean", 0.1, 1], ["bend", 0.1, 1]].forEach(function (c) {
     var el = $(c[0]); el.addEventListener("input", function () { cfg[c[0]] = +el.value * c[1]; $(c[0] + "V").textContent = cfg[c[0]].toFixed(c[2]); if (c[0] === "n") build(); });
