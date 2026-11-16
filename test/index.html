@@ -2096,6 +2096,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .skill-icon-wrap { position:relative; width:36px; height:36px; border-radius:50%; border:2px solid #f0c95f; overflow:hidden; background:#1a1410; display:flex; align-items:center; justify-content:center; font-size:16px; }
   .skillbar-8heroes .skill-icon-wrap { width:29px; height:29px; font-size:12px; }
   #idleSkillbar .skill-icon-wrap, .idle-header { will-change:transform; } /* v1583: own layers - the spinning cooldown ring and changing numbers repaint only themselves, not the panel / Blue frame art around them */
+  .skill-slot { position:relative; } .skill-slot .cd2 { position:absolute; left:50%; transform:translateX(-50%); top:39px; width:28px; height:4px; margin:0; border-radius:2px; background:rgba(0,0,0,.7); border:1px solid #3c5a46; overflow:hidden; } .skill-slot .cd2 i { display:block; height:100%; width:0; background:#7dff8a; } .skill-slot .cd2.ready i { box-shadow:0 0 4px #9dffa8; } .skillbar-8heroes .skill-slot .cd2 { top:31px; width:24px; } /* v1670: a hero's 2nd skill timer (Zarek's Blade Aegis) */
   .skill-icon-wrap .cd-overlay { position:absolute; inset:0; background:conic-gradient(rgba(0,0,0,.82) var(--pct,0deg), transparent var(--pct,0deg)); }
   .skill-icon-wrap .cd-text { position:relative; z-index:2; font-size:10px; font-weight:800; color:#fff; text-shadow:0 1px 2px #000; }
   .skillbar-8heroes .skill-icon-wrap .cd-text { font-size:7.5px; }
@@ -6744,7 +6745,8 @@ var HERO_DEFS = {
   zarek: { name: "Zarek", title: "The Blade Architect", floats: true /* v1669 (Harley): he hovers high, off the fortress - melee and ground skills can't reach him */, class: "archer", dualClass: "infantry", icon: "🗡️", rarity: "Legendary", basicAnyTarget: true, noRangeLimit: true, /* v1654 (Harley 16 Nov): built - a very tall floating tech-mage who BUILDS weapons out of green energy. Caster for now (Harley may make him Infantry later: the crescent swipe is ready in dev/labs/sword_orbit_demo.html). Same base stats as other heroes; basic = sword volley every 2 s for double damage (COMBAT_TIMING.heroAttackSec). */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Colossus Blade", icon: "🗡️💥", kind: "active", aoeAll: true, aoeDelay: 1.3, cooldown: 13, pctByLevel: [0.12, 0.15, 0.19, 0.23, 0.27], desc: "Every 13s, his orbiting blades shoot into the sky - then a colossal energy sword crashes down onto the enemy side and sticks in the ground. The impact hits every enemy, fortress included. Projection Wall shields ranged heroes from it." }
+      { name: "Colossus Blade", icon: "🗡️💥", kind: "active", aoeAll: true, aoeDelay: 1.3, cooldown: 13, pctByLevel: [0.12, 0.15, 0.19, 0.23, 0.27], desc: "Every 13s, his orbiting blades shoot into the sky - then a colossal energy sword crashes down onto the enemy side and sticks in the ground. The impact hits every enemy, fortress included. Projection Wall shields ranged heroes from it." },
+      { name: "Blade Aegis", icon: "🗡️🛡️", kind: "active", support: "aegis", unlockStars: 1, cooldown: 8, firstCd: 5, aegisPctByLevel: [0.15, 0.175, 0.20, 0.225, 0.25], desc: "Unlocks at 1★. At 5s, then every 8s, he sends a blade to every other hero; it becomes an energy shield worth 15% of that hero's max HP (25% at Lv 5). Doesn't stack." } /* v1670 (Harley): Torvald's Guard Stance for heroes - its own timer (2nd skill) */
     ],
     expeditionSkills: [
       { name: "Blade Sight", icon: "🗡️", kind: "passive", desc: "Boosts Caster ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
@@ -9291,6 +9293,8 @@ function createGame(opts) {
     if (e.hp > mx) e.hp = mx;
     return e;
   }
+  /* v1670: a hero's 2nd skill (Zarek's Blade Aegis) - runs on its own timer; locked until the hero has unlockStars stars */
+  function heroSkill2(key) { var d = HERO_DEFS[key], h = state.heroes[key], s2 = d && d.conquestSkills && d.conquestSkills[1]; if (!s2 || s2.kind !== "active" || !s2.support || s2.disabled || !h || !h.owned) return null; if ((h.stars || 0) < (s2.unlockStars || 0)) return null; return s2; }
   function idleHeroIsKo(key) { var e = state.idle.heroHp && state.idle.heroHp[key]; return !!(e && e.ko); }
   function idleResetHeroHp() { state.idle.heroHp = {}; state.idle.clones = null; state.idle.gerbT = null; state.idle.stormQ = null; state.idle.cardInvulUsed = false; state.idle.cardInvulT = 0; state.idle.cardFluxUsed = false; /* v985 */ state.idle.salvoBurstNo = 0; idleReseedCombat(); } /* runs at the start of every level attempt */
   function idleMeleeTargetHero() {
@@ -9317,7 +9321,7 @@ function createGame(opts) {
   function idleRangedHitGoesToHero(e) { var pc = HERO_KO_CFG.rangedPct / 100, n = e.hitCount || 0; return pc > 0 && Math.floor((n + 1) * pc + 1e-9) > Math.floor(n * pc + 1e-9); }
   function idleKoHero(key) {
     var e = idleHeroEntry(key);
-    e.hp = 0; e.ko = true; e.reviveT = HERO_KO_CFG.reviveSec;
+    e.hp = 0; e.ko = true; e.reviveT = HERO_KO_CFG.reviveSec; e.sh = 0;
     if (state.idle.limit) { var Lk = idleLimitSkill(key); if (!(Lk && Lk.sk.keepOnKo)) state.idle.limit[key] = 0; } /* v954: a KO empties his limit bar - v1609: not Pressure Build (keepOnKo) */
     if (!state.idle.heroKoCount) state.idle.heroKoCount = {};
     state.idle.heroKoCount[key] = (state.idle.heroKoCount[key] || 0) + 1;
@@ -10136,6 +10140,18 @@ function createGame(opts) {
     // effect with real range limits despite being archer/cavalry). Everyone else just needs the
     // target to have arrived, any distance.
     if (state.idle.oathT > 0) { state.idle.oathT -= dt; if (state.idle.oathT <= 0) { state.idle.oathT = 0; state.idle.oathPct = 0; } } /* v1413: Crimson Oath timer */
+    if (!state.heroCooldowns2) state.heroCooldowns2 = {};
+    state.conquestRoster.forEach(function (key) { /* v1670: 2nd skills (Blade Aegis) */
+      var s2 = heroSkill2(key); if (!s2) return;
+      if (idleHeroIsKo(key)) { state.heroCooldowns2[key] = s2.cooldown; return; }
+      if (state.heroCooldowns2[key] == null) state.heroCooldowns2[key] = s2.firstCd || s2.cooldown;
+      state.heroCooldowns2[key] -= dt; if (state.heroCooldowns2[key] > 0) return;
+      state.heroCooldowns2[key] += s2.cooldown;
+      if (s2.support === "aegis") { var pctA = ksPickL(s2.aegisPctByLevel, heroSkillLevel(key, "conquest", 1));
+        state.conquestRoster.forEach(function (ak) { if (ak === key || !state.heroes[ak] || !state.heroes[ak].owned || idleHeroIsKo(ak) || (HERO_DEFS[ak] && HERO_DEFS[ak].floats)) return;
+          var ae = idleHeroEntry(ak), amt = idleHeroMaxHp(ak) * pctA; ae.sh = Math.max(ae.sh || 0, amt); ae.shMax = ae.sh; });
+        state.idle.aegisCasts = (state.idle.aegisCasts || 0) + 1; }
+    });
     state.conquestRoster.forEach(function (key) {
       var def = HERO_DEFS[key], h = state.heroes[key];
       if (!def || !h || !h.owned || !def.conquestSkills) return;
@@ -11039,7 +11055,9 @@ function createGame(opts) {
       var dgP = heroDodgePct(tgtHeroKey, state.heroes[tgtHeroKey]); if (dgP > 0) state.idle.dodgeTries = (state.idle.dodgeTries || 0) + 1;
       var dgC = state.idle.dodgeN || (state.idle.dodgeN = {}), dgE = dgC[tgtHeroKey] || (dgC[tgtHeroKey] = {}); /* counter kept across level attempts, so short fights still get their share */
       if (dodgeRoll(dgE, dgP)) { state.idle.dodges = (state.idle.dodges || 0) + 1; return; } /* v992: Shadow Step */
-      tgtEnt.hp -= hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type) * (ranged && type !== "boss" ? heroRangedTakeMult(tgtHeroKey, state.heroes[tgtHeroKey]) : 1); /* v1521: Stone Shell vs ranged shots. bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
+      var hDmg = hitDmg * idleHeroDefMult(tgtHeroKey, idleEnemyAtk(type)) * idleHeroHitMult(type) * (ranged && type !== "boss" ? heroRangedTakeMult(tgtHeroKey, state.heroes[tgtHeroKey]) : 1);
+      if (tgtEnt.sh > 0) { var aSoak = Math.min(tgtEnt.sh, hDmg); tgtEnt.sh -= aSoak; hDmg -= aSoak; state.idle.aegisSoak = (state.idle.aegisSoak || 0) + aSoak; } /* v1670: Blade Aegis shield first */
+      tgtEnt.hp -= hDmg; /* v1521: Stone Shell vs ranged shots. bossVsHero: a Conquest BOSS stat (how hard its shot hits a hero) - not a hero rule, Arena has no bosses */
       idleLimitAdd(tgtHeroKey, true);
       if (tgtEnt.hp <= 0) idleKoHero(tgtHeroKey);
       return;
@@ -11977,7 +11995,7 @@ function createGame(opts) {
     equippedEsperBonusHp: equippedEsperBonusHp,
     getIdleSpawnInterval: getIdleSpawnInterval, setIdleSpawnInterval: setIdleSpawnInterval,
     equipConquestHero: equipConquestHero, unequipConquestHero: unequipConquestHero,
-    idlePlayerMaxHp: idlePlayerMaxHp, idleClampPlayerHp: idleClampPlayerHp, heroKoCfg: HERO_KO_CFG, idleHeroMaxHp: idleHeroMaxHp, idleHeroEntry: idleHeroEntry, idleHeroIsKo: idleHeroIsKo, idleKoHero: idleKoHero, idleReviveHero: idleReviveHero, idleResetHeroHp: idleResetHeroHp, idleEnemiesPerLevel: idleEnemiesPerLevel,
+    idlePlayerMaxHp: idlePlayerMaxHp, idleClampPlayerHp: idleClampPlayerHp, heroKoCfg: HERO_KO_CFG, idleHeroMaxHp: idleHeroMaxHp, idleHeroEntry: idleHeroEntry, heroSkill2: heroSkill2, idleHeroIsKo: idleHeroIsKo, idleKoHero: idleKoHero, idleReviveHero: idleReviveHero, idleResetHeroHp: idleResetHeroHp, idleEnemiesPerLevel: idleEnemiesPerLevel,
     idleRangedPower: idleRangedPower, idleMeleePower: idleMeleePower,
     heroAttackSecFor: function (k) { return heroAttackSec(k); }, idleAttackerDamage: idleAttackerDamage, idleHeroBaseAtk: idleHeroBaseAtk, idleHeroCardAtk: idleHeroCardAtk, idleHeroDefMult: idleHeroDefMult, idleHeroDmgRed: idleHeroDmgRed, idleAttackerHitDamage: idleAttackerHitDamage, idleAttackerIsMelee: idleAttackerIsMelee,
     idleLevelLabel: function () { return idleStageCh() + "-" + idleStageLv(); }, idleBestLabel: function () { return state.idle.chapter + "-" + state.idle.levelNum; },
@@ -14205,7 +14223,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1669"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1670"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29221,6 +29239,41 @@ function zkDrawConquest(ctx, w, h, vis, hScale) {
   if (Z.sk && Z.sk.tx != null && performance.now() - Z.sk.t0 >= Z.sk.land) Z.sk.tx -= dOff;
   zkDraw(ctx, idleAnim, "cq", hScale, false, { x: Z.sk && Z.sk.tx != null ? Z.sk.tx : tx, ground: groundYFor(h) + 7 * hScale, rocks: zkRockPal(game.idleEnvironment()) });
 }
+/* ---- v1670: Zarek's Blade Aegis visuals (Conquest + Arena). A blade flies from Zarek to each shielded hero, spins and melts into a round
+   green energy shield with plasma-lamp arcs inside (back layer behind the hero, rim + sheen in front). It shrinks away when the shield is used up.
+   store = idleAnim / arenaAnim; positions come from the frame before (heroVis / heroScreen) - one frame behind is invisible. */
+var AEGIS_R = { aurek: 0.40, lyra: 0.43, gareth: 0.48, ironlily: 0.45 }; /* shield radius as a share of the hero's drawn height (Harley: snug round the head) */
+function aegisR(key, hs) { var a = HERO_ANIMS[key], H = a ? a.dispH * (a.sizeMul || 1) * hs : 30 * hs; return Math.max(12 * hs, H * (AEGIS_R[key] || 0.5)); }
+function aegisPlasma(ctx, cx, cy, R, s, seed) { if (s < 0.35) return; var aS = Math.min(1, (s - 0.35) / 0.4), T = performance.now() / 1000, bucket = Math.floor(T * 16);
+  var rnd = function (n) { var x = Math.sin((bucket * 7.13 + n * 13.7 + seed * 91.3) * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  var core = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.32); core.addColorStop(0, "rgba(200,255,190," + (0.5 * aS).toFixed(2) + ")"); core.addColorStop(1, "rgba(90,255,120,0)");
+  ctx.fillStyle = core; ctx.beginPath(); ctx.arc(cx, cy, R * 0.32, 0, Math.PI * 2); ctx.fill();
+  for (var f = 0; f < 5; f++) { var ang = f * 1.2566 + Math.sin(T * (0.7 + f * 0.13) + f * 2.1 + seed) * 0.9 + T * 0.25, ex = cx + Math.cos(ang) * R * 0.97, ey = cy + Math.sin(ang) * R * 0.97, nx = -Math.sin(ang), ny = Math.cos(ang), fl = (0.55 + 0.45 * rnd(f + 50)) * aS;
+    ctx.beginPath(); for (var k = 0; k <= 7; k++) { var u = k / 7, j = (k && k < 7) ? (rnd(f * 10 + k) - 0.5) * R * 0.22 * Math.sin(u * Math.PI) : 0, px = cx + (ex - cx) * u + nx * j, py = cy + (ey - cy) * u + ny * j; if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
+    ctx.strokeStyle = "rgba(90,255,110," + (0.18 * fl).toFixed(2) + ")"; ctx.lineWidth = 2.6; ctx.stroke(); ctx.strokeStyle = "rgba(90,255,110," + (0.5 * fl).toFixed(2) + ")"; ctx.lineWidth = 1.1; ctx.stroke(); ctx.strokeStyle = "rgba(200,255,175," + (0.9 * fl).toFixed(2) + ")"; ctx.lineWidth = 0.45; ctx.stroke();
+    ctx.fillStyle = "rgba(210,255,200," + (0.55 * fl).toFixed(2) + ")"; ctx.beginPath(); ctx.arc(ex, ey, 1.6, 0, Math.PI * 2); ctx.fill(); } }
+function aegisBubble(ctx, cx, feet, R0, s, back, seed, frac) { if (s <= 0.01) return; var T = performance.now() / 1000, R = R0 * s * (1 + Math.sin(T * 3.1 + seed) * 0.025), cy = feet + 3 - R0, lv = 0.5 + 0.5 * frac;
+  ctx.save(); ctx.globalCompositeOperation = "lighter";
+  if (back) { var gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, "rgba(90,255,120,0.04)"); gr.addColorStop(0.75, "rgba(90,255,120," + (0.10 * lv).toFixed(3) + ")"); gr.addColorStop(1, "rgba(150,255,150," + (0.28 * lv).toFixed(3) + ")");
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); aegisPlasma(ctx, cx, cy, R, s * lv, seed); ctx.restore(); return; }
+  ctx.strokeStyle = "rgba(170,255,150," + ((0.55 + 0.15 * Math.sin(T * 5 + seed)) * lv).toFixed(2) + ")"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+  var sw = T * 2.4 + seed * 1.3; ctx.strokeStyle = "rgba(230,255,210," + (0.75 * lv).toFixed(2) + ")"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx, cy, R, sw, sw + 0.7); ctx.stroke();
+  ctx.strokeStyle = "rgba(220,255,220,0.2)"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(cx - R * 0.1, cy - R * 0.1, R * 0.74, Math.PI * 1.05, Math.PI * 1.45); ctx.stroke();
+  ctx.restore(); }
+/* one call per pass: back = before the heroes, front = after them (+ the flying blades). list = [{ k: store key, key: hero, x, feet, hs, frac }] */
+function aegisPass(ctx, store, list, back) { var A = store.aegis || (store.aegis = { st: {}, fly: [] }), now = performance.now(), dt = Math.min(0.1, Math.max(0, (now - (A.t || now)) / 1000)); if (!back) A.t = now;
+  list.forEach(function (o, i) { var st = A.st[o.k] || (A.st[o.k] = { v: 0, arr: 0 }), R = aegisR(o.key, o.hs), seed = (o.key.charCodeAt(0) + o.key.length) % 7;
+    if (!back) { var want = o.frac > 0.001 && now >= st.arr; if (want) { if (st.v < 1) { st.m = (st.m || 0) + dt / 0.32; st.v = Math.min(1, st.m * 1.15); } } else { st.m = 0; st.v = Math.max(0, st.v - dt / 0.25); } }
+    var sc = st.v < 1 && st.m > 0 ? st.v * (1 + 0.12 * Math.sin(Math.min(1, st.m) * Math.PI)) : st.v;
+    aegisBubble(ctx, o.x, o.feet, R, sc, back, seed, Math.max(0.25, o.frac));
+    if (!back && st.m > 0 && st.m < 1) { var mm = st.m; zkSword(ctx, o.x, o.feet + 3 - R - R * 0.1, mm * 5, ZK.len * o.hs * (1 - mm), now / 330 + mm * 6, 1 - mm * 0.5, false); } });
+  if (back) return;
+  A.fly = A.fly.filter(function (f) { var k = (now - f.t0) / 400; if (k < 0) return true; if (k >= 1) return false; var tg = list.filter(function (o) { return o.k === f.k; })[0]; if (!tg) return false;
+    var R = aegisR(tg.key, tg.hs), tx = tg.x, ty = tg.feet + 3 - R - R * 0.1, e = k * k * (3 - 2 * k);
+    zkSword(ctx, f.x + (tx - f.x) * e, f.y + (ty - f.y) * e - Math.sin(k * Math.PI) * 18 * tg.hs, 0, ZK.len * 1.05 * tg.hs, now / 330, Math.min(1, k * 3), false); return true; }); }
+/* a cast: blades leave Zarek (Z = his zk state) for every hero in `keys` */
+function aegisCast(store, Z, keys) { var A = store.aegis || (store.aegis = { st: {}, fly: [] }), now = performance.now(); if (!Z || Z.x == null) return;
+  keys.forEach(function (k, i) { var st = A.st[k] || (A.st[k] = { v: 0, arr: 0 }), t0 = now + i * 120; if (st.v > 0.5) { st.arr = 0; return; } st.arr = t0 + 400; st.m = 0; st.v = 0; A.fly.push({ t0: t0, k: k, x: Z.x, y: Z.chest }); }); }
 function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
   if (key === "zarek" && HERO_ANIMS.zarek) { var zvis = idleAnim.heroVis[key] || idleSquadSlotPos(w, h, i, key); zkDrawConquest(ctx, w, h, zvis, heroSpriteVisualScale / 100); return; } /* v1654 */
   if (key === "hanzo") drawHanzoBackFx(ctx, heroSpriteVisualScale / 100);
@@ -30572,6 +30625,9 @@ function drawIdleAnim(ctx, w, h) {
     drawSkinPart(ctx, sk, "back", w * 0.16 - bw / 2, groundY - bh + 14 - fortLift(sk), bw, bh, false, walkerCarK(sk)); ctx.restore();
     if (sk.anim.rig) { var _pdW = game.state.idle.pending; walkerCar.v = (!game.idleIsBossLevel() && !(_pdW && _pdW.type === "defeat")) ? 55 * (idleAnim.scrollK == null ? 1 : idleAnim.scrollK) / (sk.anim.rig.drumR * bw / 1000) : 0; walkerCar.gv = walkerCar.v * sk.anim.rig.drumR; walkerCar.vAt = performance.now() / 1000; } /* v1543: gv = ground speed in hull px/s - the legs step exactly that far */ /* v1542: car-mode wheels roll at the scenery's speed */
   })();
+  var aegL = []; try { (game.state.conquestRoster || []).slice(0, 5).forEach(function (k) { var v = idleAnim.heroVis[k], en = game.state.idle.heroHp && game.state.idle.heroHp[k]; if (!v || HERO_DEFS[k].floats || game.idleHeroIsKo(k)) return; aegL.push({ k: k, key: k, x: v.x, feet: v.y + 12 * (heroSpriteVisualScale / 100), hs: heroSpriteVisualScale / 100, frac: en && en.sh > 0 && en.shMax ? en.sh / en.shMax : 0 }); });
+    var aegN = game.state.idle.aegisCasts || 0; if (idleAnim.aegisN == null) idleAnim.aegisN = aegN; if (aegN !== idleAnim.aegisN) { idleAnim.aegisN = aegN; aegisCast(idleAnim, idleAnim.zk && idleAnim.zk.cq, aegL.filter(function (o) { return o.frac > 0; }).map(function (o) { return o.k; })); }
+    aegisPass(ctx, idleAnim, aegL, true); } catch (eAg) {} /* v1670: Blade Aegis, back layer */
   earlyRoster.slice(0, 5).forEach(function (key, i) {
     if (HERO_DEFS[key].class === "infantry") return;
     // TEMP VISUAL TEST (per user request) — no idle bob for heroes riding
@@ -30981,6 +31037,7 @@ function drawIdleAnim(ctx, w, h) {
   // fireball (see the skillShots update in stepIdleAnim).
   drawSkillEmbers(ctx, idleAnim.skillEmbers, sScale);
   drawHanzoStars(ctx, sScale); /* v1502 */
+  try { aegisPass(ctx, idleAnim, aegL, false); } catch (eAg2) {} /* v1670: Blade Aegis, front layer + flying blades */
   try { zkLate(ctx, idleAnim, w, h); } catch (eZk) {} /* v1654: Zarek's giant sword + effects */
   drawHeroPillars(ctx, heroSpriteVisualScale / 100, idleAnim); /* v1506: Aurek's fire pillars */
   drawHeroSkyFx(ctx, heroSpriteVisualScale / 100, idleAnim, h); /* v1508: crystal rain / orbital beams */
@@ -32916,7 +32973,7 @@ function renderIdleSkillbar() {
   /* v1318 audit: rebuilt every 1 s tick while on Conquest (7 nodes/s), throwing away the buttons mid-tap. The live parts (cooldown ring,
      countdown text, ready glow) are updated per frame by updateIdleSkillbarDom via cached nodes, so a rebuild is only needed when the
      bar's static content changes: the roster, the size setting, the timer-text setting, or a skill icon. */
-  var sig = roster.join(",") + "|" + skillbarSizeMode + "|" + (skillTimerTextEnabled ? 1 : 0) + (game.state.idle.skillAuto !== false ? "A" : "a") + "|" + roster.map(function (k) { var ic = getSkillIcon(k); return ic ? ic.length : 0; }).join(",");
+  var sig = roster.map(function (k) { return game.heroSkill2(k) ? k + "+" : k; }).join(",") + "|" + skillbarSizeMode + "|" + (skillTimerTextEnabled ? 1 : 0) + (game.state.idle.skillAuto !== false ? "A" : "a") + "|" + roster.map(function (k) { var ic = getSkillIcon(k); return ic ? ic.length : 0; }).join(",");
   if (el._sig === sig) return; el._sig = sig;
   el.className = "idle-skillbar" + (skillbarSizeMode === "8heroes" ? " skillbar-8heroes" : "");
   var notchHtml = '<div class="skillbar-notch"></div>';
@@ -32948,6 +33005,7 @@ function renderIdleSkillbar() {
     var iconHtml = iconSrc ? '<img src="' + iconSrc + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">' : "";
     slot.innerHTML =
       '<div class="skill-icon-wrap' + (ready ? ' ready' : '') + '">' + iconHtml + '<div class="cd-overlay" style="--pct:' + deg + 'deg;"></div><div class="cd-text">' + (skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "") + '</div></div>' +
+      (game.heroSkill2(key) ? '<div class="cd2" title="' + game.heroSkill2(key).name + '"><i></i></div>' : '') /* v1670 */ +
       '<div class="skill-hero-tag">' + def.name + '</div>' /* v822: no emoji stand-in beside the name */;
     el.appendChild(slot);
     slot.onclick = function () { if (game.idleCastSkill(key)) { var w = slot.querySelector(".skill-icon-wrap"); if (w) { w.classList.add("cast"); setTimeout(function () { w.classList.remove("cast"); }, 350); } } };
@@ -32959,7 +33017,8 @@ function renderIdleSkillbar() {
     idleAnim.skillbarNodes[key] = {
       wrap: slot.querySelector(".skill-icon-wrap"),
       overlay: slot.querySelector(".cd-overlay"),
-      text: slot.querySelector(".cd-text")
+      text: slot.querySelector(".cd-text"),
+      cd2: slot.querySelector(".cd2")
     };
   });
   appendSkillPlaceholders(el, roster.length);
@@ -32993,6 +33052,8 @@ function updateIdleSkillbarDom() {
     if (nodes._ready !== ready) { nodes._ready = ready; nodes.wrap.classList.toggle("ready", ready); } /* v1583: only on change */
     if (nodes._deg !== deg) { nodes._deg = deg; nodes.overlay.style.setProperty("--pct", deg + "deg"); }
     if (nodes.text) setTxt(nodes.text, skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "");
+    if (nodes.cd2) { var s2 = game.heroSkill2(key), r2 = s2 ? (game.state.heroCooldowns2 && game.state.heroCooldowns2[key] != null ? Math.max(0, game.state.heroCooldowns2[key]) : (s2.firstCd || s2.cooldown)) : 0, f2 = s2 ? Math.round(100 * (1 - r2 / s2.cooldown)) : 0; /* v1670: fills up toward the next Blade Aegis */
+      if (nodes._f2 !== f2) { nodes._f2 = f2; nodes.cd2.firstChild.style.width = Math.max(0, Math.min(100, f2)) + "%"; nodes.cd2.classList.toggle("ready", f2 >= 97); } }
   });
 }
 
@@ -38260,7 +38321,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
       if (skill.kind === "passive" && skill.effectType === "conquestDamageMult") dmgMultSum += lvl * skill.perLevel;
-      if (skill.kind === "active" && skill.support && !skill.disabled) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel || skill.buffPctByLevel)[Math.min(5, lvl) - 1] || 0, sec: skill.buffSec || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
+      if (skill.kind === "active" && skill.support && !skill.disabled && !((h.stars || 0) < (skill.unlockStars || 0))) { var _ow = def.conquestSkills[2], _ra = def.conquestSkills[1]; supportsRaw.push({ key: key, kind: skill.support, cooldown: skill.cooldown, first: skill.firstCd || skill.cooldown, pct: (skill.healPctByLevel || skill.guardPctByLevel || skill.buffPctByLevel || skill.aegisPctByLevel)[Math.min(5, lvl) - 1] || 0, sec: skill.buffSec || 0, ward: (skill.support === "heal" && _ow && _ow.effectType === "overhealWard") ? _ow.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[2]) || 1) : 0, rally: (skill.support === "heal" && _ra && _ra.effectType === "rally") ? _ra.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0 }); }
       if (skill.kind === "limit" && !skill.disabled) limitsRaw.push({ key: key, skill: skill, lvl: lvl }); /* v954: Death Strike - same numbers as Conquest (v1612: a switched-off limit skill does nothing) */
       if (skill.kind === "active" && !skill.support && !skill.disabled) activesRaw.push({ key: key, name: skill.name, icon: skill.icon, cooldown: skillCdAt(skill, lvl), skill: skill, lvl: lvl, requiresClose: isInfantry && !skill.aoeAll && !skill.dive, aoe: !!skill.aoeAll, /* v1514: a dive needs no reach - he flies to the target */ /* v992: Shuriken Storm needs no reach. Kessa's Arc Burst can hit the enemy fortress, so only melee (infantry) skills wait for engagement */ visualStyle: skill.visualStyle });
     });
@@ -38422,7 +38483,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   /* v1499: Spotter's Mark - each side's cannon bullets mark the side they hit (up to cap; super bursts lay superMarks each); that side's Pip's next hit spends them */
   var spotOnA = 0, spotOnP = 0; function spotMul(sd, id) { if (id !== 'pip') return 1; var st = sd === 'P' ? playerStats : aiStats; if (!st.spot) return 1; var m = sd === 'P' ? spotOnA : spotOnP; if (!m) return 1; if (sd === 'P') spotOnA = 0; else spotOnP = 0; return 1 + m * st.spot.pct; }
   var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = [], waveQ = [], diveQ = []; /* v1514: Caelum's Skybreaker Slam in flight */ /* v1507: rolling eruptions on the ground */ /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
-  var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {}, pGuardMax = 0, aGuardMax = 0, pGuardN = 0, aGuardN = 0; /* v1667: size of the last guard shield, for its little bar */
+  var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {}, pGuardMax = 0, aGuardMax = 0, pGuardN = 0, aGuardN = 0, pAegisN = 0, aAegisN = 0; /* v1667: size of the last guard shield, for its little bar */
   (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first * cardCdMul('P'); }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first * cardCdMul('A'); }); /* v1523: first cast gets the cooldown bonus too (Conquest does) */
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
   // COMBAT_TIMING / skill / weapon numbers Conquest uses. When off, the old tick-counted behaviour (skills' seconds read as ticks, 3-tick basic attacks).
@@ -38489,17 +38550,19 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var staggerSeed = String(opts.critSeed || 'arena'), staggerMemo = {}; /* v969: each attacker's first-swing offset depends only on the battle seed + who he is (droids by number), not on which side he is on */
   function staggerOf(id) { var k = String(id).replace(/^droid[PA]/, 'droid'); if (staggerMemo[k] == null) staggerMemo[k] = worldPvpSeededRng(staggerSeed + '|' + k)(); return staggerMemo[k]; }
   function isKo(hh, id) { var e = hh && hh.by[id]; return !!(e && e.ko && e.koTick !== tick); }
-  function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; }
+  function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; e.sh = 0; }
   function withKoPos(me, fn) { if (!me || !(me.ko && me.koTick === tick)) return fn(); var d0 = me.d; me.d = me.koD; try { return fn(); } finally { me.d = d0; } }
   function tickRevive(hh) { if (!hh) return; hh.list.forEach(function (e) { if (e.ko && e.droid) { e.dead = true; return; } if (e.ko) { e.reviveT -= dtS; if (e.reviveT <= 0) { e.ko = false; e.reviveT = 0; e.hp = e.max; } } }); }
-  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null, dg: e.dodges || 0, dv: e.air ? { t: e.diveTgt, at: e.diveAt - tick } : null }; }) : null; } /* v1514: dv = Caelum in the air (target id or 'fort', ticks to impact) */ /* v1503: dg = dodges so far (visual only - Shadow Step after-image) */
+  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null, sh: e.sh > 0.5 && e.shMax ? e.sh / e.shMax : 0 /* v1670 Blade Aegis left */, dg: e.dodges || 0, dv: e.air ? { t: e.diveTgt, at: e.diveAt - tick } : null }; }) : null; } /* v1514: dv = Caelum in the air (target id or 'fort', ticks to impact) */ /* v1503: dg = dodges so far (visual only - Shadow Step after-image) */
   function heroHitTaken(e) { if (e.limMax && !e.ko) e.lim = Math.min(e.limMax, e.lim + e.limTaken); if (e.ko && !e.limKeep) e.lim = 0; } /* v1609: Pressure Build keeps its steam through a KO */ /* v954: every hit a hero takes fills his limit bar (Death Strike), a KO empties it - same as Conquest */
   // Applies `dmg` (already after armor) to the first standing infantry heroes; returns what is left over for the fortress.
+  var aegisSoak = 0; /* v1670: Blade Aegis - a hero's shield soaks his damage first */
+  function aegisTake(e, d) { if (!(e.sh > 0) || !(d > 0)) return d; var k = Math.min(e.sh, d); e.sh -= k; aegisSoak += k; return d - k; }
   function hitHeroes(hh, dmg) {
     if (!hh || dmg <= 0) return dmg;
     for (var i = 0; i < hh.list.length && dmg > 0; i++) {
       var e = hh.list[i]; if (!e.infantry || e.ko || e.air) continue; /* v1514: not a hero in the air */
-      var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1) * (e.rt != null ? e.rt : 1) /* v1521: the ranged share is ranged damage - Stone Shell */, take = Math.min(e.hp, dmg * dm); e.hp -= take; dmg -= take / dm;
+      var dm = defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1) * (e.rt != null ? e.rt : 1) /* v1521: the ranged share is ranged damage - Stone Shell */, rawT = dmg * dm, skT = Math.min(e.sh || 0, rawT), take = Math.min(e.hp, rawT - skT); if (skT > 0) { e.sh -= skT; aegisSoak += skT; } e.hp -= take; take += skT; /* v1670: Blade Aegis first */ dmg -= take / dm;
       if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; }
       heroHitTaken(e);
     }
@@ -38552,13 +38615,13 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function diveStart(sd, a, v) { var mine = sd === 'P' ? pHH : aHH, me = mine && mine.by[a.key], q = { at: tick + Math.max(1, Math.round(a.dive.impact / dtS)), sd: sd, key: a.key, name: a.name, v: v, tgt: diveTarget(sd === 'P' ? aHH : pHH) };
     diveQ.push(q); if (me) { me.air = true; me.diveTgt = q.tgt; me.diveAt = q.at; } }
   function aoeHit(oh, oppStats, dmg, wallUp) { var blocked = 0; if (!oh) return 0; oh.list.forEach(function (o) { if (o.ko || o.dead) return; if (wallUp && !o.infantry) { blocked += dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } /* v993: Projection Wall shields ranged heroes; v1195: what it blocks is counted for Mirror Wall */ if (dodgePort(o)) return;
-    o.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
+    o.hp -= aegisTake(o, dmg * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1));
     if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); }); return blocked; }
   function meleeHit(hh, oh, oppStats, id, dmg, tag) {
     var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh, !tag); }) : null; /* no tag = a basic attack */
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
-    var e = t.hero; if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1);
+    var e = t.hero; if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= aegisTake(e, dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1));
     if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     heroHitTaken(e);
     return false;
@@ -38583,7 +38646,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     map[tag + id] = best.id;
     if (dodgePort(best)) return false; /* v992: Shadow Step */
     var SX = oh === aHH ? FXS.A : FXS.P, fR = 1 - (SX.orbit || 0); SX.inst.forEach(function (i) { if (i.k === 'dome' && i.up > 0) fR *= 1 - (i.red || 0); }); /* v1193 (audit item 14): Orbit + Dome also cut ranged hits on heroes, like Conquest */
-    best.hp -= dmg * fR * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1) * (best.rt != null ? best.rt : 1); /* v1521: Stone Shell */
+    best.hp -= aegisTake(best, dmg * fR * (oppStats.dmgTakenMult || 1) * defReduce(best.refA, best.def) * (koCfg.heroDmgMult || 1) * (best.rt != null ? best.rt : 1)); /* v1521: Stone Shell */
     if (best.hp <= 1e-9) { koMark(best); best.hp = 0; best.ko = true; best.reviveT = koCfg.reviveSec; best.kos++; best.d = 0; }
     heroHitTaken(best);
     return false;
@@ -38603,7 +38666,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     } else caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry && !o.air; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n);
     caught.forEach(function (o) {
       if (dodgePort(o)) return;
-      o.hp -= dmg * a.splash.pct * fR * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1) * (o.rt != null ? o.rt : 1); /* v1521 */
+      o.hp -= aegisTake(o, dmg * a.splash.pct * fR * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1) * (o.rt != null ? o.rt : 1)); /* v1521 */
       if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; kos++; }
       heroHitTaken(o);
     });
@@ -38646,7 +38709,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         else if (bKind === "stomp") { bossAct = bKind; bossT.stomp = BOSS.stompEvery || 10; bossT.busy = 2.1; bossT.blast = Math.max(bossT.blast, 2.4); bossQ.push({ at: tick + Math.max(1, Math.round(1.45 / dtS)), heroes: BOSS.stompHero || 0 }); bossQ.push({ at: tick + Math.max(1, Math.round(1.9 / dtS)), fort: BOSS.stomp || 0 }); } }
       for (var bqi = bossQ.length - 1; bqi >= 0; bqi--) { if (bossQ[bqi].at > tick) continue; var bq = bossQ.splice(bqi, 1)[0];
         if (bq.fort) bossFort += bq.fort * bossM;
-        if (bq.heroes && pHH) pHH.list.forEach(function (e) { if (!e.infantry || e.ko || e.air || e.dead) return; e.hp -= bq.heroes * bossM; if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; } heroHitTaken(e); }); }
+        if (bq.heroes && pHH) pHH.list.forEach(function (e) { if (!e.infantry || e.ko || e.air || e.dead) return; e.hp -= aegisTake(e, bq.heroes * bossM); if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; } heroHitTaken(e); }); }
     }
     if (posMode) {
       var mvP = planMove(pHH, aHH), mvA = planMove(aHH, pHH);
@@ -38705,7 +38768,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (dist(o.infantry ? o.d : 0) > front) { left = true; return; } q.hit[o.id] = 1;
         if (o.ko) return; if (q.ground && (o.air || o.float || stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; }))) return; /* in the air - ground effects (pillars) pass under him; effects from the sky (ground:false) still hit */
         var dmg = q.v * (1 - red); if (wallUp && !o.infantry) { blk += dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } if (dodgePort(o)) return;
-        o.hp -= dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); });
+        o.hp -= aegisTake(o, dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1)); if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); });
       var mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0;
       if (!q.fort) { if (dist(0) <= front) { q.fort = true; if (q.sd === 'P') { playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } else { aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } } else left = true; }
       if (q.sd === 'P') aiDmg += mirr; else playerDmg += mirr;
@@ -38718,7 +38781,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var t = posMode && opp && q.tgt !== 'fort' ? opp.by[q.tgt] : null; if (posMode && opp && (!t || t.ko || t.dead)) { q.tgt = diveTarget(opp); t = q.tgt !== 'fort' ? opp.by[q.tgt] : null; }
       skTgt[(q.sd === 'P' ? 'p_' : 'a_') + q.key] = t ? t.id : 'fort';
       if (t) { var ld = t.infantry ? Math.max(0, Math.min(1, 1 - t.d)) : 1;
-        if (!dodgePort(t)) { t.hp -= q.v * (oSt.dmgTakenMult || 1) * defReduce(t.refA, t.def) * (koCfg.heroDmgMult || 1); if (t.hp <= 1e-9) { koMark(t); t.hp = 0; t.ko = true; t.reviveT = koCfg.reviveSec; t.kos++; t.d = 0; } heroHitTaken(t); }
+        if (!dodgePort(t)) { t.hp -= aegisTake(t, q.v * (oSt.dmgTakenMult || 1) * defReduce(t.refA, t.def) * (koCfg.heroDmgMult || 1)); if (t.hp <= 1e-9) { koMark(t); t.hp = 0; t.ko = true; t.reviveT = koCfg.reviveSec; t.kos++; t.d = 0; } heroHitTaken(t); }
         if (me && posMode) me.d = ld; }
       else { if (q.sd === 'P') playerDmg += q.v; else aiDmg += q.v; if (me && posMode) me.d = 1; }
       if (q.sd === 'P') trAdd('skill:' + q.key + '|' + q.name, q.v); else trAddAi('skill:' + q.key + '|' + q.name, q.v); }); diveQ = diveKeep; }
@@ -38762,7 +38825,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (!tg.length) { out += L.value; return; }
         tg.forEach(function (o) {
           if (dodgePort(o)) return; /* v992: Shadow Step */
-          if (o.hp <= o.max * L.exec) o.hp = 0; else o.hp -= L.value * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1);
+          if (o.hp <= o.max * L.exec) o.hp = 0; else o.hp -= aegisTake(o, L.value * (oppStats.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1));
           if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; }
           heroHitTaken(o);
         });
@@ -38783,6 +38846,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
           if (getHp() > 0) setHp(getHp() + did);
           if (u.ward > 0 && amt - did > 0) { setG(Math.min(maxHp * u.ward, getG() + (amt - did))); if (hhh === pHH) pGuardMax = Math.max(pGuardMax, getG()); else aGuardMax = Math.max(aGuardMax, getG()); }
           if (u.rally > 0) { Object.keys(actCd).forEach(function (k) { if (k !== u.key) actCd[k] -= u.rally; }); Object.keys(cdMap).forEach(function (k) { if (k !== u.key) cdMap[k] -= u.rally; }); } /* v1523: Rally also cuts the other support heroes' timers (Torvald), as in Conquest */
+        } else if (u.kind === "aegis") { /* v1670: Zarek's Blade Aegis - a shield on every other standing hero of his side (not on floaters), max(current, pct x his max HP); same rule as Conquest */
+          if (hhh) hhh.list.forEach(function (e) { if (e.id === u.key || e.ko || e.dead || e.droid || e.float) return; e.sh = Math.max(e.sh || 0, e.max * u.pct); e.shMax = e.sh; });
+          if (hhh === pHH) pAegisN++; else aAegisN++;
         } else if (u.kind === "oath") { /* v1413: Crimson Oath - same rule as Conquest */
           if (hhh === pHH) { if (!(oathTP > 0) || u.pct >= oathPP) oathPP = u.pct; oathTP = u.sec || 4; }
           else { if (!(oathTA > 0) || u.pct >= oathPA) oathPA = u.pct; oathTA = u.sec || 4; }
@@ -39095,7 +39161,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
     var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach, g: !!e.gerbil }; }) : []; }; /* v975: clones for the visuals */
-    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerGuard: playerGuard, aiGuard: aiGuard, playerGuardMax: pGuardMax, aiGuardMax: aGuardMax, playerGuardN: pGuardN, aiGuardN: aGuardN /* v1667 */, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
+    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerGuard: playerGuard, aiGuard: aiGuard, playerGuardMax: pGuardMax, aiGuardMax: aGuardMax, playerGuardN: pGuardN, aiGuardN: aGuardN, playerAegisN: pAegisN, aiAegisN: aAegisN, aegisSoak: aegisSoak /* v1667 / v1670 */, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
       firePMult: playerCannonBullets ? playerCannonMult : 1, fireAMult: aiCannonBullets ? aiCannonMult : 1, /* v1642: super burst bullets fired this tick look different */ landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     info.bossAct = bossAct;
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
@@ -39953,12 +40019,16 @@ function drawArenaFrame(ctx, w, h) {
   drawArenaFortress(ctx, w, h, true, osSetA, "back"); drawArenaFortress(ctx, w, h, false, null, "back");
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju && kaijuState.water) kaijuDrawWater(ctx, w, h); /* v1598: shallow sea over his claws, under the heroes and their bars */
   ctx = ptCtx("a_fx", ptRealA); drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
+  var aegLA = []; try { var hsAg = heroSpriteVisualScale / 100; Object.keys(arenaAnim.heroScreen || {}).forEach(function (k) { var en = arenaAnim.heroHp && arenaAnim.heroHp[k], key = k.slice(2), pos = arenaAnim.heroScreen[k]; if (!en || en.ko || !HERO_DEFS[key] || HERO_DEFS[key].floats) return; aegLA.push({ k: k, key: key, x: pos.x, feet: pos.y + 13, hs: hsAg, frac: en.sh || 0 }); });
+    [["p", arenaAnim.aegisPN || 0, "playerAegisN"], ["a", arenaAnim.aegisAN || 0, "aiAegisN"]].forEach(function (sd) { var n = arenaAnim[sd[2]] || 0, mk = "aegisSeen_" + sd[0]; if (arenaAnim[mk] == null) arenaAnim[mk] = n; if (n !== arenaAnim[mk]) { arenaAnim[mk] = n; aegisCast(arenaAnim, arenaAnim.zk && arenaAnim.zk[sd[0] + "_zarek"], aegLA.filter(function (o) { return o.k.charAt(0) === sd[0] && o.frac > 0; }).map(function (o) { return o.k; })); } });
+    aegisPass(ctx, arenaAnim, aegLA, true); } catch (eAgA) {} /* v1670: Blade Aegis, back layer */
   ctx = ptCtx("a_heroes", ptRealA);
   drawFormation(arenaAnim.playerRoster, true, "deck");
   drawFormation(arenaAnim.aiRoster, false, "deck");
   ctx = ptCtx("a_fort", ptRealA); drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165; v1556: after the front hull layer - layered skins (crawlers, walker...) covered the guns in Arena
   ctx = ptCtx("a_heroes", ptRealA); drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
+  try { aegisPass(ctx, arenaAnim, aegLA, false); } catch (eAgA2) {} /* v1670: Blade Aegis, front layer + flying blades */
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju) kaijuDrawArenaFx(ctx, w, h); /* v1598: water, stomp surge, beam */
   if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */
   (function drawArenaClones() { /* v975: Clone Task's clone - Gareth's sprite, heavy green tint; runs out and fights where the sim puts it */
@@ -40695,6 +40765,7 @@ function renderArenaBattleScreen() {
   arenaAnim.aiFortressSkin = arenaOpponentFortressSkin(arenaOpponent); arenaAiWeaponOrder = Object.keys((arenaOpponent && arenaOpponent.weapons) || {}).slice(0, 3); /* v1167: slots known from the start, so the bot's barrels show before its first shot */ // v1109: the bot's slots start fresh each match
   arenaAnim.playerHp = pStats0.maxHp; arenaAnim.playerMaxHp = pStats0.maxHp;
   arenaAnim.aiHp = aStats0.maxHp; arenaAnim.aiMaxHp = aStats0.maxHp;
+  arenaAnim.playerAegisN = arenaAnim.aiAegisN = 0; arenaAnim.aegisSeen_p = arenaAnim.aegisSeen_a = null; arenaAnim.aegis = null; /* v1670 */
   arenaAnim.guardP = arenaAnim.guardA = arenaAnim.guardPMax = arenaAnim.guardAMax = 0; arenaAnim.guardPShow = arenaAnim.guardAShow = null; arenaAnim.guardPN = arenaAnim.guardAN = 0; /* v1667 */
   arenaAnim.shield = null; arenaAnim.shieldMax = 0; arenaAnim.shieldHits = 0; arenaAnim.shieldBreaks = 0; // v469
   arenaAnim.aiShield = null; arenaAnim.aiShieldMax = 0; arenaAnim.aiShieldHits = 0; arenaAnim.aiShieldBreaks = 0; // v1164: the bot's Hex Shield pool
@@ -40786,6 +40857,7 @@ function renderArenaBattleScreen() {
         }
       }
       arenaAnim.playerMaxHp = state.playerMaxHp; arenaAnim.aiMaxHp = state.aiMaxHp;
+      arenaAnim.playerAegisN = state.playerAegisN || 0; arenaAnim.aiAegisN = state.aiAegisN || 0; /* v1670 */
       arenaAnim.guardP = state.playerGuard || 0; arenaAnim.guardA = state.aiGuard || 0; arenaAnim.guardPMax = state.playerGuardMax || 0; arenaAnim.guardAMax = state.aiGuardMax || 0; /* v1667 */
       /* a new cast shows the shield full, then the bar drains to what's left (weapon fire often eats it in the same instant) */
       if ((state.playerGuardN || 0) !== arenaAnim.guardPN) { arenaAnim.guardPN = state.playerGuardN || 0; if (arenaAnim.guardPN) arenaAnim.guardPShow = arenaAnim.guardPMax; }
