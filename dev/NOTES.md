@@ -5321,3 +5321,18 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   - Paid packs: any pack / mail / reward can now give them (server catalogue items.json: item_ufrag_rare / _epic / _legendary -> items.ufrag_*).
 - Admin-saved live events keep what was saved: "Load the game's starting numbers" in the admin page brings the new shop rows / milestone in.
 - Tests: functions unit tests 30 pass (+ normalizeHS / normalizeLiveops accept the new items); headless: lists (Legendary = Roran, Kessa, Iron Lily, Halo-7, Caelum; no Hanzo), Hanzo and Epic-on-Kessa refused, 10 used on Kessa, capped at 6 for a nearly-maxed Roran, backpack Use 10 button works (buttons kept in view above the hero chips), daily chest text, no errors.
+
+## v1654 — Zarek, The Blade Architect (new Legendary) + universal fragments can't unlock a hero
+- Harley: universal fragments only work on a hero once the player has at least 1 of that hero's OWN fragments (or owns them). ufragHeroes() filters on it; backpack note explains it.
+- Zarek (Harley 16 Nov): Legendary, class Caster for now (`dualClass: "infantry"` - Harley decides later; the Infantry crescent swipe is ready in dev/labs/sword_orbit_demo.html). Same base stats as every hero (no atkMult / hpMult).
+  - Art: ChatGPT design (art/originals/heroes/bladelord_concept/, anime face redone in the game's 3D style), front-facing card (art/originals/heroes/zarek/zarek_card_*), Atlas idle (H3 Max, 2 runs ~$1.22 - the first had a ground ring, removed: ring would come later in code). Game files art/heroes/zarek/: idle sheet (96 frames, 12 fps), sword face/edge, Colossus (pure-energy version), slash, crystal colossus (spare).
+  - Code module zk* (zkStep / zkDraw / zkLate / zkDrawVolley / zkSkillStart): he floats HIGH over his own half and drifts slowly between random spots with lean 0.5 + bend 0.6 (Harley's demo settings: 5 swords, ring 1.6, tilt 0.3, energy brightness 0.5). 5 green swords orbit him (perspective-sliced turn).
+  - Basic = sword volley every 2 s for double damage (COMBAT_TIMING.heroAttackSec.zarek = 2): Conquest projectile style "zvolley" (straight line, swords fan), burst on the hit, swords warp back; Arena the same (projectile owner p_/a_zarek).
+  - Skill Colossus Blade: aoeAll + aoeDelay 1.3 s, cooldown 13. Swords shoot skyward, the giant energy sword drops onto the enemies (Conquest: front of the horde; Arena: the enemy ship's deck), sticks in ~30% deep, shockwave rings, sparks, rocks, short flash, dissolves into particles, swords warp back. Drawn late (over enemies) via zkLate. Arena uses arenaHeroLeapStart (no generic skill shot).
+- Balance (`run.js --only arena`, hero order matters: the 6th hero of a 6-hero team stands off the deck and can't be hit, so I ran him first AND Kessa first):
+  - His skill at Halo-7's numbers (0.28-0.66) with full ATK made him much stronger than Kessa (w/o zarek 5-13 wins vs w/o kessa 21-40 at Lv80).
+  - Shipped: full ATK, Colossus Blade 0.03-0.07 (mostly a visual): Lv80 w/o zarek 44 / 33 wins vs w/o kessa 35 / 31 (two orders) - just below Kessa. Skill ~0: 51 / 38 vs 31 / 25.
+  - Alternative tested: atkMult 0.5 (like Halo-7 / Caelum) + skill 0.28-0.66: Lv80 38 / 36 vs 37 / 28 - about Kessa level. Harley to choose.
+  - Conquest (gareth, lyra, sera, torvald + zarek vs + kessa): Lv40 both stuck at 6-12, Lv80 both 10-1.
+  - Meta check: same order as before, known warning.
+- Headless: Conquest (floats over the fortress, volleys, Colossus Blade lands with rocks + flash), Arena both sides (incl. a bot Zarek), hero screen (card + skill text), no console errors.
