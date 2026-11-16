@@ -112,6 +112,9 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
        # coming down (102-124), landing with dust (126-140)
        "tom_skill": {"hero": "tom", "tag": "v1", "stand": 70, "disp_stand": 28, "per_clip": True, "same_space": True, "canvas": 3, "wrap": 16,
                  "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(0, 63, 2)) + [64, 70] + list(range(82, 93, 2)) + list(range(102, 141, 2))}},
+       # Tom's block (flashed when he blocks a melee hit): the high-guard hold, a few frames of the breathing loop
+       "tom_block": {"hero": "tom", "tag": "v1", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 16,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "blockhold", "fps": 12, "frames": list(range(0, 48, 3))}},
        "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 38, "to": 63},
                  "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},

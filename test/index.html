@@ -6753,6 +6753,20 @@ var HERO_DEFS = {
       { name: "Hard-Light Ward", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.025 },
       { name: "Weightless", icon: "🪶", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
     ] },
+  /* v1678 (Harley 17 Nov): Tom (working name) - Legendary melee swordsman in ivory and navy robes. Basic: a sword slash (two slashes alternate). Skill: leaps as high as
+     Zarek floats, two downward slashes send giant energy crescents at the enemy team (every enemy + the fortress, like Shuriken Storm; the "melee heroes near
+     his own ship are safe" rule is for later). Passive (placeholder, Harley: "like Hanzo's, a flat number"): blocks 50% of MELEE hits completely. */
+  tom: { name: "Tom", title: "The Silver Blade", class: "infantry", icon: "⚔️", rarity: "Legendary",
+    maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
+    conquestSkills: [
+      { name: "Heaven Splitter", icon: "⚔️🌙", kind: "active", aoeAll: true, aoeDelay: 1.6, cooldown: 12, pctByLevel: [0.25, 0.30, 0.35, 0.40, 0.45], desc: "Every 12s, Tom leaps high into the air and slashes twice: two giant energy crescents fly down at the enemy side and hit every enemy, fortress included." },
+      { name: "Steel Guard", icon: "🛡️", kind: "passive", effectType: "blockMelee", flat: 0.5, desc: "Blocks 50% of melee attacks completely (placeholder)." }
+    ],
+    expeditionSkills: [
+      { name: "Silver Vanguard", icon: "⚔️", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
+      { name: "Unbroken Line", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.025 },
+      { name: "Wind Step", icon: "🪶", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
+    ] },
   /* v1386 (Harley: "delete mira"): Mira (the only governor hero, Overlord resource bonus) removed. The governor code stays (no hero uses it now). */
 };
 
@@ -7087,6 +7101,7 @@ function skillDefaultValueAtLevel(skill, level, heroKey, h, basicAtkDmg) {
 }
 // v992: Shadow Step (Hanzo) - share of incoming attacks dodged (0..0.95). Deterministic, no dice: hit n is dodged when floor((n+1)p) > floor(np).
 // v992: a skill whose cooldown shrinks with level (cdByLevel) - Hanzo's Shuriken Storm. Anything else keeps its flat cooldown.
+function tomLift(ms) { var f = ms / 1000 * 24, P = 66, ss = function (u) { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); }; if (f < 10) return 0; if (f < 32) return P * ss((f - 10) / 22); if (f < 40) return P; if (f < 52) { var u = (f - 40) / 12; return P * (1 - u * u); } return 0; } /* v1678: Tom's leap - extra height (CSS px at hero scale 1) on top of the clip's own jump, about Zarek's float height (approved mockup) */
 var HANZO_LEAP_SEC = 0.45; // v993 (Harley): Shuriken Storm isn't instant - he leaps into the air first, the shuriken land this much later (Conquest and Arena). v994: 1.0 -> 0.45 (one Arena beat): restores his Lv40 tiers while solo Kessa still edges him (53%, 93% with Projection Wall)
 var WAVE_SPEED_FR = 0.41, WAVE_GAP_FR = 0.045, WAVE_N = 4; /* v1507 (Harley): Sunforge Slam = a rolling eruption - the fire runs out from the sword at 41% of the screen width per second both ways; a target is only hit when the fire reaches it AND it is on the ground (Conquest + Arena use the same speed: Arena lane px are on a 400-wide screen) */
 var HANZO_PORT_PX = 40; // v1504 (Harley): Shadow Step teleports him this far BACK (towards his own fortress) on every dodge - out of reach until he runs back in. Already at his fortress front = he dodges on the spot. 0 = old dodge (no move)
@@ -7097,6 +7112,7 @@ function skillCdAt(skill, lvl) { return (skill && skill.cdByLevel) ? skill.cdByL
 function heroDodgePct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0;
   d.conquestSkills.forEach(function (sk, i) { if (sk.kind === "passive" && sk.effectType === "dodge") p += sk.perLevel * ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[i]) || 1); });
   return Math.min(0.95, p); }
+function heroBlockPct(key, h) { var d = HERO_DEFS[key]; if (!d || !d.conquestSkills || !h) return 0; var p = 0; d.conquestSkills.forEach(function (sk) { if (sk.kind === "passive" && sk.effectType === "blockMelee") p += sk.flat || 0; }); return Math.min(0.95, p); } /* v1678: Tom's Steel Guard - a flat share of MELEE hits blocked completely (same even spread as Shadow Step, no dice) */
 function dodgeRoll(ent, p) { if (!(p > 0) || !ent) return false; var n = ent.dgN || 0; ent.dgN = n + 1; if (Math.floor((n + 1) * p + 1e-9) > Math.floor(n * p + 1e-9)) { ent.dodges = (ent.dodges || 0) + 1; return true; } return false; }
 /* v1413: Iron Lily's kit (same numbers in Conquest and Arena). Iron Will = her own DEF x(1+pct). Blade Wall = share of BULLETS aimed at her
    that she parries, no dice (same even spread as Shadow Step, own counter) - nothing fires bullets at heroes yet (Harley: bullets only, for later).
@@ -11055,6 +11071,7 @@ function createGame(opts) {
     if (tgtHeroKey) {
       var tgtEnt = idleHeroEntry(tgtHeroKey);
       if (!tgtEnt || tgtEnt.hp <= 0) return;
+      if (!ranged) { var bkP = heroBlockPct(tgtHeroKey, state.heroes[tgtHeroKey]); if (bkP > 0) { var bkC = state.idle.blockN || (state.idle.blockN = {}), bkE = bkC[tgtHeroKey] || (bkC[tgtHeroKey] = {}); if (dodgeRoll(bkE, bkP)) { state.idle.blocks = (state.idle.blocks || 0) + 1; return; } } } /* v1678: Tom's Steel Guard */
       var dgP = heroDodgePct(tgtHeroKey, state.heroes[tgtHeroKey]); if (dgP > 0) state.idle.dodgeTries = (state.idle.dodgeTries || 0) + 1;
       var dgC = state.idle.dodgeN || (state.idle.dodgeN = {}), dgE = dgC[tgtHeroKey] || (dgC[tgtHeroKey] = {}); /* counter kept across level attempts, so short fights still get their share */
       if (dodgeRoll(dgE, dgP)) { state.idle.dodges = (state.idle.dodges || 0) + 1; return; } /* v992: Shadow Step */
@@ -14293,7 +14310,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1677"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1678"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -27656,6 +27673,9 @@ var HERO_ANIMS = {
   aurek_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/aurek/aurek_skill_anim_v1.webp", wrap: 16, cw: 160, ch: 167, ax: 65.92, ay: 164.44, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 32] }, once: { skill: true }, sizeMul: 1, dispH: 55.67, throwFrame: 9 }, /* Sunforge Slam: sword planted on frame 9 -> fire pillars */
   seraphine: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/seraphine/seraphine_anim_v1.webp", wrap: 21, cw: 138, ch: 152, ax: 70.69, ay: 149.24, fps: { idle: 8, run: 8, attack: 24 }, rows: { idle: [0, 41], run: [0, 41], attack: [1, 19] }, once: { attack: true }, sizeMul: 1, dispH: 37.31, release: 4 }, /* v1508: crystal mage on the deck; violet crystal bolt (SPELL_COLS) */
   seraphine_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/seraphine/seraphine_skill_anim_v1.webp", wrap: 18, cw: 156, ch: 168, ax: 67.91, ay: 165.31, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 35] }, once: { skill: true }, sizeMul: 1, dispH: 41.24, throwFrame: 12 }, /* Crystal Rain: staff fully raised on frame 12 -> the rain starts */
+  tom: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/tom/tom_anim_v1.webp", wrap: 14, cw: 190, ch: 134, ax: 95.18, ay: 131.04, fps: { idle: 8, run: 24, attack: 24, attack2: 24 }, rows: { idle: [0, 63], run: [3, 26], attack: [4, 25], attack2: [5, 29] }, sizeMul: 1, dispH: 41.69, impact: 7, impact2: 6 }, /* v1678: Tom - rising slash / double strike alternate (dev/heroes/build_hero_anim.py tom) */
+  tom_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/tom/tom_skill_anim_v1.webp", wrap: 16, cw: 177, ch: 119, ax: 75.76, ay: 109.7, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 60] }, once: { skill: true }, sizeMul: 1, dispH: 47.6, throwFrame: 32, throwFrame2: 39, lift: true }, /* v1678: the leap (lifted to Zarek's height by tomLift), slash 1 on frame 32, slash 2 on 39 */
+  tom_block: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/tom/tom_block_anim_v1.webp", wrap: 16, cw: 128, ch: 94, ax: 69.52, ay: 91.78, fps: { idle: 8, run: 8, skill: 12 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 16] }, sizeMul: 1, dispH: 29.24 }, /* v1678: high guard, flashed on each blocked melee hit */
   zarek: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/zarek/zarek_idle_v1.webp", wrap: 16, cw: 99, ch: 180, ax: 47.18, ay: 172.74, fps: { idle: 12, run: 12, attack: 12 }, rows: { idle: [0, 96], run: [0, 96], attack: [0, 96] }, sizeMul: 1, dispH: 43, release: 0 }, /* v1654: Atlas idle (cloth in the wind); he floats high over his half - zkDraw */
   vesper: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/vesper/vesper_anim_v1.webp", wrap: 21, cw: 84, ch: 116, ax: 44.3, ay: 113.78, fps: { idle: 8, run: 8, attack: 24 }, rows: { idle: [0, 41], run: [0, 41], attack: [1, 19] }, once: { attack: true }, sizeMul: 1, dispH: 28.47, release: 7 },
   vesper_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/vesper/vesper_skill_anim_v1.webp", wrap: 19, cw: 93, ch: 124, ax: 45.7, ay: 121.58, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 38] }, once: { skill: true }, sizeMul: 1, dispH: 30.44, throwFrame: 23 }, /* v1508 Orbital Patch: hand points forward on frame 23 -> the sky beams start */
@@ -28825,6 +28845,7 @@ var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5
   vesper: { skybeam: "beam", ring: "#7fe8ff" },
   halo7: { coreBeam: "beam", core: [4.5, 29], glow: "#ffb347" },
   caelum: { dive: true, glow: "#ff4fd8" },
+  tom: { throwImg: "slash", slash: true, ring: "#bfeaff", glow: "#7fd4ff" }, /* v1678: giant energy crescents (art/heroes/tom/tom_slash.webp) */
   sera: { heal: true, glow: "#7ee896" }, /* v1526: Mending Light - green blessing over his fortress (drawHeroHeals) */
   torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff", souls: { n: 5, core: [240, 253, 255], glow: [150, 230, 245] } } }; /* v1567: souls = orbs leave him with the aura and home into his fortress's hull (drawHeroSouls) */ /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
 function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir, ggy) { /* ggy: the battlefield ground line (a fortress rider's feet are up on the deck) */ /* the skill sheet's effect frame, same in every mode */
@@ -29078,7 +29099,7 @@ function heroAttackState(key, phase) { var a = HERO_ANIMS[key]; if (!a || !a.row
 function heroAnimStartAt(key, flip, t0, st) { heroAnimRestart(key); heroAnimMem[key + (flip ? "f" : "") + "0"] = { state: st || "skill", prev: null, t: t0 }; } /* a once-sheet started earlier than now (the engine runs ahead of the drawing) */
 function heroThrowFx(M, key, x0, y0, targets, sc) {
   var S = M.hzStars || (M.hzStars = []), now = performance.now();
-  targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: 220, spin: Math.random() * 6 }); });
+  var Fq = HERO_COMBAT_FX[key] || {}; targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: Fq.slash ? 380 : 220, spin: Math.random() * 6 }); });
   if (S.length > 40) S.splice(0, S.length - 40);
 }
 function heroDodgeFx(M, key, x, feetY, flip, hs, nx) { /* after-image where he stood + warp where he re-appears (nx) */
@@ -29093,12 +29114,15 @@ function hanzoFxStep(w, h) {
     var gx = {}, ex = {}; game.state.conquestRoster.forEach(function (k) { var v = idleAnim.heroVis[k]; if (v) gx[k] = (idleAnim.skLeap && idleAnim.skLeap[k] && now - idleAnim.skLeap[k].t0 < 2000) ? idleAnim.skLeap[k].x : v.x; });
     Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (e && !e.dying) ex[id] = e.x; }); game.setIdleWaveGeo({ w: w, heroX: gx, enemyX: ex }); } } catch (eWg) {}
   Object.keys(idleAnim.skLeap || {}).forEach(function (sk) { /* v1506: every skill sheet's effect frame (Hanzo's throw, Aurek's sword planted) */
-    var SL = idleAnim.skLeap[sk], A = HERO_ANIMS[sk + "_skill"]; if (!SL || !A || SL.thrown || A.dive || now - SL.t0 < (A.throwFrame || 0) / A.fps.skill * 1000) return;
+    var SL = idleAnim.skLeap[sk], A = HERO_ANIMS[sk + "_skill"]; if (!SL || !A || A.dive) return;
+    if (SL.thrown && A.throwFrame2 != null && !SL.thrown2 && now - SL.t0 >= A.throwFrame2 / A.fps.skill * 1000) SL.thrown = !(SL.thrown2 = true); /* v1678: Tom's second slash */
+    if (SL.thrown || now - SL.t0 < (A.throwFrame || 0) / A.fps.skill * 1000) return;
     SL.thrown = true; var k = A.dispH * hs / A.ch, fy = SL.hand ? SL.hand.y : groundYFor(h), fx = SL.x + 6 * hs, fyy = fy - A.ay * k * 0.72, T = [];
     Object.keys(idleAnim.enemyById).forEach(function (id) { var e = idleAnim.enemyById[id]; if (!e || e.dying || e.x > w + 10) return; T.push({ x: e.x, y: (e.type === "boss" ? bossTopY(h) + 30 : groundYFor(h) - 16) }); });
     if (!T.length) [0.55, 0.68, 0.8, 0.92].forEach(function (fx2) { T.push({ x: w * fx2, y: groundYFor(h) - 16 }); }); /* nothing drawn on the field at that instant (a horde between spawns): the storm still rains across it */
     heroSkillOnThrow(idleAnim, sk, fx, fyy, T, hs, SL.x, fy, 0, w, 1, groundYFor(h) + 7 * hs); /* v1511 (Harley): sky effects land where feet touch the ground */
   });
+  var bkN = game.state.idle.blocks || 0; if (idleAnim.tomBlocks != null && bkN > idleAnim.tomBlocks) idleAnim.tomBlockT = now; idleAnim.tomBlocks = bkN; /* v1678 */
   var dg = game.state.idle.dodges || 0, last = idleAnim.hzDodges; idleAnim.hzDodges = dg;
   if (last != null && dg > last && game.state.conquestRoster.indexOf("hanzo") >= 0 && HERO_ANIMS.hanzo && idleAnim.heroVis.hanzo && !(L && now - L.t0 < 1000)) {
     var v = idleAnim.heroVis.hanzo;
@@ -29118,8 +29142,8 @@ function drawHeroThrows(ctx, sc, M) {
   M = M || idleAnim; var S = M.hzStars; if (!S || !S.length) return; var now = performance.now();
   M.hzStars = S.filter(function (q) { var u = (now - q.t0) / q.dur; if (u >= 1.25) return false; var F = HERO_COMBAT_FX[q.key || "hanzo"] || {}, im = F.throwImg ? heroFxImg(q.key || "hanzo", F.throwImg) : null;
     if (u >= 1) { ctx.save(); ctx.globalAlpha = (1.25 - u) * 4 * 0.8; ctx.strokeStyle = F.ring || "#fff"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.arc(q.x1, q.y1, (6 + (u - 1) * 60) * sc, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return true; }
-    var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u - Math.sin(u * Math.PI) * 10 * sc, sz = 15 * sc;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(q.spin + u * 22); ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 8 * sc;
+    var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u - (F.slash ? 0 : Math.sin(u * Math.PI) * 10 * sc), sz = (F.slash ? 46 : 15) * sc;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(F.slash ? Math.atan2(q.y1 - q.y0, q.x1 - q.x0) : q.spin + u * 22); /* v1678: Tom's crescents fly blade-first, no spin */ ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 8 * sc;
     if (im) ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); else { ctx.fillStyle = "#cfefff"; ctx.fillRect(-sz / 3, -sz / 3, sz / 1.5, sz / 1.5); }
     ctx.restore(); return true; });
 }
@@ -29502,9 +29526,11 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
       if (dvP) { vis.x = dvP.x; idleAnim.skLeap[key].x = dvP.x; return; }
       dvL.done = true; vis.x = dvL.landX != null ? dvL.landX : vis.x; idleAnim.skLeap[key].x = vis.x;
     }
+    if (key === "tom" && HERO_ANIMS.tom_block && idleAnim.tomBlockT && performance.now() - idleAnim.tomBlockT < 450 && !(idleAnim.skLeap && idleAnim.skLeap.tom && performance.now() - idleAnim.skLeap.tom.t0 < 2600)) { drawHeroAnim(ctx, "tom_block", vis.x, vis.y + 12 * hScale, "skill", hScale, false, 0, 1); return; } /* v1678: Steel Guard - the high guard flashes on a blocked hit */
     var hzL = idleAnim.skLeap && idleAnim.skLeap[key] && !idleAnim.skLeap[key].dive && HERO_ANIMS[key + "_skill"] && performance.now() - idleAnim.skLeap[key].t0 < HERO_ANIMS[key + "_skill"].rows.skill[1] / HERO_ANIMS[key + "_skill"].fps.skill * 1000 ? idleAnim.skLeap[key] : null; /* v1502/v1506: the skill sheet plays on the spot (Hanzo's leap, Aurek's slam) */
     if (hzL) { var hzOff = idleAnim.bgOffsetFar || 0; if (hzL.off != null) { var hzD = (hzOff - hzL.off + 300000) % 300000; if (hzD < 200) hzL.x -= hzD; } hzL.off = hzOff; hzL.x = Math.max(hzL.x, 22 * hScale); /* the screen edge pushes him along - never carried off the left */ /* v1668 (Harley): while the skill plays he stands on that spot of the ground - the level scrolling carries him back (was pinned to the screen = sliding); afterwards he runs back to his place */
-      vis.x = hzL.x; drawHeroAnim(ctx, key + "_skill", hzL.x, vis.y + 12 * hScale, "skill", hScale, false, 0, 1); hzL.hand = { x: hzL.x, y: vis.y + 12 * hScale }; return; }
+      var hzLift = HERO_ANIMS[key + "_skill"].lift ? tomLift(performance.now() - hzL.t0) * hScale : 0; /* v1678: Tom's high leap */
+      vis.x = hzL.x; drawHeroAnim(ctx, key + "_skill", hzL.x, vis.y + 12 * hScale - hzLift, "skill", hScale, false, 0, 1); hzL.hand = { x: hzL.x, y: vis.y + 12 * hScale - hzLift }; return; }
     var heroFlip = (st === "attack" || st === "attack2" || slowRunSpd < 1) ? !!((st === "attack" || st === "attack2") && vis.flank && vis.flank.mode === "back" && !moving) : !!hf[key];
     var swSl = idleAnim.swingRun && idleAnim.swingRun[key], slamOn = st === "attack" && !flashing && swSl && swSl.slam && performance.now() < swSl.until && garethSlamReady();
     var animRes = slamOn ? drawGarethSlam(ctx, vis.x + hurtDx, vis.y + 12 * hScale, hScale, heroFlip, performance.now() - swSl.t0, swSl) /* v1344 */
@@ -34518,6 +34544,7 @@ function skillValueText(skill, level, heroKey, group, idx) {
   if (skill.blockPctByLevel) return "Blocks " + Math.round(pickL(skill.blockPctByLevel) * 100) + "% of bullets aimed at her";
   if (skill.defPctByLevel) return "+" + Math.round(pickL(skill.defPctByLevel) * 100) + "% own DEF";
   if (skill.kind === "active" && !skill.pctByLevel && skill.burstBase == null && ov == null) return "Every " + skill.cooldown + "s · coming soon";
+  if (skill.effectType === "blockMelee") return t("Blocks ") + Math.round((skill.flat || 0) * 100) + t("% of melee hits"); /* v1678: Tom */
   if (skill.kind === "passive" && skill.perLevel == null && ov == null) return "Coming soon";
   if (skill.kind === "limit") { /* v954: Death Strike style */
     var pL = skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, level)) - 1] || 0, nL = skill.targetsByLevel[Math.max(1, Math.min(skill.targetsByLevel.length, level)) - 1];
@@ -36703,7 +36730,7 @@ var FORTRESS_SKINS = [
 /* v1393 (Harley: dev tool - circled heroes get a random level 5-35 and 0-3 stars, the rest show as not recruited; press again = true values).
    LOOK ONLY: while the hero list / hero card draw, the real hero entries are swapped for showcase copies and put straight back afterwards
    (same tick), so battles, power, saves never see the fake numbers. New random numbers each time it's switched on. */
-var HERO_SHOWCASE_KEYS = ["gareth", "lyra", "roran", "kessa", "sera", "torvald", "hanzo", "ironlily", "juno", "bram", "pip", "aurek", "seraphine", "vesper", "halo7", "caelum", "zarek"], heroShowcase = null;
+var HERO_SHOWCASE_KEYS = ["gareth", "lyra", "roran", "kessa", "sera", "torvald", "hanzo", "ironlily", "juno", "bram", "pip", "aurek", "seraphine", "vesper", "halo7", "caelum", "zarek", "tom"], heroShowcase = null;
 function heroShowcaseWrap(fn) {
   if (!heroShowcase) return fn();
   var H = game.state.heroes, saved = {};
@@ -38400,7 +38427,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */ * (isInfantry ? ARENA_MELEE_ATK_MULT : 1) /* what-if switch (1 = off) */, melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
-    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), rt: heroRangedTakeMult(key, h) /* v1521 */, dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
+    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), rt: heroRangedTakeMult(key, h) /* v1521 */, blockMelee: heroBlockPct(key, h), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
@@ -38627,7 +38654,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // infantry hero instead of the fortress; ranged damage goes to the fortress (except HERO_KO_CFG.rangedPct); a hero at 0 HP is KO'd (stops attacking,
   // skill timer reset and frozen) and revives after reviveSec. The fortress pool is still the lose condition.
   var koCfg = game.heroKoCfg;
-  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, float: !!(HERO_DEFS[h.id] && HERO_DEFS[h.id].floats), max: h.max, def: h.def || 0, dodge: h.dodge || 0, rt: h.rt != null ? h.rt : 1, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0, limOnHit: lf ? lf.onHit : false, limKeep: lf ? lf.keep : false, limVal: lf ? lf.value : 0, limSwing: lf ? lf.swing : 1 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
+  function mkHeroHp(st, oppRefA) { if (!st.heroHp) return null; var o = { list: st.heroHp.map(function (h) { var lf = (st.limits || []).filter(function (L) { return L.key === h.id; })[0]; return { refA: oppRefA || 0, id: h.id, infantry: h.infantry, float: !!(HERO_DEFS[h.id] && HERO_DEFS[h.id].floats), max: h.max, def: h.def || 0, dodge: h.dodge || 0, blockMelee: h.blockMelee || 0, rt: h.rt != null ? h.rt : 1, runL: h.runL || null, hp: h.max, ko: false, reviveT: 0, kos: 0, d: 0, reach: false, lim: 0, limMax: lf ? lf.fill : 0, limTaken: lf ? lf.taken : 0, limOnHit: lf ? lf.onHit : false, limKeep: lf ? lf.keep : false, limVal: lf ? lf.value : 0, limSwing: lf ? lf.swing : 1 }; }), by: {} }; o.list.forEach(function (e) { o.by[e.id] = e; }); return o; }
   var pHH = mkHeroHp(playerStats, aRefA), aHH = mkHeroHp(aiStats, pRefA);
   // v969: both sides act at the same moment. A hero knocked out during this tick still makes this tick's attacks / skills (from where he stood,
   // with the limit bar he had) - it no longer matters which side's hits are worked out first. isKo = "was already down when this tick began".
@@ -38637,7 +38664,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; e.sh = 0; }
   function withKoPos(me, fn) { if (!me || !(me.ko && me.koTick === tick)) return fn(); var d0 = me.d; me.d = me.koD; try { return fn(); } finally { me.d = d0; } }
   function tickRevive(hh) { if (!hh) return; hh.list.forEach(function (e) { if (e.ko && e.droid) { e.dead = true; return; } if (e.ko) { e.reviveT -= dtS; if (e.reviveT <= 0) { e.ko = false; e.reviveT = 0; e.hp = e.max; } } }); }
-  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null, sh: e.sh > 0.5 && e.shMax ? e.sh / e.shMax : 0 /* v1670 Blade Aegis left */, dg: e.dodges || 0, dv: e.air ? { t: e.diveTgt, at: e.diveAt - tick } : null }; }) : null; } /* v1514: dv = Caelum in the air (target id or 'fort', ticks to impact) */ /* v1503: dg = dodges so far (visual only - Shadow Step after-image) */
+  function heroInfo(hh) { return hh ? hh.list.filter(function (e) { return !e.droid; }).map(function (e) { return { id: e.id, hp: e.hp, max: e.max, ko: e.ko, infantry: e.infantry, reviveT: e.reviveT, d: e.d, reach: e.reach, lim: e.limMax ? e.lim / e.limMax : null, sh: e.sh > 0.5 && e.shMax ? e.sh / e.shMax : 0 /* v1670 Blade Aegis left */, dg: e.dodges || 0, bk: e.blocks || 0, dv: e.air ? { t: e.diveTgt, at: e.diveAt - tick } : null }; }) : null; } /* v1514: dv = Caelum in the air (target id or 'fort', ticks to impact) */ /* v1503: dg = dodges so far (visual only - Shadow Step after-image) */
   function heroHitTaken(e) { if (e.limMax && !e.ko) e.lim = Math.min(e.limMax, e.lim + e.limTaken); if (e.ko && !e.limKeep) e.lim = 0; } /* v1609: Pressure Build keeps its steam through a KO */ /* v954: every hit a hero takes fills his limit bar (Death Strike), a KO empties it - same as Conquest */
   // Applies `dmg` (already after armor) to the first standing infantry heroes; returns what is left over for the fortress.
   var aegisSoak = 0; /* v1670: Blade Aegis - a hero's shield soaks his damage first */
@@ -38706,7 +38733,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh, !tag); }) : null; /* no tag = a basic attack */
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
-    var e = t.hero; if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= aegisTake(e, dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1));
+    var e = t.hero; if (e.blockMelee > 0 && dodgeRoll(e.bkE || (e.bkE = {}), e.blockMelee)) { e.blocks = (e.blocks || 0) + 1; return false; } /* v1678: Tom's Steel Guard */ if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= aegisTake(e, dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1));
     if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     heroHitTaken(e);
     return false;
@@ -40011,12 +40038,16 @@ function drawArenaFrame(ctx, w, h) {
         }
         var dGl = arenaAnim.dvGlide && arenaAnim.dvGlide[flashKey];
         if (dGl) { var uG = (performance.now() - dGl.t) / 300; if (uG >= 1 || arenaAnim.battleEnded) delete arenaAnim.dvGlide[flashKey]; else { slot = { x: dGl.x + (slot.x - dGl.x) * uG, y: dGl.y + (slot.y - dGl.y) * uG }; arenaAnim.heroScreen[flashKey] = { x: slot.x, y: slot.y }; } }
+        if (key === "tom" && HERO_ANIMS.tom_block && !lpA) { var bkE2 = arenaAnim.heroHp && arenaAnim.heroHp[flashKey], bkM = arenaAnim.tomBk || (arenaAnim.tomBk = {}), bkR = bkM[flashKey] || (bkM[flashKey] = { n: 0, t: 0 }); if (bkE2 && (bkE2.bk || 0) > bkR.n) bkR.t = performance.now(); if (bkE2) bkR.n = bkE2.bk || 0;
+          if (performance.now() - bkR.t < 450 && !arenaAnim.battleEnded) { drawHeroAnim(ctx, "tom_block", slot.x, slot.y + 13, "skill", hsA, !isPlayerSide, 0); ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, slot.y + size / 2 + 10); return; } } /* v1678: Steel Guard - the high guard flashes on a blocked hit */
         if (lpA && SAa && heroAnimImg(key + "_skill")) { /* v1503: the skill sheet plays where he stands (Hanzo leaps and throws), the throw sends his projectile at every enemy */
           var nLp = performance.now(), flLp = !isPlayerSide;
           if (nLp - lpA.t0 < SAa.rows.skill[1] / SAa.fps.skill * 1000 && !arenaAnim.battleEnded) {
             if (!lpA.started) { lpA.started = true; heroAnimStartAt(key + "_skill", flLp, lpA.t0); }
-            if (!lpA.thrown && nLp - lpA.t0 >= (SAa.throwFrame || 0) / SAa.fps.skill * 1000) { lpA.thrown = true; heroSkillOnThrow(arenaAnim, key, slot.x + (isPlayerSide ? 6 : -6) * hsA, slot.y + 13 - SAa.ay * (SAa.dispH * hsA / SAa.ch) * 0.72, arenaEnemyTargets(w, h, isPlayerSide), hsA, slot.x, slot.y + 13, 0, w, isPlayerSide ? 1 : -1, groundYFor(h) + 10 * hsA); /* v1511: sky effects land on the infantry feet line, not a rider's deck */ } /* v1506: generic effect frame */
-            drawHeroAnim(ctx, key + "_skill", slot.x, slot.y + 13, "skill", hsA, flLp, 0);
+            var lfA = SAa.lift ? tomLift(nLp - lpA.t0) * hsA : 0; /* v1678: Tom's high leap */
+            if (lpA.thrown && SAa.throwFrame2 != null && !lpA.thrown2 && nLp - lpA.t0 >= SAa.throwFrame2 / SAa.fps.skill * 1000) lpA.thrown = !(lpA.thrown2 = true); /* v1678: second slash */
+            if (!lpA.thrown && nLp - lpA.t0 >= (SAa.throwFrame || 0) / SAa.fps.skill * 1000) { lpA.thrown = true; heroSkillOnThrow(arenaAnim, key, slot.x + (isPlayerSide ? 6 : -6) * hsA, slot.y + 13 - lfA - SAa.ay * (SAa.dispH * hsA / SAa.ch) * 0.72, arenaEnemyTargets(w, h, isPlayerSide), hsA, slot.x, slot.y + 13, 0, w, isPlayerSide ? 1 : -1, groundYFor(h) + 10 * hsA); /* v1511: sky effects land on the infantry feet line, not a rider's deck */ } /* v1506: generic effect frame */
+            drawHeroAnim(ctx, key + "_skill", slot.x, slot.y + 13 - lfA, "skill", hsA, flLp, 0);
             ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, (slot.deck && (isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0])).barsAbove) ? slot.y - 28 : slot.y + size / 2 + 10);
             return;
           }
