@@ -50,6 +50,9 @@
     <label for="eb"><span>Energy sword brightness <b id="ebV">0.50</b></span><input id="eb" type="range" min="10" max="130" value="50"></label>
     <label for="gstyle"><span>Giant sword look</span><select id="gstyle"><option value="energy">Pure energy (new)</option><option value="crystal">Crystal (first)</option></select></label>
     <label for="mode"><span>Sword pose</span><select id="mode"><option value="up">Upright, turning</option><option value="tan">Along the ring</option></select></label>
+    <label for="mv"><span>Movement</span><select id="mv"><option value="off">Still</option><option value="a">A: drifting, idle only</option><option value="b" selected>B: drifting + lean and bend</option></select></label>
+    <label for="lean"><span>Lean <b id="leanV">1.0</b></span><input id="lean" type="range" min="0" max="25" value="10"></label>
+    <label for="bend"><span>Bend <b id="bendV">1.0</b></span><input id="bend" type="range" min="0" max="25" value="10"></label>
     <label class="chk" for="slow"><input id="slow" type="checkbox"> Slow motion</label>
   </div>
   <p class="note"><b>How it would work in the game:</b> the hero is his Atlas idle sheet; the orbit, the flying swords, the giant sword, the impact and the dissolve are all code drawing a few pictures, so it works the same in Conquest and Arena. Close-up zooms the camera on him to inspect the swords.</p>
@@ -65,13 +68,14 @@
   function img(src) { var i = new Image(); i.src = src; return i; }
   var HERO = img(AS.hero), FACE = img(AS.face), EDGE = img(AS.edge), GIANT = img(AS.giant), SHIP = img(AS.ship), BG = img(AS.bg), GAR = img(AS.gareth), HAL = img(AS.halo), SLASH = img(AS.slash), SLASHC = img(AS.slashCel), GIANTE = img(AS.giantE), HM = AS.heroMeta, GM = AS.giantMeta;
 
-  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false, gstyle: "energy", slstyle: "cel", eb: 0.5 };
+  var cfg = { n: 5, spd: 1, tilt: 0.3, rad: 1, gs: 1, mode: "up", slow: false, gstyle: "energy", slstyle: "cel", eb: 0.5, mv: "b", lean: 1, bend: 1 };
   function GIM() { return cfg.gstyle === "energy" ? GIANTE : GIANT; } function GMM() { return cfg.gstyle === "energy" ? AS.giantEMeta : GM; }
-  [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1], ["eb", 0.01, 2]].forEach(function (c) {
+  [["n", 1, 0], ["spd", 0.1, 1], ["tilt", 0.01, 2], ["rad", 0.01, 1], ["gs", 0.01, 1], ["eb", 0.01, 2], ["lean", 0.1, 1], ["bend", 0.1, 1]].forEach(function (c) {
     var el = $(c[0]); el.addEventListener("input", function () { cfg[c[0]] = +el.value * c[1]; $(c[0] + "V").textContent = cfg[c[0]].toFixed(c[2]); if (c[0] === "n") build(); });
   });
   $("mode").addEventListener("change", function () { cfg.mode = $("mode").value; });
   $("slstyle").addEventListener("change", function () { cfg.slstyle = $("slstyle").value; });
+  $("mv").addEventListener("change", function () { cfg.mv = $("mv").value; });
   $("gstyle").addEventListener("change", function () { cfg.gstyle = $("gstyle").value; });
   $("slow").addEventListener("change", function () { cfg.slow = $("slow").checked; });
   var CLOSE = false;
@@ -83,7 +87,18 @@
   var UW = 430, UH = 300, FLOOR = 246, HX = 118, HEROH = 39;
   var SHIPW = 178, SHIPX = 268, SHIPH = SHIPW * 285 / 400, SHIPBOT = FLOOR - 4, HITX = SHIPX + SHIPW * 0.5;
   var T = 0; // game clock (s), slows in slow motion
-  function heroPos() { var bob = Math.sin(T * 2 * Math.PI / 2.4) * 2.5; var feet = FLOOR - 13 + bob; return { x: HX, feet: feet, chest: feet - HEROH * 0.62, s: HEROH / 105 }; }
+  /* Wander: very slowly floats to random points on our half (x 30-205, 0-38 above his normal hover), waits, picks another.
+     B adds a lean into the travel direction and a "bend": a skew where the feet lag behind the head while he speeds up / slows down. */
+  var WD = { x: HX, h: 0, vx: 0, vh: 0, tx: HX, th: 0, wait: 1, vs: 0, vfast: 0 };
+  function wanderStep(dt) {
+    if (cfg.mv === "off") { WD.tx = HX; WD.th = 0; } else if (WD.wait > 0) { WD.wait -= dt; if (WD.wait <= 0) { WD.tx = 30 + Math.random() * 175; WD.th = Math.random() * 38; } }
+    var dx = WD.tx - WD.x, dh = WD.th - WD.h, d = Math.hypot(dx, dh), MAXV = 11;
+    var want = d > 0.01 ? Math.min(MAXV, d * 0.55) / d : 0, ax = (dx * want - WD.vx) * 1.4, ah = (dh * want - WD.vh) * 1.4;
+    WD.vx += ax * dt; WD.vh += ah * dt; WD.x += WD.vx * dt; WD.h += WD.vh * dt;
+    if (cfg.mv !== "off" && d < 0.8 && WD.wait <= 0) WD.wait = 1 + Math.random() * 1.6;
+    WD.vs += (WD.vx - WD.vs) * Math.min(1, dt * 1.6);      // slow-follow of velocity (for the bend: difference = how much the feet lag)
+  }
+  function heroPos() { var bob = Math.sin(T * 2 * Math.PI / 2.4) * 2.5; var feet = FLOOR - 13 - WD.h + bob; return { x: WD.x, feet: feet, chest: feet - HEROH * 0.62, s: HEROH / 105, base: FLOOR - 13 - WD.h }; }
 
   function drawAlly(im, M, x, feet) { if (!im.naturalWidth) return; var fi = Math.floor(T * M.fps) % M.n, sc = M.dispH / M.ch;
     ctx.drawImage(im, (fi % M.cols) * M.cw, Math.floor(fi / M.cols) * M.ch, M.cw, M.ch, x - M.ax * sc, feet - M.ay * sc, M.cw * sc, M.ch * sc); }
@@ -209,7 +224,7 @@
   function frame(now) {
     var real = Math.min(0.05, (now - (frame.last || now)) / 1000); frame.last = now;
     var dt = paused ? 0 : real * (cfg.slow ? 0.25 : 1); T += dt; ring += dt * cfg.spd * 1.4;
-    stepSkill(dt); if (ATK && ATK.end && T > ATK.end) { swords.forEach(function (s) { s.state = "orbit"; s.done = false; s.hit = false; }); ATK = null; }
+    wanderStep(dt); stepSkill(dt); if (ATK && ATK.end && T > ATK.end) { swords.forEach(function (s) { s.state = "orbit"; s.done = false; s.hit = false; }); ATK = null; }
     // camera
     var k = W / UW, cx = 0, cy = 0, h = heroPos();
     if (CLOSE) { k = W / UW * 2.7; cx = h.x - (W / k) / 2; cy = h.chest - (H / k) / 2; }
@@ -230,8 +245,11 @@
     var list = []; swords.forEach(function (s) { swordDraw(s, h, list); });
     list.filter(function (p) { return p.z < 0; }).sort(function (a, b) { return a.z - b.z; }).forEach(function (p) { p.f(); });
     if (HERO.naturalWidth) { var fi = Math.floor(T * HM.fps) % HM.n, sc = HEROH / (HM.feet - HM.top), dw = HM.fw * sc, dh = HM.fh * sc;
-      ctx.globalAlpha = 0.35; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(h.x, FLOOR, 9 - (h.feet - (FLOOR - 13)) * 0.6, 2.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.drawImage(HERO, (fi % HM.cols) * HM.fw, Math.floor(fi / HM.cols) * HM.fh, HM.fw, HM.fh, h.x - HM.cx * sc, h.feet - HM.feet * sc, dw, dh); }
+      ctx.globalAlpha = 0.35; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(h.x, FLOOR, Math.max(3, 9 - (FLOOR - 13 - h.feet) * 0.12), 2.2 * Math.max(0.4, 1 - WD.h / 60), 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.save(); if (cfg.mv === "b") { var lean = Math.max(-0.09, Math.min(0.09, WD.vx * 0.0075 * cfg.lean)), bend = Math.max(-0.16, Math.min(0.16, -(WD.vx - WD.vs) * 0.03 * cfg.bend));
+        ctx.translate(h.x, h.chest); ctx.rotate(lean); ctx.transform(1, 0, bend, 1, 0, 0); ctx.translate(-h.x, -h.chest);
+        if (Math.abs(WD.vx) > 6 && Math.random() < 0.25) parts.push({ x: h.x - Math.sign(WD.vx) * 4, y: h.feet - Math.random() * HEROH * 0.5, vx: -WD.vx * 0.3, vy: -3, life: 0, max: 0.6, r: 0.5 + Math.random() * 0.5, col: "140,255,110" }); }
+      ctx.drawImage(HERO, (fi % HM.cols) * HM.fw, Math.floor(fi / HM.cols) * HM.fh, HM.fw, HM.fh, h.x - HM.cx * sc, h.feet - HM.feet * sc, dw, dh); ctx.restore(); }
     list.filter(function (p) { return p.z >= 0 && p.z <= 1; }).sort(function (a, b) { return a.z - b.z; }).forEach(function (p) { p.f(); });
     list.filter(function (p) { return p.z > 1; }).forEach(function (p) { p.f(); });
     // giant sword: falls tip-down, buried in the deck (clipped at the deck surface)
