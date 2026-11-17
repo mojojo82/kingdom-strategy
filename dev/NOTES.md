@@ -5516,3 +5516,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Fixes: tomLift now gives his feet ONE curve (TOM_CLIP_H = how high the clip's own feet already are per frame; the game adds only the difference). Up from frame 9 (fast, slowing), peak at 35.5 between the slashes (80 px at hero scale 1), down to landing at 52. Arena: his x is frozen for the whole leap (lpA.x), and no knock-back while he is in a cast.
 - Guard: running drops it (Arena: infRunning; Conquest: movingEff), and a new guard doesn't start while running.
 - Test: headless Arena vs Bram/Halo-7/Aurek, no errors (15 guards, 7 blocks, 4 knock-backs in 35 s).
+
+## v1682 — Tom: sideways leap with a range (Arena, TEST)
+- Harley: the leap can carry him sideways, up to TOM_LEAP_MAX_PX = 120 px. The sim picks where he lands when the skill fires (castHold): forwards if no enemy is in reach (landing just in reach of the front enemy hero, or closer to the enemy fortress), backwards to evade if an enemy is in reach and he is below TOM_EVADE_HP = 40% HP, otherwise straight up. He moves at a steady sideways speed from take-off (frame 9) to landing (frame 52), so the body follows one curve (tomLeapProg). The sim moves him on the landing tick (leapTo / leapAt in planMove); the drawing reads it as heroInfo lt.
+- Conquest: still straight up (carried along with the ground as before).
+- Balance: Arena Lv40 w/o tom 67-53 vs w/o kessa 20-100; Lv80 46-74 vs 8-112 (no real change). Meta check: same pre-existing warning.
+- Test: headless Arena vs Bram/Halo-7/Aurek - a forward leap from home (d 0 -> 0.45) and an evade leap from the enemy fortress (1.00 -> 0.33), no errors.
