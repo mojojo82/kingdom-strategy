@@ -5708,3 +5708,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1710 — Route chevrons: solid lime, no outline (TEST)
 - Harley (screen recording of another game): change the shape and colour to match, no outline. Route arrows are now solid flat-ended chevrons (filled polygon, 26 x 14 px tile, step 26 px - the scroll snap in updateMarchMarkers uses 26 too), lime #5cc96a for your marches (returning a little fainter), red for other players' marches. Flow speed about the same (26 px / 1.1 s).
 - Performance (headless, 3D ships off so only the arrows count): unchanged - 30 routes 60 fps either way, 60 routes ~51 fps vs 60 hidden. The outline was never the cost; each flowing strip is its own animated layer. Next idea if needed: stop the flow above ~40 routes, or draw all arrows on one layer.
+
+## v1711 — 3D ship outline scales with zoom (TEST)
+- Harley: "Zoomed out it looks thick vs the ship, zoomed in it looks thin". The outline was a fixed ~1.1 CSS px. It's now MARCH_OUTLINE_K (0.0225) x the ship's on-screen length (march3dSize x skin size x tile px) - the same 1.1 px at normal zoom, thinner zoomed out, thicker zoomed in (kept between 0.3 and 3 px).
+- Checked headless at zoom 0.6 / 1 / 1.8 with 6 Blackwatch stress ships.
+- Separately explained (not changed yet): the ship layer's pixel budget (MARCH_GL_PX) lowers sharpness in 0.25 steps when zoomed in, which can also look like a detail change.
