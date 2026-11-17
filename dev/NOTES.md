@@ -5649,3 +5649,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: Tom shouldn't be invincible in the air; a ranged hero should still hit him. His leap now sets leapAir instead of air. Swords can't reach him and he doesn't swing (pickMeleeTarget / reach / Lily's sword radius / close-range skill picks skip leapAir). Ground effects (ground waves, slashes) also miss him up there. Ranged shots, ranged splash, storms and other skills still hit him. The guard prediction skips him while airborne.
 - Balance (Arena ring): w/o tom Lv40 69-48 (was 55-65), Lv80 63-47 (was 52-68) vs w/o kessa 5-115 / 7-113 - Tom a bit weaker, still useful.
 - Test: headless Arena vs Pip/Lyra/Halo-7 - damage numbers on Tom mid-leap from their shots; no errors.
+
+## (dev only, not applied) — all skill damage x2 / x3 (TEST v1703)
+- Every active skill's pctByLevel multiplied (script injected into a copy of the game), team_rank.js (100 teams, 19,800 fights per level) + duels.
+- Team avg win Lv80 (x1 / x2 / x3): Hanzo 79 / 77 / 71, Kessa 54 / 55 / 53, none 47 / 48 / 49, Tom 37 / 37 / 40, Lily 34 / 33 / 37. Lv40 hardly moves.
+- Per hero Lv80 spread (best-worst): x1 79-34, x3 71-37. Skill-heavy ranged heroes rise (Vesper 45 -> 56, Seraphine 47 -> 52, Zarek 54 -> 60), Hanzo comes down, the rest within a few %.
+- Duels Lv80 barely change (Hanzo 100 at x1-x3; Vesper / Seraphine stay at the bottom - fights end before their skills matter).
