@@ -5606,3 +5606,4 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: double his current skill damage. Heaven Splitter pctByLevel 0.5-0.9 -> 1.0-1.8 per slash (Lv80 skill 5: 1,152 per slash, two per leap).
 - team_rank.js: Tom teams Lv40 48.0%, Lv80 38.0% (Kessa 65.4 / 52.2, Hanzo 57.4 / 86.6, none 47.9 / 45.5) - Arena barely moves (few heroes are physically touched).
 - Conquest head-to-head (gareth,lyra,sera,torvald + X): Tom Lv40 6-12, Lv80 10-1; Kessa 6-12 / 10-1. Tom now ties Kessa in Conquest at Lv40 (was 6-9) - against the "below Kessa" rule, flagged to Harley.
+- Harley (17 Nov): the "well below Kessa / Hanzo" rule is mainly about Arena - Tom matching Kessa in Conquest is fine. v1696 stays. HANDOVER.md updated.
