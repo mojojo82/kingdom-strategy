@@ -104,23 +104,24 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
        # v1678 Tom (Legendary melee swordsman; all clips share one start frame -> same_space): idle 8 s at 8 fps; run = one stride (video 63-89) at 24 fps;
        # attack = rising slash (wind-up 14-26, H3 Max's slash trail 27-32 cut, raised 33-40, back to stance 112-136; the long raised hold 41-111 cut) ~1 s, hit on frame 7;
        # attack2 = double strike (wind-up 14-23, trail 24-36 cut, raised 37-40, instantly the reverse cut 85-87, trail 88-97 cut, back 98-130) ~1.2 s, hits on frames 6 and 12
-       "tom": {"tag": "v1", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 14,
+       "tom": {"tag": "v2", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 14,
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 63, "to": 89},
-                 "attack": {"fps": 24, "frames": list(range(14, 27, 2)) + [33, 34, 36, 38, 40] + list(range(112, 137, 2))},
-                 "attack2": {"fps": 24, "frames": [14, 16, 18, 20, 22, 23, 37, 38, 40, 85, 86, 87] + list(range(98, 131, 2))}},
+                 # v1679 (Harley): rising slash deleted - the double strike is his only basic attack
+                 "attack": {"clip": "attack2", "fps": 24, "frames": [14, 16, 18, 20, 22, 23, 37, 38, 40, 85, 86, 87] + list(range(98, 131, 2))}},
        # Tom's leap (own sheet, tall): crouch + jump (0-62), first slash (64, 70; trail 66-68 / 72-80 cut), after it (82-90), second slash (92, trail 94-100 cut),
        # coming down (102-124), landing with dust (126-140)
        "tom_skill": {"hero": "tom", "tag": "v1", "stand": 70, "disp_stand": 28, "per_clip": True, "same_space": True, "canvas": 3, "wrap": 16,
                  "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(0, 63, 2)) + [64, 70] + list(range(82, 93, 2)) + list(range(102, 141, 2))}},
        # Tom's block (flashed when he blocks a melee hit): the high-guard hold, a few frames of the breathing loop
-       "tom_block": {"hero": "tom", "tag": "v1", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 16,
-                 "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "blockhold", "fps": 12, "frames": list(range(0, 48, 3))}},
+       "tom_block": {"hero": "tom", "tag": "v2", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 16,
+                 "idle": {"fps": 8, "frames": [0]}, "enter": {"clip": "blockin", "fps": 24, "frames": list(range(12, 37, 2))},   # v1679: sword comes across his body into the high guard (0.54 s)
+                 "skill": {"clip": "blockhold", "fps": 12, "frames": list(range(0, 48, 3))}},
        "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 38, "to": 63},
                  "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},
                  "attack2": {"fps": 24, "frames": list(range(4, 57, 2))},
                  "attack3": {"fps": 24, "frames": list(range(16, 49, 2)) + list(range(64, 85, 2))}}}[HERO]
-ROWS = [r for r in ("idle", "run", "attack", "attack2", "attack3", "skill") if r in CFG]   # v1616: attack3 (Iron Lily rotates three basic attacks)
+ROWS = [r for r in ("idle", "run", "attack", "attack2", "attack3", "enter", "skill") if r in CFG]   # v1679: "enter" (Tom's block entry, played once before the held guard)   # v1616: attack3 (Iron Lily rotates three basic attacks)
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}
 META = json.load(open(os.path.join(L, "meta.json"))) if CFG.get("per_clip") else None
