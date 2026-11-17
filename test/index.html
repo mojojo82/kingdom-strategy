@@ -14327,7 +14327,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1702"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1703"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38721,13 +38721,13 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (px < 0) { var b = -px; if (d > 0.5) { var r1 = (d - 0.5) * 2 * L1; if (b <= r1) return d - b / (2 * L1); b -= r1; d = 0.5; } return Math.max(0, d - b / (2 * L0)); }
     var f = px; if (d < 0.5) { var r0 = (0.5 - d) * 2 * L0; if (f <= r0) return d + f / (2 * L0); f -= r0; d = 0.5; } return Math.min(1, d + f / (2 * L1)); }
   function tomIncoming(myH, oppH, oppAtk, oppCd) { /* v1682b (Harley): Tom's guard was going up AFTER the hit (sparks first). For the drawing: in how many ticks the next enemy melee swing at him lands, so the guard can be up before it */
-    myH.list.forEach(function (t) { if (!(t.blockMelee > 0)) return; t.inc = null; if (t.ko || t.air) return;
+    myH.list.forEach(function (t) { if (!(t.blockMelee > 0)) return; t.inc = null; if (t.ko || t.air || t.leapAir) return;
       oppAtk.forEach(function (a) { if (!a.melee || oppCd[a.id] == null) return; var at = oppH.by[a.id]; if (!at || at.ko || !at.reach) return; var tg = pickMeleeTarget(at, myH, true); if (!tg || tg.hero !== t) return;
         var n = Math.max(1, Math.ceil(oppCd[a.id] / dtS - 1e-9)); if (t.inc == null || n < t.inc) t.inc = n; }); }); }
   function pickMeleeTarget(me, oh, basic) {
     var best = null;
     var gNoFort = me.gerbil && (me.owner === 'P' ? opts.gerbFortP : opts.gerbFortA) === false; /* v1672: a gerbil can't climb a hovering / floating ship - no fortress, no deck heroes */
-    oh.list.forEach(function (o) { if (o.ko || o.air || o.float) return; if (gNoFort && !o.infantry) return; /* v1514: a hero in the air can't be reached by a sword (v1669: nor Zarek, always floating) */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
+    oh.list.forEach(function (o) { if (o.ko || o.air || o.leapAir || o.float) return; if (gNoFort && !o.infantry) return; /* v1514: a hero in the air can't be reached by a sword (v1669: nor Zarek, always floating) */ if (basic && ARENA_MELEE_BASIC_SKIPS_RANGED && !o.infantry) return; /* what-if switch: basic melee hits only melee heroes + the fortress */ if (me.d + o.d >= 1 - ARENA_REACH && (!best || o.d > best.d || (o.d === best.d && o.infantry && !best.infantry))) best = o; });
     if (best) return { hero: best };
     return me.d >= 1 - ARENA_REACH && !gNoFort ? { fort: true } : null; /* v1672: gerbils only bite a crawler fortress */
   }
@@ -38735,9 +38735,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var out = [];
     hh.list.forEach(function (e) {
       if (!e.infantry) return;
-      if (e.ko) { e.knockAt = null; if (e.leapTo != null) { e.leapTo = null; e.air = false; } out.push([e, 0]); return; }
+      if (e.ko) { e.knockAt = null; if (e.leapTo != null) { e.leapTo = null; e.leapAir = false; } out.push([e, 0]); return; }
       if (e.knockAt != null && tick >= e.knockAt) { e.knockAt = null; out.push([e, dMovePx(e, e.d, -TOM_KNOCK_PX)]); return; } /* v1685: Tom's knock-back lands in the sim */
-      if (e.leapTo != null && tick >= e.leapAt) { var lt = e.leapTo; e.leapTo = null; e.air = false; out.push([e, lt]); return; } /* v1682: Tom's sideways leap lands */
+      if (e.leapTo != null && tick >= e.leapAt) { var lt = e.leapTo; e.leapTo = null; e.leapAir = false; out.push([e, lt]); return; } /* v1682: Tom's sideways leap lands */
       if (e.air || e.castUntil > tick) { out.push([e, e.d]); return; } /* v1514: in the air (Skybreaker Slam) - he stays put until he lands; v1516: or while his skill sheet plays */
       var foe = null; oh.list.forEach(function (o) { if (o.infantry && !o.ko && (!foe || o.d > foe.d)) foe = o; });
       var nd = e.d;
@@ -38774,7 +38774,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       oh.list.forEach(function (o) { if (o.infantry && !o.ko && !o.dead && !o.air && (!foe || o.d > foe.d)) foe = o; });
       if (me.reach && me.hp < me.max * TOM_EVADE_HP) to = dMovePx(me, me.d, -TOM_LEAP_MAX_PX);
       else if (!me.reach) { var lim = foe ? 1 - foe.d - ARENA_REACH * 0.5 : 1; var far = dMovePx(me, me.d, TOM_LEAP_MAX_PX); if (lim > me.d && dMovePx(me, me.d, TOM_LEAP_MAX_PX * 0.2) < lim) to = Math.min(far, lim); } /* v1686: distances in real screen px */
-      me.leapTo = to; me.air = true; me.leapAt = tick + Math.max(1, Math.round(52 / 24 / dtS)); } } /* v1682b: he is in the air until he lands - swords can't reach him (and he doesn't swing) */ /* he stops where he stood when he started the cast (this tick's step undone) */
+      me.leapTo = to; me.leapAir = true; me.leapAt = tick + Math.max(1, Math.round(52 / 24 / dtS)); } } /* v1682b: he is in the air until he lands - swords can't reach him (and he doesn't swing). v1703 (Harley): not invincible - ranged shots and skills still hit him (leapAir, not air) */ /* he stops where he stood when he started the cast (this tick's step undone) */
   function diveTarget(oh) { var b = null; if (oh) oh.list.forEach(function (o) { if (o.ko || o.dead || o.droid) return; if (!b || (!o.air && b.air) || (!!o.air === !!b.air && o.hp > b.hp)) b = o; }); return b ? b.id : 'fort'; } /* v1514: the standing enemy hero with the most HP (one on the ground before one in the air) */
   function diveStart(sd, a, v) { var mine = sd === 'P' ? pHH : aHH, me = mine && mine.by[a.key], q = { at: tick + Math.max(1, Math.round(a.dive.impact / dtS)), sd: sd, key: a.key, name: a.name, v: v, tgt: diveTarget(sd === 'P' ? aHH : pHH) };
     diveQ.push(q); if (me) { me.air = true; me.diveTgt = q.tgt; me.diveAt = q.at; } }
@@ -38825,7 +38825,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var md = main ? main.d : 0, caught;
     if (a.splash.around) { /* v1615: Iron Lily's Crimson Tempest - every legal target inside the slash radius, no count (ground heroes; deck heroes and the fortress when she is that close) */
       var own = oh === aHH ? pHH : aHH, me = own && own.by[a.key], hl = me && me.runL ? me.runL[1] : 100, Rd = (a.splash.radiusPx || 36) / (2 * hl), myD = me ? me.d : 0;
-      caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && !o.air && !o.float && 1 - (myD + o.d) <= Rd; }); /* v1669: not floating Zarek */
+      caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && !o.air && !o.leapAir && !o.float && 1 - (myD + o.d) <= Rd; }); /* v1669: not floating Zarek */
       if (mainId !== "fort" && 1 - myD <= Rd) splashFort += dmg * a.splash.pct;   /* the fortress front is inside the radius too */
     } else caught = oh.list.filter(function (o) { return o !== main && !o.ko && !o.dead && o.infantry && !o.air; }) /* front-line heroes only, like her shots */.sort(function (x, y) { return Math.abs(x.d - md) - Math.abs(y.d - md); }).slice(0, a.splash.n);
     caught.forEach(function (o) {
@@ -38878,8 +38878,8 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (posMode) {
       var mvP = planMove(pHH, aHH), mvA = planMove(aHH, pHH);
       mvP.concat(mvA).forEach(function (m) { m[0].d0 = m[0].d; m[0].d = m[0].dMv = m[1]; }); /* v1516: d0 = where he stood at the start of the tick (castHold undoes the step) */
-      pHH.list.forEach(function (e) { e.reach = e.infantry && !e.air ? !!pickMeleeTarget(e, aHH) : false; });
-      aHH.list.forEach(function (e) { e.reach = e.infantry && !e.air ? !!pickMeleeTarget(e, pHH) : false; }); /* v1514: no swings while in the air */
+      pHH.list.forEach(function (e) { e.reach = e.infantry && !e.air && !e.leapAir ? !!pickMeleeTarget(e, aHH) : false; });
+      aHH.list.forEach(function (e) { e.reach = e.infantry && !e.air && !e.leapAir ? !!pickMeleeTarget(e, pHH) : false; }); /* v1514: no swings while in the air */
     } else {
       [pHH, aHH].forEach(function (hh) { if (hh) hh.list.forEach(function (e) { e.reach = engaged; }); });
     }
@@ -38934,7 +38934,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         var hsS = (typeof heroSpriteVisualScale !== "undefined" ? heroSpriteVisualScale : 100) / 100, sPx = function (e, d) { var L0 = e.runL ? e.runL[0] : 200, L1 = e.runL ? e.runL[1] : 200; return d <= 0.5 ? d * 2 * L0 : L0 + (d - 0.5) * 2 * L1; };
         if (!q.geo) { var xT = sPx(me, me.d) - me.runL[0], xL = me.leapTo != null ? sPx(me, me.leapTo) - me.runL[0] : xT; q.geo = { x0: xT + (xL - xT) * q.prog + 6 * hsS, y0: q.h0 * hsS, x1: me.runL[1], y1: TOM_SLASH_END_H * hsS }; q.geo.dur = Math.max(380, Math.min(900, Math.hypot(q.geo.x1 - q.geo.x0, q.geo.y1 - q.geo.y0) / 0.45)) / 1000; }
         var G = q.geo, prog = Math.min(1, ((tick - q.impact) * dtS + dtS) / G.dur), spanX = (G.x1 - G.x0) || 1;
-        if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (!o.infantry || o.air || o.float) { q.hit[o.id] = 1; return; } /* the ship's deck is past the nose; nothing in the air */
+        if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (!o.infantry || o.air || o.leapAir || o.float) { q.hit[o.id] = 1; return; } /* the ship's deck is past the nose; nothing in the air */
           var xe = 26 + (o.runL ? o.runL[0] : 200) - sPx(o, o.d), ue = (xe - G.x0) / spanX; if (ue < -0.05 || ue > 1.08) { q.hit[o.id] = 1; return; } /* behind him / past the nose */
           if (prog < ue) { left = true; return; } q.hit[o.id] = 1; if (o.ko) return;
           var uc = Math.max(0, Math.min(1, ue)), yl = G.y0 + (G.y1 - G.y0) * uc, half = 0.45 * ((HERO_COMBAT_FX.tom.slashLen && HERO_COMBAT_FX.tom.slashLen[q.img]) || 60) * hsS * (0.32 + 0.68 * (1 - (1 - uc) * (1 - uc))), HA = (typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[o.id]) ? HERO_ANIMS[o.id].dispH * (HERO_ANIMS[o.id].sizeMul || 1) * 0.85 * hsS : 30 * hsS;
@@ -38943,7 +38943,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         if (!q.fort) { if (prog >= 1) { q.fort = true; if (q.sd === 'P') { playerDmg += q.v; projP += q.v; trAdd('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } else { aiDmg += q.v; projA += q.v; trAddAi('skill:' + q.key + '|' + q.name, q.v * (1 - red)); } } else left = true; }
         if (left) waveKeep.push(q); return; }
       if (opp) opp.list.forEach(function (o) { if (q.hit[o.id] || o.dead) return; if (dist(o.infantry ? o.d : 0) > front) { left = true; return; } q.hit[o.id] = 1;
-        if (o.ko) return; if (q.ground && (o.air || o.float || stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; }))) return; /* in the air - ground effects (pillars) pass under him; effects from the sky (ground:false) still hit */
+        if (o.ko) return; if (q.ground && (o.air || o.leapAir || o.float || stormQ.some(function (s0) { return s0.sd === oSd && s0.key === o.id && s0.at >= tick; }))) return; /* in the air - ground effects (pillars) pass under him; effects from the sky (ground:false) still hit */
         var dmg = q.v * (1 - red); if (wallUp && !o.infantry) { blk += dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1); return; } if (dodgePort(o)) return;
         o.hp -= aegisTake(o, dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1)); if (o.hp <= 1e-9) { koMark(o); o.hp = 0; o.ko = true; o.reviveT = koCfg.reviveSec; o.kos++; o.d = 0; } heroHitTaken(o); });
       var mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0;
@@ -38999,7 +38999,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       st.limits.forEach(function (L) {
         if (L.key !== key || L.onHit) return; /* v1609: Pressure Build goes off on a basic hit instead */
         var me = hh.by[L.key], kNow = me && me.ko && me.koTick === tick; if (!me || (me.ko && !kNow) || (kNow ? me.koLim : me.lim) < L.fill || !me.reach) return;
-        var myD = kNow ? me.koD : me.d, tg = oh.list.filter(function (o) { return !o.ko && !o.droid && !o.air && myD + o.d >= 1 - ARENA_REACH; }).sort(function (a, b) { return b.d - a.d; }).slice(0, L.n);
+        var myD = kNow ? me.koD : me.d, tg = oh.list.filter(function (o) { return !o.ko && !o.droid && !o.air && !o.leapAir && myD + o.d >= 1 - ARENA_REACH; }).sort(function (a, b) { return b.d - a.d; }).slice(0, L.n);
         me.lim = 0; limTgt[tagP + L.key] = tg.map(function (o) { return o.id; });
         if (!tg.length) { out += L.value; return; }
         tg.forEach(function (o) {

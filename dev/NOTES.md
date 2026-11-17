@@ -5644,3 +5644,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1702 — Hanzo: slower shuriken (TEST)
 - Harley: the projectiles fly too fast. HERO_COMBAT_FX.hanzo.flyMs 600 (was the default 220 ms); heroThrowFx uses a hero's flyMs. Shuriken Storm aoeDelay = 35/24 + 0.6 s, so the damage still lands when they arrive. Conquest + Arena.
+
+## v1703 — Tom: hittable by ranged in the air (TEST)
+- Harley: Tom shouldn't be invincible in the air; a ranged hero should still hit him. His leap now sets leapAir instead of air. Swords can't reach him and he doesn't swing (pickMeleeTarget / reach / Lily's sword radius / close-range skill picks skip leapAir). Ground effects (ground waves, slashes) also miss him up there. Ranged shots, ranged splash, storms and other skills still hit him. The guard prediction skips him while airborne.
+- Balance (Arena ring): w/o tom Lv40 69-48 (was 55-65), Lv80 63-47 (was 52-68) vs w/o kessa 5-115 / 7-113 - Tom a bit weaker, still useful.
+- Test: headless Arena vs Pip/Lyra/Halo-7 - damage numbers on Tom mid-leap from their shots; no errors.
