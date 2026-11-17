@@ -5601,3 +5601,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1695 — Tom: skill damage x2 (TEST)
 - Harley: increase his skill damage. Heaven Splitter pctByLevel 0.25-0.45 -> 0.50-0.90 per slash.
 - team_rank.js (19,800 fights per level), Tom teams avg win: x1 46.3 / 36.8, x2 47.4 / 37.4, x3 47.8 / 37.7, x4 48.0 / 38.0 (Lv40 / Lv80; Kessa ~66 / 52). Extra damage hardly changes anything. Since v1694 the slashes only hit heroes they physically reach, and that's rare (the line is still above most heads where it crosses them). Their size / aim is the lever, not the number.
+
+## v1696 — Tom: skill damage x2 again (TEST)
+- Harley: double his current skill damage. Heaven Splitter pctByLevel 0.5-0.9 -> 1.0-1.8 per slash (Lv80 skill 5: 1,152 per slash, two per leap).
+- team_rank.js: Tom teams Lv40 48.0%, Lv80 38.0% (Kessa 65.4 / 52.2, Hanzo 57.4 / 86.6, none 47.9 / 45.5) - Arena barely moves (few heroes are physically touched).
+- Conquest head-to-head (gareth,lyra,sera,torvald + X): Tom Lv40 6-12, Lv80 10-1; Kessa 6-12 / 10-1. Tom now ties Kessa in Conquest at Lv40 (was 6-9) - against the "below Kessa" rule, flagged to Harley.
