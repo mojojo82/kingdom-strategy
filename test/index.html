@@ -14364,7 +14364,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1714"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1715"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36918,7 +36918,8 @@ walkerAnim.rig = {"parts":{"nth":{"p":[[66.45,25.31],[43.95,142.76]],"w":140,"h"
 /* v1542: Overlord Profile / skin list picture of the Walker = hull + legs in the current pose (walker or car mode), drawn from the rig */
 var walkerCar = { k: null, last: 0, spin: 0, v: 0, gv: 0, vAt: 0, ph: 0, mv: 0 }; /* v1564: moved up from the Walker rig code - the profile picture pre-draw below read it during page load before it existed, which stopped the rest of the start-up script (world chat etc.) */
 var walkerGovImg = new Image(), walkerGovBusy = false; walkerGovImg.src = walkerCqImg.src;
-function walkerGovRender(k, scale) { var R = walkerAnim.rig, b = walkerCqImg, f = walkerAnim.front; if (!R.img.naturalWidth || !b.naturalWidth || !f.naturalWidth) return null;
+var walkerGovK = 0; /* v1715: the car amount (0 walker .. 1 car) of the profile picture last drawn - the weapons follow it */
+function walkerGovRender(k, scale) { walkerGovK = k; var R = walkerAnim.rig, b = walkerCqImg, f = walkerAnim.front; if (!R.img.naturalWidth || !b.naturalWidth || !f.naturalWidth) return null;
   var W = Math.round(b.naturalWidth * scale), H = Math.round(b.naturalHeight * scale), cv = document.createElement("canvas"); cv.width = W; cv.height = H; var c = cv.getContext("2d");
   drawWalkerRig(c, R, 0, 0, W, true, k); var dy = R.carDrop * walkerCarEase(k) * W / 1000; c.drawImage(b, 0, dy, W, H); c.drawImage(f, 0, dy, W, H); return cv; }
 function walkerGovRefresh() { var cv = walkerGovRender(game.state && game.state.walkerCar ? 1 : 0, 1); if (!cv) return false; walkerGovImg.src = cv.toDataURL("image/png"); walkerGovImg.onload = function () { walkerGovImg.onload = null; walkerGovRedraw(); }; return true; }
@@ -37257,16 +37258,17 @@ function govShipWithBarrels(gImg) { /* -> { src, px, py } (padding as a fraction
     if (!ids.length || !cq || !cq.naturalWidth || !gImg.naturalWidth) return null;
     for (var j = 0; j < list.length; j++) if (WEAPON_BARREL[list[j]] && !barrelImg(list[j])) return null; /* a barrel picture still loading - plain ship for now */
     var key = sk.id + "|" + ids.join(",") + "|" + barrelSize + "|" + gImg.src.length + "|" + JSON.stringify(skinLayoutFor(sk) || {});
+    var wk = sk.anim && sk.anim.rig, ws = wk ? gImg.naturalWidth / cq.naturalWidth : 1, wdy = wk ? sk.anim.rig.carDrop * walkerCarEase(walkerGovK) * gImg.naturalWidth / 1000 : 0; /* v1715 (Harley: weapons vanished while the Walker changed and came back in the wrong spot as a car): the Walker's picture can be smaller mid-change and the hull drops in car mode - the guns follow both */
+    if (wk) key += "|" + gImg.naturalWidth + "|" + walkerGovK.toFixed(3);
     if (govBarrelCache.key === key) return govBarrelCache.val;
-    if (sk.anim && sk.anim.rig && (walkerGovBusy || gImg.naturalWidth !== cq.naturalWidth)) return null; /* v1542: Walker profile picture mid-animation */
-    var cb = imgAlphaBox(cq), gb = sk.anim && sk.anim.rig ? cb : imgAlphaBox(gImg), kk = gb.w / cb.w, L = skinLayoutFor(sk) || {}; /* v1542: the Walker's profile picture shares the hull's frame */
+    var cb = imgAlphaBox(cq), gb = wk ? { x: cb.x * ws, y: cb.y * ws, w: cb.w * ws, h: cb.h * ws } : imgAlphaBox(gImg), kk = gb.w / cb.w, L = skinLayoutFor(sk) || {}; /* v1542: the Walker's profile picture shares the hull's frame */
     var GW = gImg.naturalWidth, GH = gImg.naturalHeight, PX = 0.3, PY = 0.15, ox = GW * PX, oy = GH * PY;
     var cv = document.createElement("canvas"); cv.width = Math.round(GW * (1 + 2 * PX)); cv.height = Math.round(GH * (1 + 2 * PY));
     var cx = cv.getContext("2d"); cx.imageSmoothingEnabled = true; cx.drawImage(gImg, ox, oy, GW, GH);
     for (var q = 0; q < list.length; q++) {
       var id = list[q], b = WEAPON_BARREL[id], im = b && barrelImg(id); if (!im) continue;
       var p = L["w" + q]; if (!p || p.length < 2) p = [[0.8, 0.45], [0.8, 0.78], [0.12, 0.62]][q]; /* same defaults as barrelPivot */
-      var gx = ox + gb.x + (p[0] * cq.naturalWidth - cb.x) * kk, gy = oy + gb.y + (p[1] * cq.naturalHeight - cb.y) * kk;
+      var gx = ox + gb.x + (p[0] * cq.naturalWidth - cb.x) * kk, gy = oy + gb.y + (p[1] * cq.naturalHeight - cb.y) * kk + wdy;
       if (sk.govXf) { gx = ox + p[0] * cq.naturalWidth * sk.govXf.s + sk.govXf.x; gy = oy + p[1] * cq.naturalHeight * sk.govXf.s + sk.govXf.y; } /* v1550: a profile picture laid out differently from the battle picture (Mecha) */
       var sc = barrelSize * BARREL_UNIFY * (BARREL_REF_CQ / sk.cqScale) * (sk.govXf ? sk.govXf.s : kk) * (b.nat / 240) / b.w; /* v1554: same gun size on every skin, like Conquest */
       cx.save(); cx.translate(gx, gy); cx.scale(sc, sc); cx.drawImage(im, -b.pivot[0], -b.pivot[1], b.w, b.h); cx.restore();

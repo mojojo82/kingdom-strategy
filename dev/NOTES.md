@@ -5729,3 +5729,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Cause (reproduced headless, old build): the activity-gem counts (state.gaC / gaL / gq) were never loaded back from the save, so after every reload the game forgot today's claim and showed Claim again. Pressing it asked the server, which had already paid that day and paid 0 - then it flipped to Done. No gems were lost: the first claim each UTC day paid 300; the later ones were the button lying. The first press also had no feedback while the server call ran (and a failed login claim was dropped silently).
 - Fix: loadState restores gaC / gaL / gq; the wallet listener copies the server's own counts for today (wallet.ga) so the button matches the server on any device; the Claim button shows "…" while asking, then "+300 gems - daily login gift collected", "Already collected today - next one in about N hours (midnight UTC)", or "Couldn't reach the server".
 - Test: claim -> reload -> old build shows Claim (bug), new build Done; gems 300 once; no errors.
+
+## v1715 — Walker in the Overlord profile: weapons stay on during the change and in the right spot as a car (TEST)
+- Harley: tap the standing Walker to turn it into a car -> the weapons disappear, then come back in the wrong place.
+- Causes (reproduced headless): govShipWithBarrels skipped the guns while the profile picture was mid-change (smaller 0.6 picture, walkerGovBusy), and in car mode the hull is drawn lower (rig.carDrop) but the guns were placed for the standing hull - so they floated on top.
+- Fix: walkerGovRender remembers its car amount (walkerGovK); the guns are placed on any size of the Walker picture and dropped with the hull (rig.carDrop x ease). Cache key includes the size and car amount.
+- Check: standing / mid-change / car captures, old vs new - old: no guns mid-change, guns too high as a car; new: guns on the hull side all the way through. No errors.
