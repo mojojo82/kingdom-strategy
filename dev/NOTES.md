@@ -5575,3 +5575,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1691 — Tom: streaks behind his skill slashes (TEST)
 - Harley: some streaks behind the slashes. drawHeroThrows (slashOne): 5 speed lines trail each slash back along its path (bright cyan-white fading out, the middle one thickest; length grows with the flight), plus 3 fading after-images of the slash just behind it. Additive blend, fades in with the slash. Conquest + Arena (same function).
 - Test: headless Arena, no errors. Visual only.
+
+## v1692 — Tom: skill damage rides on the two slashes (TEST)
+- Harley: the skill's damage comes from both slashes, and a slash only damages an opponent it touches.
+- Heaven Splitter now has slashes: [{ at: 32/24 s, part 0.5 }, { at: 39/24 s, part 0.5 }] and slashSpd 1.125 (x 400 px/s = the drawn 450 px/s). Arena: each slash is a moving front (waveQ, slash: true) from Tom at that speed. It hits each ground enemy hero in front of him when it reaches them, then the fortress, for half the skill value. Enemies on the enemy deck, already behind him, or in the air / floating are not hit. Conquest: two timed waves (each enemy hit when a slash reaches it, half the damage each; setIdleWaveGeo also runs for slashes).
+- Balance: Arena Lv40 w/o tom 56-64 (was 50-70) vs w/o kessa 5-115; Lv80 54-66 (was 32-88) vs 11-109 - Tom a bit weaker, still useful. Conquest Lv40 6-9, Lv80 10-1 (unchanged; Kessa 6-12). Meta: same pre-existing warning.
+- Test: headless Arena - each slash puts a half-damage number on every enemy it passes; no errors.
