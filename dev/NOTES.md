@@ -5687,3 +5687,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Buttons: painted icons replace the emoji / drawn ones (mapIcImg); Deals in the dock uses the gift icon. New left-column buttons under Search (phones, bottom up): Alliance, Cards, Weapons, Shop -> More > Alliance / Cards / Weapons, the shop window.
 - Look (Harley picked from mockups): dark square kept, dotted border removed, normal icon size (38 px). Mail / Idle Chest still get a solid gold border when something is waiting.
 - Test: headless World map capture (all 11 icons load), each new button opens its screen, no errors.
+
+## v1707 — March ships: code-built Sky Gunship + textured Galleon, on the stress tool (TEST)
+- Harley compared our march ships with another game's (clean low-poly models, flat colours, outlines). Proofs of concept:
+  - **Textured Ghost Galleon**: the Meshy .glb's painted texture baked onto an ~8.5k-triangle version (dev/glb/bake_textured.py, encode_textured.py, previews prev_tex.*). art/models/galleon_tx.json (333 KB) + .webp (183 KB), loaded only when shown. The ship drawer now supports textured models (aUV / uTex). Finding: still lumpy - the grid-clustering shrink makes stair-steps; Blender's real decimate would fix it.
+  - **Sky Gunship**: a ship built entirely in code from simple shapes, one flat colour per part (dev/models/gunship.py -> encode_flat_model.py; preview dev/models/prev_flat.*), navy + gold + cyan, ~1,700 triangles, 29 KB, embedded as GUNSHIP3D_MODEL. The ship drawer gained a dark outline pass for models that ask for it (M.ol: back faces pushed out along smoothed normals, MARCH_OUTLINE_PX 1.1).
+- Harley: "needs to be a lot smaller" -> size 0.6; "add into test as a secondary option on our stress test tool" -> new stress bar button cycles 🚢 Mine / 🚀 Gunship / 🏴‍☠️ Textured (re-sends the same number of marches). Both test ships are hidden from the Skins list.
+- Headless (software graphics, not representative of phones): 30 stress marches 8.7 fps with Voidspire vs 7.7 with the gunship (the outline is a 2nd draw). Needs a phone check.
