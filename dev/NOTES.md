@@ -5713,3 +5713,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: "Zoomed out it looks thick vs the ship, zoomed in it looks thin". The outline was a fixed ~1.1 CSS px. It's now MARCH_OUTLINE_K (0.0225) x the ship's on-screen length (march3dSize x skin size x tile px) - the same 1.1 px at normal zoom, thinner zoomed out, thicker zoomed in (kept between 0.3 and 3 px).
 - Checked headless at zoom 0.6 / 1 / 1.8 with 6 Blackwatch stress ships.
 - Separately explained (not changed yet): the ship layer's pixel budget (MARCH_GL_PX) lowers sharpness in 0.25 steps when zoomed in, which can also look like a detail change.
+
+## v1712 — Thinner 3D ship outline (TEST)
+- Harley: v1711 scaled the right way but kept it thick - "It should be thin not thick". MARCH_OUTLINE_K 0.0225 -> 0.011 (about half; the thin zoomed-in look at every zoom), kept between 0.2 and 1.4 px.
+- Checked headless at zoom 0.6 / 1 / 1.8, crops scaled to the same ship size: the outline looks the same thin line in all three.

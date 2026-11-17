@@ -14358,7 +14358,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1711"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1712"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21917,7 +21917,7 @@ function marchVisualHeading(gx, gz, M) {
   marchVisCache[key] = best; return [Math.cos(best), Math.sin(best)];
 }
 // ships: [{id, ox, oy (viewport px of the ground point), tx, ty (tile coords), gx, gz (ground heading in tile coords)}]; u = pixels per tile step
-var MARCH_OUTLINE_K = 0.0225; /* v1707: outline for models made with one; v1711 (Harley: "zoomed out it looks thick vs the ship, zoomed in it looks thin"): width = this share of the ship's on-screen length (~1.1px at normal zoom), so it scales with zoom */
+var MARCH_OUTLINE_K = 0.011; /* v1712 (Harley: "It should be thin not thick"): the thin zoomed-in look at every zoom */ /* v1707: outline for models made with one; v1711 (Harley: "zoomed out it looks thick vs the ship, zoomed in it looks thin"): width = this share of the ship's on-screen length (~1.1px at normal zoom), so it scales with zoom */
 var MARCH_GL_PX = 600000; /* v1238: most device pixels the 3D ship layer may use (~775 x 775) */
 function marchGLDraw(ships, u) {
   var G = marchGL; if (!G.ok) return;
@@ -21964,7 +21964,7 @@ function marchGLDraw(ships, u) {
     var mk = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], mo = marchModelFor(mk), S = march3dSize * (mk.size || 1) / (2 * mo.M.h[0]); G.bind(mo); /* v1048: the march's skin; v1051: and its model */
     gl.uniform1f(L.uS, S); gl.uniform1f(L.uLift, mo.M.h[1] * S + 0.14 + bob - (march3dWater ? marchWaterCfg(mk.model || "void").sink : 0)); /* v1057: sits in the water; the shader cuts the hull off at the waterline */ gl.uniform1f(L.uZ0, (sh.tx + sh.ty - zRef) * 0.70711 * 0.81915); /* v1054: depth relative to the ships on screen — absolute tile coords pushed far-off ships (x+y > ~690) out of the depth range so they vanished */
     gl.uniform3fv(L.uLo, mk.lo); gl.uniform3fv(L.uHi, mk.hi); gl.uniform3fv(L.uGlow, mk.glow); gl.uniform3fv(L.uHot, mk.hot); gl.uniform1f(L.uVC, mo.vc); gl.uniform1f(L.uTX, mo.tex ? 1 : 0);
-    if (mo.bsn) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.FRONT); gl.uniform1f(L.uOL, Math.max(0.3, Math.min(3, MARCH_OUTLINE_K * march3dSize * (mk.size || 1) * u))); gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0); gl.disable(gl.CULL_FACE); gl.uniform1f(L.uOL, 0); } /* v1707: dark outline (back faces pushed out) */
+    if (mo.bsn) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.FRONT); gl.uniform1f(L.uOL, Math.max(0.2, Math.min(1.4, MARCH_OUTLINE_K * march3dSize * (mk.size || 1) * u))); gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0); gl.disable(gl.CULL_FACE); gl.uniform1f(L.uOL, 0); } /* v1707: dark outline (back faces pushed out) */
     gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0);
   });
   if (water) marchWaterGLDraw(gl, marchWater.nU, marchWater.n - marchWater.nU, W, H); /* near-side foam over the hull edge */
