@@ -5535,3 +5535,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: the knock-back must start exactly when Bram's / Halo-7's punch makes contact. Before, it started on the sim tick, which isn't when their attack animation's impact frame plays.
 - Now a knock-back from the sim waits (knPend; the sim says who did it: heroInfo kb) until that attacker's drawn attack reaches its impact frame (drawHeroAnim returns 2 -> arenaAnim.tomKnGo). Then the knock row and the slide start. Meanwhile Tom holds his guard where he stood. Fallback: start anyway after 1.3 s; dropped if he's KO'd or gone 2 s.
 - Test: headless Arena vs Bram/Halo-7/Aurek - Halo-7's punch sparks and the start of the slide are on the same frame, no errors. Visual only, no balance change.
+
+## v1685 — Tom: the push-back really moves him back (Arena, TEST)
+- Harley: no push-back was visible. In v1684 the sim moved him back on the hit tick but the drawing waited for the punch; by then the attacker had stopped swinging (Tom was out of reach) and Tom had already walked back in, so the "slide" went nowhere (sometimes even forwards).
+- Now: the sim applies the knock-back 2 ticks after the blocked hit (knockAt, planMove) and holds him through the slide (castUntil). So the attacker keeps punching and the drawing starts the slide on his contact frame. The slide is a fixed TOM_KNOCK_PX back from where Tom stands on screen (stopping at his own ship), then eases onto the sim position (bkR.post, 350 ms). The guard stays up while he waits for the punch (running no longer cancels it then).
+- Test: headless Arena vs Bram/Halo-7/Aurek - 3 push-backs of ~54 px each, started 0.5-1.0 s after the block on Halo-7's punch frame; no errors.
