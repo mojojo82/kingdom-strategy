@@ -25,6 +25,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   if (process.env.BIG) await P.evaluate(() => { window.__BIG = true; });
   if (process.env.FINE) await P.evaluate(() => { window.__FINE = true; });
+  if (process.env.VAL) await P.evaluate(() => { window.__VAL = true; });
+  if (process.env.CURVE) await P.evaluate((c) => { window.__CURVE = c; }, JSON.parse(process.env.CURVE));
   const r = await P.evaluate(() => {
     const d = Object.assign({}, HERO_DEFS.aurek, { name: "Drainer" }); d.conquestSkills = HERO_DEFS.aurek.conquestSkills.map((s) => Object.assign({}, s));
     const sk = d.conquestSkills[0]; sk.name = "Soul Drain"; sk.pctByLevel = [0, 0, 0, 0, 0]; HERO_DEFS.tdrain = d; if (HERO_ANIMS.aurek) HERO_ANIMS.tdrain = HERO_ANIMS.aurek;
@@ -39,7 +41,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
           if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.koTick = tick; e.koD = e.d; e.reviveT = game.heroKoCfg.reviveSec; e.kos = (e.kos || 0) + 1; e.d = 0; } });
         const fort = per * (ost.dmgTakenMult || 1); tot += fort; if (q.sd === "P") { o.pF += per; o.pH += tot; } else { o.aF += per; o.aH += tot; } ST.healed += tot; });
       Q = keep; return o; };
-    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "tdrain"]);
+    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "tdrain", "aurek"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
     const HAN = BASE.concat(["hanzo"]), T = BASE.concat(["tdrain"]);
@@ -49,6 +51,10 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(ST.casts / n).toFixed(1), healedPerFight: Math.round(ST.healed / n) }; };
     const out = {};
+    if (window.__CURVE) { const C = window.__CURVE; [["Lv80", [80, 25, 5, 30]], ["Lv60", [60, 15, 4, 20]], ["Lv40", [40, 10, 3, 15]]].forEach(([nm, L]) => {
+        const at = (side(T, L, true).attackers || []).filter((x) => x.id === "tdrain")[0], basic = at ? at.dmg : 0; out[nm + " his basic hit"] = Math.round(basic);
+        Object.keys(C).forEach((cn) => { const pc = C[cn][L[2] - 1]; CFG = { on: true, D: pc * basic }; out[nm + " curve " + cn + " (skill Lv" + L[2] + " = " + pc + "x basic = " + Math.round(pc * basic) + ")"] = rate(L); }); }); return JSON.stringify(out, null, 1); }
+    if (window.__VAL) { [[80, 25, 5], [40, 10, 3], [60, 15, 4], [20, 0, 2]].forEach((L) => { const st = side(["aurek"], L.concat([0]), true); const a = (st.actives || [])[0], at = (st.attackers || []).filter((x) => x.id === "aurek")[0]; out["Lv" + L[0] + " sk" + L[2]] = { skillValue: Math.round(a.value), basic: Math.round(at.dmg) }; }); return JSON.stringify(out); }
     [["Lv80", [80, 25, 5, 30], (window.__FINE ? [750, 800, 850, 900] : window.__BIG ? [400, 700, 1000, 1500, 2000, 3000, 5000] : [10, 25, 50, 75, 100, 150, 250])], ["Lv40", [40, 10, 3, 15], (window.__FINE ? [325, 350, 375, 400] : window.__BIG ? [200, 300, 450, 700, 1000, 1500, 2500] : [5, 10, 25, 50, 75, 100, 150])]].forEach(([nm, L, DS]) => {
       out[nm + " hero HP"] = Math.round((side(T, L, true).heroHp || [])[0].max); out[nm + " fortress HP"] = Math.round(side(T, L, true).maxHp);
       CFG = { on: false }; out[nm + " plain Aurek copy (no drain, no float)"] = rate(L);
@@ -57,5 +63,6 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     });
     return JSON.stringify(out, null, 1);
   });
-  fs.writeFileSync(path.join(__dirname, "results", process.env.FINE ? "drain_melee_fine.json" : process.env.BIG ? "drain_melee_big.json" : "drain_melee.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  if (process.env.VAL) { console.log(r); await b.close(); return; }
+  fs.writeFileSync(path.join(__dirname, "results", process.env.CURVE ? "drain_melee_curve.json" : process.env.FINE ? "drain_melee_fine.json" : process.env.BIG ? "drain_melee_big.json" : "drain_melee.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
