@@ -5621,3 +5621,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1699 — Tom: skill damage x2 once more (TEST)
 - Harley: double it again. Heaven Splitter pctByLevel 1.0-1.8 -> 2.0-3.6 per slash (Lv80 skill 5: ~2,300 per slash).
 - team_rank.js: Tom teams Lv40 46.8%, Lv80 37.4% (Kessa 62.2 / 50.4, Hanzo 57.6 / 86.3, none 45.3 / 44.3) - Arena still barely moves. Conquest (gareth,lyra,sera,torvald,tom): Lv40 6-16 (Kessa 6-12, OK per Harley: the rule is about Arena), Lv80 10-1.
+
+## v1700 — Tom: skill damage back to the v1695 value (TEST)
+- Harley: revert a few of the damage changes. Chose 0.5-0.9 per slash (v1695; Lv80 skill 5 = 576 per slash, two slashes per leap). Arena was ~47 / 37% for Tom teams at every value tested (team_rank.js), so no Arena change expected.
