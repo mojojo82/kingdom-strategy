@@ -851,13 +851,14 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   /* v856: march route arrows - chevrons flowing from base to target (outbound) and back to base (returning) */
   /* v1255 (FPS): the arrows used to repaint every frame (animated background-position + a drop-shadow filter on every strip). Now the shadow is drawn into
      the arrow picture and the strip slides by transform on its own layer, which the phone's GPU moves without repainting. Same look. */
-  .march-path { position:absolute; height:10px; margin-top:-5px; transform-origin:0 50%; pointer-events:none; overflow:hidden; opacity:.95; }
-  .march-path::before { content:""; position:absolute; top:0; bottom:0; left:-16px; right:0; background-repeat:repeat-x; background-size:16px 10px; animation:marchFlow .7s linear infinite; will-change:transform; }
-  .march-path.out { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%23ffd36b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
-  .march-path.back { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%237cd0ff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); }
-  .march-path.foe { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='10'><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='rgba(0,0,0,0.55)' stroke-width='4.6' stroke-linecap='round' stroke-linejoin='round'/><polyline points='5,1.5 10,5 5,8.5' fill='none' stroke='%23ff7a7a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/></svg>"); opacity:.75; }
+  /* v1710 (Harley, from a reference game's video): solid lime chevrons with flat-cut ends, spaced out, no dark outline (was thin gold lines + outline). Step = MARCH_ARROW_STEP (26px). */
+  .march-path { position:absolute; height:14px; margin-top:-7px; transform-origin:0 50%; pointer-events:none; overflow:hidden; opacity:.95; }
+  .march-path::before { content:""; position:absolute; top:0; bottom:0; left:-26px; right:0; background-repeat:repeat-x; background-size:26px 14px; animation:marchFlow 1.1s linear infinite; will-change:transform; }
+  .march-path.out { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='14'><polygon points='4,0.5 9,0.5 15,7 9,13.5 4,13.5 10,7' fill='%235cc96a'/></svg>"); }
+  .march-path.back { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='14'><polygon points='4,0.5 9,0.5 15,7 9,13.5 4,13.5 10,7' fill='%235cc96a'/></svg>"); opacity:.8; }
+  .march-path.foe { --mp:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='14'><polygon points='4,0.5 9,0.5 15,7 9,13.5 4,13.5 10,7' fill='%23ff6b6b'/></svg>"); opacity:.8; }
   .march-path::before { background-image:var(--mp); }
-  @keyframes marchFlow { from { transform:translateX(0); } to { transform:translateX(16px); } }
+  @keyframes marchFlow { from { transform:translateX(0); } to { transform:translateX(26px); } }
   .march-marker { position:absolute; transform:translate(-50%,-50%); font-size:15px; line-height:1;
     filter:drop-shadow(0 1px 2px #000c); }
   .march-marker.acting { animation:marchMarkerPulse 1s ease-in-out infinite; }
@@ -14357,7 +14358,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1709"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1710"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -22033,7 +22034,7 @@ function updateMarchMarkers(manual) {
         if (pathIn && (m.status === "outbound" || m.status === "returning")) { /* v856: route arrows */
           var pdx = pB.x - pA.x, pdy = pB.y - pA.y, plen = Math.sqrt(pdx * pdx + pdy * pdy);
           /* v1075: only the part of the arrow near the screen is drawn (a long route used to be one strip up to ~30,000px wide). The start is snapped to the 16px arrow pattern so the arrows don't jump */
-          var poff = Math.floor(plen * pclip[0] / 16) * 16, pend = plen * pclip[1], pux = plen ? pdx / plen : 0, puy = plen ? pdy / plen : 0;
+          var poff = Math.floor(plen * pclip[0] / 26) * 26, /* v1710: arrow step 26px */ pend = plen * pclip[1], pux = plen ? pdx / plen : 0, puy = plen ? pdy / plen : 0;
           var pe = marchPathEls[m.id];
           if (!pe) { pe = document.createElement("div"); (document.getElementById("mapPathLayer") || layer).appendChild(pe); marchPathEls[m.id] = pe; }
           var pc = "march-path " + (m.foreign ? "foe" : m.status === "returning" ? "back" : "out"); if (pe.className !== pc) pe.className = pc;

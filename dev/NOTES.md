@@ -5704,3 +5704,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: "try to do a model like blackwatch 2". dev/models/blackwatch.py (shape kit dev/models/kit.py, shared with future code-built ships): dark gunmetal armoured hull with a layered wedge bow, the long octagonal side window frame (lighter steel) with its dark opening, clamps with cyan lights on the top edge, raised spine plate, lower plates with light strips, plate seams, stern block with vents, engine drum with a glowing exhaust, rear tower (windows, mast + antennas, stack, dish) and the turret. ~1,900 triangles, 32 KB, outline on, size 0.6.
 - Stress tool ship button now cycles Mine / Gunship / 🛡️ Blackwatch / Textured. Hidden from the Skins list.
 - Checked headless on the World map (normal size and sized up), no errors.
+
+## v1710 — Route chevrons: solid lime, no outline (TEST)
+- Harley (screen recording of another game): change the shape and colour to match, no outline. Route arrows are now solid flat-ended chevrons (filled polygon, 26 x 14 px tile, step 26 px - the scroll snap in updateMarchMarkers uses 26 too), lime #5cc96a for your marches (returning a little fainter), red for other players' marches. Flow speed about the same (26 px / 1.1 s).
+- Performance (headless, 3D ships off so only the arrows count): unchanged - 30 routes 60 fps either way, 60 routes ~51 fps vs 60 hidden. The outline was never the cost; each flowing strip is its own animated layer. Next idea if needed: stop the flow above ~40 routes, or draw all arrows on one layer.
