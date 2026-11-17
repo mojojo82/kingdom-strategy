@@ -2995,7 +2995,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   /* v1706 (Harley): painted World-map icons (art/ui/mapicons, ChatGPT in the Events icon style) + new Shop / Weapons / Cards / Alliance buttons, left side under Search */
   .mapic { display:none; position:absolute; left:10px; z-index:7; width:46px; height:46px; padding:0; border:2px dashed #c9a24a; border-radius:10px; background:rgba(15,21,32,.78); cursor:pointer; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.45); }
   body[data-screen="world"] .mapic { display:flex; }
-  #mapShopBtn { top:176px; } #mapWeaponsBtn { top:232px; } #mapCardsBtn { top:288px; } #mapAllyBtn { top:344px; }
+  #mapShopBtn { top:260px; left:auto; right:10px; } #mapWeaponsBtn { top:232px; } body[data-screen="world"] #mapIdleBtn { right:auto; left:10px; top:176px; } #mapCardsBtn { top:288px; } #mapAllyBtn { top:344px; }
   #mapMailBtn, #mapReconBtn, #mapTasksBtn, #mapSearchBtn, #mapIdleBtn, #mapBagBtn, .mapic, #ksEvDock .eb { border-color:transparent !important; } /* Harley: no dotted border, dark square stays */
   #mapMailBtn.has, #mapIdleBtn.has { border-color:#f0c95f !important; border-style:solid; } /* unclaimed mail / chest ready still lights up */
   img.mapimg { width:38px; height:38px; object-fit:contain; display:block; pointer-events:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
@@ -3005,7 +3005,12 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     body[data-screen="world"] #mapAllyBtn { position:fixed; left:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
     body[data-screen="world"] #mapCardsBtn { position:fixed; left:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); }
     body[data-screen="world"] #mapWeaponsBtn { position:fixed; left:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 112px); }
-    body[data-screen="world"] #mapShopBtn { position:fixed; left:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 168px); }
+    /* v1713 (Harley's arrows): Store joins Backpack + Mail at the bottom right (like his reference game), the Idle chest takes Store's old spot on the left, Recon goes to the top of the right column */
+    body[data-screen="world"] #mapShopBtn { position:fixed; left:auto; right:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px); }
+    body[data-screen="world"] #mapMailBtn { bottom:calc(var(--bnH,86px) + 46px + 10px + 56px); }
+    body[data-screen="world"] #mapBagBtn { bottom:calc(var(--bnH,86px) + 46px + 10px + 112px); }
+    body[data-screen="world"] #mapReconBtn, html.ks-mail-on body[data-screen="world"] #mapReconBtn { bottom:calc(var(--bnH,86px) + 46px + 10px + 168px); }
+    body[data-screen="world"] #mapIdleBtn { right:auto; left:10px; top:auto; bottom:calc(var(--bnH,86px) + 46px + 10px + 168px); }
   }
   /* v929: top-bar ✉️ removed - mail lives on the World map (📪 above 🛰️) */
   #mailBadge { display:none; position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#d9412b; color:#fff; font:700 10px/16px system-ui,sans-serif; text-align:center; }
@@ -14358,7 +14363,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1712"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1713"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -35683,9 +35688,9 @@ var LG_ICONS = { bag: "data:image/webp;base64,UklGRmQdAABXRUJQVlA4WAoAAAAQAAAAfw
 function lgImg(k) { return '<img class="lg-art" src="' + LG_ICONS[k] + '" alt="">'; }
 /* v1706: painted World-map icons replace the emoji / drawn ones; four new shortcut buttons */
 (function () {
-  [["mapMailBtn", "mail"], ["mapReconBtn", "recon"], ["mapTasksBtn", "tasks"], ["mapSearchBtn", "search"], ["mapIdleBtn", "idle"], ["mapShopBtn", "shop_alt"], ["mapWeaponsBtn", "weapons"], ["mapCardsBtn", "cards"], ["mapAllyBtn", "alliance"]].forEach(function (p) {
+  [["mapMailBtn", "mail_w"], ["mapReconBtn", "recon"], ["mapTasksBtn", "tasks"], ["mapSearchBtn", "search"], ["mapIdleBtn", "idle"], ["mapShopBtn", "store_w"], ["mapWeaponsBtn", "weapons"], ["mapCardsBtn", "cards"], ["mapAllyBtn", "alliance"]].forEach(function (p) {
     var b = document.getElementById(p[0]), m = b && b.querySelector(".mmi"); if (m) m.outerHTML = mapIcImg(p[1]); });
-  var bg = document.getElementById("mapBagBtn"); if (bg) bg.innerHTML = mapIcImg("bag");
+  var bg = document.getElementById("mapBagBtn"); if (bg) bg.innerHTML = mapIcImg("bag_w"); /* v1713: white Backpack / Mail / Store (Harley's reference style) */
   var go = function (id, fn) { var b = document.getElementById(id); if (b) b.onclick = function (e) { e.stopPropagation(); fn(); }; };
   go("mapShopBtn", function () { ksShopOpen(); }); go("mapWeaponsBtn", function () { setScreen("more", "weapons"); }); go("mapCardsBtn", function () { setScreen("more", "cards"); }); go("mapAllyBtn", function () { setScreen("more", "alliance"); });
 })();

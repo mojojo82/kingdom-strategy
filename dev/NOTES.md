@@ -5717,3 +5717,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1712 — Thinner 3D ship outline (TEST)
 - Harley: v1711 scaled the right way but kept it thick - "It should be thin not thick". MARCH_OUTLINE_K 0.0225 -> 0.011 (about half; the thin zoomed-in look at every zoom), kept between 0.2 and 1.4 px.
 - Checked headless at zoom 0.6 / 1 / 1.8, crops scaled to the same ship size: the outline looks the same thin line in all three.
+
+## v1713 — White Backpack / Mail / Store icons + rearranged map buttons (TEST)
+- Harley (reference screenshot of another game): new white-style icons for Backpack, Mail and Store - ChatGPT sheet art/originals/ui/mapicons/white_icons_v1_gpt.png (style ref refs/white_icons_ref.png), keyed to icon_bag_w / icon_mail_w / icon_store_w (192 px webp).
+- His arrows: the Idle chest moves to the left column (Store's old spot), Store goes to the bottom right so Backpack, Mail and Store sit together. Right column top to bottom now: Recon, Backpack, Mail, Store. Left: Tasks, Search, Idle chest, Weapons, Cards, Alliance. (Desktop: Idle left at 176 px, Store right at 260 px.)
+- Headless check: positions and icons on the World map, no errors.
+- Next (Harley): set up the Store as the home for the free-to-play item shops.
