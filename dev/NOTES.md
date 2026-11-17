@@ -5607,3 +5607,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - team_rank.js: Tom teams Lv40 48.0%, Lv80 38.0% (Kessa 65.4 / 52.2, Hanzo 57.4 / 86.6, none 47.9 / 45.5) - Arena barely moves (few heroes are physically touched).
 - Conquest head-to-head (gareth,lyra,sera,torvald + X): Tom Lv40 6-12, Lv80 10-1; Kessa 6-12 / 10-1. Tom now ties Kessa in Conquest at Lv40 (was 6-9) - against the "below Kessa" rule, flagged to Harley.
 - Harley (17 Nov): the "well below Kessa / Hanzo" rule is mainly about Arena - Tom matching Kessa in Conquest is fine. v1696 stays. HANDOVER.md updated.
+
+## v1697 — damage log labels close-range skill hits on the fortress (TEST, dev only)
+- Harley asked why Iron Lily's skill showed no fortress damage. Close-range skills (Lily's Crimson Tempest, Bram's Piston Slam...) hitting the fortress added to the damage but weren't labelled in the trace (trAdd), so they could never show. Now labelled (player side). No gameplay change.
+- Even with the label, Lily's skill does 0 fortress damage in 18 Lv80 fights (team Gareth/Lyra/Sera/Torvald + Lily, 2 of 18 won). Her skill only reaches what's within 36 px of her sword. She spends the fights in the middle against enemy heroes and almost never reaches the ship (~4 normal hits on it per fight), so her skill lands on heroes, not the fortress.
