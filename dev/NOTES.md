@@ -5547,3 +5547,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - (1): causes: the push-back converted px to lane distance with one half's length, so near the meeting line it threw him much too far in the sim (e.g. d 0.55 -> 0.05). The walk memory (arenaMeleeApproach) also kept his old spot, so after the slide he snapped forwards in his idle pose. Fixes: dMovePx() converts screen px over both halves of the lane (used for the push-back and the leap range); the walk memory follows the push-back; whenever Tom moves on screen outside the slide he plays his run (and drops the guard). The push-back start point is always where he is drawn.
 - Balance: Arena Lv40 w/o tom 50-70 vs w/o kessa 17-103; Lv80 32-88 vs 15-104 (unchanged).
 - Test: headless Arena vs Bram/Halo-7/Aurek - 4 push-backs; after each he stays where he slid to, then runs back in with run frames; no errors.
+
+## v1687 — Tom: push-back only when a punch visibly connects with his guard (Arena, TEST)
+- Harley: the push-back must be a hit connecting while he blocks. In v1686 he could slide back with no punch on him (1 s fallback, or a punch thrown at someone else / from too far away).
+- Now the slide starts only when Bram's / Halo-7's drawn punch reaches its impact frame within 50 px (x hero scale) of Tom while he holds his guard. No fallback: if no punch connects within 1.2 s, there's no push-back.
+- The sim no longer moves him for a push-back (it just holds him while he slides). He slides back on screen, then runs back to his spot. That avoids the sim and the picture disagreeing.
+- Balance: Arena Lv40 w/o tom 50-70 vs w/o kessa 17-103; Lv80 32-88 vs 15-104 (unchanged).
+- Test: headless Arena vs Bram/Halo-7/Aurek - every slide started on a punch within 26 px of his guard; no errors.
