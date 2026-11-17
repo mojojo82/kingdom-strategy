@@ -122,6 +122,9 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},
                  "attack2": {"fps": 24, "frames": list(range(4, 57, 2))},
                  "attack3": {"fps": 24, "frames": list(range(16, 49, 2)) + list(range(64, 85, 2))}}}[HERO]
+# v1720: sharper sheets - env STAND (sheet px for the standing height, e.g. 2x the CFG value), WRAP (columns, keep the sheet <= 4096 wide) and TAG override the CFG
+for _k, _f in (("STAND", float), ("WRAP", int), ("TAG", str)):
+    if os.environ.get(_k): CFG[_k.lower()] = _f(os.environ[_k])
 ROWS = [r for r in ("idle", "run", "attack", "attack2", "attack3", "enter", "skill", "knock") if r in CFG]   # v1679: "enter" (Tom's block entry, played once before the held guard)   # v1616: attack3 (Iron Lily rotates three basic attacks)
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
 rows = {}; SLIDE = {}
