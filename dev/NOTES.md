@@ -5694,3 +5694,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   - **Sky Gunship**: a ship built entirely in code from simple shapes, one flat colour per part (dev/models/gunship.py -> encode_flat_model.py; preview dev/models/prev_flat.*), navy + gold + cyan, ~1,700 triangles, 29 KB, embedded as GUNSHIP3D_MODEL. The ship drawer gained a dark outline pass for models that ask for it (M.ol: back faces pushed out along smoothed normals, MARCH_OUTLINE_PX 1.1).
 - Harley: "needs to be a lot smaller" -> size 0.6; "add into test as a secondary option on our stress test tool" -> new stress bar button cycles 🚢 Mine / 🚀 Gunship / 🏴‍☠️ Textured (re-sends the same number of marches). Both test ships are hidden from the Skins list.
 - Headless (software graphics, not representative of phones): 30 stress marches 8.7 fps with Voidspire vs 7.7 with the gunship (the outline is a 2nd draw). Needs a phone check.
+
+## v1708 — Edge smoothing switch for the 3D march ships (TEST, stress tool)
+- Harley: "Try edge smoothing". WebGL only sets antialias when the drawing surface is made, so the stress bar's new "▫️ Smooth off / ✨ Smooth on" button rebuilds the 3D ship layer (canvas, models, textures, ship water - marchGLRebuild). Off by default as before (v1236 turned it off for speed).
+- Fix found while testing: the rebuilt canvas kept the old position memory (G._l / G._t) and was never placed - reset too. The ship water draw now also switches off the new texture / outline inputs.
+- Headless (software graphics - phones do this in hardware and pay much less): 10 gunships 22.7 fps off vs 10 fps on. Edges visibly softer. Needs Harley's phone check.

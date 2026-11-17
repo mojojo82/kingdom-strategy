@@ -3819,7 +3819,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
           </div>
             </div>
             <div id="fpsCounter">-- FPS</div>
-            <div id="mapStressBar" style="display:none;"><span>🧪 Stress</span><button type="button" data-stress="10">10</button><button type="button" data-stress="20">20</button><button type="button" data-stress="30">30</button><button type="button" data-stress="0">✕</button><button type="button" id="mapStressShip" data-stressship="1" title="Which ship the stress marches use">🚢 Mine</button><b id="mapStressN"></b></div>
+            <div id="mapStressBar" style="display:none;"><span>🧪 Stress</span><button type="button" data-stress="10">10</button><button type="button" data-stress="20">20</button><button type="button" data-stress="30">30</button><button type="button" data-stress="0">✕</button><button type="button" id="mapStressShip" data-stressship="1" title="Which ship the stress marches use">🚢 Mine</button><button type="button" id="mapStressAA" data-stressaa="1" title="Edge smoothing on the 3D ships">▫️ Smooth off</button><b id="mapStressN"></b></div>
             <button id="mapMailBtn" type="button" title="Mail" aria-label="Mail"><span class="mmi">📪</span><span id="mapMailBadge"></span></button>
             <div id="mapHomeBubble" title="Back to my city" aria-label="Back to my city"><span class="ht"></span><span class="hi">🏠</span><span class="hd"></span></div>
             <div id="mapCoords" title="Tap to go to coordinates">X:– Y:–</div>
@@ -14357,7 +14357,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1707"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1708"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21779,6 +21779,15 @@ MARCH_SKINS.push({ id: "gunship", name: "Sky Gunship (test)", model: "gunship", 
 (function () { var g = MARCH_SKINS.filter(function (k) { return k.id === "ghost_galleon"; })[0]; if (g) MARCH_SKINS.push(Object.assign({}, g, { id: "ghost_galleon_tx", name: "Ghost Galleon · Textured (test)", model: "pirate_tx", fb: "pirate", tx: "galleon_tx", hidden: true })); })();
 var MARCH_SKINS_BY_ID = {}; MARCH_SKINS.forEach(function (k) { MARCH_SKINS_BY_ID[k.id] = k; });
 var marchTxLoading = {};
+/* v1708 (Harley: "Try edge smoothing"): WebGL can only switch edge smoothing (antialias) when its drawing surface is made, so switching throws the
+   3D ship layer away and builds it again (models, textures, ship water). Off by default (v1236: off was ~2x faster); the stress tool toggles it. */
+var marchAA = false;
+function marchGLRebuild(aa) {
+  marchAA = !!aa; var G = marchGL;
+  try { if (G.cv && G.cv.parentNode) G.cv.parentNode.removeChild(G.cv); } catch (e) {}
+  G.ok = null; G.cv = null; G.gl = null; G.prog = null; G.models = null; G.bound = null; G.w = 0; G.h = 0; G.dpr = 1; G.loc = {}; G.hadShips = false; G._l = G._t = undefined; /* the new canvas must be placed again */
+  marchWater.prog = null; marchWater.buf = null; marchWater.loc = null; marchTxLoading = {};
+}
 function marchModelFor(mk) {
   var G = marchGL, m = G.models[mk.model || "void"]; if (m) return m;
   if (mk.tx && !marchTxLoading[mk.model]) { marchTxLoading[mk.model] = 1; var base = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/models/" + mk.tx;
@@ -21798,7 +21807,7 @@ function marchGLInit() {
     /* v832: the canvas lives INSIDE the scrolling map, so the browser scrolls it with the ground (no one-frame lag = no jiggle); ships are drawn in map coordinates and the canvas only re-centres when you've scrolled well away from where it was last placed. */
     var cv = document.createElement("canvas"); cv.id = "marchGL"; cv.style.cssText = "position:absolute;pointer-events:none;z-index:99999;display:none;";
     wrap.appendChild(cv);
-    var gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false } /* v1236: edge smoothing off - about 2x faster (Harley: fps drops with marches out) */); if (!gl) return false;
+    var gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: !!marchAA } /* v1236: edge smoothing off - about 2x faster (Harley: fps drops with marches out) */); if (!gl) return false;
     function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
     var vs = "attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; attribute vec2 aUV; attribute vec3 aSN; uniform float uOL; varying float vOL; varying vec2 vUV; varying vec3 vC; uniform vec2 uRes; uniform vec2 uOrg; uniform float uU; uniform float uS; uniform vec2 uCS; uniform float uLift; uniform float uZ0; varying vec3 vN; varying vec3 vP; varying float vWY;" +
       "void main(){ vec3 p = aPos * uS; float c = uCS.x, s = uCS.y; vec3 w = vec3(p.x*c + p.z*s, p.y + uLift, -p.x*s + p.z*c); vN = vec3(aNrm.x*c + aNrm.z*s, aNrm.y, -aNrm.x*s + aNrm.z*c); vP = aPos; vC = aCol; vUV = aUV; vWY = w.y;" +
@@ -21874,7 +21883,7 @@ function marchGLInit() {
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mo.bi); };
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
     ["uRes", "uOrg", "uU", "uS", "uCS", "uLift", "uZ0", "uLo", "uHi", "uGlow", "uHot", "uVC", "uTX", "uTex", "uOL"].forEach(function (n) { marchGL.loc[n] = gl.getUniformLocation(pr, n); }); gl.uniform1i(marchGL.loc.uTex, 0);
-    marchGL.cv = cv; marchGL.gl = gl; marchGL.prog = pr; marchGL.aP = aP; marchGL.aN = aN; marchGL.aC = aC; marchGL.ok = true;
+    marchGL.cv = cv; marchGL.gl = gl; marchGL.prog = pr; marchGL.aP = aP; marchGL.aN = aN; marchGL.aC = aC; marchGL.aU = aU; marchGL.aS = aS; marchGL.ok = true;
   } catch (e) { console.error("March 3D init failed:", e && e.message); marchGL.ok = false; }
   return marchGL.ok;
 }
@@ -22168,7 +22177,7 @@ function marchWaterInitGL(gl) {
 }
 function marchWaterGLDraw(gl, first, count, W, H) { /* draws a range of the water vertices, then hands the GL state back to the ship program */
   var MW = marchWater, L = MW.loc, G = marchGL; if (!count) return;
-  gl.disableVertexAttribArray(G.aP); gl.disableVertexAttribArray(G.aN); if (G.aC >= 0) gl.disableVertexAttribArray(G.aC);
+  gl.disableVertexAttribArray(G.aP); gl.disableVertexAttribArray(G.aN); if (G.aC >= 0) gl.disableVertexAttribArray(G.aC); if (G.aU >= 0) gl.disableVertexAttribArray(G.aU); if (G.aS >= 0) gl.disableVertexAttribArray(G.aS);
   gl.useProgram(MW.prog); gl.uniform2f(L.uRes, W, H); gl.bindBuffer(gl.ARRAY_BUFFER, MW.buf);
   gl.enableVertexAttribArray(L.aS); gl.vertexAttribPointer(L.aS, 2, gl.FLOAT, false, 24, 0);
   gl.enableVertexAttribArray(L.aD); gl.vertexAttribPointer(L.aD, 4, gl.FLOAT, false, 24, 8);
@@ -23542,6 +23551,8 @@ function stressMarchList(t) { if (stressMarches.length) stressMarches = stressMa
 /* v1707 (Harley): second option on the stress tool - which ship the stress marches use: your formation's own skin, the code-built Sky Gunship,
    or the textured Ghost Galleon (both test ships, not in the Skins list). Tapping it again re-sends the same number of marches with the new ship. */
 var STRESS_SHIPS = [["🚢 Mine", ""], ["🚀 Gunship", "gunship"], ["🏴‍☠️ Textured", "ghost_galleon_tx"]], stressShip = 0;
+document.addEventListener("click", function (e) { var b = e.target && e.target.closest && e.target.closest("[data-stressaa]"); if (!b) return; e.preventDefault(); /* v1708: edge smoothing on / off */
+  marchGLRebuild(!marchAA); b.textContent = marchAA ? "✨ Smooth on" : "▫️ Smooth off"; b.classList.toggle("on", marchAA); });
 document.addEventListener("click", function (e) { var b = e.target && e.target.closest && e.target.closest("[data-stressship]"); if (!b) return; e.preventDefault();
   stressShip = (stressShip + 1) % STRESS_SHIPS.length; b.textContent = STRESS_SHIPS[stressShip][0]; var n = stressMarches.length; if (n) { stressSend(0); stressSend(n); } });
 function stressSend(n) {
