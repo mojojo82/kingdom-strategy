@@ -5634,3 +5634,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Duels (hero_rank_solo.js): Tom Lv40 81% -> 85% (2nd), Lv80 64% -> 70% (6th).
 - team_rank.js: Tom teams Lv40 ~47% -> 51.4%, Lv80 ~37% -> 39.7% (Kessa 62.1 / 50.1, Hanzo 54.6 / 85.7, none 44.7 / 43.6).
 - hero_rank_solo.js takes GAMEFILE=... too.
+
+## v1701 — Hanzo: Tom-like jump for Shuriken Storm (TEST)
+- Harley: Hanzo's jump was barely visible (0.6 s, at match start, under the opening skill flashes). He should be in the air about as long as Tom. The shuriken still hit every enemy on the screen (no "keep it loaded").
+- New sheet art/heroes/hanzo/hanzo_skill_anim_v2.webp: the same 24 drawings re-timed into 52 frames at 24 fps (crouch 6, rise 26, throw on 35, fall held on the diving pose, land on 46, settle). hanzoLift (+ HANZO_CLIP_H) gives his feet one arc to 80 px at hero scale 1, like tomLift; heroLeapLift() picks tom/hanzo (Conquest + Arena drawing). He stays on the spot (no sideways leap / air immunity - that stays Tom's).
+- Shuriken Storm aoeDelay = 35/24 + 0.22 s (throw + flight; was HANZO_LEAP_SEC 0.45), so damage lands when the shuriken do. His cast hold is now the 2.2 s sheet.
+- Balance: team_rank Hanzo teams Lv40 57.4 -> 52.7%, Lv80 86.6 -> 82.3% (Kessa 64.9 / 52.7, Tom 45.7 / 37.1). Duels Lv80: Hanzo still 100%. Meta: same pre-existing warning.
+- Test: headless Arena from before the battle starts - he jumps high above his ship, throws at the peak, lands ~1.7 s later; no errors.
