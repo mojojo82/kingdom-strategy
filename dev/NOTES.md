@@ -5699,3 +5699,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: "Try edge smoothing". WebGL only sets antialias when the drawing surface is made, so the stress bar's new "▫️ Smooth off / ✨ Smooth on" button rebuilds the 3D ship layer (canvas, models, textures, ship water - marchGLRebuild). Off by default as before (v1236 turned it off for speed).
 - Fix found while testing: the rebuilt canvas kept the old position memory (G._l / G._t) and was never placed - reset too. The ship water draw now also switches off the new texture / outline inputs.
 - Headless (software graphics - phones do this in hardware and pay much less): 10 gunships 22.7 fps off vs 10 fps on. Edges visibly softer. Needs Harley's phone check.
+
+## v1709 — Blackwatch II rebuilt in code as a 3D march ship (TEST, stress tool)
+- Harley: "try to do a model like blackwatch 2". dev/models/blackwatch.py (shape kit dev/models/kit.py, shared with future code-built ships): dark gunmetal armoured hull with a layered wedge bow, the long octagonal side window frame (lighter steel) with its dark opening, clamps with cyan lights on the top edge, raised spine plate, lower plates with light strips, plate seams, stern block with vents, engine drum with a glowing exhaust, rear tower (windows, mast + antennas, stack, dish) and the turret. ~1,900 triangles, 32 KB, outline on, size 0.6.
+- Stress tool ship button now cycles Mine / Gunship / 🛡️ Blackwatch / Textured. Hidden from the Skins list.
+- Checked headless on the World map (normal size and sized up), no errors.
