@@ -6,6 +6,7 @@ const go = async (fn, uid, data) => JSON.parse(await call(fn, JSON.stringify(Obj
 (async () => {
   const aid = "A1"; const ids = ["leader01", "officer1", "member01", "member02", "loner001"];
   [["leader01", 5, 12e6], ["officer1", 4, 3e6], ["member01", 2, 1e6], ["member02", 1, 400000]].forEach(([u, rk, pw]) => { store[R + "allyindex/" + u] = { aid, tag: "TST", rank: rk }; store[R + "alliances/" + aid + "/members/" + u] = { rank: rk, name: u, power: pw }; });
+  store[R + "players/leader01/save/main"] = { power: 30e6 }; /* v1704: leader grew since joining (roster still says 12M) - the hit must use the save's 30M */
   const out = {};
   out.memberSchedule = (await go("siegeSchedule", "member01", { start: Date.now() + 3600e3, x: 100, y: 100 })).error.message;
   out.loner = (await go("siegeSchedule", "loner001", { now: true, x: 100, y: 100 })).error.message;
@@ -20,7 +21,7 @@ const go = async (fn, uid, data) => JSON.parse(await call(fn, JSON.stringify(Obj
   out.join = [(await go("siegeJoin", "leader01", { rid, name: "L" })).data, (await go("siegeJoin", "officer1", { rid, name: "O" })).data, (await go("siegeJoin", "loner001", { rid })).error.message];
   out.hitEarly = (await go("siegeHit", "member02", { rid })).error.message;
   store[R + "siege/" + aid + "/r/" + rid].launch = Date.now() - 1; // fast-forward the countdown
-  const hit = await go("siegeHit", "member02", { rid }); out.hit = hit.data; out.hitAgain = (await go("siegeHit", "leader01", { rid })).data.dup;
+  const hit = await go("siegeHit", "member02", { rid }); out.hit = hit.data; out.leaderShareUsesSave = hit.data && hit.data.shares && hit.data.shares.leader01 > 25e6 ? "yes (" + Math.round(hit.data.shares.leader01 / 1e6) + "M)" : "NO"; out.officerShareUsesRoster = hit.data && hit.data.shares && hit.data.shares.officer1 < 4e6 ? "yes" : "NO"; out.hitAgain = (await go("siegeHit", "leader01", { rid })).data.dup;
   out.claimEarly = (await go("siegeClaim", "leader01", { hid })).error.message;
   store[R + "siege/" + aid + "/h/" + hid].end = Date.now() - 1;
   const cl = await go("siegeClaim", "leader01", { hid }); out.claim = cl.data; out.claimDup = (await go("siegeClaim", "leader01", { hid })).data;

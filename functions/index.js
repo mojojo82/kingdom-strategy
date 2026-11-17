@@ -499,8 +499,9 @@ exports.siegeHit = wrap(async (req, uid, R, d) => {
     if (now < r.launch) throw new C.GameError("failed-precondition", "not yet");
     const href = db.doc(base + "/h/" + r.hid), h = (await tx.get(href)).data() || {}, ids = Object.keys(r.members);
     const mem = await Promise.all(ids.map((m) => tx.get(db.doc(K + "alliances/" + me.aid + "/members/" + m))));
+    const svs = await Promise.all(ids.map((m) => tx.get(db.doc(R + "players/" + m + "/save/main")))); /* v1704 (Harley): each member's power right now - read from their cloud save (the game writes its power with every save), not the alliance roster number written when they joined. Bots / no save: the roster number */
     const shares = {}; let hit = 0;
-    ids.forEach((m, i) => { const pw = mem[i].exists ? (mem[i].data().power || 0) : 0; const sh = C.sgShare(SG, pw, ids.length, Math.random()); shares[m] = sh; hit += sh; });
+    ids.forEach((m, i) => { const svPw = svs[i].exists ? +svs[i].data().power : NaN; const pw = svPw > 0 ? svPw : (mem[i].exists ? (mem[i].data().power || 0) : 0); const sh = C.sgShare(SG, pw, ids.length, Math.random()); shares[m] = sh; hit += sh; });
     const dmg = Object.assign({}, h.dmg || {}), names = Object.assign({}, h.names || {}), busy = Object.assign({}, h.busy || {});
     ids.forEach((m) => { dmg[m] = (dmg[m] || 0) + shares[m]; names[m] = r.members[m]; if (busy[m] === rid) delete busy[m]; });
     const last = (h.last || []).concat([{ t: now, hit, n: ids.length, by: r.lname }]).slice(-8);
