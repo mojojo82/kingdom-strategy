@@ -2,7 +2,7 @@
 const fs = require("fs"), path = require("path");
 const ROOT = require("path").join(__dirname, "../.."), OUTD = __dirname + "/results";
 const { chromium } = require("playwright");
-const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
+const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8");
 const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROME_PATH, args: ["--no-sandbox"] }), errs = [];
