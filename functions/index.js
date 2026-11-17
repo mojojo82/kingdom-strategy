@@ -469,11 +469,18 @@ exports.siegeRally = wrap(async (req, uid, R, d) => {
     const h = hs.data(); if (!(now >= h.start && now + SG.wait * 1000 <= h.end)) throw new C.GameError("failed-precondition", now < h.start ? "the hunt hasn't started" : "too late for a new rally");
     if (h.busy && h.busy[uid]) throw new C.GameError("failed-precondition", "your march is already in a rally");
     const ws = await tx.get(walletRef(R, uid)); /* v1628: rally gems (read before any write) */
-    const rid = now + "_" + uid.slice(0, 8), name = lbName(d.name);
-    tx.set(db.doc(sgRoot(K, me.aid) + "/r/" + rid), { hid, leader: uid, lname: name, launch: now + SG.wait * 1000, members: { [uid]: name }, done: false, at: now });
+    const rid = now + "_" + uid.slice(0, 8), name = lbName(d.name), doc = { hid, leader: uid, lname: name, launch: now + SG.wait * 1000, members: { [uid]: name }, done: false, at: now };
+    if (d.army) { /* v1705 (Harley): troop rally - the leader sends troops + picks the heroes that lead the whole rally; the rally's size comes from the leader */
+      const sv = await tx.get(db.doc(R + "players/" + uid + "/save/main")), save = sv.exists ? sv.data() : {}, H = save.heroes || {};
+      const heroes = (Array.isArray(d.heroes) ? d.heroes : []).map(String).filter((k, i, a) => /^[a-z0-9_]{1,40}$/.test(k) && H[k] && H[k].owned && a.indexOf(k) === i).slice(0, 5);
+      const army = sgTroopsCheck(C.sgArmy(d.army), save), n = C.sgArmyTotal(army), mine = C.sgMarchCap(save, heroes), cap = C.sgRallyCap(save, heroes);
+      if (n > mine) throw new C.GameError("invalid-argument", "that's more than your march size (" + mine.toLocaleString("en-US") + ")");
+      Object.assign(doc, { armies: { [uid]: army }, heroes, fort: [1, 2, 3].indexOf(+d.fort) >= 0 ? +d.fort : 0, cap, sent: n });
+    }
+    tx.set(db.doc(sgRoot(K, me.aid) + "/r/" + rid), doc);
     const busy = Object.assign({}, h.busy || {}); busy[uid] = rid; tx.update(href, { busy });
     const gp = payGemAct(tx, R, uid, ws, "rally", lo.ga, rid, now);
-    return { ok: true, rid, launch: now + SG.wait * 1000, gems: gp.gems, added: gp.added };
+    return { ok: true, rid, launch: now + SG.wait * 1000, cap: doc.cap || null, army: doc.armies ? doc.armies[uid] : null, gems: gp.gems, added: gp.added };
   });
 });
 exports.siegeJoin = wrap(async (req, uid, R, d) => {
@@ -485,12 +492,26 @@ exports.siegeJoin = wrap(async (req, uid, R, d) => {
     if (Object.keys(r.members).length >= SG.maxRally) throw new C.GameError("resource-exhausted", "that rally is full");
     const href = db.doc(sgRoot(K, me.aid) + "/h/" + r.hid), h = (await tx.get(href)).data() || {}; if (h.busy && h.busy[uid]) throw new C.GameError("failed-precondition", "your march is already in a rally");
     const ws = await tx.get(walletRef(R, uid)); /* v1628: rally gems */
-    const members = Object.assign({}, r.members); members[uid] = lbName(d.name); tx.update(rref, { members });
+    const members = Object.assign({}, r.members); members[uid] = lbName(d.name); const up = { members }; let army = null;
+    if (r.armies) { /* v1705: troop rally - up to my own march size and the room left in the rally (the leader's size) */
+      const sv = await tx.get(db.doc(R + "players/" + uid + "/save/main")), save = sv.exists ? sv.data() : {};
+      army = sgTroopsCheck(C.sgArmy(d.army), save); const n = C.sgArmyTotal(army), mine = C.sgMarchCap(save, null), room = Math.max(0, (r.cap || 0) - (r.sent || 0));
+      if (n > mine) throw new C.GameError("invalid-argument", "that's more than your march size (" + mine.toLocaleString("en-US") + ")");
+      if (n > room) throw new C.GameError("resource-exhausted", room > 0 ? "only " + room.toLocaleString("en-US") + " more troops fit in that rally" : "that rally is full");
+      up.armies = Object.assign({}, r.armies, { [uid]: army }); up.sent = (r.sent || 0) + n;
+    }
+    tx.update(rref, up);
     const busy = Object.assign({}, h.busy || {}); busy[uid] = rid; tx.update(href, { busy });
     const gp = payGemAct(tx, R, uid, ws, "rally", lo.ga, rid, now);
-    return { ok: true, gems: gp.gems, added: gp.added };
+    return { ok: true, army, gems: gp.gems, added: gp.added };
   });
 });
+/* v1705: every troop sent must be one the player has at home in their latest save */
+function sgTroopsCheck(army, save) {
+  const T = (save && save.troops) || {}; if (!(C.sgArmyTotal(army) > 0)) throw new C.GameError("invalid-argument", "send at least one troop");
+  Object.keys(army).forEach((k) => { if (army[k] > Math.floor(+T[k] || 0)) throw new C.GameError("failed-precondition", "you don't have that many troops at home - try again in a few seconds"); });
+  return army;
+}
 exports.siegeHit = wrap(async (req, uid, R, d) => {
   const K = kingdomRoot(R, d.srv), now = Date.now(), rid = sgId(d.rid), { SG } = await sgConfig(R);
   return db.runTransaction(async (tx) => {
@@ -498,10 +519,21 @@ exports.siegeHit = wrap(async (req, uid, R, d) => {
     const r = rs.data(); if (r.done) return { ok: true, dup: true, hit: r.hit, shares: r.shares };
     if (now < r.launch) throw new C.GameError("failed-precondition", "not yet");
     const href = db.doc(base + "/h/" + r.hid), h = (await tx.get(href)).data() || {}, ids = Object.keys(r.members);
-    const mem = await Promise.all(ids.map((m) => tx.get(db.doc(K + "alliances/" + me.aid + "/members/" + m))));
-    const svs = await Promise.all(ids.map((m) => tx.get(db.doc(R + "players/" + m + "/save/main")))); /* v1704 (Harley): each member's power right now - read from their cloud save (the game writes its power with every save), not the alliance roster number written when they joined. Bots / no save: the roster number */
-    const shares = {}; let hit = 0;
-    ids.forEach((m, i) => { const svPw = svs[i].exists ? +svs[i].data().power : NaN; const pw = svPw > 0 ? svPw : (mem[i].exists ? (mem[i].data().power || 0) : 0); const sh = C.sgShare(SG, pw, ids.length, Math.random()); shares[m] = sh; hit += sh; });
+    let shares = {}, hit = 0;
+    if (r.armies) { /* v1705 (Harley): troop rally - the game ran ONE World PvP-style battle (leader's heroes + every member's troops vs the boss) and reports
+         the total + each member's share; the server checks the shares add up and the total is believable for the troops sent */
+      const lsv = await tx.get(db.doc(R + "players/" + r.leader + "/save/main")), lpw = lsv.exists ? +lsv.data().power || 0 : 0;
+      const all = {}; Object.keys(r.armies).forEach((m) => { const a = r.armies[m] || {}; Object.keys(a).forEach((k) => { all[k] = (all[k] || 0) + a[k]; }); });
+      if (d.sent != null && +d.sent !== (r.sent || 0)) throw new C.GameError("aborted", "the rally changed - fighting it again"); /* the game fought with an older list of troops */
+      const total = Math.floor(+d.total), sh = d.shares || {}, max = C.sgDmgCap(SG, C.sgTroopPower(all), lpw);
+      if (!(total >= 0 && total <= max)) throw new C.GameError("invalid-argument", "that hit doesn't add up");
+      let sum = 0; ids.forEach((m) => { const v = Math.floor(+sh[m] || 0); if (v < 0) throw new C.GameError("invalid-argument", "bad share"); shares[m] = v; sum += v; });
+      if (Math.abs(sum - total) > ids.length) throw new C.GameError("invalid-argument", "the shares don't add up");
+      hit = sum;
+    }
+    const mem = r.armies ? [] : await Promise.all(ids.map((m) => tx.get(db.doc(K + "alliances/" + me.aid + "/members/" + m))));
+    const svs = r.armies ? [] : await Promise.all(ids.map((m) => tx.get(db.doc(R + "players/" + m + "/save/main")))); /* v1704 (Harley): each member's power right now - read from their cloud save (the game writes its power with every save), not the alliance roster number written when they joined. Bots / no save: the roster number */
+    if (!r.armies) ids.forEach((m, i) => { const svPw = svs[i].exists ? +svs[i].data().power : NaN; const pw = svPw > 0 ? svPw : (mem[i].exists ? (mem[i].data().power || 0) : 0); const sh = C.sgShare(SG, pw, ids.length, Math.random()); shares[m] = sh; hit += sh; });
     const dmg = Object.assign({}, h.dmg || {}), names = Object.assign({}, h.names || {}), busy = Object.assign({}, h.busy || {});
     ids.forEach((m) => { dmg[m] = (dmg[m] || 0) + shares[m]; names[m] = r.members[m]; if (busy[m] === rid) delete busy[m]; });
     const last = (h.last || []).concat([{ t: now, hit, n: ids.length, by: r.lname }]).slice(-8);

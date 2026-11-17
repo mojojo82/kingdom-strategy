@@ -2831,6 +2831,15 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-sgr { display:flex; align-items:center; gap:8px; margin-top:8px; background:rgba(0,0,0,.25); border:1px solid #3a4c6e; border-radius:10px; padding:7px 8px; }
   #evWin .evw-sgr .tx { flex:1; min-width:0; } #evWin .evw-sgr .tx b { display:block; font-size:13px; color:#f6e7c4; } #evWin .evw-sgr .tx span { display:block; font-size:11px; color:#93a2ba; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #evWin .evw-sgr .cd { font-size:12px; color:#ffd77a; white-space:nowrap; } #evWin .evw-sgr .go { flex:none; }
+  /* v1705: send-troops box */
+  #evWin .evw-sgr .tx span.sgtr { color:#9fe3ee; }
+  #evWin .sgpick .mon-fm { padding:8px 0 4px; } #evWin .sgpick .mon-fm button.on { background:#8fe6f1; box-shadow:inset 0 0 0 2px #8fe6f1, inset 0 0 0 3px #e2fbff, 0 2px 0 #1f6c80; }
+  #evWin .sgp-rows { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+  #evWin .sgp-r { display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,.25); border:1px dashed #3a4c6e; border-radius:10px; padding:6px 8px; }
+  #evWin .sgp-r span { font-size:13px; font-weight:700; color:#f6e7c4; min-width:0; } #evWin .sgp-r small { display:block; font-size:11px; font-weight:600; color:#93a2ba; }
+  #evWin .sgp-r input { width:96px; flex:none; background:#0d1626; color:#fff; border:1px solid #3a4c6e; border-radius:8px; padding:6px 8px; font-size:14px; text-align:right; }
+  #evWin .sgp-sum { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; color:#cfd9e8; margin:4px 0 6px; } #evWin .sgp-sum b.bad { color:#ff9a9a; }
+  #evWin .sgp-go { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; } #evWin .sgp-go .go:disabled { opacity:.5; }
   #evWin .evw-sgl { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12.5px; color:#d6c49d; padding:4px 2px; border-bottom:1px dotted #33445f; } #evWin .evw-sgl:last-child { border-bottom:0; } #evWin .evw-sgl b { color:#ff9b7a; } #evWin .evw-sgl.me span { color:#7fe0ff; font-weight:800; }
   #evWin .evw-sgx { background:none; border:1px solid #8a4a3a; color:#f0a08a; border-radius:7px; font-size:11px; padding:3px 8px; cursor:pointer; }
   #evWin .evw-sgsch { display:flex; gap:6px; margin-top:10px; } #evWin .evw-sgsch input { flex:1; min-width:0; background:#0f1828; color:#f6e7c4; border:1px solid #5d6f93; border-radius:8px; padding:6px; font:inherit; font-size:13px; color-scheme:dark; }
@@ -8000,6 +8009,7 @@ function createGame(opts) {
       { name: "City Guard", guard: true, troops: { infantry: 0, archer: 0, cavalry: 0 }, heroKeys: [] } /* v894: defence-only march - never sent anywhere; defends the city while guardOn */
     ],
     shieldUntil: 0, /* v1592 Peace Shield (Date.now() ms) */
+    sgOut: [], /* v1705: troops away in Alliance Siege rallies [{ rid, hid, army, fi, at }] - they come home when the rally hits */
     guardOn: false, /* v894: City Guard switched on -> attackers must beat it before they can damage the base */
     activeFormation: 0, // index of the currently-selected preset, or null if none chosen
     // ---- Cards (dev-side, prototype system — not part of the final build) ----
@@ -11811,6 +11821,7 @@ function createGame(opts) {
     if (typeof saved.lastProductionAt === "number") state.lastProductionAt = saved.lastProductionAt;
     state.guardOn = saved.guardOn === true; /* v894 */
     state.shieldUntil = isFinite(+saved.shieldUntil) ? Math.max(0, +saved.shieldUntil) : 0; /* v1592 */
+    state.sgOut = Array.isArray(saved.sgOut) ? saved.sgOut.filter(function (o) { return o && o.rid && o.army; }) : []; /* v1705 */
     if (saved.ev && typeof saved.ev === "object") { var sev = saved.ev; state.ev = { tok: Math.max(0, Math.floor(+sev.tok || 0)), w: sev.w | 0, pts: Math.max(0, +sev.pts || 0), ms: Array.isArray(sev.ms) ? sev.ms : [], ck: (sev.ck && typeof sev.ck === "object") ? sev.ck : {},
       ckc: Array.isArray(sev.ckc) ? sev.ckc : [], kills: +sev.kills || 0, killPaid: +sev.killPaid || 0, buys: (sev.buys && typeof sev.buys === "object") ? sev.buys : {}, days: Array.isArray(sev.days) ? sev.days : [], wkc: !!sev.wkc,
       am: Math.max(0, Math.floor(+sev.am || 0)), awp: +sev.awp || 0, abuys: (sev.abuys && typeof sev.abuys === "object") ? sev.abuys : {}, ad: sev.ad && typeof sev.ad === "object" ? { d: sev.ad.d | 0, pts: +sev.ad.pts || 0, ms: Array.isArray(sev.ad.ms) ? sev.ad.ms : [] } : null, arc: (sev.arc && typeof sev.arc === "object") ? sev.arc : {}, ff: sev.ff && typeof sev.ff === "object" ? { k: sev.ff.k | 0, pts: +sev.ff.pts || 0, ms: Array.isArray(sev.ff.ms) ? sev.ff.ms : [] } : null }; } /* v1593, v1594, v1597 */
@@ -14327,7 +14338,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1703"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1705"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20396,7 +20407,7 @@ function evWinRender(force) {
 }
 /* v1623: Alliance Siege (Bear Hunt style) - client. The server owns everything (functions/index.js siege*); this file shows it and calls it.
    <kingdom>siege/<aid> { hunts }  ·  .../h/<hid> (the hunt: totals, damage per member, busy marches, recent hits)  ·  .../r/<rid> (rallies) */
-var SG = { aid: null, sub: null, hunts: [], hid: null, hunt: null, hsub: null, rallies: [], rsub: null, busy: false, when: "", resolving: {}, fx: [], el: null };
+var SG = { aid: null, sub: null, hunts: [], hid: null, hunt: null, hsub: null, rallies: [], rsub: null, busy: false, when: "", resolving: {}, fx: [], el: null, pick: null, chk: {}, fights: {} };
 function sgCfg() { return (typeof LIVEOPS !== "undefined" && LIVEOPS.sg) || LIVEOPS_DEFAULT.sg; }
 function sgWhenLocal(t) { var d = new Date(t); return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }); }
 function sgFmt(n) { n = Math.round(n || 0); return n >= 1e9 ? (n / 1e9).toFixed(n >= 1e10 ? 1 : 2) + "B" : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 1 : 2) + "M" : n >= 1e4 ? Math.round(n / 1e3) + "K" : n.toLocaleString("en-US"); }
@@ -20424,11 +20435,121 @@ function sgClaimable() { var h = SG.hunt; return !!(h && Date.now() >= h.end && 
 function sgDot() { var a = sgActive(); return (a && !(a.busy || {})[PLAYER_ID] ? 1 : 0) + (sgClaimable() ? 1 : 0); }
 function sgHitFx(prev, cur) { if (!prev || !cur || !cur.last || !cur.last.length) return; var pt = prev.last && prev.last.length ? prev.last[prev.last.length - 1].t : 0;
   cur.last.forEach(function (x) { if (x.t > pt) SG.fx.push({ t: Date.now(), hit: x.hit, by: x.by }); }); sgMapFx(); }
-function sgRefresh() { try { if (document.getElementById("evWin") && document.getElementById("evWin").style.display !== "none" && EVW.tab === "sg" && !(document.activeElement && document.activeElement.hasAttribute && document.activeElement.hasAttribute("data-sgwhen"))) evWinRender(true); } catch (e) {} try { sgMapRender(); } catch (e) {} }
+function sgRefresh() { try { if (document.getElementById("evWin") && document.getElementById("evWin").style.display !== "none" && EVW.tab === "sg" && !(document.activeElement && document.activeElement.hasAttribute && (document.activeElement.hasAttribute("data-sgwhen") || document.activeElement.hasAttribute("data-sgpn")))) evWinRender(true); } catch (e) {} try { sgMapRender(); } catch (e) {} }
 function sgCall(name, data, ok) {
   if (SG.busy) return; SG.busy = true; EVW.note = "";
   KS_BACKEND.call(name, Object.assign({ name: (typeof getPlayerName === "function" ? getPlayerName() : "") || "" }, data)).then(function (r) { SG.busy = false; gemActShow(r, r && r.added != null ? "rally" : null); if (ok) ok(r || {}); sgRefresh(); try { evWinRender(true); } catch (e) {} },
     function (e) { SG.busy = false; EVW.note = '<span class="bad">' + escapeHtml((e && e.message) || "Couldn't reach the server") + "</span>"; try { evWinRender(true); } catch (e2) {} });
+}
+/* v1705 (Harley): a rally = ONE World PvP-style battle ("Arena + troops, one giant hit"). Every member's troops join as one army, led by the
+   LEADER's heroes, fortress, weapons, Esper, cards and troop bonuses, against the siege boss - the Boss Rush kaiju rules (he can't die, hits back,
+   hits harder as his health bars go). Troops never die here. Split: the troops' damage goes to each member by how many of each troop type they sent;
+   everything else (heroes, fortress, weapons) goes to the leader. L = the leader's sim (game itself, or a throwaway sim loaded from the leader's save). */
+function sgBossCfg() { var C = sgCfg(), b = C.boss || {}, B = kaijuBossCfg(); Object.keys(b).forEach(function (k) { B[k] = b[k]; }); B.sec = b.sec || 60; return B; }
+function sgRallyArmy(r, uid) { var a = {}; Object.keys((r && r.armies) || {}).forEach(function (u) { if (uid && u !== uid) return; var x = r.armies[u] || {}; for (var t in x) if (TROOP_DEFS[t] && x[t] > 0) a[t] = (a[t] || 0) + Math.floor(x[t]); }); return a; }
+function sgRallyBattle(r, L) {
+  L = L || game; var S = L.state, me = L === game;
+  var keys = (r.heroes || []).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && S.heroes[k] && S.heroes[k].owned; }).slice(0, 5);
+  var fortT = r.fort ? fortMapAs(S.fortressTech, r.fort) : (S.fortressTech || {});
+  var st = arenaSideStats(keys, S.heroes, S.buildings.townhall.level, arenaBaseHpPlayer, true, S.equippedEsper || null, fortT, undefined, bonusOf(L));
+  var army = sgRallyArmy(r); worldPvpAddTroops(st, army, {}, keys, L, 0);
+  var boss = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); boss.maxHp = KAIJU_INF; boss.kaiju = true;
+  boss.dmgTakenMult = (boss.dmgTakenMult || 1) * (1 + Math.min(75, me ? (equipBonus.boss || 0) : 0) / 100) * bossBonusMul(S); /* Boss Damage counts, like Boss Rush (gear bonus: only known for the player whose game this is) */
+  var B = sgBossCfg(), seed = "sg|" + (r.id || "rally");
+  var wkit = function () { var m = {}; (S.equippedWeapons || []).forEach(function (id) { if (S.weaponLevels && S.weaponLevels[id] > 0) m[id] = S.weaponLevels[id]; }); return botWeaponsToSim(m, st.bnA); };
+  var kit = me ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(S.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : wkit();
+  var tr = { src: {}, aiSrc: {}, perTick: [] };
+  var sim = arenaMakeSim(st, boss, { rng: worldPvpSeededRng(seed), critSeed: seed, boss: B, aiCannon: false, maxTicks: Math.max(10, Math.round(B.sec * 1000 / ARENA_TICK_MS)),
+    weapons: kit.specs, shieldPct: kit.shieldPct, salvoP: kit.salvo, dmgRamp: equippedDmgRamp(S), regen: equippedRegen(S), summonCall: equippedSummonCall(S), cardMods: cardModsFrom(S), trace: tr });
+  sim.runToEnd();
+  var total = Math.max(0, Math.floor(KAIJU_INF - sim.aiHp)), all = 0, byT = {};
+  Object.keys(tr.src).forEach(function (k) { var v = tr.src[k] || 0; all += v; var m = /^atk:troop_(.+)$/.exec(k); if (m) byT[m[1]] = (byT[m[1]] || 0) + v; });
+  var shares = {}, given = 0, ids = Object.keys(r.members || {}), lead = r.leader || ids[0];
+  ids.forEach(function (u) { shares[u] = 0; });
+  Object.keys(byT).forEach(function (t) { var part = all > 0 ? total * byT[t] / all : 0, n = army[t] || 0; if (!(n > 0)) return;
+    ids.forEach(function (u) { var mine = ((r.armies || {})[u] || {})[t] || 0; if (mine > 0) { var s = Math.floor(part * mine / n); shares[u] += s; given += s; } }); });
+  shares[lead] = (shares[lead] || 0) + Math.max(0, total - given);
+  return { total: total, shares: shares, survived: sim.playerHp > 0, secs: Math.round(sim.tick * ARENA_TICK_MS / 1000), troopPart: all > 0 ? Object.keys(byT).reduce(function (s, t) { return s + byT[t]; }, 0) / all : 0, army: army, heroes: keys, lv: kaijuLevel(B, total).lv };
+}
+/* v1705: the send-troops box. A formation sends its own troops (and, for the leader, its heroes lead the whole rally); "Reserve" sends troops not in a
+   formation. Up to your own march size; the rally holds 2,000 + the leader's Command Center rally value + the leader's march size (Kingshot). */
+var SG_CC_RALLY = [1500,3500,5700,8000,11500,15000,19000,24000,29500,35500,43500,52000,62000,73500,87500,105000,120000,140000,165000,195000,225000,260000,305000,350000,400000,470000,550000,630000,725000,840000]; /* functions/core.js SG_CC_RALLY */
+function sgRallyCapFor(heroKeys) { var lv = (game.state.buildings.commandcenter && game.state.buildings.commandcenter.level) | 0; return 2000 + (lv > 0 ? SG_CC_RALLY[Math.min(lv, SG_CC_RALLY.length) - 1] : 0) + game.marchCapacity(heroKeys || []); }
+function sgPickForms() { var out = []; (game.state.formations || []).forEach(function (f, i) { if (f && !f.guard && !game.formOut(i)) out.push(i); }); return out; }
+function sgPickHave() { var P = SG.pick, S = game.state, o = {}; if (!P) return o;
+  if (P.fi >= 0) { var f = S.formations[P.fi], h = (f && f.held) || {}; Object.keys(h).forEach(function (k) { var n = Math.min(Math.floor(h[k] || 0), Math.floor(S.troops[k] || 0)); if (n > 0 && TROOP_DEFS[k]) o[k] = n; }); }
+  else { var r = game.reserveAll(); Object.keys(r).forEach(function (k) { if (TROOP_DEFS[k] && r[k] > 0) o[k] = Math.floor(r[k]); }); }
+  return o; }
+function sgPickHeroes() { var P = SG.pick, f = P && P.fi >= 0 ? game.state.formations[P.fi] : null; return f ? (f.heroKeys || []).filter(function (k) { return HERO_DEFS[k] && game.state.heroes[k] && game.state.heroes[k].owned; }).slice(0, 5) : []; }
+function sgPickRoom() { var P = SG.pick; if (!P) return 0; var mine = game.marchCapacity(sgPickHeroes());
+  if (P.mode === "start") return Math.min(mine, sgRallyCapFor(sgPickHeroes()));
+  var r = SG.rallies.filter(function (x) { return x.id === P.rid; })[0]; return Math.min(mine, r ? Math.max(0, (r.cap || 0) - (r.sent || 0)) : 0); }
+function sgPickTotal() { var P = SG.pick, t = 0; Object.keys((P && P.n) || {}).forEach(function (k) { t += P.n[k] || 0; }); return t; }
+function sgPickTotals() { var el = document.querySelector("[data-sgptot]"); if (el) el.innerHTML = sgPickSumHtml(); }
+function sgPickSumHtml() { var t = sgPickTotal(), room = sgPickRoom(); return "Sending <b" + (t > room ? ' class="bad"' : "") + ">" + t.toLocaleString("en-US") + "</b> / " + room.toLocaleString("en-US"); }
+function sgPickFill() { var P = SG.pick; if (!P) return; var have = sgPickHave(), room = sgPickRoom(); P.n = game.fitArmyToCap(Object.assign({}, have), room); try { evWinRender(true); } catch (e) {} }
+function sgPickForm(fi) { var P = SG.pick; if (!P) return; P.fi = fi; P.n = {}; sgPickFill(); }
+function sgPickOpen(mode, rid) { SG.pick = { mode: mode, rid: rid || null, fi: -1, n: {} }; /* first formation with troops at home, else the Reserve */
+  var fs = sgPickForms(); for (var i = 0; i < fs.length; i++) { SG.pick.fi = fs[i]; if (Object.keys(sgPickHave()).length) break; SG.pick.fi = -1; } EVW.note = ""; sgPickFill(); }
+function sgPickHtml(act) {
+  var P = SG.pick, S = game.state, have = sgPickHave(), r = P.mode === "join" ? SG.rallies.filter(function (x) { return x.id === P.rid; })[0] : null, hk = sgPickHeroes(), room = sgPickRoom(), mine = game.marchCapacity(hk);
+  if (P.mode === "join" && (!r || r.done || Date.now() >= r.launch)) { SG.pick = null; return '<div class="evw-sgbox"><div class="evw-spnote">That rally has already marched.</div></div>'; }
+  var h = '<div class="evw-sgbox sgpick"><div class="t">' + (P.mode === "start" ? "🦏 Start a rally" : "🦏 Join " + escapeHtml(r.lname || "") + "'s rally") + "</div>";
+  h += '<div class="mon-fm">' + sgPickForms().map(function (i) { var f = S.formations[i], ic = (f.heroKeys || []).filter(function (k) { return HERO_DEFS[k]; }).map(function (k) { return HERO_DEFS[k].icon; }).join(" ");
+      return '<button type="button" data-sgpf="' + i + '"' + (P.fi === i ? ' class="on"' : "") + "><span>⚔️ " + escapeHtml(f.name || "Formation " + (i + 1)) + (ic ? " · " + ic : "") + "</span><small>" + (P.fi === i ? "✓ " : "") + game.marchCapacity(f.heroKeys || []).toLocaleString("en-US") + " max</small></button>"; }).join("")
+    + '<button type="button" data-sgpf="-1"' + (P.fi === -1 ? ' class="on"' : "") + "><span>🏠 Reserve troops</span><small>" + (P.fi === -1 ? "✓ " : "") + game.marchCapacity([]).toLocaleString("en-US") + " max</small></button></div>";
+  var ks = Object.keys(have).sort(function (a, b) { return troopTier(b) - troopTier(a) || a.localeCompare(b); });
+  h += ks.length ? '<div class="sgp-rows">' + ks.map(function (k) { return '<label class="sgp-r"><span>' + escapeHtml(troopLabel(k)) + "<small>" + have[k].toLocaleString("en-US") + ' at home</small></span><input type="number" inputmode="numeric" min="0" max="' + have[k] + '" data-sgpn="' + k + '" value="' + (P.n[k] || 0) + '"></label>'; }).join("") + "</div>"
+    : '<div class="evw-spnote" style="margin:8px 0">No troops at home in ' + (P.fi >= 0 ? "this formation" : "the Reserve") + ".</div>";
+  h += '<div class="sgp-sum"><span data-sgptot>' + sgPickSumHtml() + '</span><button type="button" class="go" data-sgpmax="1">Max</button></div>';
+  h += '<div class="evw-spnote">Your march size: ' + mine.toLocaleString("en-US") + (P.mode === "start" ? " · rally size (yours as leader): " + sgRallyCapFor(hk).toLocaleString("en-US") + (hk.length ? " · your heroes lead the whole rally" : " · pick a formation so heroes lead it") : " · room left in the rally: " + Math.max(0, (r.cap || 0) - (r.sent || 0)).toLocaleString("en-US")) + ". Troops come home when the rally hits - none are lost.</div>";
+  h += '<div class="sgp-go"><button type="button" class="go" data-sgpx="1">Cancel</button><button type="button" class="go claim" data-sgpgo="1"' + (SG.busy || !(sgPickTotal() > 0) || sgPickTotal() > room ? " disabled" : "") + ">" + (P.mode === "start" ? "📣 Start rally" : "Send troops") + "</button></div></div>";
+  return h;
+}
+function troopLabel(k) { var d = TROOP_DEFS[k]; return d ? (d.tier > 1 ? d.name : d.name + " T1") : k; }
+function sgSaveFirst() { /* the server checks the troops against the latest cloud save - write it now */
+  if (!cloudDb || !PLAYER_ID || typeof stateForOwnSave !== "function") return Promise.resolve();
+  try { var body = JSON.parse(JSON.stringify(stateForOwnSave())); body._savedAt = saveStampNow(); body._owner = PLAYER_ID; return cloudDb.doc(cloudSaveDoc()).set(body).then(function () {}, function () {}); } catch (e) { return Promise.resolve(); }
+}
+function sgPickSend() {
+  var P = SG.pick; if (!P || SG.busy) return; var have = sgPickHave(), army = {}, room = sgPickRoom();
+  Object.keys(P.n).forEach(function (k) { var n = Math.min(have[k] || 0, Math.floor(P.n[k] || 0)); if (n > 0) army[k] = n; });
+  if (!(sgPickTotal() > 0)) return; if (game.state.sgOut.length) { EVW.note = '<span class="bad">Your troops are already in a rally.</span>'; try { evWinRender(true); } catch (e) {} return; }
+  if (Object.keys(army).reduce(function (s, k) { return s + army[k]; }, 0) > room) { EVW.note = '<span class="bad">That\'s more than fits (' + room.toLocaleString("en-US") + ").</span>"; try { evWinRender(true); } catch (e) {} return; }
+  var fi = P.fi, hk = sgPickHeroes(), f = fi >= 0 ? game.state.formations[fi] : null;
+  var data = P.mode === "start" ? { hid: SG.hid, army: army, heroes: hk, fort: f ? formationFortType(f, game.state.fortressTech) : 0 } : { rid: P.rid, army: army };
+  SG.busy = true; try { evWinRender(true); } catch (e) {}
+  sgSaveFirst().then(function () { SG.busy = false; sgCall(P.mode === "start" ? "siegeRally" : "siegeJoin", data, function (res) {
+    var sent = res.army || army, S = game.state;
+    Object.keys(sent).forEach(function (k) { S.troops[k] = Math.max(0, (S.troops[k] || 0) - sent[k]); if (f && f.held) f.held[k] = Math.max(0, (f.held[k] || 0) - sent[k]); });
+    S.sgOut.push({ rid: res.rid || P.rid, hid: SG.hid, aid: SG.aid, army: sent, fi: fi, at: Date.now() });
+    SG.pick = null; try { game.formSync(); } catch (e) {} persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {}
+    evDone(P.mode === "start" ? "Rally started - your alliance has " + sgCfg().wait + "s to join" : "Troops sent to the rally");
+  }); });
+}
+/* troops come home when their rally has hit (or, failing that, once the hunt is long over - they're never lost) */
+function sgTroopsBack(o) { var S = game.state, i = S.sgOut.indexOf(o); if (i < 0) return; S.sgOut.splice(i, 1);
+  var f = o.fi >= 0 ? S.formations[o.fi] : null; Object.keys(o.army || {}).forEach(function (k) { if (!TROOP_DEFS[k]) return; S.troops[k] = (S.troops[k] || 0) + o.army[k]; if (f) { f.held = f.held || {}; f.held[k] = (f.held[k] || 0) + o.army[k]; } });
+  if (f) f.homeAt = Date.now(); try { game.formSync(); } catch (e) {} persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} try { render(); } catch (e) {} }
+function sgTroopsHome(now) {
+  var S = game.state; if (!S.sgOut || !S.sgOut.length) return;
+  S.sgOut.slice().forEach(function (o) {
+    var r = SG.rallies.filter(function (x) { return x.id === o.rid; })[0];
+    if (r && r.done) { sgTroopsBack(o); var me = (r.shares || {})[PLAYER_ID]; if (me != null) try { miniToast("🦏 Rally hit " + sgFmt(r.hit) + " · your share " + sgFmt(me) + " · troops home"); } catch (e) {} return; }
+    if (now - o.at > 3 * 3600000) { sgTroopsBack(o); return; } /* safety net */
+    if (r || !cloudDb || !o.aid || (SG.chk[o.rid] && now - SG.chk[o.rid] < 15000)) return; SG.chk[o.rid] = now; /* not in the live list (another hunt / just loaded): look it up */
+    cloudDb.doc(allyPath("siege/" + o.aid) + "/r/" + o.rid).get().then(function (sn) { var d = sn && sn.exists ? sn.data() : null; if (!d || d.done) sgTroopsBack(o); }, function () {});
+  });
+}
+/* a troop rally's countdown is over: the leader's game fights it right away; anyone else's waits 20 s for the leader, then fights it from the leader's save */
+var SG_FOREIGN_MS = 20000;
+function sgRallyHit(r, now) {
+  var lead = r.leader === PLAYER_ID; if (!lead && now < r.launch + SG_FOREIGN_MS) return;
+  SG.resolving[r.id] = 1;
+  var getL = lead ? Promise.resolve(game) : fetchSaveForOwner(r.leader).then(function (saved) { if (!saved) throw new Error("no leader save"); var sim = createGame({ mapSize: 3, seed: 1 }); sim.loadState(saved); return sim; });
+  var fresh = cloudDb.doc(allyPath("siege/" + SG.aid) + "/r/" + r.id).get().then(function (sn) { return sn && sn.exists ? sn.data() : r; }, function () { return r; }); /* the latest troops (someone may have joined in the last second) */
+  Promise.all([getL, fresh]).then(function (a) { var rr = Object.assign({ id: r.id }, a[1]); if (rr.done) return; var o = sgRallyBattle(rr, a[0]); SG.fights[r.id] = o; return KS_BACKEND.call("siegeHit", { rid: r.id, total: o.total, shares: o.shares, sent: rr.sent || 0 }); })
+    .then(function () {}, function (e) { try { console.warn("siegeHit", e && e.message); } catch (x) {} setTimeout(function () { delete SG.resolving[r.id]; }, 5000); });
 }
 function sgSpot() { /* the boss stands a short way from the scheduler's city, on a patch of open water (no resource fields / camps under it) */
   var M = game.state.map, t = mapTileById(M, game.state.homeTileId) || { x: 50, y: 50 }, free = function (x, y) { for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) { var q = mapTileAt(M, x + dx, y + dy); if (!q || q.type !== "empty" || q.owner || (x + dx === t.x && y + dy === t.y)) return false; } return true; };
@@ -20437,11 +20558,15 @@ function sgSpot() { /* the boss stands a short way from the scheduler's city, on
 /* a rally whose countdown is over is hit by whichever member's game sees it first (the server makes sure it only counts once) */
 function sgTick() {
   if (!SG.aid) return; sgPickHunt(); var now = Date.now();
-  SG.rallies.forEach(function (r) { if (!r.done && now >= r.launch && !SG.resolving[r.id]) { SG.resolving[r.id] = 1; KS_BACKEND.call("siegeHit", { rid: r.id }).then(function () {}, function () { setTimeout(function () { delete SG.resolving[r.id]; }, 5000); }); } });
+  SG.rallies.forEach(function (r) { if (!r.done && now >= r.launch && !SG.resolving[r.id]) {
+    if (r.armies) { sgRallyHit(r, now); return; } /* v1705: troop rally - one battle, run by the leader's game (or anyone's, from the leader's save, if the leader doesn't) */
+    SG.resolving[r.id] = 1; KS_BACKEND.call("siegeHit", { rid: r.id }).then(function () {}, function () { setTimeout(function () { delete SG.resolving[r.id]; }, 5000); }); } });
+  sgTroopsHome(now);
   if (sgActive() || SG.el) sgMapRender();
 }
 setInterval(function () { try { sgTick(); } catch (e) {} }, 1000);
-document.addEventListener("input", function (e) { var t = e.target; if (t && t.hasAttribute && t.hasAttribute("data-sgwhen")) SG.when = t.value; });
+document.addEventListener("input", function (e) { var t = e.target; if (t && t.hasAttribute && t.hasAttribute("data-sgwhen")) SG.when = t.value;
+  if (t && t.hasAttribute && t.hasAttribute("data-sgpn") && SG.pick) { var k = t.getAttribute("data-sgpn"), mx = sgPickHave()[k] || 0, v = Math.max(0, Math.min(mx, Math.floor(+t.value || 0))); SG.pick.n[k] = v; sgPickTotals(); } });
 function evSgHtml() {
   var C = sgCfg(), h = SG.hunt, act = sgActive(), nx = sgNext(), now = Date.now(), rk = myRank(), mine = sgMine(h), tot = (h && h.total) || 0;
   var tm = act ? '⏳ Ends in <b data-evend="' + act.end + '">' + evLeft(act.end - now) + "</b>" : nx ? '🗓️ Next hunt <b>' + sgWhenLocal(nx.start) + "</b>" : "No hunt scheduled";
@@ -20453,11 +20578,12 @@ function evSgHtml() {
   if (h) out += '<div class="evw-act">' + bar("🏰 Alliance damage", tot, C.alliance) + bar("⚔️ Your damage", mine, C.personal) + "</div>";
   if (act) {
     var busyR = (act.busy || {})[PLAYER_ID], open = SG.rallies.filter(function (r) { return !r.done; }).sort(function (a, b) { return a.launch - b.launch; });
-    out += '<div class="evw-sgbox"><div class="t">📣 Rallies</div>' + (busyR ? '<div class="evw-spnote">Your march is in a rally - it can join another once that one hits.</div>' : '<button type="button" class="evw-npbtn" data-sgrally="1"' + (SG.busy ? " disabled" : "") + ">🦏 Start a rally (" + C.wait + "s to gather)</button>")
+    if (SG.pick) out += sgPickHtml(act);
+    else out += '<div class="evw-sgbox"><div class="t">📣 Rallies</div>' + (busyR ? '<div class="evw-spnote">Your march is in a rally - it can join another once that one hits.</div>' : '<button type="button" class="evw-npbtn" data-sgrally="1"' + (SG.busy ? " disabled" : "") + ">🦏 Start a rally (" + C.wait + "s to gather)</button>")
       + (open.length ? open.map(function (r) { var n = Object.keys(r.members || {}).length, inIt = !!(r.members || {})[PLAYER_ID], left = r.launch - now;
-          return '<div class="evw-sgr"><div class="tx"><b>' + escapeHtml(r.lname || "Rally") + "'s rally</b><span>" + n + " / " + C.maxRally + " · " + Object.keys(r.members || {}).map(function (k) { return escapeHtml(r.members[k]); }).join(", ") + "</span></div>"
+          return '<div class="evw-sgr"><div class="tx"><b>' + escapeHtml(r.lname || "Rally") + "'s rally</b><span>" + n + " / " + C.maxRally + " · " + Object.keys(r.members || {}).map(function (k) { return escapeHtml(r.members[k]); }).join(", ") + "</span>" + (r.armies ? '<span class="sgtr">🪖 ' + sgFmt(r.sent || 0) + " / " + sgFmt(r.cap || 0) + " troops</span>" : "") + "</div>"
             + (left > 0 ? '<span class="cd">⏳ <b data-evend="' + r.launch + '">' + evLeft(left) + "</b></span>" : '<span class="cd">⚔️ attacking…</span>')
-            + (inIt ? '<span class="go done">✓</span>' : left > 0 && !busyR && n < C.maxRally ? '<button type="button" class="go claim" data-sgjoin="' + r.id + '">Join</button>' : "") + "</div>"; }).join("") : '<div class="evw-spnote" style="margin-top:8px">No rallies gathering - start one and your alliance can join.</div>') + "</div>";
+            + (inIt ? '<span class="go done">✓</span>' : left > 0 && !busyR && n < C.maxRally && !(r.armies && (r.sent || 0) >= (r.cap || 0)) ? '<button type="button" class="go claim" data-sgjoin="' + r.id + '">Join</button>' : "") + "</div>"; }).join("") : '<div class="evw-spnote" style="margin-top:8px">No rallies gathering - start one and your alliance can join.</div>') + "</div>";
   }
   if (h && (h.last || []).length) out += '<div class="evw-sgbox"><div class="t">💥 Recent hits</div>' + h.last.slice().reverse().map(function (x) { return '<div class="evw-sgl"><span>' + escapeHtml(x.by || "") + "'s rally · " + x.n + " player" + (x.n > 1 ? "s" : "") + '</span><b>-' + sgFmt(x.hit) + "</b></div>"; }).join("") + "</div>";
   if (h && Object.keys(h.dmg || {}).length) { var ids = Object.keys(h.dmg).sort(function (a, b) { return h.dmg[b] - h.dmg[a]; });
@@ -20469,7 +20595,7 @@ function evSgHtml() {
   out += "</div>";
   var tierRows = function (tiers) { return (tiers || []).map(function (t, i) { return '<div class="evw-sgtr"><span>' + sgFmt(t.dmg) + "+</span><div class=\"it\">" + Object.keys(t.items).map(function (k) { return evTile(k, t.items[k], " sm"); }).join("") + "</div></div>"; }).join(""); };
   out += '<div class="evw-sgbox"><div class="t">🎁 Rewards</div><div class="evw-spnote">You get the highest personal tier you reach plus the highest alliance tier, by mail after the hunt.</div><div class="evw-sgh">⚔️ Your damage</div>' + tierRows(C.personal) + '<div class="evw-sgh">🏰 Alliance damage</div>' + tierRows(C.alliance) + "</div>";
-  return out + '<div class="evw-foot">Start a rally on the siege boss and your alliance has ' + C.wait + " seconds to join, then it hits once - every member's damage comes from their power, plus " + Math.round(C.bonusPer * 100) + "% per extra player in the rally (up to +" + Math.round(C.bonusCap * 100) + "%). The boss can't be beaten - it's all about total damage. Tap the boss on the World map to get here.</div>";
+  return out + '<div class="evw-foot">Start a rally on the siege boss and your alliance has ' + C.wait + " seconds to join and send troops, then it hits as one big battle: everyone's troops together, led by the rally leader's heroes, fortress and weapons. Your share = the damage your troops did (the leader also gets the heroes' damage). Troops all come home - none are lost. The boss can't be beaten - it's all about total damage. Tap the boss on the World map to get here.</div>";
 }
 /* the boss on the World map while a hunt is live */
 function sgMapRender() {
@@ -20611,8 +20737,12 @@ function evWinClick(e) {
   if ((b = t.closest && t.closest("[data-evcb]"))) { var cbr = game.cbClaim(+b.getAttribute("data-evcb")); if (cbr.ok) evDone("Day " + b.getAttribute("data-evcb") + ": " + evGotText(cbr.got)); evWinRender(true); return; } /* v1631 */
   if ((b = t.closest && t.closest("[data-galogin]"))) { gemAct("login"); if (!ksFb()) { persist(); evWinRender(true); } return; } /* v1628 */
   if (t.closest && evArenaClick(t)) return; /* v1594 */
-  if ((b = t.closest && t.closest("[data-sgrally]"))) { if (sgActive()) sgCall("siegeRally", { hid: SG.hid }); return; } /* v1623 Alliance Siege */
-  if ((b = t.closest && t.closest("[data-sgjoin]"))) { sgCall("siegeJoin", { rid: b.getAttribute("data-sgjoin") }); return; }
+  if ((b = t.closest && t.closest("[data-sgrally]"))) { if (sgActive()) sgPickOpen("start"); return; } /* v1623 Alliance Siege; v1705: pick troops first */
+  if ((b = t.closest && t.closest("[data-sgjoin]"))) { var jr = b.getAttribute("data-sgjoin"), jro = SG.rallies.filter(function (x) { return x.id === jr; })[0]; if (jro && !jro.armies) sgCall("siegeJoin", { rid: jr }); else sgPickOpen("join", jr); return; }
+  if ((b = t.closest && t.closest("[data-sgpf]"))) { sgPickForm(+b.getAttribute("data-sgpf")); return; } /* v1705 send-troops box */
+  if ((b = t.closest && t.closest("[data-sgpmax]"))) { sgPickFill(); return; }
+  if ((b = t.closest && t.closest("[data-sgpx]"))) { SG.pick = null; EVW.note = ""; try { evWinRender(true); } catch (e) {} return; }
+  if ((b = t.closest && t.closest("[data-sgpgo]"))) { sgPickSend(); return; }
   if ((b = t.closest && t.closest("[data-sgclaim]"))) { sgCall("siegeClaim", { hid: b.getAttribute("data-sgclaim") }, function (r) { evDone(r.dup ? "Already claimed" : Object.keys(r.items || {}).length ? "Rewards sent to your mail" : "No reward tier reached this time"); }); return; }
   if ((b = t.closest && t.closest("[data-sgcancel]"))) { sgCall("siegeCancel", { hid: b.getAttribute("data-sgcancel") }); return; }
   if ((b = t.closest && t.closest("[data-sgnow]"))) { var spn = sgSpot(); sgCall("siegeSchedule", { now: true, x: spn.x, y: spn.y }, function () { evDone("The siege boss is on the World map!"); }); return; }
