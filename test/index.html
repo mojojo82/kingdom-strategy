@@ -14319,7 +14319,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1687"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1688"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28751,6 +28751,7 @@ function heroExactSheet(key, a, im, devS) {
 }
 function drawHeroAnim(ctx, key, x, feetY, state, scale, flip, phase, spd, tint) {
   if (HERO_OUTLINE_FX.length && !heroOutlineBusy) { var oFx = heroOutlineFind(key, x, scale); if (oFx) return heroOutlineDraw(oFx, ctx, key, x, feetY, state, scale, flip, phase, spd, tint); }
+  if (key === "tom_skill") { heroFxImg("tom", "slash1"); heroFxImg("tom", "slash2"); } /* v1688: preload his painted slashes while the leap starts */
   var a = HERO_ANIMS[key], im = heroAnimImg(key); if (!a || !im) return false;
   var now = performance.now(), id = key + (flip ? "f" : "") + Math.round((phase || 0) * 100);
   var mem = heroAnimMem[id] || (heroAnimMem[id] = { state: state, prev: null, t: now });
@@ -28854,7 +28855,7 @@ var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5
   vesper: { skybeam: "beam", ring: "#7fe8ff" },
   halo7: { coreBeam: "beam", core: [4.5, 29], glow: "#ffb347" },
   caelum: { dive: true, glow: "#ff4fd8" },
-  tom: { throwImg: "slash", slash: true, ring: "#bfeaff", glow: "#7fd4ff" }, /* v1678: giant energy crescents (art/heroes/tom/tom_slash.webp) */
+  tom: { throwImg: "slash", slash: true, slashPair: ["slash1", "slash2"], slashLen: { slash1: 54, slash2: 86 }, ring: "#bfeaff", glow: "#7fd4ff" }, /* v1688 (Harley): two painted slashes shaped like his two sword swings (art/heroes/tom/tom_slash1/2.webp), growing as they fly */ /* v1678: giant energy crescents (art/heroes/tom/tom_slash.webp) */
   sera: { heal: true, glow: "#7ee896" }, /* v1526: Mending Light - green blessing over his fortress (drawHeroHeals) */
   torvald: { outline: { thick: 0.85, core: "#e8f6ff", coreAlpha: 1, glow: "#3fa2ff", glowAlpha: 0.9, glowBlur: 3, echoCount: 7, echoGap: 0.1, echoLife: 0.4, echoSpread: 1.25, echoAlpha: 0.85, echoColor: "#3fa2ff", echoThick: 1.3, fadeIn: 0.08, duration: 1.1, fadeOut: 0.3 }, glow: "#3fa2ff", souls: { n: 5, core: [240, 253, 255], glow: [150, 230, 245] } } }; /* v1567: souls = orbs leave him with the aura and home into his fortress's hull (drawHeroSouls) */ /* v1525 (Harley, Stance FX Lab): Guard Stance = hard white-blue outline round his sprite + blue outline echoes pushing outwards (drawHeroAnim -> heroOutlineDraw); v1524 had a white-gold ward (F.ward, drawHeroWards - kept, unused) */ /* v1514: Riftbreaker Slam - flies up, hovers, crashes down on one target (drawHeroDive*), pink lightning burst */ /* v1509: Core Beam - a huge horizontal beam from his chest core (core = [forward, up] from his feet in hs units) that shoots across the field (art/heroes/halo7/halo7_beam.webp, additive) */ /* v1508: orbital beams (art/heroes/vesper/vesper_beam.webp, additive) */ /* v1506: Sunforge Slam - fire pillars run along the ground both ways from his sword (art/heroes/aurek/aurek_pillar.webp, drawn additive) */
 function heroSkillOnThrow(M, key, x0, y0, targets, hs, gx, gy, xMin, xMax, dir, ggy) { /* ggy: the battlefield ground line (a fortress rider's feet are up on the deck) */ /* the skill sheet's effect frame, same in every mode */
@@ -29108,7 +29109,8 @@ function heroAttackState(key, phase) { var a = HERO_ANIMS[key]; if (!a || !a.row
 function heroAnimStartAt(key, flip, t0, st) { heroAnimRestart(key); heroAnimMem[key + (flip ? "f" : "") + "0"] = { state: st || "skill", prev: null, t: t0 }; } /* a once-sheet started earlier than now (the engine runs ahead of the drawing) */
 function heroThrowFx(M, key, x0, y0, targets, sc) {
   var S = M.hzStars || (M.hzStars = []), now = performance.now();
-  var Fq = HERO_COMBAT_FX[key] || {}; targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: Fq.slash ? 380 : 220, spin: Math.random() * 6 }); });
+  var Fq = HERO_COMBAT_FX[key] || {}, pImg = null; if (Fq.slashPair) { var LT = M.slashLastT || (M.slashLastT = {}); pImg = Fq.slashPair[now - (LT[key] || -1e9) < 700 ? 1 : 0]; LT[key] = now; } /* v1688: 1st throw of a leap = slash1, the one right after = slash2 */
+  targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: pImg ? 460 : Fq.slash ? 380 : 220, spin: Math.random() * 6, img: pImg }); });
   if (S.length > 40) S.splice(0, S.length - 40);
 }
 function heroDodgeFx(M, key, x, feetY, flip, hs, nx) { /* after-image where he stood + warp where he re-appears (nx) */
@@ -29151,6 +29153,8 @@ function drawHeroThrows(ctx, sc, M) {
   M = M || idleAnim; var S = M.hzStars; if (!S || !S.length) return; var now = performance.now();
   M.hzStars = S.filter(function (q) { var u = (now - q.t0) / q.dur; if (u >= 1.25) return false; var F = HERO_COMBAT_FX[q.key || "hanzo"] || {}, im = F.throwImg ? heroFxImg(q.key || "hanzo", F.throwImg) : null;
     if (u >= 1) { ctx.save(); ctx.globalAlpha = (1.25 - u) * 4 * 0.8; ctx.strokeStyle = F.ring || "#fff"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.arc(q.x1, q.y1, (6 + (u - 1) * 60) * sc, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return true; }
+    if (q.img) { var pim = heroFxImg(q.key, q.img); if (!pim) return true; var xP = q.x0 + (q.x1 - q.x0) * u, yP = q.y0 + (q.y1 - q.y0) * u, gr = 0.32 + 0.68 * (1 - (1 - u) * (1 - u)), Lp = ((F.slashLen && F.slashLen[q.img]) || 60) * sc * gr, kP = Lp / Math.max(pim.naturalWidth, pim.naturalHeight), dxP = q.x1 - q.x0, angP = Math.atan2(q.y1 - q.y0, Math.abs(dxP) || 1);
+      ctx.save(); ctx.translate(xP, yP); if (dxP >= 0) { ctx.rotate(angP); ctx.scale(-1, 1); } else ctx.rotate(-angP); ctx.globalAlpha = u < 0.08 ? u / 0.08 : 1; ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 10 * sc; ctx.drawImage(pim, -pim.naturalWidth * kP / 2, -pim.naturalHeight * kP / 2, pim.naturalWidth * kP, pim.naturalHeight * kP); ctx.restore(); return true; } /* v1688: painted slash, thick edge leading, grows as it flies */
     var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u - (F.slash ? 0 : Math.sin(u * Math.PI) * 10 * sc), sz = (F.slash ? 46 : 15) * sc;
     ctx.save(); ctx.translate(x, y); ctx.rotate(F.slash ? Math.atan2(q.y1 - q.y0, q.x1 - q.x0) : q.spin + u * 22); /* v1678: Tom's crescents fly blade-first, no spin */ ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 8 * sc;
     if (im) ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); else { ctx.fillStyle = "#cfefff"; ctx.fillRect(-sz / 3, -sz / 3, sz / 1.5, sz / 1.5); }

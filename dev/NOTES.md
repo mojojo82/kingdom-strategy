@@ -5554,3 +5554,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - The sim no longer moves him for a push-back (it just holds him while he slides). He slides back on screen, then runs back to his spot. That avoids the sim and the picture disagreeing.
 - Balance: Arena Lv40 w/o tom 50-70 vs w/o kessa 17-103; Lv80 32-88 vs 15-104 (unchanged).
 - Test: headless Arena vs Bram/Halo-7/Aurek - every slide started on a punch within 26 px of his guard; no errors.
+
+## v1688 — Tom: painted skill slashes that grow as they fly (TEST)
+- Harley: GPT paints 2 slashes shaped like his two sword swings; they come out on the leap and grow as they fly at the enemy.
+- Art: ChatGPT, with crops of the two sword trails from the skill clip as references (art/originals/heroes/tom/refs/slash1/2_trail_ref.png). Icy white to pale cyan, on magenta: art/originals/heroes/tom/fx/skill_slashes_gpt_v1.png. Keyed and split, magenta fringe pulled to blue (fx/skill_slash1/2_keyed.png). Phone copies art/heroes/tom/tom_slash1.webp (306x320) and tom_slash2.webp (448x124).
+- Code: HERO_COMBAT_FX.tom.slashPair - the first throw of a leap uses slash1 (curved crescent), the one 0.3 s later slash2 (long sweep). Each flies thick edge first, tilted along its path, and grows from 32% to 100% of slashLen (54 / 86 px at hero scale 1) over 460 ms, then the ring flash. Same code in Conquest and Arena (heroThrowFx / drawHeroThrows). Preloaded when the leap sheet starts.
+- Test: headless Arena - both slashes fly and grow at every enemy; no errors. Visual only.
