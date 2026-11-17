@@ -5617,3 +5617,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Fix: castWaits() - if the cast would be put back out of reach, wait one tick (he doesn't move once in reach, so it fires next tick at a real target). For every close-range skill with a skill sheet (Lily, Halo-7, Aurek, Bram...), both sides.
 - Fortress damage test (Gareth/Lyra/Sera/Torvald + Lily, 18 fights Lv80): Lily's skill 0 -> 15,076 per fight, team wins 2 -> 15 of 18.
 - team_rank.js: Lily teams Lv40 31.5 -> 38.3%, Lv80 27.4 -> 31.7%. Tom 46.5 / 36.9, Kessa 62.4 / 50.4, Hanzo 57.3 / 86.6, none 45.5 / 44.4. Meta: same pre-existing warning.
+
+## v1699 — Tom: skill damage x2 once more (TEST)
+- Harley: double it again. Heaven Splitter pctByLevel 1.0-1.8 -> 2.0-3.6 per slash (Lv80 skill 5: ~2,300 per slash).
+- team_rank.js: Tom teams Lv40 46.8%, Lv80 37.4% (Kessa 62.2 / 50.4, Hanzo 57.6 / 86.3, none 45.3 / 44.3) - Arena still barely moves. Conquest (gareth,lyra,sera,torvald,tom): Lv40 6-16 (Kessa 6-12, OK per Harley: the rule is about Arena), Lv80 10-1.
