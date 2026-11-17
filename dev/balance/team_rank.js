@@ -7,7 +7,7 @@ const PER = +arg("per", 12), SEEDS = +arg("seeds", 1), LEVELS = arg("levels", "4
 (async () => {
   const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
   const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome";
-  const GAME = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8"), FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8");
+  const GAME = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8"), FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8");
   const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
   const b = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
   const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });

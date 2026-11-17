@@ -5586,3 +5586,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - New dev/balance/team_rank.js: 100 random 5-hero teams (20 each with Iron Lily, Kessa, Hanzo, Tom, and 20 with none of them; never two of those four together). Every team fights every other team, both sides, 2 seeds (19,800 fights per level). Results in results/team_rank_latest.json.
 - Average team win %: Lv40 - Kessa 65.9, Hanzo 57.4, none 48.1, **Tom 47.1**, Iron Lily 31.5. Lv80 - Hanzo 86.8, Kessa 52.2, none 45.7, **Tom 38.0**, Iron Lily 27.4.
 - Tom teams' ranks (of 100): Lv40 best 5, middle ~54; Lv80 best 19, middle ~63. Per hero (average of his teams), Lv80: Tom 16th of 18 (only Torvald and Iron Lily lower). Lv40: Tom 11th.
+
+## v1693 — Tom: each skill slash deals the full skill damage (TEST)
+- Harley: increase his skill damage. Heaven Splitter's two slashes now each deal the full skill value (part 1, was 0.5), so an enemy hit by both takes twice what v1692 dealt.
+- Full team ranking (team_rank.js, 100 teams, 19,800 fights per level), Tom teams avg win: Lv40 49.6% (was 47.1), Lv80 39.6% (was 38.0). Kessa teams 65.1 / 51.6, Hanzo 57.0 / 86.8, none 47.6 / 45.1. Per hero: Tom 9th of 18 at Lv40, 16th at Lv80.
+- Tested, not applied: x2 more again (part 2): 52.5 / 41.3. Slashes also hitting the enemy deck riders: 55.2 / 46.4 (Kessa 63.5 / 48.8) - his damage isn't the limit, what the slashes can reach is.
+- team_rank.js takes GAMEFILE=... to test a modified copy of the game.
