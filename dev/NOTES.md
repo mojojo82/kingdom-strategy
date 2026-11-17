@@ -5641,3 +5641,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Shuriken Storm aoeDelay = 35/24 + 0.22 s (throw + flight; was HANZO_LEAP_SEC 0.45), so damage lands when the shuriken do. His cast hold is now the 2.2 s sheet.
 - Balance: team_rank Hanzo teams Lv40 57.4 -> 52.7%, Lv80 86.6 -> 82.3% (Kessa 64.9 / 52.7, Tom 45.7 / 37.1). Duels Lv80: Hanzo still 100%. Meta: same pre-existing warning.
 - Test: headless Arena from before the battle starts - he jumps high above his ship, throws at the peak, lands ~1.7 s later; no errors.
+
+## v1702 — Hanzo: slower shuriken (TEST)
+- Harley: the projectiles fly too fast. HERO_COMBAT_FX.hanzo.flyMs 600 (was the default 220 ms); heroThrowFx uses a hero's flyMs. Shuriken Storm aoeDelay = 35/24 + 0.6 s, so the damage still lands when they arrive. Conquest + Arena.

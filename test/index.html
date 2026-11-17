@@ -6657,7 +6657,7 @@ var HERO_DEFS = {
   hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true, noUniversal: true /* v1653: only his own fragments */,
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, aoeDelay: 35 / 24 + 0.22, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at Lv 5), Hanzo leaps and rains shuriken on every enemy, fortress included. Projectile shields block them." },
+      { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, aoeDelay: 35 / 24 + 0.6, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at Lv 5), Hanzo leaps and rains shuriken on every enemy, fortress included. Projectile shields block them." },
       { name: "Shadow Step", icon: "💨", kind: "passive", effectType: "dodge", perLevel: 0.10, desc: "Dodges 10% of attacks per level." }
     ],
     expeditionSkills: [
@@ -14327,7 +14327,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1701"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1702"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28857,7 +28857,7 @@ function hzFxImg(n) { var c = hzFxCache[n]; if (!c) { c = hzFxCache[n] = new Ima
    - HERO_COMBAT_FX[key].throwImg      -> on the skill sheet's throwFrame that sprite flies from his hand to every enemy (heroThrowFx)
    - HERO_COMBAT_FX[key].ghost/.warp   -> each dodge leaves a fading after-image and he blinks, a warp opening behind him (heroDodgeFx)
    M = the mode's animation store (idleAnim for Conquest, arenaAnim for Arena / World PvP). */
-var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", ring: "#8ff6ff", glow: "#5ff0ff", ghost: "rgba(225,248,255,0.85)", warp: "warp" },
+var HERO_COMBAT_FX = { hanzo: { throwImg: "shuriken", flyMs: 600, /* v1702 (Harley): slower shuriken (was 220 ms) */ ring: "#8ff6ff", glow: "#5ff0ff", ghost: "rgba(225,248,255,0.85)", warp: "warp" },
   aurek: { pillars: "pillar" },
   seraphine: { rain: "shard", glow: "#c79bff", ring: "#e3cbff" }, /* v1508: crystal rain (art/heroes/seraphine/seraphine_shard.webp) */
   vesper: { skybeam: "beam", ring: "#7fe8ff" },
@@ -29119,7 +29119,7 @@ function heroThrowFx(M, key, x0, y0, targets, sc) {
   var S = M.hzStars || (M.hzStars = []), now = performance.now();
   var Fq = HERO_COMBAT_FX[key] || {}, pImg = null; if (Fq.slashPair) { var LT = M.slashLastT || (M.slashLastT = {}); pImg = Fq.slashPair[now - (LT[key] || -1e9) < 700 ? 1 : 0]; LT[key] = now; } /* v1688: 1st throw of a leap = slash1, the one right after = slash2 */
   if (pImg && Fq.slashOne && targets.length) { var far = targets[0]; targets.forEach(function (t) { if (Math.abs(t.x - x0) > Math.abs(far.x - x0)) far = t; }); var dFar = Math.hypot(far.x - x0, far.y - y0); S.push({ key: key, x0: x0, y0: y0, x1: far.x, y1: far.y, t0: now, dur: Math.max(380, Math.min(900, dFar / 0.45)), spin: 0, img: pImg }); } /* v1690: one projectile per stroke */
-  else targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: pImg ? 460 : Fq.slash ? 380 : 220, spin: Math.random() * 6, img: pImg }); });
+  else targets.forEach(function (t) { S.push({ key: key, x0: x0, y0: y0, x1: t.x, y1: t.y, t0: now, dur: pImg ? 460 : Fq.flyMs || (Fq.slash ? 380 : 220), spin: Math.random() * 6, img: pImg }); });
   if (S.length > 40) S.splice(0, S.length - 40);
 }
 function heroDodgeFx(M, key, x, feetY, flip, hs, nx) { /* after-image where he stood + warp where he re-appears (nx) */
