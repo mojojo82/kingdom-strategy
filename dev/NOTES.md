@@ -5624,3 +5624,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1700 — Tom: skill damage back to the v1695 value (TEST)
 - Harley: revert a few of the damage changes. Chose 0.5-0.9 per slash (v1695; Lv80 skill 5 = 576 per slash, two slashes per leap). Arena was ~47 / 37% for Tom teams at every value tested (team_rank.js), so no Arena change expected.
+
+## (dev only) — 1v1 duel ranking, all 18 heroes (TEST v1700)
+- hero_rank_solo.js takes LVL=40|80 and UNHIDE=ironlily. Every hero duels every other, 3 seeds each way, plus solo kaiju damage in 60 s.
+- Lv40 duel win %: Lily 86, Lyra 84, Kessa 84, **Tom 81**, Hanzo 80, Gareth 75, Pip 73, Torvald 67, Roran 45, Bram 43, Halo-7 41, Juno 35, Zarek 30, Caelum 29, Aurek 19, Sera 18, Vesper 9, Seraphine 0.
+- Lv80: Hanzo 100, Lily 89, Pip 76, Kessa 73, Lyra 72, Caelum 64, **Tom 64**, Gareth 61, Torvald 56, Bram 50, Halo-7 46, Zarek 39, Roran 38, Juno 32, Sera 18, Aurek 17, Vesper 6, Seraphine 0. Tom kaiju 36,693 (Hanzo 64,000, Lily 50,347, Kessa 42,266).
