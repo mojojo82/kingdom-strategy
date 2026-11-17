@@ -5655,3 +5655,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Team avg win Lv80 (x1 / x2 / x3): Hanzo 79 / 77 / 71, Kessa 54 / 55 / 53, none 47 / 48 / 49, Tom 37 / 37 / 40, Lily 34 / 33 / 37. Lv40 hardly moves.
 - Per hero Lv80 spread (best-worst): x1 79-34, x3 71-37. Skill-heavy ranged heroes rise (Vesper 45 -> 56, Seraphine 47 -> 52, Zarek 54 -> 60), Hanzo comes down, the rest within a few %.
 - Duels Lv80 barely change (Hanzo 100 at x1-x3; Vesper / Seraphine stay at the bottom - fights end before their skills matter).
+
+## (dev only, not applied) — skills x2 / x3 / x5 damage to the FORTRESS only (TEST v1703)
+- A copy of the game multiplies every skill's fortress damage (storms, waves, slashes, dives, close-range and ranged skill hits, splash, limits; both sides) by window.__SKF. Damage to heroes unchanged. Checked with skill_vs_fortress.js (x3: Hanzo 6,720, Lily 7,680, Tom 3,456 per cast). skill_vs_fortress.js takes GAMEFILE now.
+- team_rank.js Lv80 avg win (x1 / x2 / x3 / x5): Hanzo 79 / 80.5 / 82 / 82, Kessa 54 / 54 / 53 / 53, none 47 / 47 / 46 / 46, Tom 36.5 / 36 / 36 / 36, Lily 34 / 33 / 33 / 33. Lv40 identical within 1%. Per-hero order unchanged. Duels Lv80 barely move (Hanzo 100, Lily 92-93, Tom 64-66).
+- Why: every team's skills get the same boost, and it's small next to normal hits + cannon over a 60 s fight, so who wins hardly changes.

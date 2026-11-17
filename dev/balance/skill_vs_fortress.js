@@ -1,6 +1,6 @@
 /* v1703 (Harley): every hero alone vs an enemy fortress with no heroes (HP 1e8, no cannon): fortress damage from ONE activation of the hero's main skill (the 2nd cast, everything it lands within ~5 s), plus their basic hit. Lv40 (skills 3) and Lv80 (skills 5). Run: NODE_PATH=$(npm root -g) node dev/balance/skill_vs_fortress.js */
 const fs=require("fs"),path=require("path"),ROOT=path.join(__dirname,"../..");
-(async()=>{const {chromium}=require("playwright");const GAME=fs.readFileSync(ROOT+"/test/index.html","utf8"),FAKE=fs.readFileSync(ROOT+"/dev/tests/fakefb.js","utf8");const store={},call=require(ROOT+"/dev/tests/fnrunner.js")(store);
+(async()=>{const {chromium}=require("playwright");const GAME=fs.readFileSync(process.env.GAMEFILE||(ROOT+"/test/index.html"),"utf8"),FAKE=fs.readFileSync(ROOT+"/dev/tests/fakefb.js","utf8");const store={},call=require(ROOT+"/dev/tests/fnrunner.js")(store);
 const b=await chromium.launch({executablePath:"/opt/pw-browsers/chromium-1243/chrome-linux64/chrome",args:["--no-sandbox"]});const ctx=await b.newContext({viewport:{width:430,height:932}});
 await ctx.exposeFunction("__fbstore",(op,k,v)=>{if(op==="set")store[k]=JSON.parse(v);else if(op==="del")delete store[k];return JSON.stringify(store);});await ctx.exposeFunction("__fbcall",call);
 await ctx.route(/mojojo82\.github\.io/,require(ROOT+"/dev/tests/siteroute.js")(GAME));
