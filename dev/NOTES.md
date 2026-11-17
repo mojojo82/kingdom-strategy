@@ -5560,3 +5560,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Art: ChatGPT, with crops of the two sword trails from the skill clip as references (art/originals/heroes/tom/refs/slash1/2_trail_ref.png). Icy white to pale cyan, on magenta: art/originals/heroes/tom/fx/skill_slashes_gpt_v1.png. Keyed and split, magenta fringe pulled to blue (fx/skill_slash1/2_keyed.png). Phone copies art/heroes/tom/tom_slash1.webp (306x320) and tom_slash2.webp (448x124).
 - Code: HERO_COMBAT_FX.tom.slashPair - the first throw of a leap uses slash1 (curved crescent), the one 0.3 s later slash2 (long sweep). Each flies thick edge first, tilted along its path, and grows from 32% to 100% of slashLen (54 / 86 px at hero scale 1) over 460 ms, then the ring flash. Same code in Conquest and Arena (heroThrowFx / drawHeroThrows). Preloaded when the leap sheet starts.
 - Test: headless Arena - both slashes fly and grow at every enemy; no errors. Visual only.
+
+## v1689 — Tom: skill slashes angled like Harley's drawing (TEST)
+- Harley drew the two slashes: the first almost upright, leaning right; the second a diagonal rising to the right. Both only roughly curved.
+- HERO_COMBAT_FX.tom.slashXf: each painted slash is turned from its own tip-to-tip angle (nat) to the drawn angle (tgt). The curve is flattened across that line (sq 0.6 / 0.7) and mirrored for an enemy-side Tom. Fixed angles, no longer turned to the flight path; still grows in flight.
+- Test: headless Arena, no errors. Visual only.
