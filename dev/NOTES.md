@@ -5565,3 +5565,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley drew the two slashes: the first almost upright, leaning right; the second a diagonal rising to the right. Both only roughly curved.
 - HERO_COMBAT_FX.tom.slashXf: each painted slash is turned from its own tip-to-tip angle (nat) to the drawn angle (tgt). The curve is flattened across that line (sq 0.6 / 0.7) and mirrored for an enemy-side Tom. Fixed angles, no longer turned to the flight path; still grows in flight.
 - Test: headless Arena, no errors. Visual only.
+
+## v1690 — Tom: new slash art, one projectile per sword stroke (TEST)
+- Harley: GPT draws new images at his drawn angles, and each sword stroke fires only ONE projectile.
+- Art: same ChatGPT chat, with Harley's red-stroke drawing attached (refs/slash_shapes_harley_drawing.jpg): fx/skill_slashes_gpt_v2.png -> keyed, magenta fringe pulled to blue, split: fx/skill_slash1/2_v2_keyed.png. Phone copies art/heroes/tom/tom_slash1_v2.webp / tom_slash2_v2.webp (the v1 phone copies are removed; originals kept).
+- Code: slashOne - one projectile per stroke (slash1_v2, then slash2_v2), aimed at the farthest target so it flies through the whole enemy line. Speed ~450 px/s (380-900 ms), grows 32% -> 100% (58 / 66 px at hero scale 1), drawn as painted (no turning), mirrored for an enemy-side Tom. Damage unchanged (the skill still hits every enemy).
+- Test: headless Arena, no errors. Visual only.
