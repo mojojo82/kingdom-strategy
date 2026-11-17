@@ -5530,3 +5530,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Not covered: the very first swing right after an enemy reaches him can land before the entry finishes; skill hits aren't predicted.
 - Balance: Tom a bit stronger from the air time. Arena Lv40 w/o tom 50-70 (was 67-53) vs w/o kessa 17-103; Lv80 32-88 (was 46-74) vs 15-104 - still clearly below Kessa. Meta check: same pre-existing warning.
 - Test: headless Arena vs Bram/Halo-7/Aurek - 9 of 13 hits landed on a held guard; the rest were first contacts, knocks or while running.
+
+## v1684 — Tom: push-back starts when the punch visibly lands (Arena, TEST)
+- Harley: the knock-back must start exactly when Bram's / Halo-7's punch makes contact. Before, it started on the sim tick, which isn't when their attack animation's impact frame plays.
+- Now a knock-back from the sim waits (knPend; the sim says who did it: heroInfo kb) until that attacker's drawn attack reaches its impact frame (drawHeroAnim returns 2 -> arenaAnim.tomKnGo). Then the knock row and the slide start. Meanwhile Tom holds his guard where he stood. Fallback: start anyway after 1.3 s; dropped if he's KO'd or gone 2 s.
+- Test: headless Arena vs Bram/Halo-7/Aurek - Halo-7's punch sparks and the start of the slide are on the same frame, no errors. Visual only, no balance change.
