@@ -28,6 +28,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/", { waitUntil: "domcontentloaded", timeout: 180000 }); await P.waitForSelector("#ksAuth .box", { timeout: 120000 });
   await P.fill("#ksE", "cc" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
+  if (process.env.SLOWGRID) await P.evaluate(() => { window.__slowGrid = true; });
   const r = await P.evaluate(() => {
     const clone = (k, nm) => { const d = Object.assign({}, HERO_DEFS.aurek, { name: nm }); d.conquestSkills = HERO_DEFS.aurek.conquestSkills.map((s) => Object.assign({}, s)); d.conquestSkills[0].name = nm + " Skill"; HERO_DEFS[k] = d; if (HERO_ANIMS.aurek) HERO_ANIMS[k] = HERO_ANIMS.aurek; if (HERO_ANIMS.aurek_skill) HERO_ANIMS[k + "_skill"] = HERO_ANIMS.aurek_skill; };
     clone("tslow", "Slow Knight"); clone("tstun", "Stun Knight");
@@ -51,6 +52,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; d += x.r === "draw"; m += x.m; n++; if (bi === 0) { w0 += x.r === wn; m0 += x.m; n0++; } }); } });
       return { win: Math.round(100 * w / n), draw: Math.round(100 * d / n), lose: Math.round(100 * (n - w - d) / n), hpMargin: Math.round(100 * m / n), noWeaponsWin: Math.round(100 * w0 / n0), noWeaponsMargin: Math.round(100 * m0 / n0), castsPerFight: +(CASTS / n).toFixed(1), hanzoCasts: +(HCASTS / n).toFixed(2) }; };
     const out = {}; const L80 = [80, 25, 5, 30], L40 = [40, 10, 3, 15];
+    if (window.__slowGrid) { out["Lv80 Aurek copy (no effect)"] = rate("aurek", L80);
+      [12, 24, 60].forEach((D) => [0.5, 0.6, 0.7, 0.8, 0.9, 1].forEach((pc) => { CFG = { D }; window.__tf.pct = pc; out["Lv80 Slow " + Math.round(pc * 100) + "% for " + D + "s"] = rate("tslow", L80); })); window.__tf.pct = 0.5; return JSON.stringify(out, null, 1); }
     out["Lv80 Aurek (no extra effect, reference)"] = rate("aurek", L80);
     [3, 6, 12].forEach((D) => { CFG = { D }; out["Lv80 Slow 50% for " + D + "s"] = rate("tslow", L80); });
     [1, 2, 3].forEach((S) => { CFG = { S }; out["Lv80 Stun " + S + "s + timers reset"] = rate("tstun", L80); });
@@ -58,5 +61,5 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     out["Lv40 Aurek (reference)"] = rate("aurek", L40); CFG = { D: 6 }; window.__tf.pct = 0.3; out["Lv40 Slow 30% for 6s"] = rate("tslow", L40); window.__tf.pct = 0.5; CFG = { S: 1.2 }; out["Lv40 Stun 1.2s + timers reset"] = rate("tstun", L40); out["Lv40 Hanzo vs Hanzo"] = rate("hanzo", L40);
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "cc_heroes.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", process.env.SLOWGRID ? "slow_grid.json" : "cc_heroes.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
