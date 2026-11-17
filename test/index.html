@@ -14319,7 +14319,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1685"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1686"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38694,6 +38694,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   // all the way over if there is none; a KO'd hero is parked back home (d = 0).
   var posMode = !!(pHH && aHH && shared), ARENA_REACH = 0.04, infStep = 0.5 / (ARENA_ENGAGE_TICKS * dtS) * dtS;
   var skTgt = {}, hitTgt = {}, rangedPctLocal = (opts.rangedPct != null ? opts.rangedPct : koCfg.rangedPct), ARENA_RANGED_RANGE = 0.62, rAcc = {};
+  function dMovePx(e, d, px) { /* v1686: move a ground hero px screen pixels along his lane (+ = towards the enemy) - the two halves (home -> meeting line, meeting line -> enemy nose) have different lengths */
+    if (!e.runL) return Math.max(0, Math.min(1, d + px / 400)); var L0 = Math.max(1, e.runL[0]), L1 = Math.max(1, e.runL[1]);
+    if (px < 0) { var b = -px; if (d > 0.5) { var r1 = (d - 0.5) * 2 * L1; if (b <= r1) return d - b / (2 * L1); b -= r1; d = 0.5; } return Math.max(0, d - b / (2 * L0)); }
+    var f = px; if (d < 0.5) { var r0 = (0.5 - d) * 2 * L0; if (f <= r0) return d + f / (2 * L0); f -= r0; d = 0.5; } return Math.min(1, d + f / (2 * L1)); }
   function tomIncoming(myH, oppH, oppAtk, oppCd) { /* v1682b (Harley): Tom's guard was going up AFTER the hit (sparks first). For the drawing: in how many ticks the next enemy melee swing at him lands, so the guard can be up before it */
     myH.list.forEach(function (t) { if (!(t.blockMelee > 0)) return; t.inc = null; if (t.ko || t.air) return;
       oppAtk.forEach(function (a) { if (!a.melee || oppCd[a.id] == null) return; var at = oppH.by[a.id]; if (!at || at.ko || !at.reach) return; var tg = pickMeleeTarget(at, myH, true); if (!tg || tg.hero !== t) return;
@@ -38710,7 +38714,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     hh.list.forEach(function (e) {
       if (!e.infantry) return;
       if (e.ko) { e.knockAt = null; if (e.leapTo != null) { e.leapTo = null; e.air = false; } out.push([e, 0]); return; }
-      if (e.knockAt != null && tick >= e.knockAt) { var kl = e.runL ? (e.d <= 0.5 ? e.runL[0] : e.runL[1]) : 0; e.knockAt = null; out.push([e, Math.max(0, e.d - (kl > 0 ? TOM_KNOCK_PX / (2 * kl) : 0.12))]); return; } /* v1685: Tom's knock-back lands in the sim */
+      if (e.knockAt != null && tick >= e.knockAt) { e.knockAt = null; out.push([e, dMovePx(e, e.d, -TOM_KNOCK_PX)]); return; } /* v1685: Tom's knock-back lands in the sim */
       if (e.leapTo != null && tick >= e.leapAt) { var lt = e.leapTo; e.leapTo = null; e.air = false; out.push([e, lt]); return; } /* v1682: Tom's sideways leap lands */
       if (e.air || e.castUntil > tick) { out.push([e, e.d]); return; } /* v1514: in the air (Skybreaker Slam) - he stays put until he lands; v1516: or while his skill sheet plays */
       var foe = null; oh.list.forEach(function (o) { if (o.infantry && !o.ko && (!foe || o.d > foe.d)) foe = o; });
@@ -38739,10 +38743,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     me.castUntil = tick + Math.max(1, Math.ceil(SA.rows.skill[1] / SA.fps.skill / dtS));
     if (me.d0 != null && me.d0 !== me.d && me.d === me.dMv && !me.ko) { me.d = me.d0; me.reach = !!pickMeleeTarget(me, sd === 'P' ? aHH : pHH); }
     if (SA.lift && !me.ko) { /* v1682: Tom picks where his leap lands (applied on the landing tick, see planMove) */
-      var oh = sd === 'P' ? aHH : pHH, kl = me.runL ? (me.d <= 0.5 ? me.runL[0] : me.runL[1]) : 0, maxD = kl > 0 ? TOM_LEAP_MAX_PX / (2 * kl) : 0.25, foe = null, to = me.d;
+      var oh = sd === 'P' ? aHH : pHH, foe = null, to = me.d;
       oh.list.forEach(function (o) { if (o.infantry && !o.ko && !o.dead && !o.air && (!foe || o.d > foe.d)) foe = o; });
-      if (me.reach && me.hp < me.max * TOM_EVADE_HP) to = Math.max(0, me.d - maxD);
-      else if (!me.reach) { var lim = foe ? 1 - foe.d - ARENA_REACH * 0.5 : 1; if (lim - me.d > maxD * 0.2) to = Math.min(me.d + maxD, lim); }
+      if (me.reach && me.hp < me.max * TOM_EVADE_HP) to = dMovePx(me, me.d, -TOM_LEAP_MAX_PX);
+      else if (!me.reach) { var lim = foe ? 1 - foe.d - ARENA_REACH * 0.5 : 1; var far = dMovePx(me, me.d, TOM_LEAP_MAX_PX); if (lim > me.d && dMovePx(me, me.d, TOM_LEAP_MAX_PX * 0.2) < lim) to = Math.min(far, lim); } /* v1686: distances in real screen px */
       me.leapTo = to; me.air = true; me.leapAt = tick + Math.max(1, Math.round(52 / 24 / dtS)); } } /* v1682b: he is in the air until he lands - swords can't reach him (and he doesn't swing) */ /* he stops where he stood when he started the cast (this tick's step undone) */
   function diveTarget(oh) { var b = null; if (oh) oh.list.forEach(function (o) { if (o.ko || o.dead || o.droid) return; if (!b || (!o.air && b.air) || (!!o.air === !!b.air && o.hp > b.hp)) b = o; }); return b ? b.id : 'fort'; } /* v1514: the standing enemy hero with the most HP (one on the ground before one in the air) */
   function diveStart(sd, a, v) { var mine = sd === 'P' ? pHH : aHH, me = mine && mine.by[a.key], q = { at: tick + Math.max(1, Math.round(a.dive.impact / dtS)), sd: sd, key: a.key, name: a.name, v: v, tgt: diveTarget(sd === 'P' ? aHH : pHH) };
@@ -38754,7 +38758,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     var me = hh.by[id], t = me ? withKoPos(me, function () { return pickMeleeTarget(me, oh, !tag); }) : null; /* no tag = a basic attack */
     if (tag) skTgt[tag + id] = (t && t.hero) ? t.hero.id : "fort";
     if (!t || t.fort) return true;
-    var e = t.hero; if (e.blockMelee > 0) { e.guards = (e.guards || 0) + 1; /* v1680: he raises the guard on every melee attack at him */ if (dodgeRoll(e.bkE || (e.bkE = {}), e.blockMelee)) { e.blocks = (e.blocks || 0) + 1; if (TOM_KNOCK_BY[id] && posMode && e.infantry && !e.ko && !(e.castUntil > tick)) { /* v1681: not while he is in his leap */ e.knockAt = tick + 2; e.castUntil = tick + 2 + Math.max(1, Math.ceil(TOM_KNOCK_MS / 1000 / dtS)); e.knocks = (e.knocks || 0) + 1; e.knBy = id; } /* v1685: the slide back is applied 2 ticks later (planMove) - the attacker keeps swinging at him meanwhile, so the drawing can start the slide on his punch's contact frame */ /* v1680: a strong hero (Bram, Halo-7) sends him sliding back */ return false; } } /* v1678: Tom's Steel Guard */ if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= aegisTake(e, dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1));
+    var e = t.hero; if (e.blockMelee > 0) { e.guards = (e.guards || 0) + 1; /* v1680: he raises the guard on every melee attack at him */ if (dodgeRoll(e.bkE || (e.bkE = {}), e.blockMelee)) { e.blocks = (e.blocks || 0) + 1; if (TOM_KNOCK_BY[id] && !tag && posMode && e.infantry && !e.ko && !(e.castUntil > tick)) { /* v1686: only their basic punches (a skill hit has no punch to see - Harley saw an 'invisible' hit push him) */ /* v1681: not while he is in his leap */ e.knockAt = tick + 2; e.castUntil = tick + 2 + Math.max(1, Math.ceil(TOM_KNOCK_MS / 1000 / dtS)); e.knocks = (e.knocks || 0) + 1; e.knBy = id; } /* v1685: the slide back is applied 2 ticks later (planMove) - the attacker keeps swinging at him meanwhile, so the drawing can start the slide on his punch's contact frame */ /* v1680: a strong hero (Bram, Halo-7) sends him sliding back */ return false; } } /* v1678: Tom's Steel Guard */ if (dodgePort(e)) return false; /* v992: Shadow Step */ e.hp -= aegisTake(e, dmg * (oppStats.dmgTakenMult || 1) * defReduce(e.refA, e.def) * (koCfg.heroDmgMult || 1));
     if (e.hp <= 1e-9) { koMark(e); e.hp = 0; e.ko = true; e.reviveT = koCfg.reviveSec; e.kos++; e.d = 0; }
     heroHitTaken(e);
     return false;
@@ -40061,7 +40065,7 @@ function drawArenaFrame(ctx, w, h) {
         var dGl = arenaAnim.dvGlide && arenaAnim.dvGlide[flashKey];
         if (dGl) { var uG = (performance.now() - dGl.t) / 300; if (uG >= 1 || arenaAnim.battleEnded) delete arenaAnim.dvGlide[flashKey]; else { slot = { x: dGl.x + (slot.x - dGl.x) * uG, y: dGl.y + (slot.y - dGl.y) * uG }; arenaAnim.heroScreen[flashKey] = { x: slot.x, y: slot.y }; } }
         if (key === "tom" && HERO_ANIMS.tom_block && !lpA) { var bkE2 = arenaAnim.heroHp && arenaAnim.heroHp[flashKey], bkM = arenaAnim.tomBk || (arenaAnim.tomBk = {}), bkR = bkM[flashKey] || (bkM[flashKey] = { n: 0, kn: 0, until: 0 }), nowB = performance.now();
-          if (bkR.knPend && ((bkE2 && bkE2.ko) || nowB - bkR.knPend.t > 2000)) bkR.knPend = null; /* KO'd or away (leap) - drop it */ if (bkE2 && (bkE2.kn || 0) > bkR.kn && !bkR.knPend) bkR.knPend = { by: bkE2.kb, t: nowB, x: bkR.knock ? slot.x : (bkR.lastX != null ? bkR.lastX : slot.x) }; if (bkE2) bkR.kn = bkE2.kn || 0;
+          if (bkR.knPend && ((bkE2 && bkE2.ko) || nowB - bkR.knPend.t > 2000)) bkR.knPend = null; /* KO'd or away (leap) - drop it */ if (bkE2 && (bkE2.kn || 0) > bkR.kn && !bkR.knPend) bkR.knPend = { by: bkE2.kb, t: nowB, x: bkR.lastX != null ? bkR.lastX : slot.x }; /* where he is drawn right now */ if (bkE2) bkR.kn = bkE2.kn || 0;
           if (bkR.knPend) { var kGo = arenaAnim.tomKnGo && arenaAnim.tomKnGo[flashKey]; /* v1684 (Harley): the push-back starts the moment Bram's / Halo-7's punch visibly lands (their impact frame), not on the sim tick */
             if ((kGo && kGo >= bkR.knPend.t) || nowB - bkR.knPend.t > 1000) { var kHome = arenaSlotPos(w, h, i, isPlayerSide).x, kx1 = bkR.knPend.x + (isPlayerSide ? -1 : 1) * TOM_KNOCK_PX; if (isPlayerSide ? kx1 < kHome : kx1 > kHome) kx1 = kHome; bkR.knock = { t0: nowB, x0: bkR.knPend.x, x1: kx1 }; /* v1685: a fixed slide back from where he stands on screen (stops at his own ship) */ bkR.knPend = null; bkR.until = 0; heroAnimMem["tom_block" + (!isPlayerSide ? "f" : "") + "0"] = { state: "knock", prev: null, t: nowB }; }
             else { slot = { x: bkR.knPend.x, y: slot.y }; if (!(nowB < bkR.until)) tomGuardPre(bkR, nowB, nowB, !isPlayerSide, true); bkR.until = Math.max(bkR.until, nowB + 150); } } /* until then he holds his guard where he stood */
@@ -40072,6 +40076,8 @@ function drawArenaFrame(ctx, w, h) {
           if (bkE2 && (bkE2.ga || 0) > bkR.n && !kbA && !infRunning) tomGuardHit(bkR, nowB, !isPlayerSide); var tgA = kbA ? "knock" : tomGuardState(bkR, nowB); if (bkE2) bkR.n = bkE2.ga || 0;
           if (kbA) slot = { x: kbA.x0 + (kbA.x1 - kbA.x0) * tomKnockCurve((nowB - kbA.t0) / TOM_KNOCK_MS), y: slot.y }; /* v1680: slides back with the clip's own slowing-down curve */
           else if (bkR.post && nowB - bkR.post.t < 350) { var pu = (nowB - bkR.post.t) / 350; pu = pu * pu * (3 - 2 * pu); slot = { x: bkR.post.x + (slot.x - bkR.post.x) * pu, y: slot.y }; } /* v1685: then eases onto where the battle has him */
+          if ((kbA || bkR.knPend) && arenaAnim.meleeApr && arenaAnim.meleeApr[flashKey]) { var maT = arenaAnim.meleeApr[flashKey]; maT.x = slot.x; maT.t = nowB; maT.hold = 0; maT.free = false; } /* v1686: the walk memory follows the push-back (it held his old spot and ran him straight back to it) */
+          var dxT = bkR.lastX != null ? slot.x - bkR.lastX : 0; if (!kbA && Math.abs(dxT) > 0.35) { infRunning = true; infRunFlip = dxT < 0; } if (infRunning && !kbA && !bkR.knPend && tgA) { bkR.until = 0; tgA = null; } /* v1686 (Harley): he slid in his idle pose - any time he moves on screen (except the knock-back slide) he runs */
           bkR.lastX = slot.x;
           if (tgA && !arenaAnim.battleEnded) { drawHeroAnim(ctx, "tom_block", slot.x, slot.y + 13, tgA, hsA, !isPlayerSide, 0); ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, slot.y + size / 2 + 10); return; } } /* v1678: Steel Guard - the high guard flashes on a blocked hit */
         if (lpA && SAa && heroAnimImg(key + "_skill")) { /* v1503: the skill sheet plays where he stands (Hanzo leaps and throws), the throw sends his projectile at every enemy */
@@ -40086,7 +40092,7 @@ function drawArenaFrame(ctx, w, h) {
             ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, (slot.deck && (isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0])).barsAbove) ? slot.y - 28 : slot.y + size / 2 + 10);
             return;
           }
-          delete arenaAnim.heroLeap[flashKey]; if (key === "tom" && arenaAnim.tomBk && arenaAnim.tomBk[flashKey]) arenaAnim.tomBk[flashKey].freeAt = performance.now(); /* v1682b */
+          delete arenaAnim.heroLeap[flashKey]; if (key === "tom" && arenaAnim.tomBk && arenaAnim.tomBk[flashKey]) { arenaAnim.tomBk[flashKey].freeAt = performance.now(); arenaAnim.tomBk[flashKey].lastX = null; } /* v1682b */
         }
         var stA = "idle", isInf = sprite.def.class === "infantry";
         if (isInf && ipH > 0 && ipH < 1) stA = "run";
