@@ -5522,3 +5522,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Conquest: still straight up (carried along with the ground as before).
 - Balance: Arena Lv40 w/o tom 67-53 vs w/o kessa 20-100; Lv80 46-74 vs 8-112 (no real change). Meta check: same pre-existing warning.
 - Test: headless Arena vs Bram/Halo-7/Aurek - a forward leap from home (d 0 -> 0.45) and an evade leap from the enemy fortress (1.00 -> 0.33), no errors.
+
+## v1683 — Tom: guard is up BEFORE the swing lands (Arena, TEST)
+- Harley: Aurek hit him, sparks showed, and only then did he slowly go into the guard. The guard was started by the hit itself, and the entry takes 0.54 s.
+- Fix: the sim now works out, after each tick's attacks, in how many ticks the next enemy melee basic swing at Tom lands (tomIncoming -> heroInfo inc). The drawing starts the entry early enough to be in the held guard when it lands (tomGuardPre), keeps it up while a swing is still coming (a slow tick can't drop it early), and goes straight into the guard (skips the entry) right after a knock-back or a leap.
+- Tom is in the air (e.air) from the moment his leap starts until he lands: swords and ranged shots can't reach him there (that's where the "hit in the air with no guard" came from), and he doesn't swing. Leap landing no longer starts a run from his old spot.
+- Not covered: the very first swing right after an enemy reaches him can land before the entry finishes; skill hits aren't predicted.
+- Balance: Tom a bit stronger from the air time. Arena Lv40 w/o tom 50-70 (was 67-53) vs w/o kessa 17-103; Lv80 32-88 (was 46-74) vs 15-104 - still clearly below Kessa. Meta check: same pre-existing warning.
+- Test: headless Arena vs Bram/Halo-7/Aurek - 9 of 13 hits landed on a held guard; the rest were first contacts, knocks or while running.
