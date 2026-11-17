@@ -14319,7 +14319,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1690"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1691"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29154,6 +29154,15 @@ function drawHeroThrows(ctx, sc, M) {
   M = M || idleAnim; var S = M.hzStars; if (!S || !S.length) return; var now = performance.now();
   M.hzStars = S.filter(function (q) { var u = (now - q.t0) / q.dur; if (u >= 1.25) return false; var F = HERO_COMBAT_FX[q.key || "hanzo"] || {}, im = F.throwImg ? heroFxImg(q.key || "hanzo", F.throwImg) : null;
     if (u >= 1) { ctx.save(); ctx.globalAlpha = (1.25 - u) * 4 * 0.8; ctx.strokeStyle = F.ring || "#fff"; ctx.lineWidth = 2 * sc; ctx.beginPath(); ctx.arc(q.x1, q.y1, (6 + (u - 1) * 60) * sc, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); return true; }
+    if (q.img && F.slashOne) { var sim0 = heroFxImg(q.key, q.img); if (sim0) { /* v1691 (Harley): streaks behind the slash - speed lines + fading after-images along its path */
+      var sdx = q.x1 - q.x0, sdy = q.y1 - q.y0, sLen = Math.hypot(sdx, sdy) || 1, ux = sdx / sLen, uy = sdy / sLen, px0 = -uy, py0 = ux, xh = q.x0 + sdx * u, yh = q.y0 + sdy * u, grS = 0.32 + 0.68 * (1 - (1 - u) * (1 - u)), Ls = ((F.slashLen && F.slashLen[q.img]) || 60) * sc * grS, tail = Math.min(u * sLen, (70 + 90 * u) * sc), fadeIn = Math.min(1, u / 0.08);
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+      [-0.42, -0.2, 0, 0.2, 0.42].forEach(function (o, li) { var ox = px0 * o * Ls, oy = py0 * o * Ls, tl = tail * (1 - Math.abs(o) * 0.9) * (0.75 + 0.25 * ((li * 37) % 5) / 4), gS = ctx.createLinearGradient(xh + ox, yh + oy, xh + ox - ux * tl, yh + oy - uy * tl);
+        gS.addColorStop(0, "rgba(220,248,255," + (0.75 * fadeIn) + ")"); gS.addColorStop(0.35, "rgba(127,212,255," + (0.45 * fadeIn) + ")"); gS.addColorStop(1, "rgba(127,212,255,0)");
+        ctx.strokeStyle = gS; ctx.lineWidth = (o === 0 ? 3.2 : 1.6) * sc * grS; ctx.beginPath(); ctx.moveTo(xh + ox, yh + oy); ctx.lineTo(xh + ox - ux * tl, yh + oy - uy * tl); ctx.stroke(); });
+      for (var gk = 1; gk <= 3; gk++) { var ug = u - gk * 0.06; if (ug <= 0) break; var grG = 0.32 + 0.68 * (1 - (1 - ug) * (1 - ug)), LG = ((F.slashLen && F.slashLen[q.img]) || 60) * sc * grG, kG = LG / Math.max(sim0.naturalWidth, sim0.naturalHeight);
+        ctx.save(); ctx.translate(q.x0 + sdx * ug, q.y0 + sdy * ug); if (sdx < 0) ctx.scale(-1, 1); ctx.globalAlpha = 0.32 * (1 - gk / 4) * fadeIn; ctx.drawImage(sim0, -sim0.naturalWidth * kG / 2, -sim0.naturalHeight * kG / 2, sim0.naturalWidth * kG, sim0.naturalHeight * kG); ctx.restore(); }
+      ctx.restore(); } }
     if (q.img) { var pim = heroFxImg(q.key, q.img); if (!pim) return true; var xP = q.x0 + (q.x1 - q.x0) * u, yP = q.y0 + (q.y1 - q.y0) * u, gr = 0.32 + 0.68 * (1 - (1 - u) * (1 - u)), Lp = ((F.slashLen && F.slashLen[q.img]) || 60) * sc * gr, kP = Lp / Math.max(pim.naturalWidth, pim.naturalHeight), dxP = q.x1 - q.x0, angP = Math.atan2(q.y1 - q.y0, Math.abs(dxP) || 1);
       var XF = F.slashXf && F.slashXf[q.img]; ctx.save(); ctx.translate(xP, yP); if (F.slashOne) { if (dxP < 0) ctx.scale(-1, 1); } /* v1690: drawn as painted (already at his angles), mirrored for an enemy-side Tom */ else if (XF) { if (dxP < 0) ctx.scale(-1, 1); ctx.rotate(XF.tgt * Math.PI / 180); ctx.scale(1, XF.sq); ctx.rotate(-XF.nat * Math.PI / 180); ctx.scale(-1, 1); } else if (dxP >= 0) { ctx.rotate(angP); ctx.scale(-1, 1); } else ctx.rotate(-angP); ctx.globalAlpha = u < 0.08 ? u / 0.08 : 1; ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 10 * sc; ctx.drawImage(pim, -pim.naturalWidth * kP / 2, -pim.naturalHeight * kP / 2, pim.naturalWidth * kP, pim.naturalHeight * kP); ctx.restore(); return true; } /* v1688: painted slash, thick edge leading, grows as it flies */
     var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u - (F.slash ? 0 : Math.sin(u * Math.PI) * 10 * sc), sz = (F.slash ? 46 : 15) * sc;

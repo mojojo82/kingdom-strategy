@@ -5571,3 +5571,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Art: same ChatGPT chat, with Harley's red-stroke drawing attached (refs/slash_shapes_harley_drawing.jpg): fx/skill_slashes_gpt_v2.png -> keyed, magenta fringe pulled to blue, split: fx/skill_slash1/2_v2_keyed.png. Phone copies art/heroes/tom/tom_slash1_v2.webp / tom_slash2_v2.webp (the v1 phone copies are removed; originals kept).
 - Code: slashOne - one projectile per stroke (slash1_v2, then slash2_v2), aimed at the farthest target so it flies through the whole enemy line. Speed ~450 px/s (380-900 ms), grows 32% -> 100% (58 / 66 px at hero scale 1), drawn as painted (no turning), mirrored for an enemy-side Tom. Damage unchanged (the skill still hits every enemy).
 - Test: headless Arena, no errors. Visual only.
+
+## v1691 — Tom: streaks behind his skill slashes (TEST)
+- Harley: some streaks behind the slashes. drawHeroThrows (slashOne): 5 speed lines trail each slash back along its path (bright cyan-white fading out, the middle one thickest; length grows with the flight), plus 3 fading after-images of the slash just behind it. Additive blend, fades in with the slash. Conquest + Arena (same function).
+- Test: headless Arena, no errors. Visual only.
