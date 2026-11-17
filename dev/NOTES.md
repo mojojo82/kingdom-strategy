@@ -5503,3 +5503,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Block: new sheet tom_block_anim_v2 with an "enter" row (hblock_in frames 12-36 step 2, 13 frames at 24 fps = 0.54 s: the sword comes across his body into the high guard), then the held guard loop. tomGuardHit / tomGuardState: a blocked melee hit starts the entry if the guard is down. The guard then stays up 0.3 s after the last block (a block during the guard just keeps him holding). Same in Conquest and Arena. build_hero_anim.py supports an "enter" row.
 - Tests: headless Arena with Tom (no errors). The guard cycles enter (~0.52 s) -> hold (~0.3 s) on blocked hits; leap unchanged otherwise. Visual/timing only, no combat numbers changed.
 - Tom studio artifact updated (tabs: Idle, Run, Double strike, Leap, Steel Guard, Block in battle).
+
+## v1680 — Tom: guard on every melee attack, knock-back from strong heroes (TEST)
+- Harley: Tom raises his block whenever a melee opponent attacks him (Arena: e.guards counted in meleeHit, sent as heroInfo ga; Conquest: state.idle.guardTries). Only 50% are still really blocked (Steel Guard unchanged).
+- Strong melee heroes (TOM_KNOCK_BY: Bram, Halo-7) send him sliding back when he blocks them. In the Arena sim he moves back TOM_KNOCK_PX = 54 px (the clip's slide) and holds still for the slide (castUntil, ~0.8 s), then runs back in. Drawing: the knock row plays and he slides along the clip's own slowing-down curve (tom_block.slide).
+- Art: the knock-back v2 clip is turned into frames (build_hero_frames.py "knock"). build_hero_anim.py gets an own_scale row option: scales a clip shot at another size and pins each frame's feet, so the slide is taken out and printed as "slide". Sheet tom_block_anim_v3 (enter, hold, knock 19 frames at 24 fps).
+- Balance unchanged: Arena Lv40 w/o tom 68-52 vs w/o kessa 17-103; Lv80 46-74 vs 11-109. Meta check: same numbers and the same pre-existing warning.
+- Test: headless Arena, Tom/Lyra/Sera vs Bram/Halo-7/Aurek: 7 guards, 3 blocks, 3 knock-backs in 35 s, no errors.

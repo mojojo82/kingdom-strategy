@@ -113,17 +113,18 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
        "tom_skill": {"hero": "tom", "tag": "v1", "stand": 70, "disp_stand": 28, "per_clip": True, "same_space": True, "canvas": 3, "wrap": 16,
                  "idle": {"fps": 8, "frames": [0]}, "skill": {"fps": 24, "frames": list(range(0, 63, 2)) + [64, 70] + list(range(82, 93, 2)) + list(range(102, 141, 2))}},
        # Tom's block (flashed when he blocks a melee hit): the high-guard hold, a few frames of the breathing loop
-       "tom_block": {"hero": "tom", "tag": "v2", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 16,
+       "tom_block": {"hero": "tom", "tag": "v3", "stand": 90, "disp_stand": 28, "per_clip": True, "same_space": True, "wrap": 16,
                  "idle": {"fps": 8, "frames": [0]}, "enter": {"clip": "blockin", "fps": 24, "frames": list(range(12, 37, 2))},   # v1679: sword comes across his body into the high guard (0.54 s)
-                 "skill": {"clip": "blockhold", "fps": 12, "frames": list(range(0, 48, 3))}},
+                 "skill": {"clip": "blockhold", "fps": 12, "frames": list(range(0, 48, 3))},
+                 "knock": {"fps": 24, "frames": list(range(0, 152, 8)), "own_scale": 457 / 396}},   # v1680: knock-back (from the guard, slides back; the slide itself is taken out and done by the game)
        "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 38, "to": 63},
                  "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},
                  "attack2": {"fps": 24, "frames": list(range(4, 57, 2))},
                  "attack3": {"fps": 24, "frames": list(range(16, 49, 2)) + list(range(64, 85, 2))}}}[HERO]
-ROWS = [r for r in ("idle", "run", "attack", "attack2", "attack3", "enter", "skill") if r in CFG]   # v1679: "enter" (Tom's block entry, played once before the held guard)   # v1616: attack3 (Iron Lily rotates three basic attacks)
+ROWS = [r for r in ("idle", "run", "attack", "attack2", "attack3", "enter", "skill", "knock") if r in CFG]   # v1679: "enter" (Tom's block entry, played once before the held guard)   # v1616: attack3 (Iron Lily rotates three basic attacks)
 HD_ = CFG.get("hero", HERO); L = os.path.join(ROOT, "art/originals/heroes", HD_, "large")
-rows = {}
+rows = {}; SLIDE = {}
 META = json.load(open(os.path.join(L, "meta.json"))) if CFG.get("per_clip") else None
 for st in ROWS:
     c = CFG[st]
@@ -138,7 +139,15 @@ for st in ROWS:
     else: fs = fs[c.get("from", 0):c.get("to", len(fs))]; sel = fs[::c["step"]]
     if st == "idle" and len(sel) > 1 and "from" not in c and "frames" not in c: sel = sel[:-1]
     ims = [Image.open(f).convert("RGBA") for f in sel]
-    if META:   # every clip onto one doubled canvas at the idle clip's scale and feet point, so one cell / anchor fits all rows
+    if META and c.get("own_scale"):   # v1680: a clip shot at another size (Tom's knock-back, long canvas): scale it by own_scale and pin each frame's own feet centre
+        m0 = META["idle"]; m = META[c.get("clip", st)]; sc = c["own_scale"]; CF = CFG.get("canvas", 2); I0 = rows["idle"][0]; out = []; KX = []
+        for im in ims:
+            A = np.asarray(im.getchannel("A")) > 128; rr = np.nonzero(A.sum(1) > 12)[0]; fy = int(rr.max()); cc = np.nonzero(A[fy - 30:fy].any(0))[0]; fx = (cc.min() + cc.max()) / 2
+            KX.append(fx); big = im.resize((round(im.size[0] * sc), round(im.size[1] * sc)), Image.LANCZOS); canv = Image.new("RGBA", I0.size, (0, 0, 0, 0))
+            W0, H0 = I0.size[0] / CF, I0.size[1] / CF
+            canv.paste(big, (round(m0["feet_x"] + W0 * (CF - 1) / 2 - fx * sc), round(m0["feet_y"] + H0 * (CF - 1) / 2 - m["feet_y"] * sc))); out.append(canv)
+        ims = out; SLIDE[st] = [round((x - KX[0]) * sc * CFG["disp_stand"] / m0["stand"], 2) for x in KX]   # how far he slid (game px at hero scale 1, minus = backwards)
+    elif META:   # every clip onto one doubled canvas at the idle clip's scale and feet point, so one cell / anchor fits all rows
         m0 = META["idle"]; m = m0 if CFG.get("same_space") else META[c.get("clip", st)]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
         for im in ims:
             big = im.resize((round(W0 * sc), round(H0 * sc)), Image.LANCZOS) if abs(sc - 1) > 1e-3 else im
@@ -179,4 +188,5 @@ fps = {st: CFG[st]["fps"] for st in ROWS}; rws = {st: [ridx[st], len(rows[st])] 
 if "run" not in ROWS: fps["run"] = fps["idle"]; rws["run"] = rws["idle"]
 entry = {"file": fn, "wrap": W, "cw": cw, "ch": ch, "ax": ax, "ay": ay, "fps": fps, "rows": rws,
          "dispH": round(ch * CFG["disp_stand"] / CFG["stand"], 2)}
+if SLIDE: entry["slide"] = SLIDE
 print("sheet", sheet.size, os.path.getsize(os.path.join(out, fn)) // 1024, "KB"); print(json.dumps(entry))

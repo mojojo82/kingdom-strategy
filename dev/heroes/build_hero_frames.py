@@ -66,7 +66,7 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        # the high-guard block (hold) starts from silverblade_hblock_v3_fit, drawn at the same scale and feet spot
        "tom": {"clips": {"idle": ("silverblade_idle_v1.mp4", 0, 0), "run": ("silverblade_run_v1.mp4", 0, 0), "attack": ("silverblade_attack_rising_v1.mp4", 0, 0),
                          "attack2": ("silverblade_attack2_v1.mp4", 0, 0), "skill": ("silverblade_skill_v2.mp4", 0, 0),
-                         "blockin": ("silverblade_hblock_in_v1.mp4", 0, 0), "blockhold": ("silverblade_hblock_hold_v1.mp4", 0, 0)},
+                         "blockin": ("silverblade_hblock_in_v1.mp4", 0, 0), "blockhold": ("silverblade_hblock_hold_v1.mp4", 0, 0), "knock": ("silverblade_knockback_v2.mp4", 0, 0)},   # v1680: knock-back (long canvas)
                  "stand_src": 465, "feet_y": 721}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
