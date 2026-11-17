@@ -5735,3 +5735,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Causes (reproduced headless): govShipWithBarrels skipped the guns while the profile picture was mid-change (smaller 0.6 picture, walkerGovBusy), and in car mode the hull is drawn lower (rig.carDrop) but the guns were placed for the standing hull - so they floated on top.
 - Fix: walkerGovRender remembers its car amount (walkerGovK); the guns are placed on any size of the Walker picture and dropped with the hull (rig.carDrop x ease). Cache key includes the size and car amount.
 - Check: standing / mid-change / car captures, old vs new - old: no guns mid-change, guns too high as a car; new: guns on the hull side all the way through. No errors.
+
+## v1716 — Fortress skins retired: Ironclad, Voidspire, Voidspire II A + B (TEST)
+- Harley: delete Ironclad, Voidspire and both Voidspire IIs. Asked what replaces Ironclad as the starting / fallback skin -> Blackwatch II (now first in FORTRESS_SKINS = the fallback, and the new-player default).
+- Saves with a retired skin switch to Blackwatch II on load. Their embedded pictures are removed from the page (~0.5 MB smaller) and kept as files in art/originals/ships/retired/ (voidspire_cq / _gov, voidspire2a_cq / _front, voidspire2b_cq / _front, ironclad_gov). The March-skin thumbnail fallback now uses Blackwatch II. Leftover slot / target table entries for the old ids are harmless.
+- Headless: new account starts on Blackwatch II; skins list: Blackwatch II, Bonewake, Bonewake 2, Ironclad II, Voidspire III, Mecha, Walker, Crawler B, Sanctum, Crawler C; a save on void2a loads as Blackwatch II; profile ok; Arena balance run fine; no errors.
