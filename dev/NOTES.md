@@ -5510,3 +5510,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Art: the knock-back v2 clip is turned into frames (build_hero_frames.py "knock"). build_hero_anim.py gets an own_scale row option: scales a clip shot at another size and pins each frame's feet, so the slide is taken out and printed as "slide". Sheet tom_block_anim_v3 (enter, hold, knock 19 frames at 24 fps).
 - Balance unchanged: Arena Lv40 w/o tom 68-52 vs w/o kessa 17-103; Lv80 46-74 vs 11-109. Meta check: same numbers and the same pre-existing warning.
 - Test: headless Arena, Tom/Lyra/Sera vs Bram/Halo-7/Aurek: 7 guards, 3 blocks, 3 knock-backs in 35 s, no errors.
+
+## v1681 — Tom: leap is one smooth arc, no running in the guard (TEST)
+- Harley: in the leap he went backwards, then up, in the same jump. Causes: a knock-back could push him back mid-leap, the drawing followed any sim movement during the leap, and the clip's quick hop plus the old extra lift read as two moves.
+- Fixes: tomLift now gives his feet ONE curve (TOM_CLIP_H = how high the clip's own feet already are per frame; the game adds only the difference). Up from frame 9 (fast, slowing), peak at 35.5 between the slashes (80 px at hero scale 1), down to landing at 52. Arena: his x is frozen for the whole leap (lpA.x), and no knock-back while he is in a cast.
+- Guard: running drops it (Arena: infRunning; Conquest: movingEff), and a new guard doesn't start while running.
+- Test: headless Arena vs Bram/Halo-7/Aurek, no errors (15 guards, 7 blocks, 4 knock-backs in 35 s).
