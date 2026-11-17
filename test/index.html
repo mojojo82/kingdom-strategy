@@ -14367,7 +14367,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1718"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1719"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -30860,13 +30860,16 @@ function drawFoundryFx(ctx, L, x0, top, s, w) {
    under every ground unit - front-line heroes (Gareth, Lily...), slimes and imps. Bats and the boss are skipped. Levels opt in with shadows: true
    in TMP_ENV_BG. Drawn before the sprites, visual only. */
 var GROUND_SHADOW = { a: 0.5, rgb: "55,30,8", hero: 16, slime: 26, imp: 15, h: 3.6, y: 6.4 };
-function drawGroundShadows(ctx, groundY, enemies, roster) {
-  var S = GROUND_SHADOW, hs = heroSpriteVisualScale / 100, gy = groundY + S.y;
-  function oval(x, wd, hh, a) {
-    var g = ctx.createRadialGradient(x, gy, 0, x, gy, wd / 2);
-    g.addColorStop(0, "rgba(" + S.rgb + "," + a + ")"); g.addColorStop(0.65, "rgba(" + S.rgb + "," + (a * 0.75) + ")"); g.addColorStop(1, "rgba(" + S.rgb + ",0)");
-    ctx.save(); ctx.translate(x, gy); ctx.scale(1, hh / wd); ctx.translate(-x, -gy); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, gy, wd / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  }
+/* v1719 (Harley): shadows on EVERY level and in the Arena. Levels with their own warm shadow colour keep it (shadows: true); the rest use a neutral dark one. */
+var GROUND_SHADOW_DARK = { a: 0.9, rgb: "0,0,0", k: 1.5, kh: 1.9, core: 0.9 }; /* k / kh: wider and taller than the warm one so it reads on dark roads */ /* k: a bit wider/taller so it reads on dark roads */
+function groundShadowOval(ctx, x, gy, wd, hh, a, rgb, core) {
+  var g = ctx.createRadialGradient(x, gy, 0, x, gy, wd / 2);
+  g.addColorStop(0, "rgba(" + rgb + "," + a + ")"); g.addColorStop(0.65, "rgba(" + rgb + "," + (a * (core || 0.75)) + ")"); g.addColorStop(1, "rgba(" + rgb + ",0)");
+  ctx.save(); ctx.translate(x, gy); ctx.scale(1, hh / wd); ctx.translate(-x, -gy); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, gy, wd / 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+function drawGroundShadows(ctx, groundY, enemies, roster, warm) {
+  var S = GROUND_SHADOW, hs = heroSpriteVisualScale / 100, gy = groundY + S.y, C = warm ? S : GROUND_SHADOW_DARK;
+  function oval(x, wd, hh, a) { groundShadowOval(ctx, x, gy, wd * (C.k || 1), hh * (C.kh || 1), a * C.a / S.a, C.rgb, C.core); }
   (enemies || []).forEach(function (re) {
     var v = idleAnim.enemyById[re.id]; if (!v || re.type === "boss" || re.type === "archer") return;
     var fade = v.dying ? 0.5 : 1;
@@ -30977,6 +30980,7 @@ function drawIdleAnim(ctx, w, h) {
     hxSet = hexShieldPrepare("cq", w * 0.16 - hxW / 2, groundY - hxH + 14, hxW, hxH, hexShieldStatusConquest);
     if (hxSet) hexShieldDrawPass(ctx, hxSet, false);
   }
+  (function () { var sk = fortressSkin(), im = sk.cq; if (!sk || sk.kaiju || !im || !im.naturalWidth) return; var sc = fortressCqScale(), bw = im.naturalWidth * sc, bh = im.naturalHeight * sc; drawFortShadow(ctx, sk, w * 0.16 - bw / 2, bw, bh, groundY + FORT_SHADOW.gy); })(); /* v1719: the ship's shadow on the ground */
   var earlyRoster = game.state.conquestRoster;
   (function () { /* v1170: layered skin - the parts behind the riders (masts, sails, flags, chain) */
     var sk = fortressSkin(), im = sk.cq; if (!skinAnimReady(sk) || !im.naturalWidth) return;
@@ -31043,7 +31047,7 @@ function drawIdleAnim(ctx, w, h) {
   var barIdx = -1; for (var bi0 = 0; bi0 < drawEnemies.length; bi0++) { if (!drawEnemies[bi0].lingering && drawEnemies[bi0].type !== "boss") { barIdx = bi0; break; } } // v663: the health bar belongs to the first LIVE enemy — a dying one still fading out used to hold the slot and leave the real front enemy bar-less
   idleAnim.pendingBar = null;
   drawKnightPreview(ctx, w, groundY); /* v1174: Dark Knight look test (no stats, no attacks) */
-  if (tmpRainBg && tmpRainBg.shadows) drawGroundShadows(ctx, groundY, drawEnemies, game.state.conquestRoster); /* v1445: small shadows under ground units on bright levels */
+  drawGroundShadows(ctx, groundY, drawEnemies, game.state.conquestRoster, !!(tmpRainBg && tmpRainBg.shadows)); /* v1445: small shadows under ground units; v1719: on every level */
   drawEnemies.forEach(function (re, i) {
     var vis = idleAnim.enemyById[re.id];
     if (!vis) return;
@@ -40133,6 +40137,35 @@ function drawArenaLightningLayer(ctx, w, h, layer) {
   aBolt(alt.pts.main); aBolt(alt.pts.branch);
   ctx.restore();
 }
+/* v1719 (Harley): Arena - the same small dark oval under every infantry hero on the ground (both sides). Uses where each hero stood last frame (heroScreen = feet - 13). */
+function drawArenaGroundShadows(ctx) {
+  var A = arenaAnim, S = GROUND_SHADOW, C = GROUND_SHADOW_DARK, hs = heroSpriteVisualScale / 100; if (!A.heroScreen) return;
+  [["p_", A.playerRoster], ["a_", A.aiRoster]].forEach(function (sd) { (sd[1] || []).forEach(function (key) {
+    var d = HERO_DEFS[key], p = A.heroScreen[sd[0] + key], e = A.heroHp && A.heroHp[sd[0] + key]; if (!d || d.class !== "infantry" || d.floats || !p || (e && e.ko)) return;
+    var wd = S.hero * hs * (key === "ironlily" ? lilySizePct / 100 : 1); groundShadowOval(ctx, p.x, p.y + 13 + 1 * hs, wd * C.k, S.h * hs * C.kh, C.a, C.rgb, C.core); }); });
+}
+/* v1719 (Harley, like Fortress Saga): each fortress skin casts its own silhouette as a shadow - the ship picture filled dark, flipped onto the ground
+   (the hull's bottom edge sits on the ground line, the masts / towers fall away from the viewer), squashed and slanted as if the sun were up and to one side. */
+var FORT_SHADOW = { a: 0.6, depth: 0.17, shear: 0.9, blur: 1.2, gy: 3 }; /* gy: the shadow's ground line below groundY (a ship with no lift sits at +14) */
+function fortShadowCanvas(skin) {
+  if (skin._shadow !== undefined) return skin._shadow; var pic = skin.cq; if (!pic || !pic.complete || !pic.naturalWidth) return null;
+  var W = 360, H = Math.max(8, Math.round(W * pic.naturalHeight / pic.naturalWidth)), P = 4, c = document.createElement("canvas"); c.width = W + P * 2; c.height = H + P * 2;
+  var x = c.getContext("2d"); x.filter = "blur(" + FORT_SHADOW.blur + "px)"; x.drawImage(pic, P, P, W, H); x.filter = "none";
+  x.globalCompositeOperation = "source-in"; x.fillStyle = "#000"; x.fillRect(0, 0, c.width, c.height);
+  c._p = P; c._w = W; c._h = H; return (skin._shadow = c);
+}
+function drawFortShadow(ctx, skin, x, w, h, groundY) { /* x, w, h: where the ship picture is drawn; groundY: the ground line its shadow lies on */
+  var c = fortShadowCanvas(skin); if (!c) return; var sx = w / c._w, sy = h / c._h, D = FORT_SHADOW.depth, K = FORT_SHADOW.shear;
+  ctx.save(); ctx.globalAlpha = FORT_SHADOW.a;
+  /* picture row v (0 = top) lands at depth (H - v) * D below the ground line and slides back by that depth * shear */
+  ctx.transform(sx, 0, K * D * sy, -D * sy, x - c._p * sx - K * D * sy * (c._h + c._p), groundY + D * sy * (c._h + c._p));
+  ctx.drawImage(c, 0, 0); ctx.restore();
+}
+function drawArenaFortShadows(ctx, w, h) { /* v1719: both ships' shadows, before the hulls; the bot's side is mirrored */
+  [true, false].forEach(function (isP) { var sk = isP ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]); if (!sk || sk.kaiju) return; var img = sk.cq; if (!img || !img.complete || !img.naturalWidth) return;
+    var sc = FORTRESS_SHIP_SCALE * sk.cqScale * (24 / 22), sw = img.naturalWidth * sc, sh = img.naturalHeight * sc, cx = isP ? w * ARENA_SIDE_X : w * (1 - ARENA_SIDE_X), g = groundYFor(h) + FORT_SHADOW.gy;
+    ctx.save(); if (!isP) { ctx.translate(cx, 0); ctx.scale(-1, 1); drawFortShadow(ctx, sk, -sw / 2, sw, sh, g); } else drawFortShadow(ctx, sk, cx - sw / 2, sw, sh, g); ctx.restore(); });
+}
 function drawArenaFrame(ctx, w, h) {
   ctx.clearRect(0, 0, w, h);
   var groundY = groundYFor(h);
@@ -40470,6 +40503,7 @@ function drawArenaFrame(ctx, w, h) {
   if (osBoxB) { osSetB = orbitShieldSet("arenaAI"); orbitShieldStep(osSetB, osBoxB.x + osBoxB.sw / 2, osBoxB.y + osBoxB.sh / 2, osBoxB.sw * 0.5 * orbitShieldCfg.size); orbitShieldDrawPass(ctx, osSetB, false); }
   var hxSetB = null, hxBoxB = arenaAiShieldBox(w, h);
   if (hxBoxB) { hxSetB = hexShieldPrepare("arenaAI", hxBoxB.x, hxBoxB.y, hxBoxB.sw, hxBoxB.sh, hexShieldStatusArenaAI); if (hxSetB) hexShieldDrawPass(ctx, hxSetB, false); }
+  drawArenaFortShadows(ctx, w, h); /* v1719 */
   drawArenaFortress(ctx, w, h, true, osSetA, "back"); drawArenaFortress(ctx, w, h, false, null, "back");
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju && kaijuState.water) kaijuDrawWater(ctx, w, h); /* v1598: shallow sea over his claws, under the heroes and their bars */
   ctx = ptCtx("a_fx", ptRealA); drawHeroBackFx(ctx, heroSpriteVisualScale / 100, arenaAnim); /* v1503: after-images + warps behind the heroes */
@@ -40482,7 +40516,7 @@ function drawArenaFrame(ctx, w, h) {
   drawFormation(arenaAnim.aiRoster, false, "deck");
   ctx = ptCtx("a_fort", ptRealA); drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165; v1556: after the front hull layer - layered skins (crawlers, walker...) covered the guns in Arena
-  ctx = ptCtx("a_heroes", ptRealA); drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
+  ctx = ptCtx("a_heroes", ptRealA); drawArenaGroundShadows(ctx); drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
   try { aegisPass(ctx, arenaAnim, aegLA, false); } catch (eAgA2) {} /* v1670: Blade Aegis, front layer + flying blades */
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju) kaijuDrawArenaFx(ctx, w, h); /* v1598: water, stomp surge, beam */
   if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */
