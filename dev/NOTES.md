@@ -5723,3 +5723,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - His arrows: the Idle chest moves to the left column (Store's old spot), Store goes to the bottom right so Backpack, Mail and Store sit together. Right column top to bottom now: Recon, Backpack, Mail, Store. Left: Tasks, Search, Idle chest, Weapons, Cards, Alliance. (Desktop: Idle left at 176 px, Store right at 260 px.)
 - Headless check: positions and icons on the World map, no errors.
 - Next (Harley): set up the Store as the home for the free-to-play item shops.
+
+## v1714 — Daily login gift showed "Claim" again after a reload (TEST)
+- Harley: Claim shows, press it, nothing changes; come back later and it's "Done" but no gems - "claimed" it many times a day (video, two accounts).
+- Cause (reproduced headless, old build): the activity-gem counts (state.gaC / gaL / gq) were never loaded back from the save, so after every reload the game forgot today's claim and showed Claim again. Pressing it asked the server, which had already paid that day and paid 0 - then it flipped to Done. No gems were lost: the first claim each UTC day paid 300; the later ones were the button lying. The first press also had no feedback while the server call ran (and a failed login claim was dropped silently).
+- Fix: loadState restores gaC / gaL / gq; the wallet listener copies the server's own counts for today (wallet.ga) so the button matches the server on any device; the Claim button shows "…" while asking, then "+300 gems - daily login gift collected", "Already collected today - next one in about N hours (midnight UTC)", or "Couldn't reach the server".
+- Test: claim -> reload -> old build shows Claim (bug), new build Done; gems 300 once; no errors.

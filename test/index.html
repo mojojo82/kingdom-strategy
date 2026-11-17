@@ -11847,6 +11847,7 @@ function createGame(opts) {
     state.guardOn = saved.guardOn === true; /* v894 */
     state.shieldUntil = isFinite(+saved.shieldUntil) ? Math.max(0, +saved.shieldUntil) : 0; /* v1592 */
     state.sgOut = Array.isArray(saved.sgOut) ? saved.sgOut.filter(function (o) { return o && o.rid && o.army; }) : []; /* v1705 */
+    if (saved.gaC && typeof saved.gaC === "object") state.gaC = saved.gaC; if (saved.gaL && typeof saved.gaL === "object") state.gaL = saved.gaL; if (Array.isArray(saved.gq)) state.gq = saved.gq.slice(0, 60); /* v1714: activity-gem counts were never loaded back - after every reload the Daily login gift showed Claim again (the server had already paid it) */
     if (saved.ev && typeof saved.ev === "object") { var sev = saved.ev; state.ev = { tok: Math.max(0, Math.floor(+sev.tok || 0)), w: sev.w | 0, pts: Math.max(0, +sev.pts || 0), ms: Array.isArray(sev.ms) ? sev.ms : [], ck: (sev.ck && typeof sev.ck === "object") ? sev.ck : {},
       ckc: Array.isArray(sev.ckc) ? sev.ckc : [], kills: +sev.kills || 0, killPaid: +sev.killPaid || 0, buys: (sev.buys && typeof sev.buys === "object") ? sev.buys : {}, days: Array.isArray(sev.days) ? sev.days : [], wkc: !!sev.wkc,
       am: Math.max(0, Math.floor(+sev.am || 0)), awp: +sev.awp || 0, abuys: (sev.abuys && typeof sev.abuys === "object") ? sev.abuys : {}, ad: sev.ad && typeof sev.ad === "object" ? { d: sev.ad.d | 0, pts: +sev.ad.pts || 0, ms: Array.isArray(sev.ad.ms) ? sev.ad.ms : [] } : null, arc: (sev.arc && typeof sev.arc === "object") ? sev.arc : {}, ff: sev.ff && typeof sev.ff === "object" ? { k: sev.ff.k | 0, pts: +sev.ff.pts || 0, ms: Array.isArray(sev.ff.ms) ? sev.ff.ms : [] } : null }; } /* v1593, v1594, v1597 */
@@ -14363,7 +14364,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1713"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1714"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19946,7 +19947,7 @@ function ksStartWallet() {
   try { ksStartMail(); } catch (e) { console.error(e); }
   var touch = function () { KS_BACKEND.call("touch", {}).then(function (r) { try { if (r && r.cb !== undefined) KSE.cb = r.cb; } catch (e) {} }, function () {}); }; touch(); setInterval(touch, 3600000); /* v910: account 'last seen' date (server-side, nothing else recorded) */
   KSW.unsub = cloudDb.doc("players/" + PLAYER_ID + "/wallet/main").onSnapshot(function (s) {
-    var d = (s.exists && s.data()) || {}; KSW.topup = d.topup || null; KSW.events = d.events || null; KSW.cards = d.cards || null; KSW.spPrem = d.spPrem; KSW.hs = d.hs || null; /* v1635 / v1636 */ try { ksEvRender(); } catch (e) {} try { ksShopRender(); } catch (e) {} KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
+    var d = (s.exists && s.data()) || {}; KSW.topup = d.topup || null; KSW.events = d.events || null; KSW.cards = d.cards || null; KSW.spPrem = d.spPrem; KSW.hs = d.hs || null; /* v1635 / v1636 */ try { if (d.ga && d.ga.d === Math.floor(Date.now() / 86400000)) { game.state.gaC = { d: d.ga.d, c: Object.assign({}, d.ga.c || {}) }; evPayRedraw(); } } catch (e) {} /* v1714: the server's "claimed today" counts, not the save's (the save could be older - Claim showed after the server had already paid) */ try { ksEvRender(); } catch (e) {} try { ksShopRender(); } catch (e) {} KSW.gems = d.gems || 0; KSW.lvl = Math.max(KSW.lvl, d.lvl || 0); KSW.loaded = true;
     game.state.gems = KSW.gems; try { render(); } catch (e) {} ksClaimLoop();
   }, function (e) { console.error("wallet sync", e && e.message); });
   setInterval(function () { if (KSW.loaded && game.state.gems !== KSW.gems) { game.state.gems = KSW.gems; try { render(); } catch (e) {} } ksClaimLoop(); }, 5000); /* the wallet is the only truth: undo any local edit of gems */
@@ -20761,7 +20762,14 @@ function evWinClick(e) {
   if ((b = t.closest && t.closest("[data-evfs]"))) { var fsr = game.fsClaim(+b.getAttribute("data-evfs")); if (fsr.ok) evDone("Got " + evGotText(fsr.got)); evWinRender(true); return; } /* v1633 */
   if ((b = t.closest && t.closest("[data-evhc]"))) { var hcr = game.hcClaim(b.getAttribute("data-evhc")); if (hcr.ok) evDone("Got " + evGotText(hcr.got)); evWinRender(true); return; } /* v1632 */
   if ((b = t.closest && t.closest("[data-evcb]"))) { var cbr = game.cbClaim(+b.getAttribute("data-evcb")); if (cbr.ok) evDone("Day " + b.getAttribute("data-evcb") + ": " + evGotText(cbr.got)); evWinRender(true); return; } /* v1631 */
-  if ((b = t.closest && t.closest("[data-galogin]"))) { gemAct("login"); if (!ksFb()) { persist(); evWinRender(true); } return; } /* v1628 */
+  if ((b = t.closest && t.closest("[data-galogin]"))) { if (EVW.gaBusy) return; if (!ksFb()) { gemAct("login"); persist(); evWinRender(true); return; } /* v1628 */
+    EVW.gaBusy = true; b.disabled = true; b.textContent = "…"; /* v1714 (Harley: "the claimed part doesnt change ... gems hasnt increased"): show it's working, then say what the server did */
+    KS_BACKEND.call("claimGemAct", { act: "login" }).then(function (r) { EVW.gaBusy = false; gemActShow(r, "login"); persist();
+      var hrs = Math.max(1, Math.ceil((86400000 - Date.now() % 86400000) / 3600000));
+      EVW.note = r && r.added > 0 ? "🎉 +" + r.added + " gems - daily login gift collected" : "✓ Already collected today - the next one is in about " + hrs + (hrs === 1 ? " hour" : " hours") + " (midnight UTC)";
+      evWinRender(true); },
+    function (e) { EVW.gaBusy = false; EVW.note = '<span class="bad">Couldn\'t reach the server - try again in a moment.</span>'; evWinRender(true); });
+    return; }
   if (t.closest && evArenaClick(t)) return; /* v1594 */
   if ((b = t.closest && t.closest("[data-sgrally]"))) { if (sgActive()) sgPickOpen("start"); return; } /* v1623 Alliance Siege; v1705: pick troops first */
   if ((b = t.closest && t.closest("[data-sgjoin]"))) { var jr = b.getAttribute("data-sgjoin"), jro = SG.rallies.filter(function (x) { return x.id === jr; })[0]; if (jro && !jro.armies) sgCall("siegeJoin", { rid: jr }); else sgPickOpen("join", jr); return; }
