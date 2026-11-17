@@ -5661,3 +5661,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - team_rank.js Lv80 avg win (x1 / x2 / x3 / x5): Hanzo 79 / 80.5 / 82 / 82, Kessa 54 / 54 / 53 / 53, none 47 / 47 / 46 / 46, Tom 36.5 / 36 / 36 / 36, Lily 34 / 33 / 33 / 33. Lv40 identical within 1%. Per-hero order unchanged. Duels Lv80 barely move (Hanzo 100, Lily 92-93, Tom 64-66).
 - Why: every team's skills get the same boost, and it's small next to normal hits + cannon over a 60 s fight, so who wins hardly changes.
 - Do skills decide fights? 120 random 5v5 fights at Lv80 (same teams and seeds), one side with vs without its skills: wins 38% with, 17% without. Skills do ~15% of the fortress damage (normal hits ~85%, cannon ~1%); most of their value is damage / knock-outs on heroes. With fortress-only skill boosts (x3 / x5 / x10) the with / without numbers stay 38-40% / 16% (the trace share isn't reliable there - it logs the unboosted value).
+
+## (dev only) — fortress type vs type, maxed research trees (TEST v1703)
+- dev/balance/fort_vs_fort.js: same 5 heroes both sides (40 random teams, Lv80 5* skills 5), sides swapped, 2 seeds (160 fights per pair).
+- Maxed bonuses: F1 cannon +25.8, crit 20% x43, HP +16.5% (95,670 HP); F2 skill cooldowns -45%, hero damage +100% (82,120 HP); F3 HP +90%, damage taken -33% (156,036 HP).
+- F1 vs F2: F1 wins 43%, fights ~26 s. F1 vs F3: F1 wins 0%. F2 vs F3: F2 wins 3%. Mirrors ~50%. Fight length: F1 vs F1 ~27 s, F2 vs F2 ~54 s, F3 vs F3 60 s (always the time limit); F3 fights 56-58 s.
