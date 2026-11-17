@@ -5581,3 +5581,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Heaven Splitter now has slashes: [{ at: 32/24 s, part 0.5 }, { at: 39/24 s, part 0.5 }] and slashSpd 1.125 (x 400 px/s = the drawn 450 px/s). Arena: each slash is a moving front (waveQ, slash: true) from Tom at that speed. It hits each ground enemy hero in front of him when it reaches them, then the fortress, for half the skill value. Enemies on the enemy deck, already behind him, or in the air / floating are not hit. Conquest: two timed waves (each enemy hit when a slash reaches it, half the damage each; setIdleWaveGeo also runs for slashes).
 - Balance: Arena Lv40 w/o tom 56-64 (was 50-70) vs w/o kessa 5-115; Lv80 54-66 (was 32-88) vs 11-109 - Tom a bit weaker, still useful. Conquest Lv40 6-9, Lv80 10-1 (unchanged; Kessa 6-12). Meta: same pre-existing warning.
 - Test: headless Arena - each slash puts a half-damage number on every enemy it passes; no errors.
+
+## (dev only, no version) — Full team ranking with Tom (TEST v1692)
+- New dev/balance/team_rank.js: 100 random 5-hero teams (20 each with Iron Lily, Kessa, Hanzo, Tom, and 20 with none of them; never two of those four together). Every team fights every other team, both sides, 2 seeds (19,800 fights per level). Results in results/team_rank_latest.json.
+- Average team win %: Lv40 - Kessa 65.9, Hanzo 57.4, none 48.1, **Tom 47.1**, Iron Lily 31.5. Lv80 - Hanzo 86.8, Kessa 52.2, none 45.7, **Tom 38.0**, Iron Lily 27.4.
+- Tom teams' ranks (of 100): Lv40 best 5, middle ~54; Lv80 best 19, middle ~63. Per hero (average of his teams), Lv80: Tom 16th of 18 (only Torvald and Iron Lily lower). Lv40: Tom 11th.
