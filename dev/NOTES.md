@@ -5611,3 +5611,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1697 — damage log labels close-range skill hits on the fortress (TEST, dev only)
 - Harley asked why Iron Lily's skill showed no fortress damage. Close-range skills (Lily's Crimson Tempest, Bram's Piston Slam...) hitting the fortress added to the damage but weren't labelled in the trace (trAdd), so they could never show. Now labelled (player side). No gameplay change.
 - Even with the label, Lily's skill does 0 fortress damage in 18 Lv80 fights (team Gareth/Lyra/Sera/Torvald + Lily, 2 of 18 won). Her skill only reaches what's within 36 px of her sword. She spends the fights in the middle against enemy heroes and almost never reaches the ship (~4 normal hits on it per fight), so her skill lands on heroes, not the fortress.
+
+## v1698 — close-range skills stay loaded until the hero really reaches a legal target (Arena, TEST)
+- Harley: Iron Lily's skill should stay loaded from the start until she reaches a legal target. Found: on the tick a melee hero steps into reach, castHold puts him back where he started the tick (to play the skill on one spot). That's out of reach, so the skill fired at nothing and its 12 s timer started. Lily then died within 2-4 s of every revive, and her timer resets on KO, so she never cast again.
+- Fix: castWaits() - if the cast would be put back out of reach, wait one tick (he doesn't move once in reach, so it fires next tick at a real target). For every close-range skill with a skill sheet (Lily, Halo-7, Aurek, Bram...), both sides.
+- Fortress damage test (Gareth/Lyra/Sera/Torvald + Lily, 18 fights Lv80): Lily's skill 0 -> 15,076 per fight, team wins 2 -> 15 of 18.
+- team_rank.js: Lily teams Lv40 31.5 -> 38.3%, Lv80 27.4 -> 31.7%. Tom 46.5 / 36.9, Kessa 62.4 / 50.4, Hanzo 57.3 / 86.6, none 45.5 / 44.4. Meta: same pre-existing warning.

@@ -14324,7 +14324,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1697"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1698"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38755,6 +38755,11 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (!dodgeRoll(e, e.dodge)) return false;
     if (posMode && e.infantry && HANZO_PORT_PX > 0 && !e.ko) { var hl = e.runL ? (e.d <= 0.5 ? e.runL[0] : e.runL[1]) : 0, dd = hl > 0 ? HANZO_PORT_PX / (2 * hl) : 0.1; e.d = Math.max(0, e.d - dd); e.reach = false; }
     return true; }
+  function castWaits(sd, key) { /* v1698 (Harley): a close-range skill stays loaded until the hero is really at a legal target. On the tick he steps into reach, castHold would put him back where he started the tick (out of reach) and the skill fired at nothing (Iron Lily lost her first Crimson Tempest every fight). Wait one tick instead - he doesn't move once in reach, so it fires next tick */
+    var mine = sd === 'P' ? pHH : aHH, me = mine && mine.by[key], SA = typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[key + "_skill"];
+    if (!posMode || !me || !me.infantry || !SA || SA.dive || !SA.rows || !SA.rows.skill || me.ko) return false;
+    if (!(me.d0 != null && me.d0 !== me.d && me.d === me.dMv)) return false;
+    var dNow = me.d; me.d = me.d0; var ok = !!pickMeleeTarget(me, sd === 'P' ? aHH : pHH); me.d = dNow; return !ok; }
   function castHold(sd, key) { /* v1516 (Harley): Halo-7 slid along the ground playing his Core Beam cast while the sim kept walking him. An infantry hero with a skill sheet
        now holds his spot for the length of that sheet (Halo 1.8 s, Aurek 1.3 s, Hanzo 0.6 s; Caelum's dive has its own hold), then runs on. Same for bots. */
     var mine = sd === 'P' ? pHH : aHH, me = mine && mine.by[key], SA = typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[key + "_skill"];
@@ -38958,7 +38963,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (isKo(pHH, a.key)) { playerCd[a.key] = a.cooldown; return; } // KO'd: skill timer sits at full until he revives
       playerCd[a.key] -= cdStep;
       if (playerCd[a.key] <= 0) {
-        if (a.requiresClose && !canMelee(pHH, a.key)) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
+        if (a.requiresClose && (!canMelee(pHH, a.key) || castWaits('P', a.key))) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
         playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         var av = a.value * cardSkMul('P', a.key) * spotMul('P', a.key); /* v985: cards */
         castHold('P', a.key); /* v1516: an infantry caster stops while his skill plays */
@@ -38973,7 +38978,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (isKo(aHH, a.key)) { aiCd[a.key] = a.cooldown; return; }
       aiCd[a.key] -= cdStep;
       if (aiCd[a.key] <= 0) {
-        if (a.requiresClose && !canMelee(aHH, a.key)) { aiCd[a.key] = 0; return; }
+        if (a.requiresClose && (!canMelee(aHH, a.key) || castWaits('A', a.key))) { aiCd[a.key] = 0; return; }
         aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         var avA = a.value * cardSkMul('A', a.key) * spotMul('A', a.key); /* v985: cards */
         castHold('A', a.key); /* v1516 */
