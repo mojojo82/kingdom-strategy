@@ -5877,3 +5877,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley picked C for the overhead chop: clips/siphon_attack_over_v3.mp4, motion frames 9-24 + 54-73 + 128-152 (holds removed) sampled evenly to 31 frames at 24 fps (~1.3 s). Attack interval for Baelgor: 1.35 s (3 Arena ticks) via COMBAT_TIMING.heroAttackSec, hit scaled so DPS is unchanged.
 
 - Fear rise (pull sword out, stand, back to shoulder): clips/siphon_fear_rise_v1.mp4 (Image = kneel fear_end_small_v1, End = idle fear_start_small_v1). Kneel still until frame 58, rise + pull out + shoulder 58-124, side view, no edges. Whole move joined: fear/fear_full_preview_v1.mp4 (plunge v4 at 1.25x, kneel ~1.25 s, rise at 1.25x). Atlas ~$5.52 left.
+
+- Fear preview v2: the leg skip was the clip join (plunge kneel P153 -> rise R58; the rise clip drifts during its 2.4 s still kneel). Now plunge kneel P124-159 at 1.5x, join to R0 (0.6% diff, a normal frame step), R0-58 at 7x, rise R59-124 at 1.25x. fear/fear_full_preview_v2.mp4. Largest remaining frame steps are inside the fast swings.
