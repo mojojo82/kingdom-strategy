@@ -42,7 +42,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
       PEND.forEach((q) => { const mine = q.sd === "P" ? pHH : aHH, opp = q.sd === "P" ? aHH : pHH, ocd = q.sd === "P" ? aCd : pCd, ost = q.sd === "P" ? aSt : pSt, me = mine && mine.by.tfear;
         if (!me || me.ko || !opp) return; const R = window.__st.R;
         if (window.__st.gaze) { let best = null, bcd = 1e9; (ost.actives || []).forEach((a2) => { const e2 = opp.by[a2.key]; if (!e2 || e2.ko || e2.dead || e2.droid) return; const c = ocd[a2.key] == null ? 1e9 : ocd[a2.key]; if (c < bcd) { bcd = c; best = e2; } });
-          AURA.minB = Math.min(AURA.minB == null ? 1e9 : AURA.minB, bcd); AURA.seen = (AURA.seen || 0) + 1; if (!best) { if (tick < q.until) keep.push(q); return; } if (window.__st.interrupt && bcd > window.__st.interrupt && tick < q.until) { keep.push(q); return; } best.stunT = tick + Math.round(window.__st.S / dtS); ocd[best.id] = (ost.actives || []).find((a2) => a2.key === best.id).cooldown; AURA.casts++; AURA.hit++; if (best.id === "hanzo") AURA.hanzo++; (AURA.who = AURA.who || {})[best.id] = (AURA.who[best.id] || 0) + 1; return; }
+          AURA.minB = Math.min(AURA.minB == null ? 1e9 : AURA.minB, bcd); AURA.seen = (AURA.seen || 0) + 1; if (!best) { if (tick < q.until) keep.push(q); return; } if (window.__st.interrupt && bcd > window.__st.interrupt && tick < q.until) { keep.push(q); return; } best.stunT = tick + Math.round(window.__st.S / dtS); if (!window.__st.noReset) ocd[best.id] = (ost.actives || []).find((a2) => a2.key === best.id).cooldown; AURA.casts++; AURA.hit++; if (best.id === "hanzo") AURA.hanzo++; (AURA.who = AURA.who || {})[best.id] = (AURA.who[best.id] || 0) + 1; return; }
         const near = opp.list.filter((o) => !o.ko && !o.dead && !o.droid && ((o.infantry ? o.d : 0) + me.d >= 1 - R));
         if (!near.length && tick < q.until) { keep.push(q); return; } if (!near.length) return;
         const T = tick + Math.round(window.__st.S / dtS); AURA.casts++;
@@ -61,10 +61,10 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     const out = {}; const L80 = [80, 25, 5, 30];
     [["Hanzo team", BASE.concat(["hanzo"])], ["normal team (Aurek)", BASE.concat(["aurek"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
-      [1, 1.5, 2, 3].forEach((K) => { window.__hpK = K; window.__st = { S: 0 }; out["vs " + on + " | Baelgor HP x" + K + ", no fear"] = rate("tfear", O, L80);
-        window.__st = { S: 0.9, gaze: true, interrupt: 0.6, wait: 12 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} }; const r = rate("tfear", O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.picked = AURA.who;
-        out["vs " + on + " | Baelgor HP x" + K + ", interrupt gaze 2 steps + reset"] = r; }); window.__hpK = 0; });
+      window.__hpK = 0;
+      [0.45, 0.9, 1.35, 1.8, 2.7].forEach((S) => { window.__st = { S, gaze: true, noReset: true, wait: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} }; const r = rate("tfear", O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.picked = AURA.who;
+        out["vs " + on + " | gaze stun " + S + "s on the enemy closest to casting (no reset)"] = r; }); });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_gaze_hp.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_gaze_stun.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
