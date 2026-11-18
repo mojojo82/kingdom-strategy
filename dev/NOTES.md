@@ -5820,3 +5820,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - dev/balance/hanzo_leap_stun.js (in-memory patch): a stun that is still on Hanzo when the shuriken would land cancels that Storm. Baelgor = Aurek copy + Fear gaze (closest-to-casting), Lv80, 40 fights, no weapons.
 - Results (results/hanzo_leap_stun.json): 2 s stun ends before the landing, 0 cancels, 0% win. 4 s and 8 s stun cancel the opening Storm every fight but still only 5% win.
 - Trace: with the Storm gone the early fight is a mirror, but Baelgor walks in and is KO'd by the riders at ~2.7 s (dead again ~3 s after each revive, no second Fear). Hanzo's team wins the long fight anyway (Hanzo outlasts him, then Storms again at ~32 s). The real limit is again melee front-line survival.
+
+### (after v1721) Test: stun freezes airborne heroes + pauses timers
+- Harley's rule: a stun freezes an airborne opponent in the air and pauses his timers. dev/balance/hanzo_freeze_stun.js: while Hanzo is stunned mid-leap his pending Storm is paused (lands later by the stun time); skill timers already pause while stunned.
+- Results (results/hanzo_freeze_stun.json, 40 fights Lv80): 2/4/8 s stun all 5% win (was 0%). Hanzo hangs frozen ~1.8 s, then Baelgor's riders KO him in the air, so the opening Storm never lands - same outcome as the cancel rule. Baelgor still dies ~2.7 s in; the Hanzo team wins the long fight.
