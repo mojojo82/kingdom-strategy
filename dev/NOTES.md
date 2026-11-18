@@ -6004,3 +6004,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Checks: Conquest slash hit 114 = 6 x chop 19. baelgor_ingame.js unchanged (Hanzo 0%, Aurek 100%, Tom 95% - his basic hits decide little there).
   Meta check: same known F3 warning. Team ranking (team_rank_slash4x / slash6x.json): every hero's average identical at 4x and 6x (Baelgor 50% Lv40, 49% Lv80, 9th of 19).
   Why: in a ~60 s Arena fight he only gets ~4 slashes + ~5 chops in (he is knocked out early and waits) - his basic hits are a small share of the team's damage.
+
+### (after v1731) Hero tier list with card portraits (Harley: SS / S / A / B / C)
+- Fresh team ranking on v1731: `node dev/balance/team_rank.js --per 20 --seeds 2 --levels 40,80` (TAG=v1731_full; results/team_rank_v1731_full.json + team_rank_v1731.log).
+  Picture: results/tier_list_v1731.png (`EXTRA_DIR=art/originals/heroes/tierlist python3 dev/balance/tier_list_image.py results/team_rank_v1731_full.json OUT.png 64,57,51,44`).
+- Lv80: SS Hanzo 68.5, Lyra 64.1 | S Halo-7 60.5, Kessa 59.3, Zarek 57.8 | A Pip 54.4, Caelum 54.3, Juno 51.2 | B Vesper 49.5, Roran 49.4, Torvald 47.2,
+  Gareth 46.0, Tom 44.9, Sera 44.2 | C Baelgor 43.5, Aurek 41.6, Seraphine 39.6, Bram 39.6, Iron Lily 38.1. Hanzo 81.7 -> 68.5 since v1722 (skill-timer rule v1728).
+- Tom and Baelgor have no card portrait yet: stand-ins in art/originals/heroes/tierlist/ (Tom = crop of his game sprite, Baelgor = crop of his design art).
+- Baelgor as tested: Fear (12 s) + chop (1x) / slash (6x) basic attacks. Drain not in (no numbers yet).
