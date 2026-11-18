@@ -40,3 +40,18 @@ Lv80, random 5 heroes per player, 12 fights per row, hero line + pooled troops o
 - With thousands of pooled troops, troops do ~97% of the damage, the fight is over in seconds, and most of the line never gets used: the side with more troops wins outright.
 - The hero line matters when troops are small (or scaled down for rallies).
 - Open questions from this: how much troops vs heroes should decide a rally (e.g. troop damage with diminishing returns as the rally grows, or a lower rally troop cap), and the time limit / tie-break for long hero-heavy fights.
+
+## Power vs numbers (19 Nov, `dev/balance/rally_power.js`)
+Harley: progress and power must matter - in Kingshot one strong player can solo a 15-person rally.
+Rally = 15 players with Lv40 heroes and T3 troops (3,000 each, 45,000 total). Defender = 1 player with Lv80 heroes and T10 troops. Rally win %:
+
+| Solo defender | Linear troop damage (now) | Square-root troop damage |
+|---|---|---|
+| T10, 3,000 troops | 100% | 92% |
+| T10, 9,000 troops | 79% | **0%** |
+| T10, 9,000 troops, +100% ATK/HP | 0% | 0% |
+| T10, 30,000 troops, +100% ATK/HP | 0% | 0% |
+
+- Power already matters (tiers, bonuses), but with linear troop damage headcount is very strong.
+- Square-root troop damage (damage grows with the square root of troop count, like Kingshot-style games) makes quality beat headcount much sooner, and fights last longer (9-13 s instead of 4-5 s), so the hero line gets more turns.
+- Side finding: world PvP's 120 s time limit is NaN in the code (set before the Arena limit exists), so world PvP fights currently stop at 60 s.
