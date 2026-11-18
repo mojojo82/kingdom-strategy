@@ -1,0 +1,130 @@
+<title>Hanzo Jump Studio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{--bg:#0d1424;--panel:#141d33;--line:#2b3a5c;--fg:#e8ecf6;--mut:#9aa6c4;--gold:#f0c95f;--cyan:#3ab7d8;--red:#e0483e;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:640px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px}
+h1{font-size:20px;margin:0;color:var(--gold);text-wrap:balance}
+p{margin:0;color:var(--mut);font-size:14px}
+.stage{width:100%;max-width:430px;margin:0 auto;border:1px dashed var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+canvas{display:block;width:100%;height:auto}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+button{font:600 14px system-ui,sans-serif;padding:8px 14px;border-radius:6px;border:1px solid var(--cyan);background:#12324a;color:#cfeeff}
+button[aria-pressed="true"]{background:var(--cyan);color:#06223a}
+.sl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:10px 12px;border:1px dotted var(--line);border-radius:8px;background:var(--panel)}
+.sl label{font-weight:600;font-size:14px}
+.sl output{font:600 14px ui-monospace,Menlo,monospace;color:var(--gold)}
+.sl input{grid-column:1/-1;width:100%;accent-color:var(--cyan)}
+.sl small{grid-column:1/-1;color:var(--mut);font-size:12px}
+.read{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:13px;color:var(--mut)}
+.read div{border:1px dotted var(--line);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.read b{display:block;color:var(--fg);font:600 16px ui-monospace,Menlo,monospace}
+.verdict{padding:10px 12px;border-radius:8px;border:1px dashed var(--line);font-weight:600;text-align:center}
+.ok{color:#8fe3a1;border-color:#3d7a4c}.mid{color:var(--gold);border-color:#7a6430}.bad{color:#ff8a80;border-color:#7a3a36}
+code{font:12px ui-monospace,Menlo,monospace;color:var(--mut);word-break:break-all}
+</style>
+<div class="wrap">
+<h1>Hanzo Jump Studio</h1>
+<p>His real Shuriken Storm leap. Change how long he takes to reach the peak (where he throws) and how high he goes, then see where Baelgor's Fear has to land.</p>
+<div class="stage"><canvas id="cv" width="430" height="370"></canvas></div>
+<div class="stage"><canvas id="tl" width="430" height="92"></canvas></div>
+<div class="ctl">
+  <button id="play">Replay</button>
+  <button id="slow" aria-pressed="false">Slow motion</button>
+  <button id="fz" aria-pressed="true">Fear preview on</button>
+  <button id="reset">Back to current</button>
+</div>
+<div class="sl"><label for="rise">Time to peak (throw)</label><output id="riseO"></output><input id="rise" type="range" min="0.9" max="3.5" step="0.05"><small>Now: 1.46 s. The crouch (0.25 s) stays; only the rise is stretched.</small></div>
+<div class="sl"><label for="hgt">Jump height</label><output id="hgtO"></output><input id="hgt" type="range" min="40" max="170" step="5"><small>Now: 80. The fall takes a little longer when he jumps higher.</small></div>
+<div class="sl"><label for="fear">Fear lands at</label><output id="fearO"></output><input id="fear" type="range" min="0.3" max="4" step="0.05"><small>Seconds after both skills start (they start together at the start of a fight).</small></div>
+<div class="sl"><label for="stun">Stun length</label><output id="stunO"></output><input id="stun" type="range" min="1" max="6" step="0.5"></div>
+<div class="read">
+  <div>Shuriken leave his hand<b id="rRel"></b></div>
+  <div>Shuriken land<b id="rLand"></b></div>
+  <div>Fight beats (0.45 s each)<b id="rBeat"></b></div>
+  <div>Back on the ground<b id="rGround"></b></div>
+</div>
+<div class="verdict" id="verd"></div>
+<p>Values for the game: <code id="vals"></code></p>
+</div>
+<script>
+(function(){
+var SHEET="__SHEET__", SHUR="__SHUR__";
+var A={wrap:13,cw:190,ch:278,ax:87.2,ay:255.35,dispH:74.13};
+var CLIPH=[0,0,0,0,0.27,0.27,6.93,14.13,14.13,17.6,17.6,19.47,19.47,21.07,21.07,22.13,22.13,23.2,23.2,24,24,24.8,24.8,25.87,25.87,26.4,26.4,27.47,27.47,28.8,28.8,29.33,29.33,24,24,18.67,18.67,18.67,18.67,18.67,18.67,18.67,18.67,18.67,18.67,18.67,0,0,0,0,0,0];
+var DEF={rise:35/24,hgt:80,fear:1.8,stun:4};
+var S={rise:DEF.rise,hgt:DEF.hgt,fear:DEF.fear,stun:DEF.stun,slow:false,fz:true};
+var im=new Image(), sh=new Image(); im.src=SHEET; sh.src=SHUR;
+var cv=document.getElementById('cv'), cx=cv.getContext('2d'), tl=document.getElementById('tl'), tx=tl.getContext('2d');
+var DPR=Math.min(3,window.devicePixelRatio||1);
+[[cv,430,370],[tl,430,92]].forEach(function(a){a[0].width=a[1]*DPR;a[0].height=a[2]*DPR;});
+var W=430,H=370,GY=350,HX=80,HS=1.6, TG=[[300,0],[345,0],[390,0]];
+function fallT(){return 11/24*Math.sqrt(S.hgt/80);}
+function times(){var rel=S.rise,fall=fallT(),land=rel+fall,end=land+0.25,hit=rel+0.6;return{rel:rel,fall:fall,land:land,end:end,hit:hit};}
+// virtual animation clock: Fear before the release freezes him (and his clock) in the air
+function fearCase(T){if(!S.fz)return 'off';if(S.fear<T.rel)return 'freeze';if(S.fear<T.hit)return 'catch';return 'late';}
+function vclock(t,T){var c=fearCase(T);if(c==='freeze'&&t>S.fear)return t<S.fear+S.stun?S.fear:t-S.stun;return t;}
+function frameAt(tv,T){if(tv<0)return -1;if(tv<0.25)return tv*24;if(tv<T.rel)return 6+29*(tv-0.25)/(T.rel-0.25);if(tv<T.land)return 35+11*(tv-T.rel)/T.fall;var f=46+(tv-T.land)*24;return f>51.99?-1:f;}
+function liftAt(f){var P=S.hgt,Tn=0,u;if(f>=6&&f<35){u=(f-6)/29;Tn=P*(1-(1-u)*(1-u));}else if(f>=35&&f<46){u=(f-35)/11;Tn=P*(1-u*u);}var i=Math.max(0,Math.min(51,Math.floor(f))),fr=Math.max(0,Math.min(1,f-i)),a=CLIPH[i]||0,b=CLIPH[Math.min(51,i+1)]||0;return Math.max(-a,Tn-(a+(b-a)*fr*fr*(3-2*fr)));}
+function drawHero(f,red){var k=A.dispH*HS/A.ch,sx,sy;if(f<0){sx=0;sy=0;}else{var n=Math.floor(f);sx=(n%A.wrap)*A.cw;sy=(2+Math.floor(n/A.wrap))*A.ch;}
+  var lift=f<0?0:liftAt(f)*HS, fy=GY-lift;
+  cx.save();cx.globalAlpha=0.35;cx.fillStyle='#000';cx.beginPath();cx.ellipse(HX,GY+2,22*HS*Math.max(0.4,1-lift/300),5,0,0,Math.PI*2);cx.fill();cx.restore();
+  if(im.complete&&im.naturalWidth){cx.drawImage(im,sx,sy,A.cw,A.ch,HX-A.ax*k,fy-A.ay*k,A.cw*k,A.ch*k);
+    if(red){cx.save();cx.globalAlpha=0.5+0.2*Math.sin(perf()*0.012);cx.strokeStyle='#e0483e';cx.lineWidth=3;cx.beginPath();cx.ellipse(HX,fy-28*HS,30*HS,40*HS,0,0,Math.PI*2);cx.stroke();cx.restore();}}
+  return fy;}
+function perf(){return performance.now();}
+var t0=perf(), clock=0, last=perf();
+function drawStage(t){var T=times(),c=fearCase(T),tv=vclock(t,T),f=frameAt(tv,T);
+  cx.setTransform(DPR,0,0,DPR,0,0);
+  var g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a2740');g.addColorStop(1,'#0f1828');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  // height guide lines
+  cx.strokeStyle='rgba(154,166,196,.18)';cx.setLineDash([3,4]);cx.lineWidth=1;
+  (S.hgt===80?[80]:[80,S.hgt]).forEach(function(h,i){var y=GY-h*HS-30*HS;cx.beginPath();cx.moveTo(20,y);cx.lineTo(200,y);cx.stroke();cx.fillStyle='rgba(154,166,196,.6)';cx.font='11px system-ui';cx.fillText(i?'new peak':(S.hgt===80?'peak':'current peak'),205,y+4);});
+  cx.setLineDash([]);
+  cx.fillStyle='#2a3a28';cx.fillRect(0,GY,W,H-GY);cx.fillStyle='#3d5236';cx.fillRect(0,GY,W,3);
+  // targets
+  TG.forEach(function(p,i){var x=p[0];cx.fillStyle='#5a6b8f';cx.beginPath();cx.arc(x,GY-26,8,0,Math.PI*2);cx.fill();cx.fillRect(x-7,GY-18,14,18);});
+  var fy=drawHero(f,c==='freeze'&&t>=S.fear&&t<S.fear+S.stun);
+  // Fear burst at the centre when it lands
+  if(S.fz&&t>=S.fear&&t<S.fear+0.6){var u=(t-S.fear)/0.6;cx.save();cx.globalAlpha=1-u;cx.strokeStyle='#e0483e';cx.lineWidth=4;cx.beginPath();cx.arc(215,GY-10,10+u*90,0,Math.PI*2);cx.stroke();cx.restore();}
+  // shuriken
+  var rel=T.rel, hitT=T.hit, relV=(c==='freeze')?(S.fear<rel?rel+S.stun:rel):rel, hitV=relV+0.6;
+  if(sh.complete&&t>=relV){var hand=[HX+10,GY-liftAt(35)*HS-55*HS];
+    TG.forEach(function(p,i){[0,1,2].forEach(function(j){var u=(t-relV-j*0.05)/0.6;if(u<0)return;var stop=false,drop=0;
+      if(c==='catch'&&t>=S.fear){var uf=(S.fear-relV-j*0.05)/0.6;if(uf<1){u=Math.max(0,uf);drop=(t-S.fear);stop=true;}}
+      if(u>=1&&!stop)return;var x=hand[0]+(p[0]-8+j*8-hand[0])*u,y=hand[1]+(GY-20-hand[1])*u-40*Math.sin(Math.PI*u);
+      if(stop){y+=drop*drop*260;if(y>GY)return;cx.globalAlpha=Math.max(0,1-drop*1.2);}
+      cx.save();cx.translate(x,y);cx.rotate(t*20+j);cx.drawImage(sh,-7,-7,14,14);cx.restore();cx.globalAlpha=1;});});}
+  if(t>=hitV&&t<hitV+0.35&&c!=='catch'){TG.forEach(function(p){cx.fillStyle='rgba(255,240,200,'+(1-(t-hitV)/0.35)+')';cx.beginPath();cx.arc(p[0],GY-20,14,0,Math.PI*2);cx.fill();});}
+  cx.fillStyle='#e8ecf6';cx.font='600 13px system-ui';cx.fillText(t.toFixed(2)+' s',12,20);
+  if(c==='freeze'&&t>=S.fear&&t<S.fear+S.stun){cx.fillStyle='#ff8a80';cx.fillText('FROZEN by Fear',12,38);}
+  if(c==='catch'&&t>=S.fear){cx.fillStyle='#f0c95f';cx.fillText('Shuriken caught in the air',12,38);}
+  return T;}
+function drawTimeline(t,T){tx.setTransform(DPR,0,0,DPR,0,0);tx.fillStyle='#141d33';tx.fillRect(0,0,430,92);
+  var span=Math.max(4,S.fear+0.5,T.end+0.3),L=14,R=416,X=function(s){return L+(R-L)*s/span;};
+  tx.fillStyle='#22304d';tx.fillRect(L,30,R-L,8);
+  tx.fillStyle='rgba(143,227,161,.55)';tx.fillRect(X(0),30,X(T.rel)-X(0),8);
+  tx.fillStyle='rgba(240,201,95,.55)';tx.fillRect(X(T.rel),30,X(T.hit)-X(T.rel),8);
+  function mk(s,col,lab,row){var x=X(s);tx.fillStyle=col;tx.fillRect(x-1,24,2,20);tx.font='11px system-ui';tx.textAlign=x>380?'right':x<50?'left':'center';tx.fillText(lab,x,row);}
+  mk(T.rel,'#8fe3a1','throw '+T.rel.toFixed(2),18);mk(T.hit,'#f0c95f','hit '+T.hit.toFixed(2),58);
+  if(S.fz)mk(S.fear,'#ff6b60','Fear '+S.fear.toFixed(2),72);
+  tx.fillStyle='#fff';tx.fillRect(X(Math.min(t,span))-1,26,2,16);tx.textAlign='left';
+  tx.fillStyle='#9aa6c4';tx.font='10px system-ui';tx.fillText('green: Fear freezes him   gold: Fear catches the shuriken',L,88);}
+function loopLen(){var T=times(),c=fearCase(T);return Math.max(T.end+(c==='freeze'?S.stun:0),S.fz?S.fear+0.8:0,T.hit+0.6)+1.0;}
+function tick(){var now=perf(),dt=(now-last)/1000;last=now;clock+=dt*(S.slow?0.35:1);if(clock>loopLen())clock=0;var T=drawStage(clock);drawTimeline(clock,T);requestAnimationFrame(tick);}
+function $(id){return document.getElementById(id);}
+function ui(){var T=times();$('riseO').textContent=S.rise.toFixed(2)+' s';$('hgtO').textContent=S.hgt+(S.hgt===80?' (now)':' ('+(S.hgt/80).toFixed(2)+'x)');$('fearO').textContent=S.fear.toFixed(2)+' s';$('stunO').textContent=S.stun.toFixed(1)+' s';
+  $('rRel').textContent=T.rel.toFixed(2)+' s';$('rLand').textContent=T.hit.toFixed(2)+' s';var b=Math.max(1,Math.round(T.hit/0.45));$('rBeat').textContent=b+' ('+(b*0.45).toFixed(2)+' s)';$('rGround').textContent=T.end.toFixed(2)+' s';
+  var c=fearCase(T),v=$('verd');S.fz=S.fz;var cs={freeze:['ok','Fear lands before the throw: Hanzo freezes in the air, no Storm until the stun ends.'],catch:['mid','Fear lands after the throw but before the hit: only works if the shuriken get caught in the air.'],late:['bad','Too late: the shuriken have already hit.'],off:['mid','Fear preview is off.']}[c];
+  v.className='verdict '+cs[0];v.textContent=cs[1];
+  $('vals').textContent='riseSec '+S.rise.toFixed(2)+' (throw frame 35 at '+S.rise.toFixed(2)+' s), peak '+S.hgt+' px, fall '+fallT().toFixed(2)+' s, aoeDelay '+T.hit.toFixed(2)+' s';}
+function bind(id,key){var el=$(id);el.value=S[key];el.addEventListener('input',function(){S[key]=parseFloat(el.value);ui();});}
+bind('rise','rise');bind('hgt','hgt');bind('fear','fear');bind('stun','stun');
+$('play').onclick=function(){clock=0;};
+$('slow').onclick=function(){S.slow=!S.slow;this.setAttribute('aria-pressed',S.slow);};
+$('fz').onclick=function(){S.fz=!S.fz;this.setAttribute('aria-pressed',S.fz);this.textContent=S.fz?'Fear preview on':'Fear preview off';ui();};
+$('reset').onclick=function(){S.rise=DEF.rise;S.hgt=DEF.hgt;['rise','hgt'].forEach(function(k){$(k).value=S[k];});clock=0;ui();};
+ui();requestAnimationFrame(tick);
+})();
+</script>
