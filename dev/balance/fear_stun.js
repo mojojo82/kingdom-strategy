@@ -50,8 +50,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
     ["hanzo", "aurek"].forEach((opp) => {
-      [[1, false], [2, false], [1, true], [2, true]].forEach(([S, ro]) => { window.__st = { S, own: true, reset: true, resetOwn: ro }; out["vs " + opp + " | freeze " + S + "s both sides + " + (ro ? "BOTH sides' timers reset" : "enemy timers reset")] = rate("tfear", opp, L80); }); });
+      [[0.3, false], [0.5, false], [0.7, false], [0.3, true], [0.5, true], [0.7, true]].forEach(([S, reset]) => { window.__st = { S, own: false, reset, resetOwn: false }; out["vs " + opp + " | stun " + S + "s enemies only" + (reset ? " + their timers reset" : "")] = rate("tfear", opp, L80); }); });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_stun_both3.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_stun_enemy.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
