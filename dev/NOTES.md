@@ -5918,3 +5918,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Linear troop damage (now): solo T10 3,000 -> rally wins 100%; T10 9,000 -> 79%; T10 9,000 + 100% ATK/HP -> 0%; T10 30,000 + 100% -> 0%.
 - Square-root troop damage (each side's troop damage x sqrt(3000 / its troop count), never above 1x): solo T10 3,000 -> rally 92%; T10 9,000 -> 0%; with bonuses 0%. Fights last longer (9-13 s instead of 4-5 s).
 - Found while testing: WORLD_PVP_MAX_TICKS = ARENA_MAX_TICKS * 2 is set on line ~23343 BEFORE ARENA_MAX_TICKS exists (~38655), so it is NaN and arenaMakeSim falls back to ARENA_MAX_TICKS: world PvP fights currently get the 60 s Arena limit, not the intended 120 s. Not fixed (needs Harley's OK).
+
+## v1723 - World PvP time limit fixed (60 s -> intended 120 s)
+- Bug: `var WORLD_PVP_MAX_TICKS = ARENA_MAX_TICKS * 2` ran before ARENA_MAX_TICKS existed, so it was NaN and arenaMakeSim fell back to the 60 s Arena limit for every world PvP fight. Now declared as 0 there and set to ARENA_MAX_TICKS * 2 right after ARENA_MAX_TICKS (Harley: "fix the timer").
+- Measured: f2_ladder (World PvP, 10 seeds, spend 0 / 10M / 100M): 34 of 36 cells identical, 2 moved (F2 vs F1 at 0 spend, S5 90 -> 80%, S6 100 -> 90%) - most fights already ended inside 60 s. Meta check: identical before and after (pre-existing warning: Clone+railgun+Hex / Hex+Dome+railgun F3 above the meta build).
+- Also seen again in f2_ladder: Fortress III beats Fortress II 100% at every spend and scenario (open item, see dev/balance/STRONG_BUILDS.md).

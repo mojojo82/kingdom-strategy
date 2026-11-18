@@ -14367,7 +14367,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1722"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1723"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23340,7 +23340,7 @@ function fetchDefenderFormation(ownerId) {
 // troop stack, lead-loss-reduction softens casualties. The fight is seeded so
 // the same two armies always give the same result, and resolves instantly.
 var WORLD_PVP_TROOP_DMG_SCALE = 0.03, WORLD_PVP_TROOP_HP_SCALE = 0.03;
-var WORLD_PVP_MAX_TICKS = ARENA_MAX_TICKS * 2;
+var WORLD_PVP_MAX_TICKS = 0; /* v1723: set to ARENA_MAX_TICKS * 2 right after ARENA_MAX_TICKS is defined (it was NaN here, so world PvP fell back to the 60 s Arena limit) */
 function worldPvpSeededRng(str) {
   var h = 1779033703 ^ str.length;
   for (var i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
@@ -38653,6 +38653,7 @@ var ARENA_ENGAGE_TICKS = 3; // ticks for infantry to close the distance — mirr
 var ARENA_TICK_MS = 450; // real ms per battle tick (see runArenaBattle's setInterval) — also used to convert the tick-based cooldown countdown into a real-time rate for the smooth cooldown ring
 var ARENA_MAX_DURATION_MS = 60000; // hard time limit shown to the player as a live countdown (arenaTimerSub) — a fight still ending early on a KO
 var ARENA_MAX_TICKS = Math.round(ARENA_MAX_DURATION_MS / ARENA_TICK_MS); // ≈133 ticks at 450ms/tick
+WORLD_PVP_MAX_TICKS = ARENA_MAX_TICKS * 2; /* v1723: world PvP gets its intended 120 s limit (was NaN -> 60 s) */
 // Ticks between one attacker's (garrison, or one hero's) own basic
 // attacks — the Arena equivalent of Border Skirmish's IDLE_BASIC_ATTACK_INTERVAL,
 // just expressed in ticks since Arena's battle loop runs on a real-time
