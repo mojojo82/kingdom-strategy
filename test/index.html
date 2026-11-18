@@ -4714,7 +4714,7 @@ try { heroAttackTimingOn = localStorage.getItem(HERO_ATTACK_TIMING_KEY) !== "0";
 var COMBAT_TIMING = { basicAttackSec: 1, cannonCycleSec: 10, cannonBurstSec: 4, cannonBulletIntervalSec: 0.15 };
 // Per-hero basic-attack interval (seconds). Anything not listed uses basicAttackSec. Damage PER HIT scales by interval/basicAttackSec so DPS stays the same
 // (Gareth: swings every 0.5s for half damage). Skills still scale off the FULL (1s-equivalent) basic hit — see idleAttackerDamage / arenaSideStats.
-COMBAT_TIMING.heroAttackSec = { gareth: 0.5, zarek: 2 }; /* v1654: Zarek volleys every 2 s */
+COMBAT_TIMING.heroAttackSec = { gareth: 0.5, zarek: 2, baelgor: 1.35 }; /* v1726: Baelgor's chop takes 1.29 s - one swing per 3 Arena ticks (damage per hit scaled, DPS unchanged) */ /* v1654: Zarek volleys every 2 s */
 COMBAT_TIMING.heroNoHitScale = { zarek: true }; /* v1655 (Harley): Zarek's 2 s volley is NOT double damage - normal hit, half the basic DPS */
 /* v1344 (Harley: "base atk 1 has its own animation and base atk 2 has its own animation"; "it needs to appear random (although its not)"): attack
    SLOTS. Each swing the engine draws the next slot from a shuffled BAG (combatRng, seeded per level -> deterministic, sims reproducible). A slot
@@ -6506,6 +6506,7 @@ var I18N_HERO = { ru: {
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
   ironlily: ["Железная Лили", "Багровая буря", "Каждые 12 с — яростный вихрь ударов меча: тяжёлый урон всему, до чего достаёт её меч в радиусе ударов — враги, бойцы ближнего боя, крепости и боссы (120%, 400% на ур. 5)."],
   vesper: ["Веспер", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
+  baelgor: ["Баэлгор", "Страх", "Каждые 12 с вонзает меч в землю: удар бежит по земле и бьёт всех врагов, включая крепость. Вражеский герой, ближе всех к своему навыку, оглушён на 4 с - не двигается и не атакует, даже в воздухе, а таймер его навыка стоит."],
   aurek: ["Аурек Солмейн", "Удар солнечной кузни", "Каждые 12 с вонзает меч в землю: столбы священного огня бегут по земле в обе стороны и бьют всех врагов, включая крепость. Проекционная стена защищает от них стрелков."],
   seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
   halo7: ["Хейло-7", "Луч ядра", "Каждые 13 с выпускает из ядра в груди огромный луч через всё поле: бьёт каждого врага, до которого дотянется, включая крепость (героя в прыжке луч не задевает). Проекционная стена защищает от него стрелков."],
@@ -6742,6 +6743,20 @@ var HERO_DEFS = {
       { name: "Sunlit Banner", icon: "🚩", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
       { name: "Shepherd", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Pilgrim's Road", icon: "🥾", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.015 }
+    ] },
+  baelgor: { name: "Baelgor", title: "The Dread Blade", class: "infantry", icon: "👁️", rarity: "Epic", atkMult: 0.5, /* v1726 (Harley 19 Nov): in game. Numbers = Aurek's (the balance tests' copy); art folder art/heroes/siphon.
+      Harley: "at max power he is a counterpick for Hanzo" - not held below Hanzo / Kessa. Visual effects for Fear come later (Harley). Drain leap (2nd skill) sheet is built but not used yet. */
+    maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
+    conquestSkills: [
+      /* Fear: drives his greatsword into the ground (Sunforge Slam's numbers: hits every enemy the ground shock reaches, fortress included) and the enemy hero
+         closest to using their skill is STUNNED for 4 s - can't move or attack, skill timer paused, a hero in the air (Hanzo mid-leap) freezes there.
+         Lands when the sword is planted (1.72 s into his cast = 4 Arena ticks, one before Hanzo's Storm). Conquest: the enemy closest to its next attack waits 4 s more. */
+      { name: "Fear", icon: "👁️", kind: "active", aoeAll: true, wave: { impact: 1.72 }, gaze: { sec: 4 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, drives his greatsword into the ground: the shock runs along the ground both ways and hits every enemy it reaches, fortress included (a hero in the air is missed). The enemy hero closest to using their skill is stunned for 4s - frozen in place, even in mid-air, their skill timer paused." }
+    ],
+    expeditionSkills: [
+      { name: "Dread Banner", icon: "🚩", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
+      { name: "Iron Will", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
+      { name: "Grim March", icon: "🥾", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.015 }
     ] },
   seraphine: { name: "Seraphine Lux", title: "The Crystal Crown", class: "archer", icon: "💎", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.35, /* v1508: built - hit-everything hero (crystal rain from the sky), rides the fortress, kept well below Kessa */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
@@ -10267,7 +10282,7 @@ function createGame(opts) {
           var aoeDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = aoeDmg;
           if (skill1.slashes) { skill1.slashes.forEach(function (sl) { (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: sl.at, dmg: aoeDmg * sl.part, wave: true, spd: 1.0, slash: true, h0: sl.h0 || 96, img: sl.img }); }); return; } /* v1692: Tom's two slashes - each enemy is hit when a slash reaches it (half the damage each) */
-          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.wave ? skill1.wave.impact : skill1.aoeDelay != null ? skill1.aoeDelay : HANZO_LEAP_SEC, dmg: aoeDmg, wave: !!skill1.wave, spd: skill1.wave ? (skill1.wave.spd || WAVE_SPEED_FR) : 0 }); /* v1506: each hit-everything skill can set its own wind-up (aoeDelay s); Hanzo keeps HANZO_LEAP_SEC */
+          (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.wave ? skill1.wave.impact : skill1.aoeDelay != null ? skill1.aoeDelay : HANZO_LEAP_SEC, dmg: aoeDmg, wave: !!skill1.wave, spd: skill1.wave ? (skill1.wave.spd || WAVE_SPEED_FR) : 0, gaze: skill1.gaze ? skill1.gaze.sec : 0 }); /* v1726: Fear's stun rides on the same impact */ /* v1506: each hit-everything skill can set its own wind-up (aoeDelay s); Hanzo keeps HANZO_LEAP_SEC */
           return;
         }
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
@@ -10927,6 +10942,8 @@ function createGame(opts) {
   function idleStormTick(dt) {
     var Q = state.idle.stormQ; if (!Q || !Q.length) return; var keep = [];
     Q.forEach(function (q) { q.t -= dt; if (q.t > 1e-9) { keep.push(q); return; } if (idleHeroIsKo(q.key)) return;
+      if (q.gaze) { var gz = null; state.idle.enemies.forEach(function (e0) { if (e0.hp > 0 && e0.arrived && (gz == null || (e0.atkCooldown || 0) < (gz.atkCooldown || 0))) gz = e0; }); /* v1726: Fear in Conquest - the enemy closest to its next attack is stunned (waits sec longer) */
+        if (gz) gz.atkCooldown = (gz.atkCooldown == null ? IDLE_ENEMY_ATTACK_INTERVAL : gz.atkCooldown) + q.gaze; q.gaze = 0; }
       if (q.dive) { /* v1514: Skybreaker Slam lands on its target (re-picked if it died meanwhile) */
         var dt0 = state.idle.enemies.filter(function (e0) { return e0.hp > 0 && String(e0.id) === String(q.id); })[0] || idleDiveTarget(); if (!dt0) return;
         var dd1 = q.dmg * idleMarkMult(dt0, q.key) * idleEnemyDefTake(dt0, q.dmg); dt0.hp -= dd1; q.id = dt0.id; if (!dt0.arrived) { dt0.arrived = true; dt0.arriveRemaining = 0; }
@@ -14367,7 +14384,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1725"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1726"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -27922,6 +27939,9 @@ var HERO_ANIMS = {
   ironlily: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/ironlily/ironlily_anim_v7.webp", wrap: 14, cw: 248, ch: 197, ax: 110.58, ay: 176.59, fps: { idle: 8, run: 24, attack: 24, attack2: 24, attack3: 24 }, rows: { idle: [0, 41], run: [2, 25], attack: [3, 24], attack2: [4, 27], attack3: [5, 28] }, sizeMul: 1, dispH: 52.53, impact: 8, impact2: 10, impact3: 13 }, /* v1616 (Harley): Iron Lily redo - pale silver-grey ninja (dev/heroes/lily/, art/originals/heroes/ironlily/redo/). Standard sheet (build_hero_frames.py + build_hero_anim.py), green-screen clips. Run + three basic attacks that rotate (slash / spin slash / jump chop). The old one-off Lily system (lily_v6, LILY_LEGACY) is off. Flip benched; skill visuals (painted slashes) come later. */
   ironlily_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/ironlily/ironlily_skill_anim_v1.webp", wrap: 14, cw: 289, ch: 316, ax: 128.8, ay: 236.42, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 84] }, once: { skill: true }, sizeMul: 1, dispH: 108.34 }, /* v1619 (Harley: the skill fired but nothing showed): Crimson Tempest - the picked flurry (A-redo 2 at 1.5x, twice) with the painted ChatGPT slashes baked on her blade path, 3.5 s */
   aurek: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/aurek/aurek_anim_v1.webp", wrap: 14, cw: 174, ch: 154, ax: 67.84, ay: 151.96, fps: { idle: 8, run: 24, attack: 24, attack2: 24 }, rows: { idle: [0, 41], run: [2, 27], attack: [3, 20], attack2: [4, 20] }, sizeMul: 1.2, dispH: 51.33, /* v1546 (Harley): 1.2 - slightly taller than Bram and Torvald */ impact: 9, impact2: 9 }, /* v1506: tall paladin (1.24x Hanzo), two slashes alternate */
+  baelgor: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_anim_v1.webp", wrap: 8, cw: 497, ch: 393, ax: 191.03, ay: 388.43, fps: { idle: 6, run: 12, attack: 24 }, rows: { idle: [0, 24], run: [2, 16], attack: [3, 31] }, sizeMul: 1, dispH: 68.35, impact: 14 }, /* v1726 Baelgor: built sharp (230 sheet px for his ~40 CSS px standing height = ~1.9 sheet px per phone px); chop v3 (hit on frame 14) */
+  baelgor_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_skill_anim_v1.webp", wrap: 9, cw: 442, ch: 395, ax: 151.0, ay: 375.9, fps: { idle: 8, run: 8, skill: 16 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 69] }, once: { skill: true }, sizeMul: 1, dispH: 71.82, throwFrame: 28 }, /* Fear: lift, drive the sword into the ground (planted on frame 28 = 1.72 s), kneel, pull it out and rise (4.3 s) */
+  baelgor_drain: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_drain_anim_v1.webp", wrap: 12, cw: 331, ch: 368, ax: 146.31, ay: 366.06, fps: { idle: 8, run: 8, skill: 8 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 64] }, once: { skill: true }, sizeMul: 1, dispH: 92.0 }, /* drain leap - NOT used yet (2nd skill not designed); rebuild sharp with the final timing */
   aurek_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/aurek/aurek_skill_anim_v1.webp", wrap: 16, cw: 160, ch: 167, ax: 65.92, ay: 164.44, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 32] }, once: { skill: true }, sizeMul: 1, dispH: 55.67, throwFrame: 9 }, /* Sunforge Slam: sword planted on frame 9 -> fire pillars */
   seraphine: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/seraphine/seraphine_anim_v1.webp", wrap: 21, cw: 138, ch: 152, ax: 70.69, ay: 149.24, fps: { idle: 8, run: 8, attack: 24 }, rows: { idle: [0, 41], run: [0, 41], attack: [1, 19] }, once: { attack: true }, sizeMul: 1, dispH: 37.31, release: 4 }, /* v1508: crystal mage on the deck; violet crystal bolt (SPELL_COLS) */
   seraphine_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/seraphine/seraphine_skill_anim_v1.webp", wrap: 18, cw: 156, ch: 168, ax: 67.91, ay: 165.31, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 35] }, once: { skill: true }, sizeMul: 1, dispH: 41.24, throwFrame: 12 }, /* Crystal Rain: staff fully raised on frame 12 -> the rain starts */
@@ -34578,6 +34598,7 @@ var HERO_FLAVOR = {
   hanzo: "Nobody hears Hanzo arrive, and nobody remembers him leaving. One leap, a storm of steel from above, and the field below is never quite the same.",
   seraphine: "Heir to a crown cut from a single crystal, Seraphine learned that every shard remembers the stone it came from. Raise the staff, and the sky remembers too - and falls.",
   vesper: "Vesper writes spells the way other mages write letters: quietly, quickly, and with no typos. One line of code to the old satellites overhead, and the field below lights up beam by beam.",
+  baelgor: "Nobody remembers who forged the blade with the eye in its hilt - only that it chose Baelgor. When he plants it in the ground the eye opens, and whoever it looks at forgets how to move.",
   aurek: "Seven feet of white steel and older vows. When Aurek drives his blade into the earth, the ground itself answers - a road of holy fire that runs to both horizons, and nothing on it walks away unscorched.",
   halo7: "Built to guard a city that no longer exists, Halo-7 slept under the moss for three hundred years. Something woke the core in his chest. Now he walks again, slow as a landslide - and when that core opens, the light goes all the way to the horizon.",
   zarek: "Zarek never learned to swing a sword - he learned to build one out of nothing, a hundred times a second. He drifts above the field with his arms folded, too tall and too calm, while his blades do the work. When he finally unfolds his arms, look up.",
@@ -37028,7 +37049,7 @@ var FORTRESS_SKINS = [
 /* v1393 (Harley: dev tool - circled heroes get a random level 5-35 and 0-3 stars, the rest show as not recruited; press again = true values).
    LOOK ONLY: while the hero list / hero card draw, the real hero entries are swapped for showcase copies and put straight back afterwards
    (same tick), so battles, power, saves never see the fake numbers. New random numbers each time it's switched on. */
-var HERO_SHOWCASE_KEYS = ["gareth", "lyra", "roran", "kessa", "sera", "torvald", "hanzo", "ironlily", "juno", "bram", "pip", "aurek", "seraphine", "vesper", "halo7", "caelum", "zarek", "tom"], heroShowcase = null;
+var HERO_SHOWCASE_KEYS = ["gareth", "lyra", "roran", "kessa", "sera", "torvald", "hanzo", "ironlily", "juno", "bram", "pip", "aurek", "baelgor", "seraphine", "vesper", "halo7", "caelum", "zarek", "tom"], heroShowcase = null;
 function heroShowcaseWrap(fn) {
   if (!heroShowcase) return fn();
   var H = game.state.heroes, saved = {};
@@ -38753,7 +38774,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
       ? skillDamageBaseFor(a.key, h, attackerDmgById[a.key], bn.skill || 0) * (skill.pctByLevel[Math.max(1, Math.min(skill.pctByLevel.length, a.lvl)) - 1] || 0)
       : (skill.burstBase || 0) + (skill.burstPerLevel || 0) * a.lvl; // legacy fallback for any skill not yet converted to pctByLevel
     var svA = (HERO_DEFS[a.key].conquestSkills || []).filter(function (q) { return q.effectType === "salvage"; })[0], svL = svA ? ((h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[1]) || 1) : 0; /* v1476: Juno's Salvage */
-    return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, aoe: a.aoe, aoeDelay: skill.aoeDelay, wave: skill.wave || null, slashes: skill.slashes || null, slashSpd: skill.slashSpd || null, dive: skill.dive || null, visualStyle: a.visualStyle, splash: skill.splash || null, salvage: svA ? svA.perLevel * svL : 0 };
+    return { key: a.key, name: a.name, icon: a.icon, cooldown: a.cooldown, value: value, requiresClose: a.requiresClose, aoe: a.aoe, aoeDelay: skill.aoeDelay, wave: skill.wave || null, slashes: skill.slashes || null, slashSpd: skill.slashSpd || null, dive: skill.dive || null, gaze: skill.gaze || null /* v1726: Fear */, visualStyle: a.visualStyle, splash: skill.splash || null, salvage: svA ? svA.perLevel * svL : 0 };
   });
   var limits = limitsRaw.map(function (a) { var sk = a.skill, L = Math.max(1, Math.min(sk.pctByLevel.length, a.lvl)); return { swing: sk.swingPts != null ? sk.swingPts : 1, onHit: !!sk.onHit, keep: !!sk.keepOnKo, key: a.key, fill: sk.hitsToFill, taken: sk.takenPts || 1, n: sk.targetsByLevel[Math.min(sk.targetsByLevel.length, L) - 1], exec: sk.executePct, value: skillDamageBaseFor(a.key, heroesState[a.key], attackerDmgById[a.key], bn.skill || 0) * (sk.pctByLevel[L - 1] || 0) }; });
   var refAtk = 0; Object.keys(attackerDmgById).forEach(function (k) { refAtk = Math.max(refAtk, attackerDmgById[k]); }); if (!(refAtk > 0)) refAtk = game.idleFortressCannonBulletDmgBase() * bnA; // the attacker's own typical hit — what the other side's DEF is measured against
@@ -38893,7 +38914,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var playerShield = playerShieldMax, aiShield = aiShieldMax;
   /* v1499: Spotter's Mark - each side's cannon bullets mark the side they hit (up to cap; super bursts lay superMarks each); that side's Pip's next hit spends them */
   var spotOnA = 0, spotOnP = 0; function spotMul(sd, id) { if (id !== 'pip') return 1; var st = sd === 'P' ? playerStats : aiStats; if (!st.spot) return 1; var m = sd === 'P' ? spotOnA : spotOnP; if (!m) return 1; if (sd === 'P') spotOnA = 0; else spotOnP = 0; return 1 + m * st.spot.pct; }
-  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = [], waveQ = [], diveQ = []; /* v1514: Caelum's Skybreaker Slam in flight */ /* v1507: rolling eruptions on the ground */ /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
+  var playerCd = {}, aiCd = {}, cannonQ = [], shotQ = [], empQ = [], railQ = [], stormQ = [], waveQ = [], diveQ = [], gazeQ = []; /* v1726: Baelgor's Fear stuns waiting for the sword to land */ /* v1514: Caelum's Skybreaker Slam in flight */ /* v1507: rolling eruptions on the ground */ /* v968: weapon shots in flight. v993: Shuriken Storms mid-leap */
   var playerGuard = 0, aiGuard = 0, pSupCd = {}, aSupCd = {}, pGuardMax = 0, aGuardMax = 0, pGuardN = 0, aGuardN = 0, pAegisN = 0, aAegisN = 0; /* v1667: size of the last guard shield, for its little bar */
   (playerStats.supports || []).forEach(function (u) { pSupCd[u.key] = u.first * cardCdMul('P'); }); (aiStats.supports || []).forEach(function (u) { aSupCd[u.key] = u.first * cardCdMul('A'); }); /* v1523: first cast gets the cooldown bonus too (Conquest does) */
   // Shared timing: when on, every cooldown below counts down in REAL SECONDS (each tick = ARENA_TICK_MS/1000 s) using the same
@@ -38961,6 +38982,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var staggerSeed = String(opts.critSeed || 'arena'), staggerMemo = {}; /* v969: each attacker's first-swing offset depends only on the battle seed + who he is (droids by number), not on which side he is on */
   function staggerOf(id) { var k = String(id).replace(/^droid[PA]/, 'droid'); if (staggerMemo[k] == null) staggerMemo[k] = worldPvpSeededRng(staggerSeed + '|' + k)(); return staggerMemo[k]; }
   function isKo(hh, id) { var e = hh && hh.by[id]; return !!(e && e.ko && e.koTick !== tick); }
+  function isStunned(hh, id) { var e = hh && hh.by[id]; return !!(e && !e.ko && e.stunT > tick); } /* v1726: Fear - a stunned hero can't move or attack and his skill timer stands still */
   function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; e.sh = 0; }
   function withKoPos(me, fn) { if (!me || !(me.ko && me.koTick === tick)) return fn(); var d0 = me.d; me.d = me.koD; try { return fn(); } finally { me.d = d0; } }
   function tickRevive(hh) { if (!hh) return; hh.list.forEach(function (e) { if (e.ko && e.droid) { e.dead = true; return; } if (e.ko) { e.reviveT -= dtS; if (e.reviveT <= 0) { e.ko = false; e.reviveT = 0; e.hp = e.max; } } }); }
@@ -39007,7 +39029,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (e.ko) { e.knockAt = null; if (e.leapTo != null) { e.leapTo = null; e.leapAir = false; } out.push([e, 0]); return; }
       if (e.knockAt != null && tick >= e.knockAt) { e.knockAt = null; out.push([e, dMovePx(e, e.d, -TOM_KNOCK_PX)]); return; } /* v1685: Tom's knock-back lands in the sim */
       if (e.leapTo != null && tick >= e.leapAt) { var lt = e.leapTo; e.leapTo = null; e.leapAir = false; out.push([e, lt]); return; } /* v1682: Tom's sideways leap lands */
-      if (e.air || e.castUntil > tick) { out.push([e, e.d]); return; } /* v1514: in the air (Skybreaker Slam) - he stays put until he lands; v1516: or while his skill sheet plays */
+      if (e.air || e.castUntil > tick || e.stunT > tick) { out.push([e, e.d]); return; } /* v1726: or while stunned (Fear) */ /* v1514: in the air (Skybreaker Slam) - he stays put until he lands; v1516: or while his skill sheet plays */
       var foe = null; oh.list.forEach(function (o) { if (o.infantry && !o.ko && (!foe || o.d > foe.d)) foe = o; });
       var nd = e.d;
       if (!foe || e.d + foe.d < 1 - ARENA_REACH) {
@@ -39161,7 +39183,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     // Conquest got for the "boss melts the instant it's cornered" issue.
     function runAttackers(attackers, cd, hitList, applyDmg, hh) {
       attackers.forEach(function (a) {
-        var eligible = !isKo(hh, a.id) && (!a.melee || canMelee(hh, a.id)) && (!a.startTick || tick >= a.startTick); // startTick: troop stacks close the distance at their own speed
+        var eligible = !isKo(hh, a.id) && !isStunned(hh, a.id) && (!a.melee || canMelee(hh, a.id)) && (!a.startTick || tick >= a.startTick); // startTick: troop stacks close the distance at their own speed
         if (!eligible) { cd[a.id] = null; return; }
         var iv = (shared && a.sec) ? a.sec : atkInt;
         if (cd[a.id] == null) { var r0 = staggerOf(a.id); cd[a.id] = shared ? r0 * iv : Math.floor(r0 * iv); return; }
@@ -39184,7 +39206,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     // but a requiresClose skill's damage only lands once actually engaged.
     // v993: Shuriken Storms that finish their leap land now (both sides together). Knocked out mid-leap = no storm. The shuriken are PROJECTILES:
     // Projection Wall keeps them off the defender's ranged heroes, Deflector Dome / Orbit Shield cut them (heroes here, fortress via projP/projA below).
-    if (stormQ.length) { var stormKeep = []; stormQ.forEach(function (q) { if (q.at > tick) { stormKeep.push(q); return; }
+    if (stormQ.length) { var stormKeep = []; stormQ.forEach(function (q) { if (isStunned(q.sd === 'P' ? pHH : aHH, q.key)) q.at++; /* v1726 (Harley): a stun freezes him in mid-leap - the Storm lands that much later */ if (q.at > tick) { stormKeep.push(q); return; }
       var mine = q.sd === 'P' ? pHH : aHH; if (isKo(mine, q.key)) return;
       var dS = q.sd === 'P' ? FXS.A : FXS.P, red = FXS.ready ? fxRed(dS) : 0, wallUp = dS.wall > 0;
       var blk = q.sd === 'P' ? aoeHit(aHH, aiStats, q.v * (1 - red), wallUp) : aoeHit(pHH, playerStats, q.v * (1 - red), wallUp), mirr = blk > 0 ? blk * (dS.wallMirror || 0) : 0; /* v1195 (audit item 9): Mirror Wall (Lv50) reflects that % of what the Wall blocked at the caster's fortress */
@@ -39193,6 +39215,11 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     /* v1507: rolling eruptions. Each tick the fire front moves WAVE_SPEED_FR x 400 px/s out from the caster; an enemy hero is hit once, when the front reaches him,
        unless he is knocked out or IN THE AIR (Hanzo mid-leap: his own Storm still pending). The enemy fortress is hit when the front reaches its nose.
        Wall / dodge / DEF apply like the Storm. No hero positions (old non-shared mode): everything is in reach on the impact tick. Caster knocked out before the impact = no wave. */
+    if (gazeQ.length) { var gazeKeep = []; gazeQ.forEach(function (q) { if (q.at > tick) { gazeKeep.push(q); return; } /* v1726: Fear lands as the sword is planted */
+      var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oCd = q.sd === 'P' ? aiCd : playerCd;
+      if (!opp || isKo(mine, q.key)) return;
+      var best = null, bcd = 1e9; (oSt.actives || []).forEach(function (a2) { var e2 = opp.by[a2.key]; if (!e2 || e2.ko || e2.dead || e2.droid) return; var c2 = oCd[a2.key] == null ? 1e9 : oCd[a2.key]; if (c2 < bcd) { bcd = c2; best = e2; } }); /* the enemy hero closest to using their skill */
+      if (best) { best.stunT = Math.max(best.stunT || 0, tick + Math.max(1, Math.round(q.sec / dtS))); castEv.push((q.sd === 'P' ? 'p_' : 'a_') + q.key + ':gaze:' + best.id); } }); gazeQ = gazeKeep; }
     if (waveQ.length) { var waveKeep = []; waveQ.forEach(function (q) { if (tick < q.impact) { waveKeep.push(q); return; }
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oSd = q.sd === 'P' ? 'A' : 'P';
       if (tick === q.impact && isKo(mine, q.key)) return;
@@ -39233,7 +39260,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (q.sd === 'P') trAdd('skill:' + q.key + '|' + q.name, q.v); else trAddAi('skill:' + q.key + '|' + q.name, q.v); }); diveQ = diveKeep; }
     playerStats.actives.forEach(function (a) {
       if (isKo(pHH, a.key)) { playerCd[a.key] = a.cooldown; return; } // KO'd: skill timer sits at full until he revives
-      playerCd[a.key] -= cdStep;
+      playerCd[a.key] -= isStunned(pHH, a.key) ? 0 : cdStep; /* v1726: Fear pauses the timer */
       if (playerCd[a.key] <= 0) {
         if (a.requiresClose && (!canMelee(pHH, a.key) || castWaits('P', a.key))) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
         playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
@@ -39241,6 +39268,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         castHold('P', a.key); /* v1516: an infantry caster stops while his skill plays */
         if (a.dive) { diveStart('P', a, av); return; } /* v1514: Skybreaker Slam */
         if (a.aoe && a.slashes) { castEv.push('p_' + a.key); a.slashes.forEach(function (sl) { waveQ.push({ impact: tick + Math.max(1, Math.round(sl.at / dtS)), sd: 'P', key: a.key, name: a.name, v: av * sl.part, hit: {}, fort: false, ground: true, spd: a.slashSpd || 1.1, slash: true, prog: tomLeapProg(sl.at * 1000), h0: sl.h0 || 96, img: sl.img }); }); return; } /* v1692: Tom's two slashes - each hits only what it passes through */
+        if (a.gaze) gazeQ.push({ at: tick + Math.max(1, Math.round((a.gaze.at != null ? a.gaze.at : a.wave ? a.wave.impact : 0) / dtS)), sd: 'P', key: a.key, sec: a.gaze.sec }); /* v1726: Fear */
         if (a.aoe && a.wave) { castEv.push('p_' + a.key); waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'P', key: a.key, name: a.name, v: av, hit: {}, fort: false, ground: a.wave.ground !== false, spd: a.wave.spd || WAVE_SPEED_FR }); return; } /* v1507: Sunforge Slam - hits what the fire reaches */
         if (a.aoe) { castEv.push('p_' + a.key); stormQ.push({ at: tick + aoeTicks(a), sd: 'P', key: a.key, name: a.name, v: av }); return; } /* v993: Shuriken Storm - he leaps first; lands HANZO_LEAP_SEC later (stormLand) */
         if (!a.requiresClose || canMelee(pHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(pHH, aHH, aiStats, a.key, av, 'p_')) { playerDmg += av; trAdd('skill:' + a.key + '|' + a.name, av); } if (a.splash) { splashFort = 0; var kMp = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (splashFort) { playerDmg += splashFort; trAdd('skill:' + a.key + '|' + a.name, splashFort); splashFort = 0; } /* v1697: close-range skill hits on the fortress are now labelled in the damage log (dev trace only - no gameplay change) */ if (kMp && a.salvage) playerCd[a.key] -= kMp * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['p_' + a.key]; } if (rangedHit(pHH, aHH, aiStats, a.key, av, skTgt, 'p_')) { playerDmg += av; projP += av; } if (a.splash) { if (skTgt['p_' + a.key] == null) skTgt['p_' + a.key] = "fort"; var kP = splashHit(a, aHH, aiStats, av, skTgt['p_' + a.key], false); if (kP && a.salvage) playerCd[a.key] -= kP * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { playerDmg += av; if (a.requiresClose) playerMeleeDmg += av; } trAdd('skill:' + a.key + '|' + a.name, av); }
@@ -39248,7 +39276,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     });
     aiStats.actives.forEach(function (a) {
       if (isKo(aHH, a.key)) { aiCd[a.key] = a.cooldown; return; }
-      aiCd[a.key] -= cdStep;
+      aiCd[a.key] -= isStunned(aHH, a.key) ? 0 : cdStep; /* v1726 */
       if (aiCd[a.key] <= 0) {
         if (a.requiresClose && (!canMelee(aHH, a.key) || castWaits('A', a.key))) { aiCd[a.key] = 0; return; }
         aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
@@ -39256,6 +39284,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         castHold('A', a.key); /* v1516 */
         if (a.dive) { diveStart('A', a, avA); return; } /* v1514 */
         if (a.aoe && a.slashes) { castEv.push('a_' + a.key); a.slashes.forEach(function (sl) { waveQ.push({ impact: tick + Math.max(1, Math.round(sl.at / dtS)), sd: 'A', key: a.key, name: a.name, v: avA * sl.part, hit: {}, fort: false, ground: true, spd: a.slashSpd || 1.1, slash: true, prog: tomLeapProg(sl.at * 1000), h0: sl.h0 || 96, img: sl.img }); }); return; } /* v1692: Tom's two slashes - each hits only what it passes through */
+        if (a.gaze) gazeQ.push({ at: tick + Math.max(1, Math.round((a.gaze.at != null ? a.gaze.at : a.wave ? a.wave.impact : 0) / dtS)), sd: 'A', key: a.key, sec: a.gaze.sec }); /* v1726 */
         if (a.aoe && a.wave) { castEv.push('a_' + a.key); waveQ.push({ impact: tick + Math.max(1, Math.round(a.wave.impact / dtS)), sd: 'A', key: a.key, name: a.name, v: avA, hit: {}, fort: false, ground: a.wave.ground !== false, spd: a.wave.spd || WAVE_SPEED_FR }); return; } /* v1507 */
         if (a.aoe) { castEv.push('a_' + a.key); stormQ.push({ at: tick + aoeTicks(a), sd: 'A', key: a.key, name: a.name, v: avA }); return; } /* v993 */
         if (!a.requiresClose || canMelee(aHH, a.key)) { if (posMode && a.requiresClose) { if (meleeHit(aHH, pHH, playerStats, a.key, avA, 'a_')) aiDmg += avA; if (a.splash) { splashFort = 0; var kMa = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (splashFort) { aiDmg += splashFort; splashFort = 0; } if (kMa && a.salvage) aiCd[a.key] -= kMa * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } /* v1480: Bram's Piston Slam splash */ else if (posMode) { if (a.splash) { delete skTgt['a_' + a.key]; } if (rangedHit(aHH, pHH, playerStats, a.key, avA, skTgt, 'a_')) { aiDmg += avA; projA += avA; } if (a.splash) { if (skTgt['a_' + a.key] == null) skTgt['a_' + a.key] = "fort"; var kA = splashHit(a, pHH, playerStats, avA, skTgt['a_' + a.key], false); if (kA && a.salvage) aiCd[a.key] -= kA * a.salvage / (shared ? 1 : ARENA_TICK_MS / 1000); } } else { aiDmg += avA; if (a.requiresClose) aiMeleeDmg += avA; } trAddAi('skill:' + a.key + '|' + a.name, avA); }

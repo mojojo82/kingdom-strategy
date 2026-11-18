@@ -117,6 +117,22 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                  "idle": {"fps": 8, "frames": [0]}, "enter": {"clip": "blockin", "fps": 24, "frames": list(range(12, 37, 2))},   # v1679: sword comes across his body into the high guard (0.54 s)
                  "skill": {"clip": "blockhold", "fps": 12, "frames": list(range(0, 48, 3))},
                  "knock": {"fps": 24, "frames": list(range(0, 152, 8)), "own_scale": 457 / 396}},   # v1680: knock-back (from the guard, slides back; the slide itself is taken out and done by the game)
+       # v1726 Baelgor (art folder siphon, per-clip scale from meta.json; built sharp: STAND 240 sheet px for ~40 CSS px = 2 sheet px per phone px).
+       # idle = breath loop (video 1-95); run = one 2-step stride (40-71); attack = chop v3 even-timed (31 frames, 24 fps = 1.29 s, hit on 14) - the return runs to
+       # the clip's last frame so the cape has settled when the idle takes over
+       "siphon": {"tag": "v1", "stand": 230, "disp_stand": 40, "per_clip": True, "base_canvas": True, "wrap": 8,
+                 "idle": {"fps": 6, "frames": list(range(1, 95, 4))}, "run": {"fps": 12, "frames": list(range(40, 72, 2))},
+                 "attack": {"fps": 24, "frames": [4, 8, 11, 15, 19, 22, 26, 52, 56, 60, 63, 67, 71, 74, 78, 81, 140, 144, 147, 151, 155, 158, 162, 166, 169, 173, 176, 180, 184, 187, 191]}},
+       # Fear (own sheet): lift (36-72 at 1.5x), short hold (72-104 at 4x), drive down + kneel (104-132 at 1.5x, sword planted ~118 = frame 28 = 1.72 s -> 4 Arena ticks,
+       # one tick before Hanzo's Storm lands), kneel (132-164 at 2x), pull out + rise (fear_rise 48-114 at 1.8x); 16 fps, ~4.3 s
+       "siphon_skill": {"hero": "siphon", "tag": "v1", "stand": 220, "disp_stand": 40, "per_clip": True, "base_canvas": True, "canvas": 2, "wrap": 9,
+                 "idle": {"fps": 8, "frames": [0]},
+                 "skill": {"clip": "fear_plunge", "fps": 16, "parts": [["fear_plunge", [int(round(36 + i * 1.5 * 24 / 16)) for i in range(16)] + [int(round(72 + i * 4 * 24 / 16)) for i in range(5)]
+                                                                   + [int(round(104 + i * 1.5 * 24 / 16)) for i in range(12)] + [int(round(132 + i * 2 * 24 / 16)) for i in range(11)]],
+                                                                  ["fear_rise", [int(round(48 + i * 1.8 * 24 / 16)) for i in range(25)]]]}},
+       # drain leap (own sheet, not used yet - the skill isn't designed): every 3rd frame at 8 fps, STAND 160 (rebuild sharp with the final timing)
+       "siphon_drain": {"hero": "siphon", "tag": "v1", "stand": 160, "disp_stand": 40, "per_clip": True, "base_canvas": True, "canvas": 3, "wrap": 12,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "drain", "fps": 8, "frames": list(range(0, 192, 3))}},
        "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
                  "idle": {"step": 3, "fps": 8}, "run": {"step": 1, "fps": 24, "from": 38, "to": 63},
                  "attack": {"fps": 24, "frames": list(range(8, 37, 2)) + list(range(52, 69, 2))},
@@ -152,6 +168,7 @@ for st in ROWS:
         ims = out; SLIDE[st] = [round((x - KX[0]) * sc * CFG["disp_stand"] / m0["stand"], 2) for x in KX]   # how far he slid (game px at hero scale 1, minus = backwards)
     elif META:   # every clip onto one doubled canvas at the idle clip's scale and feet point, so one cell / anchor fits all rows
         m0 = META["idle"]; m = m0 if CFG.get("same_space") else META[c.get("clip", st)]; sc = m0["stand"] / m["stand"]; W0, H0 = ims[0].size; out = []
+        if CFG.get("base_canvas") and "idle" in rows: W0, H0 = round(rows["idle"][0].size[0] / CFG.get("canvas", 2)), round(rows["idle"][0].size[1] / CFG.get("canvas", 2))   # v1726: one canvas for every row (Baelgor's drain frames are taller than the idle clip)
         for im in ims:
             big = im.resize((round(W0 * sc), round(H0 * sc)), Image.LANCZOS) if abs(sc - 1) > 1e-3 else im
             CF = CFG.get("canvas", 2); canv = Image.new("RGBA", (round(W0 * CF), round(H0 * CF)), (0, 0, 0, 0))  # v1502: canvas factor (a high jump scaled up needs more room)
@@ -178,7 +195,7 @@ W = CFG.get("wrap") or max(1, int(np.ceil(max(len(r) for r in rows.values()) / 2
 ridx, pr = {}, 0
 for st in ROWS: ridx[st] = (pr + 1) // 2; pr = ridx[st] * 2 + int(np.ceil(len(rows[st]) / W))
 assert W * cw <= 4096, "sheet wider than 4096"
-assert pr * ch <= 4096, "sheet taller than 4096 (%d)" % (pr * ch)
+assert pr * ch <= 4096, "sheet taller than 4096 (%d; cell %dx%d, rows %d)" % (pr * ch, cw, ch, pr)
 sheet = Image.new("RGBA", (W * cw, pr * ch), (0, 0, 0, 0))
 for st in ROWS:
     for f, im in enumerate(rows[st]):

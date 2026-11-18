@@ -67,9 +67,17 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        "tom": {"clips": {"idle": ("silverblade_idle_v1.mp4", 0, 0), "run": ("silverblade_run_v1.mp4", 0, 0), "attack": ("silverblade_attack_rising_v1.mp4", 0, 0),
                          "attack2": ("silverblade_attack2_v1.mp4", 0, 0), "skill": ("silverblade_skill_v2.mp4", 0, 0),
                          "blockin": ("silverblade_hblock_in_v1.mp4", 0, 0), "blockhold": ("silverblade_hblock_hold_v1.mp4", 0, 0), "knock": ("silverblade_knockback_v2.mp4", 0, 0)},   # v1680: knock-back (long canvas)
-                 "stand_src": 465, "feet_y": 721}}[HERO]
+                 "stand_src": 465, "feet_y": 721},
+       # v1726 Baelgor (art folder "siphon"; green screen): idle + run from the full-size shoulder-stance frame; chop v3, Fear plunge + rise from the
+       # roomy-canvas frame (62%); drain leap = the lowered-canvas clip with the sword tip rebuilt + touchdown lifted (dev/heroes/baelgor_tip_fix.py, lossless
+       # copy made on the fly - set DRAIN=path). per-clip meta (different start sizes) -> build_hero_anim per_clip.
+       "siphon": {"bg": "green", "clips": {"idle": ("siphon_idle_v1.mp4", 0, 0), "run": ("siphon_run_TL_v1.mp4", 0, 0), "attack": ("siphon_attack_over_canvas_v3.mp4", 0, 0),
+                          "fear_plunge": ("siphon_fear_ground_canvas_v1.mp4", 0, 0), "fear_rise": ("siphon_fear_rise_canvas_v1.mp4", 0, 0),
+                          "drain": (os.environ.get("DRAIN", "siphon_skill_low_fixed_v1.mkv"), 0, 0)},
+                 "stand_src": 575, "feet_y": 695}}[HERO]
 GREEN = CFG.get("bg") == "green"
-META = {}   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
+META = {}
+if os.environ.get("ONLY") and os.path.exists(os.path.join(ROOT, "art/originals/heroes", sys.argv[1], "large", "meta.json")): META = json.load(open(os.path.join(ROOT, "art/originals/heroes", sys.argv[1], "large", "meta.json")))   # per clip, measured on its first frame (= the start frame): body height (rows wider than 12 px - thin steam wisps don't count), feet line, feet centre
 HD = os.path.join(ROOT, "art/originals/heroes", HERO); OUT = os.path.join(ROOT, "art/heroes", HERO)
 os.makedirs(OUT, exist_ok=True)
 def ss(t): t = np.clip(t, 0, 1); return t * t * (3 - 2 * t)
@@ -99,7 +107,8 @@ new_sheet()
 feet_x = None
 for clip, (fn, FR, FT) in CFG["clips"].items():
     tmp = tempfile.mkdtemp()
-    subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(HD, "clips", fn), os.path.join(tmp, "%04d.png")], check=True)
+    if HERO == "siphon" and os.environ.get("ONLY") and clip not in os.environ["ONLY"].split(","): continue
+    subprocess.run(["ffmpeg", "-v", "error", "-i", fn if os.path.isabs(fn) else os.path.join(HD, "clips", fn), os.path.join(tmp, "%04d.png")], check=True)
     large = os.path.join(HD, "large", clip); os.makedirs(large, exist_ok=True)
     frames = []
     for i, f in enumerate(sorted(glob.glob(os.path.join(tmp, "*.png")))):
@@ -120,6 +129,7 @@ for clip, (fn, FR, FT) in CFG["clips"].items():
         frames.append([len(sheets) - 1, x, y, w, h, round((bb[0] - feet_x) * k, 2), round((bb[1] - CFG["feet_y"]) * k, 2)])
         x += w + PAD; rowh = max(rowh, h); sheets[-1][1] = max(sheets[-1][1], y + rowh)
     man["clips"][clip] = frames; print(clip, len(frames), "frames", META.get(clip))
+    import shutil; shutil.rmtree(tmp, ignore_errors=True)   # v1726: don't leave the extracted PNGs behind (filled the disk)
     json.dump(META, open(os.path.join(HD, "large", "meta.json"), "w"), indent=1)
 if not SHEETS: sys.exit(0)
 files = []

@@ -58,7 +58,18 @@ for i, f in enumerate(fr):
             y0 = max(0, PAD - rows - 6); big[y0:PAD] = cv2.GaussianBlur(big[y0:PAD], (7, 7), 0)
         print(i, "lean %.2f" % k, "cut width %.0f (real %.0f)" % (w_top, w_true), "rebuilt %.0f px along the blade" % Lm)
     out.append(big)
+# optional: lift touchdown frames whose feet sink below the standing ground line (env LIFT=first,last)
+if os.environ.get("LIFT"):
+    l0, l1 = [int(x) for x in os.environ["LIFT"].split(",")]
+    gl = np.where((alpha(out[0]) > 0.5).any(1))[0].max()
+    for i in range(l0, l1 + 1):
+        dip = np.where((alpha(out[i]) > 0.5).any(1))[0].max() - gl
+        if dip > 0: out[i] = cv2.warpAffine(out[i], np.float32([[1, 0, 0], [0, 1, -dip]]), (out[i].shape[1], out[i].shape[0]), borderValue=tuple(int(x) for x in bg)); print("lifted", i, dip)
 H, W = out[0].shape[:2]
 vw = cv2.VideoWriter(os.path.join(OUT, "fixed_raw.avi"), cv2.VideoWriter_fourcc(*"MJPG"), 24, (W, H))
 for f in out: vw.write(f)
 vw.release(); np.save(os.path.join(OUT, "bg.npy"), bg)
+if os.environ.get("LOSSLESS"):   # lossless copy for building the game frames
+    vw = cv2.VideoWriter(os.environ["LOSSLESS"], cv2.VideoWriter_fourcc(*"FFV1"), 24, (W, H))
+    for f in out: vw.write(f)
+    vw.release()

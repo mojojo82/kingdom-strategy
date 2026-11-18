@@ -26,7 +26,10 @@ for line in blk.split('\n'):
     if not p: continue
     disp = float(d.group(1)) * (float(sm.group(1)) if sm else 1); ri = int(r0.group(1)) * 2 if r0 else 0
     f = fig(Image.open(p).crop((0, ri * ch, cw, ri * ch + ch))); dev = round(f.size[1] / ch * disp * 3)
-    hero = re.sub(r'_(skill|block)$', '', k); lg = sorted(glob.glob('art/originals/heroes/%s/large/%s/*.webp' % (hero, 'skill' if k.endswith('_skill') else 'idle')))
+    hero = re.sub(r'_(skill|block|drain)$', '', k); fd = re.search(r'art/heroes/([a-z0-9_]+)/', fm.group(1)); hero = fd.group(1) if fd else hero   # v1726: art folder (Baelgor lives in siphon/)
+    sub = 'idle'
+    if k.endswith('_skill'): sub = 'skill' if os.path.isdir('art/originals/heroes/%s/large/skill' % hero) else 'idle'
+    lg = sorted(glob.glob('art/originals/heroes/%s/large/%s/*.webp' % (hero, sub)))
     ideal = fig(Image.open(lg[0]).convert('RGBA')) if lg and not k.endswith('_block') else f
     e_b = lap(browser(f, dev)); e_i = lap(ideal.resize((max(1, round(ideal.size[0] * dev / ideal.size[1])), dev), Image.LANCZOS))
     out.append((k, round(ch / (disp * 3), 2), round(100 * e_b / e_i) if e_b and e_i else None, round(e_i, 1) if e_i else None, 'model3d' in line, bool(lg)))
