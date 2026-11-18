@@ -5912,3 +5912,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Troops 300 per player: 15v15 ~31 s, ~29 heroes used per side, 54%; 15 vs 10/5/1 = 100%.
 - No troops: 15v15 runs to the time limit, ~42 heroes used per side; 15 vs 1 / 5 = 100%.
 - Takeaway: with pooled troops, the side with more troops wins outright and the line barely matters once troops are in the thousands. The hero line only matters when troops are small or scaled down.
+
+### (after v1722) Rally power test: strong solo defender vs weak 15-player rally
+- dev/balance/rally_power.js (hero-line prototype). Rally = 15 players, Lv40 heroes (10*, skills 3), T3 troops, 3,000 each = 45,000. Defender = one player, Lv80 heroes (25*, skills 5), T10 troops. 12 fights per row. results/rally_power.json.
+- Linear troop damage (now): solo T10 3,000 -> rally wins 100%; T10 9,000 -> 79%; T10 9,000 + 100% ATK/HP -> 0%; T10 30,000 + 100% -> 0%.
+- Square-root troop damage (each side's troop damage x sqrt(3000 / its troop count), never above 1x): solo T10 3,000 -> rally 92%; T10 9,000 -> 0%; with bonuses 0%. Fights last longer (9-13 s instead of 4-5 s).
+- Found while testing: WORLD_PVP_MAX_TICKS = ARENA_MAX_TICKS * 2 is set on line ~23343 BEFORE ARENA_MAX_TICKS exists (~38655), so it is NaN and arenaMakeSim falls back to ARENA_MAX_TICKS: world PvP fights currently get the 60 s Arena limit, not the intended 120 s. Not fixed (needs Harley's OK).
