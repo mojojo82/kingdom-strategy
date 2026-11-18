@@ -25,3 +25,18 @@ Started 19 Nov 2026 with Harley. Nothing built yet.
 
 ## Next step
 - Prototype in `dev/balance` only: 15x5 line vs a 5-hero defender, with and without a garrison line; report odds and fight length.
+
+## Prototype results (19 Nov, `dev/balance/rally_line_proto.js`)
+Lv80, random 5 heroes per player, 12 fights per row, hero line + pooled troops on both sides. Benched heroes deal no damage (checked).
+
+| Troops per player | 15 v 15 | 15 v 10 | 15 v 5 | 15 v 1 | 15 v 15 fight length | Heroes used per side (15 v 15) |
+|---|---|---|---|---|---|---|
+| 3,000 | 63% | 100% | 100% | 100% | ~7 s | ~13 of 75 |
+| 300 | 54% | 100% | 100% | 100% | ~31 s | ~29 of 75 |
+| 0 | 46% | 25%* | 100% | 100% | hits the time limit | ~42 of 75 |
+
+\* decided at the time limit (the prototype used the 60 s Arena limit; world PvP is 120 s).
+
+- With thousands of pooled troops, troops do ~97% of the damage, the fight is over in seconds, and most of the line never gets used: the side with more troops wins outright.
+- The hero line matters when troops are small (or scaled down for rallies).
+- Open questions from this: how much troops vs heroes should decide a rally (e.g. troop damage with diminishing returns as the rally grows, or a lower rally troop cap), and the time limit / tie-break for long hero-heavy fights.
