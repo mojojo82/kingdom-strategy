@@ -5904,3 +5904,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: leave Iron Lily as is - her niche is the counter-pick vs ranged-heavy teams and the anchor of melee line-ups. Do not buff her for mixed-team strength.
 
 ### (after v1722) Rally design started: dev/RALLY_DESIGN.md (hero line / reinforcement queue, join order + leader can reorder).
+
+### (after v1722) Rally hero-line prototype (balance scripts only)
+- dev/balance/rally_line_proto.js: each side's heroes queue in join order (clone keys per player), 5 on the field, a knocked-out hero stays out and the next walks in with a full skill timer; troops pooled per side (worldPvpAddTroops with the leader's 5 for lead bonuses); side-wide numbers (dmgMult, base HP) from the leader's 5. Checked: benched heroes deal 0 damage. Lv80 25* skills 5, random 5 heroes per player, 12 seeds per row. results/rally_line_proto.json.
+- Note: maxTicks came through as NaN in the page, so fights used the default ~60 s Arena limit (world PvP is 120 s) - heroes-only fights were decided at that limit.
+- Troops 3,000 per player: 15v15 lasts ~7 s, only ~13 of 75 heroes get used; 15 vs 10/5/1 = 100% rally. Troops do ~97% of the damage (15v15 trace: troops 148k, heroes 4.3k).
+- Troops 300 per player: 15v15 ~31 s, ~29 heroes used per side, 54%; 15 vs 10/5/1 = 100%.
+- No troops: 15v15 runs to the time limit, ~42 heroes used per side; 15 vs 1 / 5 = 100%.
+- Takeaway: with pooled troops, the side with more troops wins outright and the line barely matters once troops are in the thousands. The hero line only matters when troops are small or scaled down.
