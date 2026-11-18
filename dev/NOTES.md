@@ -5875,3 +5875,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Overhead v3 (Harley: should follow through more): clips/siphon_attack_over_v3.mp4 - lifts straight up, holds (24-54), chop 56-68, follow-through low with the tip near the ground and a deep lean (68-128), return 128-152. Side view, full blade, no edges. Game-speed preview (0.96 s per swing, hit 0.42 s): clips/siphon_attack_over_gamespeed_v3.mp4. Atlas ~$6.13 left.
 
 - Harley picked C for the overhead chop: clips/siphon_attack_over_v3.mp4, motion frames 9-24 + 54-73 + 128-152 (holds removed) sampled evenly to 31 frames at 24 fps (~1.3 s). Attack interval for Baelgor: 1.35 s (3 Arena ticks) via COMBAT_TIMING.heroAttackSec, hit scaled so DPS is unchanged.
+
+- Fear rise (pull sword out, stand, back to shoulder): clips/siphon_fear_rise_v1.mp4 (Image = kneel fear_end_small_v1, End = idle fear_start_small_v1). Kneel still until frame 58, rise + pull out + shoulder 58-124, side view, no edges. Whole move joined: fear/fear_full_preview_v1.mp4 (plunge v4 at 1.25x, kneel ~1.25 s, rise at 1.25x). Atlas ~$5.52 left.
