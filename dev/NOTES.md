@@ -5824,3 +5824,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ### (after v1721) Test: stun freezes airborne heroes + pauses timers
 - Harley's rule: a stun freezes an airborne opponent in the air and pauses his timers. dev/balance/hanzo_freeze_stun.js: while Hanzo is stunned mid-leap his pending Storm is paused (lands later by the stun time); skill timers already pause while stunned.
 - Results (results/hanzo_freeze_stun.json, 40 fights Lv80): 2/4/8 s stun all 5% win (was 0%). Hanzo hangs frozen ~1.8 s, then Baelgor's riders KO him in the air, so the opening Storm never lands - same outcome as the cancel rule. Baelgor still dies ~2.7 s in; the Hanzo team wins the long fight.
+
+### (after v1721) Test: maxed Baelgor + chunks of HP vs Hanzo team
+- Baelgor = Aurek copy, Lv80 / 25 stars / skill Lv5, Fear = 4 s gaze stun with the freeze rule (airborne heroes freeze, timers pause). Extra HP added on top of his 1,380. 40 fights each, no weapons. dev/balance/baelgor_hp_chunks.js + _fine.js, results/baelgor_hp_chunks*.json.
+- Win % vs Hanzo team: +0 5, +250 8, +500 20, +750 25, +1000 48, +1250 60, +1500 75, +1750 83, +2000 100. Tide turns at ~+1000 (2,380 HP = he survives the riders' opening volley, then gets 1.4-3 Fears a fight instead of 1).
+- vs Aurek team and Pip team his team already wins 93-100% at +0 (Fear stun), 100% from +1000.
