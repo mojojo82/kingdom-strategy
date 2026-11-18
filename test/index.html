@@ -4726,6 +4726,7 @@ try { heroAtkSlotsOn = localStorage.getItem(HERO_ATK_SLOTS_KEY) !== "0"; } catch
 // Heroes whose first Arena skill waits for the FULL cooldown (like Conquest) instead of being ready at the start of the fight.
 COMBAT_TIMING.skillStartsFull = { gareth: true };
 function skillStartsFull(key) { return skillFullCdOn && !!COMBAT_TIMING.skillStartsFull[key]; }
+function heroMagicHp(key, h) { var d = HERO_DEFS[key]; return d && d.hpPlusAtMax && h && (h.level || 1) >= HERO_MAX_LEVEL ? d.hpPlusAtMax : 0; } /* v1729 (Harley, temporary): Hanzo +1 HP at max level so Baelgor's Fear (most HP) picks him */
 function heroSkillAnimSec(key) { /* v1728: how long a hero's skill animation plays (s) - his skill timer waits for it (Arena + Conquest) */
   if (typeof HERO_ANIMS === "undefined") return 0; var A = HERO_ANIMS[key + "_skill"]; if (A && A.rows && A.rows.skill) return A.rows.skill[1] / ((A.fps && A.fps.skill) || 24);
   var B = HERO_ANIMS[key]; if (B && B.rows) { var r = B.rows.skill || B.rows.cast; if (r) return r[1] / ((B.fps && (B.fps.skill || B.fps.cast)) || 24); } return 0; }
@@ -6509,7 +6510,7 @@ var I18N_HERO = { ru: {
   hanzo: ["Ханзо", "Шторм сюрикенов", "Каждые 8 с (5 с на ур. 5) Ханзо взмывает и обрушивает сюрикены на всех врагов, включая крепость. Щиты от снарядов их блокируют."],
   ironlily: ["Железная Лили", "Багровая буря", "Каждые 12 с — яростный вихрь ударов меча: тяжёлый урон всему, до чего достаёт её меч в радиусе ударов — враги, бойцы ближнего боя, крепости и боссы (120%, 400% на ур. 5)."],
   vesper: ["Веспер", "Орбитальный патч", "Каждые 12 с программирует удар с неба: лучи света один за другим падают по всей вражеской стороне, каждый враг получает удар, когда его достигает луч, включая крепость. Проекционная стена защищает от них стрелков."],
-  baelgor: ["Баэлгор", "Страх", "Каждые 12 с вонзает меч в землю: удар бежит по земле и бьёт всех врагов, включая крепость. Вражеский герой, ближе всех к своему навыку, оглушён на 4 с - не двигается и не атакует, даже в воздухе, а таймер его навыка стоит."],
+  baelgor: ["Баэлгор", "Страх", "Каждые 12 с вонзает меч в землю: удар бежит по земле и бьёт всех врагов, включая крепость. Вражеский герой с наибольшим здоровьем оглушён на 4 с - не двигается и не атакует, даже в воздухе, а таймер его навыка стоит."],
   aurek: ["Аурек Солмейн", "Удар солнечной кузни", "Каждые 12 с вонзает меч в землю: столбы священного огня бегут по земле в обе стороны и бьют всех врагов, включая крепость. Проекционная стена защищает от них стрелков."],
   seraphine: ["Серафина Люкс", "Кристальный дождь", "Каждые 11 с вызывает ливень кристаллов по всей вражеской стороне: каждый враг получает удар, когда до него долетают осколки, включая крепость. Проекционная стена защищает от них стрелков."],
   halo7: ["Хейло-7", "Луч ядра", "Каждые 13 с выпускает из ядра в груди огромный луч через всё поле: бьёт каждого врага, до которого дотянется, включая крепость (героя в прыжке луч не задевает). Проекционная стена защищает от него стрелков."],
@@ -6692,7 +6693,7 @@ var HERO_DEFS = {
   // Skill 1 Shuriken Storm: leaps up and hits EVERY enemy on screen (Conquest: all live enemies; Arena: every enemy hero/summon AND the enemy fortress),
   // no range limit. Tuned so level 3 is worrying, 4 dominant, 5 a force of nature. Skill 2 Shadow Step: dodges 10% of attacks per level (no dice -
   // an even spread, 50% = every 2nd hit misses). Same rules in Conquest and Arena. No art yet (placeholder like Torvald) - mockup first.
-  hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true, noUniversal: true /* v1653: only his own fragments */,
+  hanzo: { name: "Hanzo", title: "The Shadow Blade", class: "infantry", icon: "🥷", rarity: "Legendary", vipOnly: true, noUniversal: true /* v1653: only his own fragments */, hpPlusAtMax: 1, /* v1729 (Harley, temporary cheat - "i will change this later"): +1 HP at max level, so Fear (enemy with the most HP) targets him */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       { name: "Shuriken Storm", icon: "🥷✴️", kind: "active", aoeAll: true, aoeDelay: 35 / 24 + 0.6, cooldown: 8, cdByLevel: [8, 8, 8, 8, 5], pctByLevel: [0.60, 0.90, 1.40, 2.20, 3.50], desc: "Every 8s (5s at Lv 5), Hanzo leaps and rains shuriken on every enemy, fortress included. Projectile shields block them." },
@@ -6752,9 +6753,9 @@ var HERO_DEFS = {
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       /* Fear: drives his greatsword into the ground (Sunforge Slam's numbers: hits every enemy the ground shock reaches, fortress included) and the enemy hero
-         closest to using their skill is STUNNED for 4 s - can't move or attack, skill timer paused, a hero in the air (Hanzo mid-leap) freezes there.
+         with the most HP is STUNNED for 4 s (v1729; was: closest to using their skill) - can't move or attack, skill timer paused, a hero in the air (Hanzo mid-leap) freezes there.
          Lands when the sword is planted (1.72 s into his cast = 4 Arena ticks, one before Hanzo's Storm). Conquest: the enemy closest to its next attack waits 4 s more. */
-      { name: "Fear", icon: "👁️", kind: "active", aoeAll: true, wave: { impact: 1.72 }, gaze: { sec: 4 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, drives his greatsword into the ground: the shock runs along the ground both ways and hits every enemy it reaches, fortress included (a hero in the air is missed). The enemy hero closest to using their skill is stunned for 4s - frozen in place, even in mid-air, their skill timer paused." }
+      { name: "Fear", icon: "👁️", kind: "active", aoeAll: true, wave: { impact: 1.72 }, gaze: { sec: 4 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, drives his greatsword into the ground: the shock runs along the ground both ways and hits every enemy it reaches, fortress included (a hero in the air is missed). The enemy hero with the most HP is stunned for 4s - frozen in place, even in mid-air, their skill timer paused." }
     ],
     expeditionSkills: [
       { name: "Dread Banner", icon: "🚩", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
@@ -9366,7 +9367,7 @@ function createGame(opts) {
     var h = state.heroes[key];
     if (!h || !h.owned) return 0;
     var cmH = cardModsFrom(state), infHpC = (HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") ? (cmH.infHp || 0) : 0; /* v989: card 12 */
-    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * ((HERO_DEFS[key] && HERO_DEFS[key].hpMult) || 1) /* v1520: per-hero base HP (like atkMult) */ * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC) * (1 + (cmH.allHp || 0)))); /* v990: card 15 (clones/gerbils are built from this) */
+    return Math.max(1, Math.round((HERO_KO_CFG.baseHp + heroPowerLevel(h) * HERO_KO_CFG.hpPerPower) * ((HERO_DEFS[key] && HERO_DEFS[key].hpMult) || 1) /* v1520: per-hero base HP (like atkMult) */ * (1 + fortressBonusFrom(state.fortressTech || {}).hp) * heroBonusMult("hp") * (1 + infHpC) * (1 + (cmH.allHp || 0)))) + heroMagicHp(key, h); /* v990: card 15 (clones/gerbils are built from this); v1729: Hanzo's +1 */
   }
   function idleHeroEntry(key) {
     if (!state.idle.heroHp) state.idle.heroHp = {};
@@ -14389,7 +14390,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1728"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1729"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38753,7 +38754,7 @@ function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayer
     var isInfantry = def.class === "infantry";
     attackersRaw.push({ id: key, dmg: heroPowerLevel(h) * atkPerPowerV * bnA * (def.atkMult || 1) * (1 + (fb.heroDmg || 0)) /* v1474: Fortress II hero damage (skills ride on this hit) */ * (isInfantry ? ARENA_MELEE_ATK_MULT : 1) /* what-if switch (1 = off) */, melee: isInfantry });
     hp += heroPowerLevel(h) * ARENA_FORT_HP_PER_POWER; /* v956: fortress HP grows with the team's hero power */
-    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH)), def: heroDefNetOwn(key, h, bnD), rt: heroRangedTakeMult(key, h) /* v1521 */, blockMelee: heroBlockPct(key, h), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
+    if (arenaHeroHp) { var kc = game.heroKoCfg; heroHpList.push({ id: key, infantry: isInfantry, max: Math.max(1, Math.round((kc.baseHp + heroPowerLevel(h) * kc.hpPerPower) * (def.hpMult || 1) /* v1520 */ * (1 + fb.hp) * bnH) + heroMagicHp(key, h) /* v1729 */), def: heroDefNetOwn(key, h, bnD), rt: heroRangedTakeMult(key, h) /* v1521 */, blockMelee: heroBlockPct(key, h), dodge: heroDodgePct(key, h) }); } // same formula as Conquest's idleHeroMaxHp(): own HP bar, not part of the fortress pool
     else hp += heroPowerLevel(h) * 8;
     def.conquestSkills.forEach(function (skill, idx) {
       var lvl = (h.skillLevels && h.skillLevels.conquest && h.skillLevels.conquest[idx]) || 1;
@@ -39229,7 +39230,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (gazeQ.length) { var gazeKeep = []; gazeQ.forEach(function (q) { if (q.at > tick) { gazeKeep.push(q); return; } /* v1726: Fear lands as the sword is planted */
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oCd = q.sd === 'P' ? aiCd : playerCd;
       if (!opp || isKo(mine, q.key)) return;
-      var best = null, bcd = 1e9; (oSt.actives || []).forEach(function (a2) { var e2 = opp.by[a2.key]; if (!e2 || e2.ko || e2.dead || e2.droid) return; var c2 = oCd[a2.key] == null ? 1e9 : oCd[a2.key]; if (c2 < bcd) { bcd = c2; best = e2; } }); /* the enemy hero closest to using their skill */
+      var best = null; opp.list.forEach(function (e2) { if (e2.ko || e2.dead || e2.droid) return; if (!best || e2.max > best.max || (e2.max === best.max && e2.hp > best.hp)) best = e2; }); /* v1729 (Harley): the enemy hero with the most HP (max HP, then HP left) */
       if (best) { best.stunT = Math.max(best.stunT || 0, tick + Math.max(1, Math.round(q.sec / dtS))); castEv.push((q.sd === 'P' ? 'p_' : 'a_') + q.key + ':gaze:' + best.id); } }); gazeQ = gazeKeep; }
     if (waveQ.length) { var waveKeep = []; waveQ.forEach(function (q) { if (tick < q.impact) { waveKeep.push(q); return; }
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oSd = q.sd === 'P' ? 'A' : 'P';
