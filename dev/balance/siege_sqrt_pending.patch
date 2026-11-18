@@ -1,0 +1,33 @@
+diff --git a/test/index.html b/test/index.html
+index a12cc0cb..1d022f85 100644
+--- a/test/index.html
++++ b/test/index.html
+@@ -17598,7 +17598,7 @@ function bossSimStatsFor(pc) {
+   var a = pvpSimBuildSide(pc, false);
+   var keys = a.heroKeys.filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills; });
+   var st = arenaSideStats(keys, a.sim.state.heroes, a.sim.state.buildings.townhall.level, 0, true, pc.esper || null, pvpSimFortMap(pc.fort), pc.atkPerPower);
+-  worldPvpAddTroops(st, a.army, {}, keys, a.sim, 0);
++  worldPvpAddTroops(st, a.army, {}, keys, a.sim, 0, WORLD_PVP_TROOP_SQRT_REF); /* v1725: square-root troop damage, same as world PvP and siege */
+   if (pc.critRate != null && st.critRate > 0) st.critRate = pc.critRate / 100;
+   st.maxHp = 1e15; st.dmgTakenMult = 1; // the boss never hurts you; your own HP is irrelevant
+   return st;
+@@ -20482,7 +20482,7 @@ function sgRallyBattle(r, L) {
+   var keys = (r.heroes || []).filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills && S.heroes[k] && S.heroes[k].owned; }).slice(0, 5);
+   var fortT = r.fort ? fortMapAs(S.fortressTech, r.fort) : (S.fortressTech || {});
+   var st = arenaSideStats(keys, S.heroes, S.buildings.townhall.level, arenaBaseHpPlayer, true, S.equippedEsper || null, fortT, undefined, bonusOf(L));
+-  var army = sgRallyArmy(r); worldPvpAddTroops(st, army, {}, keys, L, 0);
++  var army = sgRallyArmy(r); worldPvpAddTroops(st, army, {}, keys, L, 0, WORLD_PVP_TROOP_SQRT_REF); /* v1725 (Harley): square-root troop damage here too, like Kingshot Bear Trap */
+   var boss = arenaSideStats([], {}, 1, 0, false, null, null, undefined, ZERO_BONUS); boss.maxHp = KAIJU_INF; boss.kaiju = true;
+   boss.dmgTakenMult = (boss.dmgTakenMult || 1) * (1 + Math.min(75, me ? (equipBonus.boss || 0) : 0) / 100) * bossBonusMul(S); /* Boss Damage counts, like Boss Rush (gear bonus: only known for the player whose game this is) */
+   var B = sgBossCfg(), seed = "sg|" + (r.id || "rally");
+@@ -23359,8 +23359,8 @@ function worldPvpAddTroops(stats, army, enemyArmy, heroKeys, simRef, wallLevel,
+   function dominant(a) { return troopDominantType(a); }
+   var enemyDom = dominant(enemyArmy), extraHp = 0, defWeighted = 0, totalN = 0;
+   /* v1724 (Harley, rallies): square-root troop damage, like Kingshot. A side's troop damage is linear up to sqrtRef troops, then grows with the
+-     square root of the side's total troop count (4x the troops = 2x the damage). Troop HP stays linear. World PvP passes WORLD_PVP_TROOP_SQRT_REF;
+-     the siege boss rally and boss simulator pass nothing (unchanged). Full rules: dev/RALLY_DESIGN.md "How rallies are calculated". */
++     square root of the side's total troop count (4x the troops = 2x the damage). Troop HP stays linear. World PvP, the siege boss rally and the boss simulator
++     all pass WORLD_PVP_TROOP_SQRT_REF (v1725). Full rules: dev/RALLY_DESIGN.md "How rallies are calculated". */
+   var sideN = 0; for (var t0 in army) if (army[t0] > 0 && TROOP_DEFS[t0]) sideN += army[t0];
+   var sqrtF = (sqrtRef > 0 && sideN > sqrtRef) ? Math.sqrt(sqrtRef / sideN) : 1;
+   for (var t in army) {
