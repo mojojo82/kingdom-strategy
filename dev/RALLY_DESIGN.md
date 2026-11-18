@@ -1,13 +1,13 @@
 # Rally design (in progress)
 
-Started 19 Nov 2026 with Harley. Built so far: square-root troop damage (v1724). See "How rallies are calculated".
+Started 19 Nov 2026 with Harley. Built so far: square-root troop damage (v1724; siege + new siege rewards v1725). See "How rallies are calculated".
 
 ## Today
 - The only rallies are Alliance Siege rallies against the boss (`sgRallyBattle`): one Arena-style fight. The leader's 5 heroes, fortress, weapons and cards fight, and every member's troops are pooled into one army. Troop damage is shared by troops sent, and the rest goes to the leader. Up to 15 members.
 - There are no player-vs-player rallies yet; world PvP is one march against one city.
 
 ## How rallies are calculated (the rules - keep this up to date)
-Harley, 19 Nov 2026. This is the agreed maths for rally fights (and world PvP). Built so far: troop damage (v1724). The hero line is still design / prototype only.
+Harley, 19 Nov 2026. This is the agreed maths for rally fights (and world PvP). Built so far: troop damage (v1724), siege uses it + new siege rewards (v1725). The hero line is still design / prototype only.
 
 1. **One fight per rally, using the Arena engine** (no dice, 0.45 s ticks, 120 s time limit in world PvP).
 2. **Hero line:** every participant's heroes queue in join order (the leader can reorder). 5 are on the field; when one is knocked out, the next in line walks in. Defence works the same way (city owner + garrison, join order). *(prototype only)*
@@ -15,7 +15,15 @@ Harley, 19 Nov 2026. This is the agreed maths for rally fights (and world PvP). 
 4. **From every participant:** their heroes (own level, stars, skill levels) and their troops (count, tier, type mix). All troops on a side are pooled into one army.
 5. **Troop damage is square-root (built in v1724, like Kingshot):** a side's troop damage is normal up to **3,000 troops** (`WORLD_PVP_TROOP_SQRT_REF`), then grows with the square root of the side's total troops: 4x the troops = 2x the damage (12,000 troops hit like 6,000; 48,000 like 12,000). Code: `worldPvpAddTroops(..., sqrtRef)`.
 6. **Troop HP stays linear:** every troop still adds its full HP (and DEF to the side's armour). Big armies last longer, but don't win by headcount alone - quality (tier, bonuses, heroes) matters.
-7. **Where it applies:** world PvP (attacker and defender) now, and player rallies when they're built. Not (yet) the Alliance Siege boss rally or the boss simulator - they still use linear troop damage until Harley decides (it would lower big rallies' boss damage and so reward tiers).
+7. **Where it applies:** world PvP (attacker and defender), the Alliance Siege boss rally and the boss simulator (siege + simulator since v1725 - Harley: "we will just do the same on ours", like Kingshot Bear Trap). Player rallies will use it when they're built.
+8. **Accepted side effect (Harley, 19 Nov: "kingshot must just live with it"):** the square root is on the whole rally, so a bigger rally does more TOTAL damage but each member's share is smaller (4x the troops = 2x the damage, split 4 ways). Smaller rallies give each player a bigger slice. A leader can rally the siege boss alone (no minimum).
+
+### Alliance Siege rewards (v1725, Harley)
+- **Hunt ranking:** after each hunt, your final place in your alliance's damage ranking for that hunt pays a reward (default #1, #2-3, #4-10, #11-20, everyone else who hit). Equal damage = equal place.
+- **Lifetime damage milestones:** all siege damage you've ever done, never resets - an achievement list (default 1M ... 10B, 12 steps), each claimed once. Stored on the server (wallet.sgLife; claimed amounts in wallet.sgMs).
+- **Alliance tiers** (the whole alliance's damage in one hunt) stay, lowered for the new damage: 1, 5M, 25M, 100M, 300M, 1B.
+- All of it is editable in the admin console (Live events > Alliance Siege).
+- Damage after the change (one hit, `dev/balance/siege_rally.js`): 15 players Lv40 T6 100k troops 5.2M -> 1.5M; Lv80 T10 900k troops 167M -> 9.7M.
 
 Measured (v1724, `dev/balance/rally_power.js`, same numbers as the prototype): 15 players (Lv40, T3, 45,000 troops) vs one Lv80 T10 player with 9,000 troops - the rally won 79% with linear damage, 0% with square-root.
 

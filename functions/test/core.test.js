@@ -299,11 +299,17 @@ t("v1621 Season Pass: defaults (30 levels, 60 premium season-hero shards), sp_sh
   assert.throws(() => C.normalizeLiveops({ sp: { levels: [] } }), /at least one level/);
 });
 t("v1623 Alliance Siege: defaults, tiers, rally share and bonus", () => {
-  const L = C.normalizeLiveops({}); assert.strictEqual(L.sg.perWeek, 3); assert.strictEqual(L.sg.mins, 30); assert.ok(L.sg.personal.length >= 3 && L.sg.alliance.length >= 3);
-  assert.strictEqual(C.sgTier(L.sg.personal, 0), null); assert.strictEqual(C.sgTier(L.sg.personal, 5).dmg, 1, "taking part pays"); assert.strictEqual(C.sgTier(L.sg.personal, 2e6).dmg, 1e6);
-  const SG = C.normalizeLiveops({ sg: { dpp: 1, bonusPer: 0.1, bonusCap: 0.3, personal: [], alliance: [] } }).sg;
+  const L = C.normalizeLiveops({}); assert.strictEqual(L.sg.perWeek, 3); assert.strictEqual(L.sg.mins, 30); assert.ok(L.sg.rank.length >= 3 && L.sg.ms.length >= 5 && L.sg.alliance.length >= 3);
+  assert.strictEqual(C.sgTier(L.sg.alliance, 0), null); assert.strictEqual(C.sgTier(L.sg.alliance, 5).dmg, 1, "taking part pays");
+  /* v1725: hunt ranking (equal damage = equal place; to: 0 = everyone else) + lifetime milestones */
+  const dm = { a: 900, b: 500, c: 500, d: 10 }; assert.strictEqual(C.sgRankOf(dm, "a"), 1); assert.strictEqual(C.sgRankOf(dm, "c"), 2); assert.strictEqual(C.sgRankOf(dm, "d"), 4); assert.strictEqual(C.sgRankOf(dm, "zz"), 0);
+  assert.strictEqual(C.sgRankRow(L.sg.rank, 1).to, 1); assert.strictEqual(C.sgRankRow(L.sg.rank, 2).to, 3); assert.strictEqual(C.sgRankRow(L.sg.rank, 25).to, 0); assert.strictEqual(C.sgRankRow(L.sg.rank, 0), null);
+  assert.deepStrictEqual(C.normalizeLiveops({ sg: { ms: [{ at: 50, items: { food: 1 } }, { at: 5, items: { food: 2 } }] } }).sg.ms.map((m) => m.at), [5, 50]);
+  assert.throws(() => C.normalizeLiveops({ sg: { ms: [{ at: 0, items: { food: 1 } }] } }), /needs a damage amount/);
+  assert.ok(C.normalizeLiveops({ sg: { personal: [{ dmg: 5, items: { food: 1 } }] } }).sg.rank.length >= 3, "an old config without rank rows gets the default ranking");
+  const SG = C.normalizeLiveops({ sg: { dpp: 1, bonusPer: 0.1, bonusCap: 0.3, alliance: [] } }).sg;
   assert.strictEqual(C.sgShare(SG, 1000, 1, 0.5), 1000); assert.strictEqual(C.sgShare(SG, 1000, 3, 0.5), 1200); assert.strictEqual(C.sgShare(SG, 1000, 10, 0.5), 1300, "bonus capped");
-  assert.strictEqual(C.normalizeLiveops({ sg: { personal: [{ dmg: 5, items: { gems: 1 } }] } }).sg.personal[0].items.gems, 1);
+  assert.strictEqual(C.normalizeLiveops({ sg: { alliance: [{ dmg: 5, items: { gems: 1 } }] } }).sg.alliance[0].items.gems, 1);
 });
 t("v1625 event rewards on the server: gems allowed in rewards, never in shops; item switches; claim plan + period + once-only + gem cap", () => {
   assert.throws(() => C.normalizeLiveops({ shop: { items: [{ item: "gems", qty: 1, price: 5 }] } }), /can't sell gems/);
@@ -346,7 +352,7 @@ t("v1629 gems in the starting event rewards: same patch in the game and the admi
   assert.deepStrictEqual(pat(html), C.LIVE_GEMS_PATCH, "game patch = server patch"); assert.deepStrictEqual(pat(adm), C.LIVE_GEMS_PATCH, "admin patch = server patch");
   const L = C.normalizeLiveops({}); assert.strictEqual(L.cs.fin.gems, 600); assert.ok(L.cs.tasks.every((t) => t.items.gems === 50)); assert.strictEqual(L.np.chests.reduce((a, c) => a + (c.items.gems || 0), 0), 3200);
   assert.strictEqual(L.sp.levels.reduce((a, l) => a + (l.free.gems || 0), 0), 300); assert.strictEqual(L.sp.levels.reduce((a, l) => a + (l.prem.gems || 0), 0), 6000);
-  assert.ok(L.sg.personal.every((t) => t.items.gems > 0) && L.sg.alliance.every((t) => t.items.gems > 0)); assert.strictEqual(L.arena.rankW[0].items.gems, 1000);
+  assert.ok(L.sg.rank.every((t) => t.items.gems > 0) && L.sg.ms.every((t) => t.items.gems > 0) && L.sg.alliance.every((t) => t.items.gems > 0)); assert.strictEqual(L.arena.rankW[0].items.gems, 1000);
   ["arena", "ff", "br"].forEach((k) => assert.ok(L[k].ms.every((m) => m.items.gems > 0), k));
 });
 t("v1630 hero of your choice (pick_shards) in events: allowed alone or with items, resolved to a Weekly Chest hero only", () => {

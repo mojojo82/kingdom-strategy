@@ -534,8 +534,10 @@ exports.siegeHit = wrap(async (req, uid, R, d) => {
     const mem = r.armies ? [] : await Promise.all(ids.map((m) => tx.get(db.doc(K + "alliances/" + me.aid + "/members/" + m))));
     const svs = r.armies ? [] : await Promise.all(ids.map((m) => tx.get(db.doc(R + "players/" + m + "/save/main")))); /* v1704 (Harley): each member's power right now - read from their cloud save (the game writes its power with every save), not the alliance roster number written when they joined. Bots / no save: the roster number */
     if (!r.armies) ids.forEach((m, i) => { const svPw = svs[i].exists ? +svs[i].data().power : NaN; const pw = svPw > 0 ? svPw : (mem[i].exists ? (mem[i].data().power || 0) : 0); const sh = C.sgShare(SG, pw, ids.length, Math.random()); shares[m] = sh; hit += sh; });
+    const wss = await Promise.all(ids.map((m) => tx.get(walletRef(R, m)))); /* v1725: lifetime siege damage (never resets) for the milestone list */
     const dmg = Object.assign({}, h.dmg || {}), names = Object.assign({}, h.names || {}), busy = Object.assign({}, h.busy || {});
     ids.forEach((m) => { dmg[m] = (dmg[m] || 0) + shares[m]; names[m] = r.members[m]; if (busy[m] === rid) delete busy[m]; });
+    ids.forEach((m, i) => { if (shares[m] > 0) tx.set(walletRef(R, m), { sgLife: ((wss[i].data() || {}).sgLife || 0) + shares[m] }, { merge: true }); });
     const last = (h.last || []).concat([{ t: now, hit, n: ids.length, by: r.lname }]).slice(-8);
     tx.update(href, { dmg, names, busy, total: (h.total || 0) + hit, hits: (h.hits || 0) + 1, last });
     tx.update(rref, { done: true, hit, shares });
@@ -549,12 +551,28 @@ exports.siegeClaim = wrap(async (req, uid, R, d) => {
     const h = hs.data(); if (now < h.end) throw new C.GameError("failed-precondition", "the hunt isn't over yet");
     const mine = (h.dmg || {})[uid] || 0; if (!(mine > 0)) throw new C.GameError("failed-precondition", "you didn't take part in that hunt");
     if (h.claimed && h.claimed[uid]) return { dup: true };
-    const pT = C.sgTier(SG.personal, mine), aT = C.sgTier(SG.alliance, h.total || 0), items = {};
+    const place = C.sgRankOf(h.dmg, uid), pT = C.sgRankRow(SG.rank, place), aT = C.sgTier(SG.alliance, h.total || 0), items = {}; /* v1725 (Harley): your final place in the alliance's damage ranking + the alliance tier */
     [pT, aT].forEach((t) => { if (t) Object.keys(t.items).forEach((k) => { items[k] = (items[k] || 0) + t.items[k]; }); });
     const claimed = Object.assign({}, h.claimed || {}); claimed[uid] = true; tx.update(href, { claimed });
     const out = C.resolveFeatured(items, lo.fhw ? lo : { fhw: C.normalizeLiveops({}).fhw });
-    if (Object.keys(out).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🦏 Alliance Siege rewards", "Your damage: " + mine.toLocaleString("en-US") + " · alliance total: " + (h.total || 0).toLocaleString("en-US") + ".", out, "siege", now, "alliance"));
-    return { dup: false, items: out, mine, total: h.total || 0 };
+    if (Object.keys(out).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🦏 Alliance Siege rewards", "Your damage: " + mine.toLocaleString("en-US") + " (#" + place + " in your alliance) · alliance total: " + (h.total || 0).toLocaleString("en-US") + ".", out, "siege", now, "alliance"));
+    return { dup: false, items: out, mine, total: h.total || 0, place };
+  });
+});
+/* v1725 (Harley): lifetime siege damage milestones - an achievement list that never resets. wallet.sgLife = total damage (added in siegeHit),
+   wallet.sgMs = the milestone amounts already claimed (by amount, so editing the list never re-pays). Pays milestone d.idx once, by mail. */
+exports.siegeMs = wrap(async (req, uid, R, d) => {
+  const lo = (await liveopsConfig(R)) || {}, SG = lo.sg || C.LIVE_SG_DEFAULT, idx = Math.trunc(+d.idx), now = Date.now();
+  const acs = await db.doc(R + "acplayers/" + uid).get(); if (acs.exists && acs.data().restricted) throw new C.GameError("permission-denied", "restricted");
+  const m = (SG.ms || [])[idx]; if (!m) throw new C.GameError("invalid-argument", "no such milestone");
+  return db.runTransaction(async (tx) => {
+    const ws = await tx.get(walletRef(R, uid)), wd = ws.data() || {}, life = wd.sgLife || 0, got = Array.isArray(wd.sgMs) ? wd.sgMs.slice() : [];
+    if (got.indexOf(m.at) >= 0) return { dup: true, sgLife: life, sgMs: got };
+    if (life < m.at) throw new C.GameError("failed-precondition", "not reached yet");
+    got.push(m.at); tx.set(walletRef(R, uid), { sgMs: got }, { merge: true });
+    const out = C.resolveFeatured(m.items, lo.fhw ? lo : { fhw: C.normalizeLiveops({}).fhw });
+    if (Object.keys(out).length) tx.set(mailCol(R, uid).doc(), C.makeMail("🦏 Siege milestone reward", "Lifetime siege damage reached " + m.at.toLocaleString("en-US") + "!", out, "siege", now, "alliance"));
+    return { dup: false, items: out, sgLife: life, sgMs: got };
   });
 });
 

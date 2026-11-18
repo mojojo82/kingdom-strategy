@@ -26,6 +26,14 @@ const go = async (fn, uid, data) => JSON.parse(await call(fn, JSON.stringify(Obj
   store[R + "siege/" + aid + "/h/" + hid].end = Date.now() - 1;
   const cl = await go("siegeClaim", "leader01", { hid }); out.claim = cl.data; out.claimDup = (await go("siegeClaim", "leader01", { hid })).data;
   out.claimNoDmg = (await go("siegeClaim", "member02", { hid })).error.message;
+  /* v1725: hunt ranking + lifetime milestones */
+  out.places = {}; for (const u of ["leader01", "officer1", "member01"]) { const c = await go("siegeClaim", u, { hid }); out.places[u] = c.data && (c.data.place || (c.data.dup ? "dup" : "?")); }
+  out.life = { leader01: (store[R + "players/leader01/wallet/main"] || {}).sgLife, officer1: (store[R + "players/officer1/wallet/main"] || {}).sgLife };
+  const ms0 = await go("siegeMs", "officer1", { idx: 0 }); out.ms0 = ms0.data ? { dup: ms0.data.dup, items: ms0.data.items, sgMs: ms0.data.sgMs } : ms0.error.message;
+  out.ms0Dup = (await go("siegeMs", "officer1", { idx: 0 })).data.dup;
+  out.msTooHigh = (await go("siegeMs", "officer1", { idx: 11 })).error.message;
+  out.msBad = (await go("siegeMs", "officer1", { idx: 99 })).error.message;
+  out.msMail = Object.keys(store).filter((k) => k.indexOf("players/officer1/mail") >= 0).map((k) => store[k].title);
   out.mail = Object.keys(store).filter((k) => k.indexOf("players/leader01/mail") >= 0).map((k) => store[k].title);
   out.chat = Object.keys(store).filter((k) => k.indexOf("/chat/") >= 0).map((k) => store[k].text);
   out.rallyGems = { member01: (store[R + "players/member01/wallet/main"] || {}).gems, leader01: (store[R + "players/leader01/wallet/main"] || {}).gems, officer1: (store[R + "players/officer1/wallet/main"] || {}).gems }; /* v1628: 50 per rally started / joined */

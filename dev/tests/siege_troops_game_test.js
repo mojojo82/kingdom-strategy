@@ -67,9 +67,20 @@ const SHOT = process.env.SHOT;
   if (SHOT) { await M.evaluate(() => evWinRender(true)); await M.waitForTimeout(500); await M.screenshot({ path: path.join(SHOT, "4_after_hit.png") }); }
   /* leader offline: another member's game fights the rally from the leader's save (same seed) - should land close to the leader's own result */
   out.fromSave = await M.evaluate((rid) => { const id = rid.split("/").pop(); return cloudDb.doc(rid.replace(/^envs\/test\//, "")).get().then((sn) => { const r = Object.assign({ id }, sn.data()); return fetchSaveForOwner(r.leader).then((sv) => { const sim = createGame({ mapSize: 3, seed: 1 }); sim.loadState(sv); return sgRallyBattle(r, sim).total; }); }); }, rid);
+  /* v1725: lifetime milestones - the wallet's sgLife shows in the window and a reached milestone can be claimed (the test adds 2M to the server wallet so the first milestone is reached) */
+  out.life = await L.evaluate(() => KSW.sgLife || 0);
+  Object.keys(store).filter((k) => /wallet\/main$/.test(k) && store[k].sgLife > 0).forEach((k) => { store[k].sgLife += 2e6; }); await nt(); await L.waitForTimeout(1500); /* past the first two milestones (1M, 5M stays locked) */
+  out.lifeAfter = await L.evaluate(() => KSW.sgLife || 0);
+  out.msClaim = await L.evaluate(() => new Promise((res) => { evWinRender(true);
+    setTimeout(() => { const b2 = document.querySelector("#evWin [data-sgms]"); if (!b2) return res("no claim button"); b2.click(); setTimeout(() => res("clicked"), 2500); }, 500); }));
+  out.msServer = await L.evaluate(() => KSW.sgMs);
+  if (SHOT) { await L.evaluate(() => { evWinRender(true); const bx = [].slice.call(document.querySelectorAll("#evWin .evw-sgbox .t")).find((t) => /Lifetime/.test(t.textContent)); if (bx) bx.scrollIntoView(); }); await L.waitForTimeout(500); await L.screenshot({ path: path.join(SHOT, "5_milestones.png") });
+    await L.evaluate(() => { const bx = [].slice.call(document.querySelectorAll("#evWin .evw-sgbox .t")).find((t) => /Rewards/.test(t.textContent)); if (bx) bx.scrollIntoView(); }); await L.waitForTimeout(400); await L.screenshot({ path: path.join(SHOT, "6_rewards.png") });
+    await L.evaluate(() => { const bx = document.querySelector("#evWin .evw-act"); if (bx) bx.scrollIntoView(); }); await L.waitForTimeout(400); await L.screenshot({ path: path.join(SHOT, "7_place.png") }); }
   out.errors = errs; console.log(JSON.stringify(out, null, 1));
   assert.ok(out.rally.sent > 0 && out.leaderHome.out === 1, "leader troops out"); assert.strictEqual(out.memberSent[Object.keys(out.memberSent).find((u) => out.memberSent[u].cavalry_t5)].cavalry_t5, 2000);
   assert.strictEqual(out.memberHome, 10000); assert.ok(out.hit.done && out.hit.hit > 0, "rally hit"); assert.strictEqual(out.memberBack.cav, 12000); assert.strictEqual(out.leaderBack.inf, 9000); assert.strictEqual(out.leaderBack.out, 0);
   assert.ok(out.fromSave > 0 && Math.abs(out.fromSave - out.hit.hit) / out.hit.hit < 0.25, "fight from the leader's save");
+  assert.ok(out.life > 0, "lifetime damage recorded"); assert.ok((out.msServer || []).indexOf(1e6) >= 0, "milestone claimed on the server");
   assert.deepStrictEqual(errs, []); console.log("siege troops game test passed"); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
