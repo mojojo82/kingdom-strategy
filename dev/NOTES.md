@@ -5854,3 +5854,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ### (after v1722) Arena weapons start with a full reload (kept on purpose)
 - Harley noticed both lasers didn't fire at match start. Cause: arenaMakeSim starts every missile/beam weapon at a full cooldown (weaponCd = wcd * (startFrac || 1)); only Duplicate's copy starts half-loaded (startFrac 0.5). Laser cooldown 10 s, so its first beam is ~10 s in. Hero skills fire at second 0 (except Gareth).
 - Harley: leave it, he thinks it was designed that way. No change.
+
+- Speed tests (Harley: see the animation sped up): fear/fear_speed_tests_v1.mp4, v4 clip retimed in editing, no new Atlas run. Hit after he moves: 1x 1.50 s, 1.25x 1.08 s, 1.5x 0.83 s, 2x 0.54 s (Hanzo throws at 1.46 s).
