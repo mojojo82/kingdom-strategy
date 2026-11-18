@@ -5832,3 +5832,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ### (after v1721) Test: Baelgor HP card percentages vs Hanzo team
 - Same setup as the HP chunks test (Fear 4 s + freeze, Lv80, 40 fights). Card +60% HP 28% win, +70% 45%, +75% 48%, +80% 58%, +90% 60%, +100% 75%. dev/balance/baelgor_hp_card_pct.js, results/baelgor_hp_card_pct.json.
+
+### (after v1721) Test: the +75% HP card on every hero vs Hanzo team
+- Team = Gareth, Lyra, Kessa, Sera + X (X gets +75% max HP), Lv80, 40 fights, no weapons. dev/balance/hp_card_every_hero.js, results/hp_card_every_hero.json.
+- With card (no card): Halo-7 65% (23), Baelgor 48% (5), Juno 30 (30), Roran 23 (25), Torvald 23 (5), Pip 20 (23), Iron Lily 20 (3), Bram 10 (0), Caelum 10 (3), Tom 8 (3), Vesper 5, Zarek 5, Aurek 0, Seraphine 0. Only Halo-7 beats Baelgor with it; ranged heroes gain ~nothing (HP only matters to whoever walks the front).
