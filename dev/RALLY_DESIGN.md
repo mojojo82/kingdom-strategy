@@ -6,8 +6,12 @@ Started 19 Nov 2026 with Harley. Nothing built yet.
 - The only rallies are Alliance Siege rallies against the boss (`sgRallyBattle`): one Arena-style fight. The leader's 5 heroes, fortress, weapons and cards fight, and every member's troops are pooled into one army. Troop damage is shared by troops sent, and the rest goes to the leader. Up to 15 members.
 - There are no player-vs-player rallies yet; world PvP is one march against one city.
 
-## Kingshot, for reference
-- The leader's heroes and stats fight. Each joiner adds only the first expedition skill of their first-slot hero, at most 4 joiner skills, with same-type buffs adding and different types multiplying. Joiner hero stats don't count.
+## Kingshot, for reference (checked 19 Nov 2026)
+- **Leader:** their research, governor gear, charms, pets, buffs/consumables, hero gear and hero stats apply to EVERY troop in the rally, whoever sent it. All expedition skills of their 3 heroes apply (plus exclusive-gear skills). Rally capacity comes from the leader's Command Center.
+- **Joiners count only for:** their troops (number, tier, type mix - tier sets the base stats the leader's buffs multiply) and ONE skill: the first expedition skill of their first-slot hero. 4 joiner skill slots in total, highest level first, ties by join order; stat skills stack, chance-based skills don't. 2nd/3rd heroes only raise the joiner's own march size.
+- **Excluded for joiners:** research, governor gear, charms, pets, buffs/consumables, city buffs, hero stats and gear, and their 2nd/3rd heroes' skills.
+- **Garrison (defence):** works like a rally; the garrisoned player with the highest stats becomes the rally leader automatically (stats + all 3 heroes' skills), others act as joiners.
+- Sources: kingshotguides.com Advanced Rally Guide, kingshotguide.org rally guide, kingshot.net rally guide, kingshotguides.com joiner hero mechanics.
 
 ## Harley's direction: the hero line (reinforcement queue)
 - Every participant's heroes are in the fight as a LINE: 5 on the field at a time; when one is knocked out, the next hero in line walks in (instead of the same hero reviving).
