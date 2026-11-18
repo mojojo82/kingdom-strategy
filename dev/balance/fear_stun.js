@@ -8,12 +8,13 @@ const fs = require("fs"), path = require("path"), ROOT = path.join(__dirname, ".
 const { chromium } = require(process.env.PW_PATH || "playwright");
 let G = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
 const rep = (a, b) => { if (G.split(a).length !== 2) throw new Error("patch point: " + a); G = G.replace(a, b); };
-rep("playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key);", "playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); if (window.__tfCast) window.__tfCast('P', a.key, tick, dtS, aHH, pHH); if (window.__st && window.__st.reset && a.key === 'tfear') { (aiStats.actives || []).forEach(function (a2) { var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; }); if (window.__st.resetOwn) (playerStats.actives || []).forEach(function (a2) { if (a2.key === 'tfear') return; var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; }); };");
-rep("aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key);", "aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); if (window.__tfCast) window.__tfCast('A', a.key, tick, dtS, pHH, aHH); if (window.__st && window.__st.reset && a.key === 'tfear') { (playerStats.actives || []).forEach(function (a2) { var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; }); if (window.__st.resetOwn) (aiStats.actives || []).forEach(function (a2) { if (a2.key === 'tfear') return; var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; }); };");
+rep("playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key);", "playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); if (window.__tfCast) window.__tfCast('P', a.key, tick, dtS, aHH, pHH); if (window.__st && window.__st.oldReset && a.key === 'tfear') { (aiStats.actives || []).forEach(function (a2) { var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; }); if (window.__st.resetOwn) (playerStats.actives || []).forEach(function (a2) { if (a2.key === 'tfear') return; var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; }); };");
+rep("aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key);", "aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); if (window.__tfCast) window.__tfCast('A', a.key, tick, dtS, pHH, aHH); if (window.__st && window.__st.oldReset && a.key === 'tfear') { (playerStats.actives || []).forEach(function (a2) { var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; }); if (window.__st.resetOwn) (aiStats.actives || []).forEach(function (a2) { if (a2.key === 'tfear') return; var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; }); };");
 rep("playerCd[a.key] -= cdStep;", "playerCd[a.key] -= cdStep * (pHH && pHH.by[a.key] && pHH.by[a.key].stunT > tick ? 0 : 1);");
 rep("aiCd[a.key] -= cdStep;", "aiCd[a.key] -= cdStep * (aHH && aHH.by[a.key] && aHH.by[a.key].stunT > tick ? 0 : 1);");
 rep("var eligible = !isKo(hh, a.id) &&", "var eligible = !isKo(hh, a.id) && !(hh && hh.by[a.id] && hh.by[a.id].stunT > tick) &&");
 rep("if (e.air || e.castUntil > tick) {", "if (e.air || e.castUntil > tick || e.stunT > tick) {");
+rep("if (waveQ.length) { var waveKeep = [];", "if (window.__ftTick) window.__ftTick(tick, dtS, pHH, aHH, playerCd, aiCd, playerStats, aiStats);\n    if (waveQ.length) { var waveKeep = [];");
 const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome", args: ["--no-sandbox"] }), errs = [];
@@ -35,9 +36,16 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   const r = await P.evaluate(() => {
     const d = Object.assign({}, HERO_DEFS.aurek, { name: "Siphon" }); d.conquestSkills = HERO_DEFS.aurek.conquestSkills.map((s) => Object.assign({}, s));
     const sk = d.conquestSkills[0]; sk.name = "Fear"; HERO_DEFS.tfear = d; if (HERO_ANIMS.aurek) HERO_ANIMS.tfear = HERO_ANIMS.aurek; if (HERO_ANIMS.aurek_skill) HERO_ANIMS.tfear_skill = HERO_ANIMS.aurek_skill;
-    window.__st = { S: 0, own: true };
-    window.__tfCast = (sd, key, tick, dtS, oh, mh) => { if (key !== "tfear" || !window.__st.S) return; const T = tick + Math.round(window.__st.S / dtS);
-      [oh, window.__st.own ? mh : null].forEach((h) => { if (h) h.list.forEach((e) => { if (e.ko || e.dead || e.id === "tfear") return; e.stunT = T; }); }); if (window.__st.reset && oh) window.__resetQ = { oh, sd }; };
+    window.__st = { S: 0 }; let PEND = [], AURA = { casts: 0, hit: 0, hanzo: 0 };
+    window.__tfCast = (sd, key, tick, dtS, oh, mh) => { if (key !== "tfear" || !window.__st.S) return; PEND.push({ sd, until: tick + Math.round((window.__st.wait || 0) / dtS) }); };
+    window.__ftTick = (tick, dtS, pHH, aHH, pCd, aCd, pSt, aSt) => { if (!PEND.length) return; const keep = [];
+      PEND.forEach((q) => { const mine = q.sd === "P" ? pHH : aHH, opp = q.sd === "P" ? aHH : pHH, ocd = q.sd === "P" ? aCd : pCd, ost = q.sd === "P" ? aSt : pSt, me = mine && mine.by.tfear;
+        if (!me || me.ko || !opp) return; const R = window.__st.R;
+        const near = opp.list.filter((o) => !o.ko && !o.dead && !o.droid && ((o.infantry ? o.d : 0) + me.d >= 1 - R));
+        if (!near.length && tick < q.until) { keep.push(q); return; } if (!near.length) return;
+        const T = tick + Math.round(window.__st.S / dtS); AURA.casts++;
+        near.forEach((o) => { o.stunT = T; AURA.hit++; if (o.id === "hanzo") AURA.hanzo++; if (window.__st.reset) (ost.actives || []).forEach((a2) => { if (a2.key === o.id) ocd[a2.key] = a2.cooldown; }); }); });
+      PEND = keep; };
     const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
@@ -49,9 +57,11 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
-    ["hanzo", "aurek"].forEach((opp) => {
-      [[0.3, false], [0.5, false], [0.7, false], [0.3, true], [0.5, true], [0.7, true]].forEach(([S, reset]) => { window.__st = { S, own: false, reset, resetOwn: false }; out["vs " + opp + " | stun " + S + "s enemies only" + (reset ? " + their timers reset" : "")] = rate("tfear", opp, L80); }); });
+    ["hanzo", "aurek"].forEach((opp) => { window.__st = { S: 0 }; out["vs " + opp + " | no fear"] = rate("tfear", opp, L80);
+      [[0.45, 0.04, false], [0.45, 0.1, false], [0.9, 0.04, false], [0.45, 0.04, true], [0.45, 0.1, true], [0.45, 0.2, true]].forEach(([S, R, reset]) => {
+        window.__st = { S, R, reset, wait: 12 }; AURA = { casts: 0, hit: 0, hanzo: 0 }; const r = rate("tfear", opp, L80); r.auraHitsPerFight = +(AURA.hit / 40).toFixed(1); r.hanzoStunnedPerFight = +(AURA.hanzo / 40).toFixed(1);
+        out["vs " + opp + " | aura r" + R + ", stun " + (S > 0.5 ? "2 steps" : "1 step") + (reset ? " + timers reset" : "")] = r; }); });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_stun_enemy.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_aura.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
