@@ -64,4 +64,5 @@ Rally = 15 players with Lv40 heroes and T3 troops (3,000 each, 45,000 total). De
 
 - Power already matters (tiers, bonuses), but with linear troop damage headcount is very strong.
 - Square-root troop damage (damage grows with the square root of troop count, like Kingshot-style games) makes quality beat headcount much sooner, and fights last longer (9-13 s instead of 4-5 s), so the hero line gets more turns.
-- Side finding: world PvP's 120 s time limit is NaN in the code (set before the Arena limit exists), so world PvP fights currently stop at 60 s.
+- **Kingshot does scale troops this way (checked 19 Nov):** community-tested Kingshot formulas all use the square root of troop count (e.g. "Damage scales with the Square Root of your troop count, not linearly" - kingshotguide.org; "army = sqrt(remaining troops x ...)" - kingshotguides.com bear trap guide). Not official (the devs don't publish the maths), but every source agrees. Harley's rule: follow Kingshot, so square-root troop damage is the plan.
+- Side finding (fixed in v1723): world PvP's 120 s time limit was NaN in the code (set before the Arena limit exists), so world PvP fights currently stop at 60 s.
