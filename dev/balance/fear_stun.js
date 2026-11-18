@@ -8,8 +8,8 @@ const fs = require("fs"), path = require("path"), ROOT = path.join(__dirname, ".
 const { chromium } = require(process.env.PW_PATH || "playwright");
 let G = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8");
 const rep = (a, b) => { if (G.split(a).length !== 2) throw new Error("patch point: " + a); G = G.replace(a, b); };
-rep("playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key);", "playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); if (window.__tfCast) window.__tfCast('P', a.key, tick, dtS, aHH, pHH); if (window.__st && window.__st.reset && a.key === 'tfear') (aiStats.actives || []).forEach(function (a2) { var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; });");
-rep("aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key);", "aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); if (window.__tfCast) window.__tfCast('A', a.key, tick, dtS, pHH, aHH); if (window.__st && window.__st.reset && a.key === 'tfear') (playerStats.actives || []).forEach(function (a2) { var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; });");
+rep("playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key);", "playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); if (window.__tfCast) window.__tfCast('P', a.key, tick, dtS, aHH, pHH); if (window.__st && window.__st.reset && a.key === 'tfear') { (aiStats.actives || []).forEach(function (a2) { var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; }); if (window.__st.resetOwn) (playerStats.actives || []).forEach(function (a2) { if (a2.key === 'tfear') return; var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; }); };");
+rep("aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key);", "aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); if (window.__tfCast) window.__tfCast('A', a.key, tick, dtS, pHH, aHH); if (window.__st && window.__st.reset && a.key === 'tfear') { (playerStats.actives || []).forEach(function (a2) { var e2 = pHH && pHH.by[a2.key]; if (e2 && !e2.ko) playerCd[a2.key] = a2.cooldown; }); if (window.__st.resetOwn) (aiStats.actives || []).forEach(function (a2) { if (a2.key === 'tfear') return; var e2 = aHH && aHH.by[a2.key]; if (e2 && !e2.ko) aiCd[a2.key] = a2.cooldown; }); };");
 rep("playerCd[a.key] -= cdStep;", "playerCd[a.key] -= cdStep * (pHH && pHH.by[a.key] && pHH.by[a.key].stunT > tick ? 0 : 1);");
 rep("aiCd[a.key] -= cdStep;", "aiCd[a.key] -= cdStep * (aHH && aHH.by[a.key] && aHH.by[a.key].stunT > tick ? 0 : 1);");
 rep("var eligible = !isKo(hh, a.id) &&", "var eligible = !isKo(hh, a.id) && !(hh && hh.by[a.id] && hh.by[a.id].stunT > tick) &&");
@@ -50,8 +50,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
     ["hanzo", "aurek"].forEach((opp) => {
-      [[4, true, false], [6, true, false], [8, true, false], [1, true, true], [2, true, true], [3, true, true], [0.5, false, false], [1, false, false]].forEach(([S, own, reset]) => { window.__st = { S, own, reset }; out["vs " + opp + " | stun " + S + "s " + (own ? "both sides" : "enemies only") + (reset ? " + enemy timers reset" : "")] = rate("tfear", opp, L80); }); });
+      [[1, false], [2, false], [1, true], [2, true]].forEach(([S, ro]) => { window.__st = { S, own: true, reset: true, resetOwn: ro }; out["vs " + opp + " | freeze " + S + "s both sides + " + (ro ? "BOTH sides' timers reset" : "enemy timers reset")] = rate("tfear", opp, L80); }); });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_stun_both2.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_stun_both3.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
