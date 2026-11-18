@@ -4726,6 +4726,9 @@ try { heroAtkSlotsOn = localStorage.getItem(HERO_ATK_SLOTS_KEY) !== "0"; } catch
 // Heroes whose first Arena skill waits for the FULL cooldown (like Conquest) instead of being ready at the start of the fight.
 COMBAT_TIMING.skillStartsFull = { gareth: true };
 function skillStartsFull(key) { return skillFullCdOn && !!COMBAT_TIMING.skillStartsFull[key]; }
+function heroSkillAnimSec(key) { /* v1728: how long a hero's skill animation plays (s) - his skill timer waits for it (Arena + Conquest) */
+  if (typeof HERO_ANIMS === "undefined") return 0; var A = HERO_ANIMS[key + "_skill"]; if (A && A.rows && A.rows.skill) return A.rows.skill[1] / ((A.fps && A.fps.skill) || 24);
+  var B = HERO_ANIMS[key]; if (B && B.rows) { var r = B.rows.skill || B.rows.cast; if (r) return r[1] / ((B.fps && (B.fps.skill || B.fps.cast)) || 24); } return 0; }
 function heroAttackSec(key) { var v = heroAttackTimingOn && COMBAT_TIMING.heroAttackSec[key]; return v > 0 ? v : COMBAT_TIMING.basicAttackSec; }
 function heroHitDmgMult(key) { if (COMBAT_TIMING.heroNoHitScale && COMBAT_TIMING.heroNoHitScale[key]) return 1; return heroAttackSec(key) / COMBAT_TIMING.basicAttackSec; }
 // ---- Cross-device asset sync (via the `db` runtime capability) ----
@@ -10239,7 +10242,9 @@ function createGame(opts) {
       if (!skill1 || skill1.kind !== "active") return;
       if (idleHeroIsKo(key)) { state.heroCooldowns[key] = skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)); return; } // v527: KO'd — skill timer sits at full until he revives
       if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skillCdAt(skill1, heroSkillLevel(key, "conquest", 0))) * (1 - cardCdBonus(conqCardMods(state), idleHpFrac())); /* v985 */
-      state.heroCooldowns[key] -= dt;
+      var AT = state.idle.animT || (state.idle.animT = {}); /* v1728: his timer waits while his skill animation plays (or his Storm / wave is still on its way) */
+      if (AT[key] > 0) AT[key] = Math.max(0, AT[key] - dt);
+      else if (!(state.idle.stormQ || []).some(function (q) { return q.key === key && !q.wave; })) state.heroCooldowns[key] -= dt;
       var manualCast = false; // Manual mode: the skill waits at 0 (ready) until the player taps it
       if (state.idle.skillAuto === false && state.heroCooldowns[key] <= 0) {
         state.heroCooldowns[key] = 0;
@@ -10249,7 +10254,7 @@ function createGame(opts) {
       }
       if (state.heroCooldowns[key] <= 0) {
         state.heroCooldowns[key] += skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)) * (1 - cardCdBonus(conqCardMods(state), idleHpFrac())); /* v985: skill cooldown bonus cards */
-        state.idle.skillFireCounts[key] = (state.idle.skillFireCounts[key] || 0) + 1;
+        state.idle.skillFireCounts[key] = (state.idle.skillFireCounts[key] || 0) + 1; (state.idle.animT || (state.idle.animT = {}))[key] = heroSkillAnimSec(key); /* v1728 */
         if (skill1.support) { // support skills (heal / guard shield) act on the fortress, not on an enemy
           var spLvl = heroSkillLevel(key, "conquest", 0), maxHpS = idlePlayerMaxHp();
           if (skill1.support === "heal") {
@@ -10271,14 +10276,14 @@ function createGame(opts) {
           return;
         }
         if (skill1.dive) { /* v1514: Caelum's Skybreaker Slam - he flies up, hovers, then crashes down on ONE enemy (a boss first, else the one with the most HP) dive.impact s later */
-          var dvT = idleDiveTarget(); if (!dvT) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
+          var dvT = idleDiveTarget(); if (!dvT) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; if (state.idle.animT) state.idle.animT[key] = 0; return; }
           var dvDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = dvDmg;
           (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: skill1.dive.impact, dmg: dvDmg, dive: true, id: dvT.id });
           return;
         }
         if (skill1.aoeAll) { /* v992: Hanzo's Shuriken Storm - every live enemy on the field, no range limit. v993: he leaps first - it lands HANZO_LEAP_SEC later (idleStormTick) */
-          if (!state.idle.enemies.some(function (e0) { return e0.hp > 0; })) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; }
+          if (!state.idle.enemies.some(function (e0) { return e0.hp > 0; })) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; if (state.idle.animT) state.idle.animT[key] = 0; return; }
           var aoeDmg = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
           state.idle.lastSkillDmg = state.idle.lastSkillDmg || {}; state.idle.lastSkillDmg[key] = aoeDmg;
           if (skill1.slashes) { skill1.slashes.forEach(function (sl) { (state.idle.stormQ || (state.idle.stormQ = [])).push({ key: key, t: sl.at, dmg: aoeDmg * sl.part, wave: true, spd: 1.0, slash: true, h0: sl.h0 || 96, img: sl.img }); }); return; } /* v1692: Tom's two slashes - each enemy is hit when a slash reaches it (half the damage each) */
@@ -10288,7 +10293,7 @@ function createGame(opts) {
         var meleeRangeOnly = def.class === "infantry" || skill1.requiresClose;
         var skTgt = front; if (def.class === "infantry") { var skSword = idleMeleeTargetFor(key, front); /* v844: an enemy at his sword gets slammed first */ var skPool = state.idle.enemies.filter(function (e0) { return e0.hp > 0; }); /* v845: his skill has no range or arrival limit - any live enemy on the field (only his basic attack needs reach) */ skTgt = skSword || (skill1.splash && skill1.splash.around ? null : (skPool.length ? skPool[Math.floor(combatRng() * skPool.length)] : null)); /* v1619 (Harley: the flurry played on empty ground while the hit landed far away): Crimson Tempest only strikes an enemy at her sword - none in reach = it stays ready and fires the moment she reaches one */ if (skTgt && !skTgt.arrived) { skTgt.arrived = true; skTgt.arriveRemaining = 0; } } /* v841: the slam is a charge at ANY arrived enemy, picked at random (not just the front one or one at his sword) */
         var canHit = def.class === "infantry" ? !!skTgt : ((frontTargetable || (skill1.anyTarget && front && front.hp > 0 && idleFrontOnScreen(front))) && (!meleeRangeOnly || frontPointBlank || (skill1.requiresClose && front.type === "boss"))); // requiresClose skills (Kessa's Arc Burst) can always reach a boss. v1476: anyTarget (Juno onwards) = any enemy on screen
-        if (!canHit) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; return; } // v839: nothing in reach (manual tap OR the auto cooldown running out between enemies): keep the skill ready and fire the moment something is, instead of burning the whole cooldown on a miss
+        if (!canHit) { state.heroCooldowns[key] = 0; state.idle.skillFireCounts[key]--; if (state.idle.animT) state.idle.animT[key] = 0; return; } // v839: nothing in reach (manual tap OR the auto cooldown running out between enemies): keep the skill ready and fire the moment something is, instead of burning the whole cooldown on a miss
         if (canHit) {
           var front0 = front; front = skTgt; // the skill hits the enemy at his sword (melee) or the front enemy
           var skDmgE = skillValueAtLevel(key, 0, heroSkillLevel(key, "conquest", 0), skill1, h, idleAttackerDamage(key));
@@ -14384,7 +14389,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1727"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1728"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38982,6 +38987,12 @@ function arenaMakeSim(playerStats, aiStats, opts) {
   var staggerSeed = String(opts.critSeed || 'arena'), staggerMemo = {}; /* v969: each attacker's first-swing offset depends only on the battle seed + who he is (droids by number), not on which side he is on */
   function staggerOf(id) { var k = String(id).replace(/^droid[PA]/, 'droid'); if (staggerMemo[k] == null) staggerMemo[k] = worldPvpSeededRng(staggerSeed + '|' + k)(); return staggerMemo[k]; }
   function isKo(hh, id) { var e = hh && hh.by[id]; return !!(e && e.ko && e.koTick !== tick); }
+  /* v1728 (Harley): "while a current skill is playing, the skill timer does not begin its next countdown until the animation finished" (exceptions will be set
+     per hero later). A hero's skill timers stand still while his skill sheet plays (HERO_ANIMS <key>_skill, or rows.skill / rows.cast); Hanzo also while his
+     Storm is still pending (he is in the air). Same rule in Conquest (idle loop). */
+  function animSecOf(key) { return heroSkillAnimSec(key); }
+  function animFreeze(sd, key) { var hh = sd === 'P' ? pHH : aHH, e = hh && hh.by[key], sc = animSecOf(key); if (e && sc > 0) e.animT = tick + Math.ceil(sc / dtS); }
+  function animating(sd, key) { var hh = sd === 'P' ? pHH : aHH, e = hh && hh.by[key]; if (e && e.animT > tick) return true; return stormQ.some(function (q) { return q.sd === sd && q.key === key; }); }
   function isStunned(hh, id) { var e = hh && hh.by[id]; return !!(e && !e.ko && e.stunT > tick); } /* v1726: Fear - a stunned hero can't move or attack and his skill timer stands still */
   function koMark(e) { e.koTick = tick; e.koD = e.d; e.koLim = e.lim; e.sh = 0; }
   function withKoPos(me, fn) { if (!me || !(me.ko && me.koTick === tick)) return fn(); var d0 = me.d; me.d = me.koD; try { return fn(); } finally { me.d = d0; } }
@@ -39260,10 +39271,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       if (q.sd === 'P') trAdd('skill:' + q.key + '|' + q.name, q.v); else trAddAi('skill:' + q.key + '|' + q.name, q.v); }); diveQ = diveKeep; }
     playerStats.actives.forEach(function (a) {
       if (isKo(pHH, a.key)) { playerCd[a.key] = a.cooldown; return; } // KO'd: skill timer sits at full until he revives
-      playerCd[a.key] -= isStunned(pHH, a.key) ? 0 : cdStep; /* v1726: Fear pauses the timer */
+      playerCd[a.key] -= (isStunned(pHH, a.key) || animating('P', a.key)) ? 0 : cdStep; /* v1726: Fear pauses the timer; v1728: so does his own skill animation */
       if (playerCd[a.key] <= 0) {
         if (a.requiresClose && (!canMelee(pHH, a.key) || castWaits('P', a.key))) { playerCd[a.key] = 0; return; } // not in reach yet: stays ready, fires the tick the armies engage
-        playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
+        playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); animFreeze('P', a.key); /* v1728 */ playerDmg += fireLimits(playerStats, pHH, aHH, aiStats, a.key, "p_");
         var av = a.value * cardSkMul('P', a.key) * spotMul('P', a.key); /* v985: cards */
         castHold('P', a.key); /* v1516: an infantry caster stops while his skill plays */
         if (a.dive) { diveStart('P', a, av); return; } /* v1514: Skybreaker Slam */
@@ -39276,10 +39287,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     });
     aiStats.actives.forEach(function (a) {
       if (isKo(aHH, a.key)) { aiCd[a.key] = a.cooldown; return; }
-      aiCd[a.key] -= isStunned(aHH, a.key) ? 0 : cdStep; /* v1726 */
+      aiCd[a.key] -= (isStunned(aHH, a.key) || animating('A', a.key)) ? 0 : cdStep; /* v1726, v1728 */
       if (aiCd[a.key] <= 0) {
         if (a.requiresClose && (!canMelee(aHH, a.key) || castWaits('A', a.key))) { aiCd[a.key] = 0; return; }
-        aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
+        aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); animFreeze('A', a.key); /* v1728 */ aiDmg += fireLimits(aiStats, aHH, pHH, playerStats, a.key, "a_");
         var avA = a.value * cardSkMul('A', a.key) * spotMul('A', a.key); /* v985: cards */
         castHold('A', a.key); /* v1516 */
         if (a.dive) { diveStart('A', a, avA); return; } /* v1514 */
@@ -39315,9 +39326,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
       var sdS = hhh === pHH ? 'P' : 'A', cdM = cardCdMul(sdS); /* v1523 (Harley): support skills (Sera's heal, Torvald's shield, Iron Lily's oath) get the side's skill cooldown bonus (cards, Fortress II) like every other skill - same as Conquest */
       list.forEach(function (u) {
         if (isKo(hhh, u.key)) { cdMap[u.key] = u.cooldown * cdM; return; }
-        cdMap[u.key] -= cdStep;
+        cdMap[u.key] -= animating(sdS, u.key) ? 0 : cdStep; /* v1728 */
         if (cdMap[u.key] > 0) return;
-        cdMap[u.key] += u.cooldown * cdM; if (typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[u.key + "_skill"]) { (hhh === pHH ? playerFlash : aiFlash).push(u.key); castHold(sdS, u.key); } /* v1524: show the cast (skill sheet) and stand still while it plays, like any skill */
+        cdMap[u.key] += u.cooldown * cdM; if (typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[u.key + "_skill"]) animFreeze(sdS, u.key); /* v1728: only when the sheet plays */ if (typeof HERO_ANIMS !== "undefined" && HERO_ANIMS[u.key + "_skill"]) { (hhh === pHH ? playerFlash : aiFlash).push(u.key); castHold(sdS, u.key); } /* v1524: show the cast (skill sheet) and stand still while it plays, like any skill */
         if (u.kind === "heal") {
           var amt = maxHp * u.pct, room = Math.max(0, maxHp - getHp()), did = Math.min(room, amt);
           if (getHp() > 0) setHp(getHp() + did);
