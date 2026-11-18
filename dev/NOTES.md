@@ -6002,4 +6002,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - New slot field dmgMult (COMBAT_TIMING.heroAttackSlots.baelgor.slots[2] = secMult 4, dmgMult 6): the slash still takes 5.4 s but hits 6x. Over the
   slash that is +50%; with chop and slash taking turns his basic-attack damage is +40%. Conquest (both engine paths) + Arena. Gareth unchanged.
 - Checks: Conquest slash hit 114 = 6 x chop 19. baelgor_ingame.js unchanged (Hanzo 0%, Aurek 100%, Tom 95% - his basic hits decide little there).
-  Meta check: same known F3 warning. Team ranking 4x vs 6x running (results to follow).
+  Meta check: same known F3 warning. Team ranking (team_rank_slash4x / slash6x.json): every hero's average identical at 4x and 6x (Baelgor 50% Lv40, 49% Lv80, 9th of 19).
+  Why: in a ~60 s Arena fight he only gets ~4 slashes + ~5 chops in (he is knocked out early and waits) - his basic hits are a small share of the team's damage.
