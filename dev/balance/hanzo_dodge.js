@@ -47,9 +47,10 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
       return Math.round(100 * w / n) + "% (" + Math.round(100 * dr / n) + "% draws)"; };
     const sh = HERO_DEFS.hanzo.conquestSkills.find((s) => s.effectType === "dodge"), keep = sh.perLevel;
     const out = {}; const L80 = [80, 25, 5, 30];
-    [[0.10, "50% (now)"], [0.08, "40%"]].forEach(([pl, nm]) => { sh.perLevel = pl; const o = {};
-      ["pip", "roran", "juno", "vesper", "seraphine"].forEach((x) => { if (BASE.includes(x)) throw new Error("duplicate hero " + x); CFG = { on: false }; o["Hanzo team vs team with " + x] = rate(x, L80); }); out["Hanzo dodge " + nm] = o; });
+    [[0.10, "50% (now)"]].forEach(([pl, nm]) => { sh.perLevel = pl; const o = {};
+      if (BASE.includes("pip")) throw new Error("duplicate hero pip"); CFG = { on: false }; const pm = HERO_DEFS.pip.conquestSkills[1], pk = pm.pctByLevel; o["vs Pip (normal)"] = rate("pip", L80); pm.pctByLevel = [0, 0, 0, 0, 0]; o["vs Pip, Spotter's Mark OFF"] = rate("pip", L80); pm.pctByLevel = pk;
+      const ps = HERO_DEFS.pip.conquestSkills[0], pp = ps.pctByLevel; ps.pctByLevel = [0, 0, 0, 0, 0]; o["vs Pip, Spot Shot OFF"] = rate("pip", L80); ps.pctByLevel = pp; out["Hanzo dodge " + nm] = o; });
     sh.perLevel = keep; return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "hanzo_vs_riders.json"), r); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "hanzo_vs_pip.json"), r); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
