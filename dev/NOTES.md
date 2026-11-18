@@ -5841,3 +5841,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: shuriken go in a straight line to the target and are bigger. drawHeroThrows: no more arc (was sin * 10 px), size 15 -> 26 (scaled). Shared drawing, so Conquest and Arena both. Timing unchanged (flyMs 600), no combat change.
 - Before/after capture (headless Conquest, idleCanvas): art/originals/heroes/hanzo_shuriken_straight_v1722.png.
 - Hanzo Jump Studio (dev/labs/hanzo_jump_studio.html, published artifact) updated to match.
+
+### (after v1722) Baelgor Fear animation: ground plunge (Harley picked "into the ground")
+- Start poses: art/originals/heroes/siphon/fear/fear_pose_{throw,up,ground}_v1.png + fear_poses_lineup_v1.png (ChatGPT, fresh chat, official TL frame attached).
+- Atlas H3 Max, 8 s, 3 runs ($0.608 each):
+  - v1 Image = End = idle: he turned to face the camera, added light streaks. Rejected.
+  - v2 Image = idle, End = kneel pose aligned to the idle feet line (fear_end_ground_aligned_v1.png): right motion, but the blade left the top of the frame and it added swoosh/sparks/dust.
+  - v3 same with both frames shrunk to 68% bottom-anchored (fear_start_small_v1 / fear_end_small_v1) + "no motion blur, absolutely no effects": clean, no edge contact, side view. USE THIS: clips/siphon_fear_ground_v3.mp4 (1152x768, 24 fps). Still until frame 72 (3.0 s), sword hits the ground ~frame 94-96 (~1.0 s after he moves), kneel held to the end.
+- Preview: fear/fear_ground_preview_v1.mp4 (big + game size; the pull-out is the swing played backwards as a placeholder).
