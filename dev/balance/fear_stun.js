@@ -54,7 +54,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
       PEND = keep; };
     const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear", "zarek", "tward", "tom", "roran", "juno", "pip", "vesper"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
-    const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); if (window.__hpK) (s2.heroHp || []).forEach((e) => { if (e.id === 'tfear') e.max = Math.round(e.max * window.__hpK); }); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
+    const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); if (window.__hpK) (s2.heroHp || []).forEach((e) => { if (e.id === 'tfear') e.max = Math.round(e.max * window.__hpK); }); if (window.__cdr && keys.includes('tfear')) s2.fortCdr = window.__cdr; (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
     let CASTS = 0;
     const fight = (pK, aK, L, seed, mySide) => { const A = side(pK, L, true), B = side(aK, L, false); const sim = arenaMakeSim(A, B, { rng: worldPvpSeededRng(seed), critSeed: seed });
       let res; for (let t = 0; t < 4000; t++) { res = sim.step(); ((mySide === "P" ? res.info.playerFlash : res.info.aiFlash) || []).forEach((k) => { if (k === "tfear") CASTS++; }); if (res.done) break; }
@@ -65,13 +65,13 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     const out = {}; const L80 = [80, 25, 5, 30];
     [["Hanzo team", BASE.concat(["hanzo"])], ["normal team", BASE.concat(["aurek"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
-      const T = BASE.concat(["tfear"]);
-      [[1, 0], [1.5, 0], [2, 0], [1, 0.5], [1, 1.0], [1.2, 0.5]].forEach(([K, sh]) => [0, 0.45, 0.9].forEach((S) => {
-        window.__hpK = K; window.__ward = sh ? { pct: sh, every: 8, self: true } : null; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
+      const T = BASE.concat(["tfear"]); window.__hpK = 0; window.__ward = null;
+      [0, 0.10, 0.25, 0.45, 0.55].forEach((cdr) => [0, 0.45, 0.9].forEach((S) => {
+        window.__cdr = cdr; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
         const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.hanzoGazed = +(AURA.hanzo / 40).toFixed(1);
-        out["vs " + on + " | HP x" + K + (sh ? ", shield " + sh * 100 + "% at 0s+every 8s" : "") + " | " + (S ? "gaze stun " + Math.round(S / 0.45) + " step(s)" : "no stun")] = r; }));
-      window.__hpK = 0; window.__ward = null; });
+        out["vs " + on + " | Baelgor team cooldowns -" + Math.round(cdr * 100) + "% (skill every " + (12 * (1 - cdr)).toFixed(1) + "s) | " + (S ? "gaze stun " + Math.round(S / 0.45) + " step(s)" : "no stun")] = r; }));
+      window.__cdr = 0; });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "stun_survival.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "stun_cdr.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
