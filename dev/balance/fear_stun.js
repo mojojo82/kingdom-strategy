@@ -36,9 +36,13 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   const r = await P.evaluate(() => {
     const d = Object.assign({}, HERO_DEFS.aurek, { name: "Siphon" }); d.conquestSkills = HERO_DEFS.aurek.conquestSkills.map((s) => Object.assign({}, s));
     const sk = d.conquestSkills[0]; sk.name = "Fear"; HERO_DEFS.tfear = d; if (HERO_ANIMS.aurek) HERO_ANIMS.tfear = HERO_ANIMS.aurek; if (HERO_ANIMS.aurek_skill) HERO_ANIMS.tfear_skill = HERO_ANIMS.aurek_skill;
-    window.__st = { S: 0 }; let PEND = [], AURA = { casts: 0, hit: 0, hanzo: 0 };
+    window.__st = { S: 0 }; let PEND = [], AURA = { casts: 0, hit: 0, hanzo: 0 }, WARD = { casts: 0, bael: 0 };
+    { const w = Object.assign({}, HERO_DEFS.lyra, { name: 'Warden' }); w.conquestSkills = HERO_DEFS.lyra.conquestSkills.map((x) => Object.assign({}, x)); HERO_DEFS.tward = w; if (HERO_ANIMS.lyra) HERO_ANIMS.tward = HERO_ANIMS.lyra; }
     window.__tfCast = (sd, key, tick, dtS, oh, mh) => { if (key !== "tfear" || !window.__st.S) return; PEND.push({ sd, until: tick + Math.round((window.__st.wait || 0) / dtS) }); };
-    window.__ftTick = (tick, dtS, pHH, aHH, pCd, aCd, pSt, aSt) => { if (!PEND.length) return; const keep = [];
+    window.__ftTick = (tick, dtS, pHH, aHH, pCd, aCd, pSt, aSt) => {
+      if (window.__ward) { const W = window.__ward; [pHH, aHH].forEach((h) => { if (!h || !h.by.tward || h.by.tward.ko) return; const due = tick === 1 || (tick > 1 && (tick - 1) % Math.round(W.every / dtS) === 0); if (!due) return;
+          let best = null; h.list.forEach((e) => { if (e.ko || e.dead || e.droid || e.float) return; if (!best || e.max > best.max) best = e; }); if (best) { best.sh = Math.max(best.sh || 0, W.pct * best.max); WARD.casts++; if (best.id === "tfear") WARD.bael++; } }); }
+      if (!PEND.length) return; const keep = [];
       PEND.forEach((q) => { const mine = q.sd === "P" ? pHH : aHH, opp = q.sd === "P" ? aHH : pHH, ocd = q.sd === "P" ? aCd : pCd, ost = q.sd === "P" ? aSt : pSt, me = mine && mine.by.tfear;
         if (!me || me.ko || !opp) return; const R = window.__st.R;
         if (window.__st.gaze) { let best = null, bcd = 1e9; (ost.actives || []).forEach((a2) => { const e2 = opp.by[a2.key]; if (!e2 || e2.ko || e2.dead || e2.droid) return; const c = ocd[a2.key] == null ? 1e9 : ocd[a2.key]; if (c < bcd) { bcd = c; best = e2; } });
@@ -48,7 +52,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         const T = tick + Math.round(window.__st.S / dtS); AURA.casts++;
         near.forEach((o) => { o.stunT = T; AURA.hit++; if (o.id === "hanzo") AURA.hanzo++; if (window.__st.reset) (ost.actives || []).forEach((a2) => { if (a2.key === o.id) ocd[a2.key] = a2.cooldown; }); }); });
       PEND = keep; };
-    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear", "zarek"]);
+    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear", "zarek", "tward"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); if (window.__hpK) (s2.heroHp || []).forEach((e) => { if (e.id === 'tfear') e.max = Math.round(e.max * window.__hpK); }); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
     let CASTS = 0;
@@ -61,10 +65,13 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     const out = {}; const L80 = [80, 25, 5, 30];
     [["Hanzo team", BASE.concat(["hanzo"])], ["normal team (Aurek)", BASE.concat(["aurek"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
-      window.__hpK = 0;
-      [0.45, 0.9, 1.35, 1.8, 2.7].forEach((S) => { window.__st = { S, gaze: true, noReset: true, wait: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} }; const r = rate("tfear", O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.picked = AURA.who;
-        out["vs " + on + " | gaze stun " + S + "s on the enemy closest to casting (no reset)"] = r; }); });
+      const TW = ["tward", "lyra", "kessa", "sera", "tfear"]; window.__st = { S: 0 };
+      window.__ward = null; window.__hpK = 0; out["vs " + on + " | Gareth,Lyra,Kessa,Sera + Baelgor (today)"] = rate("tfear", O, L80);
+      out["vs " + on + " | Warden(no shield),Lyra,Kessa,Sera + Baelgor"] = rate(TW, O, L80);
+      [[1.2, 0.25], [1.2, 0.5], [1.2, 1.0], [1.5, 0.5], [1.0, 0.5]].forEach(([K, pct]) => { window.__hpK = K; window.__ward = { pct, every: 8 }; WARD = { casts: 0, bael: 0 }; const r = rate(TW, O, L80); r.shieldsOnBaelgorPct = WARD.casts ? Math.round(100 * WARD.bael / WARD.casts) : 0;
+        out["vs " + on + " | Warden team, Baelgor HP x" + K + ", shield " + Math.round(pct * 100) + "% of target HP at 0s + every 8s"] = r; });
+      window.__ward = null; window.__hpK = 0; });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_gaze_stun.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "warden_shield.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
