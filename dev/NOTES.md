@@ -5850,3 +5850,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   - v3 same with both frames shrunk to 68% bottom-anchored (fear_start_small_v1 / fear_end_small_v1) + "no motion blur, absolutely no effects": clean, no edge contact, side view. USE THIS: clips/siphon_fear_ground_v3.mp4 (1152x768, 24 fps). Still until frame 72 (3.0 s), sword hits the ground ~frame 94-96 (~1.0 s after he moves), kneel held to the end.
 - Preview: fear/fear_ground_preview_v1.mp4 (big + game size; the pull-out is the swing played backwards as a placeholder).
 - v4 (Harley: bigger canvas, lift the handle before the plunge): same small frames, prompt adds "lifts it up high by the handle, blade hanging point-down, brief hold, then drives it down". clips/siphon_fear_ground_v4.mp4: swing frames 46-66, raised hold 66-120 (too long, trimmed in the preview to 67-74), plunge hits at frame 123 (small spark). Hit = 1.5 s after he moves with the trimmed hold. Preview fear/fear_ground_preview_v2.mp4 shows the full clip frame (v1 preview crop had clipped the blade). Atlas: 4 runs total, ~$2.43, ~$10.38 left.
+
+### (after v1722) Arena weapons start with a full reload (kept on purpose)
+- Harley noticed both lasers didn't fire at match start. Cause: arenaMakeSim starts every missile/beam weapon at a full cooldown (weaponCd = wcd * (startFrac || 1)); only Duplicate's copy starts half-loaded (startFrac 0.5). Laser cooldown 10 s, so its first beam is ~10 s in. Hero skills fire at second 0 (except Gareth).
+- Harley: leave it, he thinks it was designed that way. No change.
