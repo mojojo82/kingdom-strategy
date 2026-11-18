@@ -38,7 +38,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
           if (e.hp <= 1e-9) { e.hp = 0; e.ko = true; e.koTick = tick; e.koD = e.d; e.reviveT = game.heroKoCfg.reviveSec; e.kos = (e.kos || 0) + 1; e.d = 0; } });
         tot += per * (ost.dmgTakenMult || 1); if (q.sd === "P") { o.pF += per; o.pH += tot; } else { o.aF += per; o.aH += tot; } });
       Q = keep; return o; };
-    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "tdrain", "aurek", "tom", "torvald", "zarek", "pip"]);
+    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "tdrain", "aurek", "tom", "torvald", "zarek", "pip", "roran", "juno", "vesper", "seraphine"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
     const HAN = BASE.concat(["hanzo"]);
@@ -48,9 +48,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     const sh = HERO_DEFS.hanzo.conquestSkills.find((s) => s.effectType === "dodge"), keep = sh.perLevel;
     const out = {}; const L80 = [80, 25, 5, 30];
     [[0.10, "50% (now)"], [0.08, "40%"]].forEach(([pl, nm]) => { sh.perLevel = pl; const o = {};
-      ["aurek", "tom", "torvald", "zarek", "pip", "lyra"].forEach((x) => { CFG = { on: false }; o["Hanzo team vs team with " + x] = rate(x, L80); });
-      CFG = { on: true, D: 800 }; o["Hanzo team vs team with siphon (drain 800)"] = rate("tdrain", L80); out["Hanzo dodge " + nm] = o; });
+      ["pip", "roran", "juno", "vesper", "seraphine"].forEach((x) => { if (BASE.includes(x)) throw new Error("duplicate hero " + x); CFG = { on: false }; o["Hanzo team vs team with " + x] = rate(x, L80); }); out["Hanzo dodge " + nm] = o; });
     sh.perLevel = keep; return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "hanzo_dodge40.json"), r); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "hanzo_vs_riders.json"), r); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
