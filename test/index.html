@@ -6554,7 +6554,7 @@ function setLang(code) {
   document.head.appendChild(st); document.documentElement.lang = KS_LANG;
 })();
 /* v1499: Pip's Spotter's Mark numbers for a skill level (null = no Pip / no such skill) */
-function spotMarkCfg(lvl) { var d = HERO_DEFS.pip, sk = d && d.conquestSkills && d.conquestSkills[1]; if (!sk || sk.effectType !== "spotMark") return null; var L = Math.max(1, Math.min(sk.pctByLevel.length, lvl || 1)); return { pct: sk.pctByLevel[L - 1], cap: sk.markCap, superMarks: sk.superMarks }; }
+function spotMarkCfg(lvl) { var d = HERO_DEFS.pip, sk = d && d.conquestSkills && d.conquestSkills[1]; if (!sk || sk.effectType !== "spotMark" || sk.disabled) return null; /* v1721: switched off (Harley) */ var L = Math.max(1, Math.min(sk.pctByLevel.length, lvl || 1)); return { pct: sk.pctByLevel[L - 1], cap: sk.markCap, superMarks: sk.superMarks }; }
 var HERO_DEFS = {
   gareth: { name: "Gareth", title: "The Shieldbreaker", class: "infantry", icon: "🛡️", rarity: "Epic",
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 200 }, levelBaseCost: { gold: 60, food: 80 }, levelCostMult: 1.35,
@@ -6664,7 +6664,7 @@ var HERO_DEFS = {
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 220 }, levelBaseCost: { gold: 60, wood: 80 }, levelCostMult: 1.35,
     conquestSkills: [
       { name: "Spot Shot", icon: "🔭💥", kind: "active", cooldown: 9, anyTarget: true, desc: "Every 9s, fires a flare round at any enemy on screen.", pctByLevel: [0.50, 0.57, 0.64, 0.71, 0.78] },
-      { name: "Spotter's Mark", icon: "🎯", kind: "passive", effectType: "spotMark", pctByLevel: [0.10, 0.115, 0.13, 0.145, 0.16], markCap: 20, superMarks: 3,
+      { name: "Spotter's Mark", icon: "🎯", kind: "passive", disabled: true, /* v1721 (Harley): switched OFF for now, kept on his card - it alone made the Pip team beat the Hanzo team (Hanzo team 38% -> 75% with it off) */ effectType: "spotMark", pctByLevel: [0.10, 0.115, 0.13, 0.145, 0.16], markCap: 20, superMarks: 3,
         desc: "Each fortress cannon bullet that hits an enemy marks it (super bursts mark 3 times, up to 20 marks). Pip's next hit deals +10% damage per mark (16% at Lv 5), then clears them." }
     ],
     expeditionSkills: [
@@ -14367,7 +14367,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1720"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1721"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
