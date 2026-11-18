@@ -5873,3 +5873,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Overhead v2 (Harley: see the full blade, less 3/4): prompt "swing in a flat plane parallel to the camera, sword always side-on at full length". clips/siphon_attack_over_v2.mp4: blade side-on through the whole swing (frames 58-76, hit ~74), but a ~1.2 s pause with the sword hanging behind his back (28-56) - cut in the preview clips/siphon_attack_over_preview_v2.mp4. Atlas ~$6.73 left.
 
 - Overhead v3 (Harley: should follow through more): clips/siphon_attack_over_v3.mp4 - lifts straight up, holds (24-54), chop 56-68, follow-through low with the tip near the ground and a deep lean (68-128), return 128-152. Side view, full blade, no edges. Game-speed preview (0.96 s per swing, hit 0.42 s): clips/siphon_attack_over_gamespeed_v3.mp4. Atlas ~$6.13 left.
+
+- Harley picked C for the overhead chop: clips/siphon_attack_over_v3.mp4, motion frames 9-24 + 54-73 + 128-152 (holds removed) sampled evenly to 31 frames at 24 fps (~1.3 s). Attack interval for Baelgor: 1.35 s (3 Arena ticks) via COMBAT_TIMING.heroAttackSec, hit scaled so DPS is unchanged.
