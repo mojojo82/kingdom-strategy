@@ -40,8 +40,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     { const w = Object.assign({}, HERO_DEFS.lyra, { name: 'Warden' }); w.conquestSkills = HERO_DEFS.lyra.conquestSkills.map((x) => Object.assign({}, x)); HERO_DEFS.tward = w; if (HERO_ANIMS.lyra) HERO_ANIMS.tward = HERO_ANIMS.lyra; }
     window.__tfCast = (sd, key, tick, dtS, oh, mh) => { if (key !== "tfear" || !window.__st.S) return; PEND.push({ sd, until: tick + Math.round((window.__st.wait || 0) / dtS) }); };
     window.__ftTick = (tick, dtS, pHH, aHH, pCd, aCd, pSt, aSt) => {
-      if (window.__ward) { const W = window.__ward; [pHH, aHH].forEach((h) => { if (!h || !h.by.tward || h.by.tward.ko) return; const due = tick === 1 || (tick > 1 && (tick - 1) % Math.round(W.every / dtS) === 0); if (!due) return;
-          let best = null; h.list.forEach((e) => { if (e.ko || e.dead || e.droid || e.float) return; if (!best || e.max > best.max) best = e; }); if (best) { best.sh = Math.max(best.sh || 0, W.pct * best.max); WARD.casts++; if (best.id === "tfear") WARD.bael++; } }); }
+      if (window.__ward) { const W = window.__ward; [pHH, aHH].forEach((h) => { if (!h || (!W.self && (!h.by.tward || h.by.tward.ko)) || (W.self && !h.by.tfear)) return; const due = tick === 1 || (tick > 1 && (tick - 1) % Math.round(W.every / dtS) === 0); if (!due) return;
+          let best = null; if (W.self) { best = h.by.tfear && !h.by.tfear.ko ? h.by.tfear : null; } else h.list.forEach((e) => { if (e.ko || e.dead || e.droid || e.float) return; if (!best || e.max > best.max) best = e; }); if (best) { best.sh = Math.max(best.sh || 0, W.pct * best.max); WARD.casts++; if (best.id === "tfear") WARD.bael++; } }); }
       if (!PEND.length) return; const keep = [];
       PEND.forEach((q) => { const mine = q.sd === "P" ? pHH : aHH, opp = q.sd === "P" ? aHH : pHH, ocd = q.sd === "P" ? aCd : pCd, ost = q.sd === "P" ? aSt : pSt, me = mine && mine.by.tfear;
         if (!me || me.ko || !opp) return; const R = window.__st.R;
@@ -63,11 +63,15 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
-    [["Hanzo team", BASE.concat(["hanzo"])]].forEach(([on, O]) => {
+    [["Hanzo team", BASE.concat(["hanzo"])], ["normal team", BASE.concat(["aurek"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
-      window.__st = { S: 0 }; window.__ward = null; window.__hpK = 0;
-      [["roran"], ["juno"], ["pip"], ["vesper"]].forEach(([r4]) => ["tfear", "aurek", "tom"].forEach((x) => { const T = ["lyra", "kessa", "sera", r4, x]; out["vs " + on + " | Lyra,Kessa,Sera," + r4 + " + " + (x === "tfear" ? "Baelgor" : x)] = rate(T, O, L80); })); });
+      const T = BASE.concat(["tfear"]);
+      [[1, 0], [1.5, 0], [2, 0], [1, 0.5], [1, 1.0], [1.2, 0.5]].forEach(([K, sh]) => [0, 0.45, 0.9].forEach((S) => {
+        window.__hpK = K; window.__ward = sh ? { pct: sh, every: 8, self: true } : null; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
+        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.hanzoGazed = +(AURA.hanzo / 40).toFixed(1);
+        out["vs " + on + " | HP x" + K + (sh ? ", shield " + sh * 100 + "% at 0s+every 8s" : "") + " | " + (S ? "gaze stun " + Math.round(S / 0.45) + " step(s)" : "no stun")] = r; }));
+      window.__hpK = 0; window.__ward = null; });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "four_riders.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "stun_survival.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
