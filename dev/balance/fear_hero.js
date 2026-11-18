@@ -28,6 +28,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   if (process.env.SLOWGRID) await P.evaluate(() => { window.__slowGrid = true; });
   if (process.env.SLOW8) await P.evaluate(() => { window.__slow8 = true; });
+  if (process.env.LOWF) await P.evaluate(() => { window.__LOWF = true; });
   const r = await P.evaluate(() => {
     const d = Object.assign({}, HERO_DEFS.aurek, { name: "Siphon" }); d.conquestSkills = HERO_DEFS.aurek.conquestSkills.map((s) => Object.assign({}, s));
     const sk = d.conquestSkills[0]; sk.name = "Fear"; HERO_DEFS.tfear = d; if (HERO_ANIMS.aurek) HERO_ANIMS.tfear = HERO_ANIMS.aurek; if (HERO_ANIMS.aurek_skill) HERO_ANIMS.tfear_skill = HERO_ANIMS.aurek_skill;
@@ -44,12 +45,12 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
-    ["hanzo", "aurek"].forEach((opp) => {
+    (window.__LOWF ? ["aurek"] : ["hanzo", "aurek"]).forEach((opp) => {
       window.__fear = { pct: 0, D: 0 }; out["vs " + opp + " team | Aurek copy, no fear"] = rate("tfear", opp, L80);
-      [[0.3, 3], [0.3, 5], [0.5, 3], [0.5, 5], [0.7, 5]].forEach(([pct, D]) => { window.__fear = { pct, D }; out["vs " + opp + " team | Fear " + Math.round(pct * 100) + "% slower for " + D + "s"] = rate("tfear", opp, L80); });
-      window.__fear = { pct: 0.5, D: 5 }; const keep = sk.pctByLevel; sk.pctByLevel = [0, 0, 0, 0, 0]; out["vs " + opp + " team | Fear 50% 5s, NO skill damage"] = rate("tfear", opp, L80); sk.pctByLevel = keep;
+      (window.__LOWF ? [[0.05, 2], [0.1, 2], [0.1, 3], [0.15, 2], [0.15, 3], [0.2, 2], [0.2, 3]] : [[0.3, 3], [0.3, 5], [0.5, 3], [0.5, 5], [0.7, 5]]).forEach(([pct, D]) => { window.__fear = { pct, D }; out["vs " + opp + " team | Fear " + Math.round(pct * 100) + "% slower for " + D + "s"] = rate("tfear", opp, L80); });
+      if (window.__LOWF) return; window.__fear = { pct: 0.5, D: 5 }; const keep = sk.pctByLevel; sk.pctByLevel = [0, 0, 0, 0, 0]; out["vs " + opp + " team | Fear 50% 5s, NO skill damage"] = rate("tfear", opp, L80); sk.pctByLevel = keep;
     });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_hero.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", process.env.LOWF ? "fear_hero_low.json" : "fear_hero.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
