@@ -4721,6 +4721,12 @@ COMBAT_TIMING.heroNoHitScale = { zarek: true }; /* v1655 (Harley): Zarek's 2 s v
    with secMult 2 takes twice as long and hits twice as hard, so DPS never changes (same as heroAttackSec's interval/damage scaling). Slot 2 for
    Gareth = the Leonardo jump slam. Conquest only for now (Arena next, once Harley likes it). Dev Tools can turn it off (this device). */
 COMBAT_TIMING.heroAttackSlots = { gareth: { bag: [1, 1, 1, 1, 1, 1, 1, 2] /* v1352: 1 in 8 (Harley: "I should be seeing it much less"; was [1,1,2] = slamming 60% of the time) */, slots: { 2: { secMult: 3, owedSec: 3.5 } } } }; /* v1347: slam re-cut to 1.5 s (= 3 swings, 3x damage); its owed hit may wait longer (it waits for its own swing + lands ~1 s in) */
+/* v1730 (Harley: "the usual atks from heroes do 1x, this atk will be 4x"): Baelgor's horizontal slash = slot 2. Chop and slash take turns (order: no
+   shuffle). The slash takes 4 chops of time (5.4 s) and hits 4x as hard, landing impactSec into the swing (the sword passing in front). Arena too (arena). */
+COMBAT_TIMING.heroAttackSlots.baelgor = { bag: [1, 2], order: true, arena: true, slots: { 2: { secMult: 4, owedSec: 6, impactSec: 2.19 } } };
+/* how long an owed melee hit may wait for its swing (Conquest, scene drawn). A slot with owedSec waits that long; a hero whose slots take turns (order)
+   waits that long for EVERY hit - his chop can be owed while the 5.4 s slash is still playing (otherwise it expired as a miss and he slashed twice). */
+function heroOwedSec(aid, slot, dflt) { var c = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid]; if (!c || !c.slots) return dflt; var s = c.slots[slot || 1]; if (s && s.owedSec && slot && slot !== 1) return s.owedSec; if (c.order) { var m = dflt; for (var k in c.slots) if (c.slots[k].owedSec > m) m = c.slots[k].owedSec; return m; } return dflt; }
 var HERO_ATK_SLOTS_KEY = "kingdom_prototype_atkslots_v1", heroAtkSlotsOn = true;
 try { heroAtkSlotsOn = localStorage.getItem(HERO_ATK_SLOTS_KEY) !== "0"; } catch (e) {}
 // Heroes whose first Arena skill waits for the FULL cooldown (like Conquest) instead of being ready at the start of the fight.
@@ -9184,10 +9190,10 @@ function createGame(opts) {
       if (!tgt) { return; }
       var ivlMs = heroAttackSec(aid) * 1000, nowMs = Date.now();
       // v660: cooldown null = first swing of a stretch; a NEW enemy arriving at his sword also gets struck at once if a full swing interval has passed (the whole-second step used to make him wait up to a second)
-      var freshStrike = state.idle.attackCooldowns[aid] == null || (lt.id !== tgt.id && nowMs - lt.at >= ivlMs);
+      var freshStrike = state.idle.attackCooldowns[aid] == null || (lt.id !== tgt.id && nowMs - lt.at >= (lt.ivlMs || ivlMs)); /* v1730: lt.ivlMs = a slash's own length (Baelgor) - a new enemy can't be struck before it ends */
       if (!freshStrike) { lt.id = tgt.id; return; }
       lt.id = tgt.id; lt.at = nowMs;
-      var slotF = idleNextAtkSlot(aid), smF = idleSlotMult(aid, slotF), hitDmg = idleAttackerHitDamage(aid) * smF; /* v1344: a slam takes smF x as long for smF x the damage */
+      var slotF = idleNextAtkSlot(aid), smF = idleSlotMult(aid, slotF), hitDmg = idleAttackerHitDamage(aid) * smF; lt.ivlMs = COMBAT_TIMING.heroAttackSlots[aid] && COMBAT_TIMING.heroAttackSlots[aid].order ? ivlMs * smF : 0; /* v1344: a slam takes smF x as long for smF x the damage */
       var nowHit = idleMeleeStrike(aid, tgt, hitDmg, false, slotF); /* v917: owed to the sword while the scene is drawn */
       idleLogBasicHit(aid, tgt, hitDmg, !nowHit, slotF);
       state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1;
@@ -9206,7 +9212,7 @@ function createGame(opts) {
   function idleNextAtkSlot(aid) { /* v1344: next attack slot from this hero's shuffled bag (1 = his normal swing) */
     var cfg = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid]; if (!cfg) return 1;
     var bags = state.idle.atkBag || (state.idle.atkBag = {}), q = bags[aid];
-    if (!q || !q.length) { q = cfg.bag.slice(); for (var i = q.length - 1; i > 0; i--) { var j = Math.floor(combatRng() * (i + 1)), t = q[i]; q[i] = q[j]; q[j] = t; } bags[aid] = q; }
+    if (!q || !q.length) { q = cfg.bag.slice(); if (!cfg.order) for (var i = q.length - 1; i > 0; i--) { var j = Math.floor(combatRng() * (i + 1)), t = q[i]; q[i] = q[j]; q[j] = t; } bags[aid] = q; }
     return q.shift();
   }
   function idleSlotMult(aid, slot) { var cfg = COMBAT_TIMING.heroAttackSlots[aid], s = cfg && cfg.slots && cfg.slots[slot]; return s && s.secMult > 0 ? s.secMult : 1; }
@@ -9245,7 +9251,7 @@ function createGame(opts) {
   function idleMeleeSettle() { /* engine side, every combat slice: not drawn any more -> owed hits land the old way on their target; drawn -> a hit the sword never delivered expires (a miss) */
     if (!idleMeleeOwed.length) return;
     var live = idleMeleeLive(), nowMs = Date.now(), keep = [], due = [];
-    idleMeleeOwed.forEach(function (o) { var lim = IDLE_MELEE_OWED_SEC; if (o.slot && o.slot !== 1) { var cS = COMBAT_TIMING.heroAttackSlots[o.aid], sS = cS && cS.slots && cS.slots[o.slot]; if (sS && sS.owedSec) lim = sS.owedSec; } if (!live) due.push(o); else if (nowMs - o.at <= lim * 1000) keep.push(o); }); /* v1347: per-slot wait (v1348: past it, a miss like any swing) */
+    idleMeleeOwed.forEach(function (o) { var lim = heroOwedSec(o.aid, o.slot, IDLE_MELEE_OWED_SEC); /* v1730: heroOwedSec (was: slot != 1 -> its owedSec) */ if (!live) due.push(o); else if (nowMs - o.at <= lim * 1000) keep.push(o); }); /* v1347: per-slot wait (v1348: past it, a miss like any swing) */
     idleMeleeOwed = keep;
     due.forEach(function (o) { var e = idleFindEnemy(o.id); if (!e || e.hp <= 0 || state.idle.pending) return; e.hp -= o.dmg * idleMarkMult(e, o.aid) * idleEnemyDefTake(e, o.dmg); idleMeleeKillCheck(e); });
   }
@@ -10469,7 +10475,7 @@ function createGame(opts) {
         var slot = idleNextAtkSlot(aid), sm = idleSlotMult(aid, slot), hitDmg = hitDmg0 * sm; /* v1344: attack slots - a slam is sm swings long and sm swings strong (DPS unchanged) */
         if (nHits === 0) hitDmg += idlePressureRelease(aid); /* v1609: Pressure Build rides on this hit */
         state.idle.attackCooldowns[aid] += ivl * sm; for (var lmi = 0; lmi < sm; lmi++) idleLimitAdd(aid, false); /* v954: every swing fills his limit bar (a slam counts as the swings it replaces) */
-        if (nHits === 0) { if (isMelA) { idleMeleeLast[aid] = { id: tgt.id, at: Date.now() }; var nowHitM = idleMeleeStrike(aid, tgt, hitDmg, true, slot); idleLogBasicHit(aid, tgt, hitDmg, !nowHitM, slot); } else { idleLogBasicHit(aid, tgt, hitDmg); tgt.hp -= hitDmg * idleMarkMult(tgt, aid) * idleEnemyDefTake(tgt, hitDmg); } state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1; } /* v917: melee = owed to the sword while drawn */
+        if (nHits === 0) { if (isMelA) { idleMeleeLast[aid] = { id: tgt.id, at: Date.now(), ivlMs: COMBAT_TIMING.heroAttackSlots[aid] && COMBAT_TIMING.heroAttackSlots[aid].order ? ivl * sm * 1000 : 0 }; var nowHitM = idleMeleeStrike(aid, tgt, hitDmg, true, slot); idleLogBasicHit(aid, tgt, hitDmg, !nowHitM, slot); } else { idleLogBasicHit(aid, tgt, hitDmg); tgt.hp -= hitDmg * idleMarkMult(tgt, aid) * idleEnemyDefTake(tgt, hitDmg); } state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1; } /* v917: melee = owed to the sword while drawn */
         else idlePendingHits.push({ aid: aid, t: tOff, dmg: hitDmg, eid: isMelA ? tgt.id : null, slot: slot }); // 2nd, 3rd… hit of this second land one interval apart
         tOff += ivl * sm; nHits++;
       }
@@ -14390,7 +14396,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1729"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1730"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26606,20 +26612,20 @@ function stepIdleAnim(dtSec, w, h) {
     Object.keys(mqs).forEach(function (aid) {
       var q = mqs[aid]; if (!q.length) return;
       var an = HERO_ANIMS[aid], sw = idleAnim.swingRun && idleAnim.swingRun[aid];
-      var impMs = sw && sw.slam ? GARETH_SLAM.impact / GARETH_SLAM.fps * 1000 : an ? (an.impact || 5) / an.fps.attack * 1000 : 0; /* v1344: the slam lands on its landing frame */
-      var slotKind = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid] ? (sw && sw.slam ? 2 : 1) : 0;
+      var impMs = sw && sw.slam ? GARETH_SLAM.impact / GARETH_SLAM.fps * 1000 : sw && sw.atk2 ? heroAtk2ImpactMs(aid) : an ? (an.impact || 5) / an.fps.attack * 1000 : 0; /* v1344: the slam lands on its landing frame; v1730: Baelgor's slash on its hit frame */
+      var slotKind = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid] ? (sw && (sw.slam || sw.atk2) ? 2 : 1) : 0;
       if (an && sw && nowM < sw.until && sw.landedFor !== sw.t0 && (nowM - sw.t0) >= impMs) {
         sw.landedFor = sw.t0;
         var owedQ = q.filter(function (x) { return x.owed && (!slotKind || slotKind === 2 || x.slot !== 2); });
         if (owedQ.length) { /* v917: the real damage happens HERE, on the impact frame, to whoever is at the blade */
           var bl = bladeEnemy(aid, owedQ[0].id), res = game.idleMeleeLand(aid, bl == null ? null : Number(bl), slotKind || undefined);
-          if (slotKind === 2) try { chargeShakeKick(); } catch (e) {}
+          if (slotKind === 2 && sw.slam) try { chargeShakeKick(); } catch (e) {}
           owedQ.forEach(function (x) { idleAnim.pendingArrows[x.id] = Math.max(0, (idleAnim.pendingArrows[x.id] || 0) - 1); });
           q = mqs[aid] = q.filter(function (x) { return owedQ.indexOf(x) < 0; });
           res.forEach(function (r) { var ev = idleAnim.enemyById[r.id]; if (ev && game.state.conquestRoster.indexOf(aid) !== -1) meleeVisualHit(aid, r.dmg, ev, r.id, h); });
         } else { var niQ = -1; for (var qi = 0; qi < q.length; qi++) if (!q[qi].owed) { niQ = qi; break; } if (niQ >= 0) land(aid, q.splice(niQ, 1)[0]); } /* v1344: only a plain (not owed) hit - an owed hit of the OTHER slot (a slam waiting for its own swing) must stay queued */
       }
-      for (var oi = q.length - 1; oi >= 0; oi--) if (q[oi].owed && nowM - q[oi].t > (q[oi].slot === 2 ? 3500 : 1500)) { /* v1347: a slam hit may wait longer */ idleAnim.pendingArrows[q[oi].id] = Math.max(0, (idleAnim.pendingArrows[q[oi].id] || 0) - 1); q.splice(oi, 1); } /* a swing that never came: the engine expires it too (a miss) */
+      for (var oi = q.length - 1; oi >= 0; oi--) if (q[oi].owed && nowM - q[oi].t > (COMBAT_TIMING.heroAttackSlots[aid] ? heroOwedSec(aid, q[oi].slot, 1.5) * 1000 : (q[oi].slot === 2 ? 3500 : 1500))) { /* v1347: a slam hit may wait longer */ idleAnim.pendingArrows[q[oi].id] = Math.max(0, (idleAnim.pendingArrows[q[oi].id] || 0) - 1); q.splice(oi, 1); } /* a swing that never came: the engine expires it too (a miss) */
       while (q.length && !q[0].owed && (q.length > 3 || nowM - q[0].t > 900)) land(aid, q.shift()); /* old instant hits (scene not drawn when they happened) */
     });
   })();
@@ -27947,6 +27953,8 @@ var HERO_ANIMS = {
   aurek: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/aurek/aurek_anim_v1.webp", wrap: 14, cw: 174, ch: 154, ax: 67.84, ay: 151.96, fps: { idle: 8, run: 24, attack: 24, attack2: 24 }, rows: { idle: [0, 41], run: [2, 27], attack: [3, 20], attack2: [4, 20] }, sizeMul: 1.2, dispH: 51.33, /* v1546 (Harley): 1.2 - slightly taller than Bram and Torvald */ impact: 9, impact2: 9 }, /* v1506: tall paladin (1.24x Hanzo), two slashes alternate */
   baelgor: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_anim_v1.webp", wrap: 8, cw: 497, ch: 393, ax: 191.03, ay: 388.43, fps: { idle: 6, run: 12, attack: 24 }, rows: { idle: [0, 24], run: [2, 16], attack: [3, 31] }, sizeMul: 1, dispH: 68.35, impact: 14 }, /* v1726 Baelgor: built sharp (230 sheet px for his ~40 CSS px standing height = ~1.9 sheet px per phone px); chop v3 (hit on frame 14) */
   baelgor_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_skill_anim_v1.webp", wrap: 9, cw: 442, ch: 395, ax: 151.0, ay: 375.9, fps: { idle: 8, run: 8, skill: 16 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 69] }, once: { skill: true }, sizeMul: 1, dispH: 71.82, throwFrame: 28 }, /* Fear: lift, drive the sword into the ground (planted on frame 28 = 1.72 s), kneel, pull it out and rise (4.3 s) */
+  baelgor_atk2a: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_atk2a_anim_v1.webp", wrap: 5, cw: 745, ch: 340, ax: 363.22, ay: 337.19, fps: { idle: 8, run: 8, skill: 16 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 43] }, once: { skill: true }, sizeMul: 1, dispH: 59.13 }, /* v1730: horizontal slash part 1 (wind-up + the swing, frames 0-42) */
+  baelgor_atk2b: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_atk2b_anim_v1.webp", wrap: 5, cw: 472, ch: 359, ax: 188.16, ay: 356.45, fps: { idle: 8, run: 8, skill: 16 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 43] }, once: { skill: true }, sizeMul: 1, dispH: 62.43 }, /* part 2 (short hold, sword back to the shoulder) */
   baelgor_drain: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/siphon/siphon_drain_anim_v1.webp", wrap: 12, cw: 331, ch: 368, ax: 146.31, ay: 366.06, fps: { idle: 8, run: 8, skill: 8 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 64] }, once: { skill: true }, sizeMul: 1, dispH: 92.0 }, /* drain leap - NOT used yet (2nd skill not designed); rebuild sharp with the final timing */
   aurek_skill: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/aurek/aurek_skill_anim_v1.webp", wrap: 16, cw: 160, ch: 167, ax: 65.92, ay: 164.44, fps: { idle: 8, run: 8, skill: 24 }, rows: { idle: [0, 1], run: [0, 1], skill: [1, 32] }, once: { skill: true }, sizeMul: 1, dispH: 55.67, throwFrame: 9 }, /* Sunforge Slam: sword planted on frame 9 -> fire pillars */
   seraphine: { src: (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + "art/heroes/seraphine/seraphine_anim_v1.webp", wrap: 21, cw: 138, ch: 152, ax: 70.69, ay: 149.24, fps: { idle: 8, run: 8, attack: 24 }, rows: { idle: [0, 41], run: [0, 41], attack: [1, 19] }, once: { attack: true }, sizeMul: 1, dispH: 37.31, release: 4 }, /* v1508: crystal mage on the deck; violet crystal bolt (SPELL_COLS) */
@@ -28456,7 +28464,7 @@ function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
 var heroAnimImgCache = {};
 /* v1578 (Harley): only the sheets of heroes in use are loaded - your Conquest team at start (splash / world map), the Arena opponent's when a fight is set up.
    Was: all 23 animated heroes at login (~59 MP of pictures) whether used or not. Sheets not in use are let go when Conquest opens. Same pictures, same drawing. */
-function heroSheetKeys(keys) { var out = []; (keys || []).forEach(function (k) { [k, k + "_skill"].forEach(function (a) { if (HERO_ANIMS[a] && out.indexOf(a) === -1) out.push(a); }); }); return out; }
+function heroSheetKeys(keys) { var out = []; (keys || []).forEach(function (k) { [k, k + "_skill", k + "_atk2a", k + "_atk2b"].forEach(function (a) { if (HERO_ANIMS[a] && out.indexOf(a) === -1) out.push(a); }); }); return out; }
 function heroSheetsWarm(keys) { try { heroSheetKeys(keys).forEach(function (a) { var fresh = !heroAnimImgCache[a]; heroAnimImg(a); var im = heroAnimImgCache[a]; if (fresh && im && im.decode) im.decode().catch(function () {}); }); } catch (e) {} }
 function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys); Object.keys(heroAnimImgCache).forEach(function (a) { if (keep.indexOf(a) !== -1) return; var im = heroAnimImgCache[a]; delete heroAnimImgCache[a]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }); } catch (e) {} }
 function heroAnimImg(key) {
@@ -29164,6 +29172,15 @@ function drawHeroSkillFrame(ctx, key, x, feetY, f, hs, flip) { /* one frame of a
   ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high"; ctx.translate(x, feetY); if (flip) ctx.scale(-1, 1);
   ctx.drawImage(im, (f % W) * a.cw, (row[0] * 2 + Math.floor(f / W)) * a.ch, a.cw, a.ch, -a.ax * k, -a.ay * k, a.cw * k, a.ch * k); ctx.restore();
 }
+/* v1730: a basic attack on its own sheet(s), played once - Baelgor's horizontal slash (attack slot 2, COMBAT_TIMING.heroAttackSlots). parts = sheets played
+   back to back (one 4096 sheet can't hold all its frames at full sharpness), impact = the hit frame counted over all parts. Conquest + Arena. */
+var HERO_ATK2 = { baelgor: { parts: ["baelgor_atk2a", "baelgor_atk2b"], impact: 35 } };
+function heroAtk2Def(key) { var d = HERO_ATK2[key]; if (!d || typeof HERO_ANIMS === "undefined") return null; if (!d.n) { d.n = 0; d.parts.forEach(function (p) { d.n += HERO_ANIMS[p].rows.skill[1]; }); d.fps = HERO_ANIMS[d.parts[0]].fps.skill; } return d; }
+function heroAtk2Ms(key) { var d = heroAtk2Def(key); return d ? d.n / d.fps * 1000 : 0; }
+function heroAtk2ImpactMs(key) { var d = heroAtk2Def(key); return d ? d.impact / d.fps * 1000 : 0; }
+function heroAtk2Ready(key) { var d = HERO_ATK2[key]; return !!d && d.parts.every(function (p) { return !!heroAnimImg(p); }); }
+function drawHeroAtk2(ctx, key, x, feetY, hs, flip, ms) { var d = heroAtk2Def(key); if (!d) return -1; var f = Math.max(0, Math.min(d.n - 1, Math.floor(ms / 1000 * d.fps))), f0 = f;
+  for (var i = 0; i < d.parts.length; i++) { var n = HERO_ANIMS[d.parts[i]].rows.skill[1]; if (f < n) { drawHeroSkillFrame(ctx, d.parts[i], x, feetY, f, hs, flip); return f0; } f -= n; } return f0; }
 function heroDiveStep(ctx, M, key, R, now, hs) { /* draws him; on the first impact frame spawns the burst + shake. Returns the pose (null = finished) */
   var P = heroDivePose(key, R, now, hs); if (!P) return null;
   if (P.ph === "hit" && !R.hit) { R.hit = true; (M.dvBursts || (M.dvBursts = [])).push({ x: R.landX + (R.dir || 1) * 9.7 * hs, y: R.landY - 1 * hs, t0: now, seed: Math.floor(Math.random() * 1e6) }); try { chargeShakeKick(); } catch (eSk) {} if (R.onHit) try { R.onHit(); } catch (eOh) {} }
@@ -29725,10 +29742,11 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
       if (!flashing && swingWant && !(swS[key] && nowW < swS[key].until)) {
         var mqK = (idleAnim.meleeQ || {})[key] || [], owK = mqK.filter(function (x) { return x.owed; });
         var slamNext = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[key] && key === "gareth" && garethSlamReady() && owK.length && owK[0].slot === 2; /* v1344 */
+        var atk2Next = !slamNext && heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[key] && HERO_ATK2[key] && heroAtk2Ready(key) && owK.length && owK[0].slot === 2; /* v1730: Baelgor's slash (slot 2) */
         var rwA = HERO_ANIMS[key].rows, nAt = rwA.attack3 ? 3 : rwA.attack2 ? 2 : 1; /* v1502: Hanzo alternates his two basic attacks; v1616: Iron Lily rotates three */
         var aiN = slamNext || nAt < 2 ? 0 : (((swS[key] && swS[key].ai) || 0) + 1) % nAt, stN = ["attack", "attack2", "attack3"][aiN], alt2 = aiN > 0;
         if (alt2) cycMs = rwA[stN][1] / (HERO_ANIMS[key].fps[stN] || HERO_ANIMS[key].fps.attack) * 1000;
-        swS[key] = slamNext ? { t0: nowW, until: nowW + garethSlamMs(), slam: true } : { t0: nowW, until: nowW + cycMs, alt: alt2, ai: aiN }; heroAnimRestart(key);
+        swS[key] = slamNext ? { t0: nowW, until: nowW + garethSlamMs(), slam: true } : atk2Next ? { t0: nowW, until: nowW + heroAtk2Ms(key), atk2: true } : { t0: nowW, until: nowW + cycMs, alt: alt2, ai: aiN }; heroAnimRestart(key);
         if (slamNext) try { sfxGarethSlam(); } catch (e) {} /* v1346 */
       }
       if (swS[key] && nowW < swS[key].until && !flashing) swingWant = true;
@@ -29825,7 +29843,9 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
       vis.x = hzL.x; drawHeroAnim(ctx, key + "_skill", hzL.x, vis.y + 12 * hScale - hzLift, "skill", hScale, false, 0, 1); hzL.hand = { x: hzL.x, y: vis.y + 12 * hScale - hzLift }; return; }
     var heroFlip = (st === "attack" || st === "attack2" || slowRunSpd < 1) ? !!((st === "attack" || st === "attack2") && vis.flank && vis.flank.mode === "back" && !moving) : !!hf[key];
     var swSl = idleAnim.swingRun && idleAnim.swingRun[key], slamOn = st === "attack" && !flashing && swSl && swSl.slam && performance.now() < swSl.until && garethSlamReady();
+    var atk2On = !slamOn && st === "attack" && !flashing && swSl && swSl.atk2 && performance.now() < swSl.until && heroAtk2Ready(key); /* v1730: Baelgor's slash */
     var animRes = slamOn ? drawGarethSlam(ctx, vis.x + hurtDx, vis.y + 12 * hScale, hScale, heroFlip, performance.now() - swSl.t0, swSl) /* v1344 */
+      : atk2On ? (function () { var f2 = drawHeroAtk2(ctx, key, vis.x + hurtDx, vis.y + 12 * hScale, hScale, heroFlip, performance.now() - swSl.t0); if (f2 >= HERO_ATK2[key].impact && !swSl.impShown) { swSl.impShown = true; return 2; } return true; })()
       : drawHeroAnim(ctx, key, vis.x + hurtDx, vis.y + 12 * hScale, st, hScale, heroFlip, i * 0.37, slowRunSpd);
     if (animRes === 2 && isMeleeHero) { // his sword just connected — react on whoever is at the blade, on every swing (not only when the engine logs a hit)
       var hitV = null, hitD = 1e9;
@@ -39139,7 +39159,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     });
     return kos;
   }
-  var engaged = false, limTgt = {}, pressureEv = [], castEv = []; /* v1610: castEv = area skills cast this tick (tests) */ /* v1609: heroes whose Pressure Build went off this tick */
+  var engaged = false, limTgt = {}, pressureEv = [], castEv = [], atk2Ev = [], atk2Q = { P: [], A: [] }, slotIdx = { P: {}, A: {} }; /* v1610: castEv = area skills cast this tick (tests) */ /* v1609: heroes whose Pressure Build went off this tick */
   var sim = { fxState: FXS, tick: 0, playerHp: playerHp, aiHp: aiHp, maxTicks: maxTicks, shared: shared, pHH: pHH, aHH: aHH };
   // optional damage log — tr.src[source] = damage dealt BY the player side (after the target's armor), tr.perTick[]
   // (used by the Boss Simulator); tr.aiSrc[source] = damage dealt BY the opposing side (after the player's own
@@ -39162,7 +39182,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     cardInvP = Math.max(0, cardInvP - dtS); cardInvA = Math.max(0, cardInvA - dtS); /* v985: card 4 timers */
     oathTP = Math.max(0, oathTP - dtS); oathTA = Math.max(0, oathTA - dtS); /* v1413: Crimson Oath */
     engaged = tick >= ARENA_ENGAGE_TICKS; // has infantry finished walking over yet (the whole-army fallback when hero positions aren't simulated)
-    skTgt = {}; hitTgt = {}; limTgt = {}; pressureEv = []; castEv = [];
+    skTgt = {}; hitTgt = {}; limTgt = {}; pressureEv = []; castEv = []; atk2Ev = [];
     var playerFlash = [], aiFlash = [];
     var playerHitAttackers = [], aiHitAttackers = [];
     var playerDmg = 0, aiDmg = 0, playerMeleeDmg = 0, aiMeleeDmg = 0, playerRangedAtk = 0, aiRangedAtk = 0, projP = 0, projA = 0;
@@ -39194,6 +39214,9 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     // firing the instant it becomes eligible — same fix Border Skirmish's
     // Conquest got for the "boss melts the instant it's cornered" issue.
     function runAttackers(attackers, cd, hitList, applyDmg, hh) {
+      var sdA = attackers === playerStats.attackers ? 'P' : 'A';
+      if (atk2Q[sdA].length) atk2Q[sdA] = atk2Q[sdA].filter(function (q) { /* v1730: a slash (attack slot 2) lands on its hit frame - nothing at the blade = a miss, like Conquest */
+        if (q.at > tick) return true; if (!isKo(hh, q.id) && (!q.melee || canMelee(hh, q.id))) { applyDmg(q.dmg, q.id, q.melee); hitList.push(q.id); } return false; });
       attackers.forEach(function (a) {
         var eligible = !isKo(hh, a.id) && !isStunned(hh, a.id) && (!a.melee || canMelee(hh, a.id)) && (!a.startTick || tick >= a.startTick); // startTick: troop stacks close the distance at their own speed
         if (!eligible) { cd[a.id] = null; return; }
@@ -39202,11 +39225,15 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         cd[a.id] -= cdStep;
         var hitsNow = 0;
         while (cd[a.id] <= 1e-9 && hitsNow < 4) { // loop only matters if the interval is ever shorter than one tick
-          cd[a.id] += iv; hitsNow++;
+          var slC = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[a.id], slN = 1, slS = null; /* v1730: attack slots in Arena (Baelgor: chop / slash take turns, no shuffle) */
+          if (slC && slC.arena) { var slI = slotIdx[sdA][a.id] || 0; slN = slC.bag[slI % slC.bag.length]; slotIdx[sdA][a.id] = slI + 1; slS = slC.slots && slC.slots[slN]; }
+          var slM = slS && slS.secMult > 0 ? slS.secMult : 1;
+          cd[a.id] += iv * slM; hitsNow++;
           var lmP = hh && hh.by[a.id], prX = 0; if (lmP && lmP.limOnHit && lmP.limMax && lmP.lim >= lmP.limMax && (!a.melee || lmP.reach)) { prX = lmP.limVal || 0; lmP.lim = 0; pressureEv.push(a.id); } /* v1609: Pressure Build - a full boiler goes off on this hit */
-          applyDmg(a.dmg * cardAtkMul(attackers === playerStats.attackers ? 'P' : 'A', a.id) * spotMul(attackers === playerStats.attackers ? 'P' : 'A', a.id) + prX, a.id, a.melee); /* v985: cards */
-          hitList.push(a.id);
-          var lme = hh && hh.by[a.id]; if (lme && lme.limMax) lme.lim = Math.min(lme.limMax, lme.lim + (lme.limSwing != null ? lme.limSwing : 1)); /* v954: every swing fills a limit bar, same as Conquest (v1609: swingPts per skill) */
+          var dmA = a.dmg * slM * cardAtkMul(sdA, a.id) * spotMul(sdA, a.id) + prX; /* v985: cards; v1730: x slot multiplier */
+          if (slM > 1 && slS.impactSec) { atk2Q[sdA].push({ at: tick + Math.max(1, Math.round(slS.impactSec / dtS)), id: a.id, dmg: dmA, melee: a.melee }); atk2Ev.push((sdA === 'P' ? 'p_' : 'a_') + a.id); }
+          else { applyDmg(dmA, a.id, a.melee); hitList.push(a.id); }
+          var lme = hh && hh.by[a.id]; if (lme && lme.limMax) lme.lim = Math.min(lme.limMax, lme.lim + (lme.limSwing != null ? lme.limSwing : 1) * slM); /* v954: every swing fills a limit bar, same as Conquest (v1609: swingPts per skill; v1730: a slash counts as the swings it replaces) */
         }
       });
     }
@@ -39651,7 +39678,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     sim.tick = tick; sim.playerHp = playerHp; sim.aiHp = aiHp;
     var secondsLeft = Math.max(0, Math.ceil((maxTicks - tick) * ARENA_TICK_MS / 1000));
     var cloneInfo = function (hh0) { return hh0 ? hh0.list.filter(function (e) { return e.droid && !e.ko && !e.dead; }).map(function (e) { return { id: e.id, d: e.d, hp: e.hp, max: e.max, reach: e.reach, g: !!e.gerbil, sh: e.sh > 0.5 && e.shMax ? e.sh / e.shMax : 0 }; }) : []; }; /* v975: clones for the visuals; v1673: sh = Blade Aegis left */
-    var info = { casts: castEv.slice(), pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerGuard: playerGuard, aiGuard: aiGuard, playerGuardMax: pGuardMax, aiGuardMax: aGuardMax, playerGuardN: pGuardN, aiGuardN: aGuardN, playerAegisN: pAegisN, aiAegisN: aAegisN, aegisSoak: aegisSoak /* v1667 / v1670 */, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
+    var info = { casts: castEv.slice(), atk2: atk2Ev.slice() /* v1730: slashes started this tick ('p_baelgor') */, pressure: pressureEv.slice(), pClones: cloneInfo(pHH), aClones: cloneInfo(aHH), limitTargets: limTgt, fxP: { stun: FXS.P.stun, sw: FXS.P.sw, wall: FXS.P.wall }, fxA: { stun: FXS.A.stun, sw: FXS.A.sw, wall: FXS.A.wall }, railP: fxRailInfo('P'), railA: fxRailInfo('A'), playerHeroes: heroInfo(pHH), aiHeroes: heroInfo(aHH), skillTargets: skTgt, hitTargets: hitTgt, playerShield: playerShield, playerShieldMax: playerShieldMax, playerGuard: playerGuard, aiGuard: aiGuard, playerGuardMax: pGuardMax, aiGuardMax: aGuardMax, playerGuardN: pGuardN, aiGuardN: aGuardN, playerAegisN: pAegisN, aiAegisN: aAegisN, aegisSoak: aegisSoak /* v1667 / v1670 */, playerShieldHit: playerShieldHit, aiShield: aiShield, aiShieldMax: aiShieldMax, aiShieldHit: aiShieldHit, playerCannonBullets: playerCannonBullets, aiCannonBullets: aiCannonBullets, playerCannonMult: playerCannonMult, aiCannonMult: aiCannonMult, playerHp: playerHp, aiHp: aiHp, playerMaxHp: playerStats.maxHp, aiMaxHp: aiStats.maxHp, playerFlash: playerFlash, aiFlash: aiFlash, playerHitAttackers: playerHitAttackers, aiHitAttackers: aiHitAttackers, playerWeaponFires: playerWeaponFires, aiWeaponFires: aiWeaponFires, aiBeamFires: aiBeamFires, playerBeamFires: playerBeamFires, engaged: engaged, playerCooldowns: Object.assign({}, pSupCd, playerCd) /* v1640: support skills (Torvald's shield, Sera's heal) show their timer too */, secondsLeft: secondsLeft,
       firePMult: playerCannonBullets ? playerCannonMult : 1, fireAMult: aiCannonBullets ? aiCannonMult : 1, /* v1642: super burst bullets fired this tick look different */ landP: landP, landA: landA, landPMult: landPMult, landAMult: landAMult, landPBurst: landPBurst, landABurst: landABurst, landPBullets: landPBullets, landABullets: landABullets }; // raw cannon damage landed THIS tick (before armor/dmgTakenMult), the crit multiplier baked into it, which burst it belongs to, and how many individual bullets it's made of — for the on-screen cannon hit log, which logs ONE line per singular bullet (landP/landPBullets each), not a per-burst running total
     info.bossAct = bossAct;
     var done = playerHp <= 0 || aiHp <= 0 || tick >= maxTicks;
@@ -40462,6 +40489,7 @@ function drawArenaFrame(ctx, w, h) {
           var dxT = bkR.lastX != null ? slot.x - bkR.lastX : 0; if (!kbA && Math.abs(dxT) > 0.35) { infRunning = true; infRunFlip = dxT < 0; } if (infRunning && !kbA && !bkR.knPend && tgA) { bkR.until = 0; tgA = null; } /* v1686 (Harley): he slid in his idle pose - any time he moves on screen (except the knock-back slide) he runs */
           bkR.lastX = slot.x;
           if (tgA && !arenaAnim.battleEnded) { drawHeroAnim(ctx, "tom_block", slot.x, slot.y + 13, tgA, hsA, !isPlayerSide, 0); ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, slot.y + size / 2 + 10); return; } } /* v1678: Steel Guard - the high guard flashes on a blocked hit */
+        if (lpA && SAa && heroAnimImg(key + "_skill") && arenaAnim.atk2) delete arenaAnim.atk2[flashKey]; /* v1730: the skill cuts the slash off (its hit still lands in the sim) */
         if (lpA && SAa && heroAnimImg(key + "_skill")) { /* v1503: the skill sheet plays where he stands (Hanzo leaps and throws), the throw sends his projectile at every enemy */
           var nLp = performance.now(), flLp = !isPlayerSide;
           if (nLp - lpA.t0 < SAa.rows.skill[1] / SAa.fps.skill * 1000 && !arenaAnim.battleEnded) {
@@ -40475,6 +40503,17 @@ function drawArenaFrame(ctx, w, h) {
             return;
           }
           delete arenaAnim.heroLeap[flashKey]; if (key === "tom" && arenaAnim.tomBk && arenaAnim.tomBk[flashKey]) { arenaAnim.tomBk[flashKey].freeAt = performance.now(); arenaAnim.tomBk[flashKey].lastX = null; } /* v1682b */
+        }
+        var a2S = arenaAnim.atk2 && arenaAnim.atk2[flashKey]; /* v1730: Baelgor's slash (attack slot 2) plays once on the spot */
+        if (a2S && HERO_ATK2[key]) {
+          var a2Ms = performance.now() - a2S.t0;
+          if (a2Ms < heroAtk2Ms(key) && !arenaAnim.battleEnded && !(posVis && infRunning) && heroAtk2Ready(key)) {
+            var a2F = drawHeroAtk2(ctx, key, slot.x, slot.y + 13, heroSpriteVisualScale / 100, retFlip != null ? retFlip : !isPlayerSide, a2Ms);
+            if (a2F >= HERO_ATK2[key].impact && !a2S.imp) { a2S.imp = true; spawnWeldSparks(slot.x + (isPlayerSide ? 24 : -24), slot.y + 13 - 22, isPlayerSide ? 1 : -1, 22); }
+            ctx.font = "bold 8px sans-serif"; ctx.fillStyle = "#f0c95f"; ctx.textAlign = "center"; ctx.fillText(String(sprite.h.level), slot.x, (slot.deck && (isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0])).barsAbove) ? slot.y - 28 : slot.y + size / 2 + 10);
+            return;
+          }
+          delete arenaAnim.atk2[flashKey];
         }
         var stA = "idle", isInf = sprite.def.class === "infantry";
         if (isInf && ipH > 0 && ipH < 1) stA = "run";
@@ -41460,6 +41499,7 @@ function renderArenaBattleScreen() {
       // of whether their own attack was actually due. Infantry's passive
       // hit still has no dedicated shot visual, same as before this change —
       // only its active skill (if any) gets a projectile.
+      (state.atk2 || []).forEach(function (fk) { (arenaAnim.atk2 || (arenaAnim.atk2 = {}))[fk] = { t0: performance.now() }; }); /* v1730: Baelgor's slash starts (its hit lands impactSec later in the sim) */
       var playerFiredFlat = false, playerFiredArc = false, aiFiredFlat = false, aiFiredArc = false;
       state.playerHitAttackers.forEach(function (id) {
         var def = HERO_DEFS[id];

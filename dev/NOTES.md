@@ -5980,3 +5980,19 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## Baelgor horizontal slash - Seedance 2.5 test (19 Nov 2026, art only, no version bump)
 - Seedance 2.5 image-to-video, usual side-view prompt, 720p 8 s, $2.73. Clip: art/originals/heroes/siphon/clips/siphon_attack_horiz_seedance_v1.mp4 (+ _sheet.png).
 - Failed the same way as H3 Max: he turns to face left for the wind-up, plus a swoosh trail and glow flash despite "no effects", and the tip touches the right edge. The held blade-forward pose (f88-160) is clean and usable as a key pose.
+
+## v1730 - Baelgor's 2nd basic attack: the horizontal slash (4x) (19 Nov 2026, TEST)
+- Harley: "this clip is usable ... the usual atks from heroes do 1x, this atk will be 4x". The Seedance 2.5 slash with the long hold cut out
+  (siphon_attack_horiz_seedance_v1_cut.mkv = the no-pause preview frames, lossless, not in git) is attack slot 2.
+- Chop and slash take turns (COMBAT_TIMING.heroAttackSlots.baelgor: bag [1,2], order = no shuffle). The slash takes 4 chops of time (5.4 s) and hits 4x as
+  hard (secMult 4 - same rule as Gareth's slam, so damage per second is unchanged). Its hit lands on the hit frame, 2.19 s in (the sword passing in front).
+- Art: source frames 18-164 -> 86 frames at 16 fps (5.375 s). Too many for one 4096 sheet at full sharpness, so two sheets (siphon_atk2a / atk2b, built
+  from the LARGE set at stand 230 like the chop; blur check 97% / 95%) played back to back: HERO_ATK2 + drawHeroAtk2 (shared). Preloaded with his sheets.
+- Conquest: the swing follows the owed hit's slot (slash for slot 2), the owed hit lands on the slash's hit frame. Fixes so he never slashes twice in a row:
+  an owed hit of a turn-taking hero waits up to 6 s (heroOwedSec), and a new enemy can't get a "fresh strike" before the slash ends (Baelgor only;
+  Gareth unchanged).
+- Arena (new for attack slots, only heroes with arena: true = Baelgor): same turn order in arenaMakeSim, slash damage queued to land 5 ticks later (a miss
+  if nothing is at the blade or he's KO'd), info.atk2 starts the slash sheet on the spot; his skill cuts the slash drawing off (the hit still lands).
+- Checks (headless, not a phone): Conquest solo run - swings chop, SLASH, chop, SLASH...; slash hit = 76 = 4 x chop 19. Arena recording - slash plays on the
+  spot on the enemy side. baelgor_ingame.js win rates identical before/after (Hanzo 0%, Aurek 100%, Tom 95%). Meta check: same known F3 warning.
+  Tests: dev/tests/baelgor_slash_conquest.js, baelgor_slash_rec.js.

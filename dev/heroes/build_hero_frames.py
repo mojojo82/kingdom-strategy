@@ -73,7 +73,8 @@ CFG = {"juno": {"clips": {"idle": ("juno_idle_h3max_768_5s_v1.mp4", 0, 0), "atta
        # copy made on the fly - set DRAIN=path). per-clip meta (different start sizes) -> build_hero_anim per_clip.
        "siphon": {"bg": "green", "clips": {"idle": ("siphon_idle_v1.mp4", 0, 0), "run": ("siphon_run_TL_v1.mp4", 0, 0), "attack": ("siphon_attack_over_canvas_v3.mp4", 0, 0),
                           "fear_plunge": ("siphon_fear_ground_canvas_v1.mp4", 0, 0), "fear_rise": ("siphon_fear_rise_canvas_v1.mp4", 0, 0),
-                          "drain": (os.environ.get("DRAIN", "siphon_skill_low_fixed_v1.mkv"), 0, 0)},
+                          "drain": (os.environ.get("DRAIN", "siphon_skill_low_fixed_v1.mkv"), 0, 0),
+                          "slash": ("siphon_attack_horiz_seedance_v1_cut.mkv", 0, 0)},   # v1730: horizontal slash (Seedance 2.5, long hold cut out + 4-frame blend) = attack slot 2
                  "stand_src": 575, "feet_y": 695}}[HERO]
 GREEN = CFG.get("bg") == "green"
 META = {}

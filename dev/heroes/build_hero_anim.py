@@ -131,6 +131,12 @@ CFG = {"juno": {"tag": "v1", "stand_src": 580, "feet_y": 681, "stand": 110, "dis
                                                                    + [int(round(104 + i * 1.5 * 24 / 16)) for i in range(12)] + [int(round(132 + i * 2 * 24 / 16)) for i in range(11)]],
                                                                   ["fear_rise", [int(round(48 + i * 1.8 * 24 / 16)) for i in range(25)]]]}},
        # drain leap (own sheet, not used yet - the skill isn't designed): every 3rd frame at 8 fps, STAND 160 (rebuild sharp with the final timing)
+       # v1730: horizontal slash = attack slot 2 (4x damage, takes 4 chops = 5.4 s). Seedance cut (long hold removed), source frames 18-164 -> 86 frames
+       # at 16 fps (5.375 s, 1.14x speed). Too many frames for one 4096 sheet at full sharpness, so two sheets of 43 (part a, part b) played back to back.
+       "siphon_atk2a": {"hero": "siphon", "tag": "v1", "stand": 230, "disp_stand": 40, "per_clip": True, "base_canvas": True, "wrap": 5,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "slash", "fps": 16, "frames": [int(round(18 + i * 146 / 85)) for i in range(0, 43)]}},
+       "siphon_atk2b": {"hero": "siphon", "tag": "v1", "stand": 230, "disp_stand": 40, "per_clip": True, "base_canvas": True, "wrap": 5,
+                 "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "slash", "fps": 16, "frames": [int(round(18 + i * 146 / 85)) for i in range(43, 86)]}},
        "siphon_drain": {"hero": "siphon", "tag": "v1", "stand": 160, "disp_stand": 40, "per_clip": True, "base_canvas": True, "canvas": 3, "wrap": 12,
                  "idle": {"fps": 8, "frames": [0]}, "skill": {"clip": "drain", "fps": 8, "frames": list(range(0, 192, 3))}},
        "ironlily": {"tag": "v7", "stand": 90, "disp_stand": 24, "per_clip": True, "wrap": 14,
