@@ -11,6 +11,7 @@ const rep = (a, b) => { if (G.split(a).length !== 2) throw new Error("patch poin
 rep("playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key);", "playerCd[a.key] += a.cooldown * cardCdMul('P'); playerFlash.push(a.key); if (window.__tfCast) window.__tfCast('P', a.key, tick, dtS, aHH);");
 rep("aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key);", "aiCd[a.key] += a.cooldown * cardCdMul('A'); aiFlash.push(a.key); if (window.__tfCast) window.__tfCast('A', a.key, tick, dtS, pHH);");
 rep("var budget = (e.gerbil ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(e.id)) * dtS;", "var budget = (e.gerbil ? GERBIL_RUN_PX_PER_SEC : heroMoveSpeed(e.id)) * dtS * (e.fearT > tick ? 1 - window.__fear.pct : 1);");
+rep("if (dodgePort(o)) return;\n        o.hp -= aegisTake(o, dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1));", "if (dodgePort(o)) return; if (window.__fear.hit && q.key === 'tfear' && o.infantry) { o.fearT = tick + Math.round(window.__fear.D / dtS); window.__fearHits = (window.__fearHits || 0) + 1; }\n        o.hp -= aegisTake(o, dmg * (oSt.dmgTakenMult || 1) * defReduce(o.refA, o.def) * (koCfg.heroDmgMult || 1));");
 rep("cd[a.id] -= cdStep;", "cd[a.id] -= cdStep * (hh && hh.by[a.id] && hh.by[a.id].fearT > tick ? 1 - window.__fear.pct : 1);");
 const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
@@ -28,12 +29,13 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Sim"); await P.click("#ksGo"); await P.waitForTimeout(5000);
   if (process.env.SLOWGRID) await P.evaluate(() => { window.__slowGrid = true; });
   if (process.env.SLOW8) await P.evaluate(() => { window.__slow8 = true; });
+  if (process.env.HITF) await P.evaluate(() => { window.__HITF = true; });
   if (process.env.LOWF) await P.evaluate(() => { window.__LOWF = true; });
   const r = await P.evaluate(() => {
     const d = Object.assign({}, HERO_DEFS.aurek, { name: "Siphon" }); d.conquestSkills = HERO_DEFS.aurek.conquestSkills.map((s) => Object.assign({}, s));
     const sk = d.conquestSkills[0]; sk.name = "Fear"; HERO_DEFS.tfear = d; if (HERO_ANIMS.aurek) HERO_ANIMS.tfear = HERO_ANIMS.aurek; if (HERO_ANIMS.aurek_skill) HERO_ANIMS.tfear_skill = HERO_ANIMS.aurek_skill;
     window.__fear = { pct: 0, D: 0 };
-    window.__tfCast = (sd, key, tick, dtS, oh) => { if (key !== "tfear" || !oh || !window.__fear.pct) return; oh.list.forEach((e) => { if (e.ko || e.dead || e.droid) return; e.fearT = tick + Math.round(window.__fear.D / dtS); }); };
+    window.__tfCast = (sd, key, tick, dtS, oh) => { if (key !== "tfear" || !oh || !window.__fear.pct || window.__fear.hit) return; oh.list.forEach((e) => { if (e.ko || e.dead || e.droid) return; e.fearT = tick + Math.round(window.__fear.D / dtS); }); };
     const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
@@ -45,6 +47,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
+    if (window.__HITF) { ["aurek", "hanzo"].forEach((opp) => { window.__fear = { pct: 0 }; out["vs " + opp + " team | no fear"] = rate("tfear", opp, L80);
+        [[0.05, 2, false], [0.05, 2, true], [0.1, 2, true], [0.15, 2, true], [0.2, 3, true]].forEach(([pct, D, hit]) => { window.__fear = { pct, D, hit }; window.__fearHits = 0; const r = rate("tfear", opp, L80); r.meleeFearedPerFight = +(window.__fearHits / 40).toFixed(1); out["vs " + opp + " team | Fear " + Math.round(pct * 100) + "% " + D + "s " + (hit ? "melee + hit only" : "everyone")] = r; }); }); return JSON.stringify(out, null, 1); }
     (window.__LOWF ? ["aurek"] : ["hanzo", "aurek"]).forEach((opp) => {
       window.__fear = { pct: 0, D: 0 }; out["vs " + opp + " team | Aurek copy, no fear"] = rate("tfear", opp, L80);
       (window.__LOWF ? [[0.05, 2], [0.1, 2], [0.1, 3], [0.15, 2], [0.15, 3], [0.2, 2], [0.2, 3]] : [[0.3, 3], [0.3, 5], [0.5, 3], [0.5, 5], [0.7, 5]]).forEach(([pct, D]) => { window.__fear = { pct, D }; out["vs " + opp + " team | Fear " + Math.round(pct * 100) + "% slower for " + D + "s"] = rate("tfear", opp, L80); });
@@ -52,5 +56,5 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", process.env.LOWF ? "fear_hero_low.json" : "fear_hero.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", process.env.HITF ? "fear_hero_hit.json" : process.env.LOWF ? "fear_hero_low.json" : "fear_hero.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
