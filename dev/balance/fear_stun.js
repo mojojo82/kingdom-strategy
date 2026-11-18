@@ -64,15 +64,15 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
-    [["Hanzo team", BASE.concat(["hanzo"])], ["normal team", BASE.concat(["aurek"])]].forEach(([on, O]) => {
+    [["Hanzo team", BASE.concat(["hanzo"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
       const T = BASE.concat(["tfear"]); window.__hpK = 0; window.__ward = null;
-      [[0, 0, "nothing"], [0.45, 1, "Fortress II max + Quick Study + card #9"], [0.45, 2, "Fortress II max + Quick Study + #9 + OVERCLOCK"]].forEach(([cdr, cm, nm]) => [0, 0.45, 0.9].forEach((S) => {
+      [[0, 0, "no cards"], [0.45, 2, "full build + Overclock"]].forEach(([cdr, cm, nm]) => [0, 2, 4, 6, 8, 10, 15, 20].forEach((S) => {
         window.__cdr = cdr; window.__cmOn = cm; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
-        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1);
-        out["vs " + on + " | " + nm + " | " + (S ? "gaze stun " + Math.round(S / 0.45) + " step(s)" : "no stun")] = r; }));
+        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.picked = AURA.who;
+        out["vs " + on + " | " + nm + " | gaze stun " + S + "s"] = r; }));
       window.__cdr = 0; window.__cmOn = 0; });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "stun_cdr_overclock.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "hanzo_stun_length.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
