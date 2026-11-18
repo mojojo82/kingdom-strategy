@@ -5959,3 +5959,7 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1727 (19 Nov 2026) - Baelgor is Legendary
 - Harley: "hes supposed to be legendary not epic". HERO_DEFS.baelgor.rarity = "Legendary" (gold card background, Legendary shard odds like Tom). Stats unchanged (Aurek copy).
+- (after v1727) Test only (game NOT changed) - Harley: "everyone's timers should be frozen while they are animating". dev/balance/make_animfreeze_game.py writes a copy where a hero's skill timer stands still while their skill animation plays (skill sheet length; Hanzo also while his Storm is pending = in the air). Results (GAMEFILE=copy):
+  - Baelgor vs Hanzo team: 0% (same), +75% HP 10% (was 8%) - Fear still picks Hanzo every fight. vs Aurek / Tom teams 100% (same).
+  - Team ranking Lv80 (team_rank.js --per 12 --seeds 1, same 59 teams both ways; results/animfreeze_hero_compare.json): Hanzo 82.1 -> 76.3 (still S+), Lyra +3.4, Kessa +3.1, Halo-7 +1.9 (A -> S line), Baelgor 54.0 -> 51.6, Zarek -1.7, rest within +-1.6 (noise at this size ~2).
+  - meta check: same order, same known F3 warning.

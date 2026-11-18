@@ -53,6 +53,6 @@ const PER = +arg("per", 12), SEEDS = +arg("seeds", 1), LEVELS = arg("levels", "4
     lines.push("  Tom teams:"); rows.forEach((r, i) => { if (r.t.tag === "tom") lines.push("   " + String(i + 1).padStart(2) + ". " + (r.p * 100).toFixed(1).padStart(5) + "%  " + r.t.ros.map((k) => res.names[k]).join(", ")); });
   }
   console.log(lines.join("\n"));
-  fs.writeFileSync(path.join(__dirname, "results", "team_rank_latest.json"), JSON.stringify(res, null, 1));
+  fs.writeFileSync(path.join(__dirname, "results", "team_rank_" + (process.env.TAG || "latest") + ".json"), JSON.stringify(res, null, 1));
   await b.close();
 })();

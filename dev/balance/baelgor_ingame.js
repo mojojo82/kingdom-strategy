@@ -3,7 +3,7 @@
    no weapons / cards, 20 seeds both sides. Also with a +75% HP bonus on Baelgor (the planned HP card, not in the game yet).  node dev/balance/baelgor_ingame.js */
 const fs = require("fs"), path = require("path"), ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
-const G = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8"), FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
+const G = fs.readFileSync(process.env.GAMEFILE || path.join(ROOT, "test/index.html"), "utf8"), FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store);
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome", args: ["--no-sandbox"] }), errs = [];
   const ctx = await b.newContext({ viewport: { width: 430, height: 932 } });
@@ -39,5 +39,5 @@ const G = fs.readFileSync(path.join(ROOT, "test/index.html"), "utf8"), FAKE = fs
     HPADD = 0; out["(ref) Aurek team vs Hanzo team"] = rate("aurek", "hanzo"); out["(ref) Kessa-less: Aurek team vs Baelgor team"] = rate("aurek", "baelgor");
     return out; });
   console.log(JSON.stringify(r, null, 1)); console.log("page errors:", errs.length ? errs.slice(0, 5) : "none");
-  fs.writeFileSync(path.join(ROOT, "dev/balance/results/baelgor_ingame" + (process.env.VARIANTS ? "_variants" : "") + ".json"), JSON.stringify(r, null, 1)); await b.close();
+  fs.writeFileSync(path.join(ROOT, "dev/balance/results/baelgor_ingame" + (process.env.VARIANTS ? "_variants" : "") + (process.env.TAG ? "_" + process.env.TAG : "") + ".json"), JSON.stringify(r, null, 1)); await b.close();
 })();
