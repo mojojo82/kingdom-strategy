@@ -46,22 +46,25 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         const T = tick + Math.round(window.__st.S / dtS); AURA.casts++;
         near.forEach((o) => { o.stunT = T; AURA.hit++; if (o.id === "hanzo") AURA.hanzo++; if (window.__st.reset) (ost.actives || []).forEach((a2) => { if (a2.key === o.id) ocd[a2.key] = a2.cooldown; }); }); });
       PEND = keep; };
-    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear"]);
+    const BASE = ["gareth", "lyra", "kessa", "sera"], ALL = BASE.concat(["hanzo", "aurek", "tfear", "zarek"]);
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
     let CASTS = 0;
     const fight = (pK, aK, L, seed, mySide) => { const A = side(pK, L, true), B = side(aK, L, false); const sim = arenaMakeSim(A, B, { rng: worldPvpSeededRng(seed), critSeed: seed });
       let res; for (let t = 0; t < 4000; t++) { res = sim.step(); ((mySide === "P" ? res.info.playerFlash : res.info.aiFlash) || []).forEach((k) => { if (k === "tfear") CASTS++; }); if (res.done) break; }
       const mine = mySide === "P" ? sim.playerHp / A.maxHp : sim.aiHp / B.maxHp, theirs = mySide === "P" ? sim.aiHp / B.maxHp : sim.playerHp / A.maxHp; return { r: res.winner || res.result, m: mine - theirs }; };
-    const rate = (me, opp, L) => { let w = 0, dr = 0, n = 0, m = 0; CASTS = 0; const T = BASE.concat([me]), O = BASE.concat([opp]); for (let s = 0; s < 20; s++) { const r1 = fight(T, O, L, "t" + s, "P"), r2 = fight(O, T, L, "h" + s, "A");
+    const rate = (me, opp, L) => { let w = 0, dr = 0, n = 0, m = 0; CASTS = 0; const T = Array.isArray(me) ? me : BASE.concat([me]), O = Array.isArray(opp) ? opp : BASE.concat([opp]); if (new Set(T).size !== T.length || new Set(O).size !== O.length) throw new Error("duplicate hero"); for (let s = 0; s < 20; s++) { const r1 = fight(T, O, L, "t" + s, "P"), r2 = fight(O, T, L, "h" + s, "A");
         [[r1, "player"], [r2, "ai"]].forEach(([x, wn]) => { w += x.r === wn; dr += x.r === "draw"; m += x.m; n++; }); }
       return { win: Math.round(100 * w / n), draw: Math.round(100 * dr / n), lose: Math.round(100 * (n - w - dr) / n), hpMargin: Math.round(100 * m / n), castsPerFight: +(CASTS / n).toFixed(1) }; };
     const out = {}; const L80 = [80, 25, 5, 30];
-    ["hanzo", "aurek"].forEach((opp) => { window.__st = { S: 0 }; out["vs " + opp + " | no fear"] = rate("tfear", opp, L80);
-      [[0.45, 0.04, false], [0.45, 0.1, false], [0.9, 0.04, false], [0.45, 0.04, true], [0.45, 0.1, true], [0.45, 0.2, true]].forEach(([S, R, reset]) => {
-        window.__st = { S, R, reset, wait: 12 }; AURA = { casts: 0, hit: 0, hanzo: 0 }; const r = rate("tfear", opp, L80); r.auraHitsPerFight = +(AURA.hit / 40).toFixed(1); r.hanzoStunnedPerFight = +(AURA.hanzo / 40).toFixed(1);
-        out["vs " + opp + " | aura r" + R + ", stun " + (S > 0.5 ? "2 steps" : "1 step") + (reset ? " + timers reset" : "")] = r; }); });
+    const ZT = ["zarek", "lyra", "kessa", "sera", "tfear"], ZA = ["zarek", "lyra", "kessa", "sera", "aurek"];
+    [["Hanzo team", BASE.concat(["hanzo"])], ["normal team (Aurek)", BASE.concat(["aurek"])]].forEach(([on, O]) => {
+      window.__st = { S: 0 }; out["vs " + on + " | Gareth,Lyra,Kessa,Sera + Baelgor, no fear"] = rate(BASE.concat(["tfear"]), O, L80);
+      out["vs " + on + " | Zarek,Lyra,Kessa,Sera + Aurek (Zarek alone)"] = rate(ZA, O, L80);
+      out["vs " + on + " | Zarek,Lyra,Kessa,Sera + Baelgor, no fear"] = rate(ZT, O, L80);
+      [[0.45, true], [0.9, false], [0.9, true]].forEach(([S, reset]) => { window.__st = { S, R: 0.04, reset, wait: 12 }; AURA = { casts: 0, hit: 0, hanzo: 0 }; const r = rate(ZT, O, L80); r.auraHits = +(AURA.hit / 40).toFixed(1); r.hanzoStunned = +(AURA.hanzo / 40).toFixed(1);
+        out["vs " + on + " | Zarek + Baelgor, fear aura " + (S > 0.5 ? "2 steps" : "1 step") + (reset ? " + reset" : "")] = r; }); });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_aura.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "fear_aura_zarek.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
