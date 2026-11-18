@@ -67,12 +67,13 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     [["Hanzo team", BASE.concat(["hanzo"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
       const T = BASE.concat(["tfear"]); window.__hpK = 0; window.__ward = null;
-      [[0, 0, "no cards"], [0.45, 2, "full build + Overclock"]].forEach(([cdr, cm, nm]) => [0, 2, 4, 6, 8, 10, 15, 20].forEach((S) => {
-        window.__cdr = cdr; window.__cmOn = cm; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
-        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.picked = AURA.who;
-        out["vs " + on + " | " + nm + " | gaze stun " + S + "s"] = r; }));
-      window.__cdr = 0; window.__cmOn = 0; });
+      window.__cdr = 0; window.__cmOn = 0;
+      [[1, 0], [1, 1.0], [2, 0], [1, 2.0]].forEach(([K, sh]) => [0, 2, 4, 8].forEach((S) => {
+        window.__hpK = K; window.__ward = sh ? { pct: sh, every: 8, self: true } : null; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
+        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.hanzoStunned = +(AURA.hanzo / 40).toFixed(1);
+        out["vs " + on + " | HP x" + K + (sh ? ", own shield " + sh * 100 + "%" : "") + " | stun on Hanzo " + S + "s"] = r; }));
+      window.__hpK = 0; window.__ward = null; });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "hanzo_stun_length.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "shield_plus_stun.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
