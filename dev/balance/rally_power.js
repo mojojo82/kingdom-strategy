@@ -39,8 +39,7 @@ const PER = +arg("per", 12), SEEDS = +arg("seeds", 1), LEVELS = arg("levels", "4
       const bon = players[0].bonus || ZERO_BONUS; const st = arenaSideStats(keys, hs, 20, 0, isP, null, players[0].fort || {}, undefined, bon), lead = arenaSideStats(keys.slice(0, 5), hs, 20, 0, isP, null, players[0].fort || {}, undefined, bon);
       st.dmgMult = lead.dmgMult; st.maxHp = lead.maxHp; /* side-wide numbers come from the leader's 5, not all 75 */
       (st.heroHp || []).forEach((e) => { const ix = keys.indexOf(e.id) % 5; e.runL = arenaRunDist(400, 240, ix, isP); });
-      worldPvpAddTroops(st, army, oppArmy, keys.slice(0, 5), mkSim(keys), 0);
-      if (window.__sqrt) { const N = Object.values(army).reduce((x, y) => x + y, 0); const f = N > 0 ? Math.sqrt(3000 / N) * (N >= 3000 ? 1 : 1) : 1; (st.attackers || []).forEach((at) => { if (/^troop_/.test(at.id)) at.dmg = Math.round(at.dmg * Math.min(1, f)); }); }
+      worldPvpAddTroops(st, army, oppArmy, keys.slice(0, 5), mkSim(keys), 0, window.__sqrt ? WORLD_PVP_TROOP_SQRT_REF : 0); /* v1724: the real game code now (was a prototype patch) */
       return { st, keys, army }; };
     const fight = (A, D, seed) => { const armyA = {}, armyD = {}; A.forEach((p) => Object.keys(p.troops).forEach((t) => { armyA[t] = (armyA[t] || 0) + p.troops[t]; })); D.forEach((p) => Object.keys(p.troops).forEach((t) => { armyD[t] = (armyD[t] || 0) + p.troops[t]; }));
       const a = buildSide(A, "a", armyD, true), d = buildSide(D, "d", armyA, false);
@@ -50,6 +49,7 @@ const PER = +arg("per", 12), SEEDS = +arg("seeds", 1), LEVELS = arg("levels", "4
           hh.list.forEach((e) => { if (e.droid || e.bench || e.out || !e.ko || !(e.reviveT > 0 && e.reviveT < 1e8)) return; e.out = true; e.reviveT = 1e9;
             const nk = q.shift(); if (!nk) return; const n = hh.by[nk]; if (!n) return; n.bench = false; n.ko = false; n.hp = n.max; n.reviveT = 0; n.d = 0; n.runL = e.runL; L.used[sd]++; }); });
         L.init = true; };
+      window.__chk = window.__chk || []; if (window.__chk.length < 1) { const z = {}; [1500, 3000, 12000, 48000].forEach((N) => { const s0 = { attackers: [], maxHp: 1, dmgMult: 1 }, s1 = { attackers: [], maxHp: 1, dmgMult: 1 }; const ar = { infantry: N }; worldPvpAddTroops(s0, ar, {}, [], mkSim([]), 0, 0); worldPvpAddTroops(s1, ar, {}, [], mkSim([]), 0, WORLD_PVP_TROOP_SQRT_REF); z[N] = [s0.attackers[0].dmg, s1.attackers[0].dmg, s0.maxHp, s1.maxHp]; }); window.__chk.push(z); }
       const sim = arenaMakeSim(a.st, d.st, { rng: worldPvpSeededRng(seed), critSeed: seed, maxTicks: ARENA_MAX_TICKS * 2, playerCannon: true, aiCannon: true });
       const w = sim.runToEnd(); window.__lineTick = null; return { w, ticks: sim.tick, used: L.used, hpA: sim.playerHp / a.st.maxHp, hpD: sim.aiHp / d.st.maxHp }; };
     const tier = (t, n) => (n <= 1 ? t : t + "_t" + n);
@@ -67,8 +67,8 @@ const PER = +arg("per", 12), SEEDS = +arg("seeds", 1), LEVELS = arg("levels", "4
         for (let s2 = 0; s2 < SEEDS; s2++) { const r = fight(RALLY(), mkS(), "P" + sq + nm + s2); if (r.w === "player") w++; else if (r.w !== "ai") w += 0.5; n++; t += r.ticks; }
         out.rows.push({ troopMaths: sq ? "square-root" : "linear (now)", rally: "15 players: Lv40 heroes, T3 troops, 3,000 each (45,000)", defender: nm, rallyWins: Math.round(100 * w / n), avgSec: Math.round(t / n * ARENA_TICK_MS / 100) / 10 });
         await new Promise((r) => setTimeout(r, 0)); } }
-    out.maxSec = WORLD_PVP_MAX_TICKS * ARENA_TICK_MS / 1000; return out; });
-  console.log("time limit", res.maxSec, "s");
+    out.chk = window.__chk; out.maxSec = WORLD_PVP_MAX_TICKS * ARENA_TICK_MS / 1000; return out; });
+  console.log("time limit", res.maxSec, "s"); console.log("troop dmg/HP check [linear dmg, sqrt dmg, linear HP, sqrt HP]", JSON.stringify(res.chk));
   res.rows.forEach((r) => console.log(JSON.stringify(r)));
   fs.writeFileSync(path.join(__dirname, "results", "rally_power.json"), JSON.stringify(res, null, 1));
   await b.close();

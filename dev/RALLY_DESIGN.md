@@ -1,10 +1,23 @@
 # Rally design (in progress)
 
-Started 19 Nov 2026 with Harley. Nothing built yet.
+Started 19 Nov 2026 with Harley. Built so far: square-root troop damage (v1724). See "How rallies are calculated".
 
 ## Today
 - The only rallies are Alliance Siege rallies against the boss (`sgRallyBattle`): one Arena-style fight. The leader's 5 heroes, fortress, weapons and cards fight, and every member's troops are pooled into one army. Troop damage is shared by troops sent, and the rest goes to the leader. Up to 15 members.
 - There are no player-vs-player rallies yet; world PvP is one march against one city.
+
+## How rallies are calculated (the rules - keep this up to date)
+Harley, 19 Nov 2026. This is the agreed maths for rally fights (and world PvP). Built so far: troop damage (v1724). The hero line is still design / prototype only.
+
+1. **One fight per rally, using the Arena engine** (no dice, 0.45 s ticks, 120 s time limit in world PvP).
+2. **Hero line:** every participant's heroes queue in join order (the leader can reorder). 5 are on the field; when one is knocked out, the next in line walks in. Defence works the same way (city owner + garrison, join order). *(prototype only)*
+3. **From the leader only** (city owner / garrison leader on defence): fortress tech, research / troop tech, gear and stat bonuses (ATK, HP, DEF, skill %), Sword of Power and other items, weapons, cards. They apply to everyone's heroes and troops on that side.
+4. **From every participant:** their heroes (own level, stars, skill levels) and their troops (count, tier, type mix). All troops on a side are pooled into one army.
+5. **Troop damage is square-root (built in v1724, like Kingshot):** a side's troop damage is normal up to **3,000 troops** (`WORLD_PVP_TROOP_SQRT_REF`), then grows with the square root of the side's total troops: 4x the troops = 2x the damage (12,000 troops hit like 6,000; 48,000 like 12,000). Code: `worldPvpAddTroops(..., sqrtRef)`.
+6. **Troop HP stays linear:** every troop still adds its full HP (and DEF to the side's armour). Big armies last longer, but don't win by headcount alone - quality (tier, bonuses, heroes) matters.
+7. **Where it applies:** world PvP (attacker and defender) now, and player rallies when they're built. Not (yet) the Alliance Siege boss rally or the boss simulator - they still use linear troop damage until Harley decides (it would lower big rallies' boss damage and so reward tiers).
+
+Measured (v1724, `dev/balance/rally_power.js`, same numbers as the prototype): 15 players (Lv40, T3, 45,000 troops) vs one Lv80 T10 player with 9,000 troops - the rally won 79% with linear damage, 0% with square-root.
 
 ## Kingshot, for reference (checked 19 Nov 2026)
 - **Leader:** their research, governor gear, charms, pets, buffs/consumables, hero gear and hero stats apply to EVERY troop in the rally, whoever sent it. All expedition skills of their 3 heroes apply (plus exclusive-gear skills). Rally capacity comes from the leader's Command Center.

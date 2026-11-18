@@ -5923,3 +5923,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Bug: `var WORLD_PVP_MAX_TICKS = ARENA_MAX_TICKS * 2` ran before ARENA_MAX_TICKS existed, so it was NaN and arenaMakeSim fell back to the 60 s Arena limit for every world PvP fight. Now declared as 0 there and set to ARENA_MAX_TICKS * 2 right after ARENA_MAX_TICKS (Harley: "fix the timer").
 - Measured: f2_ladder (World PvP, 10 seeds, spend 0 / 10M / 100M): 34 of 36 cells identical, 2 moved (F2 vs F1 at 0 spend, S5 90 -> 80%, S6 100 -> 90%) - most fights already ended inside 60 s. Meta check: identical before and after (pre-existing warning: Clone+railgun+Hex / Hex+Dome+railgun F3 above the meta build).
 - Also seen again in f2_ladder: Fortress III beats Fortress II 100% at every spend and scenario (open item, see dev/balance/STRONG_BUILDS.md).
+
+## v1724 (19 Nov 2026) - square-root troop damage in world PvP (rallies)
+- Harley: "okay lets do it but note it down somewhere that this is how rallies are calculated". Kingshot scales troop damage with the square root of troop count.
+- `worldPvpAddTroops(..., sqrtRef)`: a side's troop damage is linear up to `WORLD_PVP_TROOP_SQRT_REF` (3,000) troops, then x sqrt(3000 / side total). 12,000 troops hit like 6,000, 48,000 like 12,000. Troop HP / armour unchanged (linear).
+- Applied in worldPvpBattle (attacker and defender). NOT applied to the Alliance Siege boss rally (sgRallyBattle) or the boss simulator - would cut big rallies' boss damage / reward tiers; waiting on Harley.
+- Rules written down: dev/RALLY_DESIGN.md "How rallies are calculated" (also project doc claude/rally-design.md) + HANDOVER.md.
+- Checks: rally_power.js now calls the real code (prototype patch removed) - same results as the prototype (15x Lv40 T3 45k troops vs solo Lv80 T10 9k: rally 79% linear -> 0% sqrt; vs solo 3k: 100% -> 92%). Direct check: 1,500/3,000 troops unchanged, 12,000 -> half, 48,000 -> quarter damage, HP identical. meta: unchanged (known F3 warning). f2_ladder (armies <= 3,000): runs, unaffected.

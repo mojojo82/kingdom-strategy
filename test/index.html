@@ -14367,7 +14367,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1723"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1724"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23340,6 +23340,7 @@ function fetchDefenderFormation(ownerId) {
 // troop stack, lead-loss-reduction softens casualties. The fight is seeded so
 // the same two armies always give the same result, and resolves instantly.
 var WORLD_PVP_TROOP_DMG_SCALE = 0.03, WORLD_PVP_TROOP_HP_SCALE = 0.03;
+var WORLD_PVP_TROOP_SQRT_REF = 3000; /* v1724: troop damage is linear up to this many troops per side, square-root above it (see worldPvpAddTroops) */
 var WORLD_PVP_MAX_TICKS = 0; /* v1723: set to ARENA_MAX_TICKS * 2 right after ARENA_MAX_TICKS is defined (it was NaN here, so world PvP fell back to the 60 s Arena limit) */
 function worldPvpSeededRng(str) {
   var h = 1779033703 ^ str.length;
@@ -23354,13 +23355,18 @@ function worldPvpSeededRng(str) {
 //   defense -> armor: the army's count-weighted average defense becomes % damage reduction (D / (D + WORLD_PVP_DEF_K)),
 //              and the defending city's Wall adds to it (2% per level), capped overall.
 var WORLD_PVP_DEF_K = 60, WORLD_PVP_ARMOR_CAP = 0.6, WORLD_PVP_WALL_PER_LEVEL = 0.02, WORLD_PVP_REF_SPEED = 6;
-function worldPvpAddTroops(stats, army, enemyArmy, heroKeys, simRef, wallLevel) {
+function worldPvpAddTroops(stats, army, enemyArmy, heroKeys, simRef, wallLevel, sqrtRef) {
   function dominant(a) { return troopDominantType(a); }
   var enemyDom = dominant(enemyArmy), extraHp = 0, defWeighted = 0, totalN = 0;
+  /* v1724 (Harley, rallies): square-root troop damage, like Kingshot. A side's troop damage is linear up to sqrtRef troops, then grows with the
+     square root of the side's total troop count (4x the troops = 2x the damage). Troop HP stays linear. World PvP passes WORLD_PVP_TROOP_SQRT_REF;
+     the siege boss rally and boss simulator pass nothing (unchanged). Full rules: dev/RALLY_DESIGN.md "How rallies are calculated". */
+  var sideN = 0; for (var t0 in army) if (army[t0] > 0 && TROOP_DEFS[t0]) sideN += army[t0];
+  var sqrtF = (sqrtRef > 0 && sideN > sqrtRef) ? Math.sqrt(sqrtRef / sideN) : 1;
   for (var t in army) {
     var n = army[t]; if (!(n > 0) || !TROOP_DEFS[t]) continue; // ignore any non-troop key in a save
     var d = TROOP_DEFS[t], counter = (d.countersType === enemyDom) ? 1.5 : 1;
-    var dmg = n * d.atk * d.power * counter * simRef.troopAtkMult(t) * simRef.heroLeadMult(t, heroKeys) * stats.dmgMult * (stats.bnA || 1) * WORLD_PVP_TROOP_DMG_SCALE; // troops get this side's own ATK Bonus
+    var dmg = n * d.atk * d.power * counter * simRef.troopAtkMult(t) * simRef.heroLeadMult(t, heroKeys) * stats.dmgMult * (stats.bnA || 1) * WORLD_PVP_TROOP_DMG_SCALE * sqrtF; // troops get this side's own ATK Bonus
     stats.attackers.push({ id: "troop_" + t, dmg: Math.round(dmg), melee: false, startTick: Math.max(1, Math.ceil(ARENA_ENGAGE_TICKS * WORLD_PVP_REF_SPEED / d.speed)) });
     extraHp += n * d.hp * WORLD_PVP_TROOP_HP_SCALE * (stats.bnH || 1); // ...and its HP Bonus, so troops stay as relevant as bonuses grow
     defWeighted += n * d.def; totalN += n;
@@ -23396,8 +23402,8 @@ function worldPvpBattle(march, def, ownerId, opts) {
       (defStats.heroHp || []).forEach(function (e) { var ix = def.heroKeys.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 220, ix, false); });
     } catch (eRL) {}
   }
-  worldPvpAddTroops(atkStats, march.army, def.army, atkKeys, asim, 0);
-  worldPvpAddTroops(defStats, def.army, march.army, def.heroKeys, dsim, (dsim.state.buildings.wall && dsim.state.buildings.wall.level) || 0);
+  worldPvpAddTroops(atkStats, march.army, def.army, atkKeys, asim, 0, WORLD_PVP_TROOP_SQRT_REF);
+  worldPvpAddTroops(defStats, def.army, march.army, def.heroKeys, dsim, (dsim.state.buildings.wall && dsim.state.buildings.wall.level) || 0, WORLD_PVP_TROOP_SQRT_REF);
   var atkMax = atkStats.maxHp, defMax = defStats.maxHp;
   var seedStr = opts.seed != null ? "seed|" + opts.seed : String(march.id) + "|" + march.tileId + "|" + ownerId;
   // dmgRamp / regen: the simulator overrides these directly (its attacker sim is throwaway and
