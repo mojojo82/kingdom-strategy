@@ -14367,7 +14367,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1721"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1722"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29394,7 +29394,7 @@ function drawHeroThrows(ctx, sc, M) {
       ctx.restore(); } }
     if (q.img) { var pim = heroFxImg(q.key, q.img); if (!pim) return true; var xP = q.x0 + (q.x1 - q.x0) * u, yP = q.y0 + (q.y1 - q.y0) * u, gr = 0.32 + 0.68 * (1 - (1 - u) * (1 - u)), Lp = ((F.slashLen && F.slashLen[q.img]) || 60) * sc * gr, kP = Lp / Math.max(pim.naturalWidth, pim.naturalHeight), dxP = q.x1 - q.x0, angP = Math.atan2(q.y1 - q.y0, Math.abs(dxP) || 1);
       var XF = F.slashXf && F.slashXf[q.img]; ctx.save(); ctx.translate(xP, yP); if (F.slashOne) { if (dxP < 0) ctx.scale(-1, 1); } /* v1690: drawn as painted (already at his angles), mirrored for an enemy-side Tom */ else if (XF) { if (dxP < 0) ctx.scale(-1, 1); ctx.rotate(XF.tgt * Math.PI / 180); ctx.scale(1, XF.sq); ctx.rotate(-XF.nat * Math.PI / 180); ctx.scale(-1, 1); } else if (dxP >= 0) { ctx.rotate(angP); ctx.scale(-1, 1); } else ctx.rotate(-angP); ctx.globalAlpha = u < 0.08 ? u / 0.08 : 1; ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 10 * sc; ctx.drawImage(pim, -pim.naturalWidth * kP / 2, -pim.naturalHeight * kP / 2, pim.naturalWidth * kP, pim.naturalHeight * kP); ctx.restore(); return true; } /* v1688: painted slash, thick edge leading, grows as it flies */
-    var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u - (F.slash ? 0 : Math.sin(u * Math.PI) * 10 * sc), sz = (F.slash ? 46 : 15) * sc;
+    var x = q.x0 + (q.x1 - q.x0) * u, y = q.y0 + (q.y1 - q.y0) * u, sz = (F.slash ? 46 : 26) * sc; /* v1722 (Harley): Hanzo's shuriken fly in a straight line to the target (no arc) and are bigger (15 -> 26) */
     ctx.save(); ctx.translate(x, y); ctx.rotate(F.slash ? Math.atan2(q.y1 - q.y0, q.x1 - q.x0) : q.spin + u * 22); /* v1678: Tom's crescents fly blade-first, no spin */ ctx.shadowColor = F.glow || "#fff"; ctx.shadowBlur = 8 * sc;
     if (im) ctx.drawImage(im, -sz / 2, -sz / 2, sz, sz); else { ctx.fillStyle = "#cfefff"; ctx.fillRect(-sz / 3, -sz / 3, sz / 1.5, sz / 1.5); }
     ctx.restore(); return true; });

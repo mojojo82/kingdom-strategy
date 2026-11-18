@@ -93,9 +93,9 @@ function drawStage(t){var T=times(),c=fearCase(T),tv=vclock(t,T),f=frameAt(tv,T)
   if(sh.complete&&t>=relV){var hand=[HX+10,GY-liftAt(35)*HS-55*HS];
     TG.forEach(function(p,i){[0,1,2].forEach(function(j){var u=(t-relV-j*0.05)/0.6;if(u<0)return;var stop=false,drop=0;
       if(c==='catch'&&t>=S.fear){var uf=(S.fear-relV-j*0.05)/0.6;if(uf<1){u=Math.max(0,uf);drop=(t-S.fear);stop=true;}}
-      if(u>=1&&!stop)return;var x=hand[0]+(p[0]-8+j*8-hand[0])*u,y=hand[1]+(GY-20-hand[1])*u-40*Math.sin(Math.PI*u);
+      if(u>=1&&!stop)return;var x=hand[0]+(p[0]-8+j*8-hand[0])*u,y=hand[1]+(GY-20-hand[1])*u;
       if(stop){y+=drop*drop*260;if(y>GY)return;cx.globalAlpha=Math.max(0,1-drop*1.2);}
-      cx.save();cx.translate(x,y);cx.rotate(t*20+j);cx.drawImage(sh,-7,-7,14,14);cx.restore();cx.globalAlpha=1;});});}
+      cx.save();cx.translate(x,y);cx.rotate(t*20+j);cx.drawImage(sh,-13,-13,26,26);cx.restore();cx.globalAlpha=1;});});}
   if(t>=hitV&&t<hitV+0.35&&c!=='catch'){TG.forEach(function(p){cx.fillStyle='rgba(255,240,200,'+(1-(t-hitV)/0.35)+')';cx.beginPath();cx.arc(p[0],GY-20,14,0,Math.PI*2);cx.fill();});}
   cx.fillStyle='#e8ecf6';cx.font='600 13px system-ui';cx.fillText(t.toFixed(2)+' s',12,20);
   if(c==='freeze'&&t>=S.fear&&t<S.fear+S.stun){cx.fillStyle='#ff8a80';cx.fillText('FROZEN by Fear',12,38);}

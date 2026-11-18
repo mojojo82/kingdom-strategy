@@ -5836,3 +5836,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ### (after v1721) Test: the +75% HP card on every hero vs Hanzo team
 - Team = Gareth, Lyra, Kessa, Sera + X (X gets +75% max HP), Lv80, 40 fights, no weapons. dev/balance/hp_card_every_hero.js, results/hp_card_every_hero.json.
 - With card (no card): Halo-7 65% (23), Baelgor 48% (5), Juno 30 (30), Roran 23 (25), Torvald 23 (5), Pip 20 (23), Iron Lily 20 (3), Bram 10 (0), Caelum 10 (3), Tom 8 (3), Vesper 5, Zarek 5, Aurek 0, Seraphine 0. Only Halo-7 beats Baelgor with it; ranged heroes gain ~nothing (HP only matters to whoever walks the front).
+
+## v1722 - Hanzo's shuriken fly straight and bigger
+- Harley: shuriken go in a straight line to the target and are bigger. drawHeroThrows: no more arc (was sin * 10 px), size 15 -> 26 (scaled). Shared drawing, so Conquest and Arena both. Timing unchanged (flyMs 600), no combat change.
+- Before/after capture (headless Conquest, idleCanvas): art/originals/heroes/hanzo_shuriken_straight_v1722.png.
+- Hanzo Jump Studio (dev/labs/hanzo_jump_studio.html, published artifact) updated to match.
