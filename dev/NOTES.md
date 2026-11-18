@@ -5902,3 +5902,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Lily + 2 melee + 2 ranged: 87 / 84 / 31 / 16 / 5. Lily + 4 ranged: 64 / 58 / 29 / 14 / 6.
 - Same teams with Lily swapped for Aurek: 64 / 58 / 31 / 19 / 3. Lily adds ~+20 points vs one-sided teams, little vs mixed teams; in a ranged team she adds ~nothing.
 - Harley: leave Iron Lily as is - her niche is the counter-pick vs ranged-heavy teams and the anchor of melee line-ups. Do not buff her for mixed-team strength.
+
+### (after v1722) Rally design started: dev/RALLY_DESIGN.md (hero line / reinforcement queue, join order + leader can reorder).
