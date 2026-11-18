@@ -5799,3 +5799,4 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ## v1721 - Pip's Spotter's Mark switched off (18 Nov 2026)
 - Harley: disable Pip's 2nd skill for now. Spotter's Mark gets disabled: true (kept on his card, like Lyra's Eagle Eye) and spotMarkCfg() returns null when disabled - the one gate for both Conquest (cannon marks + idleSpotMul) and Arena/World PvP (arenaSideStats spot), so no marks and no bonus anywhere.
 - Why: Arena test (dev/balance/hanzo_dodge.js) - Hanzo team vs [Gareth, Lyra, Kessa, Sera + Pip] 38%; with the mark off 75%; Spot Shot off made no difference.
+- v1721 checks: Hanzo team vs Pip team now 75% (was 38%). Meta check: same known pre-existing warning (Clone+railgun+Hex / Hex+Dome+railgun F3 above the meta build), unchanged by this.
