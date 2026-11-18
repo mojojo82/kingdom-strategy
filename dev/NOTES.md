@@ -5996,3 +5996,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Checks (headless, not a phone): Conquest solo run - swings chop, SLASH, chop, SLASH...; slash hit = 76 = 4 x chop 19. Arena recording - slash plays on the
   spot on the enemy side. baelgor_ingame.js win rates identical before/after (Hanzo 0%, Aurek 100%, Tom 95%). Meta check: same known F3 warning.
   Tests: dev/tests/baelgor_slash_conquest.js, baelgor_slash_rec.js.
+
+## v1731 - Baelgor's slash pays off: 6x damage, still 4 chops of time (19 Nov 2026, TEST)
+- Harley: "im trying to give it a bigger pay off. because he is in physical danger while standing there loading his animation".
+- New slot field dmgMult (COMBAT_TIMING.heroAttackSlots.baelgor.slots[2] = secMult 4, dmgMult 6): the slash still takes 5.4 s but hits 6x. Over the
+  slash that is +50%; with chop and slash taking turns his basic-attack damage is +40%. Conquest (both engine paths) + Arena. Gareth unchanged.
+- Checks: Conquest slash hit 114 = 6 x chop 19. baelgor_ingame.js unchanged (Hanzo 0%, Aurek 100%, Tom 95% - his basic hits decide little there).
+  Meta check: same known F3 warning. Team ranking 4x vs 6x running (results to follow).

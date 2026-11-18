@@ -4723,7 +4723,7 @@ COMBAT_TIMING.heroNoHitScale = { zarek: true }; /* v1655 (Harley): Zarek's 2 s v
 COMBAT_TIMING.heroAttackSlots = { gareth: { bag: [1, 1, 1, 1, 1, 1, 1, 2] /* v1352: 1 in 8 (Harley: "I should be seeing it much less"; was [1,1,2] = slamming 60% of the time) */, slots: { 2: { secMult: 3, owedSec: 3.5 } } } }; /* v1347: slam re-cut to 1.5 s (= 3 swings, 3x damage); its owed hit may wait longer (it waits for its own swing + lands ~1 s in) */
 /* v1730 (Harley: "the usual atks from heroes do 1x, this atk will be 4x"): Baelgor's horizontal slash = slot 2. Chop and slash take turns (order: no
    shuffle). The slash takes 4 chops of time (5.4 s) and hits 4x as hard, landing impactSec into the swing (the sword passing in front). Arena too (arena). */
-COMBAT_TIMING.heroAttackSlots.baelgor = { bag: [1, 2], order: true, arena: true, slots: { 2: { secMult: 4, owedSec: 6, impactSec: 2.19 } } };
+COMBAT_TIMING.heroAttackSlots.baelgor = { bag: [1, 2], order: true, arena: true, slots: { 2: { secMult: 4, dmgMult: 6, owedSec: 6, impactSec: 2.19 } } }; /* v1731 (Harley: "im trying to give it a bigger pay off. because he is in physical danger while standing there loading his animation"): takes 4 chops of time, hits 6x (dmgMult) */
 /* how long an owed melee hit may wait for its swing (Conquest, scene drawn). A slot with owedSec waits that long; a hero whose slots take turns (order)
    waits that long for EVERY hit - his chop can be owed while the 5.4 s slash is still playing (otherwise it expired as a miss and he slashed twice). */
 function heroOwedSec(aid, slot, dflt) { var c = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid]; if (!c || !c.slots) return dflt; var s = c.slots[slot || 1]; if (s && s.owedSec && slot && slot !== 1) return s.owedSec; if (c.order) { var m = dflt; for (var k in c.slots) if (c.slots[k].owedSec > m) m = c.slots[k].owedSec; return m; } return dflt; }
@@ -9193,7 +9193,7 @@ function createGame(opts) {
       var freshStrike = state.idle.attackCooldowns[aid] == null || (lt.id !== tgt.id && nowMs - lt.at >= (lt.ivlMs || ivlMs)); /* v1730: lt.ivlMs = a slash's own length (Baelgor) - a new enemy can't be struck before it ends */
       if (!freshStrike) { lt.id = tgt.id; return; }
       lt.id = tgt.id; lt.at = nowMs;
-      var slotF = idleNextAtkSlot(aid), smF = idleSlotMult(aid, slotF), hitDmg = idleAttackerHitDamage(aid) * smF; lt.ivlMs = COMBAT_TIMING.heroAttackSlots[aid] && COMBAT_TIMING.heroAttackSlots[aid].order ? ivlMs * smF : 0; /* v1344: a slam takes smF x as long for smF x the damage */
+      var slotF = idleNextAtkSlot(aid), smF = idleSlotMult(aid, slotF), hitDmg = idleAttackerHitDamage(aid) * idleSlotDmgMult(aid, slotF); lt.ivlMs = COMBAT_TIMING.heroAttackSlots[aid] && COMBAT_TIMING.heroAttackSlots[aid].order ? ivlMs * smF : 0; /* v1344: a slam takes smF x as long for smF x the damage */
       var nowHit = idleMeleeStrike(aid, tgt, hitDmg, false, slotF); /* v917: owed to the sword while the scene is drawn */
       idleLogBasicHit(aid, tgt, hitDmg, !nowHit, slotF);
       state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1;
@@ -9216,6 +9216,7 @@ function createGame(opts) {
     return q.shift();
   }
   function idleSlotMult(aid, slot) { var cfg = COMBAT_TIMING.heroAttackSlots[aid], s = cfg && cfg.slots && cfg.slots[slot]; return s && s.secMult > 0 ? s.secMult : 1; }
+  function idleSlotDmgMult(aid, slot) { var cfg = COMBAT_TIMING.heroAttackSlots[aid], s = cfg && cfg.slots && cfg.slots[slot]; return s && s.dmgMult > 0 ? s.dmgMult : idleSlotMult(aid, slot); } /* v1731: a slot can hit harder than the time it takes (Baelgor's slash) */
   function idleMeleeStrike(aid, tgt, dmg, useMark, slot) { /* returns true when the HP came off now, false when the hit is owed to the sword */
     if (LILY_LEGACY && aid === "ironlily" && idleMeleeDefers(aid)) return false; /* v1420: while she is drawn her damage comes from her blade/kick hit frames (idleLilyImpact), not this timer */
     if (idleMeleeDefers(aid)) { idleMeleeOwed.push({ aid: aid, id: tgt.id, dmg: dmg, at: Date.now(), slot: slot || 1 }); return false; }
@@ -10472,7 +10473,7 @@ function createGame(opts) {
       if (state.idle.attackCooldowns[aid] > 0) return;
       var ivl = heroAttackSec(aid), hitDmg0 = idleAttackerHitDamage(aid), nHits = 0, tOff = 0;
       while (state.idle.attackCooldowns[aid] <= 0 && nHits < 6) {
-        var slot = idleNextAtkSlot(aid), sm = idleSlotMult(aid, slot), hitDmg = hitDmg0 * sm; /* v1344: attack slots - a slam is sm swings long and sm swings strong (DPS unchanged) */
+        var slot = idleNextAtkSlot(aid), sm = idleSlotMult(aid, slot), hitDmg = hitDmg0 * idleSlotDmgMult(aid, slot); /* v1344: attack slots - a slam is sm swings long and sm swings strong (DPS unchanged) */
         if (nHits === 0) hitDmg += idlePressureRelease(aid); /* v1609: Pressure Build rides on this hit */
         state.idle.attackCooldowns[aid] += ivl * sm; for (var lmi = 0; lmi < sm; lmi++) idleLimitAdd(aid, false); /* v954: every swing fills his limit bar (a slam counts as the swings it replaces) */
         if (nHits === 0) { if (isMelA) { idleMeleeLast[aid] = { id: tgt.id, at: Date.now(), ivlMs: COMBAT_TIMING.heroAttackSlots[aid] && COMBAT_TIMING.heroAttackSlots[aid].order ? ivl * sm * 1000 : 0 }; var nowHitM = idleMeleeStrike(aid, tgt, hitDmg, true, slot); idleLogBasicHit(aid, tgt, hitDmg, !nowHitM, slot); } else { idleLogBasicHit(aid, tgt, hitDmg); tgt.hp -= hitDmg * idleMarkMult(tgt, aid) * idleEnemyDefTake(tgt, hitDmg); } state.idle.attackHitCounts[aid] = (state.idle.attackHitCounts[aid] || 0) + 1; } /* v917: melee = owed to the sword while drawn */
@@ -14396,7 +14397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1730"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1731"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -39227,10 +39228,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
         while (cd[a.id] <= 1e-9 && hitsNow < 4) { // loop only matters if the interval is ever shorter than one tick
           var slC = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[a.id], slN = 1, slS = null; /* v1730: attack slots in Arena (Baelgor: chop / slash take turns, no shuffle) */
           if (slC && slC.arena) { var slI = slotIdx[sdA][a.id] || 0; slN = slC.bag[slI % slC.bag.length]; slotIdx[sdA][a.id] = slI + 1; slS = slC.slots && slC.slots[slN]; }
-          var slM = slS && slS.secMult > 0 ? slS.secMult : 1;
+          var slM = slS && slS.secMult > 0 ? slS.secMult : 1, slD = slS && slS.dmgMult > 0 ? slS.dmgMult : slM; /* v1731: damage can be more than the time */
           cd[a.id] += iv * slM; hitsNow++;
           var lmP = hh && hh.by[a.id], prX = 0; if (lmP && lmP.limOnHit && lmP.limMax && lmP.lim >= lmP.limMax && (!a.melee || lmP.reach)) { prX = lmP.limVal || 0; lmP.lim = 0; pressureEv.push(a.id); } /* v1609: Pressure Build - a full boiler goes off on this hit */
-          var dmA = a.dmg * slM * cardAtkMul(sdA, a.id) * spotMul(sdA, a.id) + prX; /* v985: cards; v1730: x slot multiplier */
+          var dmA = a.dmg * slD * cardAtkMul(sdA, a.id) * spotMul(sdA, a.id) + prX; /* v985: cards; v1730: x slot multiplier */
           if (slM > 1 && slS.impactSec) { atk2Q[sdA].push({ at: tick + Math.max(1, Math.round(slS.impactSec / dtS)), id: a.id, dmg: dmA, melee: a.melee }); atk2Ev.push((sdA === 'P' ? 'p_' : 'a_') + a.id); }
           else { applyDmg(dmA, a.id, a.melee); hitList.push(a.id); }
           var lme = hh && hh.by[a.id]; if (lme && lme.limMax) lme.lim = Math.min(lme.limMax, lme.lim + (lme.limSwing != null ? lme.limSwing : 1) * slM); /* v954: every swing fills a limit bar, same as Conquest (v1609: swingPts per skill; v1730: a slash counts as the swings it replaces) */
