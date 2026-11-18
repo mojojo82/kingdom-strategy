@@ -5856,3 +5856,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: leave it, he thinks it was designed that way. No change.
 
 - Speed tests (Harley: see the animation sped up): fear/fear_speed_tests_v1.mp4, v4 clip retimed in editing, no new Atlas run. Hit after he moves: 1x 1.50 s, 1.25x 1.08 s, 1.5x 0.83 s, 2x 0.54 s (Hanzo throws at 1.46 s).
+
+### (after v1722) Baelgor basic attacks (Harley: overhead two-handed chop + two-handed horizontal slash)
+- Overhead: clips/siphon_attack_over_v1.mp4 (Image = End = fear_start_small_v1, 8 s). Good: side view, no edges. Raise 25-40, long overhead hold 40-67, chop 67-77 (hit ~77), return 86-139. Preview (trimmed, hit at 1.2 s): clips/siphon_attack_over_preview_v1.mp4.
+- Horizontal: 4 runs, all fail the same way - H3 Max turns him to face LEFT (back to camera) for the sweep, i.e. a spin. v1/v2 Image = End = idle; v3 End = a frame from v2 that was itself facing left (my mistake); v4 End = the level-blade frame from the overhead clip (atk_horiz_end_v2.png) - still spins mid-clip. Stopped there.
+- Atlas this batch: 5 runs ~$3.04, balance ~$7.34.
