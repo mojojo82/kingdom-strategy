@@ -56,7 +56,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     const hsAt = (L) => { const hs = {}; ALL.forEach((k) => { hs[k] = { owned: true, level: L[0], stars: L[1], skillLevels: { conquest: [L[2], L[2], L[2]], expedition: [1, 1, 1] } }; }); return hs; };
     const side = (keys, L, isP) => { const s2 = arenaSideStats(keys, hsAt(L), 15, 0, false, null, null, undefined, ZERO_BONUS); if (window.__hpK) (s2.heroHp || []).forEach((e) => { if (e.id === 'tfear') e.max = Math.round(e.max * window.__hpK); }); if (window.__cdr && keys.includes('tfear')) s2.fortCdr = window.__cdr; (s2.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, Math.max(0, keys.indexOf(e.id)), isP); }); return s2; };
     let CASTS = 0;
-    const fight = (pK, aK, L, seed, mySide) => { const A = side(pK, L, true), B = side(aK, L, false); const sim = arenaMakeSim(A, B, { rng: worldPvpSeededRng(seed), critSeed: seed });
+    const fight = (pK, aK, L, seed, mySide) => { const A = side(pK, L, true), B = side(aK, L, false); const cmB = () => { if (!window.__cmOn) return null; const m = cardModsBlank(); m.cdr = 0.05; m.cdrLow = { pct: 0.05, below: 0.90 }; if (window.__cmOn === 2) m.cdrDmg = { over: 0.25, pct: 0.25 }; m.any = true; return m; };
+      const sim = arenaMakeSim(A, B, { rng: worldPvpSeededRng(seed), critSeed: seed, cardMods: pK.includes('tfear') ? cmB() : null, aiCardMods: aK.includes('tfear') ? cmB() : null });
       let res; for (let t = 0; t < 4000; t++) { res = sim.step(); ((mySide === "P" ? res.info.playerFlash : res.info.aiFlash) || []).forEach((k) => { if (k === "tfear") CASTS++; }); if (res.done) break; }
       const mine = mySide === "P" ? sim.playerHp / A.maxHp : sim.aiHp / B.maxHp, theirs = mySide === "P" ? sim.aiHp / B.maxHp : sim.playerHp / A.maxHp; return { r: res.winner || res.result, m: mine - theirs }; };
     const rate = (me, opp, L) => { let w = 0, dr = 0, n = 0, m = 0; CASTS = 0; const T = Array.isArray(me) ? me : BASE.concat([me]), O = Array.isArray(opp) ? opp : BASE.concat([opp]); if (new Set(T).size !== T.length || new Set(O).size !== O.length) throw new Error("duplicate hero"); for (let s = 0; s < 20; s++) { const r1 = fight(T, O, L, "t" + s, "P"), r2 = fight(O, T, L, "h" + s, "A");
@@ -66,12 +67,12 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     [["Hanzo team", BASE.concat(["hanzo"])], ["normal team", BASE.concat(["aurek"])]].forEach(([on, O]) => {
       window.__st = { S: 0 }; out["vs " + on + " | no fear"] = rate("tfear", O, L80);
       const T = BASE.concat(["tfear"]); window.__hpK = 0; window.__ward = null;
-      [0, 0.10, 0.25, 0.45, 0.55].forEach((cdr) => [0, 0.45, 0.9].forEach((S) => {
-        window.__cdr = cdr; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
-        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1); r.hanzoGazed = +(AURA.hanzo / 40).toFixed(1);
-        out["vs " + on + " | Baelgor team cooldowns -" + Math.round(cdr * 100) + "% (skill every " + (12 * (1 - cdr)).toFixed(1) + "s) | " + (S ? "gaze stun " + Math.round(S / 0.45) + " step(s)" : "no stun")] = r; }));
-      window.__cdr = 0; });
+      [[0, 0, "nothing"], [0.45, 1, "Fortress II max + Quick Study + card #9"], [0.45, 2, "Fortress II max + Quick Study + #9 + OVERCLOCK"]].forEach(([cdr, cm, nm]) => [0, 0.45, 0.9].forEach((S) => {
+        window.__cdr = cdr; window.__cmOn = cm; window.__st = S ? { S, gaze: true, noReset: true, wait: 0 } : { S: 0 }; AURA = { casts: 0, hit: 0, hanzo: 0, who: {} };
+        const r = rate(T, O, L80); r.gazes = +(AURA.casts / 40).toFixed(1);
+        out["vs " + on + " | " + nm + " | " + (S ? "gaze stun " + Math.round(S / 0.45) + " step(s)" : "no stun")] = r; }));
+      window.__cdr = 0; window.__cmOn = 0; });
     return JSON.stringify(out, null, 1);
   });
-  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "stun_cdr.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
+  console.log(r); fs.writeFileSync(path.join(__dirname, "results", "stun_cdr_overclock.json"), r); if (errs.length) console.log("ERRS", errs.slice(0, 3)); await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
