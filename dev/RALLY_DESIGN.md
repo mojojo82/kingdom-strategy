@@ -13,9 +13,11 @@ Started 19 Nov 2026 with Harley. Nothing built yet.
 - Every participant's heroes are in the fight as a LINE: 5 on the field at a time; when one is knocked out, the next hero in line walks in (instead of the same hero reviving).
 - Keeps the fight 5 vs 5, so positions, targeting, the fortress deck and skills work as now (15 Hanzos don't stack, only the ones on the field fire).
 - **Order: join order, and the rally leader can reorder the line.**
+- **The defending side uses the same logic:** the city owner's heroes plus garrison reinforcements form the defender's line, 5 on the field, next one in when one is knocked out.
+- **Troops still count on both sides:** every participant's troops are pooled into each side's army and fight as in world PvP today (worldPvpAddTroops), alongside the hero line.
 
 ## Still to decide
-1. Defender side: a matching line (alliance garrison reinforcing a city, like Kingshot), or rally size scaling the defender.
+1. (Decided: defender uses the same line logic.) Garrison order: join order + city owner can reorder?
 2. Fight length: time limit / defender fortress HP vs a 75-hero line.
 3. A new arrival's skill timer: ready or full.
 4. Whose fortress, weapons and cards count (the leader's today).
