@@ -5869,3 +5869,5 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Polar Flux + Last Bastion: on F1 full lifts any team to ~40-45% (plain team 3% -> 40%, Halo team 8% -> 42%), flat across opponents. No effect on F2/F3 in these fights.
 - Lone Wolf solo (1 hero + Lone Wolf) on F1 full: 27-30% vs full 5-hero Meta/Hanzo teams. 0% on F2/F3.
 - Cannon Doctrine + Type-1 Defence + Inf ATK + Last Bastion + Polar Flux, Halo team, F1 full: 47-67%.
+
+- Overhead v2 (Harley: see the full blade, less 3/4): prompt "swing in a flat plane parallel to the camera, sword always side-on at full length". clips/siphon_attack_over_v2.mp4: blade side-on through the whole swing (frames 58-76, hit ~74), but a ~1.2 s pause with the sword hanging behind his back (28-56) - cut in the preview clips/siphon_attack_over_preview_v2.mp4. Atlas ~$6.73 left.
