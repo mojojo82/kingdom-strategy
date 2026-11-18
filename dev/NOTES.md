@@ -5861,3 +5861,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Overhead: clips/siphon_attack_over_v1.mp4 (Image = End = fear_start_small_v1, 8 s). Good: side view, no edges. Raise 25-40, long overhead hold 40-67, chop 67-77 (hit ~77), return 86-139. Preview (trimmed, hit at 1.2 s): clips/siphon_attack_over_preview_v1.mp4.
 - Horizontal: 4 runs, all fail the same way - H3 Max turns him to face LEFT (back to camera) for the sweep, i.e. a spin. v1/v2 Image = End = idle; v3 End = a frame from v2 that was itself facing left (my mistake); v4 End = the level-blade frame from the overhead clip (atk_horiz_end_v2.png) - still spins mid-clip. Stopped there.
 - Atlas this batch: 5 runs ~$3.04, balance ~$7.34.
+
+### (after v1722) Test: overpowered builds without Hanzo / Kessa / Baelgor / Iron Lily
+- dev/balance/op_builds.js (search) + op_builds_confirm.js (30 seeds x both orders). World PvP engine with 0 troops (Arena-style), Lv80 25* skills 5, no weapons. Cards: all PvP cards except Critical Mass and Regen. Fortress trees filled in research order at 5M and full (100M). Opponents: Meta (Hanzo, Kessa, Iron Lily, Lyra, Sera) and the Hanzo team, with/without Kessa's cards (#3 +200% ATK, #2, #8, #9, #15). Results in results/op_builds*.json/.log.
+- Fortress III dominates hero-only fights: at equal spend (5M and full) F3 beats F1 and F2 100% for every team tested (Halo team, plain team, Meta). F1 vs F2 full: F1 wins ~30-38%. Needs a check in the real Arena path before acting (the trees were balanced with troops in f1vf3/f2_ladder).
+- Halo-7 on Fortress II: Halo-7, Bram, Lyra, Sera, Juno, no cards, F2 full mirror -> 95% vs Meta, 82% vs Meta + Kessa cards, 97% vs Hanzo team + Kessa cards. Same team loses on F1 (5-20%) and F3 (0-17%). Plain team on F2: 0-5%. Halo-7 is the clear best non-banned hero (base-team ranking: Halo-7 25%, Bram 5%, everyone else 0% vs Meta on F3 full).
+- Polar Flux + Last Bastion: on F1 full lifts any team to ~40-45% (plain team 3% -> 40%, Halo team 8% -> 42%), flat across opponents. No effect on F2/F3 in these fights.
+- Lone Wolf solo (1 hero + Lone Wolf) on F1 full: 27-30% vs full 5-hero Meta/Hanzo teams. 0% on F2/F3.
+- Cannon Doctrine + Type-1 Defence + Inf ATK + Last Bastion + Polar Flux, Halo team, F1 full: 47-67%.
