@@ -5829,3 +5829,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Baelgor = Aurek copy, Lv80 / 25 stars / skill Lv5, Fear = 4 s gaze stun with the freeze rule (airborne heroes freeze, timers pause). Extra HP added on top of his 1,380. 40 fights each, no weapons. dev/balance/baelgor_hp_chunks.js + _fine.js, results/baelgor_hp_chunks*.json.
 - Win % vs Hanzo team: +0 5, +250 8, +500 20, +750 25, +1000 48, +1250 60, +1500 75, +1750 83, +2000 100. Tide turns at ~+1000 (2,380 HP = he survives the riders' opening volley, then gets 1.4-3 Fears a fight instead of 1).
 - vs Aurek team and Pip team his team already wins 93-100% at +0 (Fear stun), 100% from +1000.
+
+### (after v1721) Test: Baelgor HP card percentages vs Hanzo team
+- Same setup as the HP chunks test (Fear 4 s + freeze, Lv80, 40 fights). Card +60% HP 28% win, +70% 45%, +75% 48%, +80% 58%, +90% 60%, +100% 75%. dev/balance/baelgor_hp_card_pct.js, results/baelgor_hp_card_pct.json.
