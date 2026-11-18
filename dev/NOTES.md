@@ -5895,3 +5895,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 ### (after v1722) Hero tier list (Harley: C lowest, S+ highest)
 - Fresh full team ranking on v1722: `node dev/balance/team_rank.js --per 20 --seeds 2 --levels 40,80` (100 random 5-hero teams, never two of Lily/Kessa/Hanzo/Tom together, 19,800 fights per level, no cards, no weapons). Per hero = average win % of the teams he/she is in. results/team_rank_v1722.log, results/tier_list_v1722.json.
 - Tiers on Lv80: S+ Hanzo 81.7 | S Halo-7 66.1 | A Lyra 57.2, Caelum 56.2, Zarek 54.3, Kessa 53.7 (Lv40 66.0, no cards), Roran 53.0 | B Juno 50.7, Gareth 49.9, Seraphine 47.0, Vesper 46.3, Sera 45.8, Bram 45.6, Pip 44.5 | C Aurek 43.1, Tom 38.0, Torvald 36.9, Iron Lily 31.0. Baelgor not in the game yet.
+
+### (after v1722) Where Iron Lily does well
+- dev/balance/lily_scenarios.js, Lv80 25* skills 5, Arena engine, no cards/weapons, 15 Lily teams per make-up x 15 opponents per type x both sides. results/lily_scenarios.json.
+- Lily + 4 melee: 99% vs all-ranged, 85% vs all-melee, 56% vs mixed (2 melee + 3 ranged), 43% vs Kessa teams, 12% vs Hanzo teams.
+- Lily + 2 melee + 2 ranged: 87 / 84 / 31 / 16 / 5. Lily + 4 ranged: 64 / 58 / 29 / 14 / 6.
+- Same teams with Lily swapped for Aurek: 64 / 58 / 31 / 19 / 3. Lily adds ~+20 points vs one-sided teams, little vs mixed teams; in a ranged team she adds ~nothing.
