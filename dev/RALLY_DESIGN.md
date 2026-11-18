@@ -20,6 +20,12 @@ Started 19 Nov 2026 with Harley. Nothing built yet.
 - **The defending side uses the same logic:** the city owner's heroes plus garrison reinforcements form the defender's line, 5 on the field, next one in when one is knocked out.
 - **Troops still count on both sides:** every participant's troops are pooled into each side's army and fight as in world PvP today (worldPvpAddTroops), alongside the hero line.
 
+## Decided: what comes from the leader vs everyone (Harley, 19 Nov 2026)
+- **From the leader only** (the rally leader on attack, the city owner / garrison leader on defence): all tech and stat bonuses - fortress tech (Fortress I/II/III tree), research (troop tech), gear / stat bonuses (ATK, HP, DEF, skill %), the Sword of Power and other equipped items, weapons and cards. These apply to everyone's heroes and troops in the fight.
+- **From every participant:** their heroes (in the hero line, at their own level, stars and skill levels) and their troops (number, tier and type mix).
+- Simple, like Kingshot (leader's stats apply to everything), but every participant's heroes actually fight instead of adding one skill.
+- The prototype (`rally_line_proto.js` / `rally_power.js`) already works this way: leader's fortress, bonuses and troop tech for the whole side; each player's own hero levels and troops.
+
 ## Still to decide
 1. (Decided: defender uses the same line logic.) Garrison order: join order + city owner can reorder?
 2. Fight length: time limit / defender fortress HP vs a 75-hero line.
