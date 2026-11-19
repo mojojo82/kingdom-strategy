@@ -85,7 +85,8 @@ def portal_edge_fade(h, w, top=740, bot=820, x0=24, x1=110):
     return 1 - band * (1 - side[None, :])
 PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
 PORTALDN = []   # PORTALDESC=clip.mp4: the hand sinks back into the portal and it closes (fx/portal_descend_v1.mp4), played after the stun
-PORT_RING_Y = 947.0; CRACK_FROM, CRACK_DY = 103, 947.0 - 1013.0; PORTAL_SHIFT = {}; PORTAL_DY = float(os.environ.get("PORTALDY", "4"))   # scene px (2x game px): Harley 19 Nov - portal + hand a few px lower
+PORT_RING_Y = 947.0; CRACK_FROM, CRACK_DY = 103, 947.0 - 1013.0; CRACK_SDY = float(os.environ.get("CRACKSDY", "2"));   # + scene px (Harley: crack 2 px lower)
+PORTAL_SHIFT = {}; PORTAL_DY = float(os.environ.get("PORTALDY", "4"))   # scene px (2x game px): Harley 19 Nov - portal + hand a few px lower
 def _load_portal(name):
     import glob as _g3, tempfile as _tf3
     out = []; _ry = []; _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + name), os.path.join(_t3, "%04d.png")], check=True)
@@ -214,7 +215,7 @@ def _portal(fr, t, C, bb, beat, back):
         sc, x0, y0 = _PORTAL_AT["v"]; im = PORTALDN[di].resize((round(768 * sc), round(1152 * sc)), Image.LANCZOS)
         a_ = min(1.0, (len(PORTALDN) - 1 - di) / 8)   # last few frames fade (the crack goes away)
         if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
-        _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ["PORTALDESC"]][di] * sc + PORTAL_DY)); return
+        _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ["PORTALDESC"]][di] * sc + PORTAL_DY + (CRACK_SDY if di >= CRACK_FROM else 0))); return
     a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
     if a_ <= 0 or C is None: return
     front = fi >= int(os.environ.get("PORTALFRONT", "95"))   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
