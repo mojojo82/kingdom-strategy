@@ -213,7 +213,7 @@ def _portal(fr, t, C, bb, beat, back):
         tk = DK / (24 * DS); di = int(rel * 24 * DS) if rel < tk else int(DK + (rel - tk) * 24 * DC)
         if di >= len(PORTALDN): return
         sc, x0, y0 = _PORTAL_AT["v"]; im = PORTALDN[di].resize((round(768 * sc), round(1152 * sc)), Image.LANCZOS)
-        a_ = min(1.0, (len(PORTALDN) - 1 - di) / 8)   # last few frames fade (the crack goes away)
+        _u = min(1.0, max(0.0, (di - (CRACK_FROM + 3)) / max(1, len(PORTALDN) - 1 - (CRACK_FROM + 3)))); a_ = 1 - _u * _u * (3 - 2 * _u)   # Harley: the crack fades out over its whole length
         if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
         _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ["PORTALDESC"]][di] * sc + PORTAL_DY + (CRACK_SDY if di >= CRACK_FROM else 0))); return
     a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
