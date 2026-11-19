@@ -6077,3 +6077,16 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - The portal now stays where it opened (it followed a KO'd target drifting home).
 - Checked headless (dev/tests/fear_fx_rec.js arena, OPP=... for the enemy roster): vs a roster with Hanzo the hand grabs Hanzo mid-leap; vs
   gareth/lyra/kessa/sera/torvald it rises empty in the middle. No page errors. Meta check: same known warning (F3 builds above meta).
+
+## v1737 - World map angle 35 -> 44 degrees (20 Nov 2026, TEST)
+- Harley: "44 is our new map rotation. just work on it autonomously. any art that needs to be redone we will get around to at some point".
+  Why: the march ships are real 3D models drawn with the map's camera; the Watchtower skin is drawn at ~44 (helipad measured 43, ChatGPT's 3D model at
+  44 matches it), Kingshot's normal world map measures ~39-45 (teleport square, territory plots).
+- One setting now: MAP_ELEV_DEG (44). ISO_K = sin, ISO_C = cos of it; everything reads them: tile grid + taps (isoGeom etc. already used ISO_K),
+  the CSS tile / terrain squash and the upright counter-squash (CSS vars --isoK / --isoKi, set at start; were 0.5736 / 1.7434 written in), the 3D march
+  ship shader (screen y + depth) and its facing helper (were 0.57358 / 0.81915 written in), base water distance (V was 1.74). Dev Tools label shows the angle.
+- Effect: the map is ~21% taller on screen (tiles less squashed); ships and the ground are seen from higher up. Pictures drawn for 35 (most city skins,
+  map decorations like rocks / shipwreck / spire, base water tuning) may look slightly tipped back now - to redo later (Harley).
+- dev/skins/PROMPTS.md: skin / design / render prompts now say 44 degrees.
+- Checked headless (dev/tests/map_elev_shots.js OUT [ELEV] - same spot at 35 and 44, two gather marches out): ships sit on their paths and face
+  where they go at both angles, cities on their tiles, no page errors. art/originals/skins/map_elev_35_vs_44.png. Not on a phone.

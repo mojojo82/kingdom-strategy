@@ -13,7 +13,7 @@ Gives a weathered, battle-worn look (worn painted metal, chips, dirt). With one 
 I'm making a city skin for my mobile strategy game's world map. Image 1 is my mech on its round platform (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
 
 Repaint my mech in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
-- same design, same pose, same weapon, same shield and same round platform as image 1, seen from the same high isometric angle (about 35 degrees from above), the whole thing in frame
+- same design, same pose, same weapon, same shield and same round platform as image 1, seen from the same high isometric angle (about 44 degrees from above (the map angle since v1737; was 35)), the whole thing in frame
 - the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light from the upper left, deep cool navy / teal shadows on the right side, bright rim highlights on the edges, dark crevices between parts
 - materials like images 2 and 3: painted metal armour with wear, scratches and chipped edges, gold trim, glowing teal lights - not clean plastic
 - colours toned to sit with images 2 and 3: warm off-white armour, deeper red, darker royal blue, gold instead of plain yellow; no pure white, no flat bright primaries
@@ -39,7 +39,7 @@ I'm designing new city skins (the player's base) for my 4X mobile strategy game'
 Design 1: <WHAT IT IS - list the main parts>
 - the whole thing stands on a SQUARE plinth / platform: the footprint is a square seen as a diamond (corners pointing front, back, left and right), NOT round
 - chunky, slightly stylised proportions like a premium mobile strategy game, every part clearly separated so it models well
-- camera: high isometric 3/4 view, about 35 degrees from above, looking at the front corner, the whole thing in frame with a little margin
+- camera: high isometric 3/4 view, about 44 degrees from above (the map angle since v1737; was 35), looking at the front corner, the whole thing in frame with a little margin
 - soft even studio lighting, no strong cast shadows, no ground, no water, no people
 - plain flat white background, nothing else in the picture, no text
 - square image, 1024x1024
@@ -48,4 +48,4 @@ A second design can follow in the same chat ("Great. Now Design 2: ... same came
 
 ## Meshy + render (Harley's steps - to be recorded)
 - Meshy settings: ?
-- Render: isometric 35 deg, light from one side (the relit render worked much better than even light), PNG. Transparent or non-black background preferred (dark shadow sides merge into black).
+- Render: isometric 44 deg (was 35 before v1737), light from one side (the relit render worked much better than even light), PNG. Transparent or non-black background preferred (dark shadow sides merge into black).

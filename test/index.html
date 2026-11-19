@@ -817,7 +817,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #mapPathLayer { position:absolute; top:0; left:0; pointer-events:none; z-index:1; } /* v1052 (Harley): route arrows run UNDER the bases and islands, at both ends */
   #mapworld.iso #mapPathLayer { z-index:5; } /* iso tiles with art sit at 10 + x + y */
   #mapworld .tile.lod { --lsz:6px; border:none; background:none; box-shadow:none; border-radius:2px; width:var(--lsz); height:var(--lsz); min-width:0; min-height:0; padding:0; margin-left:calc((var(--tile-px) - var(--lsz)) / 2); margin-top:calc((var(--tile-px) - var(--lsz)) / 2); transform:none; animation:none; overflow:hidden; } /* v865: fixed on-screen marker size, centred on the tile */
-  #mapworld.iso .tile.lod, #mapworld.iso .tile.lod:hover { transform:scaleY(0.5736) rotate(45deg); }
+  #mapworld.iso .tile.lod, #mapworld.iso .tile.lod:hover { transform:scaleY(var(--isoK,0.69466)) rotate(45deg); }
   #mapworld .tile.lod-res.gold { background:#f0c95f; } #mapworld .tile.lod-res.food { background:#8fd14f; } #mapworld .tile.lod-res.wood { background:#c08a52; } #mapworld .tile.lod-res.stone { background:#c3cad3; }
   #saFloat { position:fixed; left:8px; right:8px; bottom:calc(var(--bnH,86px) + 8px); z-index:9300; max-width:420px; margin:0 auto; padding:8px 10px; border:2px dashed #c9a24a; border-radius:12px; background:rgba(15,21,32,.88); box-shadow:0 6px 20px rgba(0,0,0,.55); } /* v1014: skin alignment on the World map */
   #saFloat .dev-tools-row { margin:4px 0; } #saFloat .dev-slider { flex:1; min-width:0; }
@@ -893,9 +893,9 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .tile.mycity, .tile.othercity { z-index:2; }
   /* v825: every tile's content lives in .tile-up. Flat map: it just fills the tile. Isometric map: the TILE is squashed into a 35° diamond and .tile-up counter-transforms, so sprites/icons stay upright. */
   .tile-up { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-  #mapworld.iso .tile, #mapworld.iso .tile:hover { transform:scaleY(0.5736) rotate(45deg); }
+  #mapworld.iso .tile, #mapworld.iso .tile:hover { transform:scaleY(var(--isoK,0.69466)) rotate(45deg); }
   #mapworld.iso .tile.city-drop-impact { animation:none; }
-  #mapworld.iso .tile-up { transform:rotate(-45deg) scaleY(1.7434); }
+  #mapworld.iso .tile-up { transform:rotate(-45deg) scaleY(var(--isoKi,1.43956)); }
   #mapworld.iso .tile { pointer-events:none; }
   #mapworld.iso .tile.mycity:not(.fp), #mapworld.iso .tile.othercity:not(.fp) { background:none; box-shadow:none; }
   #mapworld.iso #mapMarchLayer { z-index:100000; }
@@ -903,7 +903,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .terr { position:absolute; image-rendering:pixelated; pointer-events:none; }
   .terr-gl { position:absolute; pointer-events:none; }
   .tree-sheet { position:absolute; pointer-events:none; } /* v1163: trees drawn in one canvas (with GPU land) */ /* v1162: GPU land - one canvas, already in screen orientation */
-  #mapworld.iso .terr { transform:scaleY(0.5736) rotate(45deg); }
+  #mapworld.iso .terr { transform:scaleY(var(--isoK,0.69466)) rotate(45deg); }
   #terrainPainter { display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:70px; z-index:100001; width:min(400px, calc(100vw - 16px)); background:linear-gradient(180deg,#3a3126,#231c14); border:2px solid #8a7548; border-radius:12px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.55); color:#f3e9d2; font-size:12px; }
   /* v873: sprite palette on the left while painting (dev) */
   #spritePalette { display:none; position:fixed; left:6px; top:110px; bottom:var(--tpH, 250px); z-index:100001; width:96px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:6px; background:rgba(14,22,40,.94); border:1.5px dashed rgba(240,201,95,.7); border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.5); scrollbar-width:none; }
@@ -14401,7 +14401,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1736"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1737"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -18168,7 +18168,10 @@ function mapWorldPixelSide(size) {
 // v825: isometric map (Dev Tools toggle). Same tile grid, drawn rotated 45deg and squashed to a 35deg viewing elevation (vertical scale = sin 35deg).
 var MAP_ISO_KEY = "kingdom_prototype_mapiso_v1", mapIso = false;
 mapIso = true; try { mapIso = localStorage.getItem(MAP_ISO_KEY) !== "0"; } catch (e) {} /* v904: isometric is the default; only an explicit "0" (player chose flat) turns it off */
-var ISO_K = Math.sin(35 * Math.PI / 180);
+var MAP_ELEV_DEG = 44; /* v1737 (Harley 20 Nov): the world map's viewing elevation - was 35. Everything reads it: tile grid, taps, CSS tile squash (--isoK / --isoKi, set below),
+   the 3D march ships' camera, base water. 44 = the Watchtower skin's own angle (and Kingshot's world map, ~40-45). Art drawn for 35 may need redoing. */
+var ISO_K = Math.sin(MAP_ELEV_DEG * Math.PI / 180), ISO_C = Math.cos(MAP_ELEV_DEG * Math.PI / 180);
+try { document.documentElement.style.setProperty("--isoK", ISO_K.toFixed(5)); document.documentElement.style.setProperty("--isoKi", (1 / ISO_K).toFixed(5)); } catch (e) {}
 function isoGeom() {
   var n = Math.round(Math.sqrt(game.state.map.length)), s = tilePxZ(), p = s + gapPxZ(), pad = padPxZ(), r2 = Math.SQRT1_2 * p, dW = s * Math.SQRT2, dH = dW * ISO_K;
   var km = kingdomMargins(), padX = pad + km.x * n * r2, padY = pad + km.y * n * r2 * ISO_K; /* v1083: as much as the atlas needs */ /* v870: room for a neighbouring kingdom (one diamond over shifts by half a diamond each way) */
@@ -18594,7 +18597,7 @@ function whitecapSync() {
   if (wcap.lastZoom !== u) { wcap.lastZoom = u; wcap.els.forEach(function (e) { wcPlace(e, true); }); }
 }
 function baseWaterBuildClassic(m, im) { /* v951-v1059 look, kept as the "Classic" base water style (v1066) */
-  var C = BASE_WATER, R = C.ref, Hs = Math.max(1, Math.round(im.naturalHeight * R / im.naturalWidth)), reach = C.reach, V = 1.74, Dg = Math.hypot(1, V);
+  var C = BASE_WATER, R = C.ref, Hs = Math.max(1, Math.round(im.naturalHeight * R / im.naturalWidth)), reach = C.reach, V = 1 / ISO_K, Dg = Math.hypot(1, V);
   var c = document.createElement("canvas"); c.width = R; c.height = Hs; var x = c.getContext("2d"); x.drawImage(im, 0, 0, R, Hs);
   var a = x.getImageData(0, 0, R, Hs).data, first = -1, maxb = -1, i, X, Y;
   for (i = 0; i < R * Hs; i++) if (a[i * 4 + 3] > 40) { Y = (i / R) | 0; if (first < 0) first = Y; maxb = Y; }
@@ -21875,9 +21878,9 @@ function marchGLInit() {
     function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
     var vs = "attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; attribute vec2 aUV; attribute vec3 aSN; uniform float uOL; varying float vOL; varying vec2 vUV; varying vec3 vC; uniform vec2 uRes; uniform vec2 uOrg; uniform float uU; uniform float uS; uniform vec2 uCS; uniform float uLift; uniform float uZ0; varying vec3 vN; varying vec3 vP; varying float vWY;" +
       "void main(){ vec3 p = aPos * uS; float c = uCS.x, s = uCS.y; vec3 w = vec3(p.x*c + p.z*s, p.y + uLift, -p.x*s + p.z*c); vN = vec3(aNrm.x*c + aNrm.z*s, aNrm.y, -aNrm.x*s + aNrm.z*c); vP = aPos; vC = aCol; vUV = aUV; vWY = w.y;" +
-      "float sx = (w.x - w.z) * 0.70711 * uU; float sy = ((w.x + w.z) * 0.70711 * 0.57358 - w.y * 0.81915) * uU; vec2 scr = uOrg + vec2(sx, sy); vOL = 0.0;" +
-      "if (uOL > 0.0) { vec3 s2 = vec3(aSN.x*c + aSN.z*s, aSN.y, -aSN.x*s + aSN.z*c); vec2 dir = vec2((s2.x - s2.z) * 0.70711, (s2.x + s2.z) * 0.70711 * 0.57358 - s2.y * 0.81915); float dl = length(dir); if (dl > 0.001) scr += dir / dl * uOL; vOL = 1.0; }" +
-      "float depth = uZ0 + (w.x + w.z) * 0.70711 * 0.81915 + w.y * 0.57358; gl_Position = vec4(scr.x / uRes.x * 2.0 - 1.0, 1.0 - scr.y / uRes.y * 2.0, -depth / 400.0, 1.0); }";
+      "float sx = (w.x - w.z) * 0.70711 * uU; float sy = ((w.x + w.z) * 0.70711 * " + ISO_K.toFixed(5) + " - w.y * " + ISO_C.toFixed(5) + ") * uU; vec2 scr = uOrg + vec2(sx, sy); vOL = 0.0;" +
+      "if (uOL > 0.0) { vec3 s2 = vec3(aSN.x*c + aSN.z*s, aSN.y, -aSN.x*s + aSN.z*c); vec2 dir = vec2((s2.x - s2.z) * 0.70711, (s2.x + s2.z) * 0.70711 * " + ISO_K.toFixed(5) + " - s2.y * " + ISO_C.toFixed(5) + "); float dl = length(dir); if (dl > 0.001) scr += dir / dl * uOL; vOL = 1.0; }" +
+      "float depth = uZ0 + (w.x + w.z) * 0.70711 * " + ISO_C.toFixed(5) + " + w.y * " + ISO_K.toFixed(5) + "; gl_Position = vec4(scr.x / uRes.x * 2.0 - 1.0, 1.0 - scr.y / uRes.y * 2.0, -depth / 400.0, 1.0); }";
     var fs = "precision mediump float; varying vec3 vN; varying vec3 vP; varying vec3 vC; varying vec2 vUV; varying float vWY; varying float vOL; uniform float uVC; uniform float uTX; uniform sampler2D uTex; uniform vec3 uLo; uniform vec3 uHi; uniform vec3 uGlow; uniform vec3 uHot; void main(){ if (vWY < 0.0) discard; if (vOL > 0.5) { gl_FragColor = vec4(0.07, 0.08, 0.13, 1.0); return; } vec3 n = normalize(vN);" + /* v1707: outline pass */
       "if (uTX > 0.5) { if (!gl_FrontFacing) n = -n; float dT = max(dot(n, normalize(vec3(-0.35, 0.85, 0.45))), 0.0); vec3 tc = texture2D(uTex, vUV).rgb; gl_FragColor = vec4(min(tc * (0.55 + 0.75 * dT) + tc * tc * 0.15, vec3(1.0)), 1.0); return; }" + /* v1707: textured model (painted texture baked from the original) */
       "if (uVC > 0.5) { if (!gl_FrontFacing) n = -n; vec3 L0 = normalize(vec3(-0.35, 0.85, 0.45)); float d0 = max(dot(n, L0), 0.0); vec3 lit = vC * (0.42 + 0.85 * d0) + vC * vC * 0.25; gl_FragColor = vec4(min(lit, vec3(1.0)), 1.0); return; }" +
@@ -21964,7 +21967,7 @@ function marchVisualHeading(gx, gz, M) {
   gx /= L; gz /= L;
   var base = Math.atan2(gz, gx), key = (M._key || "m") + ":" + Math.round(base * 360 / Math.PI);
   if (marchVisCache[key] !== undefined) { var cb = marchVisCache[key]; return [Math.cos(cb), Math.sin(cb)]; }
-  var K = 0.70711, Q = 0.57358, CY = 0.81915, ta = Math.atan2((gx + gz) * K * Q, (gx - gz) * K), pts = M._pts, n = pts.length / 3;
+  var K = 0.70711, Q = ISO_K, CY = ISO_C, ta = Math.atan2((gx + gz) * K * Q, (gx - gz) * K), pts = M._pts, n = pts.length / 3;
   function axisErr(phi) { /* hull bow along phi on the water (bow = model -x): on-screen long axis vs the route */
     var c = -Math.cos(phi), s = Math.sin(phi), mx = 0, my = 0, A = 0, B = 0, D = 0, X = new Float32Array(n), Y = new Float32Array(n), i; /* model -> ground: x' = x*c' + z*s' with cur = atan2(sin, -cos) */
     var cc = Math.cos(Math.atan2(s, c)), ss = Math.sin(Math.atan2(s, c));
@@ -33006,7 +33009,7 @@ document.getElementById("devSettingsDiffBtn").onclick = function () {
   };
 };
 function KS_BACKEND_ID() { try { var K = window.KS_BACKEND; return K ? (K.env + " · " + (K.email || K.name || "")) : ""; } catch (e) { return ""; } }
-function renderMapIsoBtn() { var b = document.getElementById("devMapIsoBtn"); if (!b) return; b.textContent = "🗺️ Isometric map (35°): " + (mapIso ? "On" : "Off"); b.className = "dev-btn" + (mapIso ? " active" : ""); }
+function renderMapIsoBtn() { var b = document.getElementById("devMapIsoBtn"); if (!b) return; b.textContent = "🗺️ Isometric map (" + MAP_ELEV_DEG + "°): " + (mapIso ? "On" : "Off"); b.className = "dev-btn" + (mapIso ? " active" : ""); }
 document.getElementById("devMapIsoBtn").onclick = function () {
   mapIso = !mapIso; try { localStorage.setItem(MAP_ISO_KEY, mapIso ? "1" : "0"); } catch (e) {} assetSyncUpload(MAP_ISO_KEY, mapIso ? "1" : "0");
   renderMapIsoBtn(); try { renderMarch3dBtn(); } catch (e) {}
