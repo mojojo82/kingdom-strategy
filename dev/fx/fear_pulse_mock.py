@@ -247,7 +247,8 @@ idle = Image.open(os.path.join(ROOT, "art/heroes/siphon/siphon_anim_v1.webp")).c
 ICW, ICH, IAX, IAY, IDH = 497, 393, 191.03, 388.43, 68.35
 def cell(f): return sheet.crop(((f % WRAP) * CW, (ROW * 2 + f // WRAP) * CH, (f % WRAP) * CW + CW, (ROW * 2 + f // WRAP) * CH + CH))
 bg0 = Image.open(BGP).convert("RGB").crop((0, 380, 860, 760)); W, H = bg0.size
-FEETX, FEETY = 330, 318; K = 2 * 71.82 / CH; KI = 2 * IDH / ICH
+FEETX, FEETY = 330, int(os.environ.get("FEETY", "333"))   # 333 = measured feet line in a real Conquest frame (v1734, canvas px - 380); was 318 (15 px too high)
+K = 2 * 71.82 / CH; KI = 2 * IDH / ICH
 FPS = 30; PRE, POST = 0.6, 0.8; TOT = PRE + N / FPS_S + POST; IMP = PRE + 28 / FPS_S
 BEATS = [IMP, IMP + 0.22, IMP + 1.0, IMP + 1.22]; BEAT_LEN = 0.45
 HZ_X = 600; HZ_FREEZE_F = 20; HZ_T0 = IMP - HZ_FREEZE_F / 24; STUN = 4.0
