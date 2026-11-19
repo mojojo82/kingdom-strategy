@@ -17,6 +17,7 @@ HZTREM = os.environ.get("HZTREM") == "1"     # he trembles (small shake, harder 
 HZBURST = os.environ.get("HZBURST") == "1"   # release burst: one big red echo + ring when the stun breaks
 HZTHREAD = os.environ.get("HZTHREAD") == "1" # a thin red thread from the eye in Baelgor's sword to him, throbbing with the beats
 HZEYE = os.environ.get("HZEYE") == "1"       # the eye (fear_eye_white_v1 tinted red) opens above him, watches, pulses on beats, blinks shut at release
+HZFX = os.environ.get("HZFX", "")   # cracks | chains | slash : extra effect on the frozen hero (on top of HZECHO if set)
 EYEIMG = None
 if HZEYE:
     _e = Image.open(os.path.join(ROOT, "art/originals/heroes/siphon/fx/fear_eye_white_v1.png")).convert("RGBA"); _e = _e.resize((46, round(46 * _e.height / _e.width)), Image.LANCZOS)
@@ -58,6 +59,18 @@ def code_fireball(fr, x, y, ang, t, k, wisps, sc=1.0):
     for rr, a, col in ((8.5 * fl * sc, 45, (255, 60, 75) if FBRED else (255, 255, 255)), (6.5 * fl * sc, 110, (255, 80, 95) if FBRED else (255, 255, 255)), (4.8 * fl * sc, 255, (255, 190, 195) if FBRED else (255, 255, 255))): gd.ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=col + (a,))
     g = g.filter(ImageFilter.GaussianBlur(1.4)); lay.alpha_composite(g)
     fr.alpha_composite(lay, box)
+import random as _rnd, math
+def make_cracks(seed):   # a branching crack pattern (list of segments with the beat index they appear on)
+    r = _rnd.Random(seed); segs = []
+    def grow(x, y, a, L, depth, beat):
+        if depth > 4 or L < 3: return
+        n = r.randint(2, 4); px_, py_ = x, y
+        for i in range(n):
+            a += r.uniform(-0.6, 0.6); nx_, ny_ = px_ + math.cos(a) * L / n, py_ + math.sin(a) * L / n; segs.append((px_, py_, nx_, ny_, beat, depth)); px_, py_ = nx_, ny_
+        for k in range(r.randint(1, 2)): grow(px_, py_, a + r.uniform(-1.2, 1.2), L * 0.65, depth + 1, min(3, beat + 1))
+    for k in range(5): grow(0, 0, k * 2 * math.pi / 5 + r.uniform(-0.3, 0.3), r.uniform(22, 34), 0, 0)
+    return segs
+CRACKS = make_cracks(9); SHARDS = [(_rnd.Random(k).uniform(0, 6.28), _rnd.Random(k + 50).uniform(60, 160), _rnd.Random(k + 90).uniform(3, 7)) for k in range(16)]
 def hanzo_lift(f):
     P = 80; T = 0
     if 6 <= f < 35: u = (f - 6) / 29; T = P * (1 - (1 - u) ** 2)
@@ -145,6 +158,36 @@ for i in range(int(TOT * FPS)):
                     q = e / 0.55; sc_ = 1 + 1.4 * q; g = tint(hs, GCOL, 0.9 * (1 - q) ** 1.2).resize((round(hs.width * sc_), round(hs.height * sc_)), Image.LANCZOS)
                     ov.alpha_composite(g, (max(0, round(ccx + (hx - ccx) * sc_)), max(0, round(ccy + (hy - ccy) * sc_)))); R = 10 + 70 * q
                     od.ellipse((ccx - R, ccy - R, ccx + R, ccy + R), outline=(255, 70, 85, int(220 * (1 - q))), width=max(1, round(4 * (1 - q))))
+            nb = sum(1 for b in HZ_BEATS[0::2] if t >= b)   # how many heartbeat pairs so far
+            if HZFX == "cracks" and IMP + 0.3 <= t < IMP + STUN:
+                for (x1, y1, x2, y2, bi, dp) in CRACKS:
+                    if bi < nb:
+                        w_ = max(1, 3 - dp // 2); od.line((ccx + x1, ccy + y1, ccx + x2, ccy + y2), fill=(20, 0, 4, 200), width=w_ + 2); od.line((ccx + x1, ccy + y1, ccx + x2, ccy + y2), fill=(255, 40 + int(120 * beat), 60 + int(100 * beat), 240), width=w_)
+            if HZFX == "cracks" and IMP + STUN <= t < IMP + STUN + 0.6:   # shatter
+                q = (t - IMP - STUN) / 0.6
+                for (a, sp, sz) in SHARDS:
+                    x0 = ccx + math.cos(a) * sp * q; y0 = ccy + math.sin(a) * sp * q + 120 * q * q; rr = sz * (1 - q * 0.5)
+                    od.polygon([(x0 + rr * math.cos(a + 2.1 * j + q * 6), y0 + rr * math.sin(a + 2.1 * j + q * 6)) for j in range(3)], fill=(235, 30, 50, int(230 * (1 - q))))
+            if HZFX == "chains" and IMP <= t < IMP + STUN + 0.7:
+                for side in (-1, 1):
+                    ax_, ay_ = ccx + side * 70, FEETY - 2; ex, ey = ccx + side * 6, ccy + 4
+                    grow_ = min(1, (t - IMP) / 0.25); sag = (26 - 10 * beat) if t < IMP + STUN else 26 + 300 * (t - IMP - STUN) ** 2
+                    nlinks = 15
+                    for i in range(int(nlinks * grow_)):
+                        u = i / nlinks; x_ = ax_ + (ex - ax_) * u; y_ = ay_ + (ey - ay_) * u + sag * math.sin(math.pi * u) * (1 if t < IMP + STUN else 1)
+                        if t >= IMP + STUN and i > nlinks * 0.5: continue   # snapped: the top half is gone
+                        lw, lh = (6, 3.6) if i % 2 == 0 else (3, 5.5)
+                        od.ellipse((x_ - lw, y_ - lh, x_ + lw, y_ + lh), outline=(30, 26, 30, 255), width=3); od.ellipse((x_ - lw, y_ - lh, x_ + lw, y_ + lh), outline=(220 + int(35 * beat), 40, 55, 180 + int(70 * beat)), width=1)
+                    if t < IMP + STUN: od.ellipse((ex - 9, ey - 6, ex + 9, ey + 6), outline=(225, 30, 50, 150 + int(100 * beat)), width=2)
+            if HZFX == "slash":
+                for n_, b in enumerate(HZ_BEATS[0::2]):
+                    e = t - b
+                    if 0 <= e < 0.45:
+                        sweep = min(1, e / 0.1); fade = 1 if e < 0.1 else max(0, 1 - (e - 0.1) / 0.35); dirn = 1 if n_ % 2 == 0 else -1
+                        R1, R2 = 46, 38; a0 = math.radians(-150 if dirn > 0 else -30); a1 = a0 + dirn * math.radians(120) * sweep; rot = math.radians(-18 * dirn)
+                        def P(a, R): xx, yy = math.cos(a) * R, math.sin(a) * R * 0.55; return (ccx + xx * math.cos(rot) - yy * math.sin(rot), ccy + 4 + xx * math.sin(rot) + yy * math.cos(rot))
+                        steps = 24; outer = [P(a0 + (a1 - a0) * i / steps, R1 + 6 * math.sin(math.pi * i / steps)) for i in range(steps + 1)]; inner = [P(a0 + (a1 - a0) * i / steps, R2) for i in range(steps, -1, -1)]
+                        od.polygon(outer + inner, fill=(225, 25, 45, int(230 * fade))); od.line(outer, fill=(255, 220, 225, int(240 * fade)), width=2)
             if HZEYE and IMP <= t < IMP + STUN + 0.25:
                 o = min(1, (t - IMP) / 0.2) if t < IMP + STUN else max(0, 1 - (t - IMP - STUN) / 0.15)   # opens, then blinks shut at release
                 sc_ = 1 + 0.18 * beat; ew, eh = round(EYEIMG.width * sc_), max(1, round(EYEIMG.height * sc_ * o))
