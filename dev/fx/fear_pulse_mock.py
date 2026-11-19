@@ -76,6 +76,15 @@ _CUT = os.path.join(ROOT, "art/originals/heroes/siphon/fx/cut")
 PUFFS = []; ESTRIP = None; LINKS = {}
 CLAWS = {}
 if HZFX == "claws": CLAWS = {k_: Image.open(os.path.join(_CUT, "claw_%s.png" % k_)).convert("RGBA") for k_ in ("open", "closed")}
+CLAWANIM = []   # CLAWANIM=1: the Atlas claw loop (fx/claw_loop_v1.mp4, keyed) instead of the two still poses
+if HZFX == "claws" and os.environ.get("CLAWANIM") == "1":
+    import glob as _g, tempfile as _tf
+    _t2 = _tf.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/claw_loop_v1.mp4"), os.path.join(_t2, "%04d.png")], check=True)
+    for _f in sorted(_g.glob(os.path.join(_t2, "*.png")))[:-1]:
+        _a = np.asarray(Image.open(_f).convert("RGB")).astype(np.float32); _M = np.median(_a[:20].reshape(-1, 3), 0)
+        _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _dm = _M[1] - max(_M[0], _M[2]); _al = np.clip(1 - (_d - 20) / (_dm * 0.8 - 20), 0, 1)
+        _c = np.clip((_a - (1 - _al[..., None]) * _M) / np.maximum(_al[..., None], 1e-3), 0, 255); _c[..., 1] = np.minimum(_c[..., 1], _c[..., 2] + 6); _al[_al < 0.04] = 0
+        CLAWANIM.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA").crop((140, 290, 640, 990)))
 if DARKE or HZFX in ("chains2", "claws"):
     PUFFS = [Image.open(os.path.join(_CUT, "puff_%02d.png" % i)).convert("RGBA") for i in range(16)]
     _es = Image.open(os.path.join(_CUT, "energy_strip.png")).convert("RGBA"); ESTRIP = _es.resize((round(_es.width * 26 / _es.height), 26), Image.LANCZOS)
@@ -107,8 +116,11 @@ def _claws(fr, t, C, bb, beat, back):   # shadow arms rise out of the ground and
     specs = [(-52, -22, 1.08, False, True), (52, 22, 1.08, True, False)]   # (x offset at the ground, tilt deg, size, mirrored, drawn behind him)
     for k_, (xo, tilt, sz, mir, isback) in enumerate(specs):
         if isback != back: continue
-        clench = beat > 0.25 and k_ != 2 or (beat > 0.25 and k_ == 2)
-        im = CLAWS["closed" if clench else "open"]; H = reach * sz * (1.08 if clench else 1.0); sc = H / im.height
+        clench = beat > 0.25
+        if CLAWANIM:   # play the Atlas grab loop at 1.6x, the two arms half a cycle apart
+            im = CLAWANIM[int((t * 24 * 1.6 + k_ * len(CLAWANIM) / 2)) % len(CLAWANIM)]; H = reach * sz * 1.05; sc = H / im.height
+        else:
+            im = CLAWS["closed" if clench else "open"]; H = reach * sz * (1.08 if clench else 1.0); sc = H / im.height
         im = im.resize((max(1, round(im.width * sc * 0.62)), max(1, round(H))), Image.LANCZOS)   # slimmer arms so he stays visible between them
         if mir: im = im.transpose(Image.FLIP_LEFT_RIGHT)
         sway = 4 * math.sin(t * 2.3 + k_ * 1.7); im = im.rotate(tilt + sway, resample=Image.BICUBIC, expand=True)
