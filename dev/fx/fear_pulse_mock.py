@@ -110,6 +110,10 @@ def _load_portal(name):
 if HZFX == "portal":
     PORTAL = _load_portal(os.environ.get("PORTALCLIP", "portal_grab_v1.mp4"))
     if os.environ.get("PORTALDESC"): PORTALDN = _load_portal(os.environ["PORTALDESC"])
+    if PORTALDN and os.environ.get("NOCRACK") == "1":   # Harley 19 Nov: leave the crack out - the clip ends once the portal has shrunk to its small ring
+        _K = int(os.environ.get("CRACKKEEP", "102")); PORTALDN = PORTALDN[:_K + 1]; CRACK_FROM = 10 ** 6; PORTAL_SHIFT[os.environ["PORTALDESC"]] = [0.0] * len(PORTALDN)
+        for _j in range(4):   # the last few ring frames fade
+            _im = PORTALDN[_K - 3 + _j].copy(); _f = 1 - (_j + 1) / 5; _im.putalpha(_im.getchannel("A").point(lambda v: int(v * _f))); PORTALDN[_K - 3 + _j] = _im
     if PORTALDN and os.environ.get("CRACKNEW") == "1":
         # Harley: a new crack made from the portal's own last frames instead of Atlas's lower flare. Keep frames up to the small ring
         # (KEEP), then the last ring frame is squashed flat and stretched sideways into a glowing slit (same centre, so it can't move),
