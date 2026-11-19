@@ -27,8 +27,8 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   let store_ = "idleAnim", canvasId = "idleCanvas";
   if (MODE === "arena") {
     store_ = "arenaAnim"; canvasId = "arenaCanvas";
-    await P.evaluate(() => setScreen("more", "arena")); await P.waitForTimeout(1500);
-    await P.evaluate(() => { arenaView = "battle"; renderArena(); renderArenaSkillbar(); const ro = ["gareth", "lyra", "kessa", "sera", "hanzo"], hs = {};
+    await P.evaluate((o) => { window.__opp = o; setScreen("more", "arena"); }, process.env.OPP || ""); await P.waitForTimeout(1500);
+    await P.evaluate(() => { arenaView = "battle"; renderArena(); renderArenaSkillbar(); const ro = (window.__opp || "gareth,lyra,kessa,sera,hanzo").split(","), hs = {};
       ro.forEach((k) => { hs[k] = { owned: true, level: 60, stars: 15, skillLevels: { conquest: [3, 3, 3], expedition: [1, 1, 1] } }; });
       arenaOpponent.roster = ro; arenaOpponent.heroes = hs; arenaOpponent.weapons = {}; arenaOpponent.esper = null; renderArena(); });
     await P.waitForTimeout(1500); await P.evaluate(() => { const bt = document.getElementById("arenaAttackBtn"); if (bt) bt.click(); });

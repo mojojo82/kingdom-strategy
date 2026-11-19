@@ -6064,3 +6064,16 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Also fixed (found while testing): Conquest frame error "state is not defined" every time the fortress cannon fired (v1642 super-burst flag used
   `state` instead of `game.state`) - those frames were skipped.
 - Tested headless (dev/tests/fear_fx_rec.js conquest|arena, VID=1 for a real-time video) - not on a phone. No page errors. Not checked yet: speed on a phone.
+
+## v1736 - Fear: Arena only, grabs jumping heroes only (19 Nov 2026, TEST)
+- Harley: "Its not supposed to grab ranged heroes remember. Jumping heroes. If no jumping heroes it just spawns in the center arena and grabs nothing"
+  + "Jumpers only and highest hp for now. Probably change later. If no jumpers the hand still spawns but grabs nothing. Also put a note on the move.
+  'Does not work in conquest' it will be arena only skill".
+- Arena sim (gazeQ): the stun lands only on an enemy hero in the air (Hanzo mid-leap = Storm pending, Skybreaker Slam `air`, Tom's leap `leapAir`;
+  not Zarek's permanent float), the most HP of them. Nobody jumping = no stun; the cast event still fires with an empty target and the hand rises in
+  the middle of the arena (on the ground line), closes on nothing (3.7 s) and sinks.
+- Conquest: skill flag arenaOnly - Baelgor never casts Fear there (no timer; the skill bar shows a grey icon with "Arena"). Description starts with
+  "Arena only - does not work in Conquest." This also removes Fear's ground-shock damage from his Conquest output.
+- The portal now stays where it opened (it followed a KO'd target drifting home).
+- Checked headless (dev/tests/fear_fx_rec.js arena, OPP=... for the enemy roster): vs a roster with Hanzo the hand grabs Hanzo mid-leap; vs
+  gareth/lyra/kessa/sera/torvald it rises empty in the middle. No page errors. Meta check: same known warning (F3 builds above meta).

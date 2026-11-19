@@ -6761,8 +6761,10 @@ var HERO_DEFS = {
     conquestSkills: [
       /* Fear: drives his greatsword into the ground (Sunforge Slam's numbers: hits every enemy the ground shock reaches, fortress included) and the enemy hero
          with the most HP is STUNNED for 4 s (v1729; was: closest to using their skill) - can't move or attack, skill timer paused, a hero in the air (Hanzo mid-leap) freezes there.
-         Lands when the sword is planted (1.72 s into his cast = 4 Arena ticks, one before Hanzo's Storm). Conquest: the enemy closest to its next attack waits 4 s more. */
-      { name: "Fear", icon: "👁️", kind: "active", aoeAll: true, wave: { impact: 1.72 }, gaze: { sec: 4 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, drives his greatsword into the ground: the shock runs along the ground both ways and hits every enemy it reaches, fortress included (a hero in the air is missed). The enemy hero with the most HP is stunned for 4s - frozen in place, even in mid-air, their skill timer paused." }
+         Lands when the sword is planted (1.72 s into his cast = 4 Arena ticks, one before Hanzo's Storm). Conquest: the enemy closest to its next attack waits 4 s more.
+         v1736 (Harley 19 Nov): ARENA ONLY (arenaOnly - he doesn't cast it in Conquest) and it only grabs a JUMPING enemy hero (in the air: Hanzo's leap,
+         Skybreaker Slam, Tom's leap; the most HP of them) - nobody jumping = no stun, the hand rises in the middle of the arena and grabs nothing. */
+      { name: "Fear", icon: "👁️", kind: "active", arenaOnly: true, aoeAll: true, wave: { impact: 1.72 }, gaze: { sec: 4 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Arena only - does not work in Conquest. Every 12s, drives his greatsword into the ground: the shock runs along the ground both ways and hits every enemy it reaches, fortress included (a hero in the air is missed). A giant hand rises from a portal and grabs the enemy hero who is jumping (the one with the most HP if several): stunned for 4s - frozen in mid-air, skill timer paused. Nobody jumping: the hand grabs nothing." }
     ],
     expeditionSkills: [
       { name: "Dread Banner", icon: "🚩", kind: "passive", desc: "Boosts Infantry ATK while leading.", effectType: "leadTroopAtkMult", perLevel: 0.035 },
@@ -10249,6 +10251,7 @@ function createGame(opts) {
       if (!def || !h || !h.owned || !def.conquestSkills) return;
       var skill1 = def.conquestSkills[0];
       if (!skill1 || skill1.kind !== "active") return;
+      if (skill1.arenaOnly) { delete state.heroCooldowns[key]; return; } /* v1736: Arena-only skill (Baelgor's Fear) - never cast in Conquest */
       if (idleHeroIsKo(key)) { state.heroCooldowns[key] = skillCdAt(skill1, heroSkillLevel(key, "conquest", 0)); return; } // v527: KO'd — skill timer sits at full until he revives
       if (state.heroCooldowns[key] == null) state.heroCooldowns[key] = (skill1.firstCd || skillCdAt(skill1, heroSkillLevel(key, "conquest", 0))) * (1 - cardCdBonus(conqCardMods(state), idleHpFrac())); /* v985 */
       var AT = state.idle.animT || (state.idle.animT = {}); /* v1728: his timer waits while his skill animation plays (or his Storm / wave is still on its way) */
@@ -14398,7 +14401,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1735"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1736"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29202,7 +29205,7 @@ function fearList(store) { var L = store && store.fearFx; if (!L || !L.length) r
 function fearPortalOpen(store) { var L = fearList(store), now = performance.now(); return !!(L && L.some(function (F) { return now - F.t0 < (F.stun + 1.3) * 1000; })); } /* Conquest holds the ground still while this is true */
 function fearT(F) { return (performance.now() - F.t0) / 1000; }
 function fearDescIdx(rel) { var DS = 4, DC = 2, DK = 90, tk = DK / (24 * DS); return rel < tk ? Math.floor(rel * 24 * DS) : Math.floor(DK + (rel - tk) * 24 * DC); } /* clip frame of the descend: the fist sinks at 4x, the ring closes at 2x */
-function fearSetPos(F, x, feet, cy) { if (F.frozen) return; F.x = x; F.feet = feet; F.cy = cy; var f = (feet - cy) / (FEAR_FX.portY - FEAR_FX.grabY); F.f = Math.max(FEAR_FX.fMin, Math.min(FEAR_FX.fMax, f)); }
+function fearSetPos(F, x, feet, cy) { if (F.frozen) return; F.x = x; F.feet = feet; F.cy = cy; var f = (feet - cy) / (FEAR_FX.portY - FEAR_FX.grabY); F.f = Math.max(FEAR_FX.fMin, Math.min(FEAR_FX.fMax, f)); F.frozen = true; } /* v1736: the portal stays where it opened (he is stunned anyway; a KO'd target drifting home doesn't drag it along) */
 function fearFrame(ctx, k, idx, F, alpha) { var D = FEAR_FX[k], im = fearImg(k); if (!im || F.f == null) return; idx = Math.max(0, Math.min(D.n - 1, idx)); var f = F.f, sx = (idx % D.cols) * FEAR_FX.cw, sy = Math.floor(idx / D.cols) * FEAR_FX.ch;
   ctx.save(); if (alpha < 1) ctx.globalAlpha *= alpha; ctx.drawImage(im, sx, sy, FEAR_FX.cw, FEAR_FX.ch, F.x - FEAR_FX.ringX * f, F.feet - FEAR_FX.portY * f + FEAR_FX.dy, FEAR_FX.cw * f, FEAR_FX.ch * f); ctx.restore(); }
 function fearCarve(ctx, F, t, light) { /* 4 lines (8 points) shoot out from the portal centre in 0.1 s, glow while it tears open, fade over ~0.9 s */
@@ -33533,7 +33536,7 @@ function renderIdleSkillbar() {
     var iconSrc = getSkillIcon(key);
     var iconHtml = iconSrc ? '<img src="' + iconSrc + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">' : "";
     slot.innerHTML =
-      '<div class="skill-icon-wrap' + (ready ? ' ready' : '') + '">' + iconHtml + '<div class="cd-overlay" style="--pct:' + deg + 'deg;"></div><div class="cd-text">' + (skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "") + '</div></div>' +
+      '<div class="skill-icon-wrap' + (ready ? ' ready' : '') + '"' + (skill1.arenaOnly ? ' style="filter:grayscale(1) brightness(.7)"' : '') + '>' + iconHtml + '<div class="cd-overlay" style="--pct:' + (skill1.arenaOnly ? 0 : deg) + 'deg;"></div><div class="cd-text">' + (skill1.arenaOnly ? "Arena" : skillTimerTextEnabled ? (ready ? "✓" : remaining.toFixed(1) + "s") : "") + '</div></div>' +
       (game.heroSkill2(key) ? '<div class="cd2" title="' + game.heroSkill2(key).name + '"><i></i></div>' : '') /* v1670 */ +
       '<div class="skill-hero-tag">' + def.name + '</div>' /* v822: no emoji stand-in beside the name */;
     el.appendChild(slot);
@@ -33574,6 +33577,7 @@ function updateIdleSkillbarDom() {
     if (!nodes) return;
     var def = HERO_DEFS[key];
     var skill1 = def.conquestSkills[0];
+    if (skill1 && skill1.arenaOnly) return; /* v1736: "Arena" label, no timer */
     var rawRemaining = game.state.heroCooldowns[key] != null ? Math.max(0, game.state.heroCooldowns[key]) : skillCdAt(skill1, heroSkill1Lvl(key));
     var remaining = idleAnim.smoothCooldown[key] != null ? idleAnim.smoothCooldown[key] : rawRemaining;
     var ready = remaining <= 0.05;
@@ -39361,8 +39365,10 @@ function arenaMakeSim(playerStats, aiStats, opts) {
     if (gazeQ.length) { var gazeKeep = []; gazeQ.forEach(function (q) { if (q.at > tick) { gazeKeep.push(q); return; } /* v1726: Fear lands as the sword is planted */
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oCd = q.sd === 'P' ? aiCd : playerCd;
       if (!opp || isKo(mine, q.key)) return;
-      var best = null; opp.list.forEach(function (e2) { if (e2.ko || e2.dead || e2.droid) return; if (!best || e2.max > best.max || (e2.max === best.max && e2.hp > best.hp)) best = e2; }); /* v1729 (Harley): the enemy hero with the most HP (max HP, then HP left) */
-      if (best) { best.stunT = Math.max(best.stunT || 0, tick + Math.max(1, Math.round(q.sec / dtS))); castEv.push((q.sd === 'P' ? 'p_' : 'a_') + q.key + ':gaze:' + best.id); } }); gazeQ = gazeKeep; }
+      var oSdG = q.sd === 'P' ? 'A' : 'P', jumping = function (o) { return !!(o.air || o.leapAir || stormQ.some(function (s0) { return s0.sd === oSdG && s0.key === o.id && s0.at >= tick; })); }; /* v1736: in the air = Hanzo mid-leap (Storm pending), Skybreaker Slam, Tom's leap - not Zarek's float */
+      var best = null; opp.list.forEach(function (e2) { if (e2.ko || e2.dead || e2.droid || !jumping(e2)) return; if (!best || e2.max > best.max || (e2.max === best.max && e2.hp > best.hp)) best = e2; }); /* v1736 (Harley): only a JUMPING enemy hero, the most HP of them (v1729: any hero, most HP) */
+      if (best) best.stunT = Math.max(best.stunT || 0, tick + Math.max(1, Math.round(q.sec / dtS)));
+      castEv.push((q.sd === 'P' ? 'p_' : 'a_') + q.key + ':gaze:' + (best ? best.id : '')); }); gazeQ = gazeKeep; } /* nobody jumping: no stun - the hand still rises (in the middle) and grabs nothing */
     if (waveQ.length) { var waveKeep = []; waveQ.forEach(function (q) { if (tick < q.impact) { waveKeep.push(q); return; }
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oSd = q.sd === 'P' ? 'A' : 'P';
       if (tick === q.impact && isKo(mine, q.key)) return;
@@ -41606,7 +41612,9 @@ function renderArenaBattleScreen() {
       // hit still has no dedicated shot visual, same as before this change —
       // only its active skill (if any) gets a projectile.
       (state.atk2 || []).forEach(function (fk) { (arenaAnim.atk2 || (arenaAnim.atk2 = {}))[fk] = { t0: performance.now() }; });
-      (state.casts || []).forEach(function (cs) { var mG = /^([pa])_(\w+):gaze:(\w+)$/.exec(cs); if (!mG) return; var skG = HERO_DEFS[mG[2]] && (HERO_DEFS[mG[2]].conquestSkills || [])[0]; fearStart(arenaAnim, mG[1] + "_" + mG[2], (mG[1] === "p" ? "a_" : "p_") + mG[3], (skG && skG.gaze && skG.gaze.sec) || 4); }); /* v1735: Fear visuals */ /* v1730: Baelgor's slash starts (its hit lands impactSec later in the sim) */
+      (state.casts || []).forEach(function (cs) { var mG = /^([pa])_(\w+):gaze:(\w*)$/.exec(cs); if (!mG) return; var skG = HERO_DEFS[mG[2]] && (HERO_DEFS[mG[2]].conquestSkills || [])[0];
+        if (mG[3]) { fearStart(arenaAnim, mG[1] + "_" + mG[2], (mG[1] === "p" ? "a_" : "p_") + mG[3], (skG && skG.gaze && skG.gaze.sec) || 4); return; }
+        fearStart(arenaAnim, mG[1] + "_" + mG[2], null, 3.7); /* empty: the grab plays through (fist closes on nothing), then it sinks */ var Fe = arenaAnim.fearFx[arenaAnim.fearFx.length - 1], gF = groundYFor(h) + 7; fearSetPos(Fe, w / 2, gF, gF - 60 * heroSpriteVisualScale / 100); Fe.frozen = true; }); /* v1735: Fear visuals; v1736: nobody jumping - the hand rises in the middle of the arena and grabs nothing */ /* v1730: Baelgor's slash starts (its hit lands impactSec later in the sim) */
       var playerFiredFlat = false, playerFiredArc = false, aiFiredFlat = false, aiFiredArc = false;
       state.playerHitAttackers.forEach(function (id) {
         var def = HERO_DEFS[id];
