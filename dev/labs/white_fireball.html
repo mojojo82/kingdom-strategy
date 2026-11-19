@@ -1,0 +1,74 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>White Fireball Lab</title>
+<style>html,body{margin:0;background:#0b0d16}canvas{display:block}</style></head>
+<body>
+<canvas id="c" width="860" height="380"></canvas>
+<script>
+/* v1734 lab (Harley: "a white fireball shoot with flaming white energy - the best version you can do in code"). Pure canvas 2D, additive blending.
+   Deterministic: render(frameIndex) steps the scene at 60 fps from frame 0, so a headless recorder gets the same clip every time.
+   Layers per shot: wide soft halo, flame tongues streaming back from the core (noise wobble), white-hot core, trail flames (white -> cool
+   blue-white -> gone, rising a little), flickering embers; on impact: flash, shock ring, sparks, a short burst of white flame. */
+const C = document.getElementById("c"), X = C.getContext("2d"), W = C.width, H = C.height;
+let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+const noise = (t, k) => Math.sin(t * 7.1 + k * 1.7) * 0.5 + Math.sin(t * 13.3 + k * 4.1) * 0.3 + Math.sin(t * 23.7 + k * 2.3) * 0.2;
+const bg = new Image(); let bgOk = false; bg.onload = () => { bgOk = true; }; if (window.BG) bg.src = window.BG;
+window.setBg = (src) => { bgOk = false; bg.onload = () => { bgOk = true; }; bg.src = src; };
+const FROM = { x: 205, y: 262 }, TO = { x: 700, y: 268 }, SPEED = 760, SCALE = 1;   // px/s on this 2x-size canvas
+const SHOTS = [0.3, 1.5, 2.7];   // launch times (s)
+let parts = [], embers = [], bursts = [], last = -1, slowMo = 1;
+function shotPos(t0, t) { const d = Math.hypot(TO.x - FROM.x, TO.y - FROM.y), dur = d / SPEED, u = (t - t0) / dur; if (u < 0 || u > 1) return null; const arc = Math.sin(u * Math.PI) * -18; return { x: FROM.x + (TO.x - FROM.x) * u, y: FROM.y + (TO.y - FROM.y) * u + arc, u, vx: (TO.x - FROM.x) / dur, vy: (TO.y - FROM.y) / dur + Math.cos(u * Math.PI) * -18 * Math.PI / dur }; }
+function glow(x, y, r, stops) { const g = X.createRadialGradient(x, y, 0, x, y, r); stops.forEach((s) => g.addColorStop(s[0], s[1])); X.fillStyle = g; X.beginPath(); X.arc(x, y, r, 0, 7); X.fill(); }
+function step(t, dt) {
+  SHOTS.forEach((t0, si) => {
+    const p = shotPos(t0, t);
+    if (p) {   // spawn trail flames + embers from the core
+      const n = 4; for (let i = 0; i < n; i++) { const a = Math.atan2(-p.vy, -p.vx) + (rnd() - 0.5) * 0.9, sp = 60 + rnd() * 140;
+        parts.push({ x: p.x + (rnd() - 0.5) * 8 - p.vx * dt * i / n, y: p.y + (rnd() - 0.5) * 8 - p.vy * dt * i / n, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 25, life: 0, max: 0.28 + rnd() * 0.32, r: 6 + rnd() * 6, k: rnd() * 10 }); }
+      if (rnd() < 0.7) embers.push({ x: p.x, y: p.y, vx: -p.vx * 0.15 + (rnd() - 0.5) * 120, vy: (rnd() - 0.5) * 120 - 40, life: 0, max: 0.4 + rnd() * 0.5, k: rnd() * 10 });
+      p.si = si;
+    }
+    const pe = shotPos(t0, t - dt);
+    if (pe && !shotPos(t0, t + 1e-6) && !bursts.some((b) => b.si === si)) {   // impact this frame
+      bursts.push({ si, x: TO.x, y: TO.y, t: 0 });
+      for (let i = 0; i < 46; i++) { const a = rnd() * 6.283, sp = 120 + rnd() * 420; embers.push({ x: TO.x, y: TO.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7 - 60, life: 0, max: 0.3 + rnd() * 0.5, k: rnd() * 10, spark: true }); }
+      for (let i = 0; i < 22; i++) { const a = rnd() * 6.283, sp = 40 + rnd() * 170; parts.push({ x: TO.x, y: TO.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6 - 70, life: 0, max: 0.35 + rnd() * 0.45, r: 10 + rnd() * 14, k: rnd() * 10 }); }
+    }
+  });
+  parts.forEach((q) => { q.life += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.94; q.vy = q.vy * 0.94 - 30 * dt; });
+  embers.forEach((q) => { q.life += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.96; q.vy = q.vy * 0.96 + (q.spark ? 260 : -20) * dt; });
+  bursts.forEach((b) => { b.t += dt; });
+  parts = parts.filter((q) => q.life < q.max); embers = embers.filter((q) => q.life < q.max); bursts = bursts.filter((b) => b.t < 0.7);
+}
+function lick(x, y, ang, L, w, a) {   // one flame tongue: a teardrop from the head (x,y) streaming back along -ang
+  X.save(); X.translate(x, y); X.rotate(ang + Math.PI);
+  const g = X.createLinearGradient(0, 0, L, 0); g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(0.35, `rgba(235,240,255,${a * 0.7})`); g.addColorStop(0.75, `rgba(170,190,255,${a * 0.25})`); g.addColorStop(1, "rgba(140,160,255,0)");
+  X.fillStyle = g; X.beginPath(); X.moveTo(-w * 0.6, 0); X.bezierCurveTo(-w * 0.6, -w, L * 0.35, -w * 0.9, L, 0); X.bezierCurveTo(L * 0.35, w * 0.9, -w * 0.6, w, -w * 0.6, 0); X.fill(); X.restore(); }
+function draw(t) {
+  X.globalCompositeOperation = "source-over";
+  if (bgOk) X.drawImage(bg, 0, 0, W, H); else { X.fillStyle = "#121624"; X.fillRect(0, 0, W, H); }
+  SHOTS.forEach((t0) => { const p = shotPos(t0, t); if (!p) return;   // cool blue-violet aura first (normal blend) so the white reads against any background
+    glow(p.x - 6, p.y, 40, [[0, "rgba(120,140,255,0.22)"], [0.6, "rgba(90,100,220,0.08)"], [1, "rgba(80,90,200,0)"]]); });
+  X.globalCompositeOperation = "lighter";
+  parts.forEach((q) => { const u = q.life / q.max, r = q.r * 0.55 * (1 - u * 0.5), a = (1 - u) * 0.38 * (0.6 + 0.4 * Math.abs(Math.sin(t * 30 + q.k)));   // detached flame wisps: little tongues pointing the way they drift
+    lick(q.x, q.y, Math.atan2(q.vy, q.vx) + Math.PI + 0.4 * noise(t * 3, q.k), r * (2.4 + 0.8 * noise(t * 2, q.k + 5)), r * 0.55, a); });
+  SHOTS.forEach((t0) => { const p = shotPos(t0, t); if (!p) return;
+    const ang = Math.atan2(p.vy, p.vx), fl = 1 + 0.12 * noise(t, 3);
+    glow(p.x, p.y, 30 * fl, [[0, "rgba(255,255,255,0.12)"], [1, "rgba(170,185,255,0)"]]);
+    for (let i = 0; i < 7; i++) {   // flame tongues: each its own length, angle and flicker
+      const L = (30 + i * 9) * (1 + 0.5 * noise(t * 2.6, i * 3.1)), w = 7.5 - i * 0.55, da = 0.45 * noise(t * 2.1, i + 20) * (i % 2 ? 1 : -1), a = 0.34 - i * 0.03;
+      lick(p.x + Math.cos(ang) * 3, p.y + Math.sin(ang) * 3, ang + da, L, w, a); }
+    glow(p.x, p.y, 9 * fl, [[0, "rgba(255,255,255,1)"], [0.6, "rgba(255,255,255,0.85)"], [1, "rgba(220,230,255,0)"]]);   // white-hot core
+    glow(p.x + 2, p.y - 1, 5, [[0, "rgba(255,255,255,1)"], [1, "rgba(255,255,255,0)"]]); });
+  embers.forEach((q) => { const u = q.life / q.max, fl = 0.5 + 0.5 * Math.abs(Math.sin(t * 40 + q.k * 7)), a = (1 - u) * fl;
+    glow(q.x, q.y, q.spark ? 3.5 : 2.5, [[0, `rgba(255,255,255,${a})`], [1, "rgba(190,205,255,0)"]]); });
+  bursts.forEach((b) => { const u = b.t / 0.7;
+    if (b.t < 0.1) glow(b.x, b.y, 75, [[0, `rgba(255,255,255,${0.75 * (1 - b.t / 0.1)})`], [1, "rgba(190,205,255,0)"]]);
+    for (let k = 0; k < 9; k++) { const a2 = k / 9 * 6.283 + b.si, L = (20 + 60 * Math.sqrt(u)) * (0.7 + 0.5 * Math.abs(noise(b.t * 3, k))); if (u < 0.6) lick(b.x, b.y, a2, L, 9 * (1 - u), 0.5 * (1 - u / 0.6)); }   // flame petals bursting out
+    X.strokeStyle = `rgba(230,238,255,${0.45 * (1 - u)})`; X.lineWidth = 3 * (1 - u) + 0.5; X.beginPath(); X.ellipse(b.x, b.y + 10, 16 + 110 * Math.sqrt(u), (16 + 110 * Math.sqrt(u)) * 0.3, 0, 0, 7); X.stroke(); });
+  X.globalCompositeOperation = "source-over";
+}
+window.render = (f) => { const dt = 1 / 60; for (let i = last + 1; i <= f; i++) step(i * dt, dt); last = Math.max(last, f); draw(f * dt); return parts.length; };
+let f0 = null; function loop(ts) { if (f0 == null) f0 = ts; const f = Math.floor((ts - f0) / 1000 * 60) % 240; if (f < last) { last = -1; parts = []; embers = []; bursts = []; seed = 7; } window.render(f); requestAnimationFrame(loop); }
+if (!window.NO_LOOP) requestAnimationFrame(loop);
+</script>
+</body></html>
