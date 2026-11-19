@@ -85,7 +85,7 @@ def portal_edge_fade(h, w, top=740, bot=820, x0=24, x1=110):
     return 1 - band * (1 - side[None, :])
 PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
 PORTALDN = []   # PORTALDESC=clip.mp4: the hand sinks back into the portal and it closes (fx/portal_descend_v1.mp4), played after the stun
-PORT_RING_Y = 947.0; PORTAL_SHIFT = {}
+PORT_RING_Y = 947.0; PORTAL_SHIFT = {}; PORTAL_DY = float(os.environ.get("PORTALDY", "4"))   # scene px (2x game px): Harley 19 Nov - portal + hand a few px lower
 def _load_portal(name):
     import glob as _g3, tempfile as _tf3
     out = []; _ry = []; _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + name), os.path.join(_t3, "%04d.png")], check=True)
@@ -212,7 +212,8 @@ def _portal(fr, t, C, bb, beat, back):
         sc, x0, y0 = _PORTAL_AT["v"]; im = PORTALDN[di].resize((round(768 * sc), round(1152 * sc)), Image.LANCZOS)
         a_ = min(1.0, (len(PORTALDN) - 1 - di) / 8)   # last few frames fade (the crack goes away)
         if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
-        _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ["PORTALDESC"]][di] * sc)); return
+        _k0 = int(os.environ.get("PORTALSHIFTFROM", "96")); _dy = PORTAL_DY * min(1.0, max(0.0, (_k0 + 8 - di) / 8))   # main animation moved down; the end crack stays put
+        _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ["PORTALDESC"]][di] * sc + _dy)); return
     a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
     if a_ <= 0 or C is None: return
     front = fi >= int(os.environ.get("PORTALFRONT", "95"))   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
@@ -221,7 +222,7 @@ def _portal(fr, t, C, bb, beat, back):
     sc = (FEETY - C[1]) / (PORTY - GRABY); im = im.resize((round(im.width * sc), round(im.height * sc)), Image.LANCZOS)
     if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
     x0 = round(C[0] - 384 * sc); y0 = round(FEETY - PORTY * sc); _PORTAL_AT["v"] = (sc, x0, y0)
-    _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ.get("PORTALCLIP", "portal_grab_v1.mp4")][fi] * sc))
+    _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ.get("PORTALCLIP", "portal_grab_v1.mp4")][fi] * sc + PORTAL_DY))
 def fx_back(fr, t, C, bb, beat):
     if HZFX == "portal": _portal(fr, t, C, bb, beat, back=True)
     if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=True)
