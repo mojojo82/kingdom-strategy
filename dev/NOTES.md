@@ -6012,3 +6012,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   Gareth 46.0, Tom 44.9, Sera 44.2 | C Baelgor 43.5, Aurek 41.6, Seraphine 39.6, Bram 39.6, Iron Lily 38.1. Hanzo 81.7 -> 68.5 since v1722 (skill-timer rule v1728).
 - Tom and Baelgor have no card portrait yet: stand-ins in art/originals/heroes/tierlist/ (Tom = crop of his game sprite, Baelgor = crop of his design art).
 - Baelgor as tested: Fear (12 s) + chop (1x) / slash (6x) basic attacks. Drain not in (no numbers yet).
+- (Harley: "is volley the main factor for her high ranking?") No - her basic attack is. Same full team ranking with Lyra changed (v1731):
+  Piercing Volley at 0 damage -> Lyra 63.2% Lv80 (was 64.1, still 2nd); basic attack at ~0 -> 22.6% (last of 19). In 60 Lyra fights (Lv80) her basic
+  hits are 35% of her team's damage, the Volley 3%. Results: results/team_rank_lyra_novolley.json, team_rank_lyra_nobasic.json.
