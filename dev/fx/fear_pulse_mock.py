@@ -164,7 +164,8 @@ def _portal(fr, t, C, bb, beat, back):
     GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(","))   # in the clip: where the fist closes / where the portal lies (768x1152)
     if rel >= 0 and PORTALDN:   # after the stun: he is let go, the fist sinks back into the portal and it closes (behind him), same spot and size
         if not back or not _PORTAL_AT: return
-        di = int(rel * 24 * SPD)
+        DS, DC, DK = (float(v) for v in os.environ.get("PORTALDSPD", "4,2,90").split(","))   # sink speed (x real time), closing speed, frame where the fist is gone
+        tk = DK / (24 * DS); di = int(rel * 24 * DS) if rel < tk else int(DK + (rel - tk) * 24 * DC)
         if di >= len(PORTALDN): return
         sc, x0, y0 = _PORTAL_AT["v"]; im = PORTALDN[di].resize((round(768 * sc), round(1152 * sc)), Image.LANCZOS)
         a_ = min(1.0, (len(PORTALDN) - 1 - di) / 8)   # last few frames fade (the crack goes away)
