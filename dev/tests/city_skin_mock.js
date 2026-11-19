@@ -19,7 +19,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.fill("#ksE", "skin" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Mock"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   const skins = LIST.map((s, i) => { if (s.indexOf("new:") !== 0) return { id: s }; const [, p, label] = s.split(":"); return { id: "mock" + i, label: label || "Mock " + i, src: "data:image/webp;base64," + fs.readFileSync(p).toString("base64") }; });
-  await P.evaluate((g) => { window.__guild = g[0]; window.__decor = g[1] ? g[1].split(",") : null; }, [+(process.env.GUILD || 0), process.env.DECOR || ""]);
+  await P.evaluate((g) => { window.__guild = g[0]; window.__decor = g[1] ? g[1].split(",") : null; window.__spots = g[2] ? g[2].split(";").map((q) => q.split(",").map(Number)) : null; }, [+(process.env.GUILD || 0), process.env.DECOR || "", process.env.SPOTS || ""]);
   const res = await P.evaluate(async (skins) => {
     document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove());
     skins.forEach((s) => { if (s.src) CITY_SKINS[s.id] = { id: s.id, label: s.label, scale: 1.0, src: s.src }; });
@@ -35,7 +35,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
         if (id === home) continue; const sk = skins[1 + (k % (skins.length - 1))]; occupiedTileIds[id] = "mockbot_" + k; citySkinByTile[id] = sk.id; ownerProfileCache["mockbot_" + k] = { name: sk.label || sk.id, avatar: null, bot: true }; placed.push(id); k++; }
       centerMapOnTile((h[0] + Math.floor((GN - 1) * 1.5)) + "," + (h[1] + Math.floor((GN - 1) * 1.5)));
     } else {
-      const spots = [[5, -5], [5, 5], [10, 0], [-5, 5], [15, -15]];
+      const spots = window.__spots || [[5, -5], [5, 5], [10, 0], [-5, 5], [15, -15]]; /* SPOTS="5,-5;5,5;10,0;5,0": tile offsets from my city (5,0 = centre of the default view) */
     skins.slice(1).forEach((s, i) => { const id = (h[0] + spots[i][0]) + "," + (h[1] + spots[i][1]); occupiedTileIds[id] = "mockbot_" + i; citySkinByTile[id] = s.id; ownerProfileCache["mockbot_" + i] = { name: s.label || s.id, avatar: null, bot: true }; placed.push(id); });
       centerMapOnTile((h[0] + 5) + "," + h[1]); }
     if (window.__decor && window.__decor.length) { /* DECOR=a,b,c: map decorations in a row of blocks below-right of my city (this page only), view centred on them */
