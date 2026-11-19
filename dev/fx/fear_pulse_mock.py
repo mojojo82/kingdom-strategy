@@ -12,7 +12,15 @@ BGP, OUT = sys.argv[1], sys.argv[2]; os.makedirs(os.path.join(OUT, "f"), exist_o
 FIRE = len(sys.argv) > 5 and sys.argv[5] in ("1", "2", "3"); FBRED = len(sys.argv) > 5 and sys.argv[5] == "3"   # 3 = code fireballs in the pulse red
 BRAID = float(os.environ.get("BRAID", "16"))
 HZECHO = os.environ.get("HZECHO") == "1"
-HZTINT = os.environ.get("HZTINT") == "1"   # fear tint: the frozen hero goes dark + drained of colour for the stun, red flash on each of his heartbeats   # the frozen hero does his own heartbeat echo (red ghost copies of himself) for the whole stun   # braid spread (px on this 2x canvas)
+HZTINT = os.environ.get("HZTINT") == "1"
+HZTREM = os.environ.get("HZTREM") == "1"     # he trembles (small shake, harder on each of his beats)
+HZBURST = os.environ.get("HZBURST") == "1"   # release burst: one big red echo + ring when the stun breaks
+HZTHREAD = os.environ.get("HZTHREAD") == "1" # a thin red thread from the eye in Baelgor's sword to him, throbbing with the beats
+HZEYE = os.environ.get("HZEYE") == "1"       # the eye (fear_eye_white_v1 tinted red) opens above him, watches, pulses on beats, blinks shut at release
+EYEIMG = None
+if HZEYE:
+    _e = Image.open(os.path.join(ROOT, "art/originals/heroes/siphon/fx/fear_eye_white_v1.png")).convert("RGBA"); _e = _e.resize((46, round(46 * _e.height / _e.width)), Image.LANCZOS)
+    _a = np.asarray(_e).astype(np.float32); _a[..., 0] = np.clip(_a[..., 0] * 1.0, 0, 255); _a[..., 1] *= 0.25; _a[..., 2] *= 0.3; EYEIMG = Image.fromarray(_a.astype(np.uint8))   # fear tint: the frozen hero goes dark + drained of colour for the stun, red flash on each of his heartbeats   # the frozen hero does his own heartbeat echo (red ghost copies of himself) for the whole stun   # braid spread (px on this 2x canvas)
 CODEFB = len(sys.argv) > 5 and sys.argv[5] in ("2", "3")   # 2 = code-drawn fireballs (white core, black flame tongues with a white rim, black wisps)
 GCOL = tuple(int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else "225,25,45").split(",")); HZ = len(sys.argv) > 4 and sys.argv[4] == "1"
 hzs = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_skill_anim_v2.webp")).convert("RGBA"); hzi = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_anim_v1.webp")).convert("RGBA")
@@ -101,7 +109,10 @@ for i in range(int(TOT * FPS)):
     fr = bg0.copy().convert("RGBA")
     if HZ:  # drawn before the darkening - Fear's effect on the target is Harley's call, so he only freezes
         him, hk, hax, hay, hl = hanzo_at(t); hs = him.transpose(Image.FLIP_LEFT_RIGHT).resize((round(him.width * hk), round(him.height * hk)), Image.LANCZOS)
-        hx = round(HZ_X - (him.width - hax) * hk); hy = round(FEETY - 2 * hl - hay * hk); _bb = hs.getchannel("A").getbbox(); HZ_C[0] = (hx + (_bb[0] + _bb[2]) / 2, hy + (_bb[1] + _bb[3]) / 2) if _bb else None;
+        hx = round(HZ_X - (him.width - hax) * hk); hy = round(FEETY - 2 * hl - hay * hk)
+        if HZTREM and IMP <= t < IMP + STUN:
+            kick = max([0] + [(1 - (t - b) / 0.3) for b in HZ_BEATS if 0 <= t - b < 0.3]); hx += round((0.8 + 2.4 * kick) * math.sin(t * 95)); hy += round(0.6 * kick * math.sin(t * 77))
+        _bb = hs.getchannel("A").getbbox(); HZ_C[0] = (hx + (_bb[0] + _bb[2]) / 2, hy + (_bb[1] + _bb[3]) / 2) if _bb else None;
         if HZECHO and _bb:
             for b in HZ_BEATS:
                 pp = (t - b) / BEAT_LEN
@@ -121,6 +132,24 @@ for i in range(int(TOT * FPS)):
             if fl > 0: hs2 = Image.alpha_composite(hs2, tint(hs, GCOL, 0.65 * fl))
             hs = hs2
         fr.alpha_composite(hs, (hx, max(0, hy))) if hy >= 0 else fr.paste(hs, (hx, hy), hs)
+        if _bb and HZ_C[0]:
+            ccx, ccy = HZ_C[0]; ov = Image.new("RGBA", fr.size, (0, 0, 0, 0)); od = ImageDraw.Draw(ov)
+            beat = max([0] + [(1 - (t - b) / 0.35) for b in HZ_BEATS if 0 <= t - b < 0.35])
+            if HZTHREAD and IMP <= t < IMP + STUN:
+                sx, sy = FEETX + 40, FEETY - 34; fin = min(1, (t - IMP) / 0.25) * min(1, (IMP + STUN - t) / 0.2)
+                pts = [(sx + (ccx - sx) * u + 6 * math.sin(u * 9 + t * 6) * math.sin(math.pi * u), sy + (ccy - sy) * u + 6 * math.sin(u * 7 - t * 5) * math.sin(math.pi * u)) for u in [i / 30 for i in range(31)]]
+                od.line(pts, fill=(225, 25, 45, int((90 + 140 * beat) * fin)), width=3 if beat > 0.3 else 2); od.line(pts, fill=(255, 190, 195, int((40 + 120 * beat) * fin)), width=1)
+            if HZBURST:
+                e = t - (IMP + STUN)
+                if 0 <= e < 0.55:
+                    q = e / 0.55; sc_ = 1 + 1.4 * q; g = tint(hs, GCOL, 0.9 * (1 - q) ** 1.2).resize((round(hs.width * sc_), round(hs.height * sc_)), Image.LANCZOS)
+                    ov.alpha_composite(g, (max(0, round(ccx + (hx - ccx) * sc_)), max(0, round(ccy + (hy - ccy) * sc_)))); R = 10 + 70 * q
+                    od.ellipse((ccx - R, ccy - R, ccx + R, ccy + R), outline=(255, 70, 85, int(220 * (1 - q))), width=max(1, round(4 * (1 - q))))
+            if HZEYE and IMP <= t < IMP + STUN + 0.25:
+                o = min(1, (t - IMP) / 0.2) if t < IMP + STUN else max(0, 1 - (t - IMP - STUN) / 0.15)   # opens, then blinks shut at release
+                sc_ = 1 + 0.18 * beat; ew, eh = round(EYEIMG.width * sc_), max(1, round(EYEIMG.height * sc_ * o))
+                if eh > 1: ei = EYEIMG.resize((ew, eh), Image.LANCZOS); top = hy + (_bb[1]) - 12 - eh; ov.alpha_composite(ei, (round(ccx - ew / 2), max(0, round(top + EYEIMG.height * (1 - o) / 2))))
+            fr.alpha_composite(ov)
     if dark > 0:
         g = ImageEnhance.Color(fr.convert("RGB")).enhance(1 - 0.85 * dark); g = ImageEnhance.Brightness(g).enhance(1 - 0.55 * dark); fr = g.convert("RGBA")
     bb = spr.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox(); cx, cy = px + (bb[0] + bb[2]) / 2, py + (bb[1] + bb[3]) / 2   # his own body centre this frame
