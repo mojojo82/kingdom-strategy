@@ -74,7 +74,9 @@ def make_cracks(seed):   # a branching crack pattern (list of segments with the 
 CRACKS = make_cracks(9); SHARDS = [(_rnd.Random(k).uniform(0, 6.28), _rnd.Random(k + 50).uniform(60, 160), _rnd.Random(k + 90).uniform(3, 7)) for k in range(16)]
 _CUT = os.path.join(ROOT, "art/originals/heroes/siphon/fx/cut")
 PUFFS = []; ESTRIP = None; LINKS = {}
-if DARKE or HZFX == "chains2":
+CLAWS = {}
+if HZFX == "claws": CLAWS = {k_: Image.open(os.path.join(_CUT, "claw_%s.png" % k_)).convert("RGBA") for k_ in ("open", "closed")}
+if DARKE or HZFX in ("chains2", "claws"):
     PUFFS = [Image.open(os.path.join(_CUT, "puff_%02d.png" % i)).convert("RGBA") for i in range(16)]
     _es = Image.open(os.path.join(_CUT, "energy_strip.png")).convert("RGBA"); ESTRIP = _es.resize((round(_es.width * 26 / _es.height), 26), Image.LANCZOS)
     for n_ in ("link_face_0", "link_edge_0", "link_face_1", "link_edge_1"): _l = Image.open(os.path.join(_CUT, n_ + ".png")).convert("RGBA"); LINKS[n_] = _l.resize((max(1, round(_l.width * 11 / _l.height)), 11), Image.LANCZOS)
@@ -96,7 +98,29 @@ def _stream(fr, t, S, C, fin):   # three energy ribbons: the strip texture scrol
             col = A[:, x:x + 2, :].copy(); col[..., 3] *= taper * fin * (0.85 if r_ == 0 else 0.55); out[dy:dy + H, x:x + col.shape[1], :] = col
         band = Image.fromarray(out.astype(np.uint8), "RGBA").rotate(-ang, resample=Image.BICUBIC, expand=True)
         cx_, cy_ = (S[0] + C[0]) / 2, (S[1] + C[1]) / 2; fr.alpha_composite(band, (max(0, round(cx_ - band.width / 2)), max(0, round(cy_ - band.height / 2))))
+def _claws(fr, t, C, bb, beat, back):   # shadow arms rise out of the ground and grab him; they clench on each heartbeat and sink back at release
+    if not bb or t < IMP: return
+    rel = t - (IMP + STUN); rise = min(1, (t - IMP - 0.05) / 0.35) if t >= IMP + 0.05 else 0
+    if rel > 0: rise = max(0, 1 - rel / 0.4)
+    if rise <= 0: return
+    ground = FEETY + 2; reach = ground - (C[1] - 4)
+    specs = [(-52, -22, 1.08, False, True), (52, 22, 1.08, True, False)]   # (x offset at the ground, tilt deg, size, mirrored, drawn behind him)
+    for k_, (xo, tilt, sz, mir, isback) in enumerate(specs):
+        if isback != back: continue
+        clench = beat > 0.25 and k_ != 2 or (beat > 0.25 and k_ == 2)
+        im = CLAWS["closed" if clench else "open"]; H = reach * sz * (1.08 if clench else 1.0); sc = H / im.height
+        im = im.resize((max(1, round(im.width * sc * 0.62)), max(1, round(H))), Image.LANCZOS)   # slimmer arms so he stays visible between them
+        if mir: im = im.transpose(Image.FLIP_LEFT_RIGHT)
+        sway = 4 * math.sin(t * 2.3 + k_ * 1.7); im = im.rotate(tilt + sway, resample=Image.BICUBIC, expand=True)
+        vis = round(im.height * rise); im = im.crop((0, 0, im.width, vis)) if vis > 0 else None   # only the part above the ground shows while it rises
+        if im is None: continue
+        if k_ == 2: im.putalpha(im.getchannel("A").point(lambda v: int(v * 0.75)))
+        x0 = round(C[0] + xo - im.width / 2); y0 = round(ground - vis); fr.alpha_composite(im, (max(0, x0), max(0, y0)))
+    if back:
+        for k_ in range(3):   # smoke at the roots
+            _puff(fr, C[0] - 50 + k_ * 50 + 6 * math.sin(t * 3 + k_), ground - 6, 30, t * 40 + k_ * 90, 0.55 * rise, 3 + k_ * 4)
 def fx_back(fr, t, C, bb, beat):
+    if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=True)
     if not (DARKE or HZFX == "chains2") or C is None: return
     S = (FEETX + 40, FEETY - 34); on = IMP <= t < IMP + STUN; fin = (min(1, (t - IMP) / 0.3) * min(1, (IMP + STUN - t) / 0.3)) if on else 0
     if DARKE:
@@ -119,6 +143,7 @@ def fx_back(fr, t, C, bb, beat):
                 k_ = q["orb"]["life"] / q["orb"]["max"]; _puff(fr, C[0] + math.cos(q["orb"]["a"]) * rr, C[1] + math.sin(q["orb"]["a"]) * rr * 0.35 - 6 * k_, q["sz"] * 0.9, q["rot"], 0.7 * (1 - k_), q["idx"])
     if HZFX == "chains2": _chains(fr, t, C, bb, beat, back=True)
 def fx_front(fr, t, C, bb, beat):
+    if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=False)
     if not (DARKE or HZFX == "chains2") or C is None: return
     if DARKE:
         rr = max(14, (bb[2] - bb[0]) * 0.55) if bb else 20

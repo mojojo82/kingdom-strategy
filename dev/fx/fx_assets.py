@@ -21,3 +21,6 @@ for a_, b_ in zip(xs, xs[1:]):
 runs.append((st, xs[-1])); names = ["link_face_0", "link_edge_0", "link_face_1", "link_edge_1"]
 for (x0, x1), n in zip(runs, names): trim(l.crop((x0, 0, x1 + 1, l.height))).save(os.path.join(O, n + ".png"))
 print("runs", len(runs), [Image.open(os.path.join(O, n + ".png")).size for n in names], Image.open(os.path.join(O, "energy_strip.png")).size)
+c = key(os.path.join(D, "fx_shadow_claws_v1.png")); hw = c.width // 2
+trim(c.crop((0, 0, hw, c.height))).save(os.path.join(O, "claw_open.png")); trim(c.crop((hw, 0, c.width, c.height))).save(os.path.join(O, "claw_closed.png"))
+print("claws", Image.open(os.path.join(O, "claw_open.png")).size, Image.open(os.path.join(O, "claw_closed.png")).size)
