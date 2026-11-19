@@ -85,9 +85,10 @@ def portal_edge_fade(h, w, top=740, bot=820, x0=24, x1=110):
     return 1 - band * (1 - side[None, :])
 PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
 PORTALDN = []   # PORTALDESC=clip.mp4: the hand sinks back into the portal and it closes (fx/portal_descend_v1.mp4), played after the stun
+PORT_RING_Y = 947.0; PORTAL_SHIFT = {}
 def _load_portal(name):
     import glob as _g3, tempfile as _tf3
-    out = []; _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + name), os.path.join(_t3, "%04d.png")], check=True)
+    out = []; _ry = []; _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + name), os.path.join(_t3, "%04d.png")], check=True)
     for _f in sorted(_g3.glob(os.path.join(_t3, "*.png"))):
         _a = np.asarray(Image.open(_f).convert("RGB")).astype(np.float32); _M = np.array([11.0, 230.0, 10.0])
         _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _al = np.clip(1 - (_d - 20) / (180 - 20), 0, 1)
@@ -95,6 +96,12 @@ def _load_portal(name):
         if os.environ.get("PORTALFADE", "1") == "1": _al = _al * portal_edge_fade(*_al.shape)
         _al[_al < 0.04] = 0
         out.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA"))
+        _m = (_a[..., 0] > 170) & (_a[..., 1] < 110) & (_a[..., 2] < 120); _m[:800] = False; _ys = np.nonzero(_m)[0]
+        _ry.append(_ys.mean() if len(_ys) else PORT_RING_Y)
+    # Atlas draws the closed crack ~70 px lower than the open ring (start of the grab clip, end of the descend clip): shift those frames up
+    # so the crack sits on the ring's centre (PORT_RING_Y). Per frame, smoothed, only ever upward.
+    _ry = np.convolve(np.pad(np.array(_ry), 3, mode="edge"), np.ones(7) / 7, mode="valid")
+    PORTAL_SHIFT[name] = [min(0.0, PORT_RING_Y - y) for y in _ry]
     return out
 if HZFX == "portal":
     PORTAL = _load_portal(os.environ.get("PORTALCLIP", "portal_grab_v1.mp4"))
@@ -172,7 +179,7 @@ def _carve(fr, t, C):
     if not CARVE or C is None or t < IMP: return
     T0, TC, PD = IMP, 0.10, 0.22   # carve starts as he freezes, lines reach full length in 0.1 s, portal opens 0.22 s after
     u = (t - T0) / TC
-    if "c" not in CARVE_AT: GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(",")); CARVE_AT["c"] = (C[0], FEETY, 255 * (FEETY - C[1]) / (PORTY - GRABY))
+    if "c" not in CARVE_AT: GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(",")); _sc = (FEETY - C[1]) / (PORTY - GRABY); CARVE_AT["c"] = (C[0], FEETY - (PORTY - PORT_RING_Y) * _sc, 255 * _sc)   # centred on the open ring
     cx, cy, rr = CARVE_AT["c"]; L = rr * float(os.environ.get("CARVELEN", "0.85")); FL = 0.26   # ground ellipse squash
     grow = min(1.0, max(0.0, u)) ** 0.6
     age = t - (T0 + TC); fade = 1.0 if age < 0.5 else max(0.0, 1 - (age - 0.5) / 0.9)   # glow holds while the portal tears open, then fades
@@ -204,7 +211,7 @@ def _portal(fr, t, C, bb, beat, back):
         sc, x0, y0 = _PORTAL_AT["v"]; im = PORTALDN[di].resize((round(768 * sc), round(1152 * sc)), Image.LANCZOS)
         a_ = min(1.0, (len(PORTALDN) - 1 - di) / 8)   # last few frames fade (the crack goes away)
         if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
-        _comp(fr, im, x0, y0); return
+        _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ["PORTALDESC"]][di] * sc)); return
     a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
     if a_ <= 0 or C is None: return
     front = fi >= int(os.environ.get("PORTALFRONT", "95"))   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
@@ -213,7 +220,7 @@ def _portal(fr, t, C, bb, beat, back):
     sc = (FEETY - C[1]) / (PORTY - GRABY); im = im.resize((round(im.width * sc), round(im.height * sc)), Image.LANCZOS)
     if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
     x0 = round(C[0] - 384 * sc); y0 = round(FEETY - PORTY * sc); _PORTAL_AT["v"] = (sc, x0, y0)
-    _comp(fr, im, x0, y0)
+    _comp(fr, im, x0, y0 + round(PORTAL_SHIFT[os.environ.get("PORTALCLIP", "portal_grab_v1.mp4")][fi] * sc))
 def fx_back(fr, t, C, bb, beat):
     if HZFX == "portal": _portal(fr, t, C, bb, beat, back=True)
     if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=True)
