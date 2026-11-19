@@ -6025,4 +6025,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Skill % cut by the same factor where the skill rides on ATK: Orbital Patch 0.28-0.66 -> 0.112-0.264, Crystal Rain 0.26-0.62 -> 0.091-0.217,
   Scrap Cannon 0.55-0.83 -> 0.3575-0.5395, Spot Shot 0.50-0.78 -> 0.325-0.507. Unchanged: Sera's Mending Light (heals % of max HP), Roran's
   Lance Charge (always used his full ATK). Spotter's Mark is switched off (not rescaled). Lyra / Kessa already x1.0 - untouched.
-- Balance before/after: running.
+- Balance before/after: team ranking (results/team_rank_v1732_full.json vs v1731_full) - every hero within 2.6 points (Lv80 within 1.9), same order.
+  Conquest (run.js saves v1732_default / v1732_rng vs pre_ranged_*): same chapters everywhere (+0.0, one +0.1). Arena 6-hero round robins (100 fights)
+  move a bit: Roran matters more at Lv80 (team w/o Roran 40-59, was 59-41) - his throws are now full-size single hits.
