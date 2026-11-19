@@ -6132,3 +6132,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   (lazy ksA). DECOR_SPRITES.sanctuary_castle: foot 6, scale 1 - the art's own platform spans the 6x6 block, no scale-up.
 - For now it is a decoration (Dev Tools map decor palette); capture / ownership comes later.
 - Checked headless (DECOR=sanctuary_castle in dev/tests/city_skin_mock.js): sits on its 6x6 block next to a city, no errors. castle_v1_map.png.
+
+## v1742 - New city skin: Frost Gate III (20 Nov 2026, TEST)
+- Harley's own Frost Gate picture (art/originals/skins/frostgate3/source.png), ChatGPT style 1 (weathered) - his pick from the map mockup.
+  New CITY_SKINS.frostgate3 "Frost Gate III" (scale 1.3 like the other Frost Gates), file test/assets/city-skins-frostgate3-dd266eae.webp (600 px),
+  in CITY_SKIN_ORDER, free; CITY_ART_BAKED foot point measured with the game's rule at sin44. Base water: default (not tuned).
+- Checked headless on the map as my city next to Titan / Watchtower / Frost Gate II: no errors. Not on a phone.
