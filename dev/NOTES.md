@@ -6169,3 +6169,10 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1749 (20 Nov 2026) - Mail: tab bar edge stays whole
 - Harley: "messy with the bar broken off there". v1748 opened the selected tab's bottom into the panel, which cut the bar's gold bottom edge and left loose ends. dev/ui/build_mail_tabs.py now keeps the bar's edge whole (OPEN=False): the selected slot only turns parchment inside. New ui-mail-tabon0..4 (old ones removed). Screenshot art/originals/ui/mail_v2/tabs_v1749.png. Headless, no errors.
+
+## v1750 (20 Nov 2026) - Mail: tabs are separate pictures (no overlay)
+- Harley: "i dont want you to overlay a highlighted image ... make this separate, with a transparent background. then you dont need an overlay image to change the colour."
+- GPT made a matching tab pair (unselected dark bronze / selected parchment, same shape) with a REAL transparent background (checked: RGBA, 72% fully transparent - no magenta keying needed). Colour-matched inside fill only (tab bronze #844E24, selected parchment #FCD495), saved as art/originals/ui/mail_v2/tab2_off.png / tab2_on.png -> test/assets/ui-mail-tab2off / tab2on.
+- The tab bar is no longer baked into the slab (new ui-mail-slab2). Each .mtab uses the tab picture as a 9-slice border-image (corners stay crisp), .mtab.on swaps to the selected picture. Removed the v1748/49 overlay pieces, the old slab and the unused thin-card trial files.
+- Lesson for the UI kit: ask GPT for transparent PNGs first (it worked here); anything with states (tabs, buttons) = one matching pair from ONE picture, used as separate images.
+- Headless: all 5 tabs, close at PC size, no errors.

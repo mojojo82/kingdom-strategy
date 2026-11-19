@@ -40,7 +40,8 @@ slab.alpha_composite(well,(WELL[0],WELL[1]))
 bar=Image.open(M+'tabbar_off.png').convert('RGBA'); bar=gain_dark(bar, med(bar,(60,60,200,150)), P_TAB)
 barW=W-120; bar=bar.resize((barW,round(bar.height*barW/bar.width)),Image.LANCZOS)
 BX,BY=60,190
-slab.alpha_composite(bar,(BX,BY))
+# v1750 (Harley): tabs are separate buttons now - the bar is no longer baked into the slab
+# slab.alpha_composite(bar,(BX,BY))
 
 sel=Image.open(M+'tab_sel.png').convert('RGBA'); sel=gain_all(sel, med(sel,(120,60,300,140)), P_SEL)
 slotW=barW/5; selk=(slotW*1.18)/sel.width; sel=sel.resize((round(sel.width*selk),round(sel.height*selk)),Image.LANCZOS)
@@ -52,7 +53,7 @@ def save(im,name,q=90):
     fn=f'test/assets/ui-mail-{name}-{h}.webp'; open(fn,'wb').write(d); return fn.split('test/')[1]
 out={}
 slab.save(M+'mail_slab_clean.png')
-out['slab']=save(slab,'slab'); out['tabon']=save(sel,'tabon'); out['card']=save(card,'card')
+out['slab']=save(slab,'slab2'); out['tabon']=save(sel,'tabon'); out['card']=save(card,'card')
 for n in ['ti_wars','ti_alliance','ti_system','ti_reports','ti_saved','bookmark','dot']:
     im=Image.open(M+n+'.png').convert('RGBA'); k=96/max(im.size); out[n]=save(im.resize((round(im.width*k),round(im.height*k)),Image.LANCZOS),n.replace('_',''))
 for n in ['mi_chest','mi_gift','mi_horn','mi_event','mi_letter']:
