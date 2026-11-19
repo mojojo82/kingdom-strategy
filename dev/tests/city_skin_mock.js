@@ -20,6 +20,9 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Mock"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   const skins = LIST.map((s, i) => { if (s.indexOf("new:") !== 0) return { id: s }; const [, p, label] = s.split(":"); return { id: "mock" + i, label: label || "Mock " + i, src: "data:image/webp;base64," + fs.readFileSync(p).toString("base64") }; });
   await P.evaluate((g) => { window.__guild = g[0]; window.__decor = g[1] ? g[1].split(",") : null; window.__spots = g[2] ? g[2].split(";").map((q) => q.split(",").map(Number)) : null; }, [+(process.env.GUILD || 0), process.env.DECOR || "", process.env.SPOTS || ""]);
+  if (process.env.RESMIX) await P.evaluate((sea) => { /* RESMIX=nodes.json: about half the resource nodes on screen use these (sea) pictures instead - mockup only */
+    Object.keys(sea).forEach((t) => { RES_NODE_ART["sea_" + t] = sea[t]; }); const orig = resNodeArtHtml; let n = 0;
+    window.resNodeArtHtml = resNodeArtHtml = function (type) { n++; return orig((n % 2) && RES_NODE_ART["sea_" + type] ? "sea_" + type : type); }; }, JSON.parse(fs.readFileSync(process.env.RESMIX, "utf8")));
   const res = await P.evaluate(async (skins) => {
     document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove());
     skins.forEach((s) => { if (s.src) CITY_SKINS[s.id] = { id: s.id, label: s.label, scale: 1.0, src: s.src }; });
