@@ -6015,3 +6015,14 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - (Harley: "is volley the main factor for her high ranking?") No - her basic attack is. Same full team ranking with Lyra changed (v1731):
   Piercing Volley at 0 damage -> Lyra 63.2% Lv80 (was 64.1, still 2nd); basic attack at ~0 -> 22.6% (last of 19). In 60 Lyra fights (Lv80) her basic
   hits are 35% of her team's damage, the Volley 3%. Results: results/team_rank_lyra_novolley.json, team_rank_lyra_nobasic.json.
+
+## v1732 - Casters / Ranged hit at x1.0, fire slower (19 Nov 2026, TEST)
+- Harley: "make casters and ranged heroes x1.0 in damage but slow their attacking speed down. further nerf their skill damage to also keep the balance"
+  (so a player watching can see why: no hidden ATK cut). Baseline before the change: team ranking results/team_rank_v1731_full.json + run.js saves
+  pre_ranged_default / pre_ranged_rng (conquest + arena).
+- atkMult / basicMult removed -> COMBAT_TIMING.heroAttackSec + heroNoHitScale (normal x1.0 hits, not scaled up): Sera / Vesper 2.5 s (was x0.4),
+  Seraphine 2.857 s (x0.35), Juno / Pip / Roran 1.538 s (x0.65; Roran's cut was his normal attack only). Damage per second unchanged on paper.
+- Skill % cut by the same factor where the skill rides on ATK: Orbital Patch 0.28-0.66 -> 0.112-0.264, Crystal Rain 0.26-0.62 -> 0.091-0.217,
+  Scrap Cannon 0.55-0.83 -> 0.3575-0.5395, Spot Shot 0.50-0.78 -> 0.325-0.507. Unchanged: Sera's Mending Light (heals % of max HP), Roran's
+  Lance Charge (always used his full ATK). Spotter's Mark is switched off (not rescaled). Lyra / Kessa already x1.0 - untouched.
+- Balance before/after: running.

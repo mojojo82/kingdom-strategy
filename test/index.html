@@ -4714,8 +4714,8 @@ try { heroAttackTimingOn = localStorage.getItem(HERO_ATTACK_TIMING_KEY) !== "0";
 var COMBAT_TIMING = { basicAttackSec: 1, cannonCycleSec: 10, cannonBurstSec: 4, cannonBulletIntervalSec: 0.15 };
 // Per-hero basic-attack interval (seconds). Anything not listed uses basicAttackSec. Damage PER HIT scales by interval/basicAttackSec so DPS stays the same
 // (Gareth: swings every 0.5s for half damage). Skills still scale off the FULL (1s-equivalent) basic hit — see idleAttackerDamage / arenaSideStats.
-COMBAT_TIMING.heroAttackSec = { gareth: 0.5, zarek: 2, baelgor: 1.35 }; /* v1726: Baelgor's chop takes 1.29 s - one swing per 3 Arena ticks (damage per hit scaled, DPS unchanged) */ /* v1654: Zarek volleys every 2 s */
-COMBAT_TIMING.heroNoHitScale = { zarek: true }; /* v1655 (Harley): Zarek's 2 s volley is NOT double damage - normal hit, half the basic DPS */
+COMBAT_TIMING.heroAttackSec = { gareth: 0.5, zarek: 2, baelgor: 1.35, sera: 2.5, vesper: 2.5, seraphine: 2.857, juno: 1.538, pip: 1.538, roran: 1.538 }; /* v1732 (Harley: casters / ranged hit at x1.0 but fire slower): the old hidden ATK cut moved into the firing speed - Sera / Vesper x0.4 -> one shot per 2.5 s, Seraphine x0.35 -> 2.857 s, Juno / Pip / Roran x0.65 -> 1.538 s (same damage per second) */ /* v1726: Baelgor's chop takes 1.29 s - one swing per 3 Arena ticks (damage per hit scaled, DPS unchanged) */ /* v1654: Zarek volleys every 2 s */
+COMBAT_TIMING.heroNoHitScale = { zarek: true, sera: true, vesper: true, seraphine: true, juno: true, pip: true, roran: true }; /* v1732: their slower shots are normal x1.0 hits, not scaled up */ /* v1655 (Harley): Zarek's 2 s volley is NOT double damage - normal hit, half the basic DPS */
 /* v1344 (Harley: "base atk 1 has its own animation and base atk 2 has its own animation"; "it needs to appear random (although its not)"): attack
    SLOTS. Each swing the engine draws the next slot from a shuffled BAG (combatRng, seeded per level -> deterministic, sims reproducible). A slot
    with secMult 2 takes twice as long and hits twice as hard, so DPS never changes (same as heroAttackSec's interval/damage scaling). Slot 2 for
@@ -6603,7 +6603,7 @@ var HERO_DEFS = {
       { name: "Nimble Retreat", icon: "🍃", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Swift Advance", icon: "💨", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.02 }
     ] },
-  roran: { name: "Roran", title: "The Windrider", class: "cavalry", icon: "🐎", rarity: "Legendary", basicAnyTarget: true, basicMult: 0.65, // v1132: back to x0.65 - the real problem was horde HP (v1131 x0.3, v1130 x0.45, v1129 x0.65) (v1129 x0.65 - Harley: still one-shots ch10 enemies); basic hits (Harley: weaker basic instead of tougher hordes - he throws ~3x as often since v1126); v1126 (Harley): a ranged spear thrower - throws at the nearest enemy on screen like Kessa, not only once it has reached the front line
+  roran: { name: "Roran", title: "The Windrider", class: "cavalry", icon: "🐎", rarity: "Legendary", basicAnyTarget: true, /* v1732: basicMult 0.65 removed - throws every 1.538 s instead (skills always used his full ATK) */ // v1132: back to x0.65 - the real problem was horde HP (v1131 x0.3, v1130 x0.45, v1129 x0.65) (v1129 x0.65 - Harley: still one-shots ch10 enemies); basic hits (Harley: weaker basic instead of tougher hordes - he throws ~3x as often since v1126); v1126 (Harley): a ranged spear thrower - throws at the nearest enemy on screen like Kessa, not only once it has reached the front line
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
       // Second-highest — charges the target, real but shorter exposure than
@@ -6632,7 +6632,7 @@ var HERO_DEFS = {
       { name: "Storm Ward", icon: "🛡️🌩️", kind: "passive", desc: "Fewer losses on her marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Charged Advance", icon: "💨⚡", kind: "passive", desc: "Faster marches when she leads.", effectType: "leadMarchSpeedMult", perLevel: 0.025 }
     ] },
-  sera: { name: "Sera", title: "The Mending Light", class: "archer", icon: "✨", rarity: "Epic", basicAnyTarget: true, /* v1648: no range limit (Conquest) like every ranged hero */ atkMult: 0.4,
+  sera: { name: "Sera", title: "The Mending Light", class: "archer", icon: "✨", rarity: "Epic", basicAnyTarget: true, /* v1648: no range limit (Conquest) like every ranged hero */ /* v1732: atkMult 0.4 removed - fires every 2.5 s instead (COMBAT_TIMING.heroAttackSec); Mending Light heals % of max HP, no change */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 250, food: 120 }, levelBaseCost: { gold: 70, food: 70 }, levelCostMult: 1.35,
     conquestSkills: [
       // Support: heals the fortress instead of dealing damage. First cast waits the full 12s (so it needs a front-line hero to carry the opening — see Torvald).
@@ -6656,10 +6656,10 @@ var HERO_DEFS = {
       { name: "Thick Hide", icon: "🪨", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Steady Steam", icon: "♨️", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.015 }
     ] },
-  juno: { name: "Juno Rivet", title: "The Scrapshot", class: "cavalry", icon: "🧨", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.65, /* atkMult 0.65: Harley 10 Nov - new heroes stay well below Kessa / Hanzo (Arena: team w/o Juno 80-40 vs w/o Kessa 56-62).  v1476 (Harley 10 Nov): first hero of the new animation workflow. Ranged, NO range limit (Juno onwards): any enemy on screen is a target - enemy heroes too in Arena / World PvP */
+  juno: { name: "Juno Rivet", title: "The Scrapshot", class: "cavalry", icon: "🧨", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, /* v1732: was atkMult 0.65 - fires every 1.538 s now, Scrap Cannon % x0.65 */ /* atkMult 0.65: Harley 10 Nov - new heroes stay well below Kessa / Hanzo (Arena: team w/o Juno 80-40 vs w/o Kessa 56-62).  v1476 (Harley 10 Nov): first hero of the new animation workflow. Ranged, NO range limit (Juno onwards): any enemy on screen is a target - enemy heroes too in Arena / World PvP */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 250 }, levelBaseCost: { gold: 60, wood: 80 }, levelCostMult: 1.35,
     conquestSkills: [
-      { name: "Scrap Cannon", icon: "🧨💥", kind: "active", cooldown: 10, anyTarget: true, splash: { n: 2, pct: 0.5 }, desc: "Every 10s, a heavy scrap shell hits an enemy anywhere on screen; up to 2 enemies next to it take half as splash.", pctByLevel: [0.55, 0.62, 0.69, 0.76, 0.83] },
+      { name: "Scrap Cannon", icon: "🧨💥", kind: "active", cooldown: 10, anyTarget: true, splash: { n: 2, pct: 0.5 }, desc: "Every 10s, a heavy scrap shell hits an enemy anywhere on screen; up to 2 enemies next to it take half as splash.", pctByLevel: [0.3575, 0.403, 0.4485, 0.494, 0.5395] /* v1732: x0.65 (was 0.55-0.83 at atkMult 0.65) */ },
       { name: "Salvage", icon: "🔩", kind: "passive", effectType: "salvage", perLevel: 0.5, desc: "Each enemy Scrap Cannon finishes off brings her next shot 0.5s sooner per level." }
     ],
     expeditionSkills: [
@@ -6671,10 +6671,10 @@ var HERO_DEFS = {
   // bullet that hits an enemy marks it (a super burst bullet marks 3 times, up to markCap); Pip's next hit on that enemy deals +pct per mark and clears
   // them. Every fortress type fires the cannon, so he helps all of them; Fortress I (more / longer bursts, super bursts) gets the most. Same rules in
   // Conquest, Arena and World PvP. Tested (scratchpad sims, Lv80 5*): on Fortress I between Roran and Kessa, on Fortress II / III about Roran / Juno level.
-  pip: { name: "Pip Larkspur", title: "The Spotter", class: "cavalry", icon: "🔭", rarity: "Rare", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.65,
+  pip: { name: "Pip Larkspur", title: "The Spotter", class: "cavalry", icon: "🔭", rarity: "Rare", basicAnyTarget: true, noRangeLimit: true, /* v1732: was atkMult 0.65 - fires every 1.538 s now, Spot Shot % x0.65 */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 220 }, levelBaseCost: { gold: 60, wood: 80 }, levelCostMult: 1.35,
     conquestSkills: [
-      { name: "Spot Shot", icon: "🔭💥", kind: "active", cooldown: 9, anyTarget: true, desc: "Every 9s, fires a flare round at any enemy on screen.", pctByLevel: [0.50, 0.57, 0.64, 0.71, 0.78] },
+      { name: "Spot Shot", icon: "🔭💥", kind: "active", cooldown: 9, anyTarget: true, desc: "Every 9s, fires a flare round at any enemy on screen.", pctByLevel: [0.325, 0.3705, 0.416, 0.4615, 0.507] /* v1732: x0.65 (was 0.50-0.78 at atkMult 0.65) */ },
       { name: "Spotter's Mark", icon: "🎯", kind: "passive", disabled: true, /* v1721 (Harley): switched OFF for now, kept on his card - it alone made the Pip team beat the Hanzo team (Hanzo team 38% -> 75% with it off) */ effectType: "spotMark", pctByLevel: [0.10, 0.115, 0.13, 0.145, 0.16], markCap: 20, superMarks: 3,
         desc: "Each fortress cannon bullet that hits an enemy marks it (super bursts mark 3 times, up to 20 marks). Pip's next hit deals +10% damage per mark (16% at Lv 5), then clears them." }
     ],
@@ -6731,10 +6731,10 @@ var HERO_DEFS = {
   // v1385 (Harley: "start setting up icons for them in the hero index along with all their skills and stats"): 5 new heroes from Claude's
   // list, placeholders like Iron Lily (comingSoon + vipOnly: shown in the hero list with their skills, can't be recruited/equipped, never on
   // bots / Arena). Skills are text only until each one is built and balance-checked. No art yet (emoji icon) - mockup first. No new stats.
-  vesper: { name: "Vesper", /* v1644 (Harley): no last name any more (was Vesper Quill) */ title: "The Codeweaver", class: "archer", icon: "📘", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.4, /* v1508: built - hit-everything hero (orbital beams), rides the fortress, kept well below Kessa */
+  vesper: { name: "Vesper", /* v1644 (Harley): no last name any more (was Vesper Quill) */ title: "The Codeweaver", class: "archer", icon: "📘", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, /* v1732: was atkMult 0.4 - fires every 2.5 s now, Orbital Patch % x0.4 */ /* v1508: built - hit-everything hero (orbital beams), rides the fortress, kept well below Kessa */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Orbital Patch", icon: "🛰️⚡", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.5 }, cooldown: 12, pctByLevel: [0.28, 0.36, 0.45, 0.55, 0.66], desc: "Every 12s, codes a strike into the sky: beams of light drop one after another across the whole enemy side, each enemy hit as a beam reaches it, fortress included. Projection Wall shields ranged heroes from it." },
+      { name: "Orbital Patch", icon: "🛰️⚡", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.5 }, cooldown: 12, pctByLevel: [0.112, 0.144, 0.18, 0.22, 0.264] /* v1732: x0.4 (was 0.28-0.66 at atkMult 0.4) */, desc: "Every 12s, codes a strike into the sky: beams of light drop one after another across the whole enemy side, each enemy hit as a beam reaches it, fortress included. Projection Wall shields ranged heroes from it." },
       { disabled: true, note: "very very strong" /* v1613 (Harley): put back on her card but switched OFF - VERY VERY STRONG (with it ranged went from 31% to 67% vs melee). Was perLevel 0.05 (+5%/level team damage). Vesper gets a new 2nd skill later. */, name: "Clean Code", icon: "✨", kind: "passive", effectType: "conquestDamageMult", perLevel: 0, desc: "More damage in every battle." }
 
     ],
@@ -6768,10 +6768,10 @@ var HERO_DEFS = {
       { name: "Iron Will", icon: "🛡️", kind: "passive", desc: "Fewer losses on his marches.", effectType: "leadLossReductionMult", perLevel: 0.03 },
       { name: "Grim March", icon: "🥾", kind: "passive", desc: "Faster marches when he leads.", effectType: "leadMarchSpeedMult", perLevel: 0.015 }
     ] },
-  seraphine: { name: "Seraphine Lux", title: "The Crystal Crown", class: "archer", icon: "💎", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, atkMult: 0.35, /* v1508: built - hit-everything hero (crystal rain from the sky), rides the fortress, kept well below Kessa */
+  seraphine: { name: "Seraphine Lux", title: "The Crystal Crown", class: "archer", icon: "💎", rarity: "Epic", basicAnyTarget: true, noRangeLimit: true, /* v1732: was atkMult 0.35 - fires every 2.857 s now, Crystal Rain % x0.35 */ /* v1508: built - hit-everything hero (crystal rain from the sky), rides the fortress, kept well below Kessa */
     maxLevel: HERO_MAX_LEVEL, recruitCost: { gold: 350 }, levelBaseCost: { gold: 90, food: 60, wood: 60 }, levelCostMult: 1.4,
     conquestSkills: [
-      { name: "Crystal Rain", icon: "💎🌧️", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.6 }, cooldown: 11, pctByLevel: [0.26, 0.34, 0.42, 0.51, 0.62], desc: "Every 11s, raises her staff and calls a storm of crystal shards that sweeps across the whole enemy side; each enemy is hit as the shards reach it, fortress included. Projection Wall shields ranged heroes from it." },
+      { name: "Crystal Rain", icon: "💎🌧️", kind: "active", aoeAll: true, wave: { impact: 0.5, ground: false, spd: 0.6 }, cooldown: 11, pctByLevel: [0.091, 0.119, 0.147, 0.1785, 0.217] /* v1732: x0.35 (was 0.26-0.62 at atkMult 0.35) */, desc: "Every 11s, raises her staff and calls a storm of crystal shards that sweeps across the whole enemy side; each enemy is hit as the shards reach it, fortress included. Projection Wall shields ranged heroes from it." },
       { name: "Shatterpoint", icon: "💎", kind: "passive", effectType: "bossDmg", perLevel: 0.06, desc: "Her crystals find the cracks in giants: your whole team deals +6% damage to bosses per level (Conquest chapter bosses and the Boss Rush kaiju)." } /* v1607 (Harley): replaces Crystal Focus (flat +6%/lvl team damage - a skill a stat could do). Its own multiplier, like the Boss Slayer card. */
     ],
     expeditionSkills: [
@@ -14397,7 +14397,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1731"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1732"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
