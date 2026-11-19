@@ -1,5 +1,5 @@
 # Mail tab bar: one "selected" piece per slot, cut from the slab's own tab bar (same shape as the unselected tabs),
-# dark fill recoloured to the Backpack's selected-tab parchment, bottom rim opened into the panel below. Harley v1748.
+# dark fill recoloured to the Backpack's selected-tab parchment (v1748 opened the bottom; v1749 keeps the bar's edge whole).
 from PIL import Image, ImageFilter; import numpy as np, io, hashlib, json
 from scipy import ndimage
 M='art/originals/ui/mail_v2/'; B='art/originals/ui/backpack_v2/'
@@ -17,9 +17,10 @@ for i,(L,R) in enumerate(slots):
     lum=s[m]; lo,hi=np.percentile(lum,5),np.percentile(lum,95); t=np.clip((s-lo)/(hi-lo+1e-6),0,1)
     rgb[m]=(P_LO+(P_HI-P_LO)*t[m][:,None])
     # open the bottom: from the fill's last row down, between its inner edges, paint the panel parchment that lies below the bar
+    OPEN=False  # v1749 (Harley: 'messy with the bar broken off'): keep the bar's gold bottom edge whole - only the slot's inside turns parchment
     rows=np.where(m.any(1))[0]; fb=rows.max(); cols=np.where(m[fb-6])[0]; il,ir=cols.min()+1,cols.max()-1
     below=A[Y1+6:Y1+14,x0:x1,:3].mean(0)  # panel parchment just under the bar, per column
-    for y in range(fb-2,Y1-Y0):
+    for y in (range(fb-2,Y1-Y0) if OPEN else []):
         w=min(1,(y-(fb-2))/4)
         rgb[y,il:ir]=rgb[y,il:ir]*(1-w)+below[il:ir]*w
     c[:,:,:3]=np.clip(rgb,0,255)
