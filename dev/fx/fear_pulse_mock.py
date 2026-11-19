@@ -76,6 +76,15 @@ _CUT = os.path.join(ROOT, "art/originals/heroes/siphon/fx/cut")
 PUFFS = []; ESTRIP = None; LINKS = {}
 CLAWS = {}
 if HZFX == "claws": CLAWS = {k_: Image.open(os.path.join(_CUT, "claw_%s.png" % k_)).convert("RGBA") for k_ in ("open", "closed")}
+PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
+if HZFX == "portal":
+    import glob as _g3, tempfile as _tf3
+    _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/portal_grab_v1.mp4"), os.path.join(_t3, "%04d.png")], check=True)
+    for _f in sorted(_g3.glob(os.path.join(_t3, "*.png"))):
+        _a = np.asarray(Image.open(_f).convert("RGB")).astype(np.float32); _M = np.array([11.0, 230.0, 10.0])
+        _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _al = np.clip(1 - (_d - 20) / (180 - 20), 0, 1)
+        _c = np.clip((_a - (1 - _al[..., None]) * _M) / np.maximum(_al[..., None], 1e-3), 0, 255); _c[..., 1] = np.minimum(_c[..., 1], _c[..., 2] + 6); _al[_al < 0.04] = 0
+        PORTAL.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA"))
 CLAWANIM = []   # CLAWANIM=1: the Atlas claw loop (fx/claw_loop_v1.mp4, keyed) instead of the two still poses
 if HZFX == "claws" and os.environ.get("CLAWANIM") == "1":
     import glob as _g, tempfile as _tf
@@ -131,7 +140,19 @@ def _claws(fr, t, C, bb, beat, back):   # shadow arms rise out of the ground and
     if back:
         for k_ in range(3):   # smoke at the roots
             _puff(fr, C[0] - 50 + k_ * 50 + 6 * math.sin(t * 3 + k_), ground - 6, 30, t * 40 + k_ * 90, 0.55 * rise, 3 + k_ * 4)
+def _portal(fr, t, C, bb, beat, back):
+    if not PORTAL or t < IMP: return
+    SPD = 1.5; e = (t - IMP) * 24 * SPD; n = len(PORTAL); fi = min(n - 1, int(e)); rel = t - (IMP + STUN)
+    a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
+    if a_ <= 0: return
+    front = fi >= 95   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
+    if front == back: return
+    im = PORTAL[fi]; GRABY, PORTY = 420, 1085   # in the clip: where the fist closes / where the portal lies (768x1152)
+    sc = (FEETY - C[1]) / (PORTY - GRABY); im = im.resize((round(im.width * sc), round(im.height * sc)), Image.LANCZOS)
+    if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
+    x0 = round(C[0] - 384 * sc); y0 = round(FEETY - PORTY * sc); fr.alpha_composite(im, (max(0, x0), max(0, y0))) if x0 >= 0 and y0 >= 0 else fr.paste(im, (x0, y0), im)
 def fx_back(fr, t, C, bb, beat):
+    if HZFX == "portal" and C is not None: _portal(fr, t, C, bb, beat, back=True)
     if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=True)
     if not (DARKE or HZFX == "chains2") or C is None: return
     S = (FEETX + 40, FEETY - 34); on = IMP <= t < IMP + STUN; fin = (min(1, (t - IMP) / 0.3) * min(1, (IMP + STUN - t) / 0.3)) if on else 0
@@ -155,6 +176,7 @@ def fx_back(fr, t, C, bb, beat):
                 k_ = q["orb"]["life"] / q["orb"]["max"]; _puff(fr, C[0] + math.cos(q["orb"]["a"]) * rr, C[1] + math.sin(q["orb"]["a"]) * rr * 0.35 - 6 * k_, q["sz"] * 0.9, q["rot"], 0.7 * (1 - k_), q["idx"])
     if HZFX == "chains2": _chains(fr, t, C, bb, beat, back=True)
 def fx_front(fr, t, C, bb, beat):
+    if HZFX == "portal" and C is not None: _portal(fr, t, C, bb, beat, back=False)
     if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=False)
     if not (DARKE or HZFX == "chains2") or C is None: return
     if DARKE:
