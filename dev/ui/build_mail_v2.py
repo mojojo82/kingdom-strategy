@@ -34,7 +34,7 @@ def nine(src,box,c,w,h):
             out.paste(s.crop((x0,y0,x1,y1)).resize((max(1,X1-X0),max(1,Y1-Y0)),Image.BICUBIC),(X0,Y0))
     return out
 WELL=(80,410,W-80,H-78)
-well=nine(bp.convert('RGBA'),(80,195,920,885),48,WELL[2]-WELL[0],WELL[3]-WELL[1])
+well=nine(bp.convert('RGBA'),(75,195,902,884),48,WELL[2]-WELL[0],WELL[3]-WELL[1])
 slab.alpha_composite(well,(WELL[0],WELL[1]))
 # ---- parts GPT made: tab bar (dark fill matched to the Backpack's tab bronze), selected tab, card
 bar=Image.open(M+'tabbar_off.png').convert('RGBA'); bar=gain_dark(bar, med(bar,(60,60,200,150)), P_TAB)

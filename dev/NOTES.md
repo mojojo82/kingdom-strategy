@@ -6159,3 +6159,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1746 (20 Nov 2026) - Mail: room for Claim all
 - Harley: "the claim button needs more room, its floating there". The status line + Claim all now sit wholly in the parchment gap between the tab bar and the list (mbar top 23.3%, height 4.3%, slimmer button); list gets a little top padding and the unread dot moved in, so it no longer touches the button. Card stays as v1745 (Harley: "now is fine"). Headless check, no errors.
+
+## v1747 (20 Nov 2026) - Mail: cards centred in the list
+- Harley: "not centered". The layout was symmetric; the art wasn't: the Mail slab's tan well was 9-sliced from an off-centre box of the Backpack well (80-920), so its right rim came out ~20 px thicker. dev/ui/build_mail_v2.py now slices the well's exact rim box (75-902, 195-884); new slab test/assets/ui-mail-slab-e349e8d4.webp (old c98ba64a removed). Measured in the headless screenshot: tan gap either side of a card 13 px / 16 px at 2x (was ~10 / ~50).
