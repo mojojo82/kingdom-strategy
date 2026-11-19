@@ -173,7 +173,7 @@ def _carve(fr, t, C):
     T0, TC, PD = IMP, 0.10, 0.22   # carve starts as he freezes, lines reach full length in 0.1 s, portal opens 0.22 s after
     u = (t - T0) / TC
     if "c" not in CARVE_AT: GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(",")); CARVE_AT["c"] = (C[0], FEETY, 255 * (FEETY - C[1]) / (PORTY - GRABY))
-    cx, cy, rr = CARVE_AT["c"]; L = rr * 1.25; FL = 0.26   # ground ellipse squash
+    cx, cy, rr = CARVE_AT["c"]; L = rr * float(os.environ.get("CARVELEN", "0.85")); FL = 0.26   # ground ellipse squash
     grow = min(1.0, max(0.0, u)) ** 0.6
     age = t - (T0 + TC); fade = 1.0 if age < 0.5 else max(0.0, 1 - (age - 0.5) / 0.9)   # glow holds while the portal tears open, then fades
     if fade <= 0: return
