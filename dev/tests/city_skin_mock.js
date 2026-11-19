@@ -19,6 +19,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.fill("#ksE", "skin" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Mock"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   const skins = LIST.map((s, i) => { if (s.indexOf("new:") !== 0) return { id: s }; const [, p, label] = s.split(":"); return { id: "mock" + i, label: label || "Mock " + i, src: "data:image/webp;base64," + fs.readFileSync(p).toString("base64") }; });
+  await P.evaluate((g) => { window.__guild = g; }, +(process.env.GUILD || 0));
   const res = await P.evaluate(async (skins) => {
     document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove());
     skins.forEach((s) => { if (s.src) CITY_SKINS[s.id] = { id: s.id, label: s.label, scale: 1.0, src: s.src }; });
@@ -27,9 +28,17 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
     Object.keys(occupiedTileIds).forEach((id) => { if (id !== home) { delete occupiedTileIds[id]; delete citySkinByTile[id]; } }); /* no other bases on screen */
     mapCitySkin = skins[0].id; citySkinByTile[home] = skins[0].id; try { localStorage.setItem("kingdomMapCitySkin_v1", skins[0].id); } catch (e) {}
     if (!game.state.skins) game.state.skins = {}; game.state.skins.city_titan = 1;
-    const spots = [[5, -5], [5, 5], [10, 0], [-5, 5], [15, -15]]; /* 2x2: me top-left, right, below, below-right */ const placed = [];
+    const placed = [], GN = window.__guild || 0;
+    if (GN) { /* GUILD=n: an n x n alliance block, bases 3 tiles apart (3x3 blocks touching = as tight as the map allows), skins cycled; resources under it cleared (this page only) */
+      let k = 0; for (let gy = 0; gy < GN; gy++) for (let gx = 0; gx < GN; gx++) { const X = h[0] + gx * 3, Y = h[1] + gy * 3, id = X + "," + Y;
+        for (let rx = -1; rx <= 1; rx++) for (let ry = -1; ry <= 1; ry++) { const t = mapTileAt(game.state.map, X + rx, Y + ry); if (t && t.type === "resource") { t.type = "empty"; delete t.resource; } }
+        if (id === home) continue; const sk = skins[1 + (k % (skins.length - 1))]; occupiedTileIds[id] = "mockbot_" + k; citySkinByTile[id] = sk.id; ownerProfileCache["mockbot_" + k] = { name: sk.label || sk.id, avatar: null, bot: true }; placed.push(id); k++; }
+      centerMapOnTile((h[0] + Math.floor((GN - 1) * 1.5)) + "," + (h[1] + Math.floor((GN - 1) * 1.5)));
+    } else {
+      const spots = [[5, -5], [5, 5], [10, 0], [-5, 5], [15, -15]];
     skins.slice(1).forEach((s, i) => { const id = (h[0] + spots[i][0]) + "," + (h[1] + spots[i][1]); occupiedTileIds[id] = "mockbot_" + i; citySkinByTile[id] = s.id; ownerProfileCache["mockbot_" + i] = { name: s.label || s.id, avatar: null, bot: true }; placed.push(id); });
-    centerMapOnTile((h[0] + 5) + "," + h[1]); renderVisibleTiles(); await new Promise((r) => setTimeout(r, 3000)); renderVisibleTiles();
+      centerMapOnTile((h[0] + 5) + "," + h[1]); }
+    renderVisibleTiles(); await new Promise((r) => setTimeout(r, 3000)); renderVisibleTiles();
     return { home, placed };
   }, skins);
   await P.waitForTimeout(2500);
