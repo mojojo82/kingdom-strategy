@@ -79,7 +79,7 @@ if HZFX == "claws": CLAWS = {k_: Image.open(os.path.join(_CUT, "claw_%s.png" % k
 PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
 if HZFX == "portal":
     import glob as _g3, tempfile as _tf3
-    _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/portal_grab_v1.mp4"), os.path.join(_t3, "%04d.png")], check=True)
+    _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + os.environ.get("PORTALCLIP", "portal_grab_v1.mp4")), os.path.join(_t3, "%04d.png")], check=True)
     for _f in sorted(_g3.glob(os.path.join(_t3, "*.png"))):
         _a = np.asarray(Image.open(_f).convert("RGB")).astype(np.float32); _M = np.array([11.0, 230.0, 10.0])
         _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _al = np.clip(1 - (_d - 20) / (180 - 20), 0, 1)
@@ -145,9 +145,9 @@ def _portal(fr, t, C, bb, beat, back):
     SPD = 1.5; e = (t - IMP) * 24 * SPD; n = len(PORTAL); fi = min(n - 1, int(e)); rel = t - (IMP + STUN)
     a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
     if a_ <= 0: return
-    front = fi >= 95   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
+    front = fi >= int(os.environ.get("PORTALFRONT", "95"))   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
     if front == back: return
-    im = PORTAL[fi]; GRABY, PORTY = 420, 1085   # in the clip: where the fist closes / where the portal lies (768x1152)
+    im = PORTAL[fi]; GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(","))   # in the clip: where the fist closes / where the portal lies (768x1152)
     sc = (FEETY - C[1]) / (PORTY - GRABY); im = im.resize((round(im.width * sc), round(im.height * sc)), Image.LANCZOS)
     if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
     x0 = round(C[0] - 384 * sc); y0 = round(FEETY - PORTY * sc); fr.alpha_composite(im, (max(0, x0), max(0, y0))) if x0 >= 0 and y0 >= 0 else fr.paste(im, (x0, y0), im)
