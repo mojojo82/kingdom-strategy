@@ -22,16 +22,16 @@ def desc_idx(rel): DS, DC, DK = 4, 2, 90; tk = DK / (24 * DS); return int(rel * 
 def frame_at(t):
     if t < STUN: e = t * 36; return ("g", min(61, int(e / 2)), e >= 108)
     di = desc_idx(t - STUN); return ("d", min(51, di // 2), False) if di <= 102 else None
+FE = float(os.environ.get("FEATHER", "34"))   # cells: soft blend between the two parts (Harley: the first try had a hard cut-off line)
 def draw_split(fr, im, x0, y0, part):   # part "portal" / "hand"
-    if part == "portal":
-        p = im.crop((0, int(SPL), CW, CH)).resize((round(CW * F), round((CH - int(SPL)) * F)), Image.LANCZOS); fr.alpha_composite(p, (x0, round(y0 + int(SPL) * F)))
-    else:
-        top = int(SPL - D)
-        if top <= 0: return
-        h = im.crop((0, 0, CW, top)).resize((round(CW * F), round(top * F)), Image.LANCZOS); yy = round(y0 + D * F)
-        # fade the last few rows into the cut so the seam with the arm base isn't a hard line
-        a = np.asarray(h).astype(np.float32); n = a.shape[0]; r = min(n, 6); a[n - r:, :, 3] *= np.linspace(1, 0.35, r)[:, None]; h = Image.fromarray(a.astype(np.uint8))
-        fr.alpha_composite(h, (x0, yy))
+    if part == "portal":   # ring + smoke, fading in from FE rows above the split (no flat top edge)
+        r0 = int(SPL - FE); p = np.asarray(im.crop((0, r0, CW, CH))).astype(np.float32); p[:int(FE), :, 3] *= (np.linspace(0, 1, int(FE)) ** 1.5)[:, None]
+        p = Image.fromarray(p.astype(np.uint8)).resize((round(CW * F), round((CH - r0) * F)), Image.LANCZOS); fr.alpha_composite(p, (x0, round(y0 + r0 * F)))
+    else:   # hand, moved down D, fading out over FE rows into the portal part
+        top = int(SPL - D + FE * 0.5)
+        if top <= 2: return
+        a = np.asarray(im.crop((0, 0, CW, top))).astype(np.float32); r = min(top, int(FE)); a[top - r:, :, 3] *= (np.linspace(1, 0, r) ** 1.2)[:, None]
+        h = Image.fromarray(a.astype(np.uint8)).resize((round(CW * F), round(top * F)), Image.LANCZOS); fr.alpha_composite(h, (x0, round(y0 + D * F)))
 def render(lift, out):
     tmp = tempfile.mkdtemp(); n = int((STUN + 2.2) * FPS); x0 = round(HX - RINGX * F); y0 = round(FEETY - PORTY * F + 4)
     for i in range(n):
