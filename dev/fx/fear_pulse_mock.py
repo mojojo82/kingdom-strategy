@@ -108,13 +108,21 @@ if HZFX == "claws" and os.environ.get("CLAWANIM") == "1":
         _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _dm = _M[1] - max(_M[0], _M[2]); _al = np.clip(1 - (_d - 20) / (_dm * 0.8 - 20), 0, 1)
         _c = np.clip((_a - (1 - _al[..., None]) * _M) / np.maximum(_al[..., None], 1e-3), 0, 255); _c[..., 1] = np.minimum(_c[..., 1], _c[..., 2] + 6); _al[_al < 0.04] = 0
         CLAWANIM.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA").crop((140, 290, 640, 990)))
-if DARKE or HZFX in ("chains2", "claws"):
+HZRESID = os.environ.get("HZRESID") == "1"   # residue on him after release: dark smoke peeling off + a fading dark-red rim glow and darkened body (RESLEN, 2 s)
+RES_PUFFS = []
+if DARKE or HZFX in ("chains2", "claws") or HZRESID:
     PUFFS = [Image.open(os.path.join(_CUT, "puff_%02d.png" % i)).convert("RGBA") for i in range(16)]
     _es = Image.open(os.path.join(_CUT, "energy_strip.png")).convert("RGBA"); ESTRIP = _es.resize((round(_es.width * 26 / _es.height), 26), Image.LANCZOS)
     for n_ in ("link_face_0", "link_edge_0", "link_face_1", "link_edge_1"): _l = Image.open(os.path.join(_CUT, n_ + ".png")).convert("RGBA"); LINKS[n_] = _l.resize((max(1, round(_l.width * 11 / _l.height)), 11), Image.LANCZOS)
+if HZRESID:   # residue wisps: the same puffs, darkened to near-black smoke with a little red in them
+    _dk = []
+    for _p in PUFFS:
+        _a = np.asarray(_p).astype(np.float32); _l = _a[..., :3].mean(2, keepdims=True) / 255.0
+        _a[..., :3] = np.concatenate([40 + 70 * _l, 8 + 14 * _l, 14 + 18 * _l], 2); _dk.append(Image.fromarray(_a.astype(np.uint8), "RGBA"))
+    RES_PUFFS_IMG = _dk
 _PR = _rnd.Random(3); PST = []   # live smoke puffs
-def _puff(fr, x, y, size, rot, alpha, idx):
-    im = PUFFS[idx % 16]; sc = size / max(im.width, im.height); im = im.resize((max(1, round(im.width * sc)), max(1, round(im.height * sc))), Image.LANCZOS).rotate(rot, resample=Image.BICUBIC, expand=True)
+def _puff(fr, x, y, size, rot, alpha, idx, src=None):
+    im = (src or PUFFS)[idx % 16]; sc = size / max(im.width, im.height); im = im.resize((max(1, round(im.width * sc)), max(1, round(im.height * sc))), Image.LANCZOS).rotate(rot, resample=Image.BICUBIC, expand=True)
     if alpha < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * alpha)))
     fr.alpha_composite(im, (round(x - im.width / 2), round(y - im.height / 2))) if x - im.width / 2 >= 0 and y - im.height / 2 >= 0 else fr.paste(im, (round(x - im.width / 2), round(y - im.height / 2)), im)
 def _stream(fr, t, S, C, fin):   # three energy ribbons: the strip texture scrolled toward him, bent into a travelling wave, tapered at both ends
@@ -310,6 +318,23 @@ for i in range(int(TOT * FPS)):
                 if 0 <= pp < 1: fl = max(fl, (1 - pp) ** 1.5)
             if fl > 0: hs2 = Image.alpha_composite(hs2, tint(hs, GCOL, 0.65 * fl))
             hs = hs2
+        rr = t - (IMP + STUN); RL = float(os.environ.get("RESLEN", "2.0"))
+        if HZRESID and _bb and 0 <= rr < RL:
+            f = (1 - rr / RL) ** 1.2
+            rgb = hs.convert("RGB"); rgb = ImageEnhance.Color(rgb).enhance(1 - 0.6 * f); rgb = ImageEnhance.Brightness(rgb).enhance(1 - 0.5 * f)
+            hs2 = rgb.convert("RGBA"); hs2.putalpha(hs.getchannel("A")); hs2 = Image.alpha_composite(hs2, tint(hs, (120, 10, 20), 0.35 * f))
+            glow = tint(hs, GCOL, 1.0).filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(3)); glow.putalpha(glow.getchannel("A").point(lambda v: int(min(255, v * 1.4) * 0.9 * f * (0.8 + 0.2 * math.sin(rr * 30)))))
+            fr.alpha_composite(glow, (hx, max(0, hy))) if hy >= 0 else fr.paste(glow, (hx, hy), glow)
+            hs = hs2
+            for _ in range(int(3 * f + _PR.random())):   # new wisps from random points on his body
+                bx = hx + _bb[0] + _PR.random() * (_bb[2] - _bb[0]); by = hy + _bb[1] + _PR.random() * (_bb[3] - _bb[1]) * 0.8
+                RES_PUFFS.append([bx, by, _PR.uniform(-12, 12), _PR.uniform(-38, -18), 0.0, _PR.uniform(0.5, 0.9), _PR.uniform(9, 16), _PR.uniform(0, 360), _PR.randrange(16)])
+        if HZRESID and RES_PUFFS:
+            for q in RES_PUFFS:
+                q[4] += 1 / FPS; q[0] += q[2] / FPS; q[1] += q[3] / FPS; q[7] += 40 / FPS
+                u = q[4] / q[5]
+                if u < 1: _puff(fr, q[0], q[1], q[6] * (1 + 0.8 * u), q[7], 0.85 * min(1, u * 5) * (1 - u) ** 1.3, q[8], RES_PUFFS_IMG)
+            RES_PUFFS[:] = [q for q in RES_PUFFS if q[4] < q[5]]
         _beat = max([0] + [(1 - (t - b) / 0.35) for b in HZ_BEATS if 0 <= t - b < 0.35]); _bbw = (hx + _bb[0], hy + _bb[1], hx + _bb[2], hy + _bb[3]) if _bb else None
         fx_back(fr, t, HZ_C[0], _bbw, _beat)
         fr.alpha_composite(hs, (hx, max(0, hy))) if hy >= 0 else fr.paste(hs, (hx, hy), hs)
