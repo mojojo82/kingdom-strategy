@@ -166,9 +166,35 @@ _PORTAL_AT = {}
 def _comp(fr, im, x0, y0):
     if x0 >= 0 and y0 >= 0: fr.alpha_composite(im, (x0, y0))
     else: fr.paste(im, (x0, y0), im)
+CARVE = int(os.environ.get("CARVE", "0"))   # CARVE=6 / 8: that many glowing lines carve outward from the portal's centre on the ground, very fast, just before it opens
+CARVE_ROT = float(os.environ.get("CARVEROT", "0")); CARVE_AT = {}
+def _carve(fr, t, C):
+    if not CARVE or C is None or t < IMP: return
+    T0, TC, PD = IMP, 0.10, 0.22   # carve starts as he freezes, lines reach full length in 0.1 s, portal opens 0.22 s after
+    u = (t - T0) / TC
+    if "c" not in CARVE_AT: GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(",")); CARVE_AT["c"] = (C[0], FEETY, 255 * (FEETY - C[1]) / (PORTY - GRABY))
+    cx, cy, rr = CARVE_AT["c"]; L = rr * 1.25; FL = 0.26   # ground ellipse squash
+    grow = min(1.0, max(0.0, u)) ** 0.6
+    age = t - (T0 + TC); fade = 1.0 if age < 0.5 else max(0.0, 1 - (age - 0.5) / 0.9)   # glow holds while the portal tears open, then fades
+    if fade <= 0: return
+    flash = max(0.0, 1 - age / 0.25) if age >= 0 else 1.0
+    SS = 3; W_, H_ = fr.width * SS, fr.height * SS; ov = Image.new("L", (W_, H_), 0); core = Image.new("L", (W_, H_), 0)   # drawn 3x and scaled down = smooth lines
+    do, dc = ImageDraw.Draw(ov), ImageDraw.Draw(core)
+    for k in range(CARVE):
+        a = math.radians(CARVE_ROT + 360 * k / CARVE); ln = L * grow * (0.92 + 0.08 * ((k * 37) % 5) / 4)
+        ex, ey = cx + math.cos(a) * ln, cy + math.sin(a) * ln * FL
+        n = 12; pts = [((cx + (ex - cx) * i / n) * SS, (cy + (ey - cy) * i / n) * SS) for i in range(n + 1)]
+        for i in range(n):   # tapered: thick at the centre, thin at the tip
+            w = (4.5 * (1 - i / n) + 0.8) * SS; do.line([pts[i], pts[i + 1]], fill=255, width=round(w + 3 * SS)); dc.line([pts[i], pts[i + 1]], fill=255, width=max(1, round(w * 0.55)))
+    ov = ov.resize(fr.size, Image.LANCZOS); core = core.resize(fr.size, Image.LANCZOS)
+    glow = Image.new("RGBA", fr.size, (255, 30, 45, 0)); glow.putalpha(ov.filter(ImageFilter.GaussianBlur(3.5)).point(lambda v: int(min(255, v * 1.8) * fade)))
+    hot = Image.new("RGBA", fr.size, (255, 120 + int(110 * flash), 100 + int(110 * flash), 0)); hot.putalpha(core.point(lambda v: int(min(255, v * 1.3) * fade)))
+    lay = Image.alpha_composite(glow, hot); CARVE_AT["lay"] = (t, lay); fr.alpha_composite(lay)
 def _portal(fr, t, C, bb, beat, back):
-    if not PORTAL or t < IMP: return
-    SPD = 1.5; e = (t - IMP) * 24 * SPD; n = len(PORTAL); fi = min(n - 1, int(e)); rel = t - (IMP + STUN)
+    if back: _carve(fr, t, C)
+    PD = 0.22 if CARVE else 0.0
+    if not PORTAL or t < IMP + PD: return
+    SPD = 1.5; e = (t - IMP - PD) * 24 * SPD; n = len(PORTAL); fi = min(n - 1, int(e)); rel = t - (IMP + STUN)
     GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(","))   # in the clip: where the fist closes / where the portal lies (768x1152)
     if rel >= 0 and PORTALDN:   # after the stun: he is let go, the fist sinks back into the portal and it closes (behind him), same spot and size
         if not back or not _PORTAL_AT: return
@@ -389,6 +415,8 @@ for i in range(int(TOT * FPS)):
             fr.alpha_composite(ov)
     if dark > 0:
         g = ImageEnhance.Color(fr.convert("RGB")).enhance(1 - 0.85 * dark); g = ImageEnhance.Brightness(g).enhance(1 - 0.55 * dark); fr = g.convert("RGBA")
+        if CARVE and CARVE_AT.get("lay") and CARVE_AT["lay"][0] == t:   # the carved lines are light - they keep their glow through the darkening
+            _l = CARVE_AT["lay"][1].copy(); _l.putalpha(_l.getchannel("A").point(lambda v: int(v * min(1, dark * 1.2)))); fr.alpha_composite(_l)
     bb = spr.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox(); cx, cy = px + (bb[0] + bb[2]) / 2, py + (bb[1] + bb[3]) / 2   # his own body centre this frame
     for s, a in ghosts:
         gimg = tint(spr, GCOL, a).resize((round(hw * s), round(hh * s)), Image.LANCZOS)
