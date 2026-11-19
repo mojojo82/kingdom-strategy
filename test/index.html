@@ -4728,6 +4728,7 @@ COMBAT_TIMING.heroAttackSlots.baelgor = { bag: [1, 2], order: true, arena: true,
    waits that long for EVERY hit - his chop can be owed while the 5.4 s slash is still playing (otherwise it expired as a miss and he slashed twice). */
 function heroOwedSec(aid, slot, dflt) { var c = heroAtkSlotsOn && COMBAT_TIMING.heroAttackSlots[aid]; if (!c || !c.slots) return dflt; var s = c.slots[slot || 1]; if (s && s.owedSec && slot && slot !== 1) return s.owedSec; if (c.order) { var m = dflt; for (var k in c.slots) if (c.slots[k].owedSec > m) m = c.slots[k].owedSec; return m; } return dflt; }
 var HERO_ATK_SLOTS_KEY = "kingdom_prototype_atkslots_v1", heroAtkSlotsOn = true;
+var MELEE_IDLE_RERUN = true; /* v1734 test (Harley): Conquest, no enemies on screen - when the fortress catches up with an idling melee hero he runs off to a new random spot ahead (was: 50% coin flip once per quiet spell, then a slow jog at the nose). false = old behaviour */
 try { heroAtkSlotsOn = localStorage.getItem(HERO_ATK_SLOTS_KEY) !== "0"; } catch (e) {}
 // Heroes whose first Arena skill waits for the FULL cooldown (like Conquest) instead of being ready at the start of the fight.
 COMBAT_TIMING.skillStartsFull = { gareth: true };
@@ -14397,7 +14398,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1733"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1734"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26873,6 +26874,11 @@ function stepIdleAnim(dtSec, w, h) {
           if (vis.x < vis.bossRunX - 0.5) targetX = vis.bossRunX; else vis.bossRunX = null; // running away from the fortress; the fortress can't push him while he runs
         } else if (!bossLv && vis.x > nzL + 0.5) {
           var stL = Math.min(55 * dtSec, vis.x - nzL); vis.x -= stL; vis.driftStep = stL; targetX = vis.x;
+          if (MELEE_IDLE_RERUN && vis.x <= nzL + 0.5) { /* v1734 test (Harley: "if no enemies on screen, and they are idling and the fortress catches up to them just allow them to run to a random spot"): every time the nose reaches him he runs off to a new spot ahead instead of jogging at the nose */
+            vis.bossRunX = Math.min(w - 30, vis.x + 25 + Math.random() * w * 0.4); if (vis.bossRunX < vis.x + 15) vis.bossRunX = null;
+          }
+        } else if (MELEE_IDLE_RERUN && !bossLv) { /* v1734 test: already at the nose (e.g. he started the quiet spell there) -> run off too */
+          vis.bossRunX = Math.min(w - 30, vis.x + 25 + Math.random() * w * 0.4); if (vis.bossRunX < vis.x + 15) vis.bossRunX = null; else targetX = vis.bossRunX;
         }
       }
       // idle pose while standing anywhere out in the field (or on a boss level); slow jog only when he is sitting at the nose

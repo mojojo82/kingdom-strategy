@@ -6038,3 +6038,11 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   upright salute; loop v1 clean. build_card_video.py RARITY=Legendary (Baelgor BG=green, ZOOM 1.03 CX 545). HERO_CARD_VIDEO.baelgor / .tom.
 - New dev/heroes/clip_check.py (per-frame edge gaps / size + contact sheet). Atlas: 2 x 8 s ($1.22) + 3 x 5 s loops ($1.14) = $2.36.
 - Checked headless (not a phone): hero list shows both cards; both hero pages play the card video (still playing 9 s later), no page errors.
+
+## v1734 - test: idling melee heroes run off when the fortress catches up (19 Nov 2026, TEST)
+- Harley: "dont let a melee be pushed. If no enemies on screen, and they are idling and the fortress catches up to them just allow them to run to a random
+  spot. It does this already but not consistently" (it was a 50% coin flip once per quiet spell, then a slow jog at the nose for the rest of it).
+- MELEE_IDLE_RERUN (true; false = old): Conquest, no enemy on screen - every time the fortress nose reaches him (or he is already at it) he runs to a new
+  random spot ahead (25 px + up to 40% of the screen, never past the right edge). Boss levels unchanged (still ground).
+- Measured headless (dev/tests/melee_idle_check.js, Baelgor + Lyra + Kessa Lv60, 70 s): quiet time at the nose 26.0 s -> 4.7 s; run-offs 9 -> 15.
+  Not changed yet: with enemies on screen he can still stand idle at the nose (the case Harley sees mid-level) - solution 2 to come.
