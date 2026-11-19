@@ -101,7 +101,8 @@ def _load_portal(name):
     # Atlas draws the closed crack ~70 px lower than the open ring (start of the grab clip, end of the descend clip): shift those frames up
     # so the crack sits on the ring's centre (PORT_RING_Y). Per frame, smoothed, only ever upward.
     _ry = np.convolve(np.pad(np.array(_ry), 3, mode="edge"), np.ones(7) / 7, mode="valid")
-    PORTAL_SHIFT[name] = [min(0.0, PORT_RING_Y - y) for y in _ry]
+    _sh = [min(0.0, PORT_RING_Y - y) for y in _ry]; _k0 = int(os.environ.get("PORTALSHIFTFROM", "96"))
+    PORTAL_SHIFT[name] = [v if (name == os.environ.get("PORTALDESC") and i >= _k0) else 0.0 for i, v in enumerate(_sh)]   # only the closing crack of the descend clip (Harley: it sat lower than the portal)
     return out
 if HZFX == "portal":
     PORTAL = _load_portal(os.environ.get("PORTALCLIP", "portal_grab_v1.mp4"))
@@ -179,7 +180,7 @@ def _carve(fr, t, C):
     if not CARVE or C is None or t < IMP: return
     T0, TC, PD = IMP, 0.10, 0.22   # carve starts as he freezes, lines reach full length in 0.1 s, portal opens 0.22 s after
     u = (t - T0) / TC
-    if "c" not in CARVE_AT: GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(",")); _sc = (FEETY - C[1]) / (PORTY - GRABY); CARVE_AT["c"] = (C[0], FEETY - (PORTY - PORT_RING_Y) * _sc, 255 * _sc)   # centred on the open ring
+    if "c" not in CARVE_AT: GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(",")); _sc = (FEETY - C[1]) / (PORTY - GRABY); CARVE_AT["c"] = (C[0], FEETY, 255 * _sc)
     cx, cy, rr = CARVE_AT["c"]; L = rr * float(os.environ.get("CARVELEN", "0.85")); FL = 0.26   # ground ellipse squash
     grow = min(1.0, max(0.0, u)) ** 0.6
     age = t - (T0 + TC); fade = 1.0 if age < 0.5 else max(0.0, 1 - (age - 0.5) / 0.9)   # glow holds while the portal tears open, then fades
