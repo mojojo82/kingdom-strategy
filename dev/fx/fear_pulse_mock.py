@@ -110,6 +110,24 @@ def _load_portal(name):
 if HZFX == "portal":
     PORTAL = _load_portal(os.environ.get("PORTALCLIP", "portal_grab_v1.mp4"))
     if os.environ.get("PORTALDESC"): PORTALDN = _load_portal(os.environ["PORTALDESC"])
+    if PORTALDN and os.environ.get("CRACKNEW") == "1":
+        # Harley: a new crack made from the portal's own last frames instead of Atlas's lower flare. Keep frames up to the small ring
+        # (KEEP), then the last ring frame is squashed flat and stretched sideways into a glowing slit (same centre, so it can't move),
+        # holds a moment and fades. No Atlas, no per-frame shifting.
+        KEEP = int(os.environ.get("CRACKKEEP", "101")); _src = PORTALDN[KEEP]; RCX, RCY = 380, 947; _new = []
+        _sm2 = lambda u: (lambda c: c * c * (3 - 2 * c))(min(1.0, max(0.0, u)))
+        NS, NH = 6, 10
+        for j in range(NS + NH):
+            u = _sm2(j / NS); sx = 1 + 1.7 * u + (0.25 * (j - NS) / NH if j >= NS else 0); sy = 1 - 0.78 * u
+            a_ = 1.0 if j < NS else 1 - _sm2((j - NS + 1) / NH)
+            w_, h_ = max(1, round(_src.width * sx)), max(1, round(_src.height * sy))
+            im = _src.resize((w_, h_), Image.LANCZOS)
+            if j >= NS - 2:   # a little hot flicker along the slit while it holds
+                f = 1 + 0.25 * math.sin(j * 2.3); im = Image.fromarray(np.clip(np.asarray(im).astype(np.float32) * [f, f, f, 1], 0, 255).astype(np.uint8), "RGBA")
+            if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
+            fr_ = Image.new("RGBA", _src.size, (0, 0, 0, 0)); fr_.alpha_composite(im, (round(RCX - RCX * sx), round(RCY - RCY * sy))) if (RCX - RCX * sx) >= 0 else fr_.paste(im, (round(RCX - RCX * sx), round(RCY - RCY * sy)), im)
+            _new.append(fr_)
+        PORTALDN = PORTALDN[:KEEP + 1] + _new; CRACK_FROM = 10 ** 6; PORTAL_SHIFT[os.environ["PORTALDESC"]] = [0.0] * len(PORTALDN)
 CLAWANIM = []   # CLAWANIM=1: the Atlas claw loop (fx/claw_loop_v1.mp4, keyed) instead of the two still poses
 if HZFX == "claws" and os.environ.get("CLAWANIM") == "1":
     import glob as _g, tempfile as _tf
