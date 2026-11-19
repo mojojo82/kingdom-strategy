@@ -6046,3 +6046,21 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   random spot ahead (25 px + up to 40% of the screen, never past the right edge). Boss levels unchanged (still ground).
 - Measured headless (dev/tests/melee_idle_check.js, Baelgor + Lyra + Kessa Lv60, 70 s): quiet time at the nose 26.0 s -> 4.7 s; run-offs 9 -> 15.
   Not changed yet: with enemies on screen he can still stand idle at the nose (the case Harley sees mid-level) - solution 2 to come.
+
+## v1735 - Baelgor's Fear visuals in game: portal, hand, heartbeat (19 Nov 2026, TEST)
+- Harley approved the mockup (dev/fx/fear_portal_approved.sh) and said "put it in. But we might have to cheat in conquest and stop the ground from moving".
+- Art: dev/fx/build_fear_portal.py keys the Atlas clips (portal_grab_v2 + portal_descend_v1 up to the small ring - no end crack), fades the side smoke,
+  crops, scales 0.3 and packs every 2nd frame: art/heroes/siphon/fear_portal_grab_v1.webp (62 frames, 676 KB), fear_portal_desc_v1.webp (52, 465 KB).
+- Shared code (FEAR_FX, fearStart / fearDrawBack / fearDrawFront / fearWrapDraw / fearDrawPulse), the same in Conquest and Arena, purely visual
+  (the stun is still the sim's gaze): 4 carved lines (8 points) -> portal opens 0.22 s later -> hand rises and grabs (arm behind him, closed fist in
+  front) -> held for the 4 s stun -> fist sinks at 4x, ring closes at 2x with embers. Baelgor: heartbeat pulse (red onion-skins, picture drained and
+  darkened at the beats; the carved lines keep their glow). Target: heartbeat echo through the stun, 2 s residue after (dark wisps, red rim, darkened).
+  The pulse / echo / residue draw the hero into a full-size layer first (fearLayer) so the copies are his real current frame; only his body box is
+  copied (no name / HP bar).
+- Conquest: triggered where Fear stuns (idleStormTick gaze, the enemy closest to its next attack); the ground stops scrolling while the portal is
+  open (fearPortalOpen -> scroll speed 0, eases back after). The whole hand is drawn in front of the enemy (a big boss hid it). Needs an enemy that
+  has arrived - on early levels only bosses live that long.
+- Arena: triggered by the sim's "gaze" cast event (state.casts); a hero stunned mid-leap (Hanzo) stays in the air - his leap sheet pauses for the stun.
+- Also fixed (found while testing): Conquest frame error "state is not defined" every time the fortress cannon fired (v1642 super-burst flag used
+  `state` instead of `game.state`) - those frames were skipped.
+- Tested headless (dev/tests/fear_fx_rec.js conquest|arena, VID=1 for a real-time video) - not on a phone. No page errors. Not checked yet: speed on a phone.

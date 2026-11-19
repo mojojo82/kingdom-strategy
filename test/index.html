@@ -10957,7 +10957,7 @@ function createGame(opts) {
     var Q = state.idle.stormQ; if (!Q || !Q.length) return; var keep = [];
     Q.forEach(function (q) { q.t -= dt; if (q.t > 1e-9) { keep.push(q); return; } if (idleHeroIsKo(q.key)) return;
       if (q.gaze) { var gz = null; state.idle.enemies.forEach(function (e0) { if (e0.hp > 0 && e0.arrived && (gz == null || (e0.atkCooldown || 0) < (gz.atkCooldown || 0))) gz = e0; }); /* v1726: Fear in Conquest - the enemy closest to its next attack is stunned (waits sec longer) */
-        if (gz) gz.atkCooldown = (gz.atkCooldown == null ? IDLE_ENEMY_ATTACK_INTERVAL : gz.atkCooldown) + q.gaze; q.gaze = 0; }
+        if (gz) { gz.atkCooldown = (gz.atkCooldown == null ? IDLE_ENEMY_ATTACK_INTERVAL : gz.atkCooldown) + q.gaze; try { if (typeof idleAnim !== "undefined") fearStart(idleAnim, q.key, "e" + gz.id, q.gaze, true); } catch (eF) {} } q.gaze = 0; } /* v1735: Fear visuals (portal + hand on that enemy) */
       if (q.dive) { /* v1514: Skybreaker Slam lands on its target (re-picked if it died meanwhile) */
         var dt0 = state.idle.enemies.filter(function (e0) { return e0.hp > 0 && String(e0.id) === String(q.id); })[0] || idleDiveTarget(); if (!dt0) return;
         var dd1 = q.dmg * idleMarkMult(dt0, q.key) * idleEnemyDefTake(dt0, q.dmg); dt0.hp -= dd1; q.id = dt0.id; if (!dt0.arrived) { dt0.arrived = true; dt0.arriveRemaining = 0; }
@@ -14398,7 +14398,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1734"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1735"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -26469,6 +26469,7 @@ function stepIdleAnim(dtSec, w, h) {
       game.state.idle.enemies.forEach(function (re) { var v = idleAnim.enemyById[re.id]; if (v && re.hp > 0 && v.x <= noseX) nearE = true; });
       if (nearE) idleAnim.haltHold = 0.8; else idleAnim.haltHold = Math.max(0, (idleAnim.haltHold || 0) - dtSec); /* stays stopped until nothing's been near for 0.8s - no stop-go jitter as enemies die and walk in */
       hk = idleAnim.haltHold > 0 ? 0 : 1; }
+    if (fearPortalOpen(idleAnim)) hk = 0; /* v1735 (Harley): the ground stands still while Fear's portal is open (the hand would slide with the road) */
     idleAnim.scrollK = idleAnim.scrollK == null ? hk : idleAnim.scrollK + (hk - idleAnim.scrollK) * Math.min(1, dtSec / (hk ? 0.6 : 0.3)); /* stop in ~0.3s, pull away in ~0.6s */
     var sdt = dtSec * idleAnim.scrollK;
     idleAnim.bgOffset = (idleAnim.bgOffset + 55 * sdt) % 40;
@@ -27496,7 +27497,7 @@ function stepIdleAnim(dtSec, w, h) {
       // the origin offset, so raising/lowering the origin changes the angle
       // of the shot, not where it lands.
       var cnP = fortLayoutPoint(w, h, "cq", true, "c", true); // v1109: the skin's cannon muzzle
-      spawnProjectile(w, h, cnP ? cnP.x : getCannonOriginX(w), cnP ? cnP.y : getCannonOriginY(h), cannonVis.x, groundYFor(h) - 18, false, cannonTid, cannonDmg, true); if ((state.idle.fortressCannonCritMult || 1) > 1) idleAnim.projectiles[idleAnim.projectiles.length - 1].sup = true; /* v1642: super burst bullet */
+      spawnProjectile(w, h, cnP ? cnP.x : getCannonOriginX(w), cnP ? cnP.y : getCannonOriginY(h), cannonVis.x, groundYFor(h) - 18, false, cannonTid, cannonDmg, true); if ((game.state.idle.fortressCannonCritMult || 1) > 1) idleAnim.projectiles[idleAnim.projectiles.length - 1].sup = true; /* v1642: super burst bullet */
       sfxFortressCannon();
     }
     idleAnim.cannonLaunchCooldown += game.idleFortressCannonBulletInterval();
@@ -29183,6 +29184,97 @@ function drawHeroSkillFrame(ctx, key, x, feetY, f, hs, flip) { /* one frame of a
 }
 /* v1730: a basic attack on its own sheet(s), played once - Baelgor's horizontal slash (attack slot 2, COMBAT_TIMING.heroAttackSlots). parts = sheets played
    back to back (one 4096 sheet can't hold all its frames at full sharpness), impact = the hit frame counted over all parts. Conquest + Arena. */
+/* v1735 (Harley 19 Nov 2026): Baelgor's Fear visuals - the approved mockup (dev/fx/fear_portal_approved.sh), the same in Conquest and Arena.
+   At the stun: 4 glowing lines carve out from under the target, a portal opens (Atlas clip, art/heroes/siphon/fear_portal_grab_v1.webp), a giant hand
+   rises and grabs the target and holds it for the stun; Baelgor pulses (heartbeat: red onion-skin copies, the rest of the picture dims), the target
+   throbs with a heartbeat echo; on release the fist sinks fast and the portal shrinks shut (fear_portal_desc_v1.webp) with embers, and the target
+   carries a dark residue for 2 s (wisps, red rim, darkened). Purely visual - the stun itself is the sim's (gaze). Conquest also stops the scrolling
+   ground while the portal is open (Harley: "cheat in Conquest and stop the ground from moving").
+   store = idleAnim / arenaAnim; ids: the caster's and the target's draw ids (Arena "p_baelgor" / "a_hanzo", Conquest "baelgor" / "e<enemy id>"). */
+var FEAR_FX = { cw: 216, ch: 297, step: 2, grab: { src: "art/heroes/siphon/fear_portal_grab_v1.webp", n: 62, cols: 18 }, desc: { src: "art/heroes/siphon/fear_portal_desc_v1.webp", n: 52, cols: 18 },
+  ringX: 106.8, ringY: 248.1, grabY: 114.0, portY: 256.5, frontAt: 108, clipK: 0.3, pd: 0.22, dy: 2, col: [225, 25, 45], fMin: 0.28, fMax: 0.85 };
+var FEAR_BEATS = [0, 0.22, 1.0, 1.22], FEAR_BEAT_LEN = 0.45, FEAR_HZ_BEATS = [0.45, 0.67, 1.40, 1.62, 2.35, 2.57, 3.30, 3.52], FEAR_RES = 2.0;
+var fearImgs = {};
+function fearImg(k) { var d = FEAR_FX[k]; if (!fearImgs[k]) { var im = new Image(); im.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + d.src; fearImgs[k] = im; } var i = fearImgs[k]; return i.complete && i.naturalWidth ? i : null; }
+function fearPreload() { fearImg("grab"); fearImg("desc"); }
+function fearStart(store, caster, tgt, stunSec, front) { fearPreload(); (store.fearFx || (store.fearFx = [])).push({ t0: performance.now(), stun: stunSec || 4, caster: caster, tgt: tgt, emb: [], wisp: [], lt: 0, front: !!front }); } /* front: the whole hand in front of the target (Conquest - a big boss would hide it) */
+function fearList(store) { var L = store && store.fearFx; if (!L || !L.length) return null; var now = performance.now(); store.fearFx = L.filter(function (F) { return now - F.t0 < (F.stun + FEAR_RES + 1.6) * 1000; }); return store.fearFx.length ? store.fearFx : null; }
+function fearPortalOpen(store) { var L = fearList(store), now = performance.now(); return !!(L && L.some(function (F) { return now - F.t0 < (F.stun + 1.3) * 1000; })); } /* Conquest holds the ground still while this is true */
+function fearT(F) { return (performance.now() - F.t0) / 1000; }
+function fearDescIdx(rel) { var DS = 4, DC = 2, DK = 90, tk = DK / (24 * DS); return rel < tk ? Math.floor(rel * 24 * DS) : Math.floor(DK + (rel - tk) * 24 * DC); } /* clip frame of the descend: the fist sinks at 4x, the ring closes at 2x */
+function fearSetPos(F, x, feet, cy) { if (F.frozen) return; F.x = x; F.feet = feet; F.cy = cy; var f = (feet - cy) / (FEAR_FX.portY - FEAR_FX.grabY); F.f = Math.max(FEAR_FX.fMin, Math.min(FEAR_FX.fMax, f)); }
+function fearFrame(ctx, k, idx, F, alpha) { var D = FEAR_FX[k], im = fearImg(k); if (!im || F.f == null) return; idx = Math.max(0, Math.min(D.n - 1, idx)); var f = F.f, sx = (idx % D.cols) * FEAR_FX.cw, sy = Math.floor(idx / D.cols) * FEAR_FX.ch;
+  ctx.save(); if (alpha < 1) ctx.globalAlpha *= alpha; ctx.drawImage(im, sx, sy, FEAR_FX.cw, FEAR_FX.ch, F.x - FEAR_FX.ringX * f, F.feet - FEAR_FX.portY * f + FEAR_FX.dy, FEAR_FX.cw * f, FEAR_FX.ch * f); ctx.restore(); }
+function fearCarve(ctx, F, t, light) { /* 4 lines (8 points) shoot out from the portal centre in 0.1 s, glow while it tears open, fade over ~0.9 s */
+  if (F.f == null || t < 0) return; var age = t - 0.1, fade = age < 0.5 ? 1 : Math.max(0, 1 - (age - 0.5) / 0.9); if (fade <= 0) return;
+  var grow = Math.pow(Math.min(1, Math.max(0, t / 0.1)), 0.6), flash = age >= 0 ? Math.max(0, 1 - age / 0.25) : 1, L = 255 * FEAR_FX.clipK * F.f * 0.85, cx = F.x, cy = F.feet, n = 12;
+  ctx.save(); ctx.lineCap = "round"; if (light != null) ctx.globalAlpha *= light;
+  for (var pass = 0; pass < 2; pass++) for (var k = 0; k < 8; k++) { var a = (22.5 + 45 * k) * Math.PI / 180, ln = L * grow * (0.92 + 0.08 * ((k * 37) % 5) / 4), ex = cx + Math.cos(a) * ln, ey = cy + Math.sin(a) * ln * 0.26;
+    for (var i = 0; i < n; i++) { var w0 = 2.25 * (1 - i / n) + 0.4, x0 = cx + (ex - cx) * i / n, y0 = cy + (ey - cy) * i / n, x1 = cx + (ex - cx) * (i + 1) / n, y1 = cy + (ey - cy) * (i + 1) / n;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+      if (pass === 0) { ctx.strokeStyle = "rgba(255,30,45," + (0.75 * fade).toFixed(3) + ")"; ctx.lineWidth = w0 + 1.6; ctx.shadowColor = "rgba(255,30,45," + fade.toFixed(3) + ")"; ctx.shadowBlur = 5; }
+      else { ctx.strokeStyle = "rgba(255," + Math.round(120 + 110 * flash) + "," + Math.round(100 + 110 * flash) + "," + fade.toFixed(3) + ")"; ctx.lineWidth = Math.max(0.5, w0 * 0.55); ctx.shadowBlur = 0; }
+      ctx.stroke(); } }
+  ctx.restore(); }
+function fearDrawBack(ctx, store) { var L = fearList(store); if (!L) return; L.forEach(function (F) { var t = fearT(F); fearCarve(ctx, F, t); if (F.front) return;
+  fearDrawHand(ctx, F, t, false); }); }
+function fearDrawHand(ctx, F, t, front) {
+  if (t < F.stun) { if (t < FEAR_FX.pd) return; var e = (t - FEAR_FX.pd) * 36; if (front || e < FEAR_FX.frontAt) fearFrame(ctx, "grab", Math.floor(e / FEAR_FX.step), F, 1); return; }
+  F.frozen = true; var di = fearDescIdx(t - F.stun); if (di > 102) return; fearFrame(ctx, "desc", Math.floor(di / FEAR_FX.step), F, di >= 98 ? Math.max(0, 1 - (di - 97) / 5) : 1); }
+function fearDrawFront(ctx, store) { var L = fearList(store); if (!L) return; var now = performance.now(); L.forEach(function (F) { var t = fearT(F);
+  if (F.front) fearDrawHand(ctx, F, t, true);
+  else if (t >= FEAR_FX.pd && t < F.stun) { var e = (t - FEAR_FX.pd) * 36; if (e >= FEAR_FX.frontAt) fearFrame(ctx, "grab", Math.floor(e / FEAR_FX.step), F, 1); } /* the closed fist goes over him */
+  fearEmbers(ctx, F, t, now); }); }
+function fearEmbers(ctx, F, t, now) { var dt = Math.min(0.05, F.lt ? (now - F.lt) / 1000 : 0); F.lt = now; if (F.f == null) return; var s = F.f / 0.467, kc = FEAR_FX.clipK * F.f;
+  if (t >= F.stun) { var di = fearDescIdx(t - F.stun); if (di >= 86 && !F.embDone) { var rr = (di < 90 ? 235 - (di - 84) * 3.3 : di < 93 ? 215 - (di - 90) * 11.7 : di < 96 ? 180 - (di - 93) * 17.3 : di < 99 ? 128 - (di - 96) * 13 : 89 - Math.min(3, di - 99) * 16.3) * kc, cx = F.x, cy = F.feet - (FEAR_FX.portY - FEAR_FX.ringY) * F.f + FEAR_FX.dy, nE = Math.round((3 + Math.random()) * dt * 30);
+      for (var i = 0; i < nE; i++) { var a = Math.random() * Math.PI * 2; F.emb.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.19, (Math.random() * 28 - 14) / 2 * s, -(30 + Math.random() * 45) / 2 * s, 0, 0.6 + Math.random() * 0.7, (1.2 + Math.random() * 1.2) / 2 * s, Math.random() * 9]); }
+      if (di >= 101) { for (var j = 0; j < 26; j++) { var a2 = Math.PI * (1.05 + Math.random() * 0.9), sp = (30 + Math.random() * 80) / 2 * s; F.emb.push([cx + (Math.random() * 12 - 6) / 2 * s, cy, Math.cos(a2) * sp, Math.sin(a2) * sp, 0, 0.7 + Math.random() * 0.8, (1.2 + Math.random() * 1.6) / 2 * s, Math.random() * 9]); } F.embDone = true; } } }
+  if (!F.emb.length) return; ctx.save();
+  F.emb = F.emb.filter(function (q) { q[4] += dt; q[0] += q[2] * dt + 3 * s * Math.sin(q[4] * 5 + q[7]) * dt; q[1] += q[3] * dt; q[3] *= Math.pow(0.985, dt * 30); q[2] *= Math.pow(0.97, dt * 30); var u = q[4] / q[5]; if (u >= 1) return false;
+    var fl = 0.65 + 0.35 * Math.sin(q[4] * 23 + q[7] * 3), a = Math.pow(1 - u, 1.2) * fl, r = q[6] * (1 - 0.4 * u);
+    ctx.globalAlpha = 0.43 * a; ctx.fillStyle = "rgb(255,40,30)"; ctx.beginPath(); ctx.arc(q[0], q[1], r * 2.6, 0, 6.283); ctx.fill();
+    ctx.globalAlpha = a; ctx.fillStyle = "rgb(255," + Math.round(200 - 150 * u) + "," + Math.round(90 - 70 * u) + ")"; ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, 6.283); ctx.fill(); return true; });
+  ctx.restore(); }
+/* --- the caster's pulse and the target's echo / residue need their own picture: they are drawn into a full-size layer, then composed --- */
+function fearLayer(store, id, main) { var LY = store._fearLay || (store._fearLay = {}), c = LY[id] || (LY[id] = document.createElement("canvas")), mc = main.canvas; if (c.width !== mc.width || c.height !== mc.height) { c.width = mc.width; c.height = mc.height; }
+  var x = c.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height); var T = main.getTransform(); x.setTransform(T.a, T.b, T.c, T.d, T.e, T.f); x.globalAlpha = 1; return x; }
+function fearTint(store, src, rgb, k) { var LY = store._fearLay || (store._fearLay = {}), c = LY["_t" + k] || (LY["_t" + k] = document.createElement("canvas")); if (c.width !== src.width || c.height !== src.height) { c.width = src.width; c.height = src.height; }
+  var x = c.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = "rgb(" + rgb.join(",") + ")"; x.fillRect(0, 0, c.width, c.height); x.globalCompositeOperation = "source-over"; return c; }
+function fearBlit(main, src, alpha, scale, px, py, box, dxo, dyo) { /* box = { x0, y0, x1, y1 } (css px): only that part of the layer (his body - not his name / HP bar) */
+  var T = main.getTransform(), s = scale || 1, P = px != null ? { x: T.a * px + T.c * py + T.e, y: T.b * px + T.d * py + T.f } : { x: 0, y: 0 }; main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.globalAlpha = alpha;
+  if (box) { var bx0 = Math.max(0, Math.floor(T.a * box.x0 + T.e)), by0 = Math.max(0, Math.floor(T.d * box.y0 + T.f)), bx1 = Math.min(src.width, Math.ceil(T.a * box.x1 + T.e)), by1 = Math.min(src.height, Math.ceil(T.d * box.y1 + T.f));
+    if (bx1 > bx0 && by1 > by0) main.drawImage(src, bx0, by0, bx1 - bx0, by1 - by0, P.x + (bx0 - P.x) * s + (dxo || 0) * T.a, P.y + (by0 - P.y) * s + (dyo || 0) * T.d, (bx1 - bx0) * s, (by1 - by0) * s); }
+  else if (s !== 1) main.drawImage(src, P.x - P.x * s, P.y - P.y * s, src.width * s, src.height * s); else main.drawImage(src, 0, 0); main.restore(); }
+function fearBox(p) { if (!p) return null; var hh = Math.max(10, p.feet - p.cy), hw = Math.max(14, hh * 1.15); return { x0: p.x - hw, y0: p.feet - hh * 2.1, x1: p.x + hw, y1: p.feet + 3 }; } /* his body only - not the name / HP bar above him, not the level under him */
+function fearRole(store, id) { var L = fearList(store); if (!L) return null; for (var i = 0; i < L.length; i++) { if (L[i].tgt === id) return { F: L[i], r: "tgt" }; if (L[i].caster === id && fearT(L[i]) < 1.8) return { F: L[i], r: "caster" }; } return null; }
+/* draws one hero / enemy: plain when Fear isn't on it. pos() = { x, feet, cy } read AFTER the draw (the draw code updates where he is) */
+function fearWrapDraw(store, id, main, draw, pos) { var R = fearRole(store, id); if (!R) { draw(main); return; }
+  var lay = fearLayer(store, id, main); draw(lay); var c = lay.canvas, F = R.F, t = fearT(F), p = pos ? pos() : null;
+  if (R.r === "caster") { F.cLay = c; F.cPos = p; fearBlit(main, c, 1); return; } /* his pulse is drawn over everything at the end (fearDrawPulse) */
+  if (p) fearSetPos(F, p.x, p.feet, p.cy); var cx = F.frozen ? (p ? p.x : F.x) : F.x, ccy = p ? p.cy : F.cy;
+  var bx = fearBox(p), gT = null, ek = p ? Math.max(0.3, Math.min(1, 24 / Math.max(1, p.feet - p.cy))) : 1; /* the echo is softer on a big target (a boss) */
+  if (t < F.stun && bx) FEAR_HZ_BEATS.forEach(function (b) { var pp = (t - b) / FEAR_BEAT_LEN; for (var j = 0; j < 3; j++) { var qq = pp - j * 0.18; if (qq >= 0 && qq < 1) fearBlit(main, gT || (gT = fearTint(store, c, FEAR_FX.col, "g")), 0.7 * ek * Math.pow(1 - qq, 1.3), 1 + 0.8 * qq, cx, ccy, bx); } }); /* heartbeat echo behind him */
+  var rr = t - F.stun;
+  if (rr >= 0 && rr < FEAR_RES && bx) { var f = Math.pow(1 - rr / FEAR_RES, 1.2), T = main.getTransform(), d = 1.6 * T.a, red = fearTint(store, c, FEAR_FX.col, "r"), gl = (0.8 + 0.2 * Math.sin(rr * 30)) * 0.32 * f;
+    [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].forEach(function (o) { var od = 1.6 * o[0], oe = 1.6 * o[1]; fearBlit(main, red, gl, 1, null, null, bx, od, oe); }); /* red rim */
+    var dk = fearTint(store, c, [20, 4, 8], "d"); fearBlit(main, c, 1); fearBlit(main, dk, 0.5 * f, 1, null, null, bx); fearBlit(main, red, 0.18 * f, 1, null, null, bx); /* darkened, a little red in it */
+    if (p) { var now = performance.now(), dt = Math.min(0.05, F.wl ? (now - F.wl) / 1000 : 0); F.wl = now; var hh = Math.max(10, p.feet - p.cy) * 2, nW = (3 * f + Math.random()) * dt * 30; for (var i = 0; i < Math.floor(nW + Math.random() * 0.5); i++) F.wisp.push([p.x + (Math.random() - 0.5) * hh * 0.55, p.feet - Math.random() * hh * 0.85, (Math.random() * 24 - 12) / 2, -(18 + Math.random() * 20) / 2, 0, 0.5 + Math.random() * 0.4, (9 + Math.random() * 7) / 2, Math.random() * 6]); } }
+  else fearBlit(main, c, 1);
+  if (F.wisp.length) { var now2 = performance.now(), dt2 = Math.min(0.05, F.wl2 ? (now2 - F.wl2) / 1000 : 0); F.wl2 = now2; main.save();
+    F.wisp = F.wisp.filter(function (q) { q[4] += dt2; q[0] += q[2] * dt2; q[1] += q[3] * dt2; var u = q[4] / q[5]; if (u >= 1) return false; var a = 0.85 * Math.min(1, u * 5) * Math.pow(1 - u, 1.3), r = q[6] * (1 + 0.8 * u);
+      var g = main.createRadialGradient(q[0], q[1], 0, q[0], q[1], r); g.addColorStop(0, "rgba(70,12,22," + (0.8 * a).toFixed(3) + ")"); g.addColorStop(0.6, "rgba(40,8,14," + (0.45 * a).toFixed(3) + ")"); g.addColorStop(1, "rgba(30,6,10,0)"); main.fillStyle = g; main.beginPath(); main.arc(q[0], q[1], r, 0, 6.283); main.fill(); return true; });
+    main.restore(); } }
+function fearEnemyPos(re, vis, groundY) { if (!re || !vis) return null; /* Conquest: where the grabbed enemy stands (feet on the road) and his middle */
+  if (re.type === "boss") { var sz = 58 * bossSpriteScale, by = groundY + 15; return { x: vis.x, feet: by, cy: by - sz / 2 }; }
+  var dx = re.type === "infantry" ? getEnemySkin().dx : 0, fly = re.type === "archer" && enemyBatReady();
+  return { x: vis.x + dx, feet: groundY + 7.5, cy: fly ? groundY - 16 : groundY - 6 }; }
+/* at the very end of the frame: the heartbeat dims the picture, Baelgor and his red onion-skins stay bright on top, the carved lines keep their glow */
+function fearDrawPulse(main, store, w, h) { var L = fearList(store); if (!L) return; L.forEach(function (F) { var t = fearT(F), dark = 0, gh = [];
+  FEAR_BEATS.forEach(function (b) { var p = (t - b) / FEAR_BEAT_LEN; if (p >= 0 && p < 1) { dark = Math.max(dark, Math.pow(1 - p, 1.5)); for (var j = 0; j < 3; j++) { var q = p - j * 0.18; if (q >= 0 && q < 1) gh.push([1 + 0.9 * q, 0.75 * Math.pow(1 - q, 1.3)]); } } });
+  if (dark <= 0) return; main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.globalCompositeOperation = "saturation"; main.fillStyle = "rgba(128,128,128," + (0.85 * dark).toFixed(3) + ")"; main.fillRect(0, 0, main.canvas.width, main.canvas.height); /* drains the colour */
+  main.globalCompositeOperation = "source-over"; main.fillStyle = "rgba(6,4,10," + (0.55 * dark).toFixed(3) + ")"; main.fillRect(0, 0, main.canvas.width, main.canvas.height); main.restore(); /* and darkens (mockup: colour -85 %, brightness -55 % at the beat) */
+  fearCarve(main, F, t, Math.min(1, dark * 1.2));
+  if (F.cLay && F.cPos) { var cb = fearBox(F.cPos); fearBlit(main, F.cLay, 1, 1, null, null, cb); var tc = fearTint(store, F.cLay, FEAR_FX.col, "c"); gh.forEach(function (g) { fearBlit(main, tc, g[1], g[0], F.cPos.x, F.cPos.cy, cb); }); } }); }
 var HERO_ATK2 = { baelgor: { parts: ["baelgor_atk2a", "baelgor_atk2b"], impact: 35 } };
 function heroAtk2Def(key) { var d = HERO_ATK2[key]; if (!d || typeof HERO_ANIMS === "undefined") return null; if (!d.n) { d.n = 0; d.parts.forEach(function (p) { d.n += HERO_ANIMS[p].rows.skill[1]; }); d.fps = HERO_ANIMS[d.parts[0]].fps.skill; } return d; }
 function heroAtk2Ms(key) { var d = heroAtk2Def(key); return d ? d.n / d.fps * 1000 : 0; }
@@ -31117,7 +31209,8 @@ function drawIdleAnim(ctx, w, h) {
   idleAnim.pendingBar = null;
   drawKnightPreview(ctx, w, groundY); /* v1174: Dark Knight look test (no stats, no attacks) */
   drawGroundShadows(ctx, groundY, drawEnemies, game.state.conquestRoster, !!(tmpRainBg && tmpRainBg.shadows)); /* v1445: small shadows under ground units; v1719: on every level */
-  drawEnemies.forEach(function (re, i) {
+  fearDrawBack(ctx, idleAnim); /* v1735: Fear portal + carved lines under the enemies */
+  drawEnemies.forEach(function (re, i) { fearWrapDraw(idleAnim, "e" + re.id, ctx, function (fc) { var c0e = ctx; ctx = fc; try { (function () { /* v1735: Fear echo / residue on the grabbed enemy */
     var vis = idleAnim.enemyById[re.id];
     if (!vis) return;
     var arrivingFade = 1; // enemies appear at full opacity immediately; only the arrival delay (for targeting) still applies
@@ -31247,7 +31340,8 @@ function drawIdleAnim(ctx, w, h) {
         idleAnim.pendingBar = { x: vis.x + (re.type === "infantry" ? getEnemySkin().dx : 0), y: y - (re.type === "infantry" ? 17 : 22), w: barW, frac: frac }; // v663: drawn after the heroes so Gareth can't cover it
       }
     }
-  });
+  }()); } finally { ctx = c0e; } }, function () { return fearEnemyPos(re, idleAnim.enemyById[re.id], groundY); }); });
+  fearDrawFront(ctx, idleAnim); /* v1735: the closed fist over him, embers */
   if (showHordeTextEnabled && realEnemies.length > 4) {
     ctx.font = "bold 11px sans-serif"; ctx.textAlign = "right"; ctx.fillStyle = "#ff8a6a";
     ctx.fillText("⚠️ Horde: " + realEnemies.length, w - 8, 20);
@@ -31361,7 +31455,7 @@ function drawIdleAnim(ctx, w, h) {
     roster.slice(0, 5).forEach(function (key, i) {
       if (HERO_DEFS[key].class !== "infantry") return;
       if (game.idleHeroIsKo(key)) { drawKoHero(ctx, w, h, key, i); return; } // v527: down and waiting to revive, parked on the fortress
-      drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob);
+      fearWrapDraw(idleAnim, key, ctx, function (fc) { drawIdleHeroSprite(fc, w, h, key, i, frontIsPointBlank, bob); }, function () { var vF = idleAnim.heroVis[key], hF = heroSpriteVisualScale / 100; return vF ? { x: vF.x, feet: vF.y + 12 * hF, cy: vF.y + 12 * hF - 18 * hF } : null; }); /* v1735: Fear - his heartbeat pulse */
       if (!(idleAnim.skillFlash[key] > 0) && !heroChargeMem["c_" + key]) drawHeroHpBar(ctx, w, h, key);
     });
     drawIdleClones(ctx, w, h);
@@ -31861,6 +31955,7 @@ function drawIdleAnim(ctx, w, h) {
   // than something rain/snow can visually wash over. Skipped entirely on
   // boss levels — the boss's own HP bar already shows fight progress there,
   // so this bar would just be a second, redundant readout of the same thing.
+  fearDrawPulse(ctx, idleAnim, w, h); /* v1735: Fear - the heartbeat dims the picture, Baelgor stays bright */
   if (!game.idleIsBossLevel() && !game.state.idle.bossRetry && !game.idleFarm()) (function drawLevelProgressBar() {
     var barW3 = w * 0.5, barH3 = 7, barX3 = w / 2 - barW3 / 2, barY3 = 8;
     var frac3 = idleLevelProgressFrac();
@@ -40501,10 +40596,11 @@ function drawArenaFrame(ctx, w, h) {
         if (lpA && SAa && heroAnimImg(key + "_skill") && arenaAnim.atk2) delete arenaAnim.atk2[flashKey]; /* v1730: the skill cuts the slash off (its hit still lands in the sim) */
         if (lpA && SAa && heroAnimImg(key + "_skill")) { /* v1503: the skill sheet plays where he stands (Hanzo leaps and throws), the throw sends his projectile at every enemy */
           var nLp = performance.now(), flLp = !isPlayerSide;
+          var fzR = fearRole(arenaAnim, flashKey); if (fzR && fzR.r === "tgt" && fearT(fzR.F) < fzR.F.stun && lpA.fzT) { var fzD = nLp - lpA.fzT; lpA.t0 += fzD; var fzM = heroAnimMem[key + "_skill" + (flLp ? "f" : "") + "0"]; if (fzM) fzM.t += fzD; } lpA.fzT = nLp; /* v1735: Fear holds him where he is - his leap (Hanzo in mid-air) pauses for the stun */
           if (nLp - lpA.t0 < SAa.rows.skill[1] / SAa.fps.skill * 1000 && !arenaAnim.battleEnded) {
             if (!lpA.started) { lpA.started = true; heroAnimStartAt(key + "_skill", flLp, lpA.t0); }
             if (SAa.lift) { if (lpA.x == null) lpA.x = slot.x; if (lpA.x1 == null && posVis && koE && koE.lt != null) lpA.x1 = mapDx(koE.lt); if (lpA.x1 != null && koE && !koE.ll) { var rdL = arenaAnim.heroD && arenaAnim.heroD[flashKey]; if (rdL) rdL.prev = rdL.cur; } /* landed in the sim: no glide from his old spot */ slot = { x: lpA.x + ((lpA.x1 != null ? lpA.x1 : lpA.x) - lpA.x) * tomLeapProg(nLp - lpA.t0), y: slot.y }; } /* v1681 (Harley): one direction for the whole leap; v1682: sideways (forwards / backwards) at a steady speed, landing where the sim puts him */
-            var lfA = heroLeapLift(SAa, nLp - lpA.t0) * hsA; /* v1678: Tom's high leap */
+            var lfA = heroLeapLift(SAa, nLp - lpA.t0) * hsA; /* v1678: Tom's high leap */ (arenaAnim.heroLift || (arenaAnim.heroLift = {}))[flashKey] = { v: lfA, t: nLp }; /* v1735: where Fear's hand grabs him */
             if (lpA.thrown && SAa.throwFrame2 != null && !lpA.thrown2 && nLp - lpA.t0 >= SAa.throwFrame2 / SAa.fps.skill * 1000) lpA.thrown = !(lpA.thrown2 = true); /* v1678: second slash */
             if (!lpA.thrown && nLp - lpA.t0 >= (SAa.throwFrame || 0) / SAa.fps.skill * 1000) { lpA.thrown = true; heroSkillOnThrow(arenaAnim, key, slot.x + (isPlayerSide ? 6 : -6) * hsA, slot.y + 13 - lfA - SAa.ay * (SAa.dispH * hsA / SAa.ch) * 0.72, (HERO_COMBAT_FX[key] && HERO_COMBAT_FX[key].slashOne && posVis && typeof endX === "number") ? [{ x: endX, y: slot.y + 13 - TOM_SLASH_END_H * hsA }] : arenaEnemyTargets(w, h, isPlayerSide), hsA, slot.x, slot.y + 13, 0, w, isPlayerSide ? 1 : -1, groundYFor(h) + 10 * hsA); /* v1694: Tom's slashes fly from his sword to the enemy ship's nose (the same line the battle uses for what they touch) */ /* v1511: sky effects land on the infantry feet line, not a rider's deck */ } /* v1506: generic effect frame */
             drawHeroAnim(ctx, key + "_skill", slot.x, slot.y + 13 - lfA, "skill", hsA, flLp, 0);
@@ -40580,7 +40676,7 @@ function drawArenaFrame(ctx, w, h) {
       if (pass && ((HERO_DEFS[key] && HERO_DEFS[key].class === "infantry") !== (pass === "ground"))) return;
       var hh = arenaAnim.heroHp && arenaAnim.heroHp[(isPlayerSide ? "p_" : "a_") + key];
       lastSlot = null;
-      drawOneHero(key, i);
+      var fkW = (isPlayerSide ? "p_" : "a_") + key; fearWrapDraw(arenaAnim, fkW, ctx, function (fc) { var c0F = ctx; ctx = fc; try { drawOneHero(key, i); } finally { ctx = c0F; } }, function () { var sF = arenaAnim.heroScreen && arenaAnim.heroScreen[fkW], lfF = arenaAnim.heroLift && arenaAnim.heroLift[fkW], hF = heroSpriteVisualScale / 100; if (!sF) return null; var lv = lfF && performance.now() - lfF.t < 120 ? lfF.v : 0; return { x: sF.x, feet: sF.y + 13, cy: sF.y + 13 - lv - 18 * hF }; }); /* v1735: Fear pulse / echo / residue */
       var skDk = isPlayerSide ? fortressSkin() : (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]);
       if (hh && lastSlot && lastSlot.deck && skinAnimReady(skDk)) { (arenaAnim.deckBars || (arenaAnim.deckBars = [])).push({ x: lastSlot.x, y: skDk.barsAbove ? lastSlot.y - 24 : lastSlot.y + 24, hh: hh }); hh = null; } /* v1530: drawn after the front hull */
       if (hh && lastSlot) { // per-hero HP bar (same system as Conquest)
@@ -40620,7 +40716,7 @@ function drawArenaFrame(ctx, w, h) {
   drawFormation(arenaAnim.aiRoster, false, "deck");
   ctx = ptCtx("a_fort", ptRealA); drawArenaFortress(ctx, w, h, true, osSetA, "front"); drawArenaFortress(ctx, w, h, false, null, "front"); /* v1530: layered hulls in front of the deck riders */
   try { drawWeaponBarrels(ctx, w, h, "arena", true, arenaBarrelAim(w, h, true)); drawWeaponBarrels(ctx, w, h, "arena", false, arenaBarrelAim(w, h, false)); } catch (e) {} // v1165; v1556: after the front hull layer - layered skins (crawlers, walker...) covered the guns in Arena
-  ctx = ptCtx("a_heroes", ptRealA); drawArenaGroundShadows(ctx); drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); /* v1544 (Harley): infantry on the ground in front of both hulls */
+  ctx = ptCtx("a_heroes", ptRealA); drawArenaGroundShadows(ctx); fearDrawBack(ctx, arenaAnim); /* v1735: Fear portal under the infantry */ drawFormation(arenaAnim.playerRoster, true, "ground"); drawFormation(arenaAnim.aiRoster, false, "ground"); fearDrawFront(ctx, arenaAnim); /* v1544 (Harley): infantry on the ground in front of both hulls */
   try { aegisPass(ctx, arenaAnim, aegLA, false); } catch (eAgA2) {} /* v1670: Blade Aegis, front layer + flying blades */
   if (arenaAnim.aiFortressSkin && arenaAnim.aiFortressSkin.kaiju) kaijuDrawArenaFx(ctx, w, h); /* v1598: water, stomp surge, beam */
   if (arenaAnim.deckBars) { arenaAnim.deckBars.forEach(function (b) { var bw = 13, bx = b.x - bw / 2, hh = b.hh; ctx.save(); ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(bx - 1, b.y - 1, bw + 2, 5); ctx.fillStyle = hh.ko ? "#777" : (hh.hp / hh.max > 0.35 ? "#5ed37a" : "#e8553f"); ctx.fillRect(bx, b.y, bw * Math.max(0, Math.min(1, hh.hp / hh.max)), 3); if (hh.lim != null) drawLimitBar(ctx, bx, b.y + 5, bw, 3, hh.lim, performance.now()); ctx.restore(); }); arenaAnim.deckBars = null; } /* v1530 */
@@ -40872,6 +40968,7 @@ function drawArenaFrame(ctx, w, h) {
   }
 
   // Weather — falls in front of the whole scene, same technique as Border
+  ctx = ptCtx("a_fx", ptRealA); fearDrawPulse(ctx, arenaAnim, w, h); /* v1735: Fear heartbeat */
   // Skirmish's drawIdleAnim, drawn from arenaAnim's own particle list.
   ctx = ptCtx("a_weather", ptRealA);
   var arenaEnvDraw = arenaEnvironment();
@@ -41508,7 +41605,8 @@ function renderArenaBattleScreen() {
       // of whether their own attack was actually due. Infantry's passive
       // hit still has no dedicated shot visual, same as before this change —
       // only its active skill (if any) gets a projectile.
-      (state.atk2 || []).forEach(function (fk) { (arenaAnim.atk2 || (arenaAnim.atk2 = {}))[fk] = { t0: performance.now() }; }); /* v1730: Baelgor's slash starts (its hit lands impactSec later in the sim) */
+      (state.atk2 || []).forEach(function (fk) { (arenaAnim.atk2 || (arenaAnim.atk2 = {}))[fk] = { t0: performance.now() }; });
+      (state.casts || []).forEach(function (cs) { var mG = /^([pa])_(\w+):gaze:(\w+)$/.exec(cs); if (!mG) return; var skG = HERO_DEFS[mG[2]] && (HERO_DEFS[mG[2]].conquestSkills || [])[0]; fearStart(arenaAnim, mG[1] + "_" + mG[2], (mG[1] === "p" ? "a_" : "p_") + mG[3], (skG && skG.gaze && skG.gaze.sec) || 4); }); /* v1735: Fear visuals */ /* v1730: Baelgor's slash starts (its hit lands impactSec later in the sim) */
       var playerFiredFlat = false, playerFiredArc = false, aiFiredFlat = false, aiFiredArc = false;
       state.playerHitAttackers.forEach(function (id) {
         var def = HERO_DEFS[id];
