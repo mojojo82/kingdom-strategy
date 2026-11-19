@@ -14522,7 +14522,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1751"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1752"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -39497,7 +39497,7 @@ function arenaMakeSim(playerStats, aiStats, opts) {
        Wall / dodge / DEF apply like the Storm. No hero positions (old non-shared mode): everything is in reach on the impact tick. Caster knocked out before the impact = no wave. */
     if (gazeQ.length) { var gazeKeep = []; gazeQ.forEach(function (q) { if (q.at > tick) { gazeKeep.push(q); return; } /* v1726: Fear lands as the sword is planted */
       var mine = q.sd === 'P' ? pHH : aHH, opp = q.sd === 'P' ? aHH : pHH, oSt = q.sd === 'P' ? aiStats : playerStats, oCd = q.sd === 'P' ? aiCd : playerCd;
-      if (!opp || isKo(mine, q.key)) return;
+      if (!opp || isKo(mine, q.key)) { castEv.push((q.sd === 'P' ? 'p_' : 'a_') + q.key + ':gaze:'); return; } /* v1752 (Harley: "it should always appear"): knocked out during the wind-up - the hand still rises (in the middle) and grabs nothing; no stun */
       var oSdG = q.sd === 'P' ? 'A' : 'P', jumping = function (o) { return !!(o.air || o.leapAir || stormQ.some(function (s0) { return s0.sd === oSdG && s0.key === o.id && s0.at >= tick; })); }; /* v1736: in the air = Hanzo mid-leap (Storm pending), Skybreaker Slam, Tom's leap - not Zarek's float */
       var best = null; opp.list.forEach(function (e2) { if (e2.ko || e2.dead || e2.droid || !jumping(e2)) return; if (!best || e2.max > best.max || (e2.max === best.max && e2.hp > best.hp)) best = e2; }); /* v1736 (Harley): only a JUMPING enemy hero, the most HP of them (v1729: any hero, most HP) */
       if (best) best.stunT = Math.max(best.stunT || 0, tick + Math.max(1, Math.round(q.sec / dtS)));

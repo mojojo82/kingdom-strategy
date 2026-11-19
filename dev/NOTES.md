@@ -6181,3 +6181,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: "If you inspect your button there is a near 1px gap there. Looks like you chopped it there." Seen at 4x zoom: faint lines inside each tab and each mail card - the seams where the browser joins the 9 pieces of a CSS border-image.
 - Fix: no 9-slice. Tabs (dev/ui/build_mail_tab2.py) and row cards (dev/ui/build_mail_card3.py) are made at their exact on-screen shape (tabs 1.304:1, rows 3.903:1 - both sized in --mw units so the shape never changes) by stretching only the plain middle rows, then drawn whole. The open-mail card (any height) = top cap + bottom cap + plain middle band between them. New ui-mail-tab3off/on, cardrow/top/mid/bot; old tab2 and card files removed.
 - UI kit rule: don't use border-image 9-slice for painted art (seams); pre-shape the picture, or caps + plain middle.
+
+## v1752 (20 Nov 2026) - Fear: the hand always appears in Arena
+- Harley: "in arena i see him starting the animation but the hand or portal doesn't appear (it should always appear)".
+- Reproduced headless with a sim-level log (every Baelgor cast vs every Fear event vs every portal drawn): every cast queues Fear, but when the Fear was due 2 s later the sim dropped it completely if Baelgor had been knocked out during his wind-up (`if (!opp || isKo(mine, q.key)) return;`) - no event, so no portal and no hand. Seen as an enemy-Baelgor cast with no Fear after it.
+- Fix: in that case the event still goes out with no target, so the hand rises in the middle of the arena and grabs nothing (same as "nobody jumping"). No stun in that case - balance unchanged. Verified by forcing the knocked-out case: portal placed and drawn. Normal cases re-checked (no jumpers, Hanzo grabbed, both sides). Meta check: same known F3 warning, numbers unchanged.
+- Still no Fear if the fight ends during the 2 s wind-up (the battle is over).
