@@ -3144,7 +3144,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   /* v1745 (Harley 20 Nov, UI unify): Mail look "c" = the Backpack family. Rebuilt from the Backpack's own parts (frame, nameplate, parchment, tan well,
      corner buttons) + GPT pieces colour-matched to the Backpack (tab bar, selected tab, mail card, icons) - dev/ui/build_mail_v2.py, art/originals/ui/mail_v2/.
      Same markup and logic as looks a/b; only the drawing changes. All text by code. */
-  #mailPanel.sk-c { --mw:min(92vw,400px,61vh); left:50%; top:50%; transform:translate(-50%,-50%); width:var(--mw); aspect-ratio:973/1474; height:auto; display:block; padding:0; background:var(--mail-slab) center/100% 100% no-repeat; color:#4a2a10; font-family:'EB Garamond',Georgia,serif; border:0; box-shadow:none; overflow:visible; }
+  #mailPanel.sk-c { --mw:min(92vw,400px,61vh); left:50%; top:50%; transform:translate(-50%,-50%); width:var(--mw); aspect-ratio:973/1474; height:auto; padding:0; background:var(--mail-slab) center/100% 100% no-repeat; color:#4a2a10; font-family:'EB Garamond',Georgia,serif; border:0; box-shadow:none; overflow:visible; }
   body.mail-open #mailPanel.sk-c { display:block; }
   #mailPanel.sk-c .mh { position:absolute; inset:0 0 auto 0; height:0; }
   #mailPanel.sk-c .mht { position:absolute; left:28%; right:28%; top:3.4%; height:auto; justify-content:center; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:calc(var(--mw) * 0.08); color:#fff; -webkit-text-stroke:calc(var(--mw) * 0.009) #3a2010; paint-order:stroke fill; text-shadow:0 2px 2px rgba(20,10,4,.55); }
@@ -3201,6 +3201,15 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #mailPanel.sk-c .mdet .dtiles { display:flex; flex-direction:column; gap:6px; margin-top:6px; }
   #mailPanel.sk-c .mdet .dtile { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 10px; border-radius:8px; background:rgba(122,80,40,.14); border:1px solid rgba(160,110,60,.45); color:#4a2a10; }
   #mailPanel.sk-c .mdet .dtq { font-family:'KS Title','Lilita One',sans-serif; color:#4a280e; }
+  /* v1748 (Harley: "why is the highlighted tab a different style and floating" / "i cant close the mailbox"): the panel no longer forces display:block (it stayed drawn after closing);
+     the tab buttons sit on the bar's real slots and the selected tab is that slot itself recoloured to parchment, opened into the panel (dev/ui/build_mail_tabs.py). */
+  #mailPanel.sk-c .mtab { position:absolute; top:0; flex:none; }
+  #mailPanel.sk-c .mtab.on::before { background-size:100% 100%; }
+  #mailPanel.sk-c .mtab:nth-child(1) { left:0.47%; width:20.40%; } #mailPanel.sk-c .mtab:nth-child(1).on::before { left:-1.72%; width:103.45%; top:-3.17%; height:107.94%; background-image:var(--mail-tabon0); }
+  #mailPanel.sk-c .mtab:nth-child(2) { left:20.87%; width:18.76%; } #mailPanel.sk-c .mtab:nth-child(2).on::before { left:-1.88%; width:103.75%; top:-3.17%; height:107.94%; background-image:var(--mail-tabon1); }
+  #mailPanel.sk-c .mtab:nth-child(3) { left:39.62%; width:19.23%; } #mailPanel.sk-c .mtab:nth-child(3).on::before { left:-1.83%; width:103.66%; top:-3.17%; height:107.94%; background-image:var(--mail-tabon2); }
+  #mailPanel.sk-c .mtab:nth-child(4) { left:58.85%; width:19.23%; } #mailPanel.sk-c .mtab:nth-child(4).on::before { left:-1.83%; width:103.66%; top:-3.17%; height:107.94%; background-image:var(--mail-tabon3); }
+  #mailPanel.sk-c .mtab:nth-child(5) { left:78.08%; width:18.52%; } #mailPanel.sk-c .mtab:nth-child(5).on::before { left:-1.90%; width:103.80%; top:-3.17%; height:107.94%; background-image:var(--mail-tabon4); }
   #mailPanel.sk-c.v-detail .mht { display:flex !important; }
   #mailPanel.sk-c .mbar { top:23.3%; height:4.3%; } /* v1746 (Harley: "the claim button needs more room"): the status line + Claim all sit wholly between the tabs and the list */
   #mailPanel.sk-c .mall { padding:0.6% 5.5%; font-size:calc(var(--mw) * 0.04); line-height:1.15; }
@@ -14501,7 +14510,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1747"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1748"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21229,7 +21238,7 @@ function ksMailRender() {
   var rb = document.getElementById("mapReconBtn"); if (rb) rb.onclick = function (e) { e.stopPropagation(); setScreen("more", "recon"); }; /* v925 */
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   var p = document.getElementById("mailPanel"); if (p) {
-    [["--mail-slab", "assets/ui-mail-slab-e349e8d4.webp"], ["--mail-tabon", "assets/ui-mail-tabon-1afb8f54.webp"], ["--mail-card", "assets/ui-mail-card-8efb34b3.webp"], ["--mail-dot", "assets/ui-mail-dot-679562dc.webp"], ["--mail-bookmark", "assets/ui-mail-bookmark-bb8b2fc1.webp"], ["--mail-back", "assets/ui-bag-btnback-85a898f4.webp"], ["--mail-close", "assets/ui-bag-btnclose-6e30252a.webp"]].forEach(function (v) { p.style.setProperty(v[0], "url(" + ksA(v[1], true) + ")"); }); /* v1745 Mail look c art */
+    [["--mail-tabon0", "assets/ui-mail-tabon0-b753ee90.webp"], ["--mail-tabon1", "assets/ui-mail-tabon1-ecc72785.webp"], ["--mail-tabon2", "assets/ui-mail-tabon2-07707b4b.webp"], ["--mail-tabon3", "assets/ui-mail-tabon3-785e585b.webp"], ["--mail-tabon4", "assets/ui-mail-tabon4-feb96e6a.webp"], ["--mail-slab", "assets/ui-mail-slab-e349e8d4.webp"], ["--mail-tabon", "assets/ui-mail-tabon-1afb8f54.webp"], ["--mail-card", "assets/ui-mail-card-8efb34b3.webp"], ["--mail-dot", "assets/ui-mail-dot-679562dc.webp"], ["--mail-bookmark", "assets/ui-mail-bookmark-bb8b2fc1.webp"], ["--mail-back", "assets/ui-bag-btnback-85a898f4.webp"], ["--mail-close", "assets/ui-bag-btnclose-6e30252a.webp"]].forEach(function (v) { p.style.setProperty(v[0], "url(" + ksA(v[1], true) + ")"); }); /* v1745 Mail look c art */
     function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0;
       KSM.list.forEach(function (m) { if (m.id === id && !m.claimedAt && !ksMailItems(m).length) ksMailClaim(id, true); }); } /* v939: opening a message-only mail marks it read */
     p.addEventListener("click", function (e) {
