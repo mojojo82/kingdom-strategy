@@ -102,7 +102,9 @@ def _load_portal(name):
     # so the crack sits on the ring's centre (PORT_RING_Y). Per frame, smoothed, only ever upward.
     _ry = np.convolve(np.pad(np.array(_ry), 3, mode="edge"), np.ones(7) / 7, mode="valid")
     _sh = [min(0.0, PORT_RING_Y - y) for y in _ry]; _k0 = int(os.environ.get("PORTALSHIFTFROM", "96"))
-    PORTAL_SHIFT[name] = [v if (name == os.environ.get("PORTALDESC") and i >= _k0) else 0.0 for i, v in enumerate(_sh)]   # only the closing crack of the descend clip (Harley: it sat lower than the portal)
+    _sm = lambda u: (lambda c: c * c * (3 - 2 * c))(min(1.0, max(0.0, u)))   # one smooth glide, not per-frame (the per-frame measurement jittered)
+    _full = float(np.mean(_sh[-12:])) if len(_sh) >= 12 else 0.0
+    PORTAL_SHIFT[name] = [(_full * _sm((i - _k0) / 14) if name == os.environ.get("PORTALDESC") else 0.0) for i in range(len(_sh))]   # only the closing crack of the descend clip (Harley: it sat lower than the portal)
     return out
 if HZFX == "portal":
     PORTAL = _load_portal(os.environ.get("PORTALCLIP", "portal_grab_v1.mp4"))
