@@ -216,3 +216,10 @@ Results: `dev/balance/results/team_rank_v1722.log`, `tier_list_v1722.json`.
 - All take `EXCL=hanzo,ironlily`; ranged_vs_melee.js and hero_rank_solo.js also take `OLDARENA=1` (Roran's old Arena hit).
 
 The Orbital Patch sweep is a copy of ranged_vs_melee that multiplies `HERO_DEFS.vesper.conquestSkills[0].pctByLevel` in the page.
+
+## Arena fight length (20 Nov 2026, TEST v1752) - kept on purpose
+Harley: long fights are fine - "it gives me room to make new things stronger". No change made.
+Measured with dev/balance/fort_vs_fort.js (all heroes Lv80, 5 full stars, skills 5, maxed fortress research; no weapons / Esper / cards; 160 fights each; 60 s timer):
+F1 vs F2 26 s (1% to the timer) | F1 vs F1 30 s (16%) | F2 vs F2 54 s (63%) | F1 vs F3 58 s (72%) | F2 vs F3 59 s (84%) | F3 vs F3 60 s (100%).
+F3's maxed research (+90% HP, 33% damage reduction) is what drags fights out. Bots roll F1 no-research 20% / F1 ~27% / F2 ~27% / F3 ~27%.
+Options noted if fights ever need shortening: trim F3's tank research, sudden death after 30 s, heroes x1.3 vs fortresses, -20% fortress HP, fewer F3 bots.
