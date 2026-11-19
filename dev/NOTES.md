@@ -6090,3 +6090,13 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - dev/skins/PROMPTS.md: skin / design / render prompts now say 44 degrees.
 - Checked headless (dev/tests/map_elev_shots.js OUT [ELEV] - same spot at 35 and 44, two gather marches out): ships sit on their paths and face
   where they go at both angles, cities on their tiles, no page errors. art/originals/skins/map_elev_35_vs_44.png. Not on a phone.
+
+## v1738 - Resource node art redrawn for the 44-degree map (20 Nov 2026, TEST)
+- Harley: "start redoing the resource node arts and then replace our current". The old food / wood / stone / gold nodes (v875-876) measure ~33 deg.
+- ChatGPT (one chat): attach the old node + the 44-deg furnace render (angle) + a flat 44-deg ground diamond guide (art/originals/res_nodes/
+  ground_diamond_44deg.png); "same design, only the camera higher". Farm first, then wood / stone / gold in the same chat. Sources:
+  art/originals/res_nodes/v44/gpt_*.png (+ keyed); old ones kept in res_nodes/v35_old/. Side by side: res_nodes/v35_vs_v44.png.
+- ChatGPT lands a bit steep (diamond 0.73-0.80 tall, 47-53 deg): dev/fx/build_res_nodes.py squashes each so its ground diamond is exactly sin 44
+  (0.695), resizes to the old widths (320 / wood 340), measures fx / fy / fw / aspect and writes RES_NODE_ART. New: dev/fx/measure_node.py.
+- Tip (ChatGPT): pasting a 2nd image into the same chat stopped working; setting the composer's image file input works (input[type=file] + change).
+- Checked headless on the map (dev/tests/map_elev_shots.js): nodes sit on their tiles, no errors. Not on a phone.
