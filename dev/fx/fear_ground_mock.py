@@ -13,7 +13,7 @@ GRAB = Image.open(os.path.join(ROOT, "art/heroes/siphon/fear_portal_grab_v1.webp
 cell = lambda sh, i: sh.crop(((i % COLS) * CW, (i // COLS) * CH, (i % COLS) * CW + CW, (i // COLS) * CH + CH))
 bg = Image.open(BG).convert("RGB").crop((0, 380, 860, 760)); FEETY, HX = 333, 600
 HZ = sorted(glob.glob(os.path.join(ROOT, "art/originals/heroes/hanzo/large/idle/*.webp"))); HK = 66 / 391.0; HFX, HFY = 561.5, 657
-F = 0.84   # scene px per sheet cell (= css 0.42, the size it has on a mid-air Hanzo)
+F = float(os.environ.get("HANDF", "1.66"))   # scene px per sheet cell: 1.66 = the approved mockup's size (measured: its portal ring is 242 scene px wide); 0.84 = first try (half size)
 SPL = 230.0   # sheet row just above the portal ring: below = portal part (stays), above = hand part (moves down)
 CENTER = 33   # his middle, scene px above his feet
 D = (PORTY - CENTER / F) - GRABY   # cells the hand part moves down so the fist closes on his middle
@@ -46,7 +46,7 @@ def render(lift, out):
         hs = hz.resize((round(hz.width * HK), round(hz.height * HK)), Image.LANCZOS); hx = round(HX - (hz.width - HFX) * HK); hy = round(FEETY - lf - HFY * HK)
         fr.alpha_composite(hs, (hx, max(0, hy)))
         if im and front: draw_split(fr, im, x0, y0, "hand")
-        fr.convert("RGB").crop((HX - 200, 120, HX + 200, 370)).resize((800, 500), Image.LANCZOS).save(os.path.join(tmp, "%04d.png" % i))
+        fr.convert("RGB").crop((HX - 200, 95, HX + 200, 345 + 25)).resize((800, 500), Image.LANCZOS).save(os.path.join(tmp, "%04d.png" % i))
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", os.path.join(tmp, "%04d.png"), "-c:v", "libx264", "-crf", "16", "-preset", "veryfast", "-pix_fmt", "yuv420p", out], check=True)
     return tmp
 t0 = render(False, OUT.replace(".mp4", "_nolift.mp4")); t1 = render(True, OUT.replace(".mp4", "_lift.mp4"))
