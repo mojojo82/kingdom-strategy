@@ -19,7 +19,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.fill("#ksE", "skin" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Mock"); await P.click("#ksGo"); await P.waitForTimeout(6000);
   const skins = LIST.map((s, i) => { if (s.indexOf("new:") !== 0) return { id: s }; const [, p, label] = s.split(":"); return { id: "mock" + i, label: label || "Mock " + i, src: "data:image/webp;base64," + fs.readFileSync(p).toString("base64") }; });
-  await P.evaluate((g) => { window.__guild = g; }, +(process.env.GUILD || 0));
+  await P.evaluate((g) => { window.__guild = g[0]; window.__decor = g[1] ? g[1].split(",") : null; }, [+(process.env.GUILD || 0), process.env.DECOR || ""]);
   const res = await P.evaluate(async (skins) => {
     document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove());
     skins.forEach((s) => { if (s.src) CITY_SKINS[s.id] = { id: s.id, label: s.label, scale: 1.0, src: s.src }; });
@@ -38,6 +38,11 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
       const spots = [[5, -5], [5, 5], [10, 0], [-5, 5], [15, -15]];
     skins.slice(1).forEach((s, i) => { const id = (h[0] + spots[i][0]) + "," + (h[1] + spots[i][1]); occupiedTileIds[id] = "mockbot_" + i; citySkinByTile[id] = s.id; ownerProfileCache["mockbot_" + i] = { name: s.label || s.id, avatar: null, bot: true }; placed.push(id); });
       centerMapOnTile((h[0] + 5) + "," + h[1]); }
+    if (window.__decor && window.__decor.length) { /* DECOR=a,b,c: map decorations in a row of blocks below-right of my city (this page only), view centred on them */
+      let dx = 0; window.__decor.forEach((ds, i) => { const f = DECOR_SPRITES[ds].foot; const X = h[0] + 2 + dx + (f >> 1), Y = h[1] + 6 + (i % 2) * 4;
+        for (let rx = -2; rx <= 2; rx++) for (let ry = -2; ry <= 2; ry++) { const t = mapTileAt(game.state.map, X + rx, Y + ry); if (t && t.type === "resource") { t.type = "empty"; delete t.resource; } }
+        mapDecor["mock" + i] = { s: ds, x: X, y: Y }; dx += f + 1; });
+      centerMapOnTile((h[0] + 2 + Math.round(dx / 2)) + "," + (h[1] + 8)); }
     renderVisibleTiles(); await new Promise((r) => setTimeout(r, 3000)); renderVisibleTiles();
     return { home, placed };
   }, skins);

@@ -6100,3 +6100,19 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   (0.695), resizes to the old widths (320 / wood 340), measures fx / fy / fw / aspect and writes RES_NODE_ART. New: dev/fx/measure_node.py.
 - Tip (ChatGPT): pasting a 2nd image into the same chat stopped working; setting the composer's image file input works (input[type=file] + change).
 - Checked headless on the map (dev/tests/map_elev_shots.js): nodes sit on their tiles, no errors. Not on a phone.
+
+## v1739 - Older city skins + map decorations redrawn for the 44-degree map (20 Nov 2026, TEST)
+- Harley: "Go ahead. Remake and replace the older ones" (everything still drawn for 35 deg).
+- City skins (8): Mecha, Royal Castle, Titan (Neptune), Frost Gate, Frost Gate II, Iron Sentinel, Field Sentinel, Ghost Galleon -> new files
+  test/assets/city-skins-<id>44-<hash>.webp (old files kept; old pictures in art/originals/remake44/old/). Watchtower was already ~44.
+- Map decorations (14 pictures, 19 entries): Obelisk (base + 1x1), Dark Spire (3 sizes), Ember Citadel, Shipwreck, Hill 2x2 / 3x3, Rocky outcrop
+  2x2 / 3x3, Snowy peak, Peak, Peak 2, Ridge, Foothill 1 / 2. Not redone: the small scatter pieces (trees, rocks, grass, flowers - upright, the
+  angle barely shows) and the Fortress Ship decor (the fortress picture itself).
+- ChatGPT, one chat per batch: first message = old picture + the 44-deg furnace render + the 44-deg tile diamond, "same design, only the camera
+  higher"; then each next picture with a short "same again". Raw results art/originals/remake44/gpt/; side by side cmp_skins_*.png, cmp_decor_*.png.
+- dev/fx/build_remake44.py: key, squash height x0.946 (ChatGPT lands ~47 deg), old pixel widths, decor fx / fy / fw / aspect from the widest row +
+  bottom (tile diamond = width x sin44); skins -> CITY_SKINS src; CITY_ART_BAKED re-measured for every baked skin with the game's own foundation rule
+  at sin44 (the old numbers used sin35 - Watchtower's foot point moved too).
+- Noted: ChatGPT gave the mountains / foothills a small grass ground plate (the old ones had none); Field Sentinel and the Galleon came out a bit lighter.
+- Checked headless (dev/tests/city_skin_mock.js GUILD=3 all skins; DECOR=... decorations on the map): all draw on their tiles, no page errors.
+  art/originals/remake44/map_skins_v1739.png, map_decor_v1739.png. Not on a phone.
