@@ -6028,3 +6028,13 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Balance before/after: team ranking (results/team_rank_v1732_full.json vs v1731_full) - every hero within 2.6 points (Lv80 within 1.9), same order.
   Conquest (run.js saves v1732_default / v1732_rng vs pre_ranged_*): same chapters everywhere (+0.0, one +0.1). Arena 6-hero round robins (100 fights)
   move a bit: Roran matters more at Lv80 (team w/o Roran 40-59, was 59-41) - his throws are now full-size single hits.
+
+## v1733 - Baelgor + Tom card portraits and card videos (19 Nov 2026, TEST)
+- ChatGPT (card framing refs card_lyra / sera / kessa): portrait 1024x1536 + wide card-video start 1536x1024 each. Baelgor on green (violet), Tom on magenta.
+  art/originals/heroes/siphon/card/, art/originals/heroes/tom/card/.
+- Static cards: new dev/heroes/make_card_art.py (key, width-fit 360x480, top kept; Tom ZOOM 1.2 CY 30) -> HERO_CARD_ART2.baelgor / .tom.
+- Card videos (standard: 8 s Atlas clip once, then a 5 s idle loop from its last frame): Baelgor raises his head, visor + sword eye brighten; loop v1 had an
+  invented flare + sparks -> loop v2 ("nearly still image... nothing lights up") clean. Tom tilts the sword (Atlas added a blade glint - Harley: OK) into an
+  upright salute; loop v1 clean. build_card_video.py RARITY=Legendary (Baelgor BG=green, ZOOM 1.03 CX 545). HERO_CARD_VIDEO.baelgor / .tom.
+- New dev/heroes/clip_check.py (per-frame edge gaps / size + contact sheet). Atlas: 2 x 8 s ($1.22) + 3 x 5 s loops ($1.14) = $2.36.
+- Checked headless (not a phone): hero list shows both cards; both hero pages play the card video (still playing 9 s later), no page errors.
