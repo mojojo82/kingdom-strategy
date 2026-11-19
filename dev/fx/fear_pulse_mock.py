@@ -9,7 +9,9 @@ import numpy as np
 from PIL import Image, ImageEnhance, ImageDraw, ImageFilter
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 BGP, OUT = sys.argv[1], sys.argv[2]; os.makedirs(os.path.join(OUT, "f"), exist_ok=True)
-FIRE = len(sys.argv) > 5 and sys.argv[5] in ("1", "2"); CODEFB = len(sys.argv) > 5 and sys.argv[5] == "2"   # 2 = code-drawn fireballs (white core, black flame tongues with a white rim, black wisps)
+FIRE = len(sys.argv) > 5 and sys.argv[5] in ("1", "2", "3"); FBRED = len(sys.argv) > 5 and sys.argv[5] == "3"   # 3 = code fireballs in the pulse red
+BRAID = float(os.environ.get("BRAID", "16"))   # braid spread (px on this 2x canvas)
+CODEFB = len(sys.argv) > 5 and sys.argv[5] in ("2", "3")   # 2 = code-drawn fireballs (white core, black flame tongues with a white rim, black wisps)
 GCOL = tuple(int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else "225,25,45").split(",")); HZ = len(sys.argv) > 4 and sys.argv[4] == "1"
 hzs = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_skill_anim_v2.webp")).convert("RGBA"); hzi = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_anim_v1.webp")).convert("RGBA")
 HCLIP = [0, 0, 0, 0, 0.27, 0.27, 6.93, 14.13, 14.13, 17.6, 17.6, 19.47, 19.47, 21.07, 21.07, 22.13, 22.13, 23.2, 23.2, 24, 24, 24.8, 24.8, 25.87, 25.87, 26.4, 26.4, 27.47, 27.47, 28.8, 28.8, 29.33, 29.33, 24, 24, 18.67, 18.67, 18.67, 18.67, 18.67, 18.67, 18.67, 18.67, 18.67, 18.67, 18.67, 0, 0, 0, 0, 0, 0]
@@ -34,16 +36,16 @@ def code_fireball(fr, x, y, ang, t, k, wisps, sc=1.0):
     for q in wisps:   # trailing black wisps (world coords -> local)
         u = q["age"] / q["max"]; lx, ly = q["x"] - box[0], q["y"] - box[1]
         if 0 <= lx < 2 * R and 0 <= ly < 2 * R:
-            _tongue(d, lx, ly, q["ang"], q["L"] * (1 - 0.4 * u) * sc, q["w"] * (1 - 0.5 * u) * sc + 0.6, (255, 255, 255, int(110 * (1 - u))), SS)
-            _tongue(d, lx + math.cos(q["ang"]) * 0.8, ly + math.sin(q["ang"]) * 0.8, q["ang"], q["L"] * (1 - 0.4 * u) * sc * 0.92, q["w"] * (1 - 0.5 * u) * sc, (8, 8, 12, int(220 * (1 - u))), SS)
+            _tongue(d, lx, ly, q["ang"], q["L"] * (1 - 0.4 * u) * sc, q["w"] * (1 - 0.5 * u) * sc + 0.6, ((255, 120, 130) if FBRED else (255, 255, 255)) + (int(110 * (1 - u)),), SS)
+            _tongue(d, lx + math.cos(q["ang"]) * 0.8, ly + math.sin(q["ang"]) * 0.8, q["ang"], q["L"] * (1 - 0.4 * u) * sc * 0.92, q["w"] * (1 - 0.5 * u) * sc, ((200, 20, 40) if FBRED else (8, 8, 12)) + (int(220 * (1 - u)),), SS)
     for i in range(6, -1, -1):   # flame tongues: white rim first, black body on top, each wobbling on its own
         L = (15 + i * 4.2) * (1 + 0.35 * _nz(t * 2.6, i * 3.1 + k)) * sc; w = (8.6 - i * 0.6) * sc; da = 0.5 * _nz(t * 2.1, i + 20 + k) * (1 if i % 2 else -1)
-        _tongue(d, cx + math.cos(ang) * 1.6, cy + math.sin(ang) * 1.6, ang + da, L + 1.2, w + 0.8, (240, 244, 255, 170), SS)
-        _tongue(d, cx + math.cos(ang) * 1.2, cy + math.sin(ang) * 1.2, ang + da, L, w, (4, 4, 8, 250), SS)
+        _tongue(d, cx + math.cos(ang) * 1.6, cy + math.sin(ang) * 1.6, ang + da, L + 1.2, w + 0.8, ((255, 140, 150, 190) if FBRED else (240, 244, 255, 170)), SS)
+        _tongue(d, cx + math.cos(ang) * 1.2, cy + math.sin(ang) * 1.2, ang + da, L, w, ((225, 25, 45, 245) if FBRED else (4, 4, 8, 250)), SS)
     lay = lay.filter(ImageFilter.GaussianBlur(0.35 * SS)).resize((2 * R, 2 * R), Image.LANCZOS)
     g = Image.new("RGBA", (2 * R, 2 * R), (0, 0, 0, 0)); gd = ImageDraw.Draw(g)   # white core + soft halo
     fl = 1 + 0.12 * _nz(t, 3 + k); 
-    for rr, a in ((8.5 * fl * sc, 35), (6.5 * fl * sc, 80), (4.8 * fl * sc, 255)): gd.ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=(255, 255, 255, a))
+    for rr, a, col in ((8.5 * fl * sc, 45, (255, 60, 75) if FBRED else (255, 255, 255)), (6.5 * fl * sc, 110, (255, 80, 95) if FBRED else (255, 255, 255)), (4.8 * fl * sc, 255, (255, 190, 195) if FBRED else (255, 255, 255))): gd.ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=col + (a,))
     g = g.filter(ImageFilter.GaussianBlur(1.4)); lay.alpha_composite(g)
     fr.alpha_composite(lay, box)
 def hanzo_lift(f):
@@ -111,9 +113,9 @@ for i in range(int(TOT * FPS)):
             for wq in q.get("wisps", []): wq["age"] += 1 / FPS; wq["x"] -= math.cos(wq["ang"]) * 0; wq["y"] -= 9 / FPS
             u = (t - q["t0"]) / FB_DUR
             if 0 <= u <= 1:
-                amp = 16 * math.sin(math.pi * u); w = q["ph"] + u * 2 * math.pi * 1.6   # braid: same helix, phases 120 deg apart, wraps 1.6 turns, tight at both ends
+                amp = BRAID * math.sin(math.pi * u); w = q["ph"] + u * 2 * math.pi * 1.6   # braid: same helix, phases 120 deg apart, wraps 1.6 turns, tight at both ends
                 off = amp * math.sin(w); x = src[0] + ux * L * u + nx * off; y = src[1] + uy * L * u + ny * off
-                du = 0.01; amp2 = 16 * math.sin(math.pi * min(1, u + du)); off2 = amp2 * math.sin(q["ph"] + min(1, u + du) * 2 * math.pi * 1.6)
+                du = 0.01; amp2 = BRAID * math.sin(math.pi * min(1, u + du)); off2 = amp2 * math.sin(q["ph"] + min(1, u + du) * 2 * math.pi * 1.6)
                 x2 = src[0] + ux * L * min(1, u + du) + nx * off2; y2 = src[1] + uy * L * min(1, u + du) + ny * off2
                 depth = math.cos(w)   # the strand 'behind' is a touch smaller / dimmer so they read as twisting round each other
                 if CODEFB:
