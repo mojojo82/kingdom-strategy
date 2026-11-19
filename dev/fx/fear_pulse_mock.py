@@ -76,6 +76,13 @@ _CUT = os.path.join(ROOT, "art/originals/heroes/siphon/fx/cut")
 PUFFS = []; ESTRIP = None; LINKS = {}
 CLAWS = {}
 if HZFX == "claws": CLAWS = {k_: Image.open(os.path.join(_CUT, "claw_%s.png" % k_)).convert("RGBA") for k_ in ("open", "closed")}
+def portal_edge_fade(h, w, top=740, bot=820, x0=24, x1=110):
+    """Ground smoke burst of the portal clip spreads past the clip's sides (v2 frames 19-54, rows below ~840): fade alpha to 0 toward the left /
+    right edges, only in the ground band (rows below top..bot), so the smoke dissolves softly instead of being cut. The hand / ring (x >= 118) is untouched."""
+    sm = lambda e0, e1, v: (lambda u: u * u * (3 - 2 * u))(np.clip((v - e0) / (e1 - e0), 0, 1))
+    xs = np.arange(w, dtype=np.float32); side = sm(x0, x1, np.minimum(xs, w - 1 - xs))
+    band = sm(top, bot, np.arange(h, dtype=np.float32))[:, None]
+    return 1 - band * (1 - side[None, :])
 PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
 if HZFX == "portal":
     import glob as _g3, tempfile as _tf3
@@ -83,7 +90,9 @@ if HZFX == "portal":
     for _f in sorted(_g3.glob(os.path.join(_t3, "*.png"))):
         _a = np.asarray(Image.open(_f).convert("RGB")).astype(np.float32); _M = np.array([11.0, 230.0, 10.0])
         _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _al = np.clip(1 - (_d - 20) / (180 - 20), 0, 1)
-        _c = np.clip((_a - (1 - _al[..., None]) * _M) / np.maximum(_al[..., None], 1e-3), 0, 255); _c[..., 1] = np.minimum(_c[..., 1], _c[..., 2] + 6); _al[_al < 0.04] = 0
+        _c = np.clip((_a - (1 - _al[..., None]) * _M) / np.maximum(_al[..., None], 1e-3), 0, 255); _c[..., 1] = np.minimum(_c[..., 1], _c[..., 2] + 6)
+        if os.environ.get("PORTALFADE", "1") == "1": _al = _al * portal_edge_fade(*_al.shape)
+        _al[_al < 0.04] = 0
         PORTAL.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA"))
 CLAWANIM = []   # CLAWANIM=1: the Atlas claw loop (fx/claw_loop_v1.mp4, keyed) instead of the two still poses
 if HZFX == "claws" and os.environ.get("CLAWANIM") == "1":
