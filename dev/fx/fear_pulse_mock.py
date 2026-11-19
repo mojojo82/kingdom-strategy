@@ -18,6 +18,7 @@ HZBURST = os.environ.get("HZBURST") == "1"   # release burst: one big red echo +
 HZTHREAD = os.environ.get("HZTHREAD") == "1" # a thin red thread from the eye in Baelgor's sword to him, throbbing with the beats
 HZEYE = os.environ.get("HZEYE") == "1"       # the eye (fear_eye_white_v1 tinted red) opens above him, watches, pulses on beats, blinks shut at release
 HZFX = os.environ.get("HZFX", "")   # cracks | chains | slash : extra effect on the frozen hero (on top of HZECHO if set)
+DARKE = os.environ.get("DARKE") == "1"   # dark energy (ChatGPT smoke puffs + tileable energy strip, animated in code) from the sword eye to him, swirling round him
 EYEIMG = None
 if HZEYE:
     _e = Image.open(os.path.join(ROOT, "art/originals/heroes/siphon/fx/fear_eye_white_v1.png")).convert("RGBA"); _e = _e.resize((46, round(46 * _e.height / _e.width)), Image.LANCZOS)
@@ -71,6 +72,81 @@ def make_cracks(seed):   # a branching crack pattern (list of segments with the 
     for k in range(5): grow(0, 0, k * 2 * math.pi / 5 + r.uniform(-0.3, 0.3), r.uniform(22, 34), 0, 0)
     return segs
 CRACKS = make_cracks(9); SHARDS = [(_rnd.Random(k).uniform(0, 6.28), _rnd.Random(k + 50).uniform(60, 160), _rnd.Random(k + 90).uniform(3, 7)) for k in range(16)]
+_CUT = os.path.join(ROOT, "art/originals/heroes/siphon/fx/cut")
+PUFFS = []; ESTRIP = None; LINKS = {}
+if DARKE or HZFX == "chains2":
+    PUFFS = [Image.open(os.path.join(_CUT, "puff_%02d.png" % i)).convert("RGBA") for i in range(16)]
+    _es = Image.open(os.path.join(_CUT, "energy_strip.png")).convert("RGBA"); ESTRIP = _es.resize((round(_es.width * 26 / _es.height), 26), Image.LANCZOS)
+    for n_ in ("link_face_0", "link_edge_0", "link_face_1", "link_edge_1"): _l = Image.open(os.path.join(_CUT, n_ + ".png")).convert("RGBA"); LINKS[n_] = _l.resize((max(1, round(_l.width * 11 / _l.height)), 11), Image.LANCZOS)
+_PR = _rnd.Random(3); PST = []   # live smoke puffs
+def _puff(fr, x, y, size, rot, alpha, idx):
+    im = PUFFS[idx % 16]; sc = size / max(im.width, im.height); im = im.resize((max(1, round(im.width * sc)), max(1, round(im.height * sc))), Image.LANCZOS).rotate(rot, resample=Image.BICUBIC, expand=True)
+    if alpha < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * alpha)))
+    fr.alpha_composite(im, (round(x - im.width / 2), round(y - im.height / 2))) if x - im.width / 2 >= 0 and y - im.height / 2 >= 0 else fr.paste(im, (round(x - im.width / 2), round(y - im.height / 2)), im)
+def _stream(fr, t, S, C, fin):   # three energy ribbons: the strip texture scrolled toward him, bent into a travelling wave, tapered at both ends
+    L = math.hypot(C[0] - S[0], C[1] - S[1]); Li = max(4, round(L)); ang = math.degrees(math.atan2(C[1] - S[1], C[0] - S[0]))
+    for r_ in range(3):
+        H = ESTRIP.height; off = int((t * 240 + r_ * 400) % ESTRIP.width); reps = (Li + off) // ESTRIP.width + 2
+        tile = Image.new("RGBA", (ESTRIP.width * reps, H)); [tile.paste(ESTRIP, (k * ESTRIP.width, 0)) for k in range(reps)]
+        strip = tile.crop((ESTRIP.width * reps - off - Li, 0, ESTRIP.width * reps - off, H))   # scrolls toward +x (toward him)
+        amp = 14 + 6 * r_; ph = r_ * 2.1; pad = int(amp) + 4; band = Image.new("RGBA", (Li, H + 2 * pad))
+        A = np.asarray(strip).astype(np.float32); out = np.zeros((H + 2 * pad, Li, 4), np.float32)
+        for x in range(0, Li, 2):
+            u = x / Li; taper = max(0.0, math.sin(math.pi * min(1, u * 1.08))) ** 0.7 * (0.9 - 0.15 * r_); dy = int(pad + amp * math.sin(math.pi * u) * math.sin(u * 5 + ph + t * 3.2))
+            col = A[:, x:x + 2, :].copy(); col[..., 3] *= taper * fin * (0.85 if r_ == 0 else 0.55); out[dy:dy + H, x:x + col.shape[1], :] = col
+        band = Image.fromarray(out.astype(np.uint8), "RGBA").rotate(-ang, resample=Image.BICUBIC, expand=True)
+        cx_, cy_ = (S[0] + C[0]) / 2, (S[1] + C[1]) / 2; fr.alpha_composite(band, (max(0, round(cx_ - band.width / 2)), max(0, round(cy_ - band.height / 2))))
+def fx_back(fr, t, C, bb, beat):
+    if not (DARKE or HZFX == "chains2") or C is None: return
+    S = (FEETX + 40, FEETY - 34); on = IMP <= t < IMP + STUN; fin = (min(1, (t - IMP) / 0.3) * min(1, (IMP + STUN - t) / 0.3)) if on else 0
+    if DARKE:
+        if on:
+            for _ in range(1): PST.append({"u": 0, "spd": _PR.uniform(0.9, 1.4), "lat": _PR.uniform(-1, 1), "ph": _PR.uniform(0, 6.3), "sz": _PR.uniform(16, 30), "rot": _PR.uniform(0, 360), "vr": _PR.uniform(-90, 90), "idx": _PR.randrange(16), "orb": None})
+        if fin > 0: _stream(fr, t, S, C, fin)
+        for q in PST:   # travel along the stream, then orbit round him for a while
+            if q["orb"] is None:
+                q["u"] += q["spd"] / FPS
+                if q["u"] >= 1: q["orb"] = {"a": _PR.uniform(0, 6.3), "life": 0, "max": _PR.uniform(0.6, 1.2)}
+            else: q["orb"]["life"] += 1 / FPS; q["orb"]["a"] += 4.5 / FPS
+            q["rot"] += q["vr"] / FPS
+        PST[:] = [q for q in PST if q["orb"] is None or q["orb"]["life"] < q["orb"]["max"]]
+        rr = max(14, (bb[2] - bb[0]) * 0.55) if bb else 20
+        for q in PST:
+            if q["orb"] is None:
+                u = q["u"]; L = math.hypot(C[0] - S[0], C[1] - S[1]); ux, uy = (C[0] - S[0]) / L, (C[1] - S[1]) / L; w_ = 22 * q["lat"] * math.sin(math.pi * u) * math.sin(u * 4 + q["ph"] + t * 2)
+                _puff(fr, S[0] + ux * L * u - uy * w_, S[1] + uy * L * u + ux * w_, q["sz"] * (0.6 + 0.6 * u), q["rot"], 0.6 * min(1, u * 4), q["idx"])
+            elif math.sin(q["orb"]["a"]) < 0:   # far side of the swirl: behind him
+                k_ = q["orb"]["life"] / q["orb"]["max"]; _puff(fr, C[0] + math.cos(q["orb"]["a"]) * rr, C[1] + math.sin(q["orb"]["a"]) * rr * 0.35 - 6 * k_, q["sz"] * 0.9, q["rot"], 0.7 * (1 - k_), q["idx"])
+    if HZFX == "chains2": _chains(fr, t, C, bb, beat, back=True)
+def fx_front(fr, t, C, bb, beat):
+    if not (DARKE or HZFX == "chains2") or C is None: return
+    if DARKE:
+        rr = max(14, (bb[2] - bb[0]) * 0.55) if bb else 20
+        for q in PST:
+            if q["orb"] is not None and math.sin(q["orb"]["a"]) >= 0:
+                k_ = q["orb"]["life"] / q["orb"]["max"]; _puff(fr, C[0] + math.cos(q["orb"]["a"]) * rr, C[1] + math.sin(q["orb"]["a"]) * rr * 0.35 - 6 * k_, q["sz"] * 0.9, q["rot"], 0.7 * (1 - k_), q["idx"])
+    if HZFX == "chains2": _chains(fr, t, C, bb, beat, back=False)
+def _chains(fr, t, C, bb, beat, back):   # a chain spiralling round him: links on the far side draw behind him, near side in front
+    if not bb or t < IMP: return
+    rel = t - (IMP + STUN)
+    if rel > 0.7: return
+    top, bot = C[1] - (bb[3] - bb[1]) * 0.36, C[1] + (bb[3] - bb[1]) * 0.36; R0 = (bb[2] - bb[0]) * 0.5 + 4
+    turns = 2.2; N = 58; grow = min(1, (t - IMP) / 0.55); spin = t * 1.6
+    for i in range(N):
+        s_ = i / (N - 1)
+        if s_ > grow: break
+        th = s_ * turns * 2 * math.pi + spin; R = R0 * (1 - 0.16 * beat); depth = math.sin(th)
+        x = C[0] + R * math.cos(th); y = bot + (top - bot) * s_ + 0.32 * R * depth   # seen slightly from above: each loop is a flat ellipse, near side lower
+        if (depth < 0) != back: continue
+        if rel > 0:   # snapped: links fly outward and drop
+            k_ = rel / 0.7; x += math.cos(th) * 90 * k_; y += -40 * k_ + 260 * k_ * k_
+        im = LINKS["link_face_%d" % (i // 2 % 2)] if i % 2 == 0 else LINKS["link_edge_%d" % (i // 2 % 2)]
+        dth = turns * 2 * math.pi; dx = -R * math.sin(th) * dth; dy = (top - bot) + 0.32 * R * math.cos(th) * dth; ang = math.degrees(math.atan2(dy, dx))   # follow the spiral's direction
+        sc = 1 + 0.2 * depth; im = im.resize((max(1, round(im.width * sc)), max(1, round(im.height * sc))), Image.LANCZOS).rotate(-ang + 90, resample=Image.BICUBIC, expand=True)
+        a_ = (0.6 if depth < 0 else 1.0) * (1 - max(0, rel) / 0.7)
+        if beat > 0.2: im = Image.alpha_composite(im, tint(im, (255, 60, 70), 0.35 * beat))
+        if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
+        fr.alpha_composite(im, (max(0, round(x - im.width / 2)), max(0, round(y - im.height / 2))))
 def hanzo_lift(f):
     P = 80; T = 0
     if 6 <= f < 35: u = (f - 6) / 29; T = P * (1 - (1 - u) ** 2)
@@ -144,7 +220,10 @@ for i in range(int(TOT * FPS)):
                 if 0 <= pp < 1: fl = max(fl, (1 - pp) ** 1.5)
             if fl > 0: hs2 = Image.alpha_composite(hs2, tint(hs, GCOL, 0.65 * fl))
             hs = hs2
+        _beat = max([0] + [(1 - (t - b) / 0.35) for b in HZ_BEATS if 0 <= t - b < 0.35]); _bbw = (hx + _bb[0], hy + _bb[1], hx + _bb[2], hy + _bb[3]) if _bb else None
+        fx_back(fr, t, HZ_C[0], _bbw, _beat)
         fr.alpha_composite(hs, (hx, max(0, hy))) if hy >= 0 else fr.paste(hs, (hx, hy), hs)
+        fx_front(fr, t, HZ_C[0], _bbw, _beat)
         if _bb and HZ_C[0]:
             ccx, ccy = HZ_C[0]; ov = Image.new("RGBA", fr.size, (0, 0, 0, 0)); od = ImageDraw.Draw(ov)
             beat = max([0] + [(1 - (t - b) / 0.35) for b in HZ_BEATS if 0 <= t - b < 0.35])
