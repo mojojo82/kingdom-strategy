@@ -10,7 +10,8 @@ from PIL import Image, ImageEnhance, ImageDraw, ImageFilter
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 BGP, OUT = sys.argv[1], sys.argv[2]; os.makedirs(os.path.join(OUT, "f"), exist_ok=True)
 FIRE = len(sys.argv) > 5 and sys.argv[5] in ("1", "2", "3"); FBRED = len(sys.argv) > 5 and sys.argv[5] == "3"   # 3 = code fireballs in the pulse red
-BRAID = float(os.environ.get("BRAID", "16"))   # braid spread (px on this 2x canvas)
+BRAID = float(os.environ.get("BRAID", "16"))
+HZECHO = os.environ.get("HZECHO") == "1"   # the frozen hero does his own heartbeat echo (red ghost copies of himself) for the whole stun   # braid spread (px on this 2x canvas)
 CODEFB = len(sys.argv) > 5 and sys.argv[5] in ("2", "3")   # 2 = code-drawn fireballs (white core, black flame tongues with a white rim, black wisps)
 GCOL = tuple(int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else "225,25,45").split(",")); HZ = len(sys.argv) > 4 and sys.argv[4] == "1"
 hzs = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_skill_anim_v2.webp")).convert("RGBA"); hzi = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_anim_v1.webp")).convert("RGBA")
@@ -70,6 +71,7 @@ random.seed(5)
 FB_DUR = 0.75; GROUPS = [IMP + 0.55, IMP + 1.45, IMP + 2.35]   # three braided groups while he hangs there
 FBS = [{"t0": g + k * 0.03, "ph": k * 2 * math.pi / 3, "fi": (k * 17 + gi * 5) % 120} for gi, g in enumerate(GROUPS) for k in range(3)]
 HZ_C = [None]
+HZ_BEATS = [IMP + 0.45 + n * 0.95 + d for n in range(4) for d in (0, 0.22)]   # thump-thump pairs through the 4 s stun
 def hanzo_at(t):   # (image, k, ax, ay, lift px at scale 1)
     if t < HZ_T0: return hzi.crop((0, 0, 274, 141)), 2 * 37.6 / 141, 82.83, 135.65, 0
     e = t - HZ_T0
@@ -98,7 +100,16 @@ for i in range(int(TOT * FPS)):
     fr = bg0.copy().convert("RGBA")
     if HZ:  # drawn before the darkening - Fear's effect on the target is Harley's call, so he only freezes
         him, hk, hax, hay, hl = hanzo_at(t); hs = him.transpose(Image.FLIP_LEFT_RIGHT).resize((round(him.width * hk), round(him.height * hk)), Image.LANCZOS)
-        hx = round(HZ_X - (him.width - hax) * hk); hy = round(FEETY - 2 * hl - hay * hk); _bb = hs.getchannel("A").getbbox(); HZ_C[0] = (hx + (_bb[0] + _bb[2]) / 2, hy + (_bb[1] + _bb[3]) / 2) if _bb else None; fr.alpha_composite(hs, (hx, max(0, hy))) if hy >= 0 else fr.paste(hs, (hx, hy), hs)
+        hx = round(HZ_X - (him.width - hax) * hk); hy = round(FEETY - 2 * hl - hay * hk); _bb = hs.getchannel("A").getbbox(); HZ_C[0] = (hx + (_bb[0] + _bb[2]) / 2, hy + (_bb[1] + _bb[3]) / 2) if _bb else None;
+        if HZECHO and _bb:
+            for b in HZ_BEATS:
+                pp = (t - b) / BEAT_LEN
+                for j in range(3):
+                    qq = pp - j * 0.18
+                    if 0 <= qq < 1:
+                        sc_ = 1 + 0.8 * qq; gimg = tint(hs, GCOL, 0.7 * (1 - qq) ** 1.3).resize((round(hs.width * sc_), round(hs.height * sc_)), Image.LANCZOS); ccx, ccy = HZ_C[0]
+                        gx, gy = round(ccx + (hx - ccx) * sc_), round(ccy + (hy - ccy) * sc_); fr.paste(gimg, (gx, gy), gimg) if gx < 0 or gy < 0 else fr.alpha_composite(gimg, (gx, gy))
+        fr.alpha_composite(hs, (hx, max(0, hy))) if hy >= 0 else fr.paste(hs, (hx, hy), hs)
     if dark > 0:
         g = ImageEnhance.Color(fr.convert("RGB")).enhance(1 - 0.85 * dark); g = ImageEnhance.Brightness(g).enhance(1 - 0.55 * dark); fr = g.convert("RGBA")
     bb = spr.getchannel('A').point(lambda v: 255 if v > 40 else 0).getbbox(); cx, cy = px + (bb[0] + bb[2]) / 2, py + (bb[1] + bb[3]) / 2   # his own body centre this frame
