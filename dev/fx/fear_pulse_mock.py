@@ -223,8 +223,41 @@ def _carve(fr, t, C):
     glow = Image.new("RGBA", fr.size, (255, 30, 45, 0)); glow.putalpha(ov.filter(ImageFilter.GaussianBlur(3.5)).point(lambda v: int(min(255, v * 1.8) * fade)))
     hot = Image.new("RGBA", fr.size, (255, 120 + int(110 * flash), 100 + int(110 * flash), 0)); hot.putalpha(core.point(lambda v: int(min(255, v * 1.3) * fade)))
     lay = Image.alpha_composite(glow, hot); CARVE_AT["lay"] = (t, lay); fr.alpha_composite(lay)
+EMBERS = os.environ.get("EMBERS") == "1"; EMB = []; EMB_R = None
+def _embers(fr, t, di, sc, x0, y0):
+    """EMBERS=1 (Harley 19 Nov): glowing embers lift off the ring while the portal shrinks shut, plus a small burst as it closes."""
+    global EMB_R
+    if EMB_R is None: EMB_R = _rnd.Random(11)
+    R = EMB_R; dt = 1 / FPS
+    if di is not None:
+        K = len(PORTALDN) - 1; cx, cy = x0 + 380 * sc, y0 + 947 * sc + PORTAL_DY
+        rr = float(np.interp(di, [84, 90, 93, 96, 99, 102], [235, 215, 180, 128, 89, 40])) * sc
+        if di >= 86 and not CARVE_AT.get("emb_done"):
+            for _ in range(3 + (1 if R.random() < 0.5 else 0)):
+                a = R.uniform(0, 2 * math.pi); EMB.append([cx + math.cos(a) * rr, cy + math.sin(a) * rr * 0.19, R.uniform(-14, 14), R.uniform(-75, -30), 0.0, R.uniform(0.6, 1.3), R.uniform(1.2, 2.4), R.uniform(0, 9)])
+            if di >= K - 1:   # it shuts: one last puff of embers from the middle
+                for _ in range(26):
+                    a = R.uniform(math.pi * 1.05, math.pi * 1.95); sp = R.uniform(30, 110)
+                    EMB.append([cx + R.uniform(-6, 6), cy, math.cos(a) * sp, math.sin(a) * sp, 0.0, R.uniform(0.7, 1.5), R.uniform(1.2, 2.8), R.uniform(0, 9)])
+                CARVE_AT["emb_done"] = True
+    if not EMB: return
+    ov = Image.new("RGBA", fr.size, (0, 0, 0, 0)); gl = Image.new("RGBA", fr.size, (0, 0, 0, 0)); do, dg = ImageDraw.Draw(ov), ImageDraw.Draw(gl)
+    for q in EMB:
+        q[4] += dt; q[0] += q[2] * dt + 6 * math.sin(q[4] * 5 + q[7]) * dt; q[1] += q[3] * dt; q[3] *= 0.985; q[2] *= 0.97
+        u = q[4] / q[5]
+        if u >= 1: continue
+        fl = 0.65 + 0.35 * math.sin(q[4] * 23 + q[7] * 3); a = (1 - u) ** 1.2 * fl
+        col = (255, int(200 - 150 * u), int(90 - 70 * u)); r = q[6] * (1 - 0.4 * u)
+        dg.ellipse([q[0] - r * 3, q[1] - r * 3, q[0] + r * 3, q[1] + r * 3], fill=(255, 40, 30, int(110 * a)))
+        do.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], fill=col + (int(255 * a),))
+    EMB[:] = [q for q in EMB if q[4] < q[5]]
+    fr.alpha_composite(gl.filter(ImageFilter.GaussianBlur(2.5))); fr.alpha_composite(ov)
 def _portal(fr, t, C, bb, beat, back):
     if back: _carve(fr, t, C)
+    if EMBERS and not back and PORTALDN and _PORTAL_AT and t >= IMP + STUN:
+        _rel = t - (IMP + STUN); DS, DC, DK = (float(v) for v in os.environ.get("PORTALDSPD", "4,2,90").split(","))
+        _tk = DK / (24 * DS); _di = int(_rel * 24 * DS) if _rel < _tk else int(DK + (_rel - _tk) * 24 * DC)
+        _sc, _x0, _y0 = _PORTAL_AT["v"]; _embers(fr, t, _di if _di < len(PORTALDN) else None, _sc, _x0, _y0)
     PD = 0.22 if CARVE else 0.0
     if not PORTAL or t < IMP + PD: return
     SPD = 1.5; e = (t - IMP - PD) * 24 * SPD; n = len(PORTAL); fi = min(n - 1, int(e)); rel = t - (IMP + STUN)
@@ -320,7 +353,7 @@ FPS = 30; PRE, POST = 0.6, 0.8; TOT = PRE + N / FPS_S + POST; IMP = PRE + 28 / F
 BEATS = [IMP, IMP + 0.22, IMP + 1.0, IMP + 1.22]; BEAT_LEN = 0.45
 HZ_X = 600; HZ_FREEZE_F = 20; HZ_T0 = IMP - HZ_FREEZE_F / 24; STUN = 4.0
 if HZ: TOT = max(TOT, IMP + STUN + (52 - HZ_FREEZE_F) / 24 + 0.6)
-if PORTALDN: TOT = max(TOT, IMP + STUN + len(PORTALDN) / 36 + 0.3)
+if PORTALDN: TOT = max(TOT, IMP + STUN + len(PORTALDN) / 36 + (1.4 if EMBERS else 0.3))
 import math, random
 random.seed(5)
 FB_DUR = 0.75; GROUPS = [IMP + 0.55, IMP + 1.45, IMP + 2.35]   # three braided groups while he hangs there
