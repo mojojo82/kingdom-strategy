@@ -6116,3 +6116,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Noted: ChatGPT gave the mountains / foothills a small grass ground plate (the old ones had none); Field Sentinel and the Galleon came out a bit lighter.
 - Checked headless (dev/tests/city_skin_mock.js GUILD=3 all skins; DECOR=... decorations on the map): all draw on their tiles, no page errors.
   art/originals/remake44/map_skins_v1739.png, map_decor_v1739.png. Not on a phone.
+
+## v1740 - City skins back to the originals (20 Nov 2026, TEST)
+- Harley: "The city skins you shouldnt replace. Ill remake those manually myself". CITY_SKINS + CITY_ART_BAKED restored exactly as in v1738 (old
+  pictures and old foot points); the v1739 skin files removed from test/assets. The ChatGPT skin redraws stay in art/originals/remake44/gpt/ for
+  reference only. The v1739 map decorations stay in.
