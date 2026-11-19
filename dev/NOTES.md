@@ -6138,3 +6138,9 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
   New CITY_SKINS.frostgate3 "Frost Gate III" (scale 1.3 like the other Frost Gates), file test/assets/city-skins-frostgate3-dd266eae.webp (600 px),
   in CITY_SKIN_ORDER, free; CITY_ART_BAKED foot point measured with the game's rule at sin44. Base water: default (not tuned).
 - Checked headless on the map as my city next to Titan / Watchtower / Frost Gate II: no errors. Not on a phone.
+
+## v1743 (20 Nov 2026) - Sea Furnace city skin, new default for new players and bots
+- Harley picked Furnace v4 style 1 (weathered restyle of his 44 deg 3D model) and named it "Sea Furnace". New `CITY_SKINS.seafurnace` (test/assets/city-skins-seafurnace-495ad41a.webp, 600 px), first in `CITY_SKIN_ORDER`, foot point baked in `CITY_ART_BAKED` (fx 0.5014, fy 0.6585). Originals: art/originals/skins/furnace44/ (gpt_v4_style1.png, v4_style1_keyed.png).
+- New `CITY_SKIN_DEFAULT = "seafurnace"` replaces the hard-coded "tower" fallback in `mapCitySkin`, `myCitySkinId()` and `citySkinIdAt()`; `OWNER_DEFAULTS.kingdomMapCitySkin_v1` is now "seafurnace" (it was seeding "tower" on every new device).
+- Bots: bot city docs never store a skin (`sk`), they always used the fallback - so every live bot now shows Sea Furnace with no server change. Real players who already have a skin saved on their city (including "tower") keep it.
+- Tested headless (not on a phone): new account starts on seafurnace, a city with no saved skin shows seafurnace, map mockup OK, no console errors.
