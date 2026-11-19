@@ -84,16 +84,21 @@ def portal_edge_fade(h, w, top=740, bot=820, x0=24, x1=110):
     band = sm(top, bot, np.arange(h, dtype=np.float32))[:, None]
     return 1 - band * (1 - side[None, :])
 PORTAL = []   # HZFX=portal: the Atlas portal-grab clip (fx/portal_grab_v1.mp4, keyed): portal opens under him, the hand rises and grabs him
-if HZFX == "portal":
+PORTALDN = []   # PORTALDESC=clip.mp4: the hand sinks back into the portal and it closes (fx/portal_descend_v1.mp4), played after the stun
+def _load_portal(name):
     import glob as _g3, tempfile as _tf3
-    _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + os.environ.get("PORTALCLIP", "portal_grab_v1.mp4")), os.path.join(_t3, "%04d.png")], check=True)
+    out = []; _t3 = _tf3.mkdtemp(); subprocess.run(["ffmpeg", "-v", "error", "-i", os.path.join(ROOT, "art/originals/heroes/siphon/fx/" + name), os.path.join(_t3, "%04d.png")], check=True)
     for _f in sorted(_g3.glob(os.path.join(_t3, "*.png"))):
         _a = np.asarray(Image.open(_f).convert("RGB")).astype(np.float32); _M = np.array([11.0, 230.0, 10.0])
         _d = _a[..., 1] - np.maximum(_a[..., 0], _a[..., 2]); _al = np.clip(1 - (_d - 20) / (180 - 20), 0, 1)
         _c = np.clip((_a - (1 - _al[..., None]) * _M) / np.maximum(_al[..., None], 1e-3), 0, 255); _c[..., 1] = np.minimum(_c[..., 1], _c[..., 2] + 6)
         if os.environ.get("PORTALFADE", "1") == "1": _al = _al * portal_edge_fade(*_al.shape)
         _al[_al < 0.04] = 0
-        PORTAL.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA"))
+        out.append(Image.fromarray(np.dstack([_c, _al * 255]).astype(np.uint8), "RGBA"))
+    return out
+if HZFX == "portal":
+    PORTAL = _load_portal(os.environ.get("PORTALCLIP", "portal_grab_v1.mp4"))
+    if os.environ.get("PORTALDESC"): PORTALDN = _load_portal(os.environ["PORTALDESC"])
 CLAWANIM = []   # CLAWANIM=1: the Atlas claw loop (fx/claw_loop_v1.mp4, keyed) instead of the two still poses
 if HZFX == "claws" and os.environ.get("CLAWANIM") == "1":
     import glob as _g, tempfile as _tf
@@ -149,19 +154,33 @@ def _claws(fr, t, C, bb, beat, back):   # shadow arms rise out of the ground and
     if back:
         for k_ in range(3):   # smoke at the roots
             _puff(fr, C[0] - 50 + k_ * 50 + 6 * math.sin(t * 3 + k_), ground - 6, 30, t * 40 + k_ * 90, 0.55 * rise, 3 + k_ * 4)
+_PORTAL_AT = {}
+def _comp(fr, im, x0, y0):
+    if x0 >= 0 and y0 >= 0: fr.alpha_composite(im, (x0, y0))
+    else: fr.paste(im, (x0, y0), im)
 def _portal(fr, t, C, bb, beat, back):
     if not PORTAL or t < IMP: return
     SPD = 1.5; e = (t - IMP) * 24 * SPD; n = len(PORTAL); fi = min(n - 1, int(e)); rel = t - (IMP + STUN)
+    GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(","))   # in the clip: where the fist closes / where the portal lies (768x1152)
+    if rel >= 0 and PORTALDN:   # after the stun: he is let go, the fist sinks back into the portal and it closes (behind him), same spot and size
+        if not back or not _PORTAL_AT: return
+        di = int(rel * 24 * SPD)
+        if di >= len(PORTALDN): return
+        sc, x0, y0 = _PORTAL_AT["v"]; im = PORTALDN[di].resize((round(768 * sc), round(1152 * sc)), Image.LANCZOS)
+        a_ = min(1.0, (len(PORTALDN) - 1 - di) / 8)   # last few frames fade (the crack goes away)
+        if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
+        _comp(fr, im, x0, y0); return
     a_ = 1.0 if rel < 0 else max(0, 1 - rel / 0.4)
-    if a_ <= 0: return
+    if a_ <= 0 or C is None: return
     front = fi >= int(os.environ.get("PORTALFRONT", "95"))   # once the fist closes it is drawn over him (grabbing); before that the rising arm is behind him
     if front == back: return
-    im = PORTAL[fi]; GRABY, PORTY = (float(v) for v in os.environ.get("PORTALY", "420,1085").split(","))   # in the clip: where the fist closes / where the portal lies (768x1152)
+    im = PORTAL[fi]
     sc = (FEETY - C[1]) / (PORTY - GRABY); im = im.resize((round(im.width * sc), round(im.height * sc)), Image.LANCZOS)
     if a_ < 1: im.putalpha(im.getchannel("A").point(lambda v: int(v * a_)))
-    x0 = round(C[0] - 384 * sc); y0 = round(FEETY - PORTY * sc); fr.alpha_composite(im, (max(0, x0), max(0, y0))) if x0 >= 0 and y0 >= 0 else fr.paste(im, (x0, y0), im)
+    x0 = round(C[0] - 384 * sc); y0 = round(FEETY - PORTY * sc); _PORTAL_AT["v"] = (sc, x0, y0)
+    _comp(fr, im, x0, y0)
 def fx_back(fr, t, C, bb, beat):
-    if HZFX == "portal" and C is not None: _portal(fr, t, C, bb, beat, back=True)
+    if HZFX == "portal": _portal(fr, t, C, bb, beat, back=True)
     if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=True)
     if not (DARKE or HZFX == "chains2") or C is None: return
     S = (FEETX + 40, FEETY - 34); on = IMP <= t < IMP + STUN; fin = (min(1, (t - IMP) / 0.3) * min(1, (IMP + STUN - t) / 0.3)) if on else 0
@@ -185,7 +204,7 @@ def fx_back(fr, t, C, bb, beat):
                 k_ = q["orb"]["life"] / q["orb"]["max"]; _puff(fr, C[0] + math.cos(q["orb"]["a"]) * rr, C[1] + math.sin(q["orb"]["a"]) * rr * 0.35 - 6 * k_, q["sz"] * 0.9, q["rot"], 0.7 * (1 - k_), q["idx"])
     if HZFX == "chains2": _chains(fr, t, C, bb, beat, back=True)
 def fx_front(fr, t, C, bb, beat):
-    if HZFX == "portal" and C is not None: _portal(fr, t, C, bb, beat, back=False)
+    if HZFX == "portal": _portal(fr, t, C, bb, beat, back=False)
     if HZFX == "claws" and C is not None: _claws(fr, t, C, bb, beat, back=False)
     if not (DARKE or HZFX == "chains2") or C is None: return
     if DARKE:
@@ -232,6 +251,7 @@ FPS = 30; PRE, POST = 0.6, 0.8; TOT = PRE + N / FPS_S + POST; IMP = PRE + 28 / F
 BEATS = [IMP, IMP + 0.22, IMP + 1.0, IMP + 1.22]; BEAT_LEN = 0.45
 HZ_X = 600; HZ_FREEZE_F = 20; HZ_T0 = IMP - HZ_FREEZE_F / 24; STUN = 4.0
 if HZ: TOT = max(TOT, IMP + STUN + (52 - HZ_FREEZE_F) / 24 + 0.6)
+if PORTALDN: TOT = max(TOT, IMP + STUN + len(PORTALDN) / 36 + 0.3)
 import math, random
 random.seed(5)
 FB_DUR = 0.75; GROUPS = [IMP + 0.55, IMP + 1.45, IMP + 2.35]   # three braided groups while he hangs there
