@@ -11,7 +11,8 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 BGP, OUT = sys.argv[1], sys.argv[2]; os.makedirs(os.path.join(OUT, "f"), exist_ok=True)
 FIRE = len(sys.argv) > 5 and sys.argv[5] in ("1", "2", "3"); FBRED = len(sys.argv) > 5 and sys.argv[5] == "3"   # 3 = code fireballs in the pulse red
 BRAID = float(os.environ.get("BRAID", "16"))
-HZECHO = os.environ.get("HZECHO") == "1"   # the frozen hero does his own heartbeat echo (red ghost copies of himself) for the whole stun   # braid spread (px on this 2x canvas)
+HZECHO = os.environ.get("HZECHO") == "1"
+HZTINT = os.environ.get("HZTINT") == "1"   # fear tint: the frozen hero goes dark + drained of colour for the stun, red flash on each of his heartbeats   # the frozen hero does his own heartbeat echo (red ghost copies of himself) for the whole stun   # braid spread (px on this 2x canvas)
 CODEFB = len(sys.argv) > 5 and sys.argv[5] in ("2", "3")   # 2 = code-drawn fireballs (white core, black flame tongues with a white rim, black wisps)
 GCOL = tuple(int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else "225,25,45").split(",")); HZ = len(sys.argv) > 4 and sys.argv[4] == "1"
 hzs = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_skill_anim_v2.webp")).convert("RGBA"); hzi = Image.open(os.path.join(ROOT, "art/heroes/hanzo/hanzo_anim_v1.webp")).convert("RGBA")
@@ -109,6 +110,16 @@ for i in range(int(TOT * FPS)):
                     if 0 <= qq < 1:
                         sc_ = 1 + 0.8 * qq; gimg = tint(hs, GCOL, 0.7 * (1 - qq) ** 1.3).resize((round(hs.width * sc_), round(hs.height * sc_)), Image.LANCZOS); ccx, ccy = HZ_C[0]
                         gx, gy = round(ccx + (hx - ccx) * sc_), round(ccy + (hy - ccy) * sc_); fr.paste(gimg, (gx, gy), gimg) if gx < 0 or gy < 0 else fr.alpha_composite(gimg, (gx, gy))
+        if HZTINT and IMP <= t < IMP + STUN:
+            fin = min(1, (t - IMP) / 0.15) * min(1, (IMP + STUN - t) / 0.2)   # fades in fast, fades out as the stun breaks
+            rgb = hs.convert("RGB"); rgb = ImageEnhance.Color(rgb).enhance(1 - 0.75 * fin); rgb = ImageEnhance.Brightness(rgb).enhance(1 - 0.45 * fin)
+            hs2 = rgb.convert("RGBA"); hs2.putalpha(hs.getchannel("A"))
+            fl = 0
+            for b in HZ_BEATS:
+                pp = (t - b) / 0.3
+                if 0 <= pp < 1: fl = max(fl, (1 - pp) ** 1.5)
+            if fl > 0: hs2 = Image.alpha_composite(hs2, tint(hs, GCOL, 0.65 * fl))
+            hs = hs2
         fr.alpha_composite(hs, (hx, max(0, hy))) if hy >= 0 else fr.paste(hs, (hx, hy), hs)
     if dark > 0:
         g = ImageEnhance.Color(fr.convert("RGB")).enhance(1 - 0.85 * dark); g = ImageEnhance.Brightness(g).enhance(1 - 0.55 * dark); fr = g.convert("RGBA")
