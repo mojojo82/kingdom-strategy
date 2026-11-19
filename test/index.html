@@ -3219,6 +3219,9 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #mailPanel.sk-c .mtab::before, #mailPanel.sk-c .mtab.on::before { content:none !important; display:none !important; }
   #mailPanel.sk-c .mtab img.tic { height:40%; }
   #mailPanel.sk-c .mtab .tn { top:-12%; right:-6%; }
+  #mailPanel.sk-c .mtab, #mailPanel.sk-c .mtab.on { border:0; border-image:none; background:var(--mail-tab-off) center/100% 100% no-repeat; padding:0 0 2%; } #mailPanel.sk-c .mtab.on { background-image:var(--mail-tab-on); } /* v1751: whole picture at its own shape - no 9-slice seams */
+  #mailPanel.sk-c .mi { border-image:none; background:var(--mail-cardrow) center/100% 100% no-repeat; background-origin:border-box; background-clip:border-box; } /* v1751: row card drawn whole at the rows' shape (no seams) */
+  #mailPanel.sk-c .mdet { border-image:none; background:var(--mail-cardtop) top center/100% auto no-repeat, var(--mail-cardbot) bottom center/100% auto no-repeat, var(--mail-cardmid) center/100% calc(100% - var(--mw) * 0.104) no-repeat; background-origin:border-box; background-clip:border-box; } /* open mail: caps + plain middle (middle only between the caps; cap height = card width x 0.069) */
   #mailPanel.sk-c.v-detail .mht { display:flex !important; }
   #mailPanel.sk-c .mbar { top:23.3%; height:4.3%; } /* v1746 (Harley: "the claim button needs more room"): the status line + Claim all sit wholly between the tabs and the list */
   #mailPanel.sk-c .mall { padding:0.6% 5.5%; font-size:calc(var(--mw) * 0.04); line-height:1.15; }
@@ -14519,7 +14522,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1750"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1751"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21247,7 +21250,7 @@ function ksMailRender() {
   var rb = document.getElementById("mapReconBtn"); if (rb) rb.onclick = function (e) { e.stopPropagation(); setScreen("more", "recon"); }; /* v925 */
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   var p = document.getElementById("mailPanel"); if (p) {
-    [["--mail-tab-off", "assets/ui-mail-tab2off-257277c7.webp"], ["--mail-tab-on", "assets/ui-mail-tab2on-ff05c146.webp"], ["--mail-slab", "assets/ui-mail-slab2-360fe188.webp"], ["--mail-card", "assets/ui-mail-card-8efb34b3.webp"], ["--mail-dot", "assets/ui-mail-dot-679562dc.webp"], ["--mail-bookmark", "assets/ui-mail-bookmark-bb8b2fc1.webp"], ["--mail-back", "assets/ui-bag-btnback-85a898f4.webp"], ["--mail-close", "assets/ui-bag-btnclose-6e30252a.webp"]].forEach(function (v) { p.style.setProperty(v[0], "url(" + ksA(v[1], true) + ")"); }); /* v1745 Mail look c art */
+    [["--mail-cardrow", "assets/ui-mail-cardrow-83caa51f.webp"], ["--mail-cardtop", "assets/ui-mail-cardtop-9dd78a65.webp"], ["--mail-cardmid", "assets/ui-mail-cardmid-cc3d4ccf.webp"], ["--mail-cardbot", "assets/ui-mail-cardbot-b06bc591.webp"], ["--mail-tab-off", "assets/ui-mail-tab3off-4d430e6e.webp"], ["--mail-tab-on", "assets/ui-mail-tab3on-e0c9ac22.webp"], ["--mail-slab", "assets/ui-mail-slab2-360fe188.webp"], ["--mail-dot", "assets/ui-mail-dot-679562dc.webp"], ["--mail-bookmark", "assets/ui-mail-bookmark-bb8b2fc1.webp"], ["--mail-back", "assets/ui-bag-btnback-85a898f4.webp"], ["--mail-close", "assets/ui-bag-btnclose-6e30252a.webp"]].forEach(function (v) { p.style.setProperty(v[0], "url(" + ksA(v[1], true) + ")"); }); /* v1745 Mail look c art */
     function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0;
       KSM.list.forEach(function (m) { if (m.id === id && !m.claimedAt && !ksMailItems(m).length) ksMailClaim(id, true); }); } /* v939: opening a message-only mail marks it read */
     p.addEventListener("click", function (e) {

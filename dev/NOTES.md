@@ -6176,3 +6176,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - The tab bar is no longer baked into the slab (new ui-mail-slab2). Each .mtab uses the tab picture as a 9-slice border-image (corners stay crisp), .mtab.on swaps to the selected picture. Removed the v1748/49 overlay pieces, the old slab and the unused thin-card trial files.
 - Lesson for the UI kit: ask GPT for transparent PNGs first (it worked here); anything with states (tabs, buttons) = one matching pair from ONE picture, used as separate images.
 - Headless: all 5 tabs, close at PC size, no errors.
+
+## v1751 (20 Nov 2026) - Mail: no hairline seams on tabs and cards
+- Harley: "If you inspect your button there is a near 1px gap there. Looks like you chopped it there." Seen at 4x zoom: faint lines inside each tab and each mail card - the seams where the browser joins the 9 pieces of a CSS border-image.
+- Fix: no 9-slice. Tabs (dev/ui/build_mail_tab2.py) and row cards (dev/ui/build_mail_card3.py) are made at their exact on-screen shape (tabs 1.304:1, rows 3.903:1 - both sized in --mw units so the shape never changes) by stretching only the plain middle rows, then drawn whole. The open-mail card (any height) = top cap + bottom cap + plain middle band between them. New ui-mail-tab3off/on, cardrow/top/mid/bot; old tab2 and card files removed.
+- UI kit rule: don't use border-image 9-slice for painted art (seams); pre-shape the picture, or caps + plain middle.
