@@ -6121,3 +6121,14 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: "The city skins you shouldnt replace. Ill remake those manually myself". CITY_SKINS + CITY_ART_BAKED restored exactly as in v1738 (old
   pictures and old foot points); the v1739 skin files removed from test/assets. The ChatGPT skin redraws stay in art/originals/remake44/gpt/ for
   reference only. The v1739 map decorations stay in.
+
+## v1741 - First sanctuary art: a large castle complex, 6x6 tiles (20 Nov 2026, TEST)
+- Harley: "Make a sanctuary art. They should take up 4 times the grid space on the map and has it be through art size not scaled up... Make a
+  large complex castle structure" (Kingshot: big capturable structures).
+- 4 x a city's area = 6x6 tiles (a city is 3x3). ChatGPT (refs: the 44-deg furnace render, the 44-deg tile diamond, Royal Castle + Furnace II for
+  style): keep, great hall, towers, two wall rings, gatehouse + bridge, courtyards, glowing relic shrine; one big square platform = the tile diamond.
+  art/originals/sanctuary/gpt_castle_v1.png (+ keyed, game webp).
+- Squashed 0.743 -> 0.695 (ChatGPT 48 deg -> 44), kept at full size (1254 px wide) as a file, test/assets/decor-sanctuary-castle-30674871.webp
+  (lazy ksA). DECOR_SPRITES.sanctuary_castle: foot 6, scale 1 - the art's own platform spans the 6x6 block, no scale-up.
+- For now it is a decoration (Dev Tools map decor palette); capture / ownership comes later.
+- Checked headless (DECOR=sanctuary_castle in dev/tests/city_skin_mock.js): sits on its 6x6 block next to a city, no errors. castle_v1_map.png.
