@@ -6265,3 +6265,9 @@ Harley: Torvald still lags a bit when equipped; explore putting his idle into it
 Harley: FPS dips right at Fear's heartbeat on his phone; picked option 2 (no phone data to choose option 1).
 - fearDrawPulse: the full-battle "saturation" composite (grey 85 % at the beat) is replaced by an ordinary see-through grey-blue fill, rgba(88,90,104, 0.62 x beat). The darkening, Baelgor staying bright on top, his red echoes and the carve are unchanged. Same in Conquest and the Arena (shared function).
 - Measured headless, the same 150 Fear frames drawn both ways: heartbeat frames 19.8 ms -> 14.3 ms to draw, other frames 12.3 -> 11.3 ms. Look: dims and mutes, lighter/bluer than the full grey (side-by-side video sent to Harley). Option 1 (same look via a CSS desaturate filter on the canvas + Baelgor on his own overlay layer) not done.
+
+## v1766 — Clone Task's clone runs with its hero (Conquest, TEST)
+Harley: "the droid call clone in conquest doesn't use a running animation. It just moves around using a static frame" (the green clone = Clone Task).
+- Reproduced (headless, Conquest, Clone Task on Gareth, 25 s): the clone moved ~150 px and was only ever drawn "idle" - drawIdleClones always passed idle unless it was attacking; its x follows the hero.
+- Fix: the hero's drawn state, run speed and facing are kept on his vis (drawSt / drawSpd / drawFlip); the clone uses "run" with the same speed + facing whenever its hero runs, attack when it lands a hit, idle otherwise.
+- Check: while moving, the clone now matches its hero frame for frame (clone run / hero run 303, clone idle / hero idle 393, never different). Noted, not changed: the hero himself is often drawn idle while his position shifts (his own move rules), and the clone copies that.

@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1765"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1766"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29029,7 +29029,8 @@ function drawIdleClones(ctx, w, h) {
       var gt = drawGerbilFrame(ctx, x, y + 12 * hScale, gp[0], gp[1], true, hScale); if (gt == null) return;
       ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - 9, gt - 6, 18, 4.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - 8, gt - 5, 16 * Math.max(0, Math.min(1, cl.hp / cl.max)), 2.5); ctx.restore(); return;
     }
-    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, now < cm.atkUntil ? heroAttackState(cl.tpl, 0.83 + n * 0.1) : "idle", hScale, false, 0.83 + n * 0.1, 1, CLONE_TINT); /* v1503: attack2 alternates for clones too */
+    var cAtk = now < cm.atkUntil, cRun = !cAtk && tv.drawSt === "run"; /* v1766 (Harley: the clone moved around on a static frame): runs whenever its hero runs, same speed and facing */
+    drawHeroAnim(ctx, cl.tpl, x, y + 12 * hScale, cAtk ? heroAttackState(cl.tpl, 0.83 + n * 0.1) : cRun ? "run" : "idle", hScale, cRun ? !!tv.drawFlip : false, 0.83 + n * 0.1, cRun ? (tv.drawSpd || 1) : 1, CLONE_TINT); /* v1503: attack2 alternates for clones too */
     var a = HERO_ANIMS[cl.tpl], top = (y + 12 * hScale) - a.dispH * (a.sizeMul || 1) * hScale - 5, bw = 24, fr = Math.max(0, Math.min(1, cl.hp / cl.max));
     ctx.save(); ctx.fillStyle = "rgba(6,8,14,0.85)"; ctx.fillRect(x - bw / 2 - 1, top - 1, bw + 2, 5.5); ctx.fillStyle = "#3fdc6a"; ctx.fillRect(x - bw / 2, top, bw * fr, 3.5); ctx.restore();
   });
@@ -30146,6 +30147,7 @@ function drawIdleHeroSprite(ctx, w, h, key, i, frontIsPointBlank, bob) {
       var hzLift = heroLeapLift(HERO_ANIMS[key + "_skill"], performance.now() - hzL.t0) * hScale; /* v1678: Tom's high leap */
       vis.x = hzL.x; drawHeroAnim(ctx, key + "_skill", hzL.x, vis.y + 12 * hScale - hzLift, "skill", hScale, false, 0, 1); hzL.hand = { x: hzL.x, y: vis.y + 12 * hScale - hzLift }; return; }
     var heroFlip = (st === "attack" || st === "attack2" || slowRunSpd < 1) ? !!((st === "attack" || st === "attack2") && vis.flank && vis.flank.mode === "back" && !moving) : !!hf[key];
+    vis.drawSt = st; vis.drawSpd = slowRunSpd; vis.drawFlip = heroFlip; /* v1766: Clone Task's clone copies how its hero moves (it slid along in its idle pose) */
     var swSl = idleAnim.swingRun && idleAnim.swingRun[key], slamOn = st === "attack" && !flashing && swSl && swSl.slam && performance.now() < swSl.until && garethSlamReady();
     var atk2On = !slamOn && st === "attack" && !flashing && swSl && swSl.atk2 && performance.now() < swSl.until && heroAtk2Ready(key); /* v1730: Baelgor's slash */
     var animRes = slamOn ? drawGarethSlam(ctx, vis.x + hurtDx, vis.y + 12 * hScale, hScale, heroFlip, performance.now() - swSl.t0, swSl) /* v1344 */
