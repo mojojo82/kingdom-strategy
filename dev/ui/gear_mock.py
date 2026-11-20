@@ -18,9 +18,9 @@ clean = cv2.inpaint(src, mask, 9, cv2.INPAINT_TELEA)
 base = Image.fromarray(cv2.cvtColor(clean, cv2.COLOR_BGR2RGB)).convert('RGBA')
 L = lambda n: ImageFont.truetype('fonts/LilitaOne-Regular.woff', n)
 S = 112; xs = [42, W - 42 - S]; ys = [150, 300, 450]
-GEAR = [  # (icon, tier, P, stars, level, upgradable, gems)  gems: colour or None = empty socket
-    ('helm', 'gold', 'T3', 3, 121, True, ['blue'] * 3), ('armour', 'red', 'T2', 2, 94, True, ['green', 'green', None]), ('gauntlet', 'purple', 'T1', 1, 40, False, ['gold', None, None]),
-    ('gun', 'blue', 'T2', 2, 133, True, ['blue', 'blue', None]), ('ring', 'gold', 'T3', 3, 118, False, ['green', None, None]), ('amulet', 'purple', 'T2', 2, 70, True, ['purple', 'purple', None])]
+GEAR = [  # (icon, tier colour, tier label, stars, level, upgradable, gems)  Harley 20 Nov: tiers grey -> blue -> purple -> orange -> red; stars = progress inside a tier
+    ('helm', 'red', 'T5', 3, 121, True, ['blue'] * 3), ('armour', 'gold', 'T4', 2, 94, True, ['green', 'green', None]), ('gauntlet', 'grey', 'T1', 1, 40, False, ['gold', None, None]),
+    ('gun', 'purple', 'T3', 2, 133, True, ['blue', 'blue', None]), ('ring', 'blue', 'T2', 3, 118, False, ['green', None, None]), ('amulet', 'gold', 'T4', 1, 70, True, ['purple', 'purple', None])]
 GEM = {'blue': (64, 150, 235), 'green': (70, 190, 90), 'gold': (240, 190, 50), 'purple': (170, 90, 220)}
 def cute_star(img, cx, cy, r, fill=(255, 206, 38), outline=(110, 52, 8)):
     from PIL import ImageFilter
