@@ -14593,7 +14593,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1757"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1758"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23620,8 +23620,8 @@ function worldPvpBattle(march, def, ownerId, opts) {
   if (opts.defCritRate != null && defStats.critRate > 0) defStats.critRate = opts.defCritRate;
   if (ownerId === "sim") { // v664: like the live Arena, the simulator's infantry run the real arena distances (home -> meeting line -> enemy nose), measured on a fixed reference canvas so a sim run is the same on every screen
     try {
-      (atkStats.heroHp || []).forEach(function (e) { var ix = atkKeys.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 220, ix, true); });
-      (defStats.heroHp || []).forEach(function (e) { var ix = def.heroKeys.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(400, 220, ix, false); });
+      (atkStats.heroHp || []).forEach(function (e) { var ix = atkKeys.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(ARENA_REF_W, ARENA_REF_H, ix, true); });
+      (defStats.heroHp || []).forEach(function (e) { var ix = def.heroKeys.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(ARENA_REF_W, ARENA_REF_H, ix, false); });
     } catch (eRL) {}
   }
   worldPvpAddTroops(atkStats, march.army, def.army, atkKeys, asim, 0, WORLD_PVP_TROOP_SQRT_REF);
@@ -40078,8 +40078,10 @@ function runArenaBattle(onTick, onDone) {
   try { // per-hero run distance (px) so the sim moves infantry at the universal run speed
     var rcv = document.getElementById("arenaCanvas"), rdpr = canvasDPR(), rw = Math.round(rcv.width / rdpr), rh = Math.round(rcv.height / rdpr) - arenaSkyPx(); /* v1261 */
     if (rw > 100) {
-      (playerStats.heroHp || []).forEach(function (e) { var ix = p.roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(rw, rh, ix, true); });
-      (aiStats.heroHp || []).forEach(function (e) { var ix = arenaOpponent.roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(rw, rh, ix, false); });
+      /* v1758 (Harley: smooth out screen-size differences): the fight measures run lanes on ONE fixed reference stage (ARENA_REF_W x ARENA_REF_H, the same one the
+         PvP Simulator uses), not this phone's canvas - so a 360 px and a 430 px phone get the same fight. The drawing still fills the real screen (it follows the sim's 0-1 lane position). */
+      (playerStats.heroHp || []).forEach(function (e) { var ix = p.roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(ARENA_REF_W, ARENA_REF_H, ix, true); });
+      (aiStats.heroHp || []).forEach(function (e) { var ix = arenaOpponent.roster.indexOf(e.id); if (ix >= 0) e.runL = arenaRunDist(ARENA_REF_W, ARENA_REF_H, ix, false); });
     }
   } catch (e) {}
   var arSeed = "arena|" + Date.now() + "|" + Math.random(); /* v954: one seed per battle drives everything in it (was Math.random inside the fight) - same seed, same fight */
@@ -40138,9 +40140,11 @@ function resizeArenaCanvas() {
 // Skirmish already uses for its own formation.
 var ARENA_SIDE_X = 0.16; // formation + fortress anchor as a fraction of canvas width (Conquest uses 0.16); AI side mirrors at 1 - this
 // Pixels a hero in roster slot `index` runs from home to the nose of the enemy fortress (same geometry drawOneHero uses) — lets the sim step him at HERO_RUN_PX_PER_SEC.
+var ARENA_REF_W = 400, ARENA_REF_H = 220; /* v1758: the fixed stage every Arena fight is measured on (about a PC / mid-size phone) */
+var ARENA_SKIN_CQW = { mecha: 324 }; /* v1758: drawn width (picture width x cqScale) of skins that are not the standard 214.6 - used while the picture is still loading */
 function arenaRunDist(w, h, index, isPlayerSide) {
   var oppSkin = isPlayerSide ? (arenaAnim.aiFortressSkin || FORTRESS_SKINS[0]) : fortressSkin(), oImg = oppSkin.cq;
-  var osw = (oImg && oImg.complete && oImg.naturalWidth) ? oImg.naturalWidth * FORTRESS_SHIP_SCALE * oppSkin.cqScale * (24 / 22) : 120;
+  var osw = ((oImg && oImg.complete && oImg.naturalWidth) ? oImg.naturalWidth * oppSkin.cqScale : (ARENA_SKIN_CQW[oppSkin.id] || 400 * 0.5366)) * FORTRESS_SHIP_SCALE * (24 / 22); /* v1758: a ship picture still loading used a stand-in width of 120 - now its real drawn width (every skin is 214.6 except the listed ones), so the fight is the same whether the picture has loaded or not */
   var ocx = isPlayerSide ? w * (1 - ARENA_SIDE_X) : w * ARENA_SIDE_X;
   var mfR = osw * ((oppSkin.meleeFront || 1) - 0.5), endX = isPlayerSide ? ocx - mfR - 6 : ocx + mfR + 6; /* v1590 (Harley: Aurek / Halo-7 sped up after the halfway point): the same melee stop point the drawing walks to (meleeFront, v1531) - was the picture's front edge, so on long-nose skins the second half was shorter in the maths than on screen and heroes ran up to ~2x faster there */
   var mX = isPlayerSide ? w * 0.5 - 13 : w * 0.5 + 13, sx = arenaSlotPos(w, h, index, isPlayerSide).x;
