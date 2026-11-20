@@ -6254,3 +6254,9 @@ Harley picked the middle option of the side-by-side (Torvald compare videos: now
 - Check (headless, drawn with drawHeroAnim at 3x): old vs new drawn box within 1 px for idle / run / attack at 3 times each - same place and size.
 - Not changed: torvald_skill_anim_v2 (also a v1720 2x sheet, 2.4 MP), the other heavy heroes (Baelgor, Iron Lily, Hanzo, Tom) - waiting on Harley.
 - Context (headless Arena audit, each hero alone vs Pip, 2x CPU slowdown): drawing time per frame Baelgor 17.6 ms, Torvald 15.3, Iron Lily 14.0, Hanzo 10.2, Tom 10.2, everyone else 2.2-3.7 (no hero 2.2-2.4). Droid Call: no measurable cost.
+
+## v1764 — Torvald's idle in its own sheet (TEST, to try on the phone)
+Harley: Torvald still lags a bit when equipped; explore putting his idle into its own sheet.
+- New: a hero entry can name a separate idle sheet (HERO_ANIMS[key].idleKey -> its own entry, same cell size + anchor). drawHeroAnim takes idle frames (and any state the main sheet lacks) from it; the hero only draws when both sheets are loaded; heroSheetKeys warms/releases key + "_idle". Exact-size Conquest copies (EX) are skipped for such heroes.
+- Torvald: torvald_idle_v1.webp (41 idle frames, 3276x606 = 2.0 MP) + torvald_anim_v5.webp (run 29, attack 21, attack2 23, wrap 15, 3510x1212 = 4.25 MP). Frames are v4's (1.5 sheet px per phone px), repacked without empty cells. Was one 6.8 MP sheet (v4) / 15 MP (v3). v3/v4 kept.
+- Checks (headless): old (v3) vs new drawn box within 1 px for idle / run / attack / attack2 at 4 times each. Torvald alone vs Pip, fresh browser each, CPU x2: v1763 15.5-20.6 ms draw per frame, 4-5 freezes over 0.1 s; v1764 19.2 / 9.4 / 8.0 ms, 5 / 1 / 5 freezes - better in 2 of 3 runs, not conclusive. Light heroes draw in ~0.02-0.06 ms per frame in the same test, so Torvald is still ~100x a light hero here; the phone test decides.
