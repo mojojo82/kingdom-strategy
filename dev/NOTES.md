@@ -6187,3 +6187,8 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Reproduced headless with a sim-level log (every Baelgor cast vs every Fear event vs every portal drawn): every cast queues Fear, but when the Fear was due 2 s later the sim dropped it completely if Baelgor had been knocked out during his wind-up (`if (!opp || isKo(mine, q.key)) return;`) - no event, so no portal and no hand. Seen as an enemy-Baelgor cast with no Fear after it.
 - Fix: in that case the event still goes out with no target, so the hand rises in the middle of the arena and grabs nothing (same as "nobody jumping"). No stun in that case - balance unchanged. Verified by forcing the knocked-out case: portal placed and drawn. Normal cases re-checked (no jumpers, Hanzo grabbed, both sides). Meta check: same known F3 warning, numbers unchanged.
 - Still no Fear if the fight ends during the 2 s wind-up (the battle is over).
+
+## v1753 (20 Nov 2026) - Governor Gear values (data only)
+- Harley: "Just get the values coded in. Right now im still deciding on the cost". Added GOV_GEAR_UNLOCK_TH (22), GOV_GEAR_STEPS (40 steps: colour / tier / stars, Grey -> Red T3) and GOV_GEAR_PIECES (cannon +70%, fortHp +15%, heroAtk +50%, heroSkill +65% at Red T3; troop and boss = null, not set yet) + govGearBonus(piece, step).
+- Values from dev/balance/gear_levels.py (steps grow towards Red); caps from the headless max-level Arena tests in dev/balance/BALANCE_STANDINGS.md.
+- NOT wired into fights, saves, screens or the server yet - nothing changes in play. Headless check: table loads, values right, no errors.
