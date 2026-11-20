@@ -6213,3 +6213,10 @@ Harley: the sims hadn't been updated in a long time, and "Load mine" copies the 
 Checks (headless, maxed account, F2, meta weapons, 3 cards): Boss Sim Kaiju mode = the real kaiju fight to the exact damage on 3 seeds; PvP Sim = a direct worldPvpBattle call (same ticks, same HP left) on 3 seeds. Meta check: same known warning, numbers unchanged.
 Found, not changed (question for Harley): real World PvP and rallies give the player only the Dev Tools bonus (bonusOf(game) = heroBonus), not equipment / Sword of Power / training / weapon levels, which Arena does count.
 Not in the sims yet: Governor Gear (not wired into fights).
+
+## v1757 — World PvP and rallies count the full hero bonus (TEST)
+Harley: "Yes the world pvp should count them too."
+- bonusOf(): the real player now gets the full bonus in World PvP and rallies: Dev Tools + worn equipment + Training Grounds (Sword of Power) + weapon levels, the same as the Arena (heroBonusTotal). Before, only the Dev Tools part counted.
+- Other real players' saves (defending a city, a march from another player's save, a rally leader) get the same full bonus, worked out from their own save (equipTotalsOf + tgBonusOf + weaponBonusOf).
+- Bots unchanged: their save already carries a bonus scaled from a player's full bonus (marked with isBotSave on the loaded sim).
+Checks (headless, maxed account): bonusOf(game) = the full bonus (13,550% each); a copy of that save as another player = the same; a bot save = its own stored bonus, unchanged. A maxed account attacking a strong bot used to lose in 3 ticks and now wins in 27. Meta check unchanged (same known warning).

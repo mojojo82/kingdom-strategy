@@ -14516,7 +14516,19 @@ function heroDefNet(h, bnMult) { return h ? heroPowerLevel(h) * defNetMult(bnMul
 function heroDefNetOwn(key, h, bnMult) { return h ? heroPowerLevel(h) * defNetMult(bnMult * heroOwnDefMult(key, h)) : 0; } /* v1413: Iron Will raises her DEF stat itself (before the neutral line), so it counts even with no DEF bonuses */
 var ZERO_BONUS = { atk: 0, hp: 0, def: 0, skill: 0 };
 var FORTRESS_DEF_POWER = 20; // fortress DEF = Base DEF per power x this (about a level-20 hero) x (1 + DEF Bonus)
-function bonusOf(simLike) { if (!simLike || simLike === game) return heroBonus; return (simLike.state && simLike.state.heroBonus) || ZERO_BONUS; } // real player = Dev Tools bonus; bots / other saves carry their own on state.heroBonus
+/* v1757 (Harley): World PvP and rallies count the FULL hero bonus, same as the Arena - Dev Tools + worn equipment + Training Grounds (Sword of Power) + weapon levels.
+   Was: the real player got only the Dev Tools part. Bots keep the bonus their save already carries (botCore scales it from a player's full bonus). */
+function bonusOf(simLike) {
+  if (!simLike || simLike === game) return { atk: heroBonusTotal("atk"), hp: heroBonusTotal("hp"), def: heroBonusTotal("def"), skill: heroBonusTotal("skill") };
+  var st = simLike.state, b = (st && st.heroBonus) || ZERO_BONUS; if (!st || simLike.isBotSave) return b;
+  var e = equipTotalsOf(st), t = tgBonusOf(st), w = weaponBonusOf(st);
+  return { atk: (b.atk || 0) + e.atk + t.atk + w, hp: (b.hp || 0) + e.hp + t.hp + w, def: (b.def || 0) + e.def + t.def + w, skill: (b.skill || 0) + e.skill };
+}
+function equipTotalsOf(st) { /* same sums as the game's equipTotals(), for another player's loaded save */
+  var o = { atk: 0, hp: 0, def: 0, skill: 0 }, sl = (st && st.equipment && st.equipment.slots) || [];
+  sl.forEach(function (pc) { if (!pc) return; o.atk += pc.atk || 0; o.hp += pc.hp || 0; o.def += pc.def || 0; (pc.sec || []).forEach(function (l) { if (l.k === "skill") o.skill += l.v || 0; }); });
+  o.skill = Math.min(75, o.skill); ["atk", "hp", "def", "skill"].forEach(function (k) { o[k] = Math.round(o[k] * 10) / 10; }); return o;
+}
 // Defense vs the attacker's own hit: damage taken = hit x A/(A+DEF). Scales cleanly: if ATK and DEF grow by the same %, the result doesn't change. DEF 0 = no reduction.
 function defReduce(A, def) { return (def > 0 && A > 0) ? A / (A + def) : 1; }
 // A bot/opponent's bonus: the real player's current bonus scaled by how strong that bot is (factor) with a little per-stat jitter, so bots mimic players with roughly equal ATK/HP/DEF bonuses.
@@ -14581,7 +14593,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1756"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1757"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23510,7 +23522,7 @@ function worldTileEntryFor(tile) {
 // loaded into a throwaway sim so their real tech / hero bonuses apply.
 function defenderFromSave(saved, opts) { // v798: split out of fetchDefenderFormation so the Gauntlet can build its bots from a generated save too
   var dsim = createGame({ mapSize: 3, seed: 1 });
-  dsim.loadState(saved);
+  dsim.loadState(saved); dsim.isBotSave = !!(saved && saved.isBot); /* v1757: bots carry their own pre-scaled bonus (bonusOf) */
   var st = dsim.state, stock = st.troops || {}, forms = st.formations || [];
   function sum(a) { var s = 0; for (var k in a) s += a[k] || 0; return s; }
   /* v894: City Guard. A save that has the guard slot defends with it while it's switched on; switched off (or empty) the city is undefended and every attack hits the base.
@@ -23921,7 +23933,7 @@ function foreignResolveSweep() {
       var r = snap.exists ? snap.data() : null; if (!r || r.resolved) return;
       return fetchSaveForOwner(r.ownerId).then(function (saved) {
         if (!saved) return;
-        var sim = createGame({ mapSize: 3, seed: 1 }); sim.loadState(saved); sim.state.map = game.state.map;
+        var sim = createGame({ mapSize: 3, seed: 1 }); sim.loadState(saved); sim.isBotSave = !!saved.isBot; sim.state.map = game.state.map;
         var hk = plainClone(r.heroKeys || []);
         var m = { id: r.mid, army: plainClone(r.army), tileId: r.tileId, action: r.action, status: "resolving", heroKeys: hk, heroKey: hk[0] || null, travelSec: r.travelSec, arriveAt: r.arriveAt, actionEnd: null, returnAt: null, result: null };
         var tl2 = mapTileById(game.state.map, r.tileId);
