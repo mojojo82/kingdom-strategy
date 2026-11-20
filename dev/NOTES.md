@@ -6240,3 +6240,10 @@ Harley: "the blue ui at the bottom half needs to be 1 to 1", Attack in the middl
 - Fight lock (arena-fighting class, every frame): Back and all bottom tabs dimmed and not tappable; setScreen ignores any route out of the Arena while arenaBattleRunning (tabs, Back, Backpack map jump, shortcuts); the Arena fortress-type pick is dimmed and its click ignored once the fight starts.
 - The AUTO frame left of the hero timers is empty in the Arena (Arena skills fire on their own) - open question for Harley.
 Checks (headless, 430 px, blue + classic): Arena shows the Blue bottom half with all parts placed; during a fight setScreen("world"), a nav tab and Back all left the player in the Arena, the nav was at 35% opacity, the fortress pick did not change. Conquest Blue looks as before.
+
+## v1762 — Baelgor's Fear: far less drawing work (micro pauses) (TEST)
+Harley: micro pauses in the Arena even at 60 FPS, Baelgor equipped. "Do the fix."
+Cause (measured headless): while Fear is on a hero (and on Baelgor for ~1.8 s while casting), that hero was drawn into a layer the size of the WHOLE battle canvas (~1290 x 1300 px on his phone), cleared every frame, copied into up to 3 tinted full-size layers, and stamped ~a dozen times a frame.
+Fix: fearLayer crops the layer to the area around that hero (where he stood last frame: 100 css px each side, 150 up, 40 down - room for his name, bar and swings); fearTint / fearBlit honour the crop offset (c._ox / c._oy). First frame of a Fear (no previous spot) still uses the full canvas; the spot is forgotten when Fear ends. Same picture.
+Checks (headless, 430 px, CPU x2, same team + opponent, 4 fights each): frames over 0.1 s per 15 s fight 10-12 before -> 1-6 after (mostly 1-2); long tasks 3.2-5.0 s -> 0.6-3.3 s (mostly ~1 s). Frame-by-frame recording of a Fear on Hanzo, before vs after: same look, nothing clipped.
+Not changed: the heartbeat's full-screen colour drain (a "saturation" blend over the whole battle, a few times per Fear) - may still cost on phones.
