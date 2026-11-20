@@ -244,3 +244,11 @@ Hero survival in the same fights (both sides, all 10 heroes): knockouts per figh
 | x5 skill | 14 / 60% (68%) | 18 / 61% (70%) | 38 / 70% (79%) | 24 / 49% (54%) | 28 / 55% (64%) | 30 / 48% (61%) |
 | x20 skill | 13 / 66% (73%) | 17 / 65% (73%) | 26 / 70% (80%) | 17 / 56% (62%) | 23 / 61% (68%) | 32 / 54% (63%) |
 Finding: already TODAY at max level heroes spend about half the fight knocked out (infantry 51-75%) - they mostly trade with each other while the fortress does little. Likely why hero-damage bonuses barely move fight length.
+Skill damage + hero HP together (both sides; avg s / % to timer / hero downtime):
+| HP +50% | F1v2 26.2/1%/50% | F1v1 29.8/16%/48% | F2v2 54.0/62%/62% | F1v3 58.5/77%/42% | F2v3 58.6/86%/47% | F3v3 59.9/100%/33% |
+| HP x2 | 28.2/1%/46% | 30.9/18%/42% | 55.5/66%/58% | 59.4/94%/38% | 59.5/93%/43% | 59.9/100%/28% |
+| skill x2 + HP +50% | 23.7/1%/52% | 27.7/14%/50% | 52.3/63%/64% | 55.0/62%/43% | 58.6/82%/49% | 59.9/100%/36% |
+| skill x2 + HP x2 | 25.0/1%/50% | 27.7/14%/46% | 53.4/63%/60% | 54.1/65%/40% | 58.7/88%/47% | 59.9/100%/31% |
+| skill x3 + HP x2 | 22.6/1%/51% | 26.3/13%/47% | 51.7/61%/61% | 53.3/61%/41% | 57.1/78%/47% | 59.9/100%/34% |
+| skill x5 + HP x3 | 21.8/2%/50% | 24.5/8%/44% | 46.2/52%/58% | 53.7/56%/39% | 53.7/67%/44% | 59.9/100%/32% |
+Finding: HP alone makes fights LONGER; HP cuts downtime but heroes surviving longer doesn't speed up fortress kills. Pairing cancels most of skill damage's speed-up (skill x5 alone: F1v3 44.7 s; with HP x3: 53.7 s). F3 v F3 always hits the timer in every combo.
