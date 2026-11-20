@@ -252,3 +252,17 @@ Skill damage + hero HP together (both sides; avg s / % to timer / hero downtime)
 | skill x3 + HP x2 | 22.6/1%/51% | 26.3/13%/47% | 51.7/61%/61% | 53.3/61%/41% | 57.1/78%/47% | 59.9/100%/34% |
 | skill x5 + HP x3 | 21.8/2%/50% | 24.5/8%/44% | 46.2/52%/58% | 53.7/56%/39% | 53.7/67%/44% | 59.9/100%/32% |
 Finding: HP alone makes fights LONGER; HP cuts downtime but heroes surviving longer doesn't speed up fortress kills. Pairing cancels most of skill damage's speed-up (skill x5 alone: F1v3 44.7 s; with HP x3: 53.7 s). F3 v F3 always hits the timer in every combo.
+
+## Test: gear "basic attack damage to the fortress", one piece per class (20 Nov 2026, test only)
+Harley's idea: 3 of the gear bonuses = one per class (Infantry / Caster / Ranged), each a multiplier on that class's BASIC attack damage when it lands on the enemy FORTRESS (not on heroes). Same max-level setup. (Code keys: Caster = `archer`, Ranged = `cavalry`.)
+| Bonus (both sides) | F1v2 | F1v1 | F2v2 | F1v3 | F2v3 | F3v3 |  (avg s / % to timer)
+| today | 25.5/1% | 30.3/16% | 53.6/63% | 57.9/72% | 59.1/84% | 59.9/100% |
+| all 3 classes x1.5 | 22.0/0% | 27.3/13% | 53.2/66% | 50.6/28% | 54.3/43% | 59.9/100% |
+| all 3 classes x2 | 19.6/0% | 25.6/9% | 51.4/64% | 42.2/4% | 47.6/19% | 59.9/100% |
+| all 3 classes x3 | 16.2/0% | 23.9/7% | 50.6/54% | 30.7/0% | 36.7/4% | 59.9/100% |
+| all 3 classes x5 | 13.9/0% | 21.1/4% | 42.6/29% | 20.3/0% | 26.5/0% | 59.9/100% |
+| Infantry only x3 | 20.3/0% | 29.8/14% | 50.0/59% | 42.5/17% | 49.2/29% | 59.9/100% |
+| Caster only x3 | 20.7/1% | 25.9/9% | 53.8/69% | 49.6/36% | 51.6/45% | 59.9/100% |
+| Ranged only x3 | 22.2/1% | 27.8/14% | 52.8/62% | 51.3/38% | 53.7/48% | 59.9/100% |
+One side only, all 3 x2: wins F1v1 58%, F2v2 86%, F3v3 88% (F3v3 still always on the timer -> decided on HP left).
+Finding: far stronger lever for fight length than skill damage (x2 here ~ skill x5). Infantry's piece matters most. F3 v F3 never ends before the timer even at x5 - F3 mirrors need something else.
