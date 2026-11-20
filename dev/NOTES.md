@@ -6192,3 +6192,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 - Harley: "Just get the values coded in. Right now im still deciding on the cost". Added GOV_GEAR_UNLOCK_TH (22), GOV_GEAR_STEPS (40 steps: colour / tier / stars, Grey -> Red T3) and GOV_GEAR_PIECES (cannon +70%, fortHp +15%, heroAtk +50%, heroSkill +65% at Red T3; troop and boss = null, not set yet) + govGearBonus(piece, step).
 - Values from dev/balance/gear_levels.py (steps grow towards Red); caps from the headless max-level Arena tests in dev/balance/BALANCE_STANDINGS.md.
 - NOT wired into fights, saves, screens or the server yet - nothing changes in play. Headless check: table loads, values right, no errors.
+
+## v1754 (20 Nov 2026) - Governor Gear boss damage values
+- Harley: 1 billion kaiju damage = level 100; the gear boss piece must get a whale there. Kaiju fights headless: best whale (F2, Clone Task + Droid Call + Duplicate, Sword 100, equipment Boss Damage 72%) = 193M with no gear, straight line with gear boss damage -> **+420% at Red T3 ~ 1.00B**. GOV_GEAR_PIECES.boss filled (40 steps, same curve). Multiplies with equipment Boss Damage. Still data only - not wired in. Troop damage still null. Results in dev/balance/BALANCE_STANDINGS.md, script dev/balance/kaiju_gear_boss.js.

@@ -276,3 +276,14 @@ At the caps (one side): cannon 56/83/68, HP(+15%) 61/90/99, atk 57/86/82, skill 
 All 4 maxed on BOTH sides (fight length): F1v1 30->22 s, F1v2 26->22 s, F1v3 58->52 s (72%->41% to timer), F2v3 59->55 s (84%->52%), F2v2 and F3v3 unchanged (54 s / 60 s).
 All 4 maxed on ONE side: wins F1v1 73%, F2v2 89%, F3v3 100%.
 Open issue: a fight that hits the 60 s timer goes to whoever has more fortress HP LEFT (absolute HP). F3 v F3 always hits the timer, so ANY fortress HP bonus wins that mirror (~99% even at +15%). Either accept it, or change the timeout rule (e.g. whoever dealt more damage / lost the smaller share of HP).
+
+## Governor Gear boss damage vs the kaiju (20 Nov 2026, v1754) - dev/balance/kaiju_gear_boss.js
+Harley: a player reaches kaiju level 100 at 1 billion damage; the gear boss piece must get a whale there. Maxed account, Sword of Power 100, equipment Boss Damage 72% (best rolls), gear boss damage MULTIPLIED on top, 60 s fight, 5 fights each.
+| Fortress / weapons | gear 0% | +100% | +200% | +300% | +400% | +500% |
+| F2 Clone+Droid+Duplicate | 193M | 385M | 578M | 771M | 963M | 1.16B |
+| F2 Meta | 93M | 180M | 268M | 355M | 442M | 530M |
+| F1 Clone+Droid+Duplicate | 110M | 221M | 331M | 441M | 552M | 662M |
+| F1 Meta | 61M | 115M | 170M | 224M | 278M | 333M |
+| F3 Clone+Droid+Duplicate | 93M | 185M | 278M | 370M | 463M | 555M |
+| F3 Meta | 51M | 91M | 132M | 172M | 212M | 253M |
+Straight line. **Cap +420%** -> best whale ~1.00B (level 100). Meta builds grow slower (the Railgun's % hit isn't boosted). Note the no-gear F2 best is now 193M (was 212M at v1605) - the game has changed since.

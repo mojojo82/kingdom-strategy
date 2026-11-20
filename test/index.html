@@ -12380,7 +12380,7 @@ var MAP_CITY_SKIN_KEY = "kingdomMapCitySkin_v1";
    Step = index 0..39 into GOV_GEAR_STEPS: c = colour, t = tier inside the colour (Purple T1, Yellow/Red T1-T3), s = stars (0-3).
    Bonus % per step = running total at that step. Caps balanced in headless max-level Arena tests so each piece at max is worth about the same:
    cannon +70%, fortress HP +15%, hero attack vs fortress +50%, hero skill vs fortress +65% (dev/balance/gear_levels.py, gear_build.py, BALANCE_STANDINGS.md).
-   Boss / troop damage: null = not set yet (need their own yardsticks: boss kill time, World PvP). */
+   Boss damage: +420% at Red T3 (kaiju yardstick, v1754). Troop damage: null = not set yet (needs World PvP as its yardstick). */
 var GOV_GEAR_UNLOCK_TH = 22;
 var GOV_GEAR_STEPS = [
   { c: "grey", t: 0, s: 0 },
@@ -12430,7 +12430,7 @@ var GOV_GEAR_PIECES = {
   heroAtk:   { label: "Hero Attack vs Fortress", pct: [0.62, 1.24, 2.01, 2.79, 3.56, 4.33, 5.26, 6.19, 7.12, 8.05, 8.98, 9.91, 10.84, 11.76, 13.0, 14.24, 15.48, 16.72, 17.96, 19.2, 20.43, 21.67, 22.91, 24.15, 25.39, 26.63, 27.86, 29.57, 31.27, 32.97, 34.67, 36.38, 38.08, 39.78, 41.49, 43.19, 44.89, 46.59, 48.3, 50.0] },
   heroSkill: { label: "Hero Skill vs Fortress",  pct: [0.8, 1.61, 2.62, 3.62, 4.63, 5.63, 6.84, 8.05, 9.26, 10.46, 11.67, 12.88, 14.09, 15.29, 16.9, 18.51, 20.12, 21.73, 23.34, 24.95, 26.56, 28.17, 29.78, 31.39, 33.0, 34.61, 36.22, 38.44, 40.65, 42.86, 45.08, 47.29, 49.5, 51.72, 53.93, 56.15, 58.36, 60.57, 62.79, 65.0] },
   troop:     { label: "Troop Damage",            pct: null },
-  boss:      { label: "Boss Damage",             pct: null }
+  boss:      { label: "Boss Damage",             pct: [5.2, 10.4, 16.9, 23.41, 29.91, 36.41, 44.21, 52.01, 59.81, 67.62, 75.42, 83.22, 91.02, 98.82, 109.23, 119.63, 130.03, 140.43, 150.84, 161.24, 171.64, 182.04, 192.45, 202.85, 213.25, 223.65, 234.06, 248.36, 262.66, 276.97, 291.27, 305.57, 319.88, 334.18, 348.48, 362.79, 377.09, 391.39, 405.7, 420.0] } /* v1754: +420% at Red T3 = the best maxed whale (F2, Clone Task + Droid Call + Duplicate, Sword 100, equipment Boss Damage 72%) reaches 1 billion kaiju damage = level 100. Multiplies with equipment Boss Damage. */
 };
 /* step: -1 or missing = no gear (0%); 0..39 = that step's running total. */
 function govGearBonus(piece, step) { var p = GOV_GEAR_PIECES[piece]; if (!p || !p.pct || step == null || step < 0) return 0; return p.pct[Math.min(step, p.pct.length - 1)]; }
@@ -14581,7 +14581,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1753"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1754"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {

@@ -1,5 +1,5 @@
 # Governor gear: spread each piece's cap over Harley's 40 steps (Grey ... Red T3). Steps grow towards Red.
-CAPS = {'Cannon damage': 70, 'Fortress HP': 15, 'Hero attack vs fortress': 50, 'Hero skill vs fortress': 65}
+CAPS = {'Cannon damage': 70, 'Fortress HP': 15, 'Hero attack vs fortress': 50, 'Hero skill vs fortress': 65, 'Boss damage': 420}
 STEPS = [('Grey', ['', '1*']), ('Blue', ['', '1*', '2*', '3*']),
          ('Purple', ['', '1*', '2*', '3*', 'T1', 'T1 1*', 'T1 2*', 'T1 3*']),
          ('Yellow', ['', '1*', '2*', '3*', 'T1', 'T1 1*', 'T1 2*', 'T1 3*', 'T2', 'T2 1*', 'T2 2*', 'T2 3*', 'T3']),
