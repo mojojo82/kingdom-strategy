@@ -223,3 +223,13 @@ Measured with dev/balance/fort_vs_fort.js (all heroes Lv80, 5 full stars, skills
 F1 vs F2 26 s (1% to the timer) | F1 vs F1 30 s (16%) | F2 vs F2 54 s (63%) | F1 vs F3 58 s (72%) | F2 vs F3 59 s (84%) | F3 vs F3 60 s (100%).
 F3's maxed research (+90% HP, 33% damage reduction) is what drags fights out. Bots roll F1 no-research 20% / F1 ~27% / F2 ~27% / F3 ~27%.
 Options noted if fights ever need shortening: trim F3's tank research, sudden death after 30 s, heroes x1.3 vs fortresses, -20% fortress HP, fewer F3 bots.
+
+## Test: gear "hero skill damage" bonus in Arena (20 Nov 2026, TEST v1752) - test only, not in the game
+Same setup as the fight-length baseline (all heroes Lv80, 5 full stars, skills 5, maxed research, no weapons/Esper/cards, 160 fights per matchup). Bonus = x on every hero skill's damage (test copy of cardSkMul).
+| Skill dmg | F1v2 | F1v1 | F2v2 | F1v3 | F2v3 | F3v3 | (avg s / % to timer) |
+| none | 25.5 / 1% | 30.3 / 16% | 53.6 / 63% | 57.9 / 72% | 59.1 / 84% | 59.9 / 100% |
+| +25% both | 25.2 / 1% | 28.9 / 15% | 53.8 / 66% | 57.5 / 68% | 58.8 / 84% | 59.9 / 100% |
+| +50% both | 24.3 / 0% | 28.3 / 15% | 53.2 / 63% | 57.0 / 68% | 58.6 / 79% | 59.9 / 100% |
+| +100% both | 23.9 / 1% | 27.3 / 14% | 53.2 / 63% | 56.0 / 53% | 57.3 / 66% | 59.9 / 100% |
+One side only (same fortress both sides), win % of the side with the bonus: +50% -> F1v1 51%, F2v2 80%, F3v3 83%; +100% -> 57% / 73% / 88%.
+Takeaway: barely shortens fights (even +100% saves ~1-3 s; F3 v F3 still always hits the timer), but in an even fight (same fortress) the side with it wins far more often (+50% -> ~80% in F2/F3 mirrors). Fortress type still decides mismatched fights.
