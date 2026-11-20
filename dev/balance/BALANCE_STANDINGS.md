@@ -287,3 +287,10 @@ Harley: a player reaches kaiju level 100 at 1 billion damage; the gear boss piec
 | F3 Clone+Droid+Duplicate | 93M | 185M | 278M | 370M | 463M | 555M |
 | F3 Meta | 51M | 91M | 132M | 172M | 212M | 253M |
 Straight line. **Cap +420%** -> best whale ~1.00B (level 100). Meta builds grow slower (the Railgun's % hit isn't boosted). Note the no-gear F2 best is now 193M (was 212M at v1605) - the game has changed since.
+
+## Kaiju + Critical Mass card (20 Nov 2026, v1755) - dev/balance/kaiju_critmass.js
+Harley: F1 on the kaiju with Critical Mass (cannon x10 per burst, compounding: x10, x100, x1000 ...). Maxed account, Sword 100, equipment Boss Damage 72%, 5 fights each. The real kaiju fight does pass this card in (dmgRamp: equippedDmgRamp).
+| F1 | no card, gear 0 | no card, gear +500% | Critical Mass, gear 0 | Critical Mass, gear +500% |
+| Clone+Droid+Duplicate | 110M | 662M | 443 BILLION avg (43B - 1.6T) | 2.66 TRILLION avg (260B - 9.8T) |
+| Meta | 61M | 333M | 361B avg (43B - 1.6T) | 2.16T avg (259B - 9.8T) |
+~4,000x more damage; range depends on how many cannon bursts fire. Far past 1B -> level 100 instantly. (The kaiju's hidden health is 1e15 = 1,000 trillion, not reached.)
