@@ -6198,3 +6198,18 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1755 (20 Nov 2026) - Governor Gear boss damage cap +500%
 - Harley: "lets make it a clean 500%". GOV_GEAR_PIECES.boss now tops out at +500% at Red T3 (same 40-step curve). Best maxed whale ~1.16B (level 100 at ~+420%, Yellow T3 / early Red). Still data only.
+
+## v1756 — Boss Simulator + PvP Simulator brought up to date (TEST)
+Harley: the sims hadn't been updated in a long time, and "Load mine" copies the build, so it was out of date too.
+- Fortress choices: added Fortress II (innate / max) and "Copied" (the exact fortress type + tree that Load mine / Copy to Simulator took).
+- Hero bonus % fields (ATK / HP / DEF / skill) per side. Before, the sims always fought with a 0% bonus, so equipment, Sword of Power, training and weapon levels were missing.
+- Cards: every card in the game is listed (was: only cards you had named), up to 5, and every effect reaches the fight on both sides (card modifiers, summons, ramp, regen). Saved by card key.
+- Missile Salvo now works in both sims; PvP sim weapons get their side's ATK bonus (Boss Sim already did).
+- Load mine copies everything: fortress snapshot, full hero bonus (heroBonusTotal), equipped cards, weapons, heroes in formation order (Boss Sim uses the Arena team, PvP Sim the march formation). Copy to Simulator also takes the defender's real fortress and bonus.
+- Boss Sim "Kaiju mode": the real Boss Rush fight (he hits back, real length), shows the level reached.
+- Fix: the punching bag showed Infinity damage with Railgun (a % of max HP hit against an endless bar). It now uses your own max HP, the same rule as the kaiju.
+- "Attack power constant" field defaults to the value fights really use.
+- worldPvpBattle: new optional atkSalvo/defSalvo (sims only; real fights unchanged).
+Checks (headless, maxed account, F2, meta weapons, 3 cards): Boss Sim Kaiju mode = the real kaiju fight to the exact damage on 3 seeds; PvP Sim = a direct worldPvpBattle call (same ticks, same HP left) on 3 seeds. Meta check: same known warning, numbers unchanged.
+Found, not changed (question for Harley): real World PvP and rallies give the player only the Dev Tools bonus (bonusOf(game) = heroBonus), not equipment / Sword of Power / training / weapon levels, which Arena does count.
+Not in the sims yet: Governor Gear (not wired into fights).

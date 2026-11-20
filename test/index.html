@@ -14581,7 +14581,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1755"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1756"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17305,7 +17305,7 @@ function evalSimpleMath(str, def) {
   } catch (e) { return def; }
 }
 function pvpSimDefaultSide(isAtk) {
-  var cfg = { troops: { infantry: 100, archer: 100, cavalry: 100 }, tech: { infantry: 0, archer: 0, cavalry: 0 }, lossRed: 0, critRate: 20, th: 5, wall: 0, baseHp: arenaBaseHpAi, cannon: true, esper: "", fort: "none", atkPerPower: HERO_ATK_PER_POWER, heroes: {}, weapons: {} };
+  var cfg = { bonus: { atk: 0, hp: 0, def: 0, skill: 0 }, fortMap: null, troops: { infantry: 100, archer: 100, cavalry: 100 }, tech: { infantry: 0, archer: 0, cavalry: 0 }, lossRed: 0, critRate: 20, th: 5, wall: 0, baseHp: arenaBaseHpAi, cannon: true, esper: "", fort: "none", atkPerPower: HERO_ATK_PER_POWER, heroes: {}, weapons: {} };
   pvpSimHeroKeys().forEach(function (k, i) { cfg.heroes[k] = { on: isAtk ? i < 3 : i < 1, level: 20, arms: 0, c: [1, 1, 1], e: [1, 1, 1] }; });
   return cfg;
 }
@@ -17345,9 +17345,11 @@ function pvpSimHtml(side, title) {
     h += '<div class="ps-row"><label class="ps-chk"><input type="checkbox" data-f="cannon"> Fortress cannon (marching)</label></div>';
   }
   h += '<div class="ps-srow"><span class="ps-sl">Super-burst chance %</span>' + psNum("critRate", 0, 100, 5) + '</div>';
-  h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Fortress tech</span><select class="ps-in ps-sel" data-f="fort"><option value="none">None</option><option value="base">Innate only</option><option value="mine">My tree</option><option value="max">Max tree</option><option value="t3">Type III (innate only)</option><option value="t3max">Type III (max tree)</option></select></div>';
+  h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Fortress tech</span><select class="ps-in ps-sel" data-f="fort"><option value="none">None</option><option value="mine">My fortress (type + tree)</option><option value="copied">Copied (from Load / Copy to Simulator)</option><option value="base">Type I (innate only)</option><option value="max">Type I (max tree)</option><option value="t2">Type II (innate only)</option><option value="t2max">Type II (max tree)</option><option value="t3">Type III (innate only)</option><option value="t3max">Type III (max tree)</option></select></div>';
   h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Esper</span><select class="ps-in ps-sel" data-f="esper"><option value="">None</option>' +
     Object.keys(ESPER_DEFS).map(function (k) { return '<option value="' + k + '">' + ESPER_DEFS[k].icon + ' ' + ESPER_DEFS[k].name + '</option>'; }).join("") + '</select></div>';
+  h += '<div class="ps-lbl">Hero bonus % · equipment + Sword of Power (training) + weapon levels + Dev Tools bonus</div>' + ["atk", "hp", "def", "skill"].map(function (k) { return '<div class="ps-srow"><span class="ps-sl">' + { atk: "ATK", hp: "HP", def: "DEF", skill: "Skill" }[k] + ' %</span><input class="ps-in ps-wide" type="number" min="0" step="0.1" data-f="bonus.' + k + '"></div>'; }).join("") +
+    '<div class="dev-tools-hint">v1756: the same total the real game adds to every hero (Load mine copies yours). Before v1756 the simulators always used 0.</div>';
   h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Attack power constant ("the 4")</span><input class="ps-in" type="text" inputmode="decimal" placeholder="e.g. 4*10" data-f="atkPerPower"></div>' +
     '<div class="dev-tools-hint">The conversion factor from hero level/stars into actual damage — real game default is ' + HERO_ATK_PER_POWER + '. Raises/lowers this side\'s basic attacks AND every hero skill together (skills are a % of basic attack). Sim-only — never touches your save. You can type a plain math expression here (e.g. "4*10", "80/2") instead of computing it yourself — it\'s evaluated when you run.</div>';
   h += '<div class="ps-lbl">Weapons (max ' + WEAPON_EQUIP_MAX + ') · tick to equip · level 1–' + WEAPON_MAX_LEVEL + '</div>';
@@ -17380,7 +17382,7 @@ function pvpSimBuildGame(cfg, isDef) {
   });
   Object.keys(sim.state.troops).forEach(function (t) { sim.state.troops[t] = 0; });
   Object.keys(cfg.troops).forEach(function (t) { sim.state.troops[t] = cfg.troops[t] || 0; });
-  sim.state.fortressTech = pvpSimFortMap(cfg.fort) || {};
+  sim.state.fortressTech = pvpSimFortMap(cfg.fort, cfg) || {};
   return sim;
 }
 function pvpSimGovernorPower(cfg, isDef) {
@@ -17417,13 +17419,15 @@ function pvpSimFill(side, cfg) {
   function set(sel, v) { var el = root.querySelector(sel); if (!el) return; if (el.type === "checkbox") el.checked = !!v; else el.value = v; }
   Object.keys(TROOP_DEFS).forEach(function (t) { set('[data-f="troop.' + t + '"]', cfg.troops[t] || 0); set('[data-f="tech.' + t + '"]', cfg.tech[t]); });
   set('[data-f="lossRed"]', cfg.lossRed);
+  var bn = cfg.bonus || {}; ["atk", "hp", "def", "skill"].forEach(function (k) { set('[data-f="bonus.' + k + '"]', Math.round((bn[k] || 0) * 10) / 10); }); /* v1756 */
+  pvpSimCopiedFort[side] = cfg.fortMap || null; pvpSimCopiedOrder[side] = cfg.order || null;
   set('[data-f="critRate"]', cfg.critRate != null ? cfg.critRate : 20);
   set('[data-f="th"]', cfg.th); set('[data-f="baseHp"]', cfg.baseHp || 0); set('[data-f="extraPower"]', cfg.extraPower || 0); set('[data-f="extraUsd"]', Math.round((cfg.extraUsd || 0) * 100) / 100);
   if (side === "d") { set('[data-f="wall"]', cfg.wall); }
   set('[data-f="cannon"]', cfg.cannon !== false);
   set('[data-f="esper"]', typeof cfg.esper === "string" ? cfg.esper : "");
   set('[data-f="fort"]', cfg.fort || "none");
-  set('[data-f="atkPerPower"]', cfg.atkPerPower != null ? cfg.atkPerPower : HERO_ATK_PER_POWER);
+  set('[data-f="atkPerPower"]', cfg.atkPerPower != null ? cfg.atkPerPower : heroAtkPerPowerEffective()); /* v1756: the value fights really use */
   WEAPON_DEFS.forEach(function (w) { var lv = cfg.weapons && cfg.weapons[w.id]; set('[data-f="wp.' + w.id + '.on"]', !!lv); set('[data-f="wp.' + w.id + '.lv"]', lv || 1); });
   pvpSimHeroKeys().forEach(function (k) {
     var hc = cfg.heroes[k] || { on: false, level: 1, arms: 0, c: [1, 1, 1], e: [1, 1, 1] }, hr = root.querySelector('.ps-hero[data-h="' + k + '"]');
@@ -17445,7 +17449,9 @@ function pvpSimRead(side) {
   cfg.cannon = root.querySelector('[data-f="cannon"]').checked;
   cfg.esper = root.querySelector('[data-f="esper"]').value || "";
   cfg.fort = root.querySelector('[data-f="fort"]').value || "none";
-  cfg.atkPerPower = Math.max(0.1, evalSimpleMath(root.querySelector('[data-f="atkPerPower"]').value, HERO_ATK_PER_POWER));
+  cfg.atkPerPower = Math.max(0.1, evalSimpleMath(root.querySelector('[data-f="atkPerPower"]').value, heroAtkPerPowerEffective()));
+  cfg.bonus = {}; ["atk", "hp", "def", "skill"].forEach(function (k) { cfg.bonus[k] = Math.max(0, num('[data-f="bonus.' + k + '"]', 0)); }); /* v1756 */
+  cfg.fortMap = pvpSimCopiedFort[side] || null; cfg.order = pvpSimCopiedOrder[side] || null;
   cfg.weapons = {};
   var wpCount = 0;
   WEAPON_DEFS.forEach(function (w) {
@@ -17471,26 +17477,29 @@ function pvpSimBuildSide(cfg, isDef) {
     h.owned = true; h.level = hc.level; h.stars = hc.arms; h.skillLevels = { conquest: hc.c.slice(), expedition: hc.e.slice() };
     if (hc.on && leaders.length < MAX_FORMATION_HEROES) leaders.push(k);
   });
+  if (cfg.order && cfg.order.length) { var oi = function (k) { var i = cfg.order.indexOf(k); return i < 0 ? 99 : i; }; leaders.sort(function (x, y) { return oi(x) - oi(y); }); }
   sim.troopAtkMult = function (t) { return 1 + (cfg.tech[troopBase(t)] || 0) / 100; };
   sim.lossReductionAmt = function () { return Math.min(0.9, (cfg.lossRed || 0) / 100); };
   var army = {}; Object.keys(cfg.troops).forEach(function (t) { if (cfg.troops[t] > 0) army[t] = cfg.troops[t]; });
   return { sim: sim, army: army, heroKeys: leaders };
 }
 function pvpSimRunOnce(a, d, ac, dc, seed, dmgRamp, regen, defDmgRamp, defRegen, wantTrace) {
+  var kA = dmgRamp && dmgRamp.cardMods ? dmgRamp : { dmgRamp: dmgRamp, regen: regen, summonCall: null, cardMods: null }, kD = defDmgRamp && defDmgRamp.cardMods ? defDmgRamp : { dmgRamp: defDmgRamp, regen: defRegen, summonCall: null, cardMods: null }; /* v1756: card kits */
+  dmgRamp = kA.dmgRamp; regen = kA.regen; defDmgRamp = kD.dmgRamp; defRegen = kD.regen;
   var march = { id: 0, tileId: "sim", army: Object.assign({}, a.army), heroKeys: a.heroKeys };
   // wantTrace: only asked for on the run whose report card actually gets shown (pvpSimRun passes it for i===0
   // only) — tracing costs a little extra bookkeeping per tick, no reason to pay it on every one of "Run many"'s
   // seeds when just one card's worth of breakdown is ever displayed.
-  var r = worldPvpBattle(march, { army: d.army, heroKeys: d.heroKeys, sim: d.sim }, "sim", { atkSim: a.sim, seed: seed, defBaseHp: dc.baseHp, atkBaseHp: ac.baseHp || 0, defCannon: dc.cannon, atkCannon: ac.cannon !== false, atkEsper: ac.esper || null, defEsper: dc.esper || null, defFort: pvpSimFortMap(dc.fort), atkFort: pvpSimFortMap(ac.fort), atkCritRate: (ac.critRate != null ? ac.critRate : 20) / 100, defCritRate: (dc.critRate != null ? dc.critRate : 20) / 100, atkAtkPerPower: ac.atkPerPower, defAtkPerPower: dc.atkPerPower, dmgRamp: dmgRamp, regen: regen, defDmgRamp: defDmgRamp, defRegen: defRegen, atkWeapons: simWeaponsFromCfg(ac.weapons), defWeapons: simWeaponsFromCfg(dc.weapons), atkShieldPct: simShieldPctFromCfg(ac.weapons), defShieldPct: simShieldPctFromCfg(dc.weapons), trace: wantTrace ? { src: {}, aiSrc: {}, perTick: [] } : undefined });
+  var r = worldPvpBattle(march, { army: d.army, heroKeys: d.heroKeys, sim: d.sim }, "sim", { atkSim: a.sim, seed: seed, defBaseHp: dc.baseHp, atkBaseHp: ac.baseHp || 0, defCannon: dc.cannon, atkCannon: ac.cannon !== false, atkEsper: ac.esper || null, defEsper: dc.esper || null, defFort: pvpSimFortMap(dc.fort, dc), atkFort: pvpSimFortMap(ac.fort, ac), atkCritRate: (ac.critRate != null ? ac.critRate : 20) / 100, defCritRate: (dc.critRate != null ? dc.critRate : 20) / 100, atkAtkPerPower: ac.atkPerPower, defAtkPerPower: dc.atkPerPower, dmgRamp: dmgRamp, regen: regen, defDmgRamp: defDmgRamp, defRegen: defRegen, summonCall: kA.summonCall, defSummonCall: kD.summonCall, cardMods: kA.cardMods || cardModsBlank(), defCardMods: kD.cardMods, atkBonus: ac.bonus || ZERO_BONUS, defBonus: dc.bonus || ZERO_BONUS, atkWeapons: simWeaponsFromCfg(ac.weapons, 1 + ((ac.bonus || ZERO_BONUS).atk || 0) / 100), defWeapons: simWeaponsFromCfg(dc.weapons, 1 + ((dc.bonus || ZERO_BONUS).atk || 0) / 100), atkSalvo: simSalvoFromCfg(ac.weapons), defSalvo: simSalvoFromCfg(dc.weapons), atkShieldPct: simShieldPctFromCfg(ac.weapons), defShieldPct: simShieldPctFromCfg(dc.weapons), trace: wantTrace ? { src: {}, aiSrc: {}, perTick: [] } : undefined });
   return { r: r, army: march.army };
 }
 function pvpSimRun(n) {
   var out = document.getElementById("pvpSimOut");
   var ac = pvpSimRead("a"), dc = pvpSimRead("d");
-  var cardIdxs = pvpSimReadCardIdxs("a"), defCardIdxs = pvpSimReadCardIdxs("d");
-  var dmgRamp = pvpSimEquippedDmgRamp(cardIdxs), regen = pvpSimEquippedRegen(cardIdxs);
-  var defDmgRamp = pvpSimEquippedDmgRamp(defCardIdxs), defRegen = pvpSimEquippedRegen(defCardIdxs);
-  try { localStorage.setItem(PVPSIM_KEY, JSON.stringify({ a: ac, d: dc, cardIdxs: cardIdxs, defCardIdxs: defCardIdxs })); } catch (e) {}
+  var cardKeys = simCardsRead("psCard-a"), defCardKeys = simCardsRead("psCard-d");
+  var kitA = simCardKit(cardKeys), kitD = simCardKit(defCardKeys); /* v1756: every card effect, both sides */
+  var dmgRamp = kitA, regen = null, defDmgRamp = kitD, defRegen = null;
+  try { localStorage.setItem(PVPSIM_KEY, JSON.stringify({ a: ac, d: dc, cardKeys: cardKeys, defCardKeys: defCardKeys })); } catch (e) {}
   var a = pvpSimBuildSide(ac, false), d = pvpSimBuildSide(dc, true);
   var seed0 = parseInt(document.getElementById("psSeed").value, 10) || 1;
   var wins = 0, sumTicks = 0, sumA = 0, sumD = 0, first = null;
@@ -17504,11 +17513,12 @@ function pvpSimRun(n) {
   var html = '<div class="ps-sum" style="opacity:.85;">' + POWER_ICON_HTML + ' Governor power: attacker <b>' + fmt(powA) + '</b> · defender <b>' + fmt(powD) + '</b></div><div class="ps-sum" style="opacity:.85;">💵 USD invested: attacker <b>' + fmtUsd(usdA) + '</b> · defender <b>' + fmtUsd(usdD) + '</b></div><div class="ps-sum"><b>' + (n > 1 ? n + ' runs' : 'Result') + ':</b> attacker wins <b>' + Math.round(wins / n * 100) + '%</b>' +
     ' · avg ' + (sumTicks / n).toFixed(1) + ' ticks · avg HP left: you ' + fmt(Math.round(sumA / n)) + ' / enemy ' + fmt(Math.round(sumD / n)) +
     (n > 1 ? ' · ' + wins + ' win' + (wins === 1 ? '' : 's') + ' / ' + (n - wins) + ' loss' + (n - wins === 1 ? '' : 'es') : '') + '</div>';
-  if (cardIdxs.length) html += '<div class="ps-sum" style="opacity:.85;">🃏 Equipped for this run (attacker): <b>' + cardIdxs.map(function (i) { return (game.state.cards[i] && game.state.cards[i].name) || "?"; }).join(", ") + '</b></div>';
+  var cnm = {}; simCardCatalog().forEach(function (c) { cnm[c.key] = c.name; }); var cnames = function (ks) { return ks.map(function (k) { return cnm[k] || k; }).join(", "); };
+  if (cardKeys.length) html += '<div class="ps-sum" style="opacity:.85;">🃏 Cards (attacker): <b>' + cnames(cardKeys) + '</b></div>';
+  if (defCardKeys.length) html += '<div class="ps-sum" style="opacity:.85;">🃏 Cards (defender, hypothetical): <b>' + cnames(defCardKeys) + '</b></div>';
   function wpLine(m) { return Object.keys(m || {}).map(function (id) { var w = WEAPON_DEFS_BY_ID[id]; return w ? w.icon + " " + w.name + " Lv " + m[id] : ""; }).filter(Boolean).join(", "); }
   if (wpLine(ac.weapons)) html += '<div class="ps-sum" style="opacity:.85;">🚀 Weapons (attacker): <b>' + wpLine(ac.weapons) + '</b></div>';
   if (wpLine(dc.weapons)) html += '<div class="ps-sum" style="opacity:.85;">🚀 Weapons (defender, hypothetical): <b>' + wpLine(dc.weapons) + '</b></div>';
-  if (defCardIdxs.length) html += '<div class="ps-sum" style="opacity:.85;">🃏 Equipped for this run (defender, hypothetical): <b>' + defCardIdxs.map(function (i) { return (game.state.cards[i] && game.state.cards[i].name) || "?"; }).join(", ") + '</b></div>';
   if (!a.heroKeys.length) html += '<div class="dev-tools-hint">Attacker has no hero ticked — it fights with troops only.</div>';
   out.innerHTML = html;
   var card = document.createElement("div");
@@ -17639,15 +17649,19 @@ function fortressDetail(k) { /* v1011: the node popup (same box as research) - N
   box.innerHTML = h;
   var up = document.getElementById("ftUpBtn"); if (up) up.onclick = function () { var r = game.researchFortress(k); if (r.ok) persist(); renderFortress(); };
 }
-function pvpSimFortMap(v) { return v === "max" ? fortressMaxMap() : v === "mine" ? (game.state.fortressTech || {}) : v === "base" ? {} : v === "t3" ? { _type: 3 } : v === "t3max" ? fortressMaxMap(3) : null; }
+var pvpSimCopiedOrder = {}; /* v1756: hero formation order from Load mine / Copy (front to back changes who gets hit first) */
+var pvpSimCopiedFort = {}; /* v1756: per side ("a"/"d"/"b") - the fortress map copied by Load mine / Copy to Simulator */
+function pvpSimFortMap(v, cfg) { return v === "max" ? fortressMaxMap() : v === "mine" ? (game.state.fortressTech || {}) : v === "copied" ? ((cfg && cfg.fortMap) || {}) : v === "base" ? {} : v === "t2" ? { _type: 2 } : v === "t2max" ? fortressMaxMap(2) : v === "t3" ? { _type: 3 } : v === "t3max" ? fortressMaxMap(3) : null; } /* v1756: + Type II, + copied map */
 function pvpSimLoadMine(side) {
   var st = game.state, cfg = pvpSimDefaultSide(true);
   cfg.esper = st.equippedEsper || "";
-  cfg.fort = "mine";
+  cfg.fort = "copied"; cfg.fortMap = JSON.parse(JSON.stringify(st.fortressTech || {})); /* v1756: a snapshot of your fortress (type + tree), not a live link */
+  cfg.bonus = simBonusMine();
   cfg.th = st.buildings.townhall.level; cfg.baseHp = arenaBaseHpPlayer;
   cfg.weapons = {}; (st.equippedWeapons || []).forEach(function (wid) { if (WEAPON_DEFS_BY_ID[wid] && !WEAPON_DEFS_BY_ID[wid].visualOnly) cfg.weapons[wid] = game.weaponLevel(wid); }); // your equipped weapons at their real levels
   Object.keys(TROOP_DEFS).forEach(function (t) { cfg.troops[t] = Math.floor(st.troops[t] || 0); });
-  var lead = (st.formations[st.activeFormation || 0] && st.formations[st.activeFormation || 0].heroKeys) || [];
+  var lead = side === "b" ? (st.conquestRoster || []) /* Boss Sim: your Arena / Boss Rush team */ : ((st.formations[st.activeFormation || 0] && st.formations[st.activeFormation || 0].heroKeys) || []); /* PvP Sim: your world march formation */
+  cfg.order = lead.slice();
   pvpSimHeroKeys().forEach(function (k) {
     var h = st.heroes[k]; if (!h) return;
     var sl = h.skillLevels || { conquest: [1, 1, 1], expedition: [1, 1, 1] };
@@ -17656,6 +17670,7 @@ function pvpSimLoadMine(side) {
   cfg.extraPower = Math.max(0, game.governorPower() - pvpSimGovernorPower(cfg, false)); // what your real power has beyond the ticked heroes, troops, Town Hall and fortress the form shows
   cfg.extraUsd = Math.max(0, game.accountUsdValue().investedTotal + fortressUsdOf(st.fortressTech) - pvpSimUsd(cfg, false)); // same reconcile for USD
   pvpSimFill(side || "a", cfg);
+  var cls = side === "b" ? "bsCard" : "psCard-" + (side || "a"); simCardsSet(cls, simCardsFromMine()); /* v1756: your equipped cards too */
 }
 // Builds a simulator "defender" form config from a real/bot defender (see fetchDefenderFormation): their defending army and
 // leaders, every hero's level / stars / skill levels, tech attack + loss-reduction bonuses, Town Hall and Wall.
@@ -17664,7 +17679,7 @@ function pvpSimCfgFromDefender(def) {
   Object.keys(TROOP_DEFS).forEach(function (t) { cfg.troops[t] = Math.floor(def.army[t] || 0); cfg.tech[t] = Math.round((def.sim.troopAtkMult(t) - 1) * 100); });
   cfg.lossRed = Math.round(def.sim.lossReductionAmt() * 100);
   cfg.th = st.buildings.townhall.level; cfg.wall = st.buildings.wall ? st.buildings.wall.level : 0;
-  cfg.baseHp = arenaBaseHpAi; cfg.cannon = true; cfg.esper = st.equippedEsper || ""; cfg.fort = "base";
+  cfg.baseHp = arenaBaseHpAi; cfg.cannon = true; cfg.esper = st.equippedEsper || ""; cfg.fort = "copied"; cfg.fortMap = JSON.parse(JSON.stringify(st.fortressTech || {})); cfg.bonus = Object.assign({}, ZERO_BONUS, bonusOf(def.sim)); cfg.order = (def.heroKeys || []).slice(); /* v1756: their real fortress + hero bonus (was: innate only, no bonus) */
   pvpSimHeroKeys().forEach(function (k) {
     var h = st.heroes[k], owned = !!(h && h.owned), sl = (h && h.skillLevels) || {};
     cfg.heroes[k] = { on: def.heroKeys.indexOf(k) !== -1, level: owned ? Math.max(1, h.level || 1) : 1, arms: owned ? (h.stars | 0) : 0,
@@ -17679,17 +17694,16 @@ function copyCityToSimulator(ownerId, tileId, statusEl) {
   fetchDefenderFormation(ownerId).then(function (def) {
     if (!def) { if (statusEl) statusEl.textContent = "Couldn't read that player's save."; return; }
     var cfg = pvpSimCfgFromDefender(def);
-    var atk = null, cardIdxs = null;
-    if (pvpSimBuilt) { atk = pvpSimRead("a"); cardIdxs = pvpSimReadCardIdxs("a"); }
-    else { try { var sv = JSON.parse(localStorage.getItem(PVPSIM_KEY) || "null"); atk = sv && sv.a; cardIdxs = sv && sv.cardIdxs; } catch (e) {} }
+    var atk = null, cardKeys = null;
+    if (pvpSimBuilt) { atk = pvpSimRead("a"); cardKeys = simCardsRead("psCard-a"); }
+    else { try { var sv = JSON.parse(localStorage.getItem(PVPSIM_KEY) || "null"); atk = sv && sv.a; cardKeys = sv && sv.cardKeys; } catch (e) {} }
     // The defender being loaded here is a real player's city, so its hypothetical card picker resets —
     // it had nothing to do with that player, it was testing against whatever the form held before.
-    try { localStorage.setItem(PVPSIM_KEY, JSON.stringify({ a: atk || undefined, d: cfg, cardIdxs: cardIdxs || undefined })); } catch (e) {}
+    try { localStorage.setItem(PVPSIM_KEY, JSON.stringify({ a: atk || undefined, d: cfg, cardKeys: cardKeys || undefined })); } catch (e) {}
     setScreen("more", "pvpsim");
     initPvpSim();
     pvpSimFill("d", cfg);
-    Array.prototype.slice.call(document.querySelectorAll(".psCard-d")).forEach(function (box) { box.checked = false; });
-    pvpSimUpdateCardsCount("d");
+    simCardsSet("psCard-d", []);
     var note = document.getElementById("psNote");
     if (note) { note.style.display = ""; note.textContent = "Defender loaded from " + ownerId + (tileId ? " (📍 " + tileId.replace(",", ", ") + ")" : "") + ": " + Object.keys(def.army).map(function (t) { return TROOP_ICON[t] + def.army[t]; }).join(" ") + " · Town Hall " + cfg.th + " · Wall " + cfg.wall + ". Base HP is left at your Arena AI setting."; }
     if (statusEl) statusEl.textContent = "";
@@ -17703,25 +17717,28 @@ function copyCityToSimulator(ownerId, tileId, statusEl) {
 // testing — a real defender (bot AI or another player's city) never actually has one of its own, so
 // this only ever does anything inside the simulator (see the aiDmgRamp/aiRegen wiring in
 // arenaMakeSim() and worldPvpBattle()'s defDmgRamp/defRegen opts).
-function pvpSimCardsHtml(side) {
-  var label = side === "d" ? "defender, hypothetical" : "attacker";
-  var named = bossSimNamedCards();
-  if (!named.length) return '<div class="ps-side"><div class="ps-title">🃏 Equipped cards (' + label + ')</div><div class="dev-tools-hint">No named cards yet — name a card on the Cards screen to test its effect here.</div></div>';
-  return '<div class="ps-side"><div class="ps-title">🃏 Equipped cards (' + label + ') <span id="psCardsCount-' + side + '" class="dev-tools-hint"></span></div>' +
-    named.map(function (c) { return '<div class="ps-row"><label class="ps-chk"><input type="checkbox" class="psCard-' + side + '" data-idx="' + c.idx + '"> ' + c.name + '</label></div>'; }).join("") +
-    '<div class="dev-tools-hint">Up to ' + CARD_EQUIP_MAX + ' at once, same cap as the real Cards screen. This is a hypothetical loadout for the sim only — it does not touch which cards are actually equipped on your save' + (side === "d" ? ", and it never reflects a real defender's actual cards (bots and other players' cities don't have any here)" : "") + '.</div></div>';
+// v1756: every card in the game for the simulators (was: only cards you had named on your own save). key = the CARD_EFFECTS_BY_NAME key.
+function simCardCatalog() {
+  var byIdx = {}; Object.keys(CARD_ART_BUILTIN).forEach(function (n) { var c = CARD_ART_BUILTIN[n]; if (c && c.slot != null) byIdx["#" + (c.slot + 1)] = n; });
+  var title = function (n) { return String(n).replace(/(^|\s)\S/g, function (m) { return m.toUpperCase(); }); };
+  return Object.keys(CARD_EFFECTS_BY_NAME).map(function (k) { return { key: k, name: title(k.charAt(0) === "#" ? (byIdx[k] || "Card " + k) : k) }; }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
 }
-function pvpSimUpdateCardsCount(side) {
-  var span = document.getElementById("psCardsCount-" + side); if (!span) return;
-  var n = document.querySelectorAll(".psCard-" + side + ":checked").length;
-  span.textContent = "(" + n + "/" + CARD_EQUIP_MAX + ")";
+function simCardState(keys) { var cards = [], eq = []; (keys || []).forEach(function (k) { if (!CARD_EFFECTS_BY_NAME[k]) return; if (k.charAt(0) === "#") { var i = parseInt(k.slice(1), 10) - 1; cards[i] = {}; eq.push(i); } else { cards.push({ name: k }); eq.push(cards.length - 1); } }); for (var i = 0; i < cards.length; i++) if (!cards[i]) cards[i] = {}; return { cards: cards, equippedCards: eq }; }
+/* All card effects for a hypothetical loadout, in the shape arenaMakeSim / worldPvpBattle take. */
+function simCardKit(keys) { var st = simCardState(keys); return { dmgRamp: equippedDmgRamp(st), regen: equippedRegen(st), summonCall: equippedSummonCall(st), cardMods: cardModsFrom(st) }; }
+function simSalvoFromCfg(map) { return salvoSpec(Object.keys(map || {}), function (wd) { return game.weaponStatsAtLevel(wd, map[wd.id]); }); } /* v1756: the sims ignored Missile Salvo */
+function simBonusMine() { return { atk: heroBonusTotal("atk"), hp: heroBonusTotal("hp"), def: heroBonusTotal("def"), skill: heroBonusTotal("skill") }; } /* Dev Tools bonus + equipment + Sword of Power + weapon levels */
+function simCardsFromMine() { var st = game.state, out = []; (st.equippedCards || []).forEach(function (i) { var k = cardEffectKeyAt(st, i); if (k) out.push(k); }); return out; }
+function simCardsPickerHtml(cls, title, note) {
+  return '<div class="ps-side"><div class="ps-title">🃏 ' + title + ' <span class="dev-tools-hint" data-cards-count="' + cls + '"></span></div>' +
+    simCardCatalog().map(function (c) { return '<div class="ps-row"><label class="ps-chk"><input type="checkbox" class="' + cls + '" data-key="' + c.key + '"> ' + c.name + '</label></div>'; }).join("") +
+    '<div class="dev-tools-hint">Up to ' + CARD_EQUIP_MAX + ' at once, same cap as the real Cards screen. Every card in the game is listed; all of a card\'s effects reach the fight (v1756). ' + (note || "") + '</div></div>';
 }
-function pvpSimReadCardIdxs(side) {
-  var boxes = Array.prototype.slice.call(document.querySelectorAll(".psCard-" + side + ":checked"));
-  return boxes.map(function (b) { return parseInt(b.getAttribute("data-idx"), 10); }).slice(0, CARD_EQUIP_MAX);
-}
-function pvpSimEquippedDmgRamp(idxs) { return equippedDmgRamp({ equippedCards: idxs, cards: game.state.cards }); }
-function pvpSimEquippedRegen(idxs) { return equippedRegen({ equippedCards: idxs, cards: game.state.cards }); }
+function simCardsRead(cls) { return Array.prototype.slice.call(document.querySelectorAll("." + cls + ":checked")).map(function (b) { return b.getAttribute("data-key"); }).slice(0, CARD_EQUIP_MAX); }
+function simCardsSet(cls, keys) { Array.prototype.slice.call(document.querySelectorAll("." + cls)).forEach(function (b) { b.checked = (keys || []).indexOf(b.getAttribute("data-key")) !== -1; }); simCardsCount(cls); }
+function simCardsCount(cls) { var sp = document.querySelector('[data-cards-count="' + cls + '"]'); if (sp) sp.textContent = "(" + document.querySelectorAll("." + cls + ":checked").length + "/" + CARD_EQUIP_MAX + ")"; }
+function simCardsWire(cls) { Array.prototype.slice.call(document.querySelectorAll("." + cls)).forEach(function (box) { box.onchange = function () { if (box.checked && document.querySelectorAll("." + cls + ":checked").length > CARD_EQUIP_MAX) box.checked = false; simCardsCount(cls); }; }); simCardsCount(cls); }
+function pvpSimCardsHtml(side) { return simCardsPickerHtml("psCard-" + side, "Equipped cards (" + (side === "d" ? "defender, hypothetical" : "attacker") + ")", side === "d" ? "A real defender (bot or city) never has cards - this is a what-if." : "Never touches your save."); }
 function pvpSimWire(el) {
   // Sliders <-> number boxes, and the quick +/- and hero buttons (event delegation over the whole form)
   el.addEventListener("input", function (e) {
@@ -17761,7 +17778,7 @@ function initPvpSim() {
   pvpSimBuilt = true;
   var el = document.getElementById("pvpSimBody");
   el.innerHTML = '<div id="psNote" class="dev-tools-hint" style="display:none;"></div><div class="dev-tools-hint">Fights the real world-PvP combat code between two sides you build here. Nothing touches your save. The attacker has no city (only heroes + troops); the defender is a city with its own Town Hall, Wall, base HP and fortress cannon. Each hero can be ticked in or out; the first ' + MAX_FORMATION_HEROES + ' ticked lead.</div>' +
-    '<div class="ps-btns"><button id="psLoadMine" class="secondary">⬇️ Load my heroes & troops → Attacker</button><button id="psMirror" class="secondary">🪞 Copy Attacker → Defender</button><button id="psMirrorAll" class="secondary">🪞 Mirror player simulator settings to opponent simulator CPU</button><button id="psReset" class="secondary">↺ Reset</button></div>' +
+    '<div class="ps-btns"><button id="psLoadMine" class="secondary">⬇️ Load my build → Attacker</button><button id="psMirror" class="secondary">🪞 Copy Attacker → Defender</button><button id="psMirrorAll" class="secondary">🪞 Mirror player simulator settings to opponent simulator CPU</button><button id="psReset" class="secondary">↺ Reset</button></div>' +
     pvpSimCardsHtml("a") +
     pvpSimHtml("a", "⚔️ Attacker (you)") +
     pvpSimCardsHtml("d") +
@@ -17772,19 +17789,9 @@ function initPvpSim() {
   var saved = null; try { saved = JSON.parse(localStorage.getItem(PVPSIM_KEY) || "null"); } catch (e) {}
   var da = pvpSimDefaultSide(true), dd = pvpSimDefaultSide(false);
   pvpSimFill("a", (saved && saved.a) || da); pvpSimFill("d", (saved && saved.d) || dd);
-  if (saved && Array.isArray(saved.cardIdxs)) saved.cardIdxs.forEach(function (idx) { var box = document.querySelector('.psCard-a[data-idx="' + idx + '"]'); if (box) box.checked = true; });
-  if (saved && Array.isArray(saved.defCardIdxs)) saved.defCardIdxs.forEach(function (idx) { var box = document.querySelector('.psCard-d[data-idx="' + idx + '"]'); if (box) box.checked = true; });
   pvpSimWire(el);
-  pvpSimUpdateCardsCount("a"); pvpSimUpdateCardsCount("d");
-  // Enforce the same CARD_EQUIP_MAX cap as the real Cards screen: checking one past the cap un-checks it again. Each side's cap is independent.
-  ["a", "d"].forEach(function (side) {
-    Array.prototype.slice.call(document.querySelectorAll(".psCard-" + side)).forEach(function (box) {
-      box.onchange = function () {
-        if (box.checked && document.querySelectorAll(".psCard-" + side + ":checked").length > CARD_EQUIP_MAX) box.checked = false;
-        pvpSimUpdateCardsCount(side);
-      };
-    });
-  });
+  simCardsWire("psCard-a"); simCardsWire("psCard-d");
+  if (saved) { simCardsSet("psCard-a", saved.cardKeys || []); simCardsSet("psCard-d", saved.defCardKeys || []); } /* v1756: cards saved by key (old saves stored card indexes - dropped) */
   document.getElementById("psRun1").onclick = function () { pvpSimRun(1); };
   document.getElementById("psRunN").onclick = function () { pvpSimRun(Math.max(2, Math.min(500, parseInt(document.getElementById("psN").value, 10) || 100))); };
   document.getElementById("psLoadMine").onclick = function () { pvpSimLoadMine("a"); }; // (the click event must not be passed as the side)
@@ -17795,10 +17802,7 @@ function initPvpSim() {
   document.getElementById("psMirror").onclick = function () { var c = pvpSimRead("a"); var d = pvpSimRead("d"); c.th = d.th; c.wall = d.wall; c.baseHp = d.baseHp; c.cannon = d.cannon; pvpSimFill("d", c); };
   document.getElementById("psReset").onclick = function () {
     var x = pvpSimDefaultSide(true); pvpSimFill("a", x); pvpSimFill("d", pvpSimDefaultSide(false));
-    ["a", "d"].forEach(function (side) {
-      Array.prototype.slice.call(document.querySelectorAll(".psCard-" + side)).forEach(function (box) { box.checked = false; });
-      pvpSimUpdateCardsCount(side);
-    });
+    simCardsSet("psCard-a", []); simCardsSet("psCard-d", []);
     document.getElementById("pvpSimOut").innerHTML = "";
   };
 }
@@ -17808,58 +17812,34 @@ function initPvpSim() {
 // troops, tech, Town Hall, Esper, fortress tech, cannon...) and it measures how much damage that build deals in N seconds (default 20).
 // Same combat engine as the Arena / world PvP (arenaMakeSim); the boss's defense is armor = D / (D + WORLD_PVP_DEF_K).
 var BOSSSIM_KEY = "kingdom_bosssim_v1", bossSimBuilt = false;
-function bossSimStatsFor(pc) {
+function bossSimStatsFor(pc, kaiju) {
   var a = pvpSimBuildSide(pc, false);
   var keys = a.heroKeys.filter(function (k) { return HERO_DEFS[k] && HERO_DEFS[k].conquestSkills; });
-  var st = arenaSideStats(keys, a.sim.state.heroes, a.sim.state.buildings.townhall.level, 0, true, pc.esper || null, pvpSimFortMap(pc.fort), pc.atkPerPower);
+  var st = arenaSideStats(keys, a.sim.state.heroes, a.sim.state.buildings.townhall.level, pc.baseHp || 0, true, pc.esper || null, pvpSimFortMap(pc.fort, pc), pc.atkPerPower, pc.bonus || ZERO_BONUS); /* v1756: hero bonus % now counts (was always 0) */
   worldPvpAddTroops(st, a.army, {}, keys, a.sim, 0, WORLD_PVP_TROOP_SQRT_REF); /* v1725: square-root troop damage, same as world PvP and siege */
   if (pc.critRate != null && st.critRate > 0) st.critRate = pc.critRate / 100;
-  st.maxHp = 1e15; st.dmgTakenMult = 1; // the boss never hurts you; your own HP is irrelevant
   return st;
 }
-// Cards equipped for the sim: a hypothetical selection independent of what's actually equipped in the real
-// save (same "build it here, don't touch my save" spirit as the rest of the Boss Simulator's player build).
-// Only cards the player has actually named show up as options — this reads REAL card names from game.state.cards
-// (that part isn't hypothetical, you can't test a card you haven't created), but WHICH of them count as
-// "equipped" for this run is whatever's checked here, capped at CARD_EQUIP_MAX same as the real game.
-function bossSimNamedCards() {
-  var out = [];
-  (game.state.cards || []).forEach(function (c, idx) { if (c && c.name && String(c.name).trim()) out.push({ idx: idx, name: String(c.name).trim() }); });
-  return out;
-}
-function bossSimCardsHtml() {
-  var named = bossSimNamedCards();
-  if (!named.length) return '<div class="ps-side"><div class="ps-title">🃏 Equipped cards</div><div class="dev-tools-hint">No named cards yet — name a card on the Cards screen to test its effect here.</div></div>';
-  return '<div class="ps-side"><div class="ps-title">🃏 Equipped cards <span id="bsCardsCount" class="dev-tools-hint"></span></div>' +
-    named.map(function (c) { return '<div class="ps-row"><label class="ps-chk"><input type="checkbox" class="bsCard" data-idx="' + c.idx + '"> ' + c.name + '</label></div>'; }).join("") +
-    '<div class="dev-tools-hint">Up to ' + CARD_EQUIP_MAX + ' at once, same cap as the real Cards screen. This is a hypothetical loadout for the sim only — it does not touch which cards are actually equipped on your save.</div></div>';
-}
-function bossSimUpdateCardsCount() {
-  var span = document.getElementById("bsCardsCount"); if (!span) return;
-  var n = document.querySelectorAll(".bsCard:checked").length;
-  span.textContent = "(" + n + "/" + CARD_EQUIP_MAX + ")";
-}
-function bossSimReadCardIdxs() {
-  var boxes = Array.prototype.slice.call(document.querySelectorAll(".bsCard:checked"));
-  return boxes.map(function (b) { return parseInt(b.getAttribute("data-idx"), 10); }).slice(0, CARD_EQUIP_MAX);
-}
-function bossSimEquippedDmgRamp(idxs) { return equippedDmgRamp({ equippedCards: idxs, cards: game.state.cards }); }
-function bossSimEquippedRegen(idxs) { return equippedRegen({ equippedCards: idxs, cards: game.state.cards }); }
+function bossSimCardsHtml() { return simCardsPickerHtml("bsCard", "Equipped cards", "A hypothetical loadout for the sim only - it does not touch your save."); }
 function bossSimReadBoss() {
   function n(id, d) { var v = parseFloat(document.getElementById(id).value); return isNaN(v) ? d : v; }
-  var cardIdxs = bossSimReadCardIdxs();
-  return { def: Math.max(0, n("bsDef", 0)), secs: Math.max(1, Math.min(3600, n("bsSecs", 20))), rampEvery: Math.max(0, n("bsRampEvery", 5)), rampPct: Math.max(0, n("bsRampPct", 0)), rampCompound: document.getElementById("bsRampMode").value === "compound", seed: Math.floor(n("bsSeed", 1)), cardIdxs: cardIdxs, dmgRamp: bossSimEquippedDmgRamp(cardIdxs), regen: bossSimEquippedRegen(cardIdxs) };
+  var cardKeys = simCardsRead("bsCard"), kit = simCardKit(cardKeys);
+  return { def: Math.max(0, n("bsDef", 0)), secs: Math.max(1, Math.min(3600, n("bsSecs", 20))), rampEvery: Math.max(0, n("bsRampEvery", 5)), rampPct: Math.max(0, n("bsRampPct", 0)), rampCompound: document.getElementById("bsRampMode").value === "compound", seed: Math.floor(n("bsSeed", 1)), cardKeys: cardKeys, kit: kit, kaiju: !!(document.getElementById("bsKaiju") || {}).checked };
 }
 function bossSimFight(pc, boss, seed) {
-  var P = bossSimStatsFor(pc);
-  var armor = boss.def / (boss.def + WORLD_PVP_DEF_K);
-  var B = { maxHp: Infinity, actives: [], attackers: [], dmgTakenMult: 1 - armor, cannonMult: 1, critRate: 0, critMult: 1 };
+  var KJ = !!boss.kaiju, P = bossSimStatsFor(pc, KJ), kit = boss.kit || simCardKit([]);
+  var armor = KJ ? 0 : boss.def / (boss.def + WORLD_PVP_DEF_K);
+  var B = KJ ? kaijuAiStats(KAIJU_INF) : { maxHp: Infinity, actives: [], attackers: [], dmgTakenMult: 1 - armor, cannonMult: 1, critRate: 0, critMult: 1, kaiju: true }; /* v1756: kaiju flag = 'X% of max HP' hits (Railgun, Cannon Doctrine, Polar Flux) use YOUR max HP, same rule as the kaiju - they made the bag's damage Infinity */
   var tr = { src: {}, aiSrc: {}, perTick: [] }; // v467: aiSrc was missing, so every Boss Sim run threw inside arenaMakeSim's trAddAi (the boss's own damage log)
-  var ticks = Math.max(1, Math.floor(boss.secs * 1000 / ARENA_TICK_MS));
-  var sim = arenaMakeSim(P, B, { rng: worldPvpSeededRng("boss|" + seed), critSeed: "boss|" + seed, playerCannon: pc.cannon !== false, aiCannon: false, maxTicks: ticks, trace: tr, critRamp: boss.rampPct > 0 && boss.rampEvery > 0 ? { everySec: boss.rampEvery, pct: boss.rampPct, compound: boss.rampCompound } : null, dmgRamp: boss.dmgRamp, regen: boss.regen, weapons: simWeaponsFromCfg(pc.weapons, P.bnA), shieldPct: simShieldPctFromCfg(pc.weapons) });
+  var ticks = KJ ? kaijuTicks() : Math.max(1, Math.floor(boss.secs * 1000 / ARENA_TICK_MS));
+  /* v1756: every card effect (cardMods, summonCall too), Missile Salvo, and a Kaiju mode that builds the fight exactly like the real Boss Rush (runArenaBattle with arenaOpponent.kaiju) */
+  var o = { rng: worldPvpSeededRng("boss|" + seed), critSeed: "boss|" + seed, playerCannon: pc.cannon !== false, aiCannon: false, maxTicks: ticks, trace: tr, dmgRamp: kit.dmgRamp, regen: kit.regen, summonCall: kit.summonCall, cardMods: kit.cardMods, salvoP: simSalvoFromCfg(pc.weapons), weapons: simWeaponsFromCfg(pc.weapons, P.bnA), shieldPct: simShieldPctFromCfg(pc.weapons) };
+  if (KJ) { o.boss = kaijuBossCfg(); o.aiWeapons = []; }
+  else o.critRamp = boss.rampPct > 0 && boss.rampEvery > 0 ? { everySec: boss.rampEvery, pct: boss.rampPct, compound: boss.rampCompound } : null;
+  var sim = arenaMakeSim(P, B, o);
   var winner = sim.runToEnd();
-  var dealt = tr.perTick.reduce(function (a, b) { return a + b; }, 0); // the boss has unlimited HP, so damage is summed from the log
-  return { dealt: dealt, ticksUsed: sim.tick, ticks: ticks, tr: tr, armor: armor };
+  var dealt = KJ ? KAIJU_INF - sim.aiHp : tr.perTick.reduce(function (a, b) { return a + b; }, 0); // the boss has unlimited HP, so damage is summed from the log
+  return { dealt: dealt, ticksUsed: sim.tick, ticks: ticks, tr: tr, armor: armor, kaiju: KJ, lv: KJ ? kaijuLevel(kaijuBR(), dealt).lv : 0, alive: sim.playerHp > 0 };
 }
 function bossSimLabel(k) {
   if (k === "cannon") return "💣 Fortress cannon";
@@ -17873,18 +17853,19 @@ function bossSimLabel(k) {
 }
 function bossSimRun(n) {
   var pc = pvpSimRead("b"), boss = bossSimReadBoss();
-  try { localStorage.setItem(BOSSSIM_KEY, JSON.stringify({ p: pc, boss: boss })); } catch (e) {}
+  try { var bsv = Object.assign({}, boss); delete bsv.kit; localStorage.setItem(BOSSSIM_KEY, JSON.stringify({ p: pc, boss: bsv })); } catch (e) {}
   var out = document.getElementById("bossSimOut");
   var runs = [];
   for (var i = 0; i < n; i++) runs.push(bossSimFight(pc, boss, boss.seed + i));
   var r = runs[0], secsUsed = r.ticksUsed * ARENA_TICK_MS / 1000;
-  var h = '<div class="ps-sum"><div><b>🎯 Boss Simulator</b> · unlimited HP · Defense ' + fmt(boss.def) + ' (' + Math.round(r.armor * 1000) / 10 + '% damage reduction) · ' + boss.secs + 's</div>';
+  if (r.kaiju) { boss.secs = r.ticks * ARENA_TICK_MS / 1000; var kl = runs.map(function (x) { return x.lv; }); }
+  var h = r.kaiju ? '<div class="ps-sum"><div><b>🦖 Kaiju (Boss Rush)</b> · same fight as the real one: he hits back, ' + boss.secs + 's · level reached: <b>' + (n > 1 ? Math.min.apply(null, kl) + '–' + Math.max.apply(null, kl) : r.lv) + '</b>' + (r.alive ? '' : ' · ☠️ your fortress fell') + '</div>' : '<div class="ps-sum"><div><b>🎯 Boss Simulator</b> · unlimited HP · Defense ' + fmt(boss.def) + ' (' + Math.round(r.armor * 1000) / 10 + '% damage reduction) · ' + boss.secs + 's</div>';
   if (n > 1) {
     var d = runs.map(function (x) { return x.dealt; }), avg = d.reduce(function (a, b) { return a + b; }, 0) / n;
     h += '<div class="ps-sum" style="margin:6px 0;"><b>' + n + ' runs</b> (seeds ' + boss.seed + '–' + (boss.seed + n - 1) + '): avg <b>' + fmt(avg) + '</b> damage · min ' + fmt(Math.min.apply(null, d)) + ' · max ' + fmt(Math.max.apply(null, d)) + ' · avg DPS ' + fmt(avg / boss.secs) + '</div><div class="dev-tools-hint">Breakdown below is seed ' + boss.seed + '.</div>';
   }
   h += '<div class="ps-sum" style="margin:6px 0;">Total damage in ' + boss.secs + 's: <b>' + fmt(r.dealt) + '</b> · DPS: <b>' + fmt(r.dealt / boss.secs) + '</b></div>';
-  if (boss.cardIdxs && boss.cardIdxs.length) h += '<div class="ps-sum" style="margin:6px 0;">🃏 Equipped for this run: <b>' + boss.cardIdxs.map(function (i) { return (game.state.cards[i] && game.state.cards[i].name) || "?"; }).join(", ") + '</b></div>';
+  if (boss.cardKeys && boss.cardKeys.length) { var cnm = {}; simCardCatalog().forEach(function (c) { cnm[c.key] = c.name; }); h += '<div class="ps-sum" style="margin:6px 0;">🃏 Equipped for this run: <b>' + boss.cardKeys.map(function (k) { return cnm[k] || k; }).join(", ") + '</b></div>'; }
   var bsW = Object.keys(pc.weapons || {}).map(function (id) { var w = WEAPON_DEFS_BY_ID[id]; return w ? w.icon + " " + w.name + " Lv " + pc.weapons[id] : ""; }).filter(Boolean).join(", ");
   if (bsW) h += '<div class="ps-sum" style="margin:6px 0;">🚀 Weapons for this run: <b>' + bsW + '</b></div>';
   // damage per second (ticks grouped into whole seconds)
@@ -17910,9 +17891,10 @@ function initBossSim() {
   if (bossSimBuilt) return;
   bossSimBuilt = true;
   var el = document.getElementById("bossSimBody");
-  el.innerHTML = '<div class="dev-tools-hint">A punching bag: the boss has unlimited HP (it cannot be killed) and never hits back; you can change its Defense. Build the player below (same options as the PvP simulator\'s attacker) and see how much damage it deals. Nothing touches your save. Extra base HP does nothing here (the boss can\'t hurt you).</div>' +
-    '<div class="ps-btns"><button id="bsLoadMine" class="secondary">⬇️ Load my heroes & troops</button><button id="bsReset" class="secondary">↺ Reset</button></div>' +
+  el.innerHTML = '<div class="dev-tools-hint">A punching bag: the boss has unlimited HP (it cannot be killed) and never hits back; you can change its Defense. Build the player below (same options as the PvP simulator\'s attacker) and see how much damage it deals. Nothing touches your save. Your fortress HP (base HP, HP bonus) matters for hits that deal a % of max HP (Railgun, Cannon Doctrine) and in Kaiju mode.</div>' +
+    '<div class="ps-btns"><button id="bsLoadMine" class="secondary">⬇️ Load my build</button><button id="bsReset" class="secondary">↺ Reset</button></div>' +
     '<div class="ps-side"><div class="ps-title">🎯 Boss</div>' +
+    '<div class="ps-row"><label class="ps-chk"><input type="checkbox" id="bsKaiju"> 🦖 Kaiju mode - the real Boss Rush fight (he hits back, real fight length, shows the level reached; Defense, Duration and the ramp below are ignored)</label></div>' +
         '<div class="ps-srow"><span class="ps-sl">Defense</span><input class="ps-in ps-wide" style="width:170px" type="number" min="0" id="bsDef" value="0"></div>' +
     '<div class="ps-srow"><span class="ps-sl">Duration (seconds)</span><input class="ps-in" type="number" min="1" max="3600" id="bsSecs" value="20"></div>' +
     '<div class="ps-lbl">Fortress crit damage ramp (0% = off)</div>' +
@@ -17928,21 +17910,14 @@ function initBossSim() {
   pvpSimFill("b", (saved && saved.p) || pvpSimDefaultSide(true));
   if (saved && saved.boss) {
     document.getElementById("bsDef").value = saved.boss.def; document.getElementById("bsSecs").value = saved.boss.secs; if (saved.boss.rampEvery != null) document.getElementById("bsRampEvery").value = saved.boss.rampEvery; if (saved.boss.rampPct != null) document.getElementById("bsRampPct").value = saved.boss.rampPct; if (saved.boss.rampCompound) document.getElementById("bsRampMode").value = "compound"; document.getElementById("bsSeed").value = saved.boss.seed;
-    if (Array.isArray(saved.boss.cardIdxs)) saved.boss.cardIdxs.forEach(function (idx) { var box = document.querySelector('.bsCard[data-idx="' + idx + '"]'); if (box) box.checked = true; });
+    simCardsSet("bsCard", saved.boss.cardKeys || []); document.getElementById("bsKaiju").checked = !!saved.boss.kaiju;
   }
   pvpSimWire(el);
-  bossSimUpdateCardsCount();
-  // Enforce the same CARD_EQUIP_MAX cap as the real Cards screen: checking one past the cap un-checks it again.
-  Array.prototype.slice.call(document.querySelectorAll(".bsCard")).forEach(function (box) {
-    box.onchange = function () {
-      if (box.checked && document.querySelectorAll(".bsCard:checked").length > CARD_EQUIP_MAX) box.checked = false;
-      bossSimUpdateCardsCount();
-    };
-  });
+  simCardsWire("bsCard");
   document.getElementById("bsRun1").onclick = function () { bossSimRun(1); };
   document.getElementById("bsRunN").onclick = function () { bossSimRun(Math.max(2, Math.min(500, parseInt(document.getElementById("bsN").value, 10) || 50))); };
   document.getElementById("bsLoadMine").onclick = function () { pvpSimLoadMine("b"); };
-  document.getElementById("bsReset").onclick = function () { pvpSimFill("b", pvpSimDefaultSide(true)); document.getElementById("bossSimOut").innerHTML = ""; };
+  document.getElementById("bsReset").onclick = function () { pvpSimFill("b", pvpSimDefaultSide(true)); simCardsSet("bsCard", []); document.getElementById("bsKaiju").checked = false; document.getElementById("bossSimOut").innerHTML = ""; };
 }
 function renderInfirmary() {
   var el = document.getElementById("infirmaryPanel");
@@ -23654,7 +23629,7 @@ function worldPvpBattle(march, def, ownerId, opts) {
   var kitOf = function (st, am) { var m = {}; (st.equippedWeapons || []).forEach(function (id) { if (st.weaponLevels && st.weaponLevels[id] > 0) m[id] = st.weaponLevels[id]; }); return botWeaponsToSim(m, am); /* v1190: + that side's ATK bonus */ };
   var atkKit = opts.atkWeapons !== undefined ? null : (asim === game ? { specs: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), salvo: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }) } : kitOf(asim.state, atkStats.bnA));
   var defKit = opts.defWeapons !== undefined ? null : kitOf(dsim.state, defStats.bnA);
-  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, summonCall: atkSummonCall, aiSummonCall: opts.defSummonCall || null, cardMods: atkCardMods, aiCardMods: opts.defCardMods || null, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : null, salvoA: defKit ? defKit.salvo : null, trace: opts.trace });
+  var sim = arenaMakeSim(atkStats, defStats, { rng: worldPvpSeededRng(seedStr), critSeed: seedStr, playerCannon: opts.atkCannon !== false, aiCannon: opts.defCannon !== false, maxTicks: WORLD_PVP_MAX_TICKS, dmgRamp: atkDmgRamp, regen: atkRegen, summonCall: atkSummonCall, aiSummonCall: opts.defSummonCall || null, cardMods: atkCardMods, aiCardMods: opts.defCardMods || null, aiDmgRamp: opts.defDmgRamp || null, aiRegen: opts.defRegen || null, weapons: atkKit ? atkKit.specs : opts.atkWeapons, aiWeapons: defKit ? defKit.specs : opts.defWeapons, shieldPct: atkKit ? atkKit.shieldPct : (opts.atkShieldPct || 0), aiShieldPct: defKit ? defKit.shieldPct : (opts.defShieldPct || 0), salvoP: atkKit ? atkKit.salvo : (opts.atkSalvo || null), salvoA: defKit ? defKit.salvo : (opts.defSalvo || null), trace: opts.trace }); /* v1756: atkSalvo/defSalvo = Missile Salvo for the simulators' hand-built weapon lists */
   var winner = sim.runToEnd();
   var atkFrac = atkMax > 0 ? 1 - sim.playerHp / atkMax : 0, defFrac = defMax > 0 ? 1 - sim.aiHp / defMax : 0;
   var atkRatio = atkFrac * LOSS_FACTOR * (1 - asim.lossReductionAmt()) * (1 - asim.heroLeadLossReduction(atkKeys));
