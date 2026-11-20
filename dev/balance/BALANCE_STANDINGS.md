@@ -233,3 +233,9 @@ Same setup as the fight-length baseline (all heroes Lv80, 5 full stars, skills 5
 | +100% both | 23.9 / 1% | 27.3 / 14% | 53.2 / 63% | 56.0 / 53% | 57.3 / 66% | 59.9 / 100% |
 One side only (same fortress both sides), win % of the side with the bonus: +50% -> F1v1 51%, F2v2 80%, F3v3 83%; +100% -> 57% / 73% / 88%.
 Takeaway: barely shortens fights (even +100% saves ~1-3 s; F3 v F3 still always hits the timer), but in an even fight (same fortress) the side with it wins far more often (+50% -> ~80% in F2/F3 mirrors). Fortress type still decides mismatched fights.
+Pushed further (both sides, Harley "keep increasing it until you see a difference"):
+| x3 | 21.0 / 1% | 25.4 / 10% | 52.3 / 63% | 52.3 / 39% | 55.1 / 58% | 59.9 / 100% |
+| x5 | 18.9 / 1% | 23.7 / 10% | 51.4 / 63% | 44.7 / 16% | 48.8 / 38% | 59.9 / 100% |
+| x10 | 18.7 / 1% | 22.8 / 5% | 44.7 / 51% | 31.7 / 4% | 39.5 / 14% | 59.4 / 94% |
+| x20 | 13.2 / 0% | 20.1 / 3% | 32.4 / 31% | 25.7 / 0% | 34.3 / 6% | 55.3 / 69% |
+Clear drop from x3-x5 (F1 v F3 58 s -> 45 s at x5); F2 v F2 needs ~x10; F3 v F3 only moves at x10-x20. Skill damage alone is a weak lever for fight length.
