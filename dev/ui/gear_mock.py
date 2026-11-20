@@ -17,6 +17,7 @@ mask[330:480, 156:178] = 0; mask[330:480, W - 178:W - 156] = 0   # leave the shi
 clean = cv2.inpaint(src, mask, 9, cv2.INPAINT_TELEA)
 base = Image.fromarray(cv2.cvtColor(clean, cv2.COLOR_BGR2RGB)).convert('RGBA')
 L = lambda n: ImageFont.truetype('fonts/LilitaOne-Regular.woff', n)
+CONTRAST = float(__import__('os').environ.get('CONTRAST', '2.0'))
 S = 112; xs = [42, W - 42 - S]; ys = [150, 300, 450]
 GEAR = [  # (icon, tier colour, tier label, stars, level, upgradable, gems)  Harley 20 Nov: tiers grey -> blue -> purple -> orange -> red; stars = progress inside a tier
     ('helm', 'red', 'T5', 3, 121, True, ['blue'] * 3), ('armour', 'gold', 'T4', 2, 94, True, ['green', 'green', None]), ('gauntlet', 'grey', 'T1', 1, 40, False, ['gold', None, None]),
@@ -50,7 +51,7 @@ k = 0
 for x in xs:
     for y in ys:
         ic, tier, P, st, lv, up, gems = GEAR[k]; k += 1
-        base.alpha_composite(slab(S, tier), (x, y))
+        base.alpha_composite(slab(S, tier, contrast=CONTRAST), (x, y))
         icon = Image.open(D + f'icon_{ic}.png').convert('RGBA'); f = (S * 0.70) / max(icon.size); icon = icon.resize((int(icon.width * f), int(icon.height * f)), Image.LANCZOS)
         base.alpha_composite(icon, (x + (S - icon.width) // 2, y + (S - icon.height) // 2))   # centred in the square
         d = ImageDraw.Draw(base)
