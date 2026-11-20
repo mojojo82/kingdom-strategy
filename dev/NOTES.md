@@ -6247,3 +6247,10 @@ Cause (measured headless): while Fear is on a hero (and on Baelgor for ~1.8 s wh
 Fix: fearLayer crops the layer to the area around that hero (where he stood last frame: 100 css px each side, 150 up, 40 down - room for his name, bar and swings); fearTint / fearBlit honour the crop offset (c._ox / c._oy). First frame of a Fear (no previous spot) still uses the full canvas; the spot is forgotten when Fear ends. Same picture.
 Checks (headless, 430 px, CPU x2, same team + opponent, 4 fights each): frames over 0.1 s per 15 s fight 10-12 before -> 1-6 after (mostly 1-2); long tasks 3.2-5.0 s -> 0.6-3.3 s (mostly ~1 s). Frame-by-frame recording of a Fear on Hanzo, before vs after: same look, nothing clipped.
 Not changed: the heartbeat's full-screen colour drain (a "saturation" blend over the whole battle, a few times per Fear) - may still cost on phones.
+
+## v1763 — Lighter Torvald sheet (TEST)
+Harley picked the middle option of the side-by-side (Torvald compare videos: now / 1.5 sheet px per phone px / + half idle frames).
+- torvald_anim_v4.webp = torvald_anim_v3 scaled x0.675 (Lanczos), same frames (idle 41, run 29, attack 21, attack2 23), same wrap/rows: frame 347x302 -> 234x202, sheet 3817x3926 (15 MP, ~60 MB decoded) -> 2574x2626 (6.8 MP, ~27 MB); file 1.9 MB -> 1.3 MB. ~1.5 sheet px per phone px (v1720's 2x rebuild was ~2.2). v3 kept in art/heroes/torvald/; LARGE frames stay in art/originals.
+- Check (headless, drawn with drawHeroAnim at 3x): old vs new drawn box within 1 px for idle / run / attack at 3 times each - same place and size.
+- Not changed: torvald_skill_anim_v2 (also a v1720 2x sheet, 2.4 MP), the other heavy heroes (Baelgor, Iron Lily, Hanzo, Tom) - waiting on Harley.
+- Context (headless Arena audit, each hero alone vs Pip, 2x CPU slowdown): drawing time per frame Baelgor 17.6 ms, Torvald 15.3, Iron Lily 14.0, Hanzo 10.2, Tom 10.2, everyone else 2.2-3.7 (no hero 2.2-2.4). Droid Call: no measurable cost.
