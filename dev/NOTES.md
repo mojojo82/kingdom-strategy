@@ -6195,3 +6195,6 @@ Step 3 (part 2). Every second weekend, Friday to Sunday UTC (weeks where week % 
 
 ## v1754 (20 Nov 2026) - Governor Gear boss damage values
 - Harley: 1 billion kaiju damage = level 100; the gear boss piece must get a whale there. Kaiju fights headless: best whale (F2, Clone Task + Droid Call + Duplicate, Sword 100, equipment Boss Damage 72%) = 193M with no gear, straight line with gear boss damage -> **+420% at Red T3 ~ 1.00B**. GOV_GEAR_PIECES.boss filled (40 steps, same curve). Multiplies with equipment Boss Damage. Still data only - not wired in. Troop damage still null. Results in dev/balance/BALANCE_STANDINGS.md, script dev/balance/kaiju_gear_boss.js.
+
+## v1755 (20 Nov 2026) - Governor Gear boss damage cap +500%
+- Harley: "lets make it a clean 500%". GOV_GEAR_PIECES.boss now tops out at +500% at Red T3 (same 40-step curve). Best maxed whale ~1.16B (level 100 at ~+420%, Yellow T3 / early Red). Still data only.
