@@ -6223,3 +6223,12 @@ Checks (headless, maxed account): bonusOf(game) = the full bonus (13,550% each);
 
 ## v1759 — v1758 undone (TEST)
 Harley: "I didnt ask you to change anything" / "You've modified the look of the fights (heroes moving faster)". v1758 was made without being asked. Reverted in full: Arena run lanes are measured on the phone's own canvas again (as v1757), and the ship-picture stand-in width is back to 120. Lesson: "how can we..." is a question - answer with options, don't change the game.
+
+## v1760 — Conquest UI no longer jumps after opening (TEST)
+Harley: the Conquest UI moved up and down after loading (since the blue UI). "Just do the best option to prevent the ui from jumping around."
+Cause (measured headless, 430 px wide): on phones the battle picture stretches to fill the space above the brown panel. It was measured the moment Conquest opened, while the skill timers row was still empty (22 px); a moment later the timers filled in (72 px), the panel overflowed, and the picture only re-checked its size every 0.7 s - then everything jumped 50 px (blue UI) / 36 px (classic).
+Fix (final layout unchanged - same 421 px picture as before once settled):
+- The skill timers row reserves its full 72 px from the start (CSS min-height).
+- Any size change in the brown panel re-fits the picture at once (ResizeObserver), not at the next 0.7 s check.
+- The fit measures where the panel ends up, not mid screen-swap slide (classic UI), settles in one go, and re-settles when the slide ends.
+Measured after: blue UI - no movement at all from the first frame. Classic UI - one 6 px settle at ~0.4-0.5 s (was 14 px + 36 px). No console errors.

@@ -2475,7 +2475,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     body[data-screen="conquest"][data-sub="scene"] #layout { overflow-y:auto; overscroll-behavior:none; }
         #idleSkillSpacer { display:none; }
     body[data-screen="conquest"][data-sub="scene"] #idleSkillSpacer { display:block; }
-    body[data-screen="conquest"][data-sub="scene"] #idleSkillDock { flex:0 0 auto; display:flex; align-items:flex-start; justify-content:center; background:#42301c; padding-bottom:0; position:relative; line-height:normal; }
+    body[data-screen="conquest"][data-sub="scene"] #idleSkillDock { min-height:72px; /* v1760: the skill timers row's full height from the start - it filled in a moment after Conquest opened and pushed the panel down (the UI jumped) */ flex:0 0 auto; display:flex; align-items:flex-start; justify-content:center; background:#42301c; padding-bottom:0; position:relative; line-height:normal; }
     body[data-screen="conquest"][data-sub="scene"] #idleSkillDock .idle-skillbar { background:#42301c; border-top:2px solid #836a41; width:100%; }
         body[data-screen="conquest"][data-sub="scene"] #idleBottom { margin-top:0; flex:1 1 auto; display:flex; flex-direction:column; }
     #idleBottom { background:#2b1c10; }
@@ -14593,7 +14593,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1759"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1760"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -32268,6 +32268,7 @@ function idleFitSky(cv) {
   var navOn = nav && nav.offsetParent && nav.getBoundingClientRect().height > 0;
   if (navOn && window.innerWidth <= 900) {
     var bottom = 0; document.querySelectorAll("#conquestModeContent .idle-power-slots").forEach(function (e) { if (e.offsetParent) bottom = Math.max(bottom, e.getBoundingClientRect().bottom); });
+    try { var lay = document.getElementById("layout"), tf = lay && getComputedStyle(lay).transform; if (tf && tf !== "none") { var mm = tf.match(/matrix\(([^)]+)\)/); if (mm) bottom -= parseFloat(mm[1].split(",")[5]) || 0; } } catch (eT) {} /* v1760: measure where the panel ENDS UP, not mid screen-swap slide (classic UI) - that wrong reading was corrected 0.7 s later and the UI jumped */
     if (bottom > 0) skyH = Math.max(0, Math.min(400, Math.floor(nav.getBoundingClientRect().top - bottom - 8 + cur)));
   }
   var baseH = Math.round(cv.clientWidth * 240 / 400);
@@ -32290,7 +32291,7 @@ function resizeIdleCanvas() {
   // again once the tab is actually visible — leaving the canvas
   // permanently under-resolution (blurry, upscaled) until then.
   if (rect.width === 0 || rect.height === 0) return;
-  if (idleFitSky(canvas)) rect = canvas.getBoundingClientRect();
+  if (idleFitSky(canvas)) { for (var fitI = 0; fitI < 3 && idleFitSky(canvas); fitI++) {} rect = canvas.getBoundingClientRect(); } /* v1760: settle in one go (one pass could leave it a few px off until the next re-check) */
   var dpr = canvasDPR();
   // Read the actual rendered height instead of a hardcoded 230 — the CSS
   // aspect-ratio:400/230 rule on #idleCanvas now derives that displayed
@@ -35831,6 +35832,10 @@ function lilitaLoad() {
   box.insertBefore(ph, box.firstChild);
   function syncSpacer() { ph.style.minHeight = "112px"; }  // v700: at least 112px so the 2x5 icon grid can be a decent size
   if (sk && window.ResizeObserver) new ResizeObserver(syncSpacer).observe(sk);
+  /* v1760 (Harley: the Conquest UI jumped up and down after loading): when anything in the brown panel changes height, re-fit the battle picture at once
+     (it used to wait for the 0.7 s re-check, so the panel overflowed for a moment and then everything jumped) */
+  if (window.ResizeObserver) { var refit = function () { try { if (document.body.getAttribute("data-screen") === "conquest") resizeIdleCanvas(); } catch (e) {} }; var ro = new ResizeObserver(refit); ro.observe(box); ro.observe(dock); ro.observe(ph); setTimeout(function () { document.querySelectorAll("#conquestModeContent .idle-power-slots").forEach(function (e) { ro.observe(e); }); }, 0); }
+  var layEl = document.getElementById("layout"); if (layEl) layEl.addEventListener("animationend", function () { try { if (document.body.getAttribute("data-screen") === "conquest") { resizeIdleCanvas(); resizeIdleCanvas(); } } catch (e) {} }); /* v1760: classic UI - settle the fit as soon as the 0.18 s screen slide ends (was the next 0.7 s re-check) */
   window.addEventListener("resize", syncSpacer); syncSpacer();
 })();
 // Small "Stats" button in the empty brown band under the skill timers (Conquest) -> small popover showing the Stats panel's rows.
