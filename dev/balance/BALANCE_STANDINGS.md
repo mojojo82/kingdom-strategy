@@ -239,3 +239,8 @@ Pushed further (both sides, Harley "keep increasing it until you see a differenc
 | x10 | 18.7 / 1% | 22.8 / 5% | 44.7 / 51% | 31.7 / 4% | 39.5 / 14% | 59.4 / 94% |
 | x20 | 13.2 / 0% | 20.1 / 3% | 32.4 / 31% | 25.7 / 0% | 34.3 / 6% | 55.3 / 69% |
 Clear drop from x3-x5 (F1 v F3 58 s -> 45 s at x5); F2 v F2 needs ~x10; F3 v F3 only moves at x10-x20. Skill damage alone is a weak lever for fight length.
+Hero survival in the same fights (both sides, all 10 heroes): knockouts per fight / share of hero-time spent knocked out (infantry only in brackets):
+| today | F1v2 16 / 53% (61%) | F1v1 19 / 54% (68%) | F2v2 37 / 66% (75%) | F1v3 28 / 46% (51%) | F2v3 32 / 52% (59%) | F3v3 25 / 40% (58%) |
+| x5 skill | 14 / 60% (68%) | 18 / 61% (70%) | 38 / 70% (79%) | 24 / 49% (54%) | 28 / 55% (64%) | 30 / 48% (61%) |
+| x20 skill | 13 / 66% (73%) | 17 / 65% (73%) | 26 / 70% (80%) | 17 / 56% (62%) | 23 / 61% (68%) | 32 / 54% (63%) |
+Finding: already TODAY at max level heroes spend about half the fight knocked out (infantry 51-75%) - they mostly trade with each other while the fortress does little. Likely why hero-damage bonuses barely move fight length.
