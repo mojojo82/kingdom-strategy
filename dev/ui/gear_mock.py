@@ -19,9 +19,21 @@ base = Image.fromarray(cv2.cvtColor(clean, cv2.COLOR_BGR2RGB)).convert('RGBA')
 L = lambda n: ImageFont.truetype('fonts/LilitaOne-Regular.woff', n)
 S = 112; xs = [42, W - 42 - S]; ys = [150, 300, 450]
 GEAR = [  # (icon, tier, P, stars, level, upgradable, gems)  gems: colour or None = empty socket
-    ('helm', 'gold', 'P3', 3, 121, True, ['blue'] * 3), ('armour', 'red', 'P2', 2, 94, True, ['green', 'green', None]), ('gauntlet', 'purple', 'P1', 1, 40, False, ['gold', None, None]),
-    ('gun', 'blue', 'P2', 2, 133, True, ['blue', 'blue', None]), ('ring', 'gold', 'P3', 3, 118, False, ['green', None, None]), ('amulet', 'purple', 'P2', 2, 70, True, ['purple', 'purple', None])]
+    ('helm', 'gold', 'T3', 3, 121, True, ['blue'] * 3), ('armour', 'red', 'T2', 2, 94, True, ['green', 'green', None]), ('gauntlet', 'purple', 'T1', 1, 40, False, ['gold', None, None]),
+    ('gun', 'blue', 'T2', 2, 133, True, ['blue', 'blue', None]), ('ring', 'gold', 'T3', 3, 118, False, ['green', None, None]), ('amulet', 'purple', 'T2', 2, 70, True, ['purple', 'purple', None])]
 GEM = {'blue': (64, 150, 235), 'green': (70, 190, 90), 'gold': (240, 190, 50), 'purple': (170, 90, 220)}
+def cute_star(img, cx, cy, r, fill=(255, 206, 38), outline=(110, 52, 8)):
+    from PIL import ImageFilter
+    ss = 6; R = r * ss; N = R * 2 + 8 * ss; c = N / 2
+    pts = [(c + (R if i % 2 == 0 else R * 0.52) * math.sin(i * math.pi / 5), c - (R if i % 2 == 0 else R * 0.52) * math.cos(i * math.pi / 5)) for i in range(10)]
+    m = Image.new('L', (N, N), 0); ImageDraw.Draw(m).polygon(pts, fill=255)
+    m = m.filter(ImageFilter.GaussianBlur(R * 0.16)).point(lambda v: 255 if v > 110 else 0)      # rounded tips
+    o = m.filter(ImageFilter.MaxFilter(2 * int(R * 0.2) + 1))                                     # outline ring
+    st = Image.new('RGBA', (N, N), outline + (0,)); st.putalpha(o)
+    body = Image.new('RGBA', (N, N), fill + (255,)); body.putalpha(m); st.alpha_composite(body)
+    hl = Image.new('L', (N, N), 0); ImageDraw.Draw(hl).ellipse((c - R * 0.42, c - R * 0.62, c - R * 0.05, c - R * 0.2), fill=150)
+    hl = Image.fromarray((np.array(hl) * (np.array(m) > 0)).astype(np.uint8)); w = Image.new('RGBA', (N, N), (255, 252, 220, 0)); w.putalpha(hl); st.alpha_composite(w)
+    st = st.resize((N // ss, N // ss), Image.LANCZOS); img.alpha_composite(st, (int(cx - st.width / 2), int(cy - st.height / 2)))
 def star(d, cx, cy, r, fill, outline):
     pts = [(cx + (r if i % 2 == 0 else r * 0.45) * math.sin(i * math.pi / 5), cy - (r if i % 2 == 0 else r * 0.45) * math.cos(i * math.pi / 5)) for i in range(10)]
     d.polygon(pts, fill=fill, outline=outline, width=2)
@@ -40,10 +52,11 @@ for x in xs:
         ic, tier, P, st, lv, up, gems = GEAR[k]; k += 1
         base.alpha_composite(slab(S, tier), (x, y))
         icon = Image.open(D + f'icon_{ic}.png').convert('RGBA'); f = (S * 0.70) / max(icon.size); icon = icon.resize((int(icon.width * f), int(icon.height * f)), Image.LANCZOS)
-        base.alpha_composite(icon, (x + S - icon.width - 8, y + 8 + int((S * 0.72 - icon.height) / 2)))
+        base.alpha_composite(icon, (x + (S - icon.width) // 2, y + (S - icon.height) // 2))   # centred in the square
         d = ImageDraw.Draw(base)
         d.text((x + 8, y + 4), P, font=L(26), fill=(255, 228, 60), stroke_width=3, stroke_fill=(70, 35, 10))
-        for s in range(st): star(d, x + 20, y + 47 + s * 21, 11, (255, 222, 70), (120, 66, 12))
+        for s in range(st): cute_star(base, x + 19, y + 46 + s * 22, 12)
+        d = ImageDraw.Draw(base)
         d.text((x + S / 2 + 6, y + S - 17), f'Lv.{lv}', font=L(23), fill=(255, 255, 255), stroke_width=3, stroke_fill=(50, 30, 15), anchor='mm')
         if up: d.ellipse((x + S - 16, y - 6, x + S + 6, y + 16), fill=(225, 30, 30), outline=(255, 255, 255), width=3)
         for g_, col in enumerate(gems): gem(base, x + S / 2 + (g_ - 1) * 30, y + S + 19, 12, col)
