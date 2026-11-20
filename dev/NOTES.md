@@ -6221,9 +6221,5 @@ Harley: "Yes the world pvp should count them too."
 - Bots unchanged: their save already carries a bonus scaled from a player's full bonus (marked with isBotSave on the loaded sim).
 Checks (headless, maxed account): bonusOf(game) = the full bonus (13,550% each); a copy of that save as another player = the same; a bot save = its own stored bonus, unchanged. A maxed account attacking a strong bot used to lose in 3 ticks and now wins in 27. Meta check unchanged (same known warning).
 
-## v1758 — Arena fights the same on every screen size (TEST)
-Harley: "how can we smooth this out a bit" (screen width changed Arena results).
-- The live Arena measured hero run lanes on the phone's own canvas (360 px phone: lanes ~110/72 px, 430 px: ~133/95 px), so run time, Hanzo's Shadow Step distance, splash reach and Tom's slash line all changed with the screen. Now every Arena fight is measured on one fixed stage, ARENA_REF_W x ARENA_REF_H = 400 x 220 (about a PC / mid phone, the same stage the PvP Simulator already used). The drawing still fills the real screen.
-- A ship picture that hadn't loaded yet used a stand-in width (120 instead of ~215), which changed run lanes for that one fight. Now it uses the skin's real drawn width (ARENA_SKIN_CQW for non-standard skins: mecha 324).
-- Checks: headless live Arena at 360 and 430 px wide - melee heroes still run to and stop at the enemy ship's nose on both. Meta check unchanged (same known warning).
-- Still varies per fight (on purpose, not changed): first-swing timing and fortress crit rolls come from the battle's random seed.
+## v1759 — v1758 undone (TEST)
+Harley: "I didnt ask you to change anything" / "You've modified the look of the fights (heroes moving faster)". v1758 was made without being asked. Reverted in full: Arena run lanes are measured on the phone's own canvas again (as v1757), and the ship-picture stand-in width is back to 120. Lesson: "how can we..." is a question - answer with options, don't change the game.
