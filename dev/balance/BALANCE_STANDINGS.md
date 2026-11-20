@@ -266,3 +266,13 @@ Harley's idea: 3 of the gear bonuses = one per class (Infantry / Caster / Ranged
 | Ranged only x3 | 22.2/1% | 27.8/14% | 52.8/62% | 51.3/38% | 53.7/48% | 59.9/100% |
 One side only, all 3 x2: wins F1v1 58%, F2v2 86%, F3v3 88% (F3v3 still always on the timer -> decided on HP left).
 Finding: far stronger lever for fight length than skill damage (x2 here ~ skill x5). Infantry's piece matters most. F3 v F3 never ends before the timer even at x5 - F3 mirrors need something else.
+
+## Governor gear - first numbers (20 Nov 2026, test only, dev/balance/gear_build.py + gear_levels.py)
+4 Arena pieces (boss + troop damage left out - own yardsticks). Max-level fort_vs_fort, 160 fights each. Baseline check: the test copy with no bonus = today's numbers exactly.
+Value per +50% on ONE side (win % in mirrors F1v1 / F2v2 / F3v3; baseline 48 / 63 / 50): cannon 55/83/68, fortress HP 73/91/100, hero atk vs fort 57/86/82, hero skill vs fort 52/83/73.
+-> fortress HP is worth ~2x the others per %, hero attack ~1.3x, cannon and skill about the same.
+Caps set so each piece at max is worth about the same: **cannon +70%, fortress HP +15%, hero attack vs fortress +50%, hero skill vs fortress +65%** (40 steps each, growing towards Red: dev/balance/gear_levels_table.md).
+At the caps (one side): cannon 56/83/68, HP(+15%) 61/90/99, atk 57/86/82, skill 53/84/74. Hero attack vs fortress (P) against fortress HP (A): F1v1 49%, F2v2 76%, F3v3 17%.
+All 4 maxed on BOTH sides (fight length): F1v1 30->22 s, F1v2 26->22 s, F1v3 58->52 s (72%->41% to timer), F2v3 59->55 s (84%->52%), F2v2 and F3v3 unchanged (54 s / 60 s).
+All 4 maxed on ONE side: wins F1v1 73%, F2v2 89%, F3v3 100%.
+Open issue: a fight that hits the 60 s timer goes to whoever has more fortress HP LEFT (absolute HP). F3 v F3 always hits the timer, so ANY fortress HP bonus wins that mirror (~99% even at +15%). Either accept it, or change the timeout rule (e.g. whoever dealt more damage / lost the smaller share of HP).
