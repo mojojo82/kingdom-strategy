@@ -1998,6 +1998,13 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .arena-actions #arenaNewOpponentBtn { grid-column:4; clip-path:polygon(9px 0, 100% 0, 100% 100%, 0 100%); padding-left:10px; }
   #arenaPlayerSub { grid-column:1; justify-self:start; } #arenaAiSub { grid-column:5; justify-self:end; }
   .arena-actions.hide button { opacity:0; pointer-events:none; }
+  /* v1761 (Harley): Attack sits in the middle of the battle's bottom edge, above the panel's centre tab - a flat cyan button (New stays to its right until it is removed) */
+  #arenaCard .arena-actions #arenaAttackBtn { grid-column:3; justify-self:center; width:108px; height:30px; padding:0 8px; clip-path:none; border-radius:8px; border:1px solid #a6e8ff; background:linear-gradient(180deg,#5fd0ff 0%,#2a9de6 55%,#1b7cc9 100%); color:#06223a; font-size:13px; letter-spacing:.5px; text-shadow:none; box-shadow:inset 0 0 6px rgba(255,255,255,.45), 0 0 9px rgba(70,180,255,.6); }
+  #arenaCard .arena-actions #arenaAttackBtn:active { transform:translateY(1px); filter:brightness(1.1); }
+  #arenaCard .arena-actions #arenaAttackBtn:disabled:not(.active) { filter:grayscale(.5) brightness(.8); }
+  /* v1761 (Harley): no leaving the Arena while a fight runs - Back and the bottom tabs are switched off (dimmed), the fortress-type pick is locked */
+  body.arena-fighting #screenBar .sb-back, body.arena-fighting #bottomNav .bn { opacity:.35 !important; pointer-events:none !important; }
+  body.arena-fighting .fort-pick[data-fp="arena"] { opacity:.45 !important; pointer-events:none !important; }
   .arena-top-info { position:absolute; left:0; right:0; top:0; height:0; line-height:normal; pointer-events:none; }
   .arena-top-info > * { position:absolute; pointer-events:auto; font-size:11px; font-weight:800; text-shadow:0 1px 3px #000; }
   #arenaTimerSub { left:50%; top:16px; transform:translateX(-50%); font-size:15px; background:rgba(20,12,6,.55); padding:1px 8px; border-radius:9px; pointer-events:none; }
@@ -6402,6 +6409,7 @@ document.addEventListener("click", function (e) {
   e.stopPropagation();
   var which = b.closest(".fort-pick").getAttribute("data-fp"), t = fortTypeOk(+b.getAttribute("data-ft")) ? +b.getAttribute("data-ft") : 1, st = game.state;
   if (which === "conquest") { fortressSetType(t); }
+  else if (which === "arena" && typeof arenaBattleRunning !== "undefined" && arenaBattleRunning) { return; } /* v1761: locked once the fight has begun */
   else if (which === "arena") { st.arenaFort = t; persist(); try { if (mapMode === "arena") renderArena(); } catch (e2) {} }
   else { var f = st.formations[+which.slice(1)]; if (f) { f.fort = t; persist(); } }
   fortPickSync();
@@ -14593,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1760"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1761"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36904,9 +36912,26 @@ var UI_SKIN_TOP_H = 430 * 437 / 1187, UI_SKIN_BOT_H = 430 * 1169 / 1187; /* art 
 function uiSkin() { try { return localStorage.getItem(UI_SKIN_KEY) === "blue" ? "blue" : "classic"; } catch (e) { return "classic"; } }
 function setUiSkin(v) { try { localStorage.setItem(UI_SKIN_KEY, v); } catch (e) {} uiSkinKey = ""; uiSkinApply(); }
 function skyDriftOn() { try { return localStorage.getItem(UI_SKY_DRIFT_KEY) === "1"; } catch (e) { return false; } }
+function uiSkinArena() { return document.body.getAttribute("data-screen") === "more" && typeof appSub !== "undefined" && appSub === "arena" && typeof arenaView !== "undefined" && arenaView === "battle"; } /* v1761: the Arena fight screen */
+function uiSkinRoot() { return uiSkinArena() ? document.getElementById("arenaCard") : document.getElementById("conquestModeContent"); }
+/* v1761: the Arena gets the same bottom-half parts as Conquest - the 6 shortcut squares and the Forge are live copies of Conquest's (a tap is passed on
+   to the real one, so they do exactly the same thing), plus the Arena's own fortress-type pick. Refreshed at most twice a second. */
+var arenaBlueT = 0;
+function arenaBlueParts() {
+  var now = performance.now(); if (now - arenaBlueT < 500 && document.getElementById("arenaLeftGrid")) return; arenaBlueT = now;
+  var row2 = document.querySelector("#arenaCard .idle-power-slots.ps-row2"), band = document.getElementById("arenaFxBand"); if (!row2 || !band) return;
+  var mirror = function (src, id, parent) { if (!src) return null; var c = document.getElementById(id);
+    if (!c) { c = src.cloneNode(true); c.id = id; c.addEventListener("click", function (e) { e.stopPropagation(); var real = c._src; var t = e.target && e.target.closest ? e.target.closest("[class]") : null; var path = []; for (var n = t; n && n !== c; n = n.parentNode) path.unshift([].indexOf.call(n.parentNode.children, n)); var r = real; path.forEach(function (i) { if (r && r.children[i]) r = r.children[i]; }); (r || real).click(); }); parent.appendChild(c); }
+    else if (c.innerHTML !== src.innerHTML) c.innerHTML = src.innerHTML;
+    c._src = src; c.querySelectorAll("[id]").forEach(function (x) { x.removeAttribute("id"); }); return c; };
+  mirror(document.querySelector("#idleSkillSpacer .cq-left-grid"), "arenaLeftGrid", band);
+  mirror(document.getElementById("idleForgeBtn"), "arenaForgeBtn", row2);
+  if (!row2.querySelector(".fort-pick")) { var fp = document.createElement("div"); fp.className = "idle-fort"; fp.innerHTML = fortPickHtml("arena"); row2.appendChild(fp); }
+}
 function uiSkinActive() {
-  if (uiSkin() !== "blue" || document.body.getAttribute("data-screen") !== "conquest" || window.innerWidth > 900) return false;
-  var nav = document.getElementById("bottomNav"), cv = document.getElementById("idleCanvas");
+  if (uiSkin() !== "blue" || window.innerWidth > 900) return false;
+  var ar = uiSkinArena(); if (!ar && document.body.getAttribute("data-screen") !== "conquest") return false; /* v1761 (Harley: the Arena's bottom half 1 to 1 with Conquest's Blue) */
+  var nav = document.getElementById("bottomNav"), cv = document.getElementById(ar ? "arenaCanvas" : "idleCanvas");
   return !!(nav && nav.offsetParent && cv && cv.offsetParent);
 }
 /* the night sky goes with the blue style on the village (day) level */
@@ -36922,9 +36947,9 @@ function drawNightSky(ctx, w, groundY) {
 }
 var uiSkinKey = "", uiSkinEls = [];
 (function uiSkinCss() {
-  var B = 'body.ui-blue[data-screen="conquest"] ';
-  var css = B + ':is(#topbar, .idle-header, #idleSkillDock, #idleSkillbar, #idleBottom, #idleSkillSpacer, .idle-power-slots, .idle-wrap, #conquestModeContent, #mainPanel, .layout) { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
-    'body.ui-blue[data-screen="conquest"] { background:#060b16 !important; }\n' +
+  var B = 'body.ui-blue:is([data-screen="conquest"],[data-screen="more"]) '; /* v1761: Conquest or the Arena fight (ui-blue is only set while one of them shows); the attribute keeps the old strength, so these still win over the brown panel rules */
+  var css = B + ':is(#topbar, .idle-header, #idleSkillDock, #idleSkillbar, #idleBottom, #idleSkillSpacer, .idle-power-slots, .idle-wrap, #conquestModeContent, #mainPanel, .layout, #arenaModeContent, #arenaCard, #arenaSkillbar, #arenaFxBand, .arena-canvas-wrap) { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
+    'body.ui-blue:is([data-screen="conquest"],[data-screen="more"]) { background:#060b16 !important; }\n' +
     B + '.skillbar-notch, ' + B + '#ksFbBadge { display:none !important; }\n' +
     B + ':is(.idle-skillbar .skill-auto-btn, .idle-stats-btn, .idle-forge-btn, .fort-pick, .fort-pick button, .lg-cell, .lg-cell button, .power-slot, .ig-cell.ig-blank, .skill-slot .skill-icon-wrap, .resbar .res, #resBtn, #avatarWrap, #powerBadge) { background:transparent !important; border:none !important; box-shadow:none !important; }\n' +
     B + '.skill-slot .skill-icon-wrap { border-radius:50% !important; }\n' + B + '.skill-slot .skill-icon-wrap img { border-radius:50%; }\n' +
@@ -36948,7 +36973,7 @@ var uiSkinKey = "", uiSkinEls = [];
     'body.ui-blue-top #avatarWrap > :is(#avatarImg, #avatarPlaceholder) { clip-path:polygon(13% 0, 87% 0, 100% 13%, 100% 87%, 87% 100%, 13% 100%, 0 87%, 0 13%); border-radius:0 !important; }\n' +
     'body.ui-blue-top #avatarWrap > #avatarPlaceholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#0b1628; }\n' +
     /* v1274: no slide-in when Conquest opens in Blue - the frame art can't slide with it, so the page and the frame drifted apart for ~10 frames */
-    'body.ui-blue[data-screen="conquest"] #layout, ' + B + '#conquestModeContent { animation:none !important; }\n' +
+    'body.ui-blue #layout, ' + B + '#conquestModeContent { animation:none !important; }\n' +
     /* v1269 (Harley's FPS test: the glows cost the frames): no text glow in the Blue style - not on our own labels, and not on text that changes all the
        time (header counters, timers, Forge numbers), which had to be re-glowed over the see-through frame on every change */
     B + ':is(.idle-header, .idle-header *, .cd-text, .skill-icon-wrap, .skill-auto-btn, #idleStatsBtn, #idleForgeBtn, #idleForgeBtn *, #topbar *, #bottomNav *) { text-shadow:none !important; }\n' + B + '.layout, ' + B + '#topbar { position:relative; z-index:1; }\n' + B + '#bottomNav { z-index:5; }\n' +
@@ -36972,6 +36997,7 @@ var uiSkinKey = "", uiSkinEls = [];
     /* v1273 (Harley: the gap above the nav closed up on Conquest): on Conquest the nav stays see-through over the Conquest art (its own nav, with the
        original gap) and the buttons are placed on it as before; the cut nav bar is for the other screens */
     B + '#bottomNav, ' + B + '#bottomNav .bn { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
+    'body:not(.ui-blue) :is(#arenaLeftGrid, #arenaForgeBtn, #arenaCard .ps-row2 .idle-fort) { display:none !important; }\n' +
     '#uiSkinLayer, .ui-skin-strip { display:none; position:fixed; left:0; pointer-events:none; }\n' + B + '#uiSkinLayer { display:block; inset:0; z-index:0; }\n' + B + '.ui-skin-strip { display:block; z-index:6; background-repeat:no-repeat; }\n';
   var st = document.createElement("style"); st.id = "uiSkinCss"; st.textContent = css; document.head.appendChild(st);
   var L = document.createElement("div"); L.id = "uiSkinLayer"; L.innerHTML = '<img id="uiSkinTopImg" style="position:absolute;left:0"><img id="uiSkinBotImg" style="position:absolute;left:0">';
@@ -36991,7 +37017,7 @@ function uiSkinLayoutBox(el) { /* viewport box from layout offsets (ignores ever
   return { left: x, top: y, width: el.offsetWidth, height: el.offsetHeight };
 }
 function uiSkinCanvasBox() { /* the canvas's layout box: its own rect moves with the screen shake, so take the parent's rect + offsets */
-  var cv = document.getElementById("idleCanvas"), pr = cv.offsetParent ? cv.offsetParent.getBoundingClientRect() : { top: 0 }, t = pr.top + cv.offsetTop;
+  var cv = document.getElementById(uiSkinArena() ? "arenaCanvas" : "idleCanvas"), pr = cv.offsetParent ? cv.offsetParent.getBoundingClientRect() : { top: 0 }, t = pr.top + cv.offsetTop;
   return { top: t, bottom: t + cv.offsetHeight };
 }
 var uiNavSheet = (function () { var st = document.createElement("style"); st.id = "uiNavPos"; document.head.appendChild(st); return st; })(), uiNavKey = "";
@@ -37030,15 +37056,22 @@ function uiSkinApply() {
   var on = uiSkinActive();
   document.body.classList.toggle("ui-blue", uiSkin() === "blue" && on);
   if (!on) { if (uiSkinSheet.textContent) uiSkinClear(); uiSkinKey = ""; return; }
-  var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); };
+  var R = uiSkinRoot() || document, AR = uiSkinArena(); /* v1761: only the shown screen's parts (Conquest's stay in the page, hidden, while the Arena shows) */
+  var q = function (s) { return /bottomNav/.test(s) ? document.querySelector(s) : R.querySelector(s); }, qa = function (s) { return [].slice.call(/bottomNav/.test(s) ? document.querySelectorAll(s) : R.querySelectorAll(s)); };
+  if (AR) arenaBlueParts();
   var cvR = uiSkinCanvasBox(), k = window.innerWidth / 430;
-  var key = [window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|"); /* v1281: re-fit when the power number or a pill grows */
+  var key = [AR ? "ar" : "cq", window.innerWidth, window.innerHeight, Math.round(cvR.top), Math.round(cvR.bottom), qa(".idle-skillbar > .skill-slot").length, qa(".skill-slot.empty").length, qa(".power-slot").length, qa(".ig-cell").length, qa(".lg-cell").length, qa("#bottomNav .bn").length].join("|"); /* v1281: re-fit when the power number or a pill grows */
   if (key === uiSkinKey) return;
   /* v1266 (Harley's video: flashes + panels sliding): elements are measured by their LAYOUT box (offsets), which transforms never touch, so the
      rules are never switched off to measure - switching them off restarted every animation (a dim flash) and made transitions slide things around */
   var Y0 = Math.round(cvR.bottom - 30 * k), TOPY = -28 * k; /* v1278: whole pixels, so the nav art lands on exactly the same pixels as on the other screens */
   var ti = document.getElementById("uiSkinTopImg"), bi = document.getElementById("uiSkinBotImg");
   ti.style.width = bi.style.width = (430 * k) + "px"; ti.style.top = TOPY + "px"; bi.style.top = Y0 + "px";
+  /* v1761: the art has the Conquest tab lit - on the Arena, cover that glow with a plain tab (cut from the same art, like the other screens' nav) and light the active tab */
+  (function () { var Lr = document.getElementById("uiSkinLayer"), act = [].slice.call(document.querySelectorAll("#bottomNav > .bn")).findIndex(function (b) { return b.classList.contains("active"); });
+    var piece = function (id, artX, artY, w, h, x, y) { var d = document.getElementById(id); if (!d) { d = document.createElement("div"); d.id = id; d.style.position = "absolute"; Lr.appendChild(d); }
+      d.style.cssText = "position:absolute;left:" + x * k + "px;top:" + (Y0 + (336 + y) * k) + "px;width:" + w * k + "px;height:" + h * k + "px;background:url(" + UI_SKIN_BOT.src + ") " + (-artX * k) + "px " + (-(336 + artY) * k) + "px/" + 430 * k + "px " + UI_SKIN_BOT_H * k + "px no-repeat;display:" + (AR && act > 0 ? "block" : "none"); return d; };
+    var tabs = [4, 88, 172.4, 257.1, 341.6]; piece("uiSkinNavPatch", 89, 6.5, 81.5, 67.7, 6, 6.5); piece("uiSkinNavAct", 1.5, 1.5, 89, 79, 1.5 + ((tabs[act] || 4) - 4), 1.5); })();
   var sT = document.getElementById("uiSkinStripTop"), sB = document.getElementById("uiSkinStripBot");
   /* the frame edges that reach over the battle are drawn again on top of the canvas */
   sT.style.cssText = "width:" + 430 * k + "px;top:" + (cvR.top - 4) + "px;height:" + 16 + "px;background-image:url(" + UI_SKIN_TOP.src + ");background-size:" + 430 * k + "px " + UI_SKIN_TOP_H * k + "px;background-position:0 " + (TOPY - cvR.top + 4) + "px";
@@ -37064,8 +37097,8 @@ function uiSkinApply() {
   left.forEach(function (e, i) { var t = LT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
   right.forEach(function (e, i) { var t = RT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
   var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
-  fit(q("#idleForgeBtn"), 160, 236, 110, 74, Y0); fit(q("#idleStatsBtn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 340.3, 298.3, 77, 21, Y0, null, true); /* v1288 (Harley: not lined up): stretched to the inside of its frame (outline at x 338.7-418, y 297.1-319.9, measured) */
-  var css = uiJobsCss(jobs, 'body.ui-blue[data-screen="conquest"] ');
+  fit(q(".idle-forge-btn"), 160, 236, 110, 74, Y0); fit(q(".idle-stats-btn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 340.3, 298.3, 77, 21, Y0, null, true); /* v1288 (Harley: not lined up): stretched to the inside of its frame (outline at x 338.7-418, y 297.1-319.9, measured) */
+  var css = uiJobsCss(jobs, 'body.ui-blue:is([data-screen="conquest"],[data-screen="more"]) ');
   if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;
   uiSkinKey = key;
 }
@@ -37088,9 +37121,9 @@ var uiTopSheet = (function () { var st = document.createElement("style"); st.id 
 function uiTopApply() {
   var on = document.body.classList.contains("ui-blue-top"); if (!on) { if (uiTopSheet.textContent) uiTopSheet.textContent = ""; uiTopKey = ""; return; }
   var q = function (s) { return document.querySelector(s); }, qa = function (s) { return [].slice.call(document.querySelectorAll(s)); }, k = window.innerWidth / 430, TOPY = -28 * k;
-  var cq = document.body.classList.contains("ui-blue"), ti = document.getElementById("uiSkinTopImg");
+  var cq = document.body.classList.contains("ui-blue") && document.body.getAttribute("data-screen") === "conquest", ti = document.getElementById("uiSkinTopImg"); /* v1761: the Conquest header frame only on Conquest (the Arena keeps its Back bar) */
   ti.style.width = (430 * k) + "px"; ti.style.top = TOPY + "px"; ti.style.clipPath = cq ? "" : "inset(0 0 " + ((UI_SKIN_TOP_H - 87) * k).toFixed(2) + "px 0)";
-  var key = [window.innerWidth, document.body.getAttribute("data-screen"), (q("#topbar") || {}).offsetHeight, (q("#powerBadge") || {}).offsetWidth, qa("#resbar .res").map(function (e) { return e.offsetParent ? e.offsetWidth : 0; }).join(",")].join("|");
+  var key = [window.innerWidth, document.body.getAttribute("data-screen"), document.body.classList.contains("ui-blue"), (q("#topbar") || {}).offsetHeight, (q("#powerBadge") || {}).offsetWidth, qa("#resbar .res").map(function (e) { return e.offsetParent ? e.offsetWidth : 0; }).join(",")].join("|");
   if (key === uiTopKey) return; uiTopKey = key;
   var jobs = []; function fit(el, x, y, w, h, base, sub, stretch) { if (el) jobs.push({ el: el, x: x * k, y: base + y * k, w: w * k, h: h * k, sub: sub, stretch: stretch }); }
   /* v1281 (Harley: the top bar's player data doesn't sit in its frame; avatar should fill its frame, same shape): frame insides measured off the art */
@@ -37106,6 +37139,9 @@ function uiTopApply() {
 /* v1274 (Harley's video: tapping Conquest, the UI visibly settles into place in 2 steps): check every frame instead of every 250 ms (the check is cheap,
    the work only runs when something changed), and on a screen switch size the Conquest canvas + place everything before the first paint */
 (function uiSkinLoop() { try { uiSkinApply(); } catch (e) {} requestAnimationFrame(uiSkinLoop); })();
+/* v1761 (Harley: the player can't leave the Arena while a fight runs): any route out (tabs, Back, a shortcut, the Backpack's map jump...) is ignored until it ends */
+(function () { var orig = setScreen; setScreen = function (screen, sub) { if (typeof arenaBattleRunning !== "undefined" && arenaBattleRunning && appScreen === "more" && appSub === "arena" && !(screen === "more" && sub === "arena")) return; return orig.apply(this, arguments); }; })();
+(function arenaFightLoop() { try { document.body.classList.toggle("arena-fighting", !!(typeof arenaBattleRunning !== "undefined" && arenaBattleRunning && appScreen === "more" && appSub === "arena")); } catch (e) {} requestAnimationFrame(arenaFightLoop); })();
 (function () { var orig = setScreen; setScreen = function () { var r = orig.apply(this, arguments);
   try { if (uiSkin() === "blue") { uiNavKey = ""; uiTopKey = ""; uiSkinApply(); } /* v1279: every screen - nav placed before the first paint (Harley's video: icons jumped for 1-2 frames) */
     if (uiSkin() === "blue" && document.body.getAttribute("data-screen") === "conquest") { resizeIdleCanvas(); resizeIdleCanvas(); uiSkinKey = ""; uiSkinApply(); } /* class first (it turns the slide-in off), then fit the canvas (twice: the fit settles in 2 steps), then place */ } catch (e) {} return r; }; })();

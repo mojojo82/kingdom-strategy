@@ -6232,3 +6232,11 @@ Fix (final layout unchanged - same 421 px picture as before once settled):
 - Any size change in the brown panel re-fits the picture at once (ResizeObserver), not at the next 0.7 s check.
 - The fit measures where the panel ends up, not mid screen-swap slide (classic UI), settles in one go, and re-settles when the slide ends.
 Measured after: blue UI - no movement at all from the first frame. Classic UI - one 6 px settle at ~0.4-0.5 s (was 14 px + 36 px). No console errors.
+
+## v1761 — Arena bottom half = Conquest's Blue UI, Attack button moved, no leaving mid-fight (TEST)
+Harley: "the blue ui at the bottom half needs to be 1 to 1", Attack in the middle of the battle's bottom edge (his circled spot), "the player won't be able to exit out of this screen while a battle runs ... the bottom nav bar gets temp disabled or slides out of view", "the fortress type selector works so long as the battle did not begin". New won't exist in the final build (kept for now, right of Attack).
+- Blue UI now also runs on the Arena fight screen (uiSkinActive / uiSkinRoot / uiSkinArena): same bottom art, same slots. The Arena gets live copies of Conquest's 6 shortcut squares and the Forge (arenaBlueParts - a tap is passed to the real one), its own Stats, icon tiles, card/weapon slots, and the Arena fortress-type pick. The nav shows More lit (patch over the art's lit Conquest tab). The top keeps the Arena's Back bar (no Conquest header frame). Conquest unchanged. Classic UI: unchanged apart from the Attack spot and the fight lock.
+- Attack: a flat cyan button in the centre column of the battle's bottom edge (grid column 3), hidden while fighting as before.
+- Fight lock (arena-fighting class, every frame): Back and all bottom tabs dimmed and not tappable; setScreen ignores any route out of the Arena while arenaBattleRunning (tabs, Back, Backpack map jump, shortcuts); the Arena fortress-type pick is dimmed and its click ignored once the fight starts.
+- The AUTO frame left of the hero timers is empty in the Arena (Arena skills fire on their own) - open question for Harley.
+Checks (headless, 430 px, blue + classic): Arena shows the Blue bottom half with all parts placed; during a fight setScreen("world"), a nav tab and Back all left the player in the Arena, the nav was at 35% opacity, the fortress pick did not change. Conquest Blue looks as before.
