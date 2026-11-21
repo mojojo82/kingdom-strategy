@@ -6345,3 +6345,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - HERO_BMP_ON = true for everyone; the PERF-panel switch is gone (the perf log, Fear test and battle layers stay in the panel).
 - New dev/PERF_FIXES.md: every performance fix (v1765-v1781) with results and how to undo it, what went wrong, the note that Baelgor's art may be redone (rebuild or drop his HERO_TRIM lines), and the waiting list (Tom trim, Torvald verdict, beams, other heroes, Hex Shield, Fear start pauses). HANDOVER open items point to it.
 - Headless: copies made by default for both teams through 4 x New, no errors. Not tested on a phone.
+
+## v1782 - Zarek's small swords from 160 px pictures (TEST)
+- Harley: the swords are tiny on screen (~51 px tall on his phone) but drawn from 380 px pictures. Side-by-side (now / shrunk / shrunk 1.5x): he picked "shrunk", same size.
+- zarek_sword_face_160.webp (96x160) and zarek_sword_edge_160.webp (21x160): high-quality shrink in premultiplied colour (no dark fringes). ZK_FILE maps the names in zkImg. The 380 px originals stay in art/heroes/zarek/ and are copied to art/originals/heroes/zarek/. Same look; the turning copies are now built from the small pictures.
+- Headless: Arena with Zarek, pictures load at 96x160 / 21x160, swords draw, no errors. Not tested on a phone.

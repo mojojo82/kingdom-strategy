@@ -45,3 +45,8 @@ Things that went wrong (don't repeat):
 7. Arena screen-size fairness (zoom-to-fit vs crop-to-360): parked earlier.
 
 Measured sheet sizes (unpacked, MB) before trimming: Baelgor main 62.5, skill 62.9, slash a 55.7, slash b 37.3, drain 46.8, Fear grab 18.5, desc 13.9; Tom main 60.3, guard 27.1, skill 8.1; Torvald 17.0 (+ idle 7.9, skill 9.5); Roran 11.0; Zarek 6.8; Kessa 5.5; Pip 4.2.
+
+## Later additions
+| Version | Fix | How to undo |
+|---|---|---|
+| v1782 | Zarek's small swords drawn from 160 px pictures instead of 380 px (they show ~51 px tall on the phone). Same size and look. | empty `ZK_FILE` in the Zarek code |
