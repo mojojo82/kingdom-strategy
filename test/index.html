@@ -14713,7 +14713,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1805"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1806"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17033,7 +17033,9 @@ function fmgStyle() {
     "#fmg .fg-fp:has(button[data-ft='3'].on){background-image:var(--fmg-pickR3)!important}",
     "#fmg .fg-fp button{all:unset;flex:1 1 0!important;height:100%!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;cursor:pointer;font-size:0!important}",
     "#fmg .fg-fp button + button{border-left:0!important}",
-    "#fmg .fg-blue{position:absolute;border-style:solid;border-color:transparent;border-width:0 " + D(40) + ";border-image:var(--fmg-btn_blue) 0 40 fill/0 " + D(40) + " stretch;pointer-events:none}"
+    "#fmg .fg-blue{position:absolute;border-style:solid;border-color:transparent;border-width:0 " + D(40) + ";border-image:var(--fmg-btn_blue) 0 40 fill/0 " + D(40) + " stretch;pointer-events:none}",
+    "#fmg .fg-blue.ksx{--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;border-image:none!important;border:" + D(5) + " solid var(--ksb-edge)!important;background:var(--ksb-bg);border-radius:" + D(18) + ";box-shadow:inset 0 0 0 " + D(4) + " var(--ksb-bg),inset 0 0 0 " + D(7) + " var(--ksb-ring),0 " + D(5) + " 0 var(--ksb-edge);box-sizing:border-box}",
+    "#fmg .fg-blue.ksx.on{--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8}"
   ].join("\n");
   var st = document.createElement("style"); st.id = "fmgCss"; st.textContent = css; document.head.appendChild(st);
 }
@@ -17174,9 +17176,10 @@ function renderFormationsGpt() {
     var st = fmStatusText(f, idx), act = st.c === "act";
     c.pillB.style.display = act ? "none" : ""; c.pillT.className = "t tc " + (act ? "wb" : "w");
     fmgSet(c.pillT, st.t);
-    c.blue.style.display = isActive ? "none" : ""; c.selT.className = "t " + (isActive ? "dk" : "wb");
-    c.selT.style.left = fmgD(isActive ? 499 : 400); c.selT.style.width = isActive ? "" : fmgD(244); c.selT.style.textAlign = isActive ? "" : "center"; c.selT._max = isActive ? 160 : 244;
-    fmgSet(c.selT, isGuard ? (isActive ? "Guard: On" : "Guard: Off") : (isActive ? "Selected" : "Select"));
+    /* v1806 (Harley): the Select / Guard button is our common button (code), blue = Select, tan = picked - not the painted blue button */
+    c.blue.style.display = ""; c.blue.classList.add("ksx"); c.blue.classList.toggle("on", isActive); c.selT.className = "t wb";
+    c.selT.style.left = fmgD(400); c.selT.style.width = fmgD(244); c.selT.style.textAlign = "center"; c.selT._max = 244; c.selT.style.webkitTextStrokeColor = isActive ? "#4a3410" : "#0d4a5c";
+    fmgSet(c.selT, isGuard ? (isActive ? "✓ Guard: On" : "Guard: Off") : (isActive ? "✓ Selected" : "Select"));
     fmgSet(c.saveT, "Save"); fmgSet(c.relT, "Release to Reserve");
     var held = f.held || {}, shortBy = 0;
     FM_BASES.forEach(function (b) {
@@ -18108,7 +18111,6 @@ function renderTroops() {
     var host = document.getElementById("troopsModeContent"); if (!host || typeof ksBarEl !== "function") return;
     if (!host.querySelector(":scope > .ksbar")) { var back = function () { setScreen("city", "buildings"); };
       var a = ksBarEl("Troops", "🛡️", back); a.classList.add("trp-only"); var b = ksBarEl("Infirmary", "🏥", back); b.classList.add("inf-only"); host.insertBefore(b, host.firstChild); host.insertBefore(a, host.firstChild); }
-    var tg = document.getElementById("troopsTotalTag"), t = host.querySelector(":scope > .ksbar.trp-only .t"); if (t && tg) t.innerHTML = 'Troops <span class="rp"></span>', t.querySelector(".rp").textContent = tg.textContent;
     var inf = document.querySelector("#infirmaryPanel > .sub"), t2 = host.querySelector(":scope > .ksbar.inf-only .t"); if (t2) t2.textContent = "Infirmary";
   })();
   var el = document.getElementById("troopsList"); /* v1219: not cleared here - renderTrainPanel only rebuilds when something changed */

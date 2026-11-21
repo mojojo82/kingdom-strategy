@@ -6490,3 +6490,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Buttons all use the one shape: troop type / tier / -,+ / Promote = tan when off, blue when picked; Train and Heal = standard blue. Locked tiers faded.
 - Formations (same container) unchanged.
 - Headless check: Troops, Infirmary, Formations, back arrow; no errors. Not tested on a phone.
+
+## v1806 - Formations Select / Guard = common button; Troops badge removed (TEST)
+- Harley approved the mockup: the painted glossy blue Select / Guard: Off button (fg-blue, border-image of btn_blue) is now drawn in code as our common button - blue = Select / Guard: Off, tan with a tick = Selected / Guard: On (it covers the painted Selected button underneath). Label centred, white title font with a teal (blue) or brown (tan) outline.
+- Troops title bar: the troop-count badge is gone (the type buttons already show the counts).
+- Not changed yet: the painted I / II / III picker and the blue ACTIVE / Home tags in the card art.
+- Headless check: Formations before / after tapping Select (active formation changes), Troops bar; no errors. Not tested on a phone.
