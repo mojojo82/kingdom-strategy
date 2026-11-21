@@ -6523,3 +6523,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - The painted tag at the top right of each card is covered by a piece of the plain header bar (same card art, shifted, soft left edge). At home: nothing shows.
 - While the formation is out: a small bar like the world map's Marches list - fill (green going out, orange fighting / gathering, blue coming home), icon and time left. Same maths as the Marches list.
 - Headless check: home cards show no tag; fake marches (out 0:28, returning 1:34) show the bar; no errors. Not tested on a phone.
+
+## v1811 - Formations: smaller Equalise / Preset / I II III text (TEST)
+- Harley: "Make this text smaller". Equalise / Preset 15 -> 13 px (still shrink-to-fit), I / II / III 13 -> 11 px, slightly thinner outline.
+- Fix: the header patch that hides the Home tag now starts left of the tag - its soft left edge was letting a sliver of the painted blue tag show.
+- Headless check; no errors. Not tested on a phone.
