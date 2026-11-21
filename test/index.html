@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1779"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1780"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28694,8 +28694,17 @@ function heroBmpSet(on) { HERO_BMP_ON = !!on; try { localStorage.setItem("ks_bmp
   [[heroAnimImgCache, heroAnimBmp], [fearImgs, fearBmp]].forEach(function (P) { var C = P[0], B = P[1];
     Object.keys(B).forEach(function (k) { try { B[k].close(); } catch (e) {} delete B[k]; });
     Object.keys(C).forEach(function (k) { var im = C[k]; im._bmpAsked = false; if (on && im.complete && im.naturalWidth > 1) heroBmpMake(im, { cache: C, bmp: B }, k, im.src); }); }); }
+var heroBmpChk = null;
+function heroBmpBlank(b) { /* v1780: a copy made too early comes out empty on iPhone - shrink it to 24 x 24 and look for any visible pixel (every sheet has some) */
+  try { if (!heroBmpChk) { heroBmpChk = document.createElement("canvas"); heroBmpChk.width = heroBmpChk.height = 24; } var x = heroBmpChk.getContext("2d", { willReadFrequently: true }); x.clearRect(0, 0, 24, 24); x.drawImage(b, 0, 0, 24, 24);
+    var d = x.getImageData(0, 0, 24, 24).data; for (var i = 3; i < d.length; i += 4) if (d[i] > 0) return false; return true; } catch (e) { return false; } }
 function heroBmpMake(im, store, key, srcUrl) { if (!HERO_BMP_ON || typeof createImageBitmap !== "function" || im._bmpAsked) return; im._bmpAsked = true;
-  createImageBitmap(im).then(function (b) { if (store.cache[key] !== im) { try { b.close(); } catch (e) {} return; } b.naturalWidth = b.width; b.naturalHeight = b.height; b.complete = true; b.src = srcUrl; if (!HERO_BMP_ON) { try { b.close(); } catch (e) {} return; } store.bmp[key] = b; }).catch(function () {}); } /* v1779: the <img> is kept (emptying it blanked the heroes on iPhone) */
+  var tries = im._bmpTries = (im._bmpTries || 0) + 1;
+  var go = function () { if (store.cache[key] !== im || !HERO_BMP_ON) return; createImageBitmap(im).then(function (b) {
+      if (store.cache[key] !== im || !HERO_BMP_ON) { try { b.close(); } catch (e) {} return; }
+      if (heroBmpBlank(b)) { try { b.close(); } catch (e) {} if (tries < 4) setTimeout(function () { im._bmpAsked = false; heroBmpMake(im, store, key, srcUrl); }, 1500 * tries); return; } /* empty: keep drawing the <img>, try again later */
+      b.naturalWidth = b.width; b.naturalHeight = b.height; b.complete = true; b.src = srcUrl; store.bmp[key] = b; }).catch(function () {}); };
+  var p = im.decode ? im.decode() : Promise.resolve(); p.catch(function () {}).then(function () { setTimeout(go, 400); }); } /* v1780: copy only once the picture is fully unpacked (+ a short wait); the <img> is kept */
 function heroAnimImg(key) {
   var a = HERO_ANIMS[key]; if (!a) return null;
   var b = heroAnimBmp[key]; if (b) return b;
