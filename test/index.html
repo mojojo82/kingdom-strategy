@@ -2808,7 +2808,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #evWin .evw-ms, #evWin .evw-ch { position:absolute; top:-17px; transform:translateX(-50%); background:none; border:0; padding:0; cursor:pointer; text-align:center; }
   #evWin .evw-ms small, #evWin .evw-ch small { display:block; margin-top:4px; font-size:11px; font-weight:800; color:#e8d3a6; }
   #evWin .evw-ch { top:-22px; } #evWin .evw-ch img { width:46px; height:46px; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
-  #evWin .evw-ch.ready img { filter:drop-shadow(0 0 8px #ffd04d); } #evWin .evw-ch.got img { opacity:.4; }
+  #evWin .evw-ch.ready img { filter:drop-shadow(0 0 8px #ffd04d); } #evWin .evw-ch.got img { opacity:1; } /* v1821: a claimed chest is drawn open instead of faded */
   #evWin .evw-tile { position:relative; width:44px; height:44px; border-radius:9px; border:2px solid rgba(255,255,255,.6); background:linear-gradient(#7d848c,#b9bec4); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 0 rgba(0,0,0,.45); margin:0 auto; }
   #evWin .r1 { background:linear-gradient(#2f9a63,#7fd8a4); } #evWin .r2 { background:linear-gradient(#2a73c9,#6cc0f5); } #evWin .r3 { background:linear-gradient(#6a52d6,#b3a3f5); } #evWin .r4 { background:linear-gradient(#f0861c,#ffc56b); }
   #evWin .evw-tile .art { width:88%; height:88%; display:flex; align-items:center; justify-content:center; line-height:0; } #evWin .evw-tile .art img { width:100%; height:100%; object-fit:contain; }
@@ -14715,7 +14715,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1820"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1821"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21134,7 +21134,7 @@ function evDailyHtml() {
   var g = game, list = g.dailyList(), chests = g.dailyChests(), pts = g.dailyPoints(), E = g.evSync(), W = LIVEOPS.wk, days = g.evDayCount(), R = g.DAILY_TASK_REWARD;
   var h = '<div class="evw-hd2" style="background-image:url(' + evArt("banner_daily") + ')"><div class="tt"><h1>Daily Missions</h1><br><span class="tm">⏳ Resets in <b data-evend="' + (Date.now() + g.dailyMsLeft()) + '">' + evLeft(g.dailyMsLeft()) + "</b></span></div></div>";
   h += '<div class="evw-act"><div class="row1"><b>' + pts + '</b><span>Activity today</span></div><div class="evw-trk" style="margin-top:34px"><i style="width:' + Math.min(100, pts) + '%"></i>'
-    + chests.map(function (c) { var tier = c.idx < 2 ? 1 : c.idx < 4 ? 2 : 3; return '<button type="button" class="evw-ch' + (c.claimed ? " got" : c.ready ? " ready" : "") + '" data-evch="' + c.idx + '" style="left:' + (c.at - 4) + '%"><img alt="" src="' + evArt("chest_act_" + tier) + '"><small>' + c.at + "</small></button>"; }).join("") + "</div></div>";
+    + chests.map(function (c) { var tier = c.idx < 2 ? 1 : c.idx < 4 ? 2 : 3; /* v1821 (Harley): claimed chests show open (chest_open_N), new closed purple chest_act_3b matches its open one */ return '<button type="button" class="evw-ch' + (c.claimed ? " got" : c.ready ? " ready" : "") + '" data-evch="' + c.idx + '" style="left:' + (c.at - 4) + '%"><img alt="" src="' + evArt(c.claimed ? "chest_open_" + tier : tier === 3 ? "chest_act_3b" : "chest_act_" + tier) + '"><small>' + c.at + "</small></button>"; }).join("") + "</div></div>";
   if (EVW.note) h += '<div class="evw-note2">' + EVW.note + "</div>";
   h += '<div class="evw-wk"><div class="t"><span>Weekly Chest · ' + Math.min(days, W.days) + " / " + W.days + ' days</span><span class="r">' + (E.wkc ? "claimed" : "resets Monday") + '</span></div><div class="days">';
   for (var i = 0; i < W.days; i++) h += "<i" + (i < days ? ' class="on"' : "") + "></i>";

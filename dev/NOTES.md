@@ -6582,3 +6582,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Preview of everything v1817 removed (artifact "Removed Art Preview"); Harley ticked what to keep: the 3 sounds and the last (unnamed) card's picture. Everything else stays removed (old card pictures for named cards, old hero pictures, Mira, Kessa combat sprite, Aries esper picture).
 - Restored those 4 OWNER_DEFAULTS entries, took them off the v1817 storage clean-up list, and the every-load re-seed now covers sounds as well as pictures (sounds were only seeded once per phone, so phones that lost them would never get them back). Side effect: a sound reset in Dev Tools comes back on the next load, same as pictures always did.
 - Headless: fresh account and a "phone after v1817" (keys deleted, seeded flag set) both get the 3 sounds and the card picture back after a reload. File 24.26 -> 24.41 MB. HANDOVER: search key prefixes before calling anything unused. Not tested on a phone.
+
+## v1821 - Daily Missions: open chests once claimed + new closed purple chest (TEST)
+- Harley: the chests need a closed and an open version. ChatGPT made open versions of the 3 activity chests (wood / blue / purple) and a new closed purple chest that matches its open one (no pink glow). Originals: art/originals/events/shared/chest_open_gpt_v1.png, chest_purple_closed_gpt_v1.png, cut pieces in .../shared/cut/.
+- New files (old chest_act_1-3 kept, LIVE still uses them): art/events/chest_open_1/2/3.webp, chest_act_3b.webp. evDailyHtml: claimed -> chest_open_<tier>, the 100 chest uses chest_act_3b; a claimed chest is no longer faded.
+- Headless: 60 Activity with 20/40 claimed shows two open wooden chests, the 60 chest glowing, new purple at 100; no errors. Not tested on a phone.
