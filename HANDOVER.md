@@ -95,7 +95,8 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 
 - Keep reports concise. Explain things in plain terms; he's not a programmer.
 - **Reproduce a bug before fixing it**; measure before and after. Testing is headless Chromium only, so never claim it was tested on his phone.
-- Game UI style: dark navy and gold, flat cyan buttons, dashed and dotted borders. He **dislikes round, puffy, bushy trees and bushes**.
+- Game UI style: dark navy and gold, flat cyan buttons, dashed and dotted borders.
+- **One standard blue button (v1793, Harley 21 Nov 2026):** every blue button uses the shared style (#2bc8e2, 2px #136a80 edge, light inner ring, white title-font text with a dark teal outline). New blue buttons: give them `class="ks-blue"` (or add the selector to the v1793 list at the end of the main style) - never invent a new blue. Exception for now: the Formations Select button (drawn into the art). He **dislikes round, puffy, bushy trees and bushes**.
 - Use `/* */` comments inside one-line functions.
 - **One rule set for heroes:** a hero and its skills must work exactly the same in Conquest and Arena (no per-mode rules or stats); balance as an in-between. Check every hero change with `node dev/balance/run.js --vs <saved run>` (Conquest walls, swap test, Arena round-robin). 10+ more heroes are planned before the live play test.
 - Inspiration: Shining Force 2, Ultima VII; genre references Kingshot / High Seas Hero.

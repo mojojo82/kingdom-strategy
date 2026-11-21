@@ -6408,3 +6408,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Arcsteel = the single Governor Gear upgrade material (Harley picked the glowing alloy ingot from 4 ChatGPT concepts and the name). GI_DEFS.arcsteel (rar 3, `later` note until gear upgrading exists), art/items/arcsteel.webp; originals in art/originals/items/arcsteel*.png. Not in the server catalogue (functions/items.json) yet - add it there when gear upgrading is built so the admin console / rewards can give it.
 - Hero shards in the Backpack "Other" tab now show the hero's card portrait inside the gold puzzle piece instead of the emoji (SHARD_ART list; heroes not in it keep the emoji). 19 icons, built by dev/items/build_shards.py (per-hero face position + zoom; Harley's tweaks: Kessa not cut off, Hanzo zoomed out and moved, all centred). Originals art/originals/items/shards/.
 - Headless check: 19 shard icons + Arcsteel load in the Backpack, no errors. Not tested on a phone.
+
+## v1793 - One standard blue button (TEST)
+- Harley: "Everytime another blue button comes into the game its a completely different style". There were 8 different blues. He picked the Backpack's Use button + the inner ring as the ONE standard.
+- One shared rule at the end of the main style (`--ksb-*` colours, class `ks-blue` + 50 existing selectors): #2bc8e2, 2px #136a80 edge, light inner ring #a8eef6, 2 px drop, white KS Title text with a dark teal outline, pressed = 1 px down, disabled = half see-through. Covers the old light-cyan buttons (map tile popup, Alliance, Daily, presets, monster search, Governor profile, Rig/List), the darker flat cyan (Events window Go/Claim/Buy, Event shop, Mail, Shop, update banner, sign-in), Backpack Use / Go, Deals Buy, Skin list, Train popup, hero skill Equip, card Equip, Conquest Go, Arena Challenge.
+- Left alone: Formations Select (drawn into the art - Harley: leave for now), the small Conquest fortress toggle in the Blue chrome (a toggle, not a button), dev tool chips, Fear test panel.
+- HANDOVER: new blue buttons must use `ks-blue`.
+- Headless check: Backpack, Events > Daily, Arena - all the same button, no errors. Not tested on a phone.
