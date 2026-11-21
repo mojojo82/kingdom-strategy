@@ -6473,3 +6473,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
   - Fortress III (stone / steel): stone blocks, foundation pillars, granite keep, stone heart (HP); layered plates, deflector, portcullis, golden dome (damage taken).
 - Mapping in RESEARCH_NODE_ART (key -> art/items/research_f<tree>_<name>.webp). Originals + sheets in art/originals/items/research/. Cutter: loose sparks / debris now join the nearest icon.
 - Headless check: all three Fortress trees, 99 icons load, no emoji left; no errors. Not tested on a phone.
+
+## v1803 - Fortress bonus box text (TEST)
+- Harley picked the middle mockup (white outlined headings) + "On the brown text use our common font": Innate / From research / Total = white title font with the dark outline; the bonus lines = brown (#5a3410) in the game's common title font (like the Backpack text). All three Fortress trees.
+- Headless check: Fortress I-III boxes; no errors. Not tested on a phone.
