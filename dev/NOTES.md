@@ -6330,3 +6330,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1778 - unpacked copies switched OFF (TEST)
 - Harley (screenshot): "Cant see my heroes" on v1777 - his whole team (Tom, Kessa, Zarek, Baelgor) was invisible on the iPhone; only the enemy Gareth showed. Headless Chromium drew them fine.
 - HERO_BMP_ON = false: sheets are drawn from the <img> again exactly as in v1776. The one-tap Clear log stays.
+
+## v1779 - "Unpacked copies (test)" switch in the Arena PERF panel (TEST)
+- Harley OK'd testing the ImageBitmap idea again. Top of the PERF panel: "Unpacked copies (test): off/ON" (remembered on this phone, ks_bmp_test; default off). ON makes an ImageBitmap of every loaded hero sheet + the Fear hand and draws from it - this time the <img> is KEPT (v1777 emptied it and the heroes vanished on iPhone). OFF closes the copies and draws from the <img> as in v1776. The perf log records the setting (ui.unpacked).
+- Headless: off -> 0 copies; ON -> 12 copies + Fear hand, Baelgor drawn from his copy, <img> still full; off again -> back to the <img>. No errors. Not tested on a phone.
