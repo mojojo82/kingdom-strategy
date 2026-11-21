@@ -6555,3 +6555,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
   - UI_NAV_PLAIN (22 KB): never used.
   - Ask first: the Stats popup's candidate frames (navy 115 KB, thin + blue 225 KB) are still pickable with the skin button.
 - Headless: Cards / Heroes / More / Conquest on the Blue UI, no errors. Not tested on a phone.
+
+## v1817 - Unused art removed; Stats popup keeps Parchment only (TEST)
+- Harley: keep the Parchment Stats look, remove the other candidates; remove the unused art from the v1816 audit.
+- Removed: 17 old prototype pictures/sounds in OWNER_DEFAULTS (card art, hero art, Kessa combat sprite, Aries esper, 3 sound overrides - never read), the switched-off dark-knight boss sheet (BOSS_ANIM src now empty, bossAnimImg returns null), UI_NAV_PLAIN, the Stats Navy / Thin gold / Blue frame candidates + navy row strip + the "Skin x/4" chip.
+- Phones: the 17 old keys are deleted from local storage on load (frees space players already had filled).
+- test/index.html 27.14 MB -> 24.25 MB (-2.9 MB, about 11%).
+- Headless: Stats popup on Parchment (no chip), Heroes / Cards / Arena open, no errors. Not tested on a phone.
