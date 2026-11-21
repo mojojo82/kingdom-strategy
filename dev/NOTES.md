@@ -6443,3 +6443,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley circled the profile's cream panel and the Backpack's panels ("Pick from these colours to use on all the research bg"); they are flat colours (no texture). Option A picked (B, Backpack tan page, "looks out of place").
 - Research page #dcc2a0 (profile panel), cards / tree board / Fortress boost box / queue bar / research popup #eecea7 (Backpack light panel). Flat, no gradients. Use the same pair for Troops / Infirmary.
 - Headless check: colours confirmed on hub, tree and popup; no errors. Not tested on a phone.
+
+## v1798 - Research colours = the Backpack's two panel colours (TEST)
+- Harley marked two Backpack areas ("Use these 2 for the research areas"): 1 = the cream margin #f4d5a7 -> Research page; 2 = the description panel #eecea7 -> cards / tree board / boost box / popup (unchanged). Use the same pair on Troops / Infirmary.
+- Headless check: hub + tree, no errors. Not tested on a phone.
