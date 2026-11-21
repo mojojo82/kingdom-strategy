@@ -6477,3 +6477,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1803 - Fortress bonus box text (TEST)
 - Harley picked the middle mockup (white outlined headings) + "On the brown text use our common font": Innate / From research / Total = white title font with the dark outline; the bonus lines = brown (#5a3410) in the game's common title font (like the Backpack text). All three Fortress trees.
 - Headless check: Fortress I-III boxes; no errors. Not tested on a phone.
+
+## v1804 - Research: queue line out, repeated heading out, dev link admin-only (TEST + one-line LIVE fix)
+- Harley: "Take out the queue line because we are going to put all queue information into their own page" + "do the other stuff u said".
+- TEST: the research queue line ("Research: 0/1 · idle" + speed-ups) is hidden on every research screen (queue page comes later). The tree heading "Fortress I — Heavy Cannon" is hidden on the phone (the title bar names the tree).
+- The "dev: finish" link (finishes research instantly, free) was showing for EVERY player, also on LIVE. Now admin-only (#devRFin added to the ks-noadmin hide list) in TEST and in LIVE index.html - only that one line changed on LIVE (Harley approved the fix).
+- Headless check: TEST queue + heading hidden; LIVE dev link hidden for a non-admin; no errors. Not tested on a phone.

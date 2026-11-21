@@ -57,7 +57,7 @@
   var SDK = "https://www.gstatic.com/firebasejs/10.14.1/";
   /* dev tools (🔍 🛠️ icons, debug floaters, map painting) are hidden for everyone except admins */
   document.documentElement.classList.add("ks-noadmin");
-  (function () { var st = document.createElement("style"); st.textContent = "html.ks-noadmin #moreMenu .mm-dev,html.ks-noadmin .ft-dev,html.ks-noadmin .idle-util-icons,html.ks-noadmin #coreSaveDebugPanel,html.ks-noadmin #assetSyncDebugPanel,html.ks-noadmin #mapPaintBtn,html.ks-noadmin #spritePalette,html.ks-noadmin #terrainPainter,html.ks-noadmin #devToolsPanel{display:none!important}"; document.head.appendChild(st); })();
+  (function () { var st = document.createElement("style"); st.textContent = "html.ks-noadmin #devRFin,html.ks-noadmin #moreMenu .mm-dev,html.ks-noadmin .ft-dev,html.ks-noadmin .idle-util-icons,html.ks-noadmin #coreSaveDebugPanel,html.ks-noadmin #assetSyncDebugPanel,html.ks-noadmin #mapPaintBtn,html.ks-noadmin #spritePalette,html.ks-noadmin #terrainPainter,html.ks-noadmin #devToolsPanel{display:none!important}"; document.head.appendChild(st); })();
   var KS = window.KS_BACKEND = { kind: "firebase", env: ENV, root: ROOT, status: "loading", uid: null, name: null, email: null, isAdmin: false, error: null, pendingName: null };
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -3693,6 +3693,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   html body[data-screen="city"] #researchModeContent .rt-time { color:#a0600a !important; text-shadow:none !important; }
   html body[data-screen="city"] #techFortressHost :is(.tf-title, .ft-head, .ft-head *) { color:var(--pp-ink) !important; text-shadow:none !important; }
   html body[data-screen="city"] #techFortressHost .tf-title { font-family:'KS Title','Lilita One',sans-serif !important; font-weight:400 !important; font-size:17px !important; }
+  @media (max-width:900px) { html body[data-screen="city"] #techFortressHost .tf-title:not(#z) { display:none !important; } } /* v1804: the title bar already names the tree */
   html body[data-screen="city"] #techFortressHost .ft-boosts { background:#eecea7 !important; border:3px solid var(--pp-gold) !important; border-radius:12px !important; box-shadow:0 0 0 1.5px var(--pp-dk) !important; color:var(--pp-ink) !important; }
   html body[data-screen="city"] #techFortressHost .ft-boosts :is(span, div) { color:var(--pp-ink) !important; } html body[data-screen="city"] #techFortressHost .ft-boosts b { color:#9a5a10 !important; }
   @media (max-width:900px) { html body[data-screen="city"] #researchModeContent > h2:not(#z) { display:none !important; } } /* v1796: the title bar replaces the heading on the phone */
@@ -14685,7 +14686,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1803"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1804"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -16739,7 +16740,7 @@ function renderTechs() {
   var tqb = document.getElementById("techQueueBar"), rqq = game.state.researchQueue;
   tqb.innerHTML = '<span>🔬 Research: <b>' + (rqq ? 1 : 0) + '/1</b>' + (rqq && researchQueueDef(rqq) ? ' · ' + researchQueueDef(rqq).name + ' Lv' + rqq.toLevel : ' · idle') + '</span>' + (rqq ? speedupBtnsHtml("research", null) : "") + '<a href="#" id="devRFin" style="color:#7a6a4a;">dev: finish</a>';
   tqb.querySelector("#devRFin").onclick = function (e) { e.preventDefault(); game.researchFinishNow(); persist(); render(); };
-  tqb.style.display = activeTechCategory === "hub" ? "none" : "";
+  tqb.style.display = "none"; /* v1804 (Harley): queue info moves to its own page later - the line (and its "dev: finish" link) is hidden */
   if (activeTechCategory === "fortress1" || activeTechCategory === "fortress2" || activeTechCategory === "fortress3") { renderTechFortress(); return; }
   fortressViewType = null;
   techFortressHide();
