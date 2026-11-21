@@ -95,11 +95,15 @@ async function worker() {
       const W3 = ["missile_barrage", "laser_beam", "railgun"], FIVE = HEROES.slice(0, 5);
       if (job.kind === "meta") { /* round robin of weapon builds (each on its natural fortress); META = Harley's meta build */
         const [lvl, arms, wl, frac] = job.stage, FIVE = HEROES.slice(0, 5), GEAR = { atk: 48, hp: 48, def: 29, skill: 24, boss: 24, support: 24 };
-        const partial = (type, f) => { const T = type === 3 ? FORTRESS3_TREE : FORTRESS1_TREE, keys = Object.keys(T).sort((a, b) => T[a].row - T[b].row || T[a].col - T[b].col); let budget = Math.round(keys.reduce((a, k) => a + T[k].maxLevel, 0) * f); const m = type === 3 ? { _type: 3 } : {}; keys.forEach((k) => { const n = Math.min(T[k].maxLevel, budget); if (n > 0) { m[k] = n; budget -= n; } }); return m; };
+        const partial = (type, f) => { const T = type === 3 ? FORTRESS3_TREE : type === 2 ? FORTRESS2_TREE : FORTRESS1_TREE, keys = Object.keys(T).sort((a, b) => T[a].row - T[b].row || T[a].col - T[b].col); let budget = Math.round(keys.reduce((a, k) => a + T[k].maxLevel, 0) * f); const m = type > 1 ? { _type: type } : {}; /* v1785: F2 too */ keys.forEach((k) => { const n = Math.min(T[k].maxLevel, budget); if (n > 0) { m[k] = n; budget -= n; } }); return m; };
         const B = [["META missile+laser+railgun (F1)", ["missile_barrage", "laser_beam", "railgun"], 1], ["META missile+laser+railgun (F3)", ["missile_barrage", "laser_beam", "railgun"], 3],
           ["Salvo+railgun+laser (F1)", ["salvo_loader", "railgun", "laser_beam"], 1], ["Salvo+EMP+missile (F1)", ["salvo_loader", "emp_gun", "missile_barrage"], 1],
           ["Hex+Dome+railgun (F3)", ["hex_shield", "deflector_dome", "railgun"], 3], ["Clone+railgun+Hex (F3)", ["clone_task", "railgun", "hex_shield"], 3],
-          ["Laser+pulse+railgun (F1)", ["laser_beam", "pulse_beam", "railgun"], 1], ["IO+Dome+laser (F3)", ["io_repair", "deflector_dome", "laser_beam"], 3]];
+          ["Laser+pulse+railgun (F1)", ["laser_beam", "pulse_beam", "railgun"], 1], ["IO+Dome+laser (F3)", ["io_repair", "deflector_dome", "laser_beam"], 3],
+          /* v1785 (Harley: F2 didn't exist when the weapons were made - "see how F2 fares"): the same builds on F2 */
+          ["META missile+laser+railgun (F2)", ["missile_barrage", "laser_beam", "railgun"], 2], ["Salvo+EMP+missile (F2)", ["salvo_loader", "emp_gun", "missile_barrage"], 2],
+          ["Salvo+railgun+laser (F2)", ["salvo_loader", "railgun", "laser_beam"], 2], ["Clone+railgun+Hex (F2)", ["clone_task", "railgun", "hex_shield"], 2],
+          ["Hex+Dome+railgun (F2)", ["hex_shield", "deflector_dome", "railgun"], 2]];
         const hs = {}; FIVE.forEach((k) => { hs[k] = { owned: true, level: lvl, stars: arms, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
         const kit = B.map((b) => { const m = {}; b[1].forEach((id) => { m[id] = wl; }); return botWeaponsToSim(m); });
         const side = (i, isP) => { const st = arenaSideStats(FIVE, hs, 20, 0, false, null, partial(B[i][2], frac), undefined, GEAR); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, FIVE.indexOf(e.id), isP); }); return st; };
