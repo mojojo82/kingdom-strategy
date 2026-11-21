@@ -14713,7 +14713,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1806"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1807"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17035,7 +17035,17 @@ function fmgStyle() {
     "#fmg .fg-fp button + button{border-left:0!important}",
     "#fmg .fg-blue{position:absolute;border-style:solid;border-color:transparent;border-width:0 " + D(40) + ";border-image:var(--fmg-btn_blue) 0 40 fill/0 " + D(40) + " stretch;pointer-events:none}",
     "#fmg .fg-blue.ksx{--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;border-image:none!important;border:" + D(5) + " solid var(--ksb-edge)!important;background:var(--ksb-bg);border-radius:" + D(18) + ";box-shadow:inset 0 0 0 " + D(4) + " var(--ksb-bg),inset 0 0 0 " + D(7) + " var(--ksb-ring),0 " + D(5) + " 0 var(--ksb-edge);box-sizing:border-box}",
-    "#fmg .fg-blue.ksx.on{--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8}"
+    "#fmg .fg-blue.ksx.on{--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8}",
+    /* v1807 (Harley: all Formations buttons in our style, text at the Research menu sizes): Save / Select / Release 17 px, Equalise / Preset / I II III 15 px */
+    "#fmg .kbx,#fmg .fg-blue.ksx{position:absolute;display:flex;align-items:center;justify-content:center;gap:4px;z-index:3;pointer-events:none;box-sizing:border-box;--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8;--ksb-ink:#4a3410;background:var(--ksb-bg);border:2px solid var(--ksb-edge)!important;border-image:none!important;border-radius:10px;box-shadow:inset 0 0 0 2px var(--ksb-bg),inset 0 0 0 3px var(--ksb-ring),0 2px 0 var(--ksb-edge);color:#fff;font-family:'Lilita One',sans-serif;font-size:17px;line-height:1;letter-spacing:.02em;white-space:nowrap;-webkit-text-stroke:.13em var(--ksb-ink);paint-order:stroke fill}",
+    "#fmg .fg-blue.ksx:not(.on){--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;--ksb-ink:#0d4a5c}",
+    "#fmg .kbx.sm{font-size:15px}",
+    "#fmg .kbx i{font-style:normal;-webkit-text-stroke:0}",
+    "#fmg .fg-fp{background:none!important;gap:3px}",
+    "#fmg .fg-fp button{position:relative!important;display:flex!important;align-items:center;justify-content:center;box-sizing:border-box!important;--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8;--ksb-ink:#4a3410;background:var(--ksb-bg)!important;border:2px solid var(--ksb-edge)!important;border-radius:8px!important;box-shadow:inset 0 0 0 1.5px var(--ksb-bg),inset 0 0 0 2.5px var(--ksb-ring),0 2px 0 var(--ksb-edge)!important}",
+    "#fmg .fg-fp button.on{--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;--ksb-ink:#0d4a5c}",
+    "#fmg .fg-fp button::after{color:#fff;font-family:'Lilita One',sans-serif;font-size:15px;line-height:1;-webkit-text-stroke:.13em var(--ksb-ink);paint-order:stroke fill}",
+    "#fmg .fg-fp button[data-ft='1']::after{content:'I'}#fmg .fg-fp button[data-ft='2']::after{content:'II'}#fmg .fg-fp button[data-ft='3']::after{content:'III'}"
   ].join("\n");
   var st = document.createElement("style"); st.id = "fmgCss"; st.textContent = css; document.head.appendChild(st);
 }
@@ -17105,9 +17115,10 @@ function renderFormationsGpt() {
       /* right column */
       if (f0.guard) fmgEl(card, "div", "pc", fmgTop(770, 128, 225, 138) + "background-image:var(--fmg-guard_patch);");
       else {
-        var eqT = fmgTxt(card, "w", fmgTop(860, 165), 22, 108); fmgSet(eqT, "Equalise");
+        fmgEl(card, "div", "kbx sm", fmgTop(790, 140, 184, 51)).innerHTML = "<i>⚖️</i>Equalise"; fmgEl(card, "div", "kbx sm", fmgTop(790, 205, 184, 51)).innerHTML = "<i>⭐</i>Preset"; /* v1807 */
+        var eqT = fmgTxt(card, "w", fmgTop(860, 165) + "display:none;", 22, 108); fmgSet(eqT, "Equalise");
         fmgEl(card, "div", "hs", fmgTop(788, 138, 188, 55)).onclick = function () { game.equaliseFormation(idx); c.setInputsFromSet(); persist(); render(); };
-        var prT = fmgTxt(card, "w", fmgTop(853, 230), 22, 62); fmgSet(prT, "Preset");
+        var prT = fmgTxt(card, "w", fmgTop(853, 230) + "display:none;", 22, 62); fmgSet(prT, "Preset");
         fmgEl(card, "div", "hs", fmgTop(788, 203, 188, 55)).onclick = function () { openPresetSheet(idx, function () { c.setInputsFromSet(); }); };
       }
       var fp = fmgEl(card, "span", "fort-pick fg-fp", fmgTop(782, 262, 202, 54), fortPickHtml("f" + idx).replace(/^<span[^>]*>|<\/span>$/g, "").replace(/>[^<]*<\/button>/g, "></button>")); /* v1475: the numerals are in the art */
@@ -17119,12 +17130,13 @@ function renderFormationsGpt() {
       var over = fmgEl(mid, "div", "fg-note"); over.style.cssText = "display:none;color:#c0392b;";
       var note = fmgEl(mid, "div", "fg-note");
       /* bottom buttons */
-      var saveT = fmgEl(card, "div", "t w", fmgBotT(209, 354) + "font-size:" + fmgD(22) + ";"); saveT._fs = 22; saveT._max = 150;
+      fmgEl(card, "div", "kbx", fmgBot(50, 317, 321, 72)).innerHTML = "<i>💾</i>Save"; fmgEl(card, "div", "kbx", fmgBot(672, 317, 307, 72)).innerHTML = "<i>🏰</i>Release"; /* v1807: "Release to Reserve" -> "Release" */
+      var saveT = fmgEl(card, "div", "t w", fmgBotT(209, 354) + "font-size:" + fmgD(22) + ";display:none;"); saveT._fs = 22; saveT._max = 150;
       var saveH = fmgEl(card, "div", "hs", fmgBot(55, 322, 311, 63));
-      var blue = fmgEl(card, "div", "fg-blue", fmgBot(379, 319, 286, 68));
+      var blue = fmgEl(card, "div", "fg-blue", fmgBot(376, 317, 292, 72));
       var selT = fmgEl(card, "div", "t", fmgBotT(499, 354) + "font-size:" + fmgD(22) + ";"); selT._fs = 22; selT._max = 160;
       var selH = fmgEl(card, "div", "hs", fmgBot(380, 322, 284, 63));
-      var relT = fmgEl(card, "div", "t w", fmgBotT(757, 354) + "font-size:" + fmgD(20) + ";"); relT._fs = 20; relT._max = 206;
+      var relT = fmgEl(card, "div", "t w", fmgBotT(757, 354) + "font-size:" + fmgD(20) + ";display:none;"); relT._fs = 20; relT._max = 206;
       var relH = fmgEl(card, "div", "hs", fmgBot(677, 322, 297, 63));
       var c = { over: over, card: card, nameIn: nameIn, pillB: pillB, pillT: pillT, march: march, fill: fill, barPatch: barPatch, rows: rows, slots: slots, note: note, blue: blue, selT: selT, saveT: saveT, relT: relT };
       function setTot() { var t = 0; FM_BASES.forEach(function (b) { t += Math.max(0, parseInt(rows[b].num.value, 10) || 0); }); return t; }
@@ -17179,7 +17191,7 @@ function renderFormationsGpt() {
     /* v1806 (Harley): the Select / Guard button is our common button (code), blue = Select, tan = picked - not the painted blue button */
     c.blue.style.display = ""; c.blue.classList.add("ksx"); c.blue.classList.toggle("on", isActive); c.selT.className = "t wb";
     c.selT.style.left = fmgD(400); c.selT.style.width = fmgD(244); c.selT.style.textAlign = "center"; c.selT._max = 244; c.selT.style.webkitTextStrokeColor = isActive ? "#4a3410" : "#0d4a5c";
-    fmgSet(c.selT, isGuard ? (isActive ? "✓ Guard: On" : "Guard: Off") : (isActive ? "✓ Selected" : "Select"));
+    c.selT.style.display = "none"; var selL = isGuard ? (isActive ? "✓ Guard: On" : "Guard: Off") : (isActive ? "✓ Selected" : "Select"); if (c.blue.textContent !== selL) c.blue.textContent = selL; /* v1807 */
     fmgSet(c.saveT, "Save"); fmgSet(c.relT, "Release to Reserve");
     var held = f.held || {}, shortBy = 0;
     FM_BASES.forEach(function (b) {

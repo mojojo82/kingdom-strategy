@@ -6496,3 +6496,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Troops title bar: the troop-count badge is gone (the type buttons already show the counts).
 - Not changed yet: the painted I / II / III picker and the blue ACTIVE / Home tags in the card art.
 - Headless check: Formations before / after tapping Select (active formation changes), Troops bar; no errors. Not tested on a phone.
+
+## v1807 - All Formations buttons in our common style (TEST)
+- Harley: every Formations card button in our style, "Release to Reserve" -> "Release", text at the Research menu sizes.
+- Code buttons (.kbx, same shape + colours as the common button) drawn over the painted ones: Save / Release tan, Select / Guard: Off blue, Selected tan with a tick - 17 px (Research card button size); Equalise / Preset tan with icons and the I / II / III picker (tan, picked = blue) - 15 px. The old painted labels are hidden; the tap areas are the same as before.
+- Not changed: the blue ACTIVE / Home tag at the top of each card.
+- Headless check: tapping Fortress II on Formation 2 and its Select both work; no errors. Not tested on a phone.
