@@ -28,10 +28,23 @@ for i in range(1, hn + 1):  # fill a pocket only if it is NOT plain background (
     if np.median(d[m]) > 40: hole |= m
 a[hole] = orig[hole]; al = np.where(hole, 1.0, al)
 rgba = np.dstack([np.clip(a, 0, 255), al * 255]).astype(np.uint8)
+GRID = __import__('os').environ.get('GRID')  # e.g. "5x2": cut by grid cells instead of blobs (icons with loose sparks / debris)
+if GRID:
+    gc, gr = map(int, GRID.split('x')); Hh, Ww = al.shape; rgba = np.dstack([np.clip(a, 0, 255), al * 255]).astype(np.uint8)
+    for idx, nm in enumerate(names):
+        r, c = divmod(idx, gc); y0, y1, x0, x1 = r * Hh // gr, (r + 1) * Hh // gr, c * Ww // gc, (c + 1) * Ww // gc
+        crop = Image.fromarray(rgba[y0:y1, x0:x1]); bb = crop.getchannel('A').point(lambda v: 255 if v > 10 else 0).getbbox(); crop = crop.crop(bb)
+        s2 = max(crop.size) + 8; sq = Image.new('RGBA', (s2, s2)); sq.paste(crop, ((s2 - crop.width) // 2, (s2 - crop.height) // 2)); sq.save(f'{out}/{nm}.png'); print(nm, sq.size)
+    sys.exit(0)
 DIL = int(__import__('os').environ.get('DIL', '6'))
 lab, n = nd.label(nd.binary_dilation(al > 0.5, iterations=DIL))
 sizes = nd.sum(np.ones_like(al), lab, range(1, n + 1))
 keep = sorted(range(1, n + 1), key=lambda i: -sizes[i - 1])[:len(names)]
+# loose bits (sparks, debris) join the nearest icon
+cen = nd.center_of_mass(np.ones_like(al), lab, range(1, n + 1))
+for j in range(1, n + 1):
+    if j in keep or sizes[j - 1] < 30: continue
+    cy, cx = cen[j - 1]; best = min(keep, key=lambda i: (cen[i - 1][0] - cy) ** 2 + (cen[i - 1][1] - cx) ** 2); lab[lab == j] = best
 boxes = [nd.find_objects((lab == i).astype(int))[0] + (i,) for i in keep]
 H = a.shape[0]; rowh = H / max(1, round(len(names) / max(1, sum(1 for b in boxes if b[0].start < H / 2 + 1)))) if False else None
 boxes.sort(key=lambda b: (round((b[0].start + b[0].stop) / 2 / (H / 4)), b[1].start))

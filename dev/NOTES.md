@@ -6465,3 +6465,11 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - researchIcon(key, emoji) + RESEARCH_NODE_ART (key -> art/items/research_<name>.webp, 160 px) used by the tech tree nodes, the research popup, and the Fortress tree nodes / popup (Fortress keys not mapped yet -> emoji).
 - dev/items/cut_icon_grid.py: pockets enclosed by the outline that aren't plain background stay solid (green crystal on a green screen), real gaps (wrench ring) stay see-through.
 - Headless check: all 3 trees, 20 icons load, popup; no errors. Not tested on a phone.
+
+## v1802 - Icons for the Fortress I-III research items (TEST)
+- Harley: "Where possible if the research is similar just use the same icon as previous tier." Each Fortress tree has only 2-3 stats, so items are grouped by stat and theme: 26 icons cover all 99 items (each icon used 3-5 times across the tiers).
+  - Fortress I (cannon / iron / fire): shell, ammo belt, barrel + gear, blast (cannon dmg); armour plate, iron wall, reactor core (HP); exploding shell, crosshair, horned skull (super burst dmg).
+  - Fortress II (command / gold + blue): war drum, hourglass, signal tower, clockwork gears (cooldowns); blue banner, battle map, sword + laurel, blue-flame sword (hero dmg).
+  - Fortress III (stone / steel): stone blocks, foundation pillars, granite keep, stone heart (HP); layered plates, deflector, portcullis, golden dome (damage taken).
+- Mapping in RESEARCH_NODE_ART (key -> art/items/research_f<tree>_<name>.webp). Originals + sheets in art/originals/items/research/. Cutter: loose sparks / debris now join the nearest icon.
+- Headless check: all three Fortress trees, 99 icons load, no emoji left; no errors. Not tested on a phone.
