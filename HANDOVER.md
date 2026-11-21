@@ -94,6 +94,7 @@ admin/index.html   ── signs in (Google) ───────► admin* Clou
 - **Weapon fix list (15 Oct):** while working through dev/audit/weapons_conquest_vs_arena.md, after EVERY completed request write the numbered list back to Harley showing what's left (done ones ticked), so he can track progress.
 
 - Keep reports concise. Explain things in plain terms; he's not a programmer.
+- **Screenshots use the Blue UI (Harley, 22 Nov 2026).** The Blue UI is what he plays with and the Classic UI is being retired, so every headless screenshot/mockup switches to it after login: `setUiSkin("blue")` (already in the dev/tests/card_check_v1733.js header). Fresh test accounts start on Classic otherwise.
 - **Reproduce a bug before fixing it**; measure before and after. Testing is headless Chromium only, so never claim it was tested on his phone.
 - Game UI style: dark navy and gold, flat cyan buttons, dashed and dotted borders.
 - **One standard blue button (v1793, Harley 21 Nov 2026):** every blue button uses the shared style (#2bc8e2, 2px #136a80 edge, light inner ring, white title-font text with a dark teal outline). New blue buttons: give them `class="ks-blue"` (or add the selector to the v1793 list at the end of the main style) - never invent a new blue. Exception for now: the Formations Select button (drawn into the art).

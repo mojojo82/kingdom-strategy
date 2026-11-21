@@ -19,6 +19,7 @@ const FAKE = fs.readFileSync(path.join(ROOT, "dev/tests/fakefb.js"), "utf8"), st
   await P.goto("https://mojojo82.github.io/kingdom-strategy/test/", { timeout: 180000 }); await P.waitForSelector("#ksAuth .box", { timeout: 120000 });
   await P.fill("#ksE", "bcq" + process.pid + "@test.dev"); await P.fill("#ksP", "secret123"); await P.click("#ksUp");
   await P.waitForSelector("#ksN", { timeout: 120000 }); await P.fill("#ksN", "Rec"); await P.click("#ksGo"); await P.waitForTimeout(6000);
+  await P.evaluate(() => { try { setUiSkin("blue"); } catch (e) {} }); /* Harley 22 Nov 2026: always screenshot with the Blue UI (Classic is being retired) */
   await P.evaluate(() => { window.__bl = {}; ["gareth", "lyra", "kessa", "sera", "baelgor"].forEach((k) => { const h = game.state.heroes[k]; h.owned = true; h.level = 40; h.stars = 10; h.skillLevels = { conquest: [3, 3, 3], expedition: [1, 1, 1] }; });
     game.state.conquestRoster = ["gareth", "lyra", "kessa", "sera", "baelgor"]; document.querySelectorAll(".ks-update, #ksUpdate").forEach((e) => e.remove()); setScreen("conquest"); });
   await P.evaluate(() => { game.state.heroes.tom.owned = true; game.state.heroes.tom.level = 40; });

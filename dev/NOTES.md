@@ -6544,3 +6544,14 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1815 - Title bar: pointed ends visible (TEST)
 - Harley: the end cap's arrow edge was covered. The back octagon (and Heroes gear) now sit just past the point where the chevron reaches full height, so the tip shows like on the Overlord Profile: long bars 100 px from the bar's edge (was 69), short bars 29 px (was 22); titles moved along.
+
+## v1816 - Cards page on the dark blue background; screenshots use the Blue UI (TEST)
+- Harley: the Cards page now sits on the game's dark blue background (its own dark brown box made transparent). Nothing else changed.
+- Headless screenshots now switch to the Blue UI after login (dev/tests/card_check_v1733.js header + HANDOVER rule) - Classic is being retired.
+- Size: test/index.html 27.2 MB (18.6 MB gzipped); 19.8 MB of it is embedded pictures/sounds/videos (405 of them).
+- Audit of embedded art nothing ever shows (reported to Harley, nothing removed yet):
+  - OWNER_DEFAULTS (line ~4925) old prototype uploads never read anywhere: card art x8 (1.1 MB), hero art x5 (0.96 MB), Kessa combat sprite (61 KB), Aries esper picture (150 KB), 3 sound overrides (114 KB). About 2.4 MB, and the seeding still copies them into every phone's storage each load.
+  - BOSS_ANIM dark-knight boss sheet (120 KB): BOSS_ANIM_ON = false, but still loaded at startup.
+  - UI_NAV_PLAIN (22 KB): never used.
+  - Ask first: the Stats popup's candidate frames (navy 115 KB, thin + blue 225 KB) are still pickable with the skin button.
+- Headless: Cards / Heroes / More / Conquest on the Blue UI, no errors. Not tested on a phone.
