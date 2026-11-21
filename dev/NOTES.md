@@ -6355,3 +6355,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: quick test on his low-level admin account - "try the 0.5 now and I'll run through some battles to see how they feel" (before deciding on an early-game curve).
 - ARENA_HP_TEST = 0.5: both fortresses in an Arena fight get x0.5 max HP (fight + the bars before it). Heals / shields / regen are % of max HP so they shrink with it. Not World PvP, not Boss Rush, not the simulators. Set ARENA_HP_TEST = 1 to undo.
 - Headless (Lv80 test teams): 82,025 -> 41,013 HP; that fight lasted about 34 s (the same setup ran about 42 s at full HP earlier). Not tested on a phone. Balance tools not rerun (test only).
+
+## v1784 - TEST: Arena fortress HP x0.3
+- Harley after playing x0.5: "Try 0.3". ARENA_HP_TEST = 0.3 (same scope: Arena fights only; 1 = off).
