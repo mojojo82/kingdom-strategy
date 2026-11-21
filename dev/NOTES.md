@@ -6576,3 +6576,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
   - frame callbacks: Heroes / More 1,800 -> 0; World 2,400 -> 1,200; Conquest 2,480 -> 1,260
   - script time: Heroes / More ~160 -> ~62 ms; World 249 -> 124 ms; Conquest unchanged (3.6-4.6 s in both, the battle drawing; headless has no graphics chip)
 - Checks: Marches row kept between ticks, timer/bar update, badge on state change, fold/unfold, clears with no marches; Arena fight greys the nav as before (same as v1818); Blue UI switch both ways; skill tuning set/clear; storage write/remove/read; Conquest and Arena look unchanged. No errors (except from my fake test marches). Not tested on a phone.
+
+## v1820 - Put back the missile / lightning / skill shot sounds and the card 16 picture (TEST)
+- v1817 mistake: those OWNER_DEFAULTS entries looked unused because the game builds their keys from a prefix (SFX_OVERRIDE_PREFIX + name, CARD_ART_PREFIX + slot). Harley noticed the missile sound had changed.
+- Preview of everything v1817 removed (artifact "Removed Art Preview"); Harley ticked what to keep: the 3 sounds and the last (unnamed) card's picture. Everything else stays removed (old card pictures for named cards, old hero pictures, Mira, Kessa combat sprite, Aries esper picture).
+- Restored those 4 OWNER_DEFAULTS entries, took them off the v1817 storage clean-up list, and the every-load re-seed now covers sounds as well as pictures (sounds were only seeded once per phone, so phones that lost them would never get them back). Side effect: a sound reset in Dev Tools comes back on the next load, same as pictures always did.
+- Headless: fresh account and a "phone after v1817" (keys deleted, seeded flag set) both get the 3 sounds and the card picture back after a reload. File 24.26 -> 24.41 MB. HANDOVER: search key prefixes before calling anything unused. Not tested on a phone.
