@@ -19,7 +19,8 @@ else:
     lim = np.minimum(a[..., 0], a[..., 2]); m = lim > a[..., 1]; edge = (al < 1) & m
     a[..., 0] = np.where(edge, a[..., 1] + (a[..., 0] - lim), a[..., 0]); a[..., 2] = np.where(edge, a[..., 1] + (a[..., 2] - lim), a[..., 2])
 rgba = np.dstack([np.clip(a, 0, 255), al * 255]).astype(np.uint8)
-lab, n = nd.label(nd.binary_dilation(al > 0.5, iterations=6))
+DIL = int(__import__('os').environ.get('DIL', '6'))
+lab, n = nd.label(nd.binary_dilation(al > 0.5, iterations=DIL))
 sizes = nd.sum(np.ones_like(al), lab, range(1, n + 1))
 keep = sorted(range(1, n + 1), key=lambda i: -sizes[i - 1])[:len(names)]
 boxes = [nd.find_objects((lab == i).astype(int))[0] + (i,) for i in keep]
