@@ -294,3 +294,15 @@ Harley: F1 on the kaiju with Critical Mass (cannon x10 per burst, compounding: x
 | Clone+Droid+Duplicate | 110M | 662M | 443 BILLION avg (43B - 1.6T) | 2.66 TRILLION avg (260B - 9.8T) |
 | Meta | 61M | 333M | 361B avg (43B - 1.6T) | 2.16T avg (259B - 9.8T) |
 ~4,000x more damage; range depends on how many cannon bursts fire. Far past 1B -> level 100 instantly. (The kaiju's hidden health is 1e15 = 1,000 trillion, not reached.)
+
+## Arena fortress HP x0.3 (21 Nov 2026, TEST v1784 has ARENA_HP_TEST = 0.3 in Arena fights only)
+Harley: 0.3 "feels about right" on his low-level account; asked what x0.3 as the norm (no curve) means for whales. fort_vs_fort.js, maxed accounts (Lv80 5*, skills 5, maxed research, no weapons/cards/Esper), 40 teams, 160 fights per matchup. Full gear = all 4 Governor Gear Arena pieces at cap on both sides (gear_build.py; HP x0.3 via its hp knob).
+| Matchup | today | x0.3 | full gear | full gear + x0.3 | (avg s; first side's win %: today / x0.3 / gear / gear+x0.3) |
+| F1 vs F2 | 25.5 | 13.0 | 21.5 | 11.2 | 46 / 33 / 48 / 29 |
+| F1 vs F3 | 57.9 | 24.5 | 51.8 | 16.1 | 0 / 6 / 3 / 28 |
+| F2 vs F3 | 59.1 | 33.4 | 55.4 | 28.4 | 1 / 3 / 1 / 3 |
+| F1 vs F1 | 30.3 | 19.3 | 22.1 | 18.0 | ~50 |
+| F2 vs F2 | 53.6 | 42.4 | 53.5 | 37.5 | ~50 (timer 63% -> 31% / 21%) |
+| F3 vs F3 | 59.9 | 59.8 | 59.9 | 59.7 | ~50 (timer 96-100% in all) |
+Findings: whale fights 11-38 s instead of 22-60; fights shrink only 30-60% (much of a max-level fight is heroes walking in and trading), so x0.3 bites harder early than late. F3 mirrors stay on the timer. F1 gains vs F3 (0% -> 6%, 28% with gear), loses some vs F2 (46% -> 33%).
+**Harley (21 Nov): likes all of it, including F3 mirrors staying long - no retuning planned.** Meta weapon builds not yet checked at x0.3.
