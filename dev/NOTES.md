@@ -6304,3 +6304,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: "There doesnt need to be dust at all. Just crop that out." (perf log v1772 showed 130-290 ms freezes when big sheets like tom_block get re-unpacked on iPhone).
 - art/heroes/tom/tom_block_anim_v5.webp: dust trail cleared from all 19 knock frames (ground behind his back boot, ground between the boots outside where his boots are in clean frames, faint grey left-overs, loose specks). Frame box 426 -> 340 px wide (now set by the enter swing streak and his hair), ax 251.17 -> 165.17 (exact crop offset 86). 27.1 -> 21.6 MB in memory. v4 kept in the repo.
 - Headless: sheet loads (3060 px), guard plays in Arena, no errors. Not tested on a phone.
+
+## v1774 - Baelgor group: trimmed sheets (TEST)
+- Harley's per-hero plan, group 1 (Baelgor). Perf log v1772: 130-290 ms freezes when iOS re-unpacks big hero sheets it threw away (memory).
+- New dev/heroes/trim_sheet.py: every frame cut to its own tight box (+2 px clear edge, 2 px gaps), shelf-packed, webp q95. HERO_TRIM / FEAR_TRIM hold r[cell] = [x, y, w, h, ox, oy]; heroTrimBlit draws a frame from it (drawHeroAnim, drawHeroSkillFrame -> also the 2-part slash), fearFrame reads FEAR_TRIM. Exact-size ranged copy skips trimmed sheets. Old sheets stay in the repo - delete a hero's HERO_TRIM lines to go back.
+- Baelgor main 62.5 -> 22.6 MB, skill 62.9 -> 19.7, slash a 55.7 -> 16.7, slash b 37.3 -> 17.3, drain 46.8 -> 10.1, Fear hand grab 18.5 -> 10.0, desc 13.9 -> 9.7. Total ~298 -> ~106 MB in memory. Download 6.7 -> 8.2 MB (q95 so the re-compression stays close).
+- Check: every frame drawn old vs new at 1:1 - all in the exact same place, colour difference mean 4-5/255 (re-compression). Arena fight with Baelgor on both sides incl. Fear and slashes: draws fine, no errors. Not tested on a phone.
