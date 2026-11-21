@@ -6562,3 +6562,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Phones: the 17 old keys are deleted from local storage on load (frees space players already had filled).
 - test/index.html 27.14 MB -> 24.25 MB (-2.9 MB, about 11%).
 - Headless: Stats popup on Parchment (no chip), Heroes / Cards / Arena open, no errors. Not tested on a phone.
+
+## v1818 - World map: Marches box moved up (TEST)
+- Harley: the Marches box covered the left icon column. It now sits just under Hide Resources / Bookmarks (top measured from that row each refresh) and its height stops above the first left icon (scrolls if there are many marches).
+- Headless (430x932, 3 test marches): box at y 131-265, first left icon at 472 - no overlap. Not tested on a phone.

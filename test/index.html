@@ -14701,7 +14701,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1817"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1818"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -34647,6 +34647,10 @@ function renderFleetHud() {
   var ms = game.state.marches || [];
   if (!ms.length) { hud.className = ""; hud.innerHTML = ""; return; }
   hud.className = "has" + (fleetHudCollapsed ? " collapsed" : "");
+  /* v1818 (Harley: "move the march info up higher so its not covering our icons"): sit just under Hide Resources / Bookmarks, above the left icon column */
+  try { var hb = document.getElementById("mapHideResourcesBtn"), tb = document.getElementById("mapTasksBtn"), hr = hb && hb.getBoundingClientRect();
+    if (hr && hr.height) { var top = Math.round(hr.bottom + 8); hud.style.top = top + "px"; hud.style.bottom = "auto";
+      var tr = tb && tb.getBoundingClientRect(); hud.style.maxHeight = (tr && tr.height && tr.top - top > 80 ? Math.round(tr.top - top - 8) : Math.round(innerHeight * 0.3)) + "px"; } } catch (e) {}
   var now = vnow(), html = '<div class="fh-head"><span class="fh-tri"></span><span class="fh-title">Marches</span><span class="fh-count">' + ms.length + '</span></div>';
   ms.forEach(function (m) {
     var frac = 1, left = 0, badge = "➡️";
