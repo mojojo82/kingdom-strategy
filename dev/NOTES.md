@@ -6528,3 +6528,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: "Make this text smaller". Equalise / Preset 15 -> 13 px (still shrink-to-fit), I / II / III 13 -> 11 px, slightly thinner outline.
 - Fix: the header patch that hides the Home tag now starts left of the tag - its soft left edge was letting a sliver of the painted blue tag show.
 - Headless check; no errors. Not tested on a phone.
+
+## v1812 - Formations I / II / III text matches the other buttons (TEST)
+- Harley: the numerals' outline looked different. They were inheriting an old 4-way dark text-shadow + 2 px drop from the previous picker style; now text-shadow none and the same outline as the other small buttons (.11em).
