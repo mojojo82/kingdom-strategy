@@ -6566,3 +6566,13 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1818 - World map: Marches box moved up (TEST)
 - Harley: the Marches box covered the left icon column. It now sits just under Hide Resources / Bookmarks (top measured from that row each refresh) and its height stops above the first left icon (scrolls if there are many marches).
 - Headless (430x932, 3 test marches): box at y 131-265, first left icon at 472 - no overlap. Not tested on a phone.
+
+## v1819 - Audit fixes 3, 7, 8: Marches box, settings reads, always-on loops (TEST)
+- 3 Marches box (World Map): built once; each second only the timers / bars change (the row and its ship picture stay). Rebuilt only when a march starts, ends or changes state; nothing at all off the World Map; position measured when built, on a switch to the World Map and on resize (renderFleetHud, fleetHudPlace, fleetRowState).
+- 7 Settings reads: localStorage reads are remembered in memory (Storage.prototype patch at the top of the main script, localStorage only; set/remove/clear update it, another tab's change empties it). Skill tuning is parsed once per change (getSkillOverride memo).
+- 8 Loops: the Arena "fight running" check loops only while the Arena is open; the FPS counter only counts on the World Map; the Blue UI fitting runs every frame only on Conquest / the Arena fight, 4x a second elsewhere (still at once on a screen switch or resize).
+- Measured headless, 10 s per screen, v1818 -> v1819:
+  - storage reads: Conquest ~9,700 -> 1; World / Heroes / More ~3,700 -> 0
+  - frame callbacks: Heroes / More 1,800 -> 0; World 2,400 -> 1,200; Conquest 2,480 -> 1,260
+  - script time: Heroes / More ~160 -> ~62 ms; World 249 -> 124 ms; Conquest unchanged (3.6-4.6 s in both, the battle drawing; headless has no graphics chip)
+- Checks: Marches row kept between ticks, timer/bar update, badge on state change, fold/unfold, clears with no marches; Arena fight greys the nav as before (same as v1818); Blue UI switch both ways; skill tuning set/clear; storage write/remove/read; Conquest and Arena look unchanged. No errors (except from my fake test marches). Not tested on a phone.
