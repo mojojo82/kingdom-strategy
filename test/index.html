@@ -3679,6 +3679,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
      glows cyan (was a cyan rim), maxed = gold hexagon, locked = grey. */
   html body[data-screen="city"] #techList .rh-hex:not(#z), html body[data-screen="city"] #researchModeContent .rt-hex:not(#z) { background:transparent !important; clip-path:none !important; }
   html body[data-screen="city"] #techList .rh-hex i:not(#z) { inset:0 !important; background:#c19d6c !important; }
+  .rt-hex > i img { width:80%; height:80%; object-fit:contain; filter:drop-shadow(0 1px 1px rgba(60,30,10,.35)); }
   html body[data-screen="city"] #techList .rh-hex i img { width:78%; height:78%; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(60,30,10,.35)); }
   html body[data-screen="city"] #researchModeContent .rt-hex > i:not(#z) { width:64px !important; height:72px !important; background:#c19d6c !important; }
   html body[data-screen="city"] #researchModeContent .rt-node.max .rt-hex > i:not(#z) { background:#f0c95f !important; }
@@ -14681,7 +14682,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1800"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1801"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -16637,6 +16638,8 @@ function techBonusText(def, level) {
 /* v1032 (Harley, from a reference screenshot + approved mockup): Research opens on a hub - banners "Economy" (Growth, Economy) and "Warfare"
    (Battle, Fortress I, Fortress III) with one card per tree: hex icon, levels done / total + bar, 👍 when something can be researched now,
    ⏳ when that tree is researching. Tap a card to open its tree; "‹ All research" goes back. The running research shows at the bottom. */
+var RESEARCH_NODE_ART = { pavedRoads: "pavedRoads", efficientBuilders: "efficientBuilders", drillSergeant: "drillSergeant", campExpansion: "campExpansion", scholarlyPursuit: "scholarlyPursuit", energonSiphon: "energonSiphon", fieldLogistics: "fieldLogistics", logistics: "logistics", irrigation: "irrigation", sharperAxes: "sharperAxes", deepShafts: "deepShafts", prospecting: "prospecting", grandStorage: "grandStorage", ironDiscipline: "ironDiscipline", compositeBows: "compositeBows", stirrupTactics: "stirrupTactics", eliteVanguard: "eliteVanguard", fieldHospital: "fieldHospital" }; /* v1801: research item key -> picture name (art/items/research_<name>.webp); items that are just a higher tier of an earlier one reuse its picture */
+function researchIcon(key, emoji) { var n = RESEARCH_NODE_ART[key]; return n ? itemArt("research_" + n) : (emoji || "🔬"); }
 var RESEARCH_HUB_ART = { growth: 1, economy: 1, battle: 1, fortress1: 1, fortress2: 1, fortress3: 1 }; /* v1800: ChatGPT icons art/items/research_<key>.webp (originals art/originals/items/research/) */
 var RESEARCH_HUB = [
   { banner: "Economy", cls: "eco", cards: [{ key: "growth", name: "Growth", icon: "🌱" }, { key: "economy", name: "Economy", icon: "💰" }] },
@@ -16825,7 +16828,7 @@ function renderTechTree() {
   rows.forEach(function (row, r) { row.forEach(function (k, c) {
     var def = TECH_DEFS[k], lv = game.state.tech[k] || 0, st = techNodeState(k), p = pos(r, c, row.length);
     nodes += '<div class="rt-node ' + st + '" data-k="' + k + '" style="left:' + p.x + 'px;top:' + p.y + 'px">' +
-      '<div class="rt-hex"><i>' + (def.icon || "🔬") + '</i></div>' + (st === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
+      '<div class="rt-hex"><i>' + researchIcon(k, def.icon) + '</i></div>' + (st === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
       '<div class="rt-lv">' + (st === "max" ? "MAX" : lv + "/" + def.maxLevel) + '</div><div class="rt-nm">' + escapeHtml(def.name) + '</div>' + (st === "run" ? '<div class="rt-time" data-rt-time="1"></div>' : "") + '</div>';
   }); });
   el.innerHTML = '<div class="rt-board" style="height:' + H + 'px"><svg class="rt-lines" width="' + W + '" height="' + H + '">' + lines + '</svg>' + nodes + '</div>';
@@ -16844,7 +16847,7 @@ function techTreeTick() { var rq = game.state.researchQueue, t = document.queryS
 function techTreeDetail(key) {
   var box = document.getElementById("rtDetail"); if (!box) return;
   var def = TECH_DEFS[key], level = game.state.tech[key] || 0, maxed = level >= def.maxLevel, unlocked = game.meetsTechRequirements(key), rq = game.state.researchQueue, st = techNodeState(key);
-  var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + st + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + (def.icon || "🔬") + '</i></div></div><div><div class="rt-dn">' + escapeHtml(def.name) + '</div><div>' + (maxed ? "MAX" : "Level " + level + " / " + def.maxLevel) + '</div></div></div>';
+  var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + st + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + researchIcon(key, def.icon) + '</i></div></div><div><div class="rt-dn">' + escapeHtml(def.name) + '</div><div>' + (maxed ? "MAX" : "Level " + level + " / " + def.maxLevel) + '</div></div></div>';
   var cur = techBonusText(def, level);
   h += cur ? '<div class="cur">Now: ' + cur + '</div>' : '<div style="opacity:.8">Boosts: ' + def.statLabel + '</div>';
   if (!maxed) h += '<div class="nxt">Next level: ' + techBonusText(def, level + 1) + '</div>';
@@ -17721,7 +17724,7 @@ function renderFortress() {
     var frq = st.researchQueue, running = frq && frq.fort && frq.key === k;
     var stt = maxed ? "max" : running ? "run" : !unlocked ? "locked" : st.researchPoints >= fortressNodeCost(k, lvl + 1) && !frq ? "can" : "";
     h += '<div class="rt-node ' + stt + '" data-k="' + k + '" style="left:' + p.x + 'px;top:' + p.y + 'px">' +
-      '<div class="rt-hex"><i>' + d.icon + '</i></div>' + (stt === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
+      '<div class="rt-hex"><i>' + researchIcon(k, d.icon) + '</i></div>' + (stt === "locked" ? '<span class="rt-lock">🔒</span>' : "") +
       '<div class="rt-lv">' + (maxed ? "MAX" : lvl + "/" + d.maxLevel) + '</div><div class="rt-nm">' + escapeHtml(d.name) + '</div></div>';
   });
   h += '</div>';
@@ -17743,7 +17746,7 @@ function fortressDetail(k) { /* v1011: the node popup (same box as research) - N
   var st = game.state, map = st.fortressTech || {}, d = fortressNode(k); if (!d) return;
   var lv = map[k] || 0, maxed = lv >= d.maxLevel, unl = fortressNodeUnlocked(map, k), cost = maxed ? 0 : fortressNodeCost(k, lv + 1), can = unl && !maxed && st.researchPoints >= cost;
   var stt = maxed ? "max" : !unl ? "locked" : can ? "can" : "";
-  var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + stt + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + d.icon + '</i></div></div><div><div class="rt-dn">' + escapeHtml(d.name) + '</div><div>' + (maxed ? "MAX" : "Level " + lv + " / " + d.maxLevel) + '</div></div></div>';
+  var h = '<button class="rt-x" aria-label="Close">✕</button><div class="rt-dh"><div class="rt-node ' + stt + '" style="position:static;width:auto;margin:0"><div class="rt-hex"><i>' + researchIcon(k, d.icon) + '</i></div></div><div><div class="rt-dn">' + escapeHtml(d.name) + '</div><div>' + (maxed ? "MAX" : "Level " + lv + " / " + d.maxLevel) + '</div></div></div>';
   h += '<div class="cur">Now: ' + fortressDesc(d, lv) + '</div>';
   if (!maxed) h += '<div class="nxt">Next level: ' + fortressDesc(d, lv + 1) + '</div>';
   if (!unl) h += '<div class="locked">🔒 Needs ' + d.parents.map(function (pk) { return fortressNode(pk).name + " Lv" + Math.min(FORTRESS_UNLOCK_AT, fortressNode(pk).maxLevel); }).join(" and ") + '</div>';

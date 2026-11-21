@@ -18,6 +18,15 @@ if bgname == 'green':
 else:
     lim = np.minimum(a[..., 0], a[..., 2]); m = lim > a[..., 1]; edge = (al < 1) & m
     a[..., 0] = np.where(edge, a[..., 1] + (a[..., 0] - lim), a[..., 0]); a[..., 2] = np.where(edge, a[..., 1] + (a[..., 2] - lim), a[..., 2])
+# pockets fully enclosed by the icon's outline stay solid (e.g. a green crystal on a green screen)
+orig = np.asarray(Image.open(src).convert('RGB')).astype(float)
+inside = nd.binary_fill_holes(nd.binary_closing(al > 0.5, iterations=2)) & ~nd.binary_erosion(al > 0.5, iterations=0 or 1) if False else nd.binary_fill_holes(al > 0.5)
+cand = inside & (al < 1)
+hl, hn = nd.label(cand); hole = np.zeros_like(cand)
+for i in range(1, hn + 1):  # fill a pocket only if it is NOT plain background (a real gap, like a wrench's ring, stays see-through)
+    m = hl == i
+    if np.median(d[m]) > 40: hole |= m
+a[hole] = orig[hole]; al = np.where(hole, 1.0, al)
 rgba = np.dstack([np.clip(a, 0, 255), al * 255]).astype(np.uint8)
 DIL = int(__import__('os').environ.get('DIL', '6'))
 lab, n = nd.label(nd.binary_dilation(al > 0.5, iterations=DIL))

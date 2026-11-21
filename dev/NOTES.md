@@ -6459,3 +6459,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - RESEARCH_HUB_ART -> art/items/research_<key>.webp on the hub cards and in the title bar socket inside a tree. Originals + all options in art/originals/items/research/. New cutter dev/items/cut_icon_grid.py (strict key, so green leaves survive a green screen; only each icon's own pixels).
 - Next: icons for the research inside the trees (Fortress trees keep their own theme: cannon/fire, command/blue gems, stone/steel).
 - Headless check: 6 icons load on the hub, Fortress II bar shows the baton; no errors. Not tested on a phone.
+
+## v1801 - Icons for the Growth / Economy / Battle research items (TEST)
+- 18 new ChatGPT icons (2 sheets of 9, same chat and style as v1800): Paved Roads road+speed arrow, Efficient Builders hammer+wrench, Drill Sergeant war horn, Camp Expansion army tent, Scholarly Pursuit book+rune, Energon Siphon green crystal, Field Logistics pocket watch on a crate, Logistics supply cart, Irrigation wheat+water drop, Sharper Axes axe in a log, Deep Shafts pickaxe on stone, Prospecting gold nugget in a pan, Grand Storage vault door, Iron Discipline shield+sword, Arcane Focus purple orb, Composite Bows bow, Elite Vanguard star medal, Field Hospital medical satchel. None of the 18 are tiers of each other, so no reuse yet (Harley: reuse the earlier tier's icon where research is similar - applies to the Fortress trees).
+- researchIcon(key, emoji) + RESEARCH_NODE_ART (key -> art/items/research_<name>.webp, 160 px) used by the tech tree nodes, the research popup, and the Fortress tree nodes / popup (Fortress keys not mapped yet -> emoji).
+- dev/items/cut_icon_grid.py: pockets enclosed by the outline that aren't plain background stay solid (green crystal on a green screen), real gaps (wrench ring) stay see-through.
+- Headless check: all 3 trees, 20 icons load, popup; no errors. Not tested on a phone.
