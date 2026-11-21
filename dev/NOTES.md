@@ -6534,3 +6534,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1813 - No icon in the title bar's right socket (TEST)
 - Harley: the icon at the right end of the new title bars looked broken (emoji on the phone); leave it empty like the Heroes page. `.ksbar .ic` hidden on every screen that uses the shared bar (Research + trees, Troops, Infirmary, More screens, Gauntlet, Chat).
+
+## v1814 - New title bar kit in the game (TEST)
+- Harley: full-screen-width headers get the LONG version (runs off the screen), headers inside a framed page get the SHORT version (bracket stub just pokes past the frame).
+- Pieces: art/ui/tb2_cap_long_left/right, tb2_middle, tb2_cap_short_left/right, tb2_octagon, tb2_gear, tb_arrow (originals + README in art/originals/ui/titlebar/). Rebuilt from the Overlord Profile bar's colours and thickness, no blue brackets. 48 px tall.
+- LONG: Heroes (#heroTitleBar - fit() now overhangs 55 px each side), every More screen, Gauntlet, Chat (#screenBar .ksbar). SHORT: Research (+ trees), Troops, Infirmary (pages now overflow:visible so the stubs show). Back = blank octagon + arrow sitting on the bar; Heroes gear = octagon + gear.
+- Bug fix: since v1796 the title bar on the More screens / Gauntlet / Chat was hidden on the phone (its display rule lost specificity when the bar CSS went generic) - they had no Back button. Restored.
+- Headless check: Heroes, Research, Troops, Arena, Weapons, Chat; Back on Weapons -> More menu, Heroes back -> Conquest; no errors. Not tested on a phone.
