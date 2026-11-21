@@ -22,10 +22,11 @@ rgba = np.dstack([np.clip(a, 0, 255), al * 255]).astype(np.uint8)
 lab, n = nd.label(nd.binary_dilation(al > 0.5, iterations=6))
 sizes = nd.sum(np.ones_like(al), lab, range(1, n + 1))
 keep = sorted(range(1, n + 1), key=lambda i: -sizes[i - 1])[:len(names)]
-boxes = [nd.find_objects((lab == i).astype(int))[0] for i in keep]
+boxes = [nd.find_objects((lab == i).astype(int))[0] + (i,) for i in keep]
 H = a.shape[0]; rowh = H / max(1, round(len(names) / max(1, sum(1 for b in boxes if b[0].start < H / 2 + 1)))) if False else None
 boxes.sort(key=lambda b: (round((b[0].start + b[0].stop) / 2 / (H / 4)), b[1].start))
 for nm, b in zip(names, boxes):
-    crop = Image.fromarray(rgba[b[0].start:b[0].stop, b[1].start:b[1].stop])
+    sub = rgba[b[0].start:b[0].stop, b[1].start:b[1].stop].copy(); sub[..., 3] = np.where(lab[b[0].start:b[0].stop, b[1].start:b[1].stop] == b[2], sub[..., 3], 0)  # only this icon's pixels
+    crop = Image.fromarray(sub)
     bb = crop.getchannel('A').point(lambda v: 255 if v > 10 else 0).getbbox(); crop = crop.crop(bb)
     s = max(crop.size) + 8; sq = Image.new('RGBA', (s, s)); sq.paste(crop, ((s - crop.width) // 2, (s - crop.height) // 2)); sq.save(f'{out}/{nm}.png'); print(nm, sq.size)
