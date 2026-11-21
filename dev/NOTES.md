@@ -6320,3 +6320,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: couldn't scroll the panel on the phone (the whole Arena UI moved instead), so he couldn't reach Clear log.
 - Perf log (count, Copy, Share, Clear) is now at the top; Battle layers and Fear test are folded (tap to open). The panel also scrolls on its own now (touch events stay in the panel, overscroll contained) if a section is opened.
 - Headless: closed panel fits under the battle, Clear log (tap twice) empties the log. Not tested on a phone.
+
+## v1777 - hero sheets drawn from unpacked copies (ImageBitmap) + one-tap Clear log (TEST)
+- Harley's log (v1776, 4 fights): Baelgor and Tom still froze 110-200 ms on first use AND again every few seconds, even though their sheets are decoded before the fight -> iPhone Safari drops the unpacked picture and unpacks it again on later draws.
+- heroAnimImg: when a sheet has loaded it is turned into an ImageBitmap (createImageBitmap) and drawn from that; the <img> is emptied afterwards so the picture isn't held twice. The bitmap gets naturalWidth/naturalHeight/src so existing code (exact-size copy) keeps working. Same for the Fear hand (fearImg). heroSheetsRelease closes the bitmaps. Until a copy is ready (or if making one fails) the <img> is drawn as before. All heroes, all modes.
+- Clear log: one tap now (shows "Cleared!") - the 2-tap version didn't work for Harley.
+- Headless: 4 x New then a fight - 16 copies made (only the two teams), Baelgor drawn from his copy, Fear hand too, fight runs, no errors. Not tested on a phone.

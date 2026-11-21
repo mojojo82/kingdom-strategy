@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1776"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1777"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28683,13 +28683,21 @@ var heroAnimImgCache = {};
    Was: all 23 animated heroes at login (~59 MP of pictures) whether used or not. Sheets not in use are let go when Conquest opens. Same pictures, same drawing. */
 function heroSheetKeys(keys) { var out = [], all = Object.keys(HERO_ANIMS); (keys || []).forEach(function (k) { if (!k) return; all.forEach(function (a) { if ((a === k || a.indexOf(k + "_") === 0) && out.indexOf(a) === -1) out.push(a); }); }); return out; } /* v1775: every sheet of the hero (was main/idle/skill/atk2 only - Tom's guard, Baelgor's drain loaded mid-fight) */
 function heroSheetsWarm(keys) { try { heroSheetKeys(keys).forEach(function (a) { var fresh = !heroAnimImgCache[a]; heroAnimImg(a); var im = heroAnimImgCache[a]; if (fresh && im && im.decode) im.decode().catch(function () {}); }); if ((keys || []).indexOf("baelgor") !== -1) ["grab", "desc"].forEach(function (k) { var fresh = !fearImgs[k]; fearImg(k); if (fresh && fearImgs[k] && fearImgs[k].decode) fearImgs[k].decode().catch(function () {}); }); } catch (e) {} } /* v1775: + the Fear hand when Baelgor is in */
-function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys); Object.keys(heroAnimImgCache).forEach(function (a) { if (keep.indexOf(a) !== -1) return; var im = heroAnimImgCache[a]; delete heroAnimImgCache[a]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} });
-  if ((keepKeys || []).indexOf("baelgor") === -1) Object.keys(fearImgs).forEach(function (k) { var im = fearImgs[k]; delete fearImgs[k]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }); } catch (e) {} } /* v1775: the Fear hand goes too when no Baelgor */
+function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys); Object.keys(heroAnimImgCache).forEach(function (a) { if (keep.indexOf(a) !== -1) return; var im = heroAnimImgCache[a]; delete heroAnimImgCache[a]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} var bm = heroAnimBmp[a]; delete heroAnimBmp[a]; if (bm) try { bm.close(); } catch (e) {} });
+  if ((keepKeys || []).indexOf("baelgor") === -1) Object.keys(fearImgs).forEach(function (k) { var im = fearImgs[k]; delete fearImgs[k]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} var bm = fearBmp[k]; delete fearBmp[k]; if (bm) try { bm.close(); } catch (e) {} }); } catch (e) {} } /* v1775: the Fear hand goes too when no Baelgor */
+/* v1777 (Harley's perf log: iPhone Safari unpacks a big sheet, throws it away and unpacks it again on the next draw -> 100-200 ms freezes, even after
+   decode()): once a sheet has loaded it is turned into an ImageBitmap (an already-unpacked copy Safari keeps) and the game draws from that; the <img>
+   is then emptied so the picture isn't held twice. heroSheetsRelease closes the copy. */
+var heroAnimBmp = {};
+function heroBmpMake(im, store, key, srcUrl) { if (typeof createImageBitmap !== "function" || im._bmpAsked) return; im._bmpAsked = true;
+  createImageBitmap(im).then(function (b) { if (store.cache[key] !== im) { try { b.close(); } catch (e) {} return; } b.naturalWidth = b.width; b.naturalHeight = b.height; b.complete = true; b.src = srcUrl; store.bmp[key] = b;
+    try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }).catch(function () {}); }
 function heroAnimImg(key) {
   var a = HERO_ANIMS[key]; if (!a) return null;
-  if (!heroAnimImgCache[key]) { var im = new Image(); im.src = a.src; heroAnimImgCache[key] = im; }
+  var b = heroAnimBmp[key]; if (b) return b;
+  if (!heroAnimImgCache[key]) { var im = new Image(); im.onload = function () { heroBmpMake(im, { cache: heroAnimImgCache, bmp: heroAnimBmp }, key, a.src); }; im.src = a.src; heroAnimImgCache[key] = im; }
   var im2 = heroAnimImgCache[key];
-  return (im2.complete && im2.naturalWidth > 0) ? im2 : null;
+  return im2.complete && im2.naturalWidth > 1 ? im2 : null; /* until its unpacked copy is ready (or if making one failed) */
 }
 // Draws the hero standing with feet at (x, feetY). state: "idle" | "run" | "attack". flip = face left. Returns false if no sheet.
 // ===== v509 welding sparks — where Gareth's sword connects (enemy, boss, Arena fortress/heroes) =====
@@ -29408,7 +29416,8 @@ var FEAR_FX = { cw: 216, ch: 297, step: 2, grab: { src: "art/heroes/siphon/fear_
   ringX: 106.8, ringY: 248.1, grabY: 114.0, portY: 256.5, frontAt: 108, clipK: 0.3, pd: 0.22, dy: 2, col: [225, 25, 45], fMin: 0.28, fMax: 0.85 };
 var FEAR_BEATS = [0, 0.22, 1.0, 1.22], FEAR_BEAT_LEN = 0.45, FEAR_HZ_BEATS = [0.45, 0.67, 1.40, 1.62, 2.35, 2.57, 3.30, 3.52], FEAR_RES = 2.0;
 var fearImgs = {};
-function fearImg(k) { var d = FEAR_FX[k]; if (!fearImgs[k]) { var im = new Image(); im.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + (FEAR_TRIM[k] ? FEAR_TRIM[k].src : d.src); /* v1774: trimmed */ fearImgs[k] = im; } var i = fearImgs[k]; return i.complete && i.naturalWidth ? i : null; }
+var fearBmp = {};
+function fearImg(k) { if (fearBmp[k]) return fearBmp[k]; var d = FEAR_FX[k]; if (!fearImgs[k]) { var im = new Image(); im.onload = function () { heroBmpMake(im, { cache: fearImgs, bmp: fearBmp }, k, im.src); }; im.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + (FEAR_TRIM[k] ? FEAR_TRIM[k].src : d.src); /* v1774: trimmed */ fearImgs[k] = im; } var i = fearImgs[k]; return i.complete && i.naturalWidth > 1 && !fearBmp[k] ? i : null; } /* v1777: drawn from the unpacked copy once it exists */
 function fearPreload() { fearImg("grab"); fearImg("desc"); }
 /* v1770 (Harley: "a button that spawns each effect so I can see which part is doing it"): Arena PERF panel test switches for Fear's parts. All on = normal. TEST tool. */
 var FEAR_TEST = { off: {} }; function fearOff(k) { return !!FEAR_TEST.off[k]; }
@@ -32299,7 +32308,7 @@ function ptMountArena() {
       pn.innerHTML = (PL.on ? '<div style="color:#f0c95f;font:bold 10px sans-serif;margin:0 0 4px;">Perf log: ' + nL + ' fight' + (nL === 1 ? '' : 's') + ' saved (last 8, this phone only)</div>' + grid
           + '<button type="button" data-fs="plcopy" style="display:block;width:100%;margin:0;font:bold 11px sans-serif;border-radius:4px;padding:6px;border:none;background:#3ab7d8;color:#06223a;">Copy log</button>'
           + '<button type="button" data-fs="plshare" style="display:block;width:100%;margin:0;font:bold 11px sans-serif;border-radius:4px;padding:6px;border:none;background:#3ab7d8;color:#06223a;">Share log file</button>'
-          + '<button type="button" data-fs="plclear" style="display:block;width:100%;margin:0;font:bold 11px sans-serif;border-radius:4px;padding:5px 6px;border:1px solid #e06a5a;background:#4a1e1e;color:#ffb4a8;">' + (FEAR_TEST.plAsk ? 'Tap again to clear' : 'Clear log') + '</button></div>' : '')
+          + '<button type="button" data-fs="plclear" style="display:block;width:100%;margin:0;font:bold 11px sans-serif;border-radius:4px;padding:5px 6px;border:1px solid #e06a5a;background:#4a1e1e;color:#ffb4a8;">' + (FEAR_TEST.plAsk ? 'Cleared!' : 'Clear log') + '</button></div>' : '')
         + '<button type="button" data-fs="lay" style="display:block;width:100%;margin:6px 0 4px;padding:4px 6px;font:bold 10px sans-serif;text-align:left;border:none;background:none;color:#f0c95f;">' + (FEAR_TEST.lay ? '▾' : '▸') + ' Battle layers (tap to hide)</button>'
         + (FEAR_TEST.lay ? grid + PT_ITEMS_A.map(function (it) { return ptBtnH("data-pt", it[0], it[1], !!PT[it[0]]); }).join("") + '</div>' : '')
         + '<button type="button" data-fs="fearsec" style="display:block;width:100%;margin:6px 0 4px;padding:4px 6px;font:bold 10px sans-serif;text-align:left;border:none;background:none;color:#f0c95f;">' + (FEAR_TEST.sec ? '▾' : '▸') + ' Fear test (looks only)</button>'
@@ -32312,7 +32321,7 @@ function ptMountArena() {
     pn.style.width = "min(330px, calc(100vw - 24px))"; pn.style.boxSizing = "border-box"; pn.style.maxHeight = "60vh"; pn.style.overflowY = "auto"; pn.style.webkitOverflowScrolling = "touch"; pn.style.overscrollBehavior = "contain"; pn.style.touchAction = "pan-y"; ["touchstart", "touchmove"].forEach(function (ev) { pn.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); }); /* v1770: sits UNDER the battle so the fortresses stay in view */
     pn.onclick = function (e) { var t = e.target.closest("[data-pt],[data-fp],[data-fs]"); if (!t) return; e.stopPropagation();
       if (t.hasAttribute("data-fp")) { var fp = t.getAttribute("data-fp"); FEAR_TEST.off[fp] = !FEAR_TEST.off[fp]; }
-      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "fearsec") FEAR_TEST.sec = !FEAR_TEST.sec; else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "plcopy") { plCopy(t); return; } else if (t.getAttribute("data-fs") === "plshare") { plShare(); return; } else if (t.getAttribute("data-fs") === "plclear") { if (FEAR_TEST.plAsk) { try { localStorage.removeItem(PL.KEY); } catch (e) {} FEAR_TEST.plAsk = false; } else { FEAR_TEST.plAsk = true; setTimeout(function () { FEAR_TEST.plAsk = false; }, 3000); } } else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
+      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "fearsec") FEAR_TEST.sec = !FEAR_TEST.sec; else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "plcopy") { plCopy(t); return; } else if (t.getAttribute("data-fs") === "plshare") { plShare(); return; } else if (t.getAttribute("data-fs") === "plclear") { try { localStorage.removeItem(PL.KEY); } catch (e) {} FEAR_TEST.plAsk = true; setTimeout(function () { FEAR_TEST.plAsk = false; try { ptMountArena._redraw && ptMountArena._redraw(); } catch (e) {} }, 1500); } /* v1777: one tap clears (Harley: the 2-tap version didn't work for him) */ else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
       else { var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; } draw(); };
     b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
     host.appendChild(b); host.appendChild(pn); b._pn = pn;
