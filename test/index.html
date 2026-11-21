@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1769"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1770"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29392,6 +29392,9 @@ var FEAR_BEATS = [0, 0.22, 1.0, 1.22], FEAR_BEAT_LEN = 0.45, FEAR_HZ_BEATS = [0.
 var fearImgs = {};
 function fearImg(k) { var d = FEAR_FX[k]; if (!fearImgs[k]) { var im = new Image(); im.src = (/\/test\/[^\/]*$/.test(location.pathname) ? "../" : "") + d.src; fearImgs[k] = im; } var i = fearImgs[k]; return i.complete && i.naturalWidth ? i : null; }
 function fearPreload() { fearImg("grab"); fearImg("desc"); }
+/* v1770 (Harley: "a button that spawns each effect so I can see which part is doing it"): Arena PERF panel test switches for Fear's parts. All on = normal. TEST tool. */
+var FEAR_TEST = { off: {} }; function fearOff(k) { return !!FEAR_TEST.off[k]; }
+var FEAR_TEST_PARTS = [["cracks", "Red cracks (glow)"], ["wash", "Pulse: grey wash"], ["dark", "Pulse: darken"], ["cbright", "Pulse: Baelgor bright copy"], ["cecho", "Pulse: Baelgor red rings"], ["hand", "Hand / portal"], ["embers", "Embers"], ["vecho", "Victim heartbeat rings"], ["vrim", "Victim red rim + dark"], ["wisps", "Victim smoke wisps"], ["layer", "Hero copy layers (all)"]];
 function fearStart(store, caster, tgt, stunSec, front) { fearPreload(); (store.fearFx || (store.fearFx = [])).push({ t0: performance.now(), stun: stunSec || 4, caster: caster, tgt: tgt, emb: [], wisp: [], lt: 0, front: !!front }); } /* front: the whole hand in front of the target (Conquest - a big boss would hide it) */
 function fearList(store) { var L = store && store.fearFx; if (!L || !L.length) return null; var now = performance.now(); store.fearFx = L.filter(function (F) { return now - F.t0 < (F.stun + FEAR_RES + 1.6) * 1000; }); return store.fearFx.length ? store.fearFx : null; }
 function fearPortalOpen(store) { var L = fearList(store), now = performance.now(); return !!(L && L.some(function (F) { return now - F.t0 < (F.stun + 1.3) * 1000; })); } /* Conquest holds the ground still while this is true */
@@ -29401,7 +29404,7 @@ function fearSetPos(F, x, feet, cy) { if (F.frozen) return; F.x = x; F.feet = fe
 function fearFrame(ctx, k, idx, F, alpha) { var D = FEAR_FX[k], im = fearImg(k); if (!im || F.f == null) return; idx = Math.max(0, Math.min(D.n - 1, idx)); var f = F.f, sx = (idx % D.cols) * FEAR_FX.cw, sy = Math.floor(idx / D.cols) * FEAR_FX.ch;
   ctx.save(); if (alpha < 1) ctx.globalAlpha *= alpha; ctx.drawImage(im, sx, sy, FEAR_FX.cw, FEAR_FX.ch, F.x - FEAR_FX.ringX * f, F.feet - FEAR_FX.portY * f + FEAR_FX.dy, FEAR_FX.cw * f, FEAR_FX.ch * f); ctx.restore(); }
 function fearCarve(ctx, F, t, light) { /* 4 lines (8 points) shoot out from the portal centre in 0.1 s, glow while it tears open, fade over ~0.9 s */
-  if (F.f == null || t < 0) return; var age = t - 0.1, fade = age < 0.5 ? 1 : Math.max(0, 1 - (age - 0.5) / 0.9); if (fade <= 0) return;
+  if (F.f == null || t < 0 || fearOff("cracks")) return; var age = t - 0.1, fade = age < 0.5 ? 1 : Math.max(0, 1 - (age - 0.5) / 0.9); if (fade <= 0) return;
   var grow = Math.pow(Math.min(1, Math.max(0, t / 0.1)), 0.6), flash = age >= 0 ? Math.max(0, 1 - age / 0.25) : 1, L = 255 * FEAR_FX.clipK * F.f * 0.85, cx = F.x, cy = F.feet, n = 12;
   ctx.save(); ctx.lineCap = "round"; if (light != null) ctx.globalAlpha *= light;
   for (var pass = 0; pass < 2; pass++) for (var k = 0; k < 8; k++) { var a = (22.5 + 45 * k) * Math.PI / 180, ln = L * grow * (0.92 + 0.08 * ((k * 37) % 5) / 4), ex = cx + Math.cos(a) * ln, ey = cy + Math.sin(a) * ln * 0.26;
@@ -29413,14 +29416,14 @@ function fearCarve(ctx, F, t, light) { /* 4 lines (8 points) shoot out from the 
   ctx.restore(); }
 function fearDrawBack(ctx, store) { var L = fearList(store); if (!L) return; L.forEach(function (F) { var t = fearT(F); fearCarve(ctx, F, t); if (F.front) return;
   fearDrawHand(ctx, F, t, false); }); }
-function fearDrawHand(ctx, F, t, front) {
+function fearDrawHand(ctx, F, t, front) { if (fearOff("hand")) return;
   if (t < F.stun) { if (t < FEAR_FX.pd) return; var e = (t - FEAR_FX.pd) * 36; if (front || e < FEAR_FX.frontAt) fearFrame(ctx, "grab", Math.floor(e / FEAR_FX.step), F, 1); return; }
   F.frozen = true; var di = fearDescIdx(t - F.stun); if (di > 102) return; fearFrame(ctx, "desc", Math.floor(di / FEAR_FX.step), F, di >= 98 ? Math.max(0, 1 - (di - 97) / 5) : 1); }
 function fearDrawFront(ctx, store) { var L = fearList(store); if (!L) return; var now = performance.now(); L.forEach(function (F) { var t = fearT(F);
   if (F.front) fearDrawHand(ctx, F, t, true);
-  else if (t >= FEAR_FX.pd && t < F.stun) { var e = (t - FEAR_FX.pd) * 36; if (e >= FEAR_FX.frontAt) fearFrame(ctx, "grab", Math.floor(e / FEAR_FX.step), F, 1); } /* the closed fist goes over him */
+  else if (t >= FEAR_FX.pd && t < F.stun && !fearOff("hand")) { var e = (t - FEAR_FX.pd) * 36; if (e >= FEAR_FX.frontAt) fearFrame(ctx, "grab", Math.floor(e / FEAR_FX.step), F, 1); } /* the closed fist goes over him */
   fearEmbers(ctx, F, t, now); }); }
-function fearEmbers(ctx, F, t, now) { var dt = Math.min(0.05, F.lt ? (now - F.lt) / 1000 : 0); F.lt = now; if (F.f == null) return; var s = F.f / 0.467, kc = FEAR_FX.clipK * F.f;
+function fearEmbers(ctx, F, t, now) { var dt = Math.min(0.05, F.lt ? (now - F.lt) / 1000 : 0); F.lt = now; if (F.f == null || fearOff("embers")) return; var s = F.f / 0.467, kc = FEAR_FX.clipK * F.f;
   if (t >= F.stun) { var di = fearDescIdx(t - F.stun); if (di >= 86 && !F.embDone) { var rr = (di < 90 ? 235 - (di - 84) * 3.3 : di < 93 ? 215 - (di - 90) * 11.7 : di < 96 ? 180 - (di - 93) * 17.3 : di < 99 ? 128 - (di - 96) * 13 : 89 - Math.min(3, di - 99) * 16.3) * kc, cx = F.x, cy = F.feet - (FEAR_FX.portY - FEAR_FX.ringY) * F.f + FEAR_FX.dy, nE = Math.round((3 + Math.random()) * dt * 30);
       for (var i = 0; i < nE; i++) { var a = Math.random() * Math.PI * 2; F.emb.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.19, (Math.random() * 28 - 14) / 2 * s, -(30 + Math.random() * 45) / 2 * s, 0, 0.6 + Math.random() * 0.7, (1.2 + Math.random() * 1.2) / 2 * s, Math.random() * 9]); }
       if (di >= 101) { for (var j = 0; j < 26; j++) { var a2 = Math.PI * (1.05 + Math.random() * 0.9), sp = (30 + Math.random() * 80) / 2 * s; F.emb.push([cx + (Math.random() * 12 - 6) / 2 * s, cy, Math.cos(a2) * sp, Math.sin(a2) * sp, 0, 0.7 + Math.random() * 0.8, (1.2 + Math.random() * 1.6) / 2 * s, Math.random() * 9]); } F.embDone = true; } } }
@@ -29452,18 +29455,20 @@ function fearBlit(main, src, alpha, scale, px, py, box, dxo, dyo) { /* box = { x
 function fearBox(p) { if (!p) return null; var hh = Math.max(10, p.feet - p.cy), hw = Math.max(14, hh * 1.15); return { x0: p.x - hw, y0: p.feet - hh * 2.1, x1: p.x + hw, y1: p.feet + 3 }; } /* his body only - not the name / HP bar above him, not the level under him */
 function fearRole(store, id) { var L = fearList(store); if (!L) return null; for (var i = 0; i < L.length; i++) { if (L[i].tgt === id) return { F: L[i], r: "tgt" }; if (L[i].caster === id && fearT(L[i]) < 1.8) return { F: L[i], r: "caster" }; } return null; }
 /* draws one hero / enemy: plain when Fear isn't on it. pos() = { x, feet, cy } read AFTER the draw (the draw code updates where he is) */
-function fearWrapDraw(store, id, main, draw, pos) { var R = fearRole(store, id); if (!R) { if (store._fearPos) delete store._fearPos[id]; draw(main); return; }
+function fearWrapDraw(store, id, main, draw, pos) { var R = fearRole(store, id); if (R && fearOff("layer")) { if (R.r !== "caster" && pos) { var pL = pos(); if (pL) fearSetPos(R.F, pL.x, pL.feet, pL.cy); } else if (R.r === "caster") R.F.cLay = null; draw(main); return; } if (!R) { if (store._fearPos) delete store._fearPos[id]; draw(main); return; }
   var LP = store._fearPos || (store._fearPos = {}), lay = fearLayer(store, id, main, LP[id]); draw(lay); var c = lay.canvas, F = R.F, t = fearT(F), p = pos ? pos() : null; if (p) LP[id] = { x: p.x, feet: p.feet }; /* v1762: next frame's layer goes around where he is now */
   if (R.r === "caster") { F.cLay = c; F.cPos = p; fearBlit(main, c, 1); return; } /* his pulse is drawn over everything at the end (fearDrawPulse) */
   if (p) fearSetPos(F, p.x, p.feet, p.cy); var cx = F.frozen ? (p ? p.x : F.x) : F.x, ccy = p ? p.cy : F.cy;
   var bx = fearBox(p), gT = null, ek = p ? Math.max(0.3, Math.min(1, 24 / Math.max(1, p.feet - p.cy))) : 1; /* the echo is softer on a big target (a boss) */
-  if (t < F.stun && bx) FEAR_HZ_BEATS.forEach(function (b) { var pp = (t - b) / FEAR_BEAT_LEN; for (var j = 0; j < 3; j++) { var qq = pp - j * 0.18; if (qq >= 0 && qq < 1) fearBlit(main, gT || (gT = fearTint(store, c, FEAR_FX.col, "g")), 0.7 * ek * Math.pow(1 - qq, 1.3), 1 + 0.8 * qq, cx, ccy, bx); } }); /* heartbeat echo behind him */
+  if (t < F.stun && bx && !fearOff("vecho")) FEAR_HZ_BEATS.forEach(function (b) { var pp = (t - b) / FEAR_BEAT_LEN; for (var j = 0; j < 3; j++) { var qq = pp - j * 0.18; if (qq >= 0 && qq < 1) fearBlit(main, gT || (gT = fearTint(store, c, FEAR_FX.col, "g")), 0.7 * ek * Math.pow(1 - qq, 1.3), 1 + 0.8 * qq, cx, ccy, bx); } }); /* heartbeat echo behind him */
   var rr = t - F.stun;
+  if (rr >= 0 && rr < FEAR_RES && bx && fearOff("vrim")) { fearBlit(main, c, 1); rr = -1; }
   if (rr >= 0 && rr < FEAR_RES && bx) { var f = Math.pow(1 - rr / FEAR_RES, 1.2), T = main.getTransform(), d = 1.6 * T.a, red = fearTint(store, c, FEAR_FX.col, "r"), gl = (0.8 + 0.2 * Math.sin(rr * 30)) * 0.32 * f;
     [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]].forEach(function (o) { var od = 1.6 * o[0], oe = 1.6 * o[1]; fearBlit(main, red, gl, 1, null, null, bx, od, oe); }); /* red rim */
     var dk = fearTint(store, c, [20, 4, 8], "d"); fearBlit(main, c, 1); fearBlit(main, dk, 0.5 * f, 1, null, null, bx); fearBlit(main, red, 0.18 * f, 1, null, null, bx); /* darkened, a little red in it */
     if (p) { var now = performance.now(), dt = Math.min(0.05, F.wl ? (now - F.wl) / 1000 : 0); F.wl = now; var hh = Math.max(10, p.feet - p.cy) * 2, nW = (3 * f + Math.random()) * dt * 30; for (var i = 0; i < Math.floor(nW + Math.random() * 0.5); i++) F.wisp.push([p.x + (Math.random() - 0.5) * hh * 0.55, p.feet - Math.random() * hh * 0.85, (Math.random() * 24 - 12) / 2, -(18 + Math.random() * 20) / 2, 0, 0.5 + Math.random() * 0.4, (9 + Math.random() * 7) / 2, Math.random() * 6]); } }
-  else fearBlit(main, c, 1);
+  else if (rr !== -1) fearBlit(main, c, 1);
+  if (fearOff("wisps")) F.wisp = [];
   if (F.wisp.length) { var now2 = performance.now(), dt2 = Math.min(0.05, F.wl2 ? (now2 - F.wl2) / 1000 : 0); F.wl2 = now2; main.save();
     F.wisp = F.wisp.filter(function (q) { q[4] += dt2; q[0] += q[2] * dt2; q[1] += q[3] * dt2; var u = q[4] / q[5]; if (u >= 1) return false; var a = 0.85 * Math.min(1, u * 5) * Math.pow(1 - u, 1.3), r = q[6] * (1 + 0.8 * u);
       var g = main.createRadialGradient(q[0], q[1], 0, q[0], q[1], r); g.addColorStop(0, "rgba(70,12,22," + (0.8 * a).toFixed(3) + ")"); g.addColorStop(0.6, "rgba(40,8,14," + (0.45 * a).toFixed(3) + ")"); g.addColorStop(1, "rgba(30,6,10,0)"); main.fillStyle = g; main.beginPath(); main.arc(q[0], q[1], r, 0, 6.283); main.fill(); return true; });
@@ -29475,10 +29480,10 @@ function fearEnemyPos(re, vis, groundY) { if (!re || !vis) return null; /* Conqu
 /* at the very end of the frame: the heartbeat dims the picture, Baelgor and his red onion-skins stay bright on top, the carved lines keep their glow */
 function fearDrawPulse(main, store, w, h) { var L = fearList(store); if (!L) return; L.forEach(function (F) { var t = fearT(F), dark = 0, gh = [];
   FEAR_BEATS.forEach(function (b) { var p = (t - b) / FEAR_BEAT_LEN; if (p >= 0 && p < 1) { dark = Math.max(dark, Math.pow(1 - p, 1.5)); for (var j = 0; j < 3; j++) { var q = p - j * 0.18; if (q >= 0 && q < 1) gh.push([1 + 0.9 * q, 0.75 * Math.pow(1 - q, 1.3)]); } } });
-  if (dark <= 0) return; main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.globalCompositeOperation = "source-over"; main.fillStyle = "rgba(88,90,104," + (0.62 * dark).toFixed(3) + ")"; main.fillRect(0, 0, main.canvas.width, main.canvas.height); /* v1765 (Harley, option 2): a plain grey-blue wash mutes the colour - was a "saturation" blend over the whole battle, which iPhones handle slowly (heartbeat FPS dips) */
-  main.globalCompositeOperation = "source-over"; main.fillStyle = "rgba(6,4,10," + (0.55 * dark).toFixed(3) + ")"; main.fillRect(0, 0, main.canvas.width, main.canvas.height); main.restore(); /* and darkens (mockup: colour -85 %, brightness -55 % at the beat) */
+  if (dark <= 0) return; main.save(); main.setTransform(1, 0, 0, 1, 0, 0); main.globalCompositeOperation = "source-over"; main.fillStyle = "rgba(88,90,104," + (0.62 * dark).toFixed(3) + ")"; if (!fearOff("wash")) main.fillRect(0, 0, main.canvas.width, main.canvas.height); /* v1765 (Harley, option 2): a plain grey-blue wash mutes the colour - was a "saturation" blend over the whole battle, which iPhones handle slowly (heartbeat FPS dips) */
+  main.globalCompositeOperation = "source-over"; main.fillStyle = "rgba(6,4,10," + (0.55 * dark).toFixed(3) + ")"; if (!fearOff("dark")) main.fillRect(0, 0, main.canvas.width, main.canvas.height); main.restore(); /* and darkens (mockup: colour -85 %, brightness -55 % at the beat) */
   fearCarve(main, F, t, Math.min(1, dark * 1.2));
-  if (F.cLay && F.cPos) { var cb = fearBox(F.cPos); fearBlit(main, F.cLay, 1, 1, null, null, cb); var tc = fearTint(store, F.cLay, FEAR_FX.col, "c"); gh.forEach(function (g) { fearBlit(main, tc, g[1], g[0], F.cPos.x, F.cPos.cy, cb); }); } }); }
+  if (F.cLay && F.cPos) { var cb = fearBox(F.cPos); if (!fearOff("cbright")) fearBlit(main, F.cLay, 1, 1, null, null, cb); if (fearOff("cecho")) return; var tc = fearTint(store, F.cLay, FEAR_FX.col, "c"); gh.forEach(function (g) { fearBlit(main, tc, g[1], g[0], F.cPos.x, F.cPos.cy, cb); }); } }); }
 var HERO_ATK2 = { baelgor: { parts: ["baelgor_atk2a", "baelgor_atk2b"], impact: 35 } };
 function heroAtk2Def(key) { var d = HERO_ATK2[key]; if (!d || typeof HERO_ANIMS === "undefined") return null; if (!d.n) { d.n = 0; d.parts.forEach(function (p) { d.n += HERO_ANIMS[p].rows.skill[1]; }); d.fps = HERO_ANIMS[d.parts[0]].fps.skill; } return d; }
 function heroAtk2Ms(key) { var d = heroAtk2Def(key); return d ? d.n / d.fps * 1000 : 0; }
@@ -32252,14 +32257,31 @@ function ptMountArena() {
     b.style.cssText = "position:absolute;z-index:6;font:bold 10px sans-serif;padding:4px 6px;background:#3ab7d8;color:#06223a;border:none;border-radius:4px;line-height:1;";
     var pn = document.createElement("div"); pn.id = "ptPanelA";
     pn.style.cssText = "position:absolute;z-index:6;display:none;background:rgba(8,14,26,.92);border:1px dashed #c9a24a;border-radius:6px;padding:6px;width:150px;line-height:1.2;";
-    var draw = function () { pn.innerHTML = '<div style="color:#f0c95f;font:bold 10px sans-serif;margin-bottom:4px;">Tap to hide (test)</div>' + PT_ITEMS_A.map(function (it) { var off = !!PT[it[0]]; return '<button type="button" data-pt="' + it[0] + '" style="display:block;width:100%;margin:2px 0;padding:5px 6px;font:bold 11px sans-serif;text-align:left;border-radius:4px;border:1px solid ' + (off ? '#e06a5a' : '#3ab7d8') + ';background:' + (off ? '#4a1e1e' : '#12324a') + ';color:' + (off ? '#ffb4a8' : '#cfeeff') + ';">' + (off ? 'HIDDEN · ' : '') + it[1] + '</button>'; }).join(""); };
-    pn.onclick = function (e) { var t = e.target.closest("[data-pt]"); if (!t) return; e.stopPropagation(); var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; draw(); };
+    var ptBtnH = function (attr, k, label, off) { return '<button type="button" ' + attr + '="' + k + '" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;text-align:left;border-radius:4px;border:1px solid ' + (off ? '#e06a5a' : '#3ab7d8') + ';background:' + (off ? '#4a1e1e' : '#12324a') + ';color:' + (off ? '#ffb4a8' : '#cfeeff') + ';">' + (off ? 'HIDDEN · ' : '') + label + '</button>'; };
+    var grid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">';
+    var draw = function () { pn.innerHTML = '<button type="button" data-fs="lay" style="display:block;width:100%;margin:0 0 4px;padding:4px 6px;font:bold 10px sans-serif;text-align:left;border:none;background:none;color:#f0c95f;">' + (FEAR_TEST.lay ? '▾' : '▸') + ' Battle layers (tap to hide)</button>'
+      + (FEAR_TEST.lay ? grid + PT_ITEMS_A.map(function (it) { return ptBtnH("data-pt", it[0], it[1], !!PT[it[0]]); }).join("") + '</div>' : '')
+      + '<div style="color:#f0c95f;font:bold 10px sans-serif;margin:6px 0 4px;">Fear test (looks only - tap a part to hide it)</div>' + grid
+      + '<button type="button" data-fs="1" style="display:block;width:100%;margin:0;padding:6px;font:bold 11px sans-serif;border-radius:4px;border:none;background:#3ab7d8;color:#06223a;">Spawn Fear</button>'
+      + '<button type="button" data-fs="loop" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #3ab7d8;background:' + (FEAR_TEST.loop ? '#3ab7d8' : '#12324a') + ';color:' + (FEAR_TEST.loop ? '#06223a' : '#cfeeff') + ';">Repeat 6 s: ' + (FEAR_TEST.loop ? 'ON' : 'off') + '</button>'
+      + FEAR_TEST_PARTS.map(function (it) { return ptBtnH("data-fp", it[0], it[1], fearOff(it[0])); }).join("") + '</div>'; };
+    pn.style.width = "min(330px, calc(100vw - 24px))"; pn.style.boxSizing = "border-box"; pn.style.maxHeight = "45vh"; pn.style.overflowY = "auto"; /* v1770: sits UNDER the battle so the fortresses stay in view */
+    pn.onclick = function (e) { var t = e.target.closest("[data-pt],[data-fp],[data-fs]"); if (!t) return; e.stopPropagation();
+      if (t.hasAttribute("data-fp")) { var fp = t.getAttribute("data-fp"); FEAR_TEST.off[fp] = !FEAR_TEST.off[fp]; }
+      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
+      else { var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; } draw(); };
     b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
     host.appendChild(b); host.appendChild(pn); b._pn = pn;
   }
-  if (b._top !== top || b._left !== left) { b._top = top; b._left = left; b.style.top = top + "px"; b.style.left = left + "px"; b._pn.style.top = (top + 22) + "px"; b._pn.style.left = left + "px"; }
+  if (b._top !== top || b._left !== left || b._cb !== cv.offsetHeight) { b._cb = cv.offsetHeight; b._top = top; b._left = left; b.style.top = top + "px"; b.style.left = left + "px"; b._pn.style.top = (cv.offsetTop + cv.offsetHeight + 4) + "px"; b._pn.style.left = left + "px"; }
   var tx = "PERF " + Math.round(arenaAnim.fpsSmoothed || 60); if (b.textContent !== tx) b.textContent = tx;
+  if (FEAR_TEST.loop && now >= (FEAR_TEST.nextAt || 0)) fearTestSpawn();
 }
+function fearTestSpawn() { /* v1770: fires a Fear for the looks only (the fight itself doesn't change): Baelgor (or your first hero) grabs the first enemy hero still standing */
+  FEAR_TEST.nextAt = performance.now() + 6000; var S = arenaAnim.heroScreen || {}, H = arenaAnim.heroHp || {}, ks = Object.keys(S).filter(function (k) { return /^[pa]_/.test(k) && HERO_DEFS[k.slice(2)] && !(H[k] && H[k].ko); });
+  var me = ks.filter(function (k) { return k.charAt(0) === "p"; }), foe = ks.filter(function (k) { return k.charAt(0) === "a"; });
+  var cst = me.indexOf("p_baelgor") >= 0 ? "p_baelgor" : (me[0] || "p_none"); fearStart(arenaAnim, cst, foe[0] || null, 4);
+  if (!foe[0]) { var cv = document.getElementById("arenaCanvas"), Fe = arenaAnim.fearFx[arenaAnim.fearFx.length - 1], w = cv ? cv.clientWidth : 400, gF = groundYFor(cv ? cv.clientHeight : 400) + 7; fearSetPos(Fe, w / 2, gF, gF - 60 * heroSpriteVisualScale / 100); Fe.frozen = true; } }
 /* v1580 (Harley: Options > Light backgrounds): the Conquest sky and far background layers are drawn on their own canvas behind the battle at 2x
    sharpness (max), which the phone stretches for free when it puts the screen together; everything else (near layer, road, heroes, enemies,
    effects, numbers) stays on the battle canvas at full sharpness. Off = exactly as before. Per device. */

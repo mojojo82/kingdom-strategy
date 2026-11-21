@@ -6278,3 +6278,10 @@ Baelgor split + shrink test (not in the game yet): 10 test sheets (idle / run / 
 
 ## v1769 — v1768 undone (TEST)
 Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1 sheets (git revert of v1768, code included). The v2 sheets were removed from the repo with the revert; copies stay in the scratchpad test folder. Harley's observation: the red glow on Fear seems to be most of the issue - next to look at.
+
+## v1770 - Fear test tool in the Arena PERF panel (TEST)
+- Harley: "a button that spawns each effect on screen, then I can see which part is doing it" (Baelgor's Fear lag on his iPhone).
+- Arena PERF panel now sits under the battle (two columns). Battle layer switches are folded under "Battle layers".
+- New "Fear test (looks only)": Spawn Fear (Baelgor, or your first hero, grabs the first enemy hero; no effect on the fight), Repeat every 6 s, and a hide switch per part: red cracks (glow), pulse grey wash, pulse darken, Baelgor bright copy, Baelgor red rings, hand/portal, embers, victim heartbeat rings, victim red rim + dark, victim smoke wisps, hero copy layers (all).
+- All on = Fear looks exactly as before. FEAR_TEST / fearOff() / fearTestSpawn(). Delete once we know the culprit.
+- Headless: spawn works, all 11 switches hide their part, no errors. Not tested on a phone.
