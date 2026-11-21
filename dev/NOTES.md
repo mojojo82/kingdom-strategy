@@ -6285,3 +6285,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - New "Fear test (looks only)": Spawn Fear (Baelgor, or your first hero, grabs the first enemy hero; no effect on the fight), Repeat every 6 s, and a hide switch per part: red cracks (glow), pulse grey wash, pulse darken, Baelgor bright copy, Baelgor red rings, hand/portal, embers, victim heartbeat rings, victim red rim + dark, victim smoke wisps, hero copy layers (all).
 - All on = Fear looks exactly as before. FEAR_TEST / fearOff() / fearTestSpawn(). Delete once we know the culprit.
 - Headless: spawn works, all 11 switches hide their part, no errors. Not tested on a phone.
+
+## v1771 - Fear red cracks: glow baked, not blurred every frame (TEST)
+- Harley (v1770 test tool): the red crack glow does a lot of the damage.
+- The crack glow was 96 blurred strokes (shadowBlur) drawn every frame, twice on pulse frames. Now the blurred glow is drawn ONCE into small pictures (12 fade steps x 6 pulse-dim steps, same colours / shadow / per-stroke alpha as before) and stamped; the thin bright centre lines (no blur) still draw live. Pictures are shared by every Fear (fearCrkCache, oldest dropped past 90). The first 0.1 s (lines shooting out) still draws live.
+- Headless, crack cost per frame over a Fear: 2.3 ms -> 0.47 ms on the first Fear, 0.11 ms after (pictures reused). 27 pictures per target size.
+- Look: old vs new side by side at 3x - 9 pixels differ, max 30/255.
+- PERF panel: "Cracks: NEW way / OLD way" switch to compare on the phone. Not tested on a phone.

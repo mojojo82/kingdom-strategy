@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1770"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1771"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29403,11 +29403,28 @@ function fearDescIdx(rel) { var DS = 4, DC = 2, DK = 90, tk = DK / (24 * DS); re
 function fearSetPos(F, x, feet, cy) { if (F.frozen) return; F.x = x; F.feet = feet; F.cy = cy; var f = (feet - cy) / (FEAR_FX.portY - FEAR_FX.grabY); F.f = Math.max(FEAR_FX.fMin, Math.min(FEAR_FX.fMax, f)); F.frozen = true; } /* v1736: the portal stays where it opened (he is stunned anyway; a KO'd target drifting home doesn't drag it along) */
 function fearFrame(ctx, k, idx, F, alpha) { var D = FEAR_FX[k], im = fearImg(k); if (!im || F.f == null) return; idx = Math.max(0, Math.min(D.n - 1, idx)); var f = F.f, sx = (idx % D.cols) * FEAR_FX.cw, sy = Math.floor(idx / D.cols) * FEAR_FX.ch;
   ctx.save(); if (alpha < 1) ctx.globalAlpha *= alpha; ctx.drawImage(im, sx, sy, FEAR_FX.cw, FEAR_FX.ch, F.x - FEAR_FX.ringX * f, F.feet - FEAR_FX.portY * f + FEAR_FX.dy, FEAR_FX.cw * f, FEAR_FX.ch * f); ctx.restore(); }
+var fearCrkCache = { m: {}, k: [] }; /* v1771: baked crack-glow pictures, shared by every Fear (oldest dropped past 90) */
+function fearCrkBake(L, sc, pass, e, flash, lt) { /* v1771: one pass of the cracks drawn ONCE (same strokes, same blur, same per-stroke alpha e) into a picture */
+  var pad = 12, W = Math.ceil((2 * L + 2 * pad) * sc), H = Math.ceil((0.52 * L + 2 * pad) * sc), n = 12, c = document.createElement("canvas"); c.width = W; c.height = H; var x = c.getContext("2d");
+  x.setTransform(sc, 0, 0, sc, (L + pad) * sc, (0.26 * L + pad) * sc); x.lineCap = "round"; x.globalAlpha = lt;
+  for (var k = 0; k < 8; k++) { var a = (22.5 + 45 * k) * Math.PI / 180, ln = L * (0.92 + 0.08 * ((k * 37) % 5) / 4), ex = Math.cos(a) * ln, ey = Math.sin(a) * ln * 0.26;
+    for (var i = 0; i < n; i++) { var w0 = 2.25 * (1 - i / n) + 0.4; x.beginPath(); x.moveTo(ex * i / n, ey * i / n); x.lineTo(ex * (i + 1) / n, ey * (i + 1) / n);
+      if (pass === 0) { x.strokeStyle = "rgba(255,30,45," + (0.75 * e).toFixed(3) + ")"; x.lineWidth = w0 + 1.6; x.shadowColor = "rgba(255,30,45," + e.toFixed(3) + ")"; x.shadowBlur = 5; }
+      else { x.strokeStyle = "rgba(255," + Math.round(120 + 110 * flash) + "," + Math.round(100 + 110 * flash) + "," + e.toFixed(3) + ")"; x.lineWidth = Math.max(0.5, w0 * 0.55); x.shadowBlur = 0; }
+      x.stroke(); } }
+  c._ox = (L + pad) * sc; c._oy = (0.26 * L + pad) * sc; return c; }
 function fearCarve(ctx, F, t, light) { /* 4 lines (8 points) shoot out from the portal centre in 0.1 s, glow while it tears open, fade over ~0.9 s */
   if (F.f == null || t < 0 || fearOff("cracks")) return; var age = t - 0.1, fade = age < 0.5 ? 1 : Math.max(0, 1 - (age - 0.5) / 0.9); if (fade <= 0) return;
   var grow = Math.pow(Math.min(1, Math.max(0, t / 0.1)), 0.6), flash = age >= 0 ? Math.max(0, 1 - age / 0.25) : 1, L = 255 * FEAR_FX.clipK * F.f * 0.85, cx = F.x, cy = F.feet, n = 12;
+  var glowBaked = false;
+  if (!FEAR_TEST.oldCrk && grow >= 1) { /* v1771 (Harley: the crack glow costs frames on iPhone): the blurred red glow is stamped from pictures baked once (12 fade x 6 pulse steps, same colours / shadow as the live draw, kept for later Fears); the thin bright centre lines (no blur) still draw live below. The first 0.1 s (lines shooting out) draws live */
+    var sc = Math.min(3, Math.max(1, Math.abs(ctx.getTransform().a) || 1)), eq = Math.round(fade * 12) / 12, lq = light != null ? Math.round(Math.min(1, light) * 6) / 6 : 1;
+    if (eq > 0 && lq > 0) { var C = fearCrkCache, gk = L.toFixed(1) + "_" + sc + "_" + eq + "_" + lq, g = C.m[gk];
+      if (!g) { g = C.m[gk] = fearCrkBake(L, sc, 0, eq, 0, lq); C.k.push(gk); if (C.k.length > 90) delete C.m[C.k.shift()]; }
+      ctx.save(); ctx.shadowBlur = 0; ctx.translate(cx, cy); ctx.scale(1 / sc, 1 / sc); ctx.drawImage(g, -g._ox, -g._oy); ctx.restore(); }
+    glowBaked = true; }
   ctx.save(); ctx.lineCap = "round"; if (light != null) ctx.globalAlpha *= light;
-  for (var pass = 0; pass < 2; pass++) for (var k = 0; k < 8; k++) { var a = (22.5 + 45 * k) * Math.PI / 180, ln = L * grow * (0.92 + 0.08 * ((k * 37) % 5) / 4), ex = cx + Math.cos(a) * ln, ey = cy + Math.sin(a) * ln * 0.26;
+  for (var pass = glowBaked ? 1 : 0; pass < 2; pass++) for (var k = 0; k < 8; k++) { var a = (22.5 + 45 * k) * Math.PI / 180, ln = L * grow * (0.92 + 0.08 * ((k * 37) % 5) / 4), ex = cx + Math.cos(a) * ln, ey = cy + Math.sin(a) * ln * 0.26;
     for (var i = 0; i < n; i++) { var w0 = 2.25 * (1 - i / n) + 0.4, x0 = cx + (ex - cx) * i / n, y0 = cy + (ey - cy) * i / n, x1 = cx + (ex - cx) * (i + 1) / n, y1 = cy + (ey - cy) * (i + 1) / n;
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
       if (pass === 0) { ctx.strokeStyle = "rgba(255,30,45," + (0.75 * fade).toFixed(3) + ")"; ctx.lineWidth = w0 + 1.6; ctx.shadowColor = "rgba(255,30,45," + fade.toFixed(3) + ")"; ctx.shadowBlur = 5; }
@@ -32264,11 +32281,12 @@ function ptMountArena() {
       + '<div style="color:#f0c95f;font:bold 10px sans-serif;margin:6px 0 4px;">Fear test (looks only - tap a part to hide it)</div>' + grid
       + '<button type="button" data-fs="1" style="display:block;width:100%;margin:0;padding:6px;font:bold 11px sans-serif;border-radius:4px;border:none;background:#3ab7d8;color:#06223a;">Spawn Fear</button>'
       + '<button type="button" data-fs="loop" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #3ab7d8;background:' + (FEAR_TEST.loop ? '#3ab7d8' : '#12324a') + ';color:' + (FEAR_TEST.loop ? '#06223a' : '#cfeeff') + ';">Repeat 6 s: ' + (FEAR_TEST.loop ? 'ON' : 'off') + '</button>'
+      + '<button type="button" data-fs="crk" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #c9a24a;background:#2a2412;color:#f0c95f;">Cracks: ' + (FEAR_TEST.oldCrk ? 'OLD way' : 'NEW way') + '</button>'
       + FEAR_TEST_PARTS.map(function (it) { return ptBtnH("data-fp", it[0], it[1], fearOff(it[0])); }).join("") + '</div>'; };
     pn.style.width = "min(330px, calc(100vw - 24px))"; pn.style.boxSizing = "border-box"; pn.style.maxHeight = "45vh"; pn.style.overflowY = "auto"; /* v1770: sits UNDER the battle so the fortresses stay in view */
     pn.onclick = function (e) { var t = e.target.closest("[data-pt],[data-fp],[data-fs]"); if (!t) return; e.stopPropagation();
       if (t.hasAttribute("data-fp")) { var fp = t.getAttribute("data-fp"); FEAR_TEST.off[fp] = !FEAR_TEST.off[fp]; }
-      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
+      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
       else { var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; } draw(); };
     b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
     host.appendChild(b); host.appendChild(pn); b._pn = pn;
