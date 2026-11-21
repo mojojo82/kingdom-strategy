@@ -6483,3 +6483,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - TEST: the research queue line ("Research: 0/1 · idle" + speed-ups) is hidden on every research screen (queue page comes later). The tree heading "Fortress I — Heavy Cannon" is hidden on the phone (the title bar names the tree).
 - The "dev: finish" link (finishes research instantly, free) was showing for EVERY player, also on LIVE. Now admin-only (#devRFin added to the ks-noadmin hide list) in TEST and in LIVE index.html - only that one line changed on LIVE (Harley approved the fix).
 - Headless check: TEST queue + heading hidden; LIVE dev link hidden for a non-admin; no errors. Not tested on a phone.
+
+## v1805 - Troops + Infirmary in the Research style (TEST)
+- Harley: "use all the design elements from research and apply it to the troops and infirmary area".
+- Same as Research: cream page #f4d5a7 with the gold frame, cards #eecea7 with gold frames (troop stage, cost box, infirmary rows), headings white title font + dark outline (troop name, wounded troop names), other text brown common font, title bar (phone) "Troops" (+ troop counts badge) / "Infirmary", back -> City Buildings, old headings hidden on the phone.
+- Buttons all use the one shape: troop type / tier / -,+ / Promote = tan when off, blue when picked; Train and Heal = standard blue. Locked tiers faded.
+- Formations (same container) unchanged.
+- Headless check: Troops, Infirmary, Formations, back arrow; no errors. Not tested on a phone.
