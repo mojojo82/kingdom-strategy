@@ -6431,3 +6431,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Button kit: one shape, colours only. `.ks-btn` joins the standard list; `.ks-tan` and `.ks-slate` swap the four --ksb-* colours (kept for later). HANDOVER updated.
 - Troops / Infirmary / Formations pages not restyled yet (next, to match).
 - Headless check: Research, its tree, Troops tab row; no errors. Not tested on a phone.
+
+## v1796 - Research: same title bar + the tree screens match (TEST)
+- Harley: "This is an example of the ui constantly veering. The screen after goes off on its own thing... Completely different border. Also make the research have same title bar".
+- Research uses the Heroes title bar (ksBarEl, phone only): hub = "Research" + RP badge, back -> City Buildings; inside a tree = the tree's name and icon, back -> All research. The old heading / "All research" row are hidden on the phone (PC unchanged). The bar CSS is now generic (.ksbar), not only for #screenBar.
+- Tree board, its detail popup and the Fortress I-III tree header / boost box: the same cream card + gold frame as the hub cards; dark text; buyable nodes cyan; popup button = the standard blue (#rtGo).
+- HANDOVER: sub-screens must keep the parent screen's panels, frames and title bar.
+- Headless check: hub, Growth tree, popup, Fortress I tree, both back arrows, PC unchanged; no errors. Not tested on a phone.
