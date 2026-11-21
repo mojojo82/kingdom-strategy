@@ -6531,3 +6531,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1812 - Formations I / II / III text matches the other buttons (TEST)
 - Harley: the numerals' outline looked different. They were inheriting an old 4-way dark text-shadow + 2 px drop from the previous picker style; now text-shadow none and the same outline as the other small buttons (.11em).
+
+## v1813 - No icon in the title bar's right socket (TEST)
+- Harley: the icon at the right end of the new title bars looked broken (emoji on the phone); leave it empty like the Heroes page. `.ksbar .ic` hidden on every screen that uses the shared bar (Research + trees, Troops, Infirmary, More screens, Gauntlet, Chat).
