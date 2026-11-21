@@ -6415,3 +6415,11 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Left alone: Formations Select (drawn into the art - Harley: leave for now), the small Conquest fortress toggle in the Blue chrome (a toggle, not a button), dev tool chips, Fear test panel.
 - HANDOVER: new blue buttons must use `ks-blue`.
 - Headless check: Backpack, Events > Daily, Arena - all the same button, no errors. Not tested on a phone.
+
+## v1794 - Heroes title bar on every screen with a Back button (TEST)
+- Harley: "Wherever we need a back option we should consider to use it there" (approved the mockup).
+- ksBarEl() in renderScreenBar: the Heroes bar (same left end with the back arrow, stretching middle) with the screen's name in the title font and its icon in the right socket. Right end = the gear end with the gear painted out (original art/originals/ui/kit_gpt/herobar/slice_tR_empty.png, phone copy art/ui/titlebar_r_empty.webp).
+- Used on every More screen (Arena, Weapons, Espers, Cards, Reports, Stats, Alliance, Options, simulators...), the Gauntlet and Chat (Chat keeps its World / Alliance / Private tabs under the bar). The back arrow does what the old Back button did (Arena fight -> leaderboard, Boss fight -> Boss Rush). Greyed out during an Arena fight like before.
+- The repeated heading at the top of those screens ("Espers", "Battle Reports", "Stats") is hidden while the bar shows.
+- Phone layout only (max-width 900); PC keeps the old Back + title. Backpack, Formations and the Research tree back button left as they are.
+- Headless check: 10 screens, Back goes to the More menu, PC unchanged, no errors. Not tested on a phone.
