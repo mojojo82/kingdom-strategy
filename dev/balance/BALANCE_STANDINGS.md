@@ -306,3 +306,9 @@ Harley: 0.3 "feels about right" on his low-level account; asked what x0.3 as the
 | F3 vs F3 | 59.9 | 59.8 | 59.9 | 59.7 | ~50 (timer 96-100% in all) |
 Findings: whale fights 11-38 s instead of 22-60; fights shrink only 30-60% (much of a max-level fight is heroes walking in and trading), so x0.3 bites harder early than late. F3 mirrors stay on the timer. F1 gains vs F3 (0% -> 6%, 28% with gear), loses some vs F2 (46% -> 33%).
 **Harley (21 Nov): likes all of it, including F3 mirrors staying long - no retuning planned.** Meta weapon builds not yet checked at x0.3.
+
+## Meta check with F2 builds (21 Nov 2026, v1785) - run.js --only meta now has 13 builds (5 new on F2)
+Harley: "F2 did not exist when the weapons were created - see how F2 fares". Overall round-robin win %, Lv80 (full HP -> Arena x0.3):
+Clone+railgun+Hex F3 99 -> 81 | Hex+Dome+railgun F3 92 -> 83 | Salvo+railgun+laser F1 74 -> 81 | Salvo+EMP+missile F1 71 -> 96 | **Hex+Dome+railgun F2 68 -> 64** | **Clone+railgun+Hex F2 57 -> 57** | META F3 52 -> 39 | IO+Dome+laser F3 50 -> 49 | **META F2 26 -> 29** | **Salvo+EMP+missile F2 22 -> 28** | Laser+pulse+railgun F1 15 -> 16 | **Salvo+railgun+laser F2 13 -> 16** | META F1 11 -> 12.
+Lv40 same picture (x0.3 top: Salvo+EMP+missile F1 96, Salvo+railgun+laser F1 90). Lv20: F3 builds on top either way; Salvo+EMP+missile F2 4% / 0%.
+Findings: F2 is mid-table with defensive weapons (Hex/Dome/Clone ~57-68%) and near the bottom with attack builds (same build on F1 vs F2: Salvo+EMP+missile 71 vs 22). x0.3 barely moves F2. F2 has no weapon build that suits it (it didn't exist when weapons were made).
