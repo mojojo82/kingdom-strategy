@@ -6377,3 +6377,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: an earlier cut-off for resource nodes like Kingshot / Lords Rush (to save work, not for looks). Measured first (headless zoom 1 -> 0.25 -> 1): today up to ~600 resource dots on screen at far zoom; zoom frames 45 ms avg / 143 ms worst. Only moving the art cut-off changed nothing (art just became dots) - the saving needs resources hidden.
 - RES_HIDE_PX = 24 (zoom 0.8 at the default 30 px tile): below it resource tiles aren't drawn at all (no art, no dots; lodCandidates skips them). Monsters and bases unchanged (they follow LOD_MID / LOD_FAR as before). Crossing the cut-off rebuilds the tile layer like a detail-level change.
 - Headless after: 0 resource elements below 0.8, back to ~100 when zoomed in; zoom frames 23 ms avg / 61 ms worst. Not tested on a phone.
+
+## v1788 - World map resource cut-off moved out to about 0.37x (TEST)
+- Harley: 0.8x "feels too soon", screenshot of where he wants it (monsters already gone, bases small - estimated ~0.35-0.37x).
+- RES_HIDE_PX 24 -> 11 (zoom ~0.37). Between 0.53x and 0.37x resources show as the small dots again (detail level unchanged); past ~0.37x nothing.
+- Headless zoom sweep: 38 ms avg / 92 ms worst per frame (was 45 / 143 with dots all the way, 23 / 61 at 0.8x). Elements: 225 at 0.44x, 1 at 0.36x (was 593 at 0.25x). Not tested on a phone.
