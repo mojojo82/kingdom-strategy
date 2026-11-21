@@ -6438,3 +6438,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Tree board, its detail popup and the Fortress I-III tree header / boost box: the same cream card + gold frame as the hub cards; dark text; buyable nodes cyan; popup button = the standard blue (#rtGo).
 - HANDOVER: sub-screens must keep the parent screen's panels, frames and title bar.
 - Headless check: hub, Growth tree, popup, Fortress I tree, both back arrows, PC unchanged; no errors. Not tested on a phone.
+
+## v1797 - Research colours from the Overlord Profile + Backpack (TEST)
+- Harley circled the profile's cream panel and the Backpack's panels ("Pick from these colours to use on all the research bg"); they are flat colours (no texture). Option A picked (B, Backpack tan page, "looks out of place").
+- Research page #dcc2a0 (profile panel), cards / tree board / Fortress boost box / queue bar / research popup #eecea7 (Backpack light panel). Flat, no gradients. Use the same pair for Troops / Infirmary.
+- Headless check: colours confirmed on hub, tree and popup; no errors. Not tested on a phone.
