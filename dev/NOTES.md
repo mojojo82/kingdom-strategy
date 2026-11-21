@@ -6362,3 +6362,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1785 - Arena fortress HP x0.3 is the norm (TEST)
 - Harley: "I'll make 0.3 the norm with a potential move to a curve at some point." ARENA_HP_TEST -> ARENA_HP_MULT = 0.3 (same behaviour as v1784: both fortresses in Arena fights, bars match; not World PvP / Boss Rush / simulators). Results + his verdict (no retuning, F3 mirrors staying long is fine): dev/balance/BALANCE_STANDINGS.md.
 - Meta weapon-build check at x0.3 running (results in the next notes entry).
+- Meta check (dev/balance/run.js --only meta; the x0.3 run used a test copy with x0.3 in arenaMakeSim, since the balance tools skip runArenaBattle):
+  - today: Lv80 Clone+railgun+Hex (F3) 98, Hex+Dome+railgun (F3) 86, Salvo+railgun+laser (F1) 65, Salvo+EMP+missile (F1) 50, META (F3) 49 ... META (F1) 5 (known warning: F3 builds above meta).
+  - x0.3: Lv80 Salvo+EMP+missile (F1) 93, Hex+Dome+railgun (F3) 71, Clone+railgun+Hex (F3) 71, Salvo+railgun+laser (F1) 67, IO+Dome+laser 40, META (F3) 31 ... META (F1) 8. Lv40 same order (Salvo+EMP+missile 93). Lv20 barely changes (Hex+Dome+railgun 100).
+  - -> at x0.3 the F1 burst build Salvo+EMP+missile becomes the strongest at Lv40/80; META (F3) drops 48-49% -> 31%. Reported to Harley.
