@@ -6447,3 +6447,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1798 - Research colours = the Backpack's two panel colours (TEST)
 - Harley marked two Backpack areas ("Use these 2 for the research areas"): 1 = the cream margin #f4d5a7 -> Research page; 2 = the description panel #eecea7 -> cards / tree board / boost box / popup (unchanged). Use the same pair on Troops / Infirmary.
 - Headless check: hub + tree, no errors. Not tested on a phone.
+
+## v1799 - Research icons on a flat tan hexagon, no outline (TEST)
+- Harley picked option 6 from three rounds of mockups ("Try our existing palette but no outline"): research icons sit on a flat Backpack-tan hexagon #c19d6c, no rim.
+- Tree states without the rim: can start = soft cyan glow, maxed = gold hexagon, locked = grey, selected = white glow.
+- Next: new icons from ChatGPT to go inside the hexagons.
+- Headless check: hub + tree; no errors. Not tested on a phone.
