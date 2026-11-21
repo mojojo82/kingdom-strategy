@@ -6366,3 +6366,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
   - today: Lv80 Clone+railgun+Hex (F3) 98, Hex+Dome+railgun (F3) 86, Salvo+railgun+laser (F1) 65, Salvo+EMP+missile (F1) 50, META (F3) 49 ... META (F1) 5 (known warning: F3 builds above meta).
   - x0.3: Lv80 Salvo+EMP+missile (F1) 93, Hex+Dome+railgun (F3) 71, Clone+railgun+Hex (F3) 71, Salvo+railgun+laser (F1) 67, IO+Dome+laser 40, META (F3) 31 ... META (F1) 8. Lv40 same order (Salvo+EMP+missile 93). Lv20 barely changes (Hex+Dome+railgun 100).
   - -> at x0.3 the F1 burst build Salvo+EMP+missile becomes the strongest at Lv40/80; META (F3) drops 48-49% -> 31%. Reported to Harley.
+
+## v1786 - Backpack frame and icons appear together (TEST)
+- Harley: "when opening the backpack often the icons in the backpack load before the actual backpack".
+- Cause: the Backpack art (slab, active tab, back / close buttons) was marked lazy (not in the splash preload) and only fetched when the Backpack first opened; the item icons were already there.
+- bagArtPreload(): 2.5 s after the page loads, the 4 pictures are fetched + unpacked in the background and kept in memory (BAG_ART). bagOpen(): if the slab isn't ready yet, the window stays hidden until it is (max 0.6 s), so frame and icons show together.
+- Headless: preloaded before the first open -> shows at once; forced open before the preload -> hidden, then visible within 0.6 s. No errors. Not tested on a phone.

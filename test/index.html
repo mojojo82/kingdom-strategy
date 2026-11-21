@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1785"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1786"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36175,6 +36175,13 @@ function bagItemUse() {
   if (r.ok) { try { sfxReward(); } catch (e) {} bagState.got = "Got " + Object.keys(r.got).map(function (k) { return "+" + fmtCompact(r.got[k]) + " " + ITEM_RES_NAME[k]; }).join(", "); persist(); try { if (cloudSyncReady) cloudSyncNow(true); } catch (e) {} render(); }
   bagState.qtyFor = null; bagRender();
 }
+/* v1786 (Harley: "when opening the backpack often the icons load before the actual backpack"): the Backpack art (slab, tab, back / close buttons) was only
+   fetched the first time the Backpack opened, and the item icons showed before it. Now it is fetched + unpacked in the background after the game loads
+   and kept in memory, and on open the window waits for the slab (max 0.6 s) so icons and frame appear together. */
+var BAG_ART = null;
+function bagArtUrls() { return { slab: ksA("assets/ui-bag-slab-55d2a1e4.webp", true), tabon: ksA("assets/ui-bag-tabon-cefd8916.webp", true), back: ksA("assets/ui-bag-btnback-85a898f4.webp", true), close: ksA("assets/ui-bag-btnclose-6e30252a.webp", true) }; }
+function bagArtPreload() { if (BAG_ART) return BAG_ART; var U = bagArtUrls(); BAG_ART = {}; Object.keys(U).forEach(function (k) { var im = new Image(); im.decoding = "async"; im.src = U[k]; BAG_ART[k] = im; im._p = (im.decode ? im.decode() : Promise.resolve()).then(function () { im._ok = true; }, function () { im._ok = true; }); }); return BAG_ART; }
+try { window.addEventListener("load", function () { setTimeout(function () { try { bagArtPreload(); } catch (e) {} }, 2500); }); } catch (e) {}
 function bagOpen() {
   var pop = document.getElementById("bagPop");
   if (!pop) { pop = document.createElement("div"); pop.id = "bagPop"; pop.style.setProperty("--bag-slab", "url(" + ksA("assets/ui-bag-slab-55d2a1e4.webp", true) + ")"); pop.style.setProperty("--bag-tabon", "url(" + ksA("assets/ui-bag-tabon-cefd8916.webp", true) + ")"); pop.style.setProperty("--bag-back", "url(" + ksA("assets/ui-bag-btnback-85a898f4.webp", true) + ")"); pop.style.setProperty("--bag-close", "url(" + ksA("assets/ui-bag-btnclose-6e30252a.webp", true) + ")"); /* v1744 Backpack v2 art */
@@ -36195,6 +36202,8 @@ function bagOpen() {
     });
     pop.addEventListener("input", function (e) { if (e.target && e.target.id === "bgRange") { bagState.qty = +e.target.value; var n = document.getElementById("bgN"); if (n) n.textContent = bagState.qty; } }); }
   if (!bagItemsFor(bagState.cat).length) { var firstFull = BAG_CATS.filter(function (c) { return bagItemsFor(c[0]).length; })[0]; if (firstFull) bagState.cat = firstFull[0]; }
+  var A = bagArtPreload(), box = pop.querySelector(".bg-box");
+  if (box && !(A.slab && A.slab._ok)) { box.style.visibility = "hidden"; var shown = false, show = function () { if (shown) return; shown = true; box.style.visibility = ""; }; A.slab._p.then(show); setTimeout(show, 600); } /* v1786: frame + icons appear together */
   pop.style.display = "flex"; var dv = pop.querySelector(".bg-dev"); if (dv) dv.style.display = assetIsAdmin() ? "block" : "none"; bagRender();
 }
 /* v1025: tap the FPS / version label on the World map for a small "map look check" - the shared map look and skin alignment this game is using,
