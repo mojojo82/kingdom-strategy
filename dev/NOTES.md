@@ -6509,3 +6509,11 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - fmgFitBtn: labels start at the Research sizes (17 px bottom row, 15 px Equalise / Preset) and shrink only if they would run off the button (measured). I / II / III 13 px.
 - Save / Release: text only.
 - Headless check at 430 and 375 px wide: no label overflows, Select still works; no errors. Not tested on a phone.
+
+## v1809 - Formations: thinner I/II/III, ACTIVE tag in our style, no Equalise/Preset icons (TEST)
+- Harley: picker borders too thick; the blue ACTIVE tag (top right) needs changing; no icons on Equalise / Preset.
+- I / II / III buttons: 1.5 px edge, thinner ring and drop, 4 px gaps.
+- "ACTIVE · Home" on the active formation = our common blue button drawn in code over the painted blue tag (other formations keep the brown Home tag).
+- Equalise / Preset: text only (now fit at 15 px).
+- (His red circle on Formation 1 looked like an overlap; measured - all cards are laid out the same.)
+- Headless check; no errors. Not tested on a phone.
