@@ -2511,6 +2511,10 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     /* v998: Dev Tools as a More screen - category tabs, the category's tools as chips, the chosen tool below */
     #devScreen { display:none; } body[data-screen="more"][data-sub="devtools"] #devScreen { display:block; padding:2px 0 24px; }
     #devToolsPanel.dt-tabbed .dev-sub-header { display:none; } #devToolsPanel.dt-tabbed .dev-sub { display:none; } #devToolsPanel.dt-tabbed .dev-sub.dt-on { display:block; }
+    #devToolsPanel .dt-search { display:flex; align-items:center; gap:8px; margin:2px 0 8px; } #devToolsPanel .dt-search input { flex:1; min-width:0; padding:8px 10px; border-radius:8px; border:1px dashed var(--gold); background:var(--panel2); color:var(--text); font-size:14px; }
+    #devToolsPanel .dt-sn { font-size:11px; color:var(--muted); white-space:nowrap; }
+    #devToolsPanel.dt-searching .dt-tabs, #devToolsPanel.dt-searching .dt-chips { display:none; } #devToolsPanel.dt-searching .dev-sub:not(.dt-hit) { display:none; } #devToolsPanel.dt-searching .dev-sub.dt-hit { display:block; margin-bottom:10px; }
+    #devToolsPanel.dt-searching .dev-sub.dt-hit .dev-sub-header { display:flex; pointer-events:none; } #devToolsPanel .dt-hide { display:none !important; } /* v1789 search */
     #devToolsPanel .dt-tabs { display:flex; gap:6px; overflow-x:auto; padding:2px 0 8px; margin-bottom:6px; border-bottom:1px dashed var(--border); scrollbar-width:none; }
     #devToolsPanel .dt-tab { flex:0 0 auto; padding:7px 11px; border:1px dashed var(--border); border-radius:8px; background:var(--panel2); color:var(--muted); font-weight:700; font-size:12.5px; cursor:pointer; white-space:nowrap; }
     #devToolsPanel .dt-tab.on { color:var(--gold); border-color:var(--gold); background:var(--panel3, #1c2840); }
@@ -14601,7 +14605,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1788"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1789"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -32731,6 +32735,28 @@ var devTabs = { cat: null, tool: null };
   }
   var saved = ""; try { saved = localStorage.getItem("ksDevTab") || ""; } catch (e) {}
   var sp = saved.split("|"); devTabs.pick = pick; pick(sp[0] || "test", sp[1] || null);
+  /* v1789 (Harley: "many are very difficult to find"): search box above the tabs - type a few letters and every tool section with a matching row opens,
+     showing only the matching rows (a section whose NAME matches shows whole). Empty box = back to the tabs as they were. */
+  var sb = document.createElement("div"); sb.className = "dt-search";
+  sb.innerHTML = '<input type="search" id="devSearch" placeholder="🔎 Search dev tools (e.g. cannon, Iron Lily, rain)" autocomplete="off" spellcheck="false"><span class="dt-sn"></span>';
+  panel.insertBefore(sb, tabs); var inp = sb.querySelector("input"), sn = sb.querySelector(".dt-sn");
+  var rowText = function (el) { var t = el.textContent || ""; el.querySelectorAll("[title],[placeholder],option").forEach(function (x) { t += " " + (x.getAttribute("title") || "") + " " + (x.getAttribute("placeholder") || "") + " " + (x.textContent || ""); }); return t.toLowerCase(); };
+  var run = function () { var q = inp.value.trim().toLowerCase(), hits = 0;
+    if (!q) { panel.classList.remove("dt-searching"); panel.querySelectorAll(".dt-hide").forEach(function (e) { e.classList.remove("dt-hide"); }); Object.keys(byId).forEach(function (id) { byId[id].el.classList.remove("dt-hit"); }); sn.textContent = ""; pick(devTabs.cat, devTabs.tool); return; }
+    panel.classList.add("dt-searching");
+    Object.keys(byId).forEach(function (id) { var x = byId[id], body = document.getElementById(id); if (!body) return; var nameHit = x.label.toLowerCase().indexOf(q) >= 0, any = false;
+      var ctl = function (el) { return !!(el.matches && el.matches("input,button,select,textarea,.dev-btn")) || !!(el.querySelector && el.querySelector("input,button,select,textarea,.dev-btn,canvas")); };
+      var filt = function (par, depth) { var got = 0, carry = 0; [].slice.call(par.children).forEach(function (row) {
+          var txt = rowText(row), ok = nameHit || txt.indexOf(q) >= 0;
+          if (!ok && carry > 0) { if (ctl(row) && txt.replace(/[^a-z]/g, "").length < 40) { ok = true; carry--; } else carry = 0; } /* the controls right under a matching heading */
+          if (ok && !nameHit && depth < 2 && row.children.length >= 4 && txt.indexOf(q) >= 0) { var sub = filt(row, depth + 1); ok = sub > 0; got += sub; row.classList.toggle("dt-hide", !ok); if (ok) any = true; return; } /* a long list inside one box: filter its rows */
+          row.classList.toggle("dt-hide", !ok); if (ok) { got++; any = true; if (!nameHit && !ctl(row)) carry = 3; } });
+        return got; };
+      hits += filt(body, 0);
+      x.el.classList.toggle("dt-hit", any);
+      if (any && body.style.display === "none") x.h.click(); /* opens it with its reveal hooks */ });
+    sn.textContent = hits ? hits + " found" : "nothing found"; };
+  inp.addEventListener("input", run);
 })();
 function devScreenOpen() {
   var pop = document.getElementById("utilPopup"), panel = document.getElementById("devToolsPanel"), host = document.getElementById("devScreen");

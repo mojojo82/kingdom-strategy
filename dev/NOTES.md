@@ -6382,3 +6382,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: 0.8x "feels too soon", screenshot of where he wants it (monsters already gone, bases small - estimated ~0.35-0.37x).
 - RES_HIDE_PX 24 -> 11 (zoom ~0.37). Between 0.53x and 0.37x resources show as the small dots again (detail level unchanged); past ~0.37x nothing.
 - Headless zoom sweep: 38 ms avg / 92 ms worst per frame (was 45 / 143 with dots all the way, 23 / 61 at 0.8x). Elements: 225 at 0.44x, 1 at 0.36x (was 593 at 0.25x). Not tested on a phone.
+
+## v1789 - Dev Tools search box (TEST)
+- Harley: dev tools are hard to find (start of the Dev Tools reorganisation: 1 remove retired items, 2 leave simulators / Event Log in More for now, 3 search box first, then regroup).
+- Search box above the Dev Tools tabs: typing hides the tabs and shows every tool section with a matching row, only the matching rows (title / placeholder / option text count too). A matching heading also shows the controls right under it (e.g. "cannon" shows the cannon position sliders); a long list inside one box (Sound Effects) is filtered row by row; a section whose name matches shows whole. Empty box = back to the tabs as before.
+- Headless: "cannon" 10 found (cannon switch, target, position sliders, cannon sound), "valor" 3, "iron lily" 7, nonsense -> "nothing found", clearing restores the tabs. No errors. Not tested on a phone.
