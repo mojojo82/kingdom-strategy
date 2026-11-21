@@ -6299,3 +6299,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Drawing costs: per PERF layer (L:a_fort ...), per effect function (f:...), per hero sheet (h:baelgor_skill ...). iPhone Safari clocks are coarse (~1 ms) - read the averages, not single frames.
 - Last 8 fights kept in localStorage ks_perflog_v1. PERF panel > Perf log: Copy log / Share log file / Clear log. Only on the TEST page (or ?perflog=1).
 - Headless test fight: works, 17 KB per fight. It already shows a ~370 ms freeze the first time Baelgor's skill sheet is drawn (unpacking).
+
+## v1773 - Tom's guard sheet: knock-back dust removed (TEST)
+- Harley: "There doesnt need to be dust at all. Just crop that out." (perf log v1772 showed 130-290 ms freezes when big sheets like tom_block get re-unpacked on iPhone).
+- art/heroes/tom/tom_block_anim_v5.webp: dust trail cleared from all 19 knock frames (ground behind his back boot, ground between the boots outside where his boots are in clean frames, faint grey left-overs, loose specks). Frame box 426 -> 340 px wide (now set by the enter swing streak and his hair), ax 251.17 -> 165.17 (exact crop offset 86). 27.1 -> 21.6 MB in memory. v4 kept in the repo.
+- Headless: sheet loads (3060 px), guard plays in Arena, no errors. Not tested on a phone.
