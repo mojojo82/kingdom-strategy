@@ -7946,6 +7946,7 @@ var GI_DEFS = {
   chest_eq_3: { name: "Super Rare Equipment Chest", art: "chest_equipment", rar: 3, top: "S.Rare", eqR: 3, desc: "Gives one Super Rare equipment piece." },
   chest_eq_4: { name: "Epic Equipment Chest", art: "chest_equipment", rar: 4, top: "Epic", eqR: 4, desc: "Gives one Epic equipment piece." },
   enhance_stone: { name: "Enhance Stone", art: "enhance_stone", rar: 2, later: "Enhancing equipment comes later - keep these for then.", desc: "Used to enhance equipment." },
+  arcsteel: { name: "Arcsteel", art: "arcsteel", rar: 3, later: "Upgrading Governor Gear comes later - keep these for then.", desc: "Used to upgrade Governor Gear." }, /* v1792 */
   /* v1653 (Harley): universal fragments, one kind per hero tier. 1 = 1 fragment of any hero of that tier (pick the hero and how many);
      heroes with noUniversal (Hanzo, VIP heroes) only take their own fragments. Like Kingshot's General Hero Shards. */
   ufrag_rare: { name: "Universal Rare Fragment", art: "fragment", rar: 2, top: "Rare", cat: "heroes", tier: "Rare", desc: "Turns into a fragment of any Rare hero you pick (once you have at least 1 of that hero's own fragments)." },
@@ -14617,7 +14618,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1791"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1792"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36189,10 +36190,11 @@ function bagResItems() { /* v1024: resource packs and chests from state.items */
     return { id: id, cat: "res", rar: bagRarity(d), top: d.kind === "choice" ? "Lv." + d.lv : itemAmtLabel(d.amt),
       icon: d.kind === "res" ? ico(d.res) : itemArt(d.kind === "choice" ? "chest_res_custom" : "chest_res_supply"), name: d.name, desc: d.desc, item: d, count: function () { return (game.state.items || {})[id] || 0; } }; });
 }
+var SHARD_ART = { gareth: 1, lyra: 1, roran: 1, kessa: 1, sera: 1, bram: 1, juno: 1, pip: 1, torvald: 1, hanzo: 1, ironlily: 1, vesper: 1, aurek: 1, baelgor: 1, seraphine: 1, halo7: 1, caelum: 1, zarek: 1, tom: 1 }; /* v1792: art/items/shard_<hero>.webp (dev/items/build_shards.py) */
 function bagItemsFor(cat) {
   var list = BAG_ITEMS.filter(function (it) { return it.cat === cat && it.count() > 0; });
   if (cat === "res") list = bagResItems().concat(list);
-  if (cat === "heroes") Object.keys(game.state.heroes).forEach(function (k) { var h = game.state.heroes[k], d = HERO_DEFS[k]; if (d && h && (h.fragments | 0) > 0 && d.class !== "governor") list.push({ id: "shards_" + k, cat: "heroes", icon: '<span style="font-size:24px">' + (d.icon || "🧩") + '</span>', name: d.name + " shards", count: function () { return h.fragments | 0; }, desc: "Shards for " + d.name + ": recruit or add stars.", go: function () { setScreen("heroes"); } }); });
+  if (cat === "heroes") Object.keys(game.state.heroes).forEach(function (k) { var h = game.state.heroes[k], d = HERO_DEFS[k]; if (d && h && (h.fragments | 0) > 0 && d.class !== "governor") list.push({ id: "shards_" + k, cat: "heroes", icon: SHARD_ART[k] ? itemArt("shard_" + k) : '<span style="font-size:24px">' + (d.icon || "🧩") + '</span>', /* v1792: hero picture in the gold puzzle piece */ name: d.name + " shards", count: function () { return h.fragments | 0; }, desc: "Shards for " + d.name + ": recruit or add stars.", go: function () { setScreen("heroes"); } }); });
   return list;
 }
 var bagState = { cat: "res", sel: null, qty: 1, qtyFor: null, pick: null, det: null, got: "" };
