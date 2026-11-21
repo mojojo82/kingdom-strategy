@@ -6541,3 +6541,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - LONG: Heroes (#heroTitleBar - fit() now overhangs 55 px each side), every More screen, Gauntlet, Chat (#screenBar .ksbar). SHORT: Research (+ trees), Troops, Infirmary (pages now overflow:visible so the stubs show). Back = blank octagon + arrow sitting on the bar; Heroes gear = octagon + gear.
 - Bug fix: since v1796 the title bar on the More screens / Gauntlet / Chat was hidden on the phone (its display rule lost specificity when the bar CSS went generic) - they had no Back button. Restored.
 - Headless check: Heroes, Research, Troops, Arena, Weapons, Chat; Back on Weapons -> More menu, Heroes back -> Conquest; no errors. Not tested on a phone.
+
+## v1815 - Title bar: pointed ends visible (TEST)
+- Harley: the end cap's arrow edge was covered. The back octagon (and Heroes gear) now sit just past the point where the chevron reaches full height, so the tip shows like on the Overlord Profile: long bars 100 px from the bar's edge (was 69), short bars 29 px (was 22); titles moved along.
