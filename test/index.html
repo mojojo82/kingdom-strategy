@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1780"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1781"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28689,7 +28689,7 @@ function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys);
    decode()): once a sheet has loaded it is turned into an ImageBitmap (an already-unpacked copy Safari keeps) and the game draws from that; the <img>
    is then emptied so the picture isn't held twice. heroSheetsRelease closes the copy. */
 var heroAnimBmp = {};
-var HERO_BMP_ON = false; try { HERO_BMP_ON = localStorage.getItem("ks_bmp_test") === "1"; } catch (e) {} /* v1779: TEST switch in the Arena PERF panel (default off). v1777 emptied the <img> after copying and the heroes vanished on Harley's iPhone - now the original is kept */
+var HERO_BMP_ON = true; /* v1781 (Harley): unpacked copies are the permanent fix (perf log v1780: 0 freezes over 100 ms, was 6-8 per fight). Never empty the <img> after copying - that blanked the heroes on iPhone (v1777). See dev/PERF_FIXES.md */
 function heroBmpSet(on) { HERO_BMP_ON = !!on; try { localStorage.setItem("ks_bmp_test", on ? "1" : "0"); } catch (e) {}
   [[heroAnimImgCache, heroAnimBmp], [fearImgs, fearBmp]].forEach(function (P) { var C = P[0], B = P[1];
     Object.keys(B).forEach(function (k) { try { B[k].close(); } catch (e) {} delete B[k]; });
@@ -32318,7 +32318,7 @@ function ptMountArena() {
     var ptBtnH = function (attr, k, label, off) { return '<button type="button" ' + attr + '="' + k + '" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;text-align:left;border-radius:4px;border:1px solid ' + (off ? '#e06a5a' : '#3ab7d8') + ';background:' + (off ? '#4a1e1e' : '#12324a') + ';color:' + (off ? '#ffb4a8' : '#cfeeff') + ';">' + (off ? 'HIDDEN · ' : '') + label + '</button>'; };
     var grid = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">';
     var draw = function () { var nL = plLoad().length; /* v1776: perf log first, the other sections folded - nothing needs scrolling */
-      pn.innerHTML = '<button type="button" data-fs="bmp" style="display:block;width:100%;margin:0 0 6px;padding:6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #c9a24a;background:' + (HERO_BMP_ON ? '#f0c95f' : '#2a2412') + ';color:' + (HERO_BMP_ON ? '#2a1a00' : '#f0c95f') + ';">Unpacked copies (test): ' + (HERO_BMP_ON ? 'ON' : 'off') + '</button>'
+      pn.innerHTML = ''
         + (PL.on ? '<div style="color:#f0c95f;font:bold 10px sans-serif;margin:0 0 4px;">Perf log: ' + nL + ' fight' + (nL === 1 ? '' : 's') + ' saved (last 8, this phone only)</div>' + grid
           + '<button type="button" data-fs="plcopy" style="display:block;width:100%;margin:0;font:bold 11px sans-serif;border-radius:4px;padding:6px;border:none;background:#3ab7d8;color:#06223a;">Copy log</button>'
           + '<button type="button" data-fs="plshare" style="display:block;width:100%;margin:0;font:bold 11px sans-serif;border-radius:4px;padding:6px;border:none;background:#3ab7d8;color:#06223a;">Share log file</button>'
@@ -32335,7 +32335,7 @@ function ptMountArena() {
     pn.style.width = "min(330px, calc(100vw - 24px))"; pn.style.boxSizing = "border-box"; pn.style.maxHeight = "60vh"; pn.style.overflowY = "auto"; pn.style.webkitOverflowScrolling = "touch"; pn.style.overscrollBehavior = "contain"; pn.style.touchAction = "pan-y"; ["touchstart", "touchmove"].forEach(function (ev) { pn.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); }); /* v1770: sits UNDER the battle so the fortresses stay in view */
     pn.onclick = function (e) { var t = e.target.closest("[data-pt],[data-fp],[data-fs]"); if (!t) return; e.stopPropagation();
       if (t.hasAttribute("data-fp")) { var fp = t.getAttribute("data-fp"); FEAR_TEST.off[fp] = !FEAR_TEST.off[fp]; }
-      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "fearsec") FEAR_TEST.sec = !FEAR_TEST.sec; else if (t.getAttribute("data-fs") === "bmp") heroBmpSet(!HERO_BMP_ON); else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "plcopy") { plCopy(t); return; } else if (t.getAttribute("data-fs") === "plshare") { plShare(); return; } else if (t.getAttribute("data-fs") === "plclear") { try { localStorage.removeItem(PL.KEY); } catch (e) {} FEAR_TEST.plAsk = true; setTimeout(function () { FEAR_TEST.plAsk = false; try { ptMountArena._redraw && ptMountArena._redraw(); } catch (e) {} }, 1500); } /* v1777: one tap clears (Harley: the 2-tap version didn't work for him) */ else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
+      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "fearsec") FEAR_TEST.sec = !FEAR_TEST.sec; else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "plcopy") { plCopy(t); return; } else if (t.getAttribute("data-fs") === "plshare") { plShare(); return; } else if (t.getAttribute("data-fs") === "plclear") { try { localStorage.removeItem(PL.KEY); } catch (e) {} FEAR_TEST.plAsk = true; setTimeout(function () { FEAR_TEST.plAsk = false; try { ptMountArena._redraw && ptMountArena._redraw(); } catch (e) {} }, 1500); } /* v1777: one tap clears (Harley: the 2-tap version didn't work for him) */ else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
       else { var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; } draw(); };
     b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
     host.appendChild(b); host.appendChild(pn); b._pn = pn;

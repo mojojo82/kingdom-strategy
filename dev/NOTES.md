@@ -6339,3 +6339,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley (switch ON): his own heroes stayed visible, but after "New" the new opponent's heroes were invisible -> copies made right as a picture arrives come out empty on iPhone.
 - heroBmpMake now waits for img.decode() + 400 ms before copying, then shrinks the copy to 24x24 and checks it has visible pixels; an empty copy is thrown away (the <img> keeps being drawn) and retried up to 3 more times (1.5 s, 3 s, 4.5 s later).
 - Headless: switch ON, 4 x New - every new opponent hero got a working copy, fight runs, no errors. Not tested on a phone.
+
+## v1781 - unpacked copies permanent + performance fixes log (TEST)
+- Harley: v1780 log very successful (2 fights with Baelgor: avg 59-60 FPS, 0 freezes over 100 ms - was 6-8 per fight at 110-290 ms; longest pause 56 ms). "You can make the unpacked copies the permanent solution", the other planned fixes wait.
+- HERO_BMP_ON = true for everyone; the PERF-panel switch is gone (the perf log, Fear test and battle layers stay in the panel).
+- New dev/PERF_FIXES.md: every performance fix (v1765-v1781) with results and how to undo it, what went wrong, the note that Baelgor's art may be redone (rebuild or drop his HERO_TRIM lines), and the waiting list (Tom trim, Torvald verdict, beams, other heroes, Hex Shield, Fear start pauses). HANDOVER open items point to it.
+- Headless: copies made by default for both teams through 4 x New, no errors. Not tested on a phone.
