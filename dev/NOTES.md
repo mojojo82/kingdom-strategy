@@ -6453,3 +6453,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Tree states without the rim: can start = soft cyan glow, maxed = gold hexagon, locked = grey, selected = white glow.
 - Next: new icons from ChatGPT to go inside the hexagons.
 - Headless check: hub + tree; no errors. Not tested on a phone.
+
+## v1800 - New Research category icons (TEST)
+- ChatGPT icons in the game's item-icon style (ChatGPT chat "Create Research Icons"), Harley's picks: Growth = sprout in a gear, Economy = coin sack, Battle = crossed swords, Fortress I = flaming cannonball (the cannon looked like the world-map weapon icon), Fortress II = gold baton with a blue gem (the helmet looked like the gear icon), Fortress III = the first steel shield.
+- RESEARCH_HUB_ART -> art/items/research_<key>.webp on the hub cards and in the title bar socket inside a tree. Originals + all options in art/originals/items/research/. New cutter dev/items/cut_icon_grid.py (strict key, so green leaves survive a green screen; only each icon's own pixels).
+- Next: icons for the research inside the trees (Fortress trees keep their own theme: cannon/fire, command/blue gems, stone/steel).
+- Headless check: 6 icons load on the hub, Fortress II bar shows the baton; no errors. Not tested on a phone.
