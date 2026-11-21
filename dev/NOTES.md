@@ -6315,3 +6315,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: every Arena test starts with pressing "New" several times. Each New loaded (and asked iOS to unpack) the new bot's hero sheets and nothing unloaded them until Conquest opened -> memory piled up, iOS threw pictures away mid-fight.
 - renderArenaBattleScreen: heroSheetsRelease(your Arena team + opponent + Conquest team) before warming. heroSheetKeys now takes EVERY sheet of a hero (key + "_..."; was main/idle/skill/atk2 only, so Tom's guard and Baelgor's drain only loaded mid-fight). Warm/release also handle the Fear hand (kept only while Baelgor is in).
 - Headless: 10 x New -> 10-20 sheets loaded at any time (just the current two teams), fight runs, no errors. Not tested on a phone.
+
+## v1776 - Arena PERF panel fits without scrolling (TEST)
+- Harley: couldn't scroll the panel on the phone (the whole Arena UI moved instead), so he couldn't reach Clear log.
+- Perf log (count, Copy, Share, Clear) is now at the top; Battle layers and Fear test are folded (tap to open). The panel also scrolls on its own now (touch events stay in the panel, overscroll contained) if a section is opened.
+- Headless: closed panel fits under the battle, Clear log (tap twice) empties the log. Not tested on a phone.
