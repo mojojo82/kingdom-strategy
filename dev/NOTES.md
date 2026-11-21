@@ -6334,3 +6334,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1779 - "Unpacked copies (test)" switch in the Arena PERF panel (TEST)
 - Harley OK'd testing the ImageBitmap idea again. Top of the PERF panel: "Unpacked copies (test): off/ON" (remembered on this phone, ks_bmp_test; default off). ON makes an ImageBitmap of every loaded hero sheet + the Fear hand and draws from it - this time the <img> is KEPT (v1777 emptied it and the heroes vanished on iPhone). OFF closes the copies and draws from the <img> as in v1776. The perf log records the setting (ui.unpacked).
 - Headless: off -> 0 copies; ON -> 12 copies + Fear hand, Baelgor drawn from his copy, <img> still full; off again -> back to the <img>. No errors. Not tested on a phone.
+
+## v1780 - unpacked copies: wait for unpacking + reject blank copies (TEST)
+- Harley (switch ON): his own heroes stayed visible, but after "New" the new opponent's heroes were invisible -> copies made right as a picture arrives come out empty on iPhone.
+- heroBmpMake now waits for img.decode() + 400 ms before copying, then shrinks the copy to 24x24 and checks it has visible pixels; an empty copy is thrown away (the <img> keeps being drawn) and retried up to 3 more times (1.5 s, 3 s, 4.5 s later).
+- Headless: switch ON, 4 x New - every new opponent hero got a working copy, fight runs, no errors. Not tested on a phone.
