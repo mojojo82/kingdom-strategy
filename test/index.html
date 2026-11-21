@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1771"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1772"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -32248,7 +32248,7 @@ function canvasDPR() { var d = window.devicePixelRatio || 1; return (typeof PT =
    frames on a warm phone. A hidden part is drawn into a 1x1 canvas (the game logic still runs). Delete once we have the answer. */
 var PT = {}, ptNullCtx = null;
 function ptNull() { if (!ptNullCtx) { var c = document.createElement("canvas"); c.width = c.height = 1; ptNullCtx = c.getContext("2d"); } return ptNullCtx; }
-function ptCtx(k, real) { return PT[k] ? ptNull() : real; }
+function ptCtx(k, real) { if (PL.fr) plMark(k); return PT[k] ? ptNull() : real; }
 var PT_ITEMS = [["far", "Sky + far"], ["near", "Near layer"], ["road", "Road"], ["fort", "Fortress + riders"], ["enemies", "Enemies"], ["heroes", "Melee heroes"], ["fx", "Shots + effects"], ["numbers", "Damage numbers"], ["dom", "Header numbers"], ["res2", "Whole battle 2x"]];
 function ptMountButton() {
   var cv = document.getElementById("idleCanvas"); if (!cv || document.getElementById("ptBtn")) return;
@@ -32282,11 +32282,16 @@ function ptMountArena() {
       + '<button type="button" data-fs="1" style="display:block;width:100%;margin:0;padding:6px;font:bold 11px sans-serif;border-radius:4px;border:none;background:#3ab7d8;color:#06223a;">Spawn Fear</button>'
       + '<button type="button" data-fs="loop" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #3ab7d8;background:' + (FEAR_TEST.loop ? '#3ab7d8' : '#12324a') + ';color:' + (FEAR_TEST.loop ? '#06223a' : '#cfeeff') + ';">Repeat 6 s: ' + (FEAR_TEST.loop ? 'ON' : 'off') + '</button>'
       + '<button type="button" data-fs="crk" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #c9a24a;background:#2a2412;color:#f0c95f;">Cracks: ' + (FEAR_TEST.oldCrk ? 'OLD way' : 'NEW way') + '</button>'
-      + FEAR_TEST_PARTS.map(function (it) { return ptBtnH("data-fp", it[0], it[1], fearOff(it[0])); }).join("") + '</div>'; };
+      + FEAR_TEST_PARTS.map(function (it) { return ptBtnH("data-fp", it[0], it[1], fearOff(it[0])); }).join("") + '</div>'
+      + (PL.on ? '<div style="color:#f0c95f;font:bold 10px sans-serif;margin:8px 0 4px;">Perf log: ' + plLoad().length + ' fight' + (plLoad().length === 1 ? '' : 's') + ' saved (last 8, this phone only)</div>' + grid
+        + '<button type="button" data-fs="plcopy" style="display:block;width:100%;margin:0;padding:6px;font:bold 11px sans-serif;border-radius:4px;border:none;background:#3ab7d8;color:#06223a;">Copy log</button>'
+        + '<button type="button" data-fs="plshare" style="display:block;width:100%;margin:0;padding:6px;font:bold 11px sans-serif;border-radius:4px;border:none;background:#3ab7d8;color:#06223a;">Share log file</button>'
+        + '<button type="button" data-fs="plclear" style="display:block;width:100%;margin:0;padding:5px 6px;font:bold 11px sans-serif;border-radius:4px;border:1px solid #e06a5a;background:#4a1e1e;color:#ffb4a8;">' + (FEAR_TEST.plAsk ? 'Tap again to clear' : 'Clear log') + '</button></div>' : ''); };
+    ptMountArena._redraw = draw;
     pn.style.width = "min(330px, calc(100vw - 24px))"; pn.style.boxSizing = "border-box"; pn.style.maxHeight = "45vh"; pn.style.overflowY = "auto"; /* v1770: sits UNDER the battle so the fortresses stay in view */
     pn.onclick = function (e) { var t = e.target.closest("[data-pt],[data-fp],[data-fs]"); if (!t) return; e.stopPropagation();
       if (t.hasAttribute("data-fp")) { var fp = t.getAttribute("data-fp"); FEAR_TEST.off[fp] = !FEAR_TEST.off[fp]; }
-      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
+      else if (t.hasAttribute("data-fs")) { if (t.getAttribute("data-fs") === "lay") FEAR_TEST.lay = !FEAR_TEST.lay; else if (t.getAttribute("data-fs") === "crk") FEAR_TEST.oldCrk = !FEAR_TEST.oldCrk; else if (t.getAttribute("data-fs") === "plcopy") { plCopy(t); return; } else if (t.getAttribute("data-fs") === "plshare") { plShare(); return; } else if (t.getAttribute("data-fs") === "plclear") { if (FEAR_TEST.plAsk) { try { localStorage.removeItem(PL.KEY); } catch (e) {} FEAR_TEST.plAsk = false; } else { FEAR_TEST.plAsk = true; setTimeout(function () { FEAR_TEST.plAsk = false; }, 3000); } } else if (t.getAttribute("data-fs") === "loop") { FEAR_TEST.loop = !FEAR_TEST.loop; FEAR_TEST.nextAt = 0; } else fearTestSpawn(); }
       else { var k = t.getAttribute("data-pt"); PT[k] = !PT[k]; } draw(); };
     b.onclick = function (e) { e.stopPropagation(); pn.style.display = pn.style.display === "none" ? "block" : "none"; draw(); };
     host.appendChild(b); host.appendChild(pn); b._pn = pn;
@@ -32295,6 +32300,58 @@ function ptMountArena() {
   var tx = "PERF " + Math.round(arenaAnim.fpsSmoothed || 60); if (b.textContent !== tx) b.textContent = tx;
   if (FEAR_TEST.loop && now >= (FEAR_TEST.nextAt || 0)) fearTestSpawn();
 }
+/* v1772 (Harley: "have an arena match log each skill and the fps in a file, I run a few matches and you check the result"): TEST-only Arena perf log.
+   Records each Arena fight on THIS device only (nothing is sent anywhere): FPS per second, slow frames, how long each part of the drawing took,
+   which skills / weapons fired. The last 8 fights stay in this browser; PERF panel > Copy log / Share log hands them over. Delete once we have the answer. */
+var PL = { on: /\/test\//.test(location.pathname) || /[?&]perflog=1/.test(location.search), fr: false, cur: null, last: 0, rec: null, wrapped: false, KEY: "ks_perflog_v1" };
+var PL_WRAP = ["fearDrawBack", "fearDrawFront", "fearDrawPulse", "fearCarve", "drawArenaFortress", "drawMissileSmokeTrail", "drawMissileImpactFx", "drawHeroBackFx", "drawHeroThrows", "drawHeroSkyFx", "drawHeroPillars", "drawHeroCoreBeams", "drawHeroDiveBursts", "drawHeroSouls", "drawHeroHeals", "drawHeroWards", "drawHeroWarps", "drawArenaClones", "drawArenaGroundShadows", "drawLaserBeamSegment", "hexShieldDrawPass", "orbitShieldDrawPass", "drawBolt", "drawRoranFire", "drawRoranSpear", "drawRoranEmbers", "drawFormation", "zkDrawVolley", "kaijuDrawArenaFx", "drawWeldSparks", "drawSpellOrb", "drawSkillEmbers", "drawPipSpotShot", "drawPipFlare", "drawOrbBursts", "drawMechaEnergyBall", "drawLyraArrow", "drawKessaRings", "drawJunoShell", "drawGerbilFrame", "drawGerbilDeath", "drawFireballShot", "drawElectricCube", "drawCannonTracer", "drawBulletSparks", "drawLimitBar", "drawArenaWeather"];
+function plWrapAll() { if (PL.wrapped) return; PL.wrapped = true; var miss = [];
+  PL_WRAP.forEach(function (nm) { var f = window[nm]; if (typeof f !== "function") { miss.push(nm); return; } window[nm] = function () { if (!PL.fr) return f.apply(this, arguments); var t = performance.now(); try { return f.apply(this, arguments); } finally { plAdd("f:" + nm, performance.now() - t); } }; });
+  ["drawHeroAnim", "drawHeroSkillFrame"].forEach(function (nm) { var f = window[nm]; if (typeof f !== "function") { miss.push(nm); return; } window[nm] = function (c, key) { if (!PL.fr) return f.apply(this, arguments); var t = performance.now(); try { return f.apply(this, arguments); } finally { plAdd("h:" + key, performance.now() - t); if (PL.rec && !PL.rec.seen[key]) { PL.rec.seen[key] = 1; plEv("first draw " + key); } } }; });
+  PL.miss = miss; }
+function plAdd(k, ms) { var F = PL.ff; if (F) F[k] = (F[k] || 0) + ms; }
+function plMark(k) { var n = performance.now(); if (PL.cur) plAdd("L:" + PL.cur, n - PL.last); PL.cur = k; PL.last = n; }
+function plEv(e) { var R = PL.rec; if (!R) return; var S = R.sec; S.ev[e] = (S.ev[e] || 0) + 1; }
+function plNewSec(i) { return { s: i, n: 0, worst: 0, slow: 0, cpu: 0, cpuMax: 0, simMax: 0, ev: {}, b: {} }; }
+function plStart() { if (!PL.on) return; try { plWrapAll(); } catch (e) {} var A = arenaOpponent || {}, sv = game && game.state || {};
+  PL.rec = { v: KS_BUILD, at: new Date().toISOString(), dev: { w: screen.width, h: screen.height, dpr: window.devicePixelRatio, cvW: (document.getElementById("arenaCanvas") || {}).width, ua: navigator.userAgent.replace(/^Mozilla\/5\.0 /, "").slice(0, 120), standalone: !!(navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches)) },
+    me: { heroes: (sv.conquestRoster || []).slice(), weapons: (sv.equippedWeapons || []).map(function (w) { return w && (w.id || w.key || w); }), skin: sv.fortressSkin || sv.shipSkin || null },
+    opp: { name: A.name, heroes: (A.roster || []).slice(), weapons: Object.keys(A.weapons || {}), skin: A.skin || A.fortressSkin || null },
+    ui: { blue: (function () { try { return !!uiSkinActive(); } catch (e) { return null; } })(), hidden: Object.keys(PT).filter(function (k) { return PT[k]; }), fearOff: Object.keys(FEAR_TEST.off).filter(function (k) { return FEAR_TEST.off[k]; }), oldCrk: !!FEAR_TEST.oldCrk },
+    t0: performance.now(), lastTs: 0, secs: [], spikes: [], sec: plNewSec(0), seen: {}, tot: {}, frames: 0, prevF: null, ticks: 0 };
+  if (PL.miss && PL.miss.length) PL.rec.notWrapped = PL.miss; }
+function plFrameBegin(ts) { var R = PL.rec; if (!R || !arenaBattleRunning) { PL.fr = false; return; } PL.fr = true; PL.ff = {}; PL.fStart = performance.now(); PL.cur = "step"; PL.last = PL.fStart; PL.ts = ts; }
+function plFrameEnd() { if (!PL.fr) return; plMark(null); PL.fr = false; var R = PL.rec, F = PL.ff, cpu = performance.now() - PL.fStart, ts = PL.ts, dt = R.lastTs ? ts - R.lastTs : 16.7; R.lastTs = ts; R.frames++;
+  var si = Math.floor((ts - R.t0) / 1000); if (si > R.sec.s) { plCloseSec(); R.sec = plNewSec(si); }
+  var S = R.sec; S.n++; S.worst = Math.max(S.worst, dt); if (dt > 22) S.slow++; S.cpu += cpu; S.cpuMax = Math.max(S.cpuMax, cpu);
+  for (var k in F) { S.b[k] = (S.b[k] || 0) + F[k]; R.tot[k] = (R.tot[k] || 0) + F[k]; }
+  if (dt > 40 && R.spikes.length < 60) { var top = function (M) { return M ? Object.keys(M).sort(function (a, b) { return M[b] - M[a]; }).slice(0, 4).map(function (k) { return k + " " + M[k].toFixed(1); }) : null; };
+    R.spikes.push({ t: +((ts - R.t0) / 1000).toFixed(2), gap: Math.round(dt), cpuThis: +cpu.toFixed(1), cpuPrev: R.prevF ? +R.prevF.cpu.toFixed(1) : null, prevTop: top(R.prevF && R.prevF.F), simInGap: R.simGap || 0, ev: Object.keys(S.ev).slice(-6) }); }
+  R.prevF = { cpu: cpu, F: F }; R.simGap = 0; }
+function plCloseSec() { var R = PL.rec, S = R.sec; if (!S.n) return; var o = { s: S.s, fps: S.n, worst: Math.round(S.worst), slow: S.slow, cpu: +(S.cpu / S.n).toFixed(1), cpuMax: +S.cpuMax.toFixed(1), sim: +S.simMax.toFixed(1) };
+  var bk = Object.keys(S.b).sort(function (a, b) { return S.b[b] - S.b[a]; }).slice(0, 6); o.top = bk.map(function (k) { return k + " " + (S.b[k] / S.n).toFixed(2); });
+  if (Object.keys(S.ev).length) o.ev = S.ev; var on = {}; try { Object.keys(arenaAnim).forEach(function (k) { var v = arenaAnim[k]; if (Array.isArray(v) && v.length) on[k] = v.length; }); } catch (e) {} if (Object.keys(on).length) o.on = on;
+  R.secs.push(o); }
+function plTick(info, simMs) { var R = PL.rec; if (!R || !info) return; R.ticks++; R.sec.simMax = Math.max(R.sec.simMax, simMs || 0); R.simGap = (R.simGap || 0) + (simMs || 0);
+  (info.casts || []).forEach(function (c) { var m = /^([pa]_\w+):gaze:/.exec(c); plEv(m ? m[1] + " Fear" : c + " skill"); });
+  (info.atk2 || []).forEach(function (c) { plEv(c + " slash2"); });
+  (info.playerWeaponFires || []).forEach(function (w) { plEv("p weapon " + w.id); }); (info.aiWeaponFires || []).forEach(function (w) { plEv("a weapon " + w.id); });
+  (info.playerBeamFires || []).forEach(function (w) { plEv("p beam " + w.id); }); (info.aiBeamFires || []).forEach(function (w) { plEv("a beam " + w.id); }); }
+function plEnd(how) { var R = PL.rec; if (!R) return; PL.fr = false; plCloseSec(); PL.rec = null;
+  var secs = R.secs.filter(function (o) { return o.s > 0; }), fpsA = secs.map(function (o) { return o.fps; }).sort(function (a, b) { return a - b; });
+  var tot = Object.keys(R.tot).sort(function (a, b) { return R.tot[b] - R.tot[a]; }).slice(0, 15).map(function (k) { return k + " " + (R.tot[k] / Math.max(1, R.frames)).toFixed(2); });
+  var out = { v: R.v, at: R.at, end: how, dev: R.dev, me: R.me, opp: R.opp, ui: R.ui, notWrapped: R.notWrapped,
+    sum: { secs: secs.length, frames: R.frames, avgFps: fpsA.length ? +(R.frames / Math.max(1, (R.lastTs - R.t0) / 1000)).toFixed(1) : 0, worstSecFps: fpsA[0] || 0, slowFrames: secs.reduce(function (a, o) { return a + o.slow; }, 0), spikes40ms: R.spikes.length, msPerFrame: tot },
+    spikes: R.spikes, secs: R.secs };
+  var L = plLoad(); L.push(out); while (L.length > 8) L.shift(); try { localStorage.setItem(PL.KEY, JSON.stringify(L)); } catch (e) { try { L.shift(); localStorage.setItem(PL.KEY, JSON.stringify(L)); } catch (e2) {} } }
+function plLoad() { try { var L = JSON.parse(localStorage.getItem(PL.KEY) || "[]"); return Array.isArray(L) ? L : []; } catch (e) { return []; } }
+function plText() { return JSON.stringify(plLoad()); }
+function plCopy(btn) { var tx = plText(), done = function (ok) { if (btn) btn.textContent = ok ? "Copied!" : "Copy failed"; setTimeout(function () { try { ptMountArena._redraw && ptMountArena._redraw(); } catch (e) {} }, 1500); };
+  try { navigator.clipboard.writeText(tx).then(function () { done(true); }, function () { done(plCopyOld(tx)); }); } catch (e) { done(plCopyOld(tx)); } }
+function plCopyOld(tx) { try { var ta = document.createElement("textarea"); ta.value = tx; ta.style.cssText = "position:fixed;left:-9999px;top:0;"; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, tx.length); var ok = document.execCommand("copy"); ta.remove(); return ok; } catch (e) { return false; } }
+function plShare() { var tx = plText(), nm = "arena_perf_" + KS_BUILD + "_" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-") + ".json";
+  try { var f = new File([tx], nm, { type: "application/json" }); if (navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: nm }).catch(function () {}); return; } } catch (e) {}
+  try { if (navigator.share) { navigator.share({ title: nm, text: tx }).catch(function () {}); return; } } catch (e) {} plCopy(); }
 function fearTestSpawn() { /* v1770: fires a Fear for the looks only (the fight itself doesn't change): Baelgor (or your first hero) grabs the first enemy hero still standing */
   FEAR_TEST.nextAt = performance.now() + 6000; var S = arenaAnim.heroScreen || {}, H = arenaAnim.heroHp || {}, ks = Object.keys(S).filter(function (k) { return /^[pa]_/.test(k) && HERO_DEFS[k.slice(2)] && !(H[k] && H[k].ko); });
   var me = ks.filter(function (k) { return k.charAt(0) === "p"; }), foe = ks.filter(function (k) { return k.charAt(0) === "a"; });
@@ -40183,6 +40240,7 @@ function runArenaBattle(onTick, onDone) {
   var sim = arenaMakeSim(playerStats, aiStats, { rng: worldPvpSeededRng(arSeed), critSeed: arSeed, salvoP: salvoSpec(game.state.equippedWeapons, function (wd) { return game.weaponLevelStats(wd); }), aiWeapons: aiKit.specs, aiShieldPct: aiKit.shieldPct, salvoA: aiKit.salvo, dmgRamp: equippedDmgRamp(game.state), regen: equippedRegen(game.state), summonCall: equippedSummonCall(game.state), cardMods: cardModsFrom(game.state), weapons: arenaPlayerWeaponsForSim(), shieldPct: arenaPlayerShieldPct(), boss: KJ ? kaijuBossCfg() : null, aiCannon: KJ ? false : undefined, maxTicks: KJ ? kaijuTicks() : undefined });
   arenaBattleRunning = true;
   arenaAnim.battleShared = sim.shared;
+  if (PL.on) { try { plStart(); var plTk = onTick, plDn = onDone, plSim = sim.step; sim.step = function () { var t = performance.now(), r = plSim.apply(this, arguments); PL.simMs = performance.now() - t; return r; }; onTick = function (i) { try { plTick(i, PL.simMs); } catch (e) {} return plTk(i); }; onDone = function (r) { try { plEnd(r && r.winner); } catch (e) {} return plDn(r); }; } catch (ePl) {} } /* v1772 perf log */
   // Hero positions are drawn gliding from the previous tick to the current one, so the very first tick runs right now: the infantry start running at frame one
   // instead of waiting a tick and then snapping back to where the sim says they are.
   if (sim.shared && playerStats.heroHp && aiStats.heroHp) {
@@ -41528,12 +41586,14 @@ function startArenaAnimLoop() {
       try {
         var dpr = canvasDPR();
         var skyPx = arenaSkyPx(), w = Math.round(canvas.width / dpr), h = Math.round(canvas.height / dpr) - skyPx; /* v1261 */
+        if (PL.rec) plFrameBegin(ts); /* v1772 perf log */
         stepArenaAnim(dt, w, h);
         var ctx = canvas.getContext("2d");
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.scale(dpr, dpr); ctx.translate(0, skyPx);
         drawArenaFrame(ctx, w, h);
+        if (PL.fr) plFrameEnd();
         drawArenaFpsCounter(ctx, w);
         try { ptMountArena(); } catch (ePt) {} /* v1664 */
         ctx.restore();
@@ -41566,6 +41626,7 @@ function stopArenaAnimLoop() {
 // abandoning one partway through.
 function stopArenaBattleIfRunning() {
   if (!arenaBattleRunning) return;
+  try { plEnd("left"); } catch (ePl) {} /* v1772 perf log */
   clearInterval(arenaBattleTimer);
   arenaBattleRunning = false;
   arenaAnim.battleEnded = true;

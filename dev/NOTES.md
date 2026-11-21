@@ -6292,3 +6292,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Headless, crack cost per frame over a Fear: 2.3 ms -> 0.47 ms on the first Fear, 0.11 ms after (pictures reused). 27 pictures per target size.
 - Look: old vs new side by side at 3x - 9 pixels differ, max 30/255.
 - PERF panel: "Cracks: NEW way / OLD way" switch to compare on the phone. Not tested on a phone.
+
+## v1772 - Arena perf log (TEST only)
+- Harley: "have an arena match log each skill and the fps in a file, I'll run a few matches and you check the result".
+- Every Arena fight on /test/ is recorded on the phone itself (nothing sent anywhere): device + setup (heroes, weapons, skins, UI, PERF switches), per second FPS / worst frame gap / slow frames / CPU draw ms / sim ms / top drawing costs / skills + weapons fired / effects on screen, plus every frame gap over 40 ms with what the previous frame spent its time on and "first draw <sheet>" events (picture unpacking).
+- Drawing costs: per PERF layer (L:a_fort ...), per effect function (f:...), per hero sheet (h:baelgor_skill ...). iPhone Safari clocks are coarse (~1 ms) - read the averages, not single frames.
+- Last 8 fights kept in localStorage ks_perflog_v1. PERF panel > Perf log: Copy log / Share log file / Clear log. Only on the TEST page (or ?perflog=1).
+- Headless test fight: works, 17 KB per fight. It already shows a ~370 ms freeze the first time Baelgor's skill sheet is drawn (unpacking).
