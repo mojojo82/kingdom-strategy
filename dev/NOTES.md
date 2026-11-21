@@ -6350,3 +6350,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: the swords are tiny on screen (~51 px tall on his phone) but drawn from 380 px pictures. Side-by-side (now / shrunk / shrunk 1.5x): he picked "shrunk", same size.
 - zarek_sword_face_160.webp (96x160) and zarek_sword_edge_160.webp (21x160): high-quality shrink in premultiplied colour (no dark fringes). ZK_FILE maps the names in zkImg. The 380 px originals stay in art/heroes/zarek/ and are copied to art/originals/heroes/zarek/. Same look; the turning copies are now built from the small pictures.
 - Headless: Arena with Zarek, pictures load at 96x160 / 21x160, swords draw, no errors. Not tested on a phone.
+
+## v1783 - TEST: Arena fortress HP x0.5 (feel test)
+- Harley: quick test on his low-level admin account - "try the 0.5 now and I'll run through some battles to see how they feel" (before deciding on an early-game curve).
+- ARENA_HP_TEST = 0.5: both fortresses in an Arena fight get x0.5 max HP (fight + the bars before it). Heals / shields / regen are % of max HP so they shrink with it. Not World PvP, not Boss Rush, not the simulators. Set ARENA_HP_TEST = 1 to undo.
+- Headless (Lv80 test teams): 82,025 -> 41,013 HP; that fight lasted about 34 s (the same setup ran about 42 s at full HP earlier). Not tested on a phone. Balance tools not rerun (test only).

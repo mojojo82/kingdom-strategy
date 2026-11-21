@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1782"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1783"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -39232,6 +39232,7 @@ function renderArenaSharedTimingBtn() { var b = document.getElementById("devAren
 (function () { var b = document.getElementById("devArenaSharedTimingBtn"); if (b) b.onclick = function () { arenaSharedTiming = !arenaSharedTiming; try { localStorage.setItem(ARENA_SHARED_TIMING_KEY, arenaSharedTiming ? "1" : "0"); } catch (e) {} assetSyncUpload(ARENA_SHARED_TIMING_KEY, arenaSharedTiming ? "1" : "0"); renderArenaSharedTimingBtn(); }; renderArenaSharedTimingBtn(); })();
 // esperOverride (optional): undefined = the old behaviour (the real player's equipped Esper on the player side, none on the AI
 // side); null = no Esper; an Esper key = that Esper's bonuses, whichever side this is. World PvP and the PvP Simulator pass it explicitly.
+var ARENA_HP_TEST = 0.5; /* v1783 TEST (Harley: quick feel test on his low-level admin account): both fortresses in an Arena fight x this. 1 = off. Not World PvP / Boss Rush. */
 var ARENA_FORT_HP_PER_POWER = 100; /* v959: ON (was 0). v956 knob: Arena/PvP fortress gets this much HP per point of its team's hero power (heroPowerLevel summed) */
 function arenaSideStats(rosterKeys, heroesState, townhallLevel, baseHp, isPlayerSide, esperOverride, fortressMap, atkPerPower, bonus) {
   var bn = bonus !== undefined ? (bonus || ZERO_BONUS) : ((isPlayerSide && atkPerPower == null) ? { atk: heroBonusTotal("atk"), hp: heroBonusTotal("hp"), def: heroBonusTotal("def"), skill: heroBonusTotal("skill") } : ZERO_BONUS); // this side's own ATK / HP / DEF bonus % (real player = Dev Tools value; bots / other saves bring their own)
@@ -40268,6 +40269,7 @@ function runArenaBattle(onTick, onDone) {
   var aiKit = KJ ? { specs: [], shieldPct: 0, salvo: null } : botWeaponsToSim(arenaOpponent.weapons, 1 + (((arenaOpponent.bonus || ZERO_BONUS).atk) || 0) / 100); /* v1190: the bot's own ATK bonus */
   if (!KJ && arenaOpponent.roster && arenaOpponent.roster.length > 5) arenaOpponent.roster = arenaOpponent.roster.slice(0, 5); /* v1672 */
   var aiStats = KJ ? kaijuAiStats(KAIJU_INF) : arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
+  if (!KJ && ARENA_HP_TEST !== 1) { playerStats.maxHp = Math.max(1, Math.round(playerStats.maxHp * ARENA_HP_TEST)); aiStats.maxHp = Math.max(1, Math.round(aiStats.maxHp * ARENA_HP_TEST)); } /* v1783 test */
   // critSeed: without this, fortressCritRoll(opts.critSeed || "arena", side, burstNo) always fell back to the
   // literal string "arena" — the SAME seed every single real Arena battle. fortressCritRoll is a pure function
   // of (seed, side, burstNo), so with a fixed seed the player's super-burst crit landed on the exact same
@@ -41863,6 +41865,7 @@ function renderArenaBattleScreen() {
   var pStats0 = arenaSideStats(p.roster, p.heroes, game.state.buildings.townhall.level, arenaBaseHpPlayer, true);
   var aStats0 = arenaSideStats(arenaOpponent.roster, arenaOpponent.heroes, arenaOpponent.townhallLevel, arenaBaseHpAi, false, arenaOpponent.esper || null, arenaOpponent.fortressTech || null, undefined, arenaOpponent.bonus || ZERO_BONUS);
   if (KJ) aStats0 = kaijuAiStats(KAIJU_INF);
+  else if (ARENA_HP_TEST !== 1) { pStats0.maxHp = Math.max(1, Math.round(pStats0.maxHp * ARENA_HP_TEST)); aStats0.maxHp = Math.max(1, Math.round(aStats0.maxHp * ARENA_HP_TEST)); } /* v1783 test: the bars show the same numbers as the fight */
   arenaAnim.playerRoster = p.roster; arenaAnim.playerHeroesSnap = p.heroes;
   arenaAnim.aiRoster = arenaOpponent.roster; arenaAnim.aiHeroesSnap = arenaOpponent.heroes;
   var keepA = (p.roster || []).concat(arenaOpponent.roster || [], (game.state && game.state.conquestRoster) || []); heroSheetsRelease(keepA); /* v1775 (Harley): unload every sheet not in this fight (each "New" opponent used to stay in memory until Conquest) */
