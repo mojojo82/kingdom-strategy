@@ -6326,3 +6326,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - heroAnimImg: when a sheet has loaded it is turned into an ImageBitmap (createImageBitmap) and drawn from that; the <img> is emptied afterwards so the picture isn't held twice. The bitmap gets naturalWidth/naturalHeight/src so existing code (exact-size copy) keeps working. Same for the Fear hand (fearImg). heroSheetsRelease closes the bitmaps. Until a copy is ready (or if making one fails) the <img> is drawn as before. All heroes, all modes.
 - Clear log: one tap now (shows "Cleared!") - the 2-tap version didn't work for Harley.
 - Headless: 4 x New then a fight - 16 copies made (only the two teams), Baelgor drawn from his copy, Fear hand too, fight runs, no errors. Not tested on a phone.
+
+## v1778 - unpacked copies switched OFF (TEST)
+- Harley (screenshot): "Cant see my heroes" on v1777 - his whole team (Tom, Kessa, Zarek, Baelgor) was invisible on the iPhone; only the enemy Gareth showed. Headless Chromium drew them fine.
+- HERO_BMP_ON = false: sheets are drawn from the <img> again exactly as in v1776. The one-tap Clear log stays.

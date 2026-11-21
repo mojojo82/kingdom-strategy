@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1777"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1778"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28689,7 +28689,8 @@ function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys);
    decode()): once a sheet has loaded it is turned into an ImageBitmap (an already-unpacked copy Safari keeps) and the game draws from that; the <img>
    is then emptied so the picture isn't held twice. heroSheetsRelease closes the copy. */
 var heroAnimBmp = {};
-function heroBmpMake(im, store, key, srcUrl) { if (typeof createImageBitmap !== "function" || im._bmpAsked) return; im._bmpAsked = true;
+var HERO_BMP_ON = false; /* v1778: OFF - on Harley's iPhone the heroes vanished with it (v1777); kept for a later test */
+function heroBmpMake(im, store, key, srcUrl) { if (!HERO_BMP_ON || typeof createImageBitmap !== "function" || im._bmpAsked) return; im._bmpAsked = true;
   createImageBitmap(im).then(function (b) { if (store.cache[key] !== im) { try { b.close(); } catch (e) {} return; } b.naturalWidth = b.width; b.naturalHeight = b.height; b.complete = true; b.src = srcUrl; store.bmp[key] = b;
     try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }).catch(function () {}); }
 function heroAnimImg(key) {
