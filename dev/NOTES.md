@@ -6358,3 +6358,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1784 - TEST: Arena fortress HP x0.3
 - Harley after playing x0.5: "Try 0.3". ARENA_HP_TEST = 0.3 (same scope: Arena fights only; 1 = off).
+
+## v1785 - Arena fortress HP x0.3 is the norm (TEST)
+- Harley: "I'll make 0.3 the norm with a potential move to a curve at some point." ARENA_HP_TEST -> ARENA_HP_MULT = 0.3 (same behaviour as v1784: both fortresses in Arena fights, bars match; not World PvP / Boss Rush / simulators). Results + his verdict (no retuning, F3 mirrors staying long is fine): dev/balance/BALANCE_STANDINGS.md.
+- Meta weapon-build check at x0.3 running (results in the next notes entry).
