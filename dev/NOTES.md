@@ -6423,3 +6423,11 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - The repeated heading at the top of those screens ("Espers", "Battle Reports", "Stats") is hidden while the bar shows.
 - Phone layout only (max-width 900); PC keeps the old Back + title. Backpack, Formations and the Research tree back button left as they are.
 - Headless check: 10 screens, Back goes to the More menu, PC unchanged, no errors. Not tested on a phone.
+
+## v1795 - Research in the Overlord Profile style + button colour variants (TEST)
+- Harley: ChatGPT concept (art/originals/ui/refs/research_concept_v1.png, from research_now.png + overlord_profile.png) built as much as possible in code - it ended up 100% CSS, no new images.
+- City > Research: cream parchment page with a gold frame, "Research" on a brown name plate with a cream RP badge, cream cards with gold frames, gold-edged hexagons, brown count + dark progress bar, and the card's name = the standard blue button (Harley picked blue over tan / slate). Tree view: header band lightened (All research + tree name on the parchment); the tree itself unchanged for now.
+- City tab row: brown tabs with gold edges and the title font, the selected tab cream.
+- Button kit: one shape, colours only. `.ks-btn` joins the standard list; `.ks-tan` and `.ks-slate` swap the four --ksb-* colours (kept for later). HANDOVER updated.
+- Troops / Infirmary / Formations pages not restyled yet (next, to match).
+- Headless check: Research, its tree, Troops tab row; no errors. Not tested on a phone.
