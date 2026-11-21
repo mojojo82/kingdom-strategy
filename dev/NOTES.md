@@ -6502,3 +6502,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Code buttons (.kbx, same shape + colours as the common button) drawn over the painted ones: Save / Release tan, Select / Guard: Off blue, Selected tan with a tick - 17 px (Research card button size); Equalise / Preset tan with icons and the I / II / III picker (tan, picked = blue) - 15 px. The old painted labels are hidden; the tap areas are the same as before.
 - Not changed: the blue ACTIVE / Home tag at the top of each card.
 - Headless check: tapping Fortress II on Formation 2 and its Select both work; no errors. Not tested on a phone.
+
+## v1808 - Formations buttons: no painted edges, text fits, no Save / Release icons (TEST)
+- Harley: "Dont make the text come off the button. Remove save button icon and release icon. Why do the buttons look like they have an image behind them".
+- The painted buttons' dark frames showed around the code buttons: plain parchment plates (.kpl #dcb376) now cover the painted bottom row and right column; the code buttons sit on top with small gaps.
+- fmgFitBtn: labels start at the Research sizes (17 px bottom row, 15 px Equalise / Preset) and shrink only if they would run off the button (measured). I / II / III 13 px.
+- Save / Release: text only.
+- Headless check at 430 and 375 px wide: no label overflows, Select still works; no errors. Not tested on a phone.

@@ -14713,7 +14713,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1807"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1808"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17040,15 +17040,20 @@ function fmgStyle() {
     "#fmg .kbx,#fmg .fg-blue.ksx{position:absolute;display:flex;align-items:center;justify-content:center;gap:4px;z-index:3;pointer-events:none;box-sizing:border-box;--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8;--ksb-ink:#4a3410;background:var(--ksb-bg);border:2px solid var(--ksb-edge)!important;border-image:none!important;border-radius:10px;box-shadow:inset 0 0 0 2px var(--ksb-bg),inset 0 0 0 3px var(--ksb-ring),0 2px 0 var(--ksb-edge);color:#fff;font-family:'Lilita One',sans-serif;font-size:17px;line-height:1;letter-spacing:.02em;white-space:nowrap;-webkit-text-stroke:.13em var(--ksb-ink);paint-order:stroke fill}",
     "#fmg .fg-blue.ksx:not(.on){--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;--ksb-ink:#0d4a5c}",
     "#fmg .kbx.sm{font-size:15px}",
+    "#fmg .kpl{position:absolute;z-index:2;pointer-events:none;background:#dcb376;border-radius:10px;box-shadow:0 0 4px 2px #dcb376}",
+    "#fmg .fg-fp{z-index:3}",
     "#fmg .kbx i{font-style:normal;-webkit-text-stroke:0}",
     "#fmg .fg-fp{background:none!important;gap:3px}",
     "#fmg .fg-fp button{position:relative!important;display:flex!important;align-items:center;justify-content:center;box-sizing:border-box!important;--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8;--ksb-ink:#4a3410;background:var(--ksb-bg)!important;border:2px solid var(--ksb-edge)!important;border-radius:8px!important;box-shadow:inset 0 0 0 1.5px var(--ksb-bg),inset 0 0 0 2.5px var(--ksb-ring),0 2px 0 var(--ksb-edge)!important}",
     "#fmg .fg-fp button.on{--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;--ksb-ink:#0d4a5c}",
-    "#fmg .fg-fp button::after{color:#fff;font-family:'Lilita One',sans-serif;font-size:15px;line-height:1;-webkit-text-stroke:.13em var(--ksb-ink);paint-order:stroke fill}",
+    "#fmg .fg-fp button::after{color:#fff;font-family:'Lilita One',sans-serif;font-size:13px;line-height:1;-webkit-text-stroke:.13em var(--ksb-ink);paint-order:stroke fill}",
     "#fmg .fg-fp button[data-ft='1']::after{content:'I'}#fmg .fg-fp button[data-ft='2']::after{content:'II'}#fmg .fg-fp button[data-ft='3']::after{content:'III'}"
   ].join("\n");
   var st = document.createElement("style"); st.id = "fmgCss"; st.textContent = css; document.head.appendChild(st);
 }
+function fmgFitBtn(el) { /* v1808: the label never runs off the button - starts at the Research size (17 / 15 px), shrinks only if it must */
+  if (!el.clientWidth) return; var base = el.classList.contains("sm") ? 15 : 17, k = el.textContent + "|" + el.clientWidth; if (el._fit === k) return; el._fit = k;
+  var fs = base, rg = document.createRange(); rg.selectNodeContents(el); el.style.fontSize = fs + "px"; while (fs > 9 && rg.getBoundingClientRect().width > el.clientWidth - 12) { fs -= 0.5; el.style.fontSize = fs + "px"; } }
 function fmgD(n) { return "calc(var(--fd)*" + n + ")"; }
 /* top part of a card: art y from the card's top; bottom part: art y from the card's top (card art is 412 tall, 316 top / 94 bottom slices) */
 function fmgTop(x, y, w, h) { return "left:" + fmgD(x) + ";top:" + fmgD(y - 316) + ";" + (w != null ? "width:" + fmgD(w) + ";" : "") + (h != null ? "height:" + fmgD(h) + ";" : ""); }
@@ -17115,13 +17120,15 @@ function renderFormationsGpt() {
       /* right column */
       if (f0.guard) fmgEl(card, "div", "pc", fmgTop(770, 128, 225, 138) + "background-image:var(--fmg-guard_patch);");
       else {
-        fmgEl(card, "div", "kbx sm", fmgTop(790, 140, 184, 51)).innerHTML = "<i>⚖️</i>Equalise"; fmgEl(card, "div", "kbx sm", fmgTop(790, 205, 184, 51)).innerHTML = "<i>⭐</i>Preset"; /* v1807 */
+        fmgEl(card, "div", "kpl", fmgTop(778, 132, 216, 188));
+        fmgEl(card, "div", "kbx sm", fmgTop(790, 140, 192, 52)).innerHTML = "<i>⚖️</i>Equalise"; fmgEl(card, "div", "kbx sm", fmgTop(790, 201, 192, 52)).innerHTML = "<i>⭐</i>Preset"; /* v1807 */
         var eqT = fmgTxt(card, "w", fmgTop(860, 165) + "display:none;", 22, 108); fmgSet(eqT, "Equalise");
         fmgEl(card, "div", "hs", fmgTop(788, 138, 188, 55)).onclick = function () { game.equaliseFormation(idx); c.setInputsFromSet(); persist(); render(); };
         var prT = fmgTxt(card, "w", fmgTop(853, 230) + "display:none;", 22, 62); fmgSet(prT, "Preset");
         fmgEl(card, "div", "hs", fmgTop(788, 203, 188, 55)).onclick = function () { openPresetSheet(idx, function () { c.setInputsFromSet(); }); };
       }
-      var fp = fmgEl(card, "span", "fort-pick fg-fp", fmgTop(782, 262, 202, 54), fortPickHtml("f" + idx).replace(/^<span[^>]*>|<\/span>$/g, "").replace(/>[^<]*<\/button>/g, "></button>")); /* v1475: the numerals are in the art */
+      if (f0.guard) fmgEl(card, "div", "kpl", fmgTop(778, 258, 216, 62));
+      var fp = fmgEl(card, "span", "fort-pick fg-fp", fmgTop(790, 264, 192, 50), fortPickHtml("f" + idx).replace(/^<span[^>]*>|<\/span>$/g, "").replace(/>[^<]*<\/button>/g, "></button>")); /* v1475: the numerals are in the art */
       fp.setAttribute("data-fp", "f" + idx);
       /* v1475: the old "I" / "III" text labels are gone - the I / II / III numerals are painted into the picker art */
       /* middle (stretches): extra troop types + refill note */
@@ -17130,10 +17137,11 @@ function renderFormationsGpt() {
       var over = fmgEl(mid, "div", "fg-note"); over.style.cssText = "display:none;color:#c0392b;";
       var note = fmgEl(mid, "div", "fg-note");
       /* bottom buttons */
-      fmgEl(card, "div", "kbx", fmgBot(50, 317, 321, 72)).innerHTML = "<i>💾</i>Save"; fmgEl(card, "div", "kbx", fmgBot(672, 317, 307, 72)).innerHTML = "<i>🏰</i>Release"; /* v1807: "Release to Reserve" -> "Release" */
+      fmgEl(card, "div", "kpl", fmgBot(44, 314, 942, 78)); /* v1808: plain parchment over the painted buttons (their dark frames showed around the code buttons) */
+      fmgEl(card, "div", "kbx", fmgBot(54, 321, 298, 64)).textContent = "Save"; fmgEl(card, "div", "kbx", fmgBot(672, 321, 302, 64)).textContent = "Release"; /* v1807: "Release to Reserve" -> "Release"; v1808: no icons */
       var saveT = fmgEl(card, "div", "t w", fmgBotT(209, 354) + "font-size:" + fmgD(22) + ";display:none;"); saveT._fs = 22; saveT._max = 150;
       var saveH = fmgEl(card, "div", "hs", fmgBot(55, 322, 311, 63));
-      var blue = fmgEl(card, "div", "fg-blue", fmgBot(376, 317, 292, 72));
+      var blue = fmgEl(card, "div", "fg-blue", fmgBot(364, 321, 296, 64));
       var selT = fmgEl(card, "div", "t", fmgBotT(499, 354) + "font-size:" + fmgD(22) + ";"); selT._fs = 22; selT._max = 160;
       var selH = fmgEl(card, "div", "hs", fmgBot(380, 322, 284, 63));
       var relT = fmgEl(card, "div", "t w", fmgBotT(757, 354) + "font-size:" + fmgD(20) + ";display:none;"); relT._fs = 20; relT._max = 206;
@@ -17191,7 +17199,7 @@ function renderFormationsGpt() {
     /* v1806 (Harley): the Select / Guard button is our common button (code), blue = Select, tan = picked - not the painted blue button */
     c.blue.style.display = ""; c.blue.classList.add("ksx"); c.blue.classList.toggle("on", isActive); c.selT.className = "t wb";
     c.selT.style.left = fmgD(400); c.selT.style.width = fmgD(244); c.selT.style.textAlign = "center"; c.selT._max = 244; c.selT.style.webkitTextStrokeColor = isActive ? "#4a3410" : "#0d4a5c";
-    c.selT.style.display = "none"; var selL = isGuard ? (isActive ? "✓ Guard: On" : "Guard: Off") : (isActive ? "✓ Selected" : "Select"); if (c.blue.textContent !== selL) c.blue.textContent = selL; /* v1807 */
+    c.selT.style.display = "none"; var selL = isGuard ? (isActive ? "✓ Guard: On" : "Guard: Off") : (isActive ? "✓ Selected" : "Select"); if (c.blue.textContent !== selL) c.blue.textContent = selL; /* v1807 */ c.card.querySelectorAll(".kbx, .fg-blue.ksx").forEach(fmgFitBtn);
     fmgSet(c.saveT, "Save"); fmgSet(c.relT, "Release to Reserve");
     var held = f.held || {}, shortBy = 0;
     FM_BASES.forEach(function (b) {
