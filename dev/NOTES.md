@@ -6397,3 +6397,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Kept although it says "(Old)": the skillbar "5 Heroes (Old)" switch - "5 Heroes" is the current default, not retired. Sound Effects and Espers looked empty in the HTML but are filled by code - kept.
 - Not done yet: Options still has some test switches (Light backgrounds, Exact-size ranged heroes, Phone view on PC) - ask Harley.
 - Headless: every tab / section opens with its controls, moved buttons toggle, search still works, no errors. Not tested on a phone.
+
+## v1791 - Governor Gear power (TEST, data only)
+- Harley: all 6 gear pieces maxed = 20M power total (kept modest - charms and the account "level" number will add more later).
+- GOV_GEAR_POWER_TOTAL = 20M; govGearPower(piece, step) = 20M / 6 x (cannon running % / its cap) - power follows the bonus at every step like Kingshot (~24K power per 1% there), one shared shape since all pieces use the same step weights; govGearPowerAll(map). powerBreakdown gets `gear` from state.govGear ({ piece: step }) and governorPower adds it. Nothing writes state.govGear yet, so everyone's power is unchanged today.
+- Check (headless): all 6 at Grey 1* +0.49M, Blue 3* +1.73M, Purple T1 3* +4.71M, Yellow T3 +11.15M, Red T3 +20.0M (3.33M per piece); no gear -> power unchanged. Not tested on a phone.
+- Also decided (design, not coded): ONE upgrade material for all 40 steps (Kingshot cost curve as the baseline, see Overlord doc claude/gear-first-numbers.md); gear level RESET = a conscious choice: full refund, one piece at a time, gated by a reset item or a Town Hall level.

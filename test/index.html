@@ -12181,11 +12181,11 @@ function createGame(opts) {
   function powerBreakdown() {
     return { buildings: powerFromBuildingsOld() * POWER_SCALE + powerFromBuildingsReal(), research: powerFromTech(),
       fortress: powerFromFortressTech() * POWER_SCALE, fortType: fortressTypeOf(state.fortressTech || {}), heroes: powerFromHeroes() * POWER_SCALE,
-      troops: powerFromTroops(), weapons: powerFromWeapons(), equipment: powerFromEquipment(), sword: powerFromSword() };
+      troops: powerFromTroops(), weapons: powerFromWeapons(), equipment: powerFromEquipment(), sword: powerFromSword(), gear: govGearPowerAll(state.govGear) }; /* v1791: + Governor Gear */
   }
   function governorPower() { /* v946: troops in real units; v1199 weapons; v1200 Sword of Power; v1201 worn equipment */
     var b = powerBreakdown();
-    return Math.round(b.buildings + b.research + b.fortress + b.heroes + b.troops + b.weapons + b.equipment + b.sword);
+    return Math.round(b.buildings + b.research + b.fortress + b.heroes + b.troops + b.weapons + b.equipment + b.sword + (b.gear || 0));
   }
   // DEV-ONLY: what this account is "worth" in USD, using USD_VALUES. `held` = stockpiles
   // on hand; the rest is what has been invested (cost of everything built/trained/levelled).
@@ -12450,6 +12450,12 @@ var GOV_GEAR_PIECES = {
   troop:     { label: "Troop Damage",            pct: null },
   boss:      { label: "Boss Damage",             pct: [6.19, 12.38, 20.12, 27.86, 35.6, 43.34, 52.63, 61.92, 71.21, 80.5, 89.78, 99.07, 108.36, 117.65, 130.03, 142.41, 154.8, 167.18, 179.57, 191.95, 204.33, 216.72, 229.1, 241.49, 253.87, 266.25, 278.64, 295.67, 312.69, 329.72, 346.75, 363.78, 380.8, 397.83, 414.86, 431.89, 448.92, 465.94, 482.97, 500.0] } /* v1755 (Harley: "a clean 500%"): +500% at Red T3. At +420% the best maxed whale (F2, Clone Task + Droid Call + Duplicate, Sword 100, equipment Boss Damage 72%) reached ~1B = level 100; at +500% ~1.16B. Multiplies with equipment Boss Damage. */
 };
+/* v1791 (Harley 21 Nov 2026): gear POWER - all 6 pieces maxed = 20M (~3.33M per piece), growing with the bonus like Kingshot (~same power per 1% at
+   every step), so one shared shape: cannon's running % / its cap (every piece uses the same step weights). Counted in governor power from state.govGear
+   = { piece: step } once gear exists in saves (nothing writes it yet, so power is unchanged today). */
+var GOV_GEAR_POWER_TOTAL = 20000000;
+function govGearPower(piece, step) { if (!GOV_GEAR_PIECES[piece] || step == null || step < 0) return 0; var c = GOV_GEAR_PIECES.cannon.pct, i = Math.min(step, c.length - 1); return Math.round(GOV_GEAR_POWER_TOTAL / 6 * c[i] / c[c.length - 1]); }
+function govGearPowerAll(map) { var t = 0; if (map) Object.keys(GOV_GEAR_PIECES).forEach(function (k) { t += govGearPower(k, map[k]); }); return t; }
 /* step: -1 or missing = no gear (0%); 0..39 = that step's running total. */
 function govGearBonus(piece, step) { var p = GOV_GEAR_PIECES[piece]; if (!p || !p.pct || step == null || step < 0) return 0; return p.pct[Math.min(step, p.pct.length - 1)]; }
 var CITY_SKIN_DEFAULT = "seafurnace"; /* v1743 (Harley): the skin new players start on, and the skin every bot city (no saved skin) shows. Was "tower". */
@@ -14611,7 +14617,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1790"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1791"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
