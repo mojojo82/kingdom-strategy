@@ -6517,3 +6517,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Equalise / Preset: text only (now fit at 15 px).
 - (His red circle on Formation 1 looked like an overlap; measured - all cards are laid out the same.)
 - Headless check; no errors. Not tested on a phone.
+
+## v1810 - Formations: no Home tag; march timer while out (TEST)
+- Harley: "If its at home lets show nothing at all. But if its out doing something lets try to show the march timer somewhere in formations".
+- The painted tag at the top right of each card is covered by a piece of the plain header bar (same card art, shifted, soft left edge). At home: nothing shows.
+- While the formation is out: a small bar like the world map's Marches list - fill (green going out, orange fighting / gathering, blue coming home), icon and time left. Same maths as the Marches list.
+- Headless check: home cards show no tag; fake marches (out 0:28, returning 1:34) show the bar; no errors. Not tested on a phone.

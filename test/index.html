@@ -14713,7 +14713,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1809"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1810"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17040,6 +17040,11 @@ function fmgStyle() {
     "#fmg .kbx,#fmg .fg-blue.ksx{position:absolute;display:flex;align-items:center;justify-content:center;gap:4px;z-index:3;pointer-events:none;box-sizing:border-box;--ksb-bg:#c9ab68;--ksb-edge:#6f5c38;--ksb-ring:#f0dea8;--ksb-ink:#4a3410;background:var(--ksb-bg);border:2px solid var(--ksb-edge)!important;border-image:none!important;border-radius:10px;box-shadow:inset 0 0 0 2px var(--ksb-bg),inset 0 0 0 3px var(--ksb-ring),0 2px 0 var(--ksb-edge);color:#fff;font-family:'Lilita One',sans-serif;font-size:17px;line-height:1;letter-spacing:.02em;white-space:nowrap;-webkit-text-stroke:.13em var(--ksb-ink);paint-order:stroke fill}",
     "#fmg .fg-blue.ksx:not(.on){--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;--ksb-ink:#0d4a5c}",
     "#fmg .kbx.sm{font-size:15px}",
+    "#fmg .kpat{position:absolute;z-index:2;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%);mask-image:linear-gradient(90deg,transparent,#000 14%);background-repeat:no-repeat;background-size:calc(var(--fd)*1024) calc(var(--fd)*412)}",
+    "#fmg .fg-card.b-blue .kpat{background-image:var(--fmg-card_blue)}#fmg .fg-card.b-red .kpat{background-image:var(--fmg-card_red)}#fmg .fg-card.b-purple .kpat{background-image:var(--fmg-card_purple)}#fmg .fg-card.b-guard .kpat{background-image:var(--fmg-card_guard)}",
+    "#fmg .kmar{position:absolute;z-index:3;pointer-events:none;background:#1a120a;border:1.5px solid #c98a2a;border-radius:7px;overflow:hidden;box-sizing:border-box}",
+    "#fmg .kmar .f{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#7fd35a,#3f9a2a)}#fmg .kmar .f.returning{background:linear-gradient(#5fd0ff,#2a8ad0)}#fmg .kmar .f.acting{background:linear-gradient(#ffb04a,#d06a1a)}",
+    "#fmg .kmar .tx{position:relative;display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-family:'Lilita One',sans-serif;font-size:13px;line-height:1;-webkit-text-stroke:.12em #1a120a;paint-order:stroke fill;white-space:nowrap}",
     "#fmg .kbx.blue{--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#a8eef6;--ksb-ink:#0d4a5c}",
     "#fmg .kpl{position:absolute;z-index:2;pointer-events:none;background:#dcb376;border-radius:10px;box-shadow:0 0 4px 2px #dcb376}",
     "#fmg .fg-fp{z-index:3}",
@@ -17111,6 +17116,10 @@ function renderFormationsGpt() {
       var pillB = fmgEl(card, "div", "pc", fmgTop(750, 17, 225, 64) + "background-image:var(--fmg-pill_brown);");
       var pillT = fmgTxt(card, "w tc", fmgTop(806, 47, 150), 21, 150);
       var pillK = fmgEl(card, "div", "kbx sm blue", fmgTop(748, 15, 229, 68) + "display:none;"); /* v1809: the ACTIVE tag = our common blue button, not the painted blue */
+      /* v1810 (Harley: "If its at home lets show nothing at all. But if its out doing something ... show the march timer"): the painted tag is covered with a
+         piece of the plain header bar (same card art, shifted) and a march bar (like the world map's Marches list) shows only while the formation is out */
+      fmgEl(card, "div", "kpat", fmgTop(752, 16, 220, 62) + "background-position:calc(var(--fd)*-520) calc(var(--fd)*-16);");
+      var marB = fmgEl(card, "div", "kmar", fmgTop(758, 26, 208, 42) + "display:none;"); marB.innerHTML = '<div class="f"></div><div class="tx"></div>';
       var march = fmgTxt(card, "dk", fmgTop(273, 103) + "z-index:2;", 22, 205);
       var fill = fmgEl(card, "div", "fg-fill", fmgTop(490, 95, 0, 15));
       var barPatch = fmgEl(card, "div", "pc", fmgTop(470, 84, 498, 38) + "background-image:var(--fmg-bar_patch);display:none;");
@@ -17148,7 +17157,7 @@ function renderFormationsGpt() {
       var selH = fmgEl(card, "div", "hs", fmgBot(380, 322, 284, 63));
       var relT = fmgEl(card, "div", "t w", fmgBotT(757, 354) + "font-size:" + fmgD(20) + ";display:none;"); relT._fs = 20; relT._max = 206;
       var relH = fmgEl(card, "div", "hs", fmgBot(677, 322, 297, 63));
-      var c = { pillK: pillK, over: over, card: card, nameIn: nameIn, pillB: pillB, pillT: pillT, march: march, fill: fill, barPatch: barPatch, rows: rows, slots: slots, note: note, blue: blue, selT: selT, saveT: saveT, relT: relT };
+      var c = { marB: marB, pillK: pillK, over: over, card: card, nameIn: nameIn, pillB: pillB, pillT: pillT, march: march, fill: fill, barPatch: barPatch, rows: rows, slots: slots, note: note, blue: blue, selT: selT, saveT: saveT, relT: relT };
       function setTot() { var t = 0; FM_BASES.forEach(function (b) { t += Math.max(0, parseInt(rows[b].num.value, 10) || 0); }); return t; }
       c.updCap = function () {
         var f = game.state.formations[idx], cap = game.marchCapacity(f.heroKeys), tot = setTot();
@@ -17196,7 +17205,14 @@ function renderFormationsGpt() {
   E.cards.forEach(function (c, idx) {
     var f = game.state.formations[idx], isGuard = !!f.guard, isActive = isGuard ? !!game.state.guardOn : game.state.activeFormation === idx, out = game.formOut(idx);
     var st = fmStatusText(f, idx), act = st.c === "act";
-    c.pillB.style.display = ""; c.pillT.className = "t tc w"; c.pillT.style.visibility = act ? "hidden" : ""; c.pillK.style.display = act ? "" : "none"; if (act && c.pillK.textContent !== st.t) c.pillK.textContent = st.t; /* v1809 */
+    c.pillB.style.display = "none"; c.pillT.style.visibility = "hidden"; c.pillK.style.display = "none";
+    (function () { var m = fmMarchFor(idx), now = vnow(); if (!m) { c.marB.style.display = "none"; return; } /* v1810: march bar */
+      var frac = 1, left = 0, ic = "➡️";
+      if (m.status === "outbound") { var t0 = m.arriveAt - m.travelSec * 1000; frac = m.travelSec > 0 ? (now - t0) / (m.travelSec * 1000) : 1; left = (m.arriveAt - now) / 1000; }
+      else if (m.status === "acting") { frac = 1 - (m.actionEnd - now) / 5000; left = (m.actionEnd - now) / 1000; ic = m.action === "attack" ? "⚔️" : "⛏️"; }
+      else if (m.status === "returning") { var r0 = m.returnAt - m.travelSec * 1000; frac = m.travelSec > 0 ? (now - r0) / (m.travelSec * 1000) : 1; left = (m.returnAt - now) / 1000; ic = "🏠"; }
+      frac = Math.max(0, Math.min(1, frac)); c.marB.style.display = ""; c.marB.firstChild.style.width = (frac * 100).toFixed(1) + "%"; c.marB.firstChild.className = "f " + m.status;
+      var tx = ic + " " + (typeof fleetClock === "function" ? fleetClock(Math.max(0, left)) : fmtTime(Math.max(0, left))); if (c.marB.lastChild.textContent !== tx) c.marB.lastChild.textContent = tx; })();
     fmgSet(c.pillT, st.t);
     /* v1806 (Harley): the Select / Guard button is our common button (code), blue = Select, tan = picked - not the painted blue button */
     c.blue.style.display = ""; c.blue.classList.add("ksx"); c.blue.classList.toggle("on", isActive); c.selT.className = "t wb";
