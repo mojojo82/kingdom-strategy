@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1774"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1775"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -28681,9 +28681,10 @@ function lilyBattleDraw(ctx, store, id, x, feetY, hScale, mode, faceLeft) {
 var heroAnimImgCache = {};
 /* v1578 (Harley): only the sheets of heroes in use are loaded - your Conquest team at start (splash / world map), the Arena opponent's when a fight is set up.
    Was: all 23 animated heroes at login (~59 MP of pictures) whether used or not. Sheets not in use are let go when Conquest opens. Same pictures, same drawing. */
-function heroSheetKeys(keys) { var out = []; (keys || []).forEach(function (k) { [k, k + "_idle", k + "_skill", k + "_atk2a", k + "_atk2b"].forEach(function (a) { if (HERO_ANIMS[a] && out.indexOf(a) === -1) out.push(a); }); }); return out; }
-function heroSheetsWarm(keys) { try { heroSheetKeys(keys).forEach(function (a) { var fresh = !heroAnimImgCache[a]; heroAnimImg(a); var im = heroAnimImgCache[a]; if (fresh && im && im.decode) im.decode().catch(function () {}); }); } catch (e) {} }
-function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys); Object.keys(heroAnimImgCache).forEach(function (a) { if (keep.indexOf(a) !== -1) return; var im = heroAnimImgCache[a]; delete heroAnimImgCache[a]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }); } catch (e) {} }
+function heroSheetKeys(keys) { var out = [], all = Object.keys(HERO_ANIMS); (keys || []).forEach(function (k) { if (!k) return; all.forEach(function (a) { if ((a === k || a.indexOf(k + "_") === 0) && out.indexOf(a) === -1) out.push(a); }); }); return out; } /* v1775: every sheet of the hero (was main/idle/skill/atk2 only - Tom's guard, Baelgor's drain loaded mid-fight) */
+function heroSheetsWarm(keys) { try { heroSheetKeys(keys).forEach(function (a) { var fresh = !heroAnimImgCache[a]; heroAnimImg(a); var im = heroAnimImgCache[a]; if (fresh && im && im.decode) im.decode().catch(function () {}); }); if ((keys || []).indexOf("baelgor") !== -1) ["grab", "desc"].forEach(function (k) { var fresh = !fearImgs[k]; fearImg(k); if (fresh && fearImgs[k] && fearImgs[k].decode) fearImgs[k].decode().catch(function () {}); }); } catch (e) {} } /* v1775: + the Fear hand when Baelgor is in */
+function heroSheetsRelease(keepKeys) { try { var keep = heroSheetKeys(keepKeys); Object.keys(heroAnimImgCache).forEach(function (a) { if (keep.indexOf(a) !== -1) return; var im = heroAnimImgCache[a]; delete heroAnimImgCache[a]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} });
+  if ((keepKeys || []).indexOf("baelgor") === -1) Object.keys(fearImgs).forEach(function (k) { var im = fearImgs[k]; delete fearImgs[k]; try { im.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; } catch (e) {} }); } catch (e) {} } /* v1775: the Fear hand goes too when no Baelgor */
 function heroAnimImg(key) {
   var a = HERO_ANIMS[key]; if (!a) return null;
   if (!heroAnimImgCache[key]) { var im = new Image(); im.src = a.src; heroAnimImgCache[key] = im; }
@@ -41838,6 +41839,7 @@ function renderArenaBattleScreen() {
   if (KJ) aStats0 = kaijuAiStats(KAIJU_INF);
   arenaAnim.playerRoster = p.roster; arenaAnim.playerHeroesSnap = p.heroes;
   arenaAnim.aiRoster = arenaOpponent.roster; arenaAnim.aiHeroesSnap = arenaOpponent.heroes;
+  var keepA = (p.roster || []).concat(arenaOpponent.roster || [], (game.state && game.state.conquestRoster) || []); heroSheetsRelease(keepA); /* v1775 (Harley): unload every sheet not in this fight (each "New" opponent used to stay in memory until Conquest) */
   heroSheetsWarm((p.roster || []).concat(arenaOpponent.roster || [])); /* v1578 */
   arenaAnim.opponentName = arenaOpponent.name;
   arenaAnim.aiFortressSkin = arenaOpponentFortressSkin(arenaOpponent); arenaAiWeaponOrder = Object.keys((arenaOpponent && arenaOpponent.weapons) || {}).slice(0, 3); /* v1167: slots known from the start, so the bot's barrels show before its first shot */ // v1109: the bot's slots start fresh each match
