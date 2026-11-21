@@ -14601,7 +14601,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1786"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1787"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -18260,10 +18260,13 @@ function mapZoomMin() {
 // v862: level of detail, by how big a tile is on screen. 0 = full art; 1 = resources become small markers, bare ground draws nothing;
 // 2 = resources hidden, cities become markers (yours gold). Terrain, marches and the border always draw.
 var LOD_MID_PX = 16, LOD_FAR_PX = 7, mapLodLast = 0;
+var RES_HIDE_PX = 24; /* v1787 (Harley: an earlier cut-off like Kingshot / Lords Rush, to save work): resource nodes are not drawn at all once a tile is smaller than this on screen (24 px = zoom 0.8 at the default tile size) - no art, no dots. Monsters and bases are unchanged. Measured headless: zooming ~45 -> ~26 ms per frame, worst ~143 -> ~77 ms (up to ~600 dots were drawn before). */
+function mapResHidden() { return tilePxZ() < RES_HIDE_PX; }
+var mapResHideLast = false;
 function mapLod() { var px = tilePxZ(); return px >= LOD_MID_PX ? 0 : px >= LOD_FAR_PX ? 1 : 2; }
 var lodResCache = null;
 function lodCandidates(minX, maxX, minY, maxY) { /* the only tiles that can show anything when zoomed out (v864: resources only from the chunks in view) */
-  var out = (mapLod() === 1 && minX != null) ? (game.state.map.isWorld ? game.state.map.resourcesIn(minX, maxX, minY, maxY) : game.state.map.filter(function (t) { return t.type === "resource" && t.x >= minX && t.x <= maxX && t.y >= minY && t.y <= maxY; })) : [], seen = {};
+  var out = (mapLod() === 1 && minX != null && !mapResHidden()) ? (game.state.map.isWorld ? game.state.map.resourcesIn(minX, maxX, minY, maxY) : game.state.map.filter(function (t) { return t.type === "resource" && t.x >= minX && t.x <= maxX && t.y >= minY && t.y <= maxY; })) : [], seen = {};
   out.forEach(function (t) { seen[t.id] = 1; });
   [game.state.homeTileId, selectedTile].concat(Object.keys(occupiedTileIds)).forEach(function (id) { if (id && !seen[id] && !isForeignTile(id)) { var t = mapTileById(game.state.map, id); if (t) { out.push(t); seen[id] = 1; } } }); /* v1085: neighbours' are added by nbrVisit */
   return out;
@@ -18877,7 +18880,7 @@ function renderVisibleTiles() {
   try { noteWorldViewChunks(minX, maxX, minY, maxY, lod); } catch (e) { console.error(e); } /* v919 */
   try { notePatchView(minX, maxX, minY, maxY, lod); } catch (e) { console.error(e); } /* v1081 */
   world.classList.toggle("nomid", !!(lod === 2 && patchMidTooMany && patchMode())); /* v1084: too far out to load every patch on screen - no base markers rather than a patchy few (World zoom shows kingdom names) */
-  if (lod !== mapLodLast) { Object.keys(mapTileEls).forEach(function (id) { mapTileEls[id].remove(); }); mapTileEls = {}; tilePool.forEach(function (d) { d.remove(); }); tilePool = []; mapLodLast = lod; } /* v862: rebuild tiles when the detail level changes */
+  var rhNow = mapResHidden(); if (lod !== mapLodLast || rhNow !== mapResHideLast) { Object.keys(mapTileEls).forEach(function (id) { mapTileEls[id].remove(); }); mapTileEls = {}; tilePool.forEach(function (d) { d.remove(); }); tilePool = []; mapLodLast = lod; mapResHideLast = rhNow; } /* v1787: also when resources hide / show */ /* v862: rebuild tiles when the detail level changes */
   if (lod > 0) world.style.setProperty("--lodk", String(Math.max(1, 7 / tilePxZ())));
   world.classList.toggle("notags", lod > 0 && tilePxZ() < 13); /* v1009: bases drawn small at LOD 1 - their alliance tags would pile up, so they go below 13 px tiles */
   var wanted = {};
@@ -18890,10 +18893,12 @@ function renderVisibleTiles() {
       for (var fdx = -BASE_FP_R; fdx <= BASE_FP_R; fdx++) for (var fdy = -BASE_FP_R; fdy <= BASE_FP_R; fdy++) fpMark[(sxy[0] + fdx) + "," + (sxy[1] + fdy)] = fpBad ? "fp bad" : "fp";
     }
   }
+  var resHideNow = mapResHidden();
   var visitTile = function (tile) { /* v859: called only for tiles inside the visible window (see the loop below), not for every tile in the world */
     if (isoRect) { var icx = isoG.offX + (tile.x - tile.y) * isoG.r2, icy = isoG.offY + (tile.x + tile.y) * isoG.r2 * ISO_K; if (icx < isoRect.L || icx > isoRect.R || icy < isoRect.T || icy > isoRect.B) return; }
     var isMyCity = tile.id === game.state.homeTileId;
     var isOtherCity = !isMyCity && isTileOccupied(tile.id);
+    if (tile.type === "resource" && !isMyCity && !isOtherCity && resHideNow && selectedTile !== tile.id) return; /* v1787: zoomed out past RES_HIDE_PX - resources aren't drawn */
     var hiddenAsEmpty = !isMyCity && !isOtherCity &&
       ((tile.type === "resource" && mapHideResources) || (tile.type === "npc" && mapHideThreats) || ((tile.type === "resource" || tile.type === "npc") && !!baseCenterNear(tile.x, tile.y))); /* v824: tiles under a base's 3x3 block show as ground */
     if (lod > 0 && !(lod === 1 && (isMyCity || isOtherCity))) { /* v862: zoomed out - markers only. v1009 (Harley): bases keep their real art one zoom step further (LOD 1); only resources become dots there */

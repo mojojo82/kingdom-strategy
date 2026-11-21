@@ -6372,3 +6372,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Cause: the Backpack art (slab, active tab, back / close buttons) was marked lazy (not in the splash preload) and only fetched when the Backpack first opened; the item icons were already there.
 - bagArtPreload(): 2.5 s after the page loads, the 4 pictures are fetched + unpacked in the background and kept in memory (BAG_ART). bagOpen(): if the slab isn't ready yet, the window stays hidden until it is (max 0.6 s), so frame and icons show together.
 - Headless: preloaded before the first open -> shows at once; forced open before the preload -> hidden, then visible within 0.6 s. No errors. Not tested on a phone.
+
+## v1787 - World map: resources hidden past zoom 0.8 (TEST)
+- Harley: an earlier cut-off for resource nodes like Kingshot / Lords Rush (to save work, not for looks). Measured first (headless zoom 1 -> 0.25 -> 1): today up to ~600 resource dots on screen at far zoom; zoom frames 45 ms avg / 143 ms worst. Only moving the art cut-off changed nothing (art just became dots) - the saving needs resources hidden.
+- RES_HIDE_PX = 24 (zoom 0.8 at the default 30 px tile): below it resource tiles aren't drawn at all (no art, no dots; lodCandidates skips them). Monsters and bases unchanged (they follow LOD_MID / LOD_FAR as before). Crossing the cut-off rebuilds the tile layer like a detail-level change.
+- Headless after: 0 resource elements below 0.8, back to ~100 when zoomed in; zoom frames 23 ms avg / 61 ms worst. Not tested on a phone.
