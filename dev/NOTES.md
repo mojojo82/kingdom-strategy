@@ -6676,3 +6676,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1837 - EMP off in Conquest, icon greyed (TEST)
 - Harley: EMP only matters against mechanical bosses (not made yet). `CONQUEST_EMP_ON = false`: the Conquest engine skips EMP (no stun on Conquest enemies); its tile in the Conquest weapon row is greyed (grayscale) with the tooltip "(no effect in Conquest)". Arena / World PvP EMP unchanged. Turn the flag on (and add the mech-boss rule + a Conquest visual) when Harley says the bosses are coming.
 - Headless: Conquest weapon row shows EMP greyed next to a normal Flak tile; no errors. Not tested on a phone.
+
+## v1838 - Reports in Mail + full-screen report (TEST)
+- Harley: World PvP battles go to Mail > Wars, everything else (enemy camps, monsters, guarded nodes, new gathering reports) to Mail > Reports. The list shows the result at a glance (round badge, title, Victory/Defeat tag, coords, lost, loot, base hit / amount gathered); unread dot + tab count, "Read all" (state.reportsRead; existing reports start read).
+- Tapping a report opens it full screen (#repFull, repFullOpen): top bar (back / Save), result banner, you on the LEFT and the opponent on the RIGHT (avatar, name, coords, power, HP-left bar, armor, damage dealt, heroes, troop table sent/had + lost + wounded, came back / left), then Base hit, Rewards, Infirmary note. Gathering reports: one panel.
+- New gathering report (`kind: "gather"`, pushed when a march starts gathering). Their name is saved on PvP reports (rep.defName from fetchOwnerProfile). More > Reports now opens Mail on the Reports tab.
+- Headless: lists, full-screen PvP win/loss, camp defeat, monster, gathering; no errors. Not tested on a phone. Not yet: reports for being attacked (not recorded), hero levels.

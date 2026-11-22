@@ -3233,6 +3233,102 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #mailPanel.sk-c .mtab .tn { top:-12%; right:-6%; }
   #mailPanel.sk-c .mtab, #mailPanel.sk-c .mtab.on { border:0; border-image:none; background:var(--mail-tab-off) center/100% 100% no-repeat; padding:0 0 2%; } #mailPanel.sk-c .mtab.on { background-image:var(--mail-tab-on); } /* v1751: whole picture at its own shape - no 9-slice seams */
   #mailPanel.sk-c .mi { border-image:none; background:var(--mail-cardrow) center/100% 100% no-repeat; background-origin:border-box; background-clip:border-box; } /* v1751: row card drawn whole at the rows' shape (no seams) */
+  /* v1838: full-screen report (tapped from Mail) */
+  #repFull { display:none; position:fixed; inset:0; z-index:100060; flex-direction:column; background:linear-gradient(#0d1a33, #0a1222 60%, #070d19); color:#f3e9d2; font-family:'Chakra Petch',system-ui,-apple-system,'Segoe UI',sans-serif; padding-top:env(safe-area-inset-top, 0px); }
+  body.repfull-open #repFull { display:flex; }
+  #repFull .rf-top { flex:none; display:flex; align-items:center; gap:10px; padding:10px max(12px, env(safe-area-inset-left, 0px)) 10px; background:linear-gradient(#6b4320, #4a2c12); border-bottom:2px solid #c9a35a; box-shadow:0 3px 8px rgba(0,0,0,.5); }
+  #repFull .rf-back { width:40px; height:40px; border-radius:50%; border:2px solid #f0c95f; background:#3a220c; color:#f0c95f; font-size:28px; line-height:30px; padding:0 0 4px; cursor:pointer; }
+  #repFull .rf-title { flex:1; font-family:'KS Title','Lilita One',sans-serif; font-size:22px; color:#ffe7a8; text-shadow:0 2px 0 rgba(0,0,0,.5); }
+  #repFull .rf-save { border:2px solid #c9a35a; background:#3a220c; color:#f3dcb0; border-radius:10px; padding:6px 10px; font-family:'KS Title','Lilita One',sans-serif; font-size:15px; cursor:pointer; } #repFull .rf-save.on { background:#8a5a1c; color:#fff1c8; }
+  #repFull .rf-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px max(10px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); display:flex; flex-direction:column; gap:10px; }
+  #repFull .rf-ban { padding:10px 12px; border-radius:12px; text-align:center; color:#fff; box-shadow:inset 0 -3px 0 rgba(0,0,0,.2), 0 3px 10px rgba(0,0,0,.4); border:2px solid rgba(255,255,255,.18); }
+  #repFull .rf-ban b { display:block; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:34px; letter-spacing:.05em; text-transform:uppercase; text-shadow:0 2px 0 rgba(0,0,0,.35); }
+  #repFull .rf-ban span { display:block; font-size:13px; opacity:.95; }
+  #repFull .rf-ban.w { background:linear-gradient(#5fae4a, #2f7a2a); } #repFull .rf-ban.l { background:linear-gradient(#c45a44, #8a2a1e); } #repFull .rf-ban.g { background:linear-gradient(#5ea2cf, #2a5f8a); } #repFull .rf-ban.n { background:linear-gradient(#b48a52, #7a5228); }
+  #repFull .rf-cols { display:grid; grid-template-columns:1fr auto 1fr; gap:6px; align-items:start; } #repFull .rf-cols.one { grid-template-columns:1fr; }
+  #repFull .rf-vs { align-self:start; margin-top:34px; font-family:'KS Title','Lilita One',sans-serif; font-size:18px; color:#f0c95f; text-shadow:0 2px 0 #000; }
+  #repFull .rf-side { min-width:0; padding:9px 8px; border-radius:12px; background:linear-gradient(#5a3a1c, #3d2610); border:2px solid #8a6a2f; box-shadow:inset 0 0 12px rgba(0,0,0,.35); }
+  #repFull .rf-side.me { border-color:#5a8fc8; background:linear-gradient(#24406a, #172a47); } #repFull .rf-side.foe { border-color:#c8665a; background:linear-gradient(#5e2a22, #3d1a15); }
+  #repFull .rf-av { width:54px; height:54px; margin:0 auto 4px; border-radius:50%; overflow:hidden; border:2px solid #f0c95f; background:#1a1208; display:flex; align-items:center; justify-content:center; font-size:28px; }
+  #repFull .rf-av img { width:100%; height:100%; object-fit:cover; }
+  #repFull .rf-name { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:16px; line-height:1.1; color:#fff3d0; overflow-wrap:anywhere; }
+  #repFull .rf-at { text-align:center; font-size:12px; color:#9fd0ff; text-decoration:underline; cursor:pointer; margin:2px 0 4px; } #repFull .rf-at.off { text-decoration:none; }
+  #repFull .rf-pw { text-align:center; font-size:13px; color:#ffe7a8; margin-bottom:4px; }
+  #repFull .rp2-bar { position:relative; height:16px; border-radius:6px; background:#4a1a14; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
+  #repFull .rp2-bar i { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(#7fd06a, #3c8a34); } #repFull .rp2-bar.foe i { background:linear-gradient(#e8a25a, #b8642a); }
+  #repFull .rp2-bar span { position:relative; display:block; text-align:center; font-size:11px; line-height:16px; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.7); font-weight:700; }
+  #repFull .rf-kv { display:flex; justify-content:space-between; gap:4px; font-size:12px; color:#e6d6b4; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+  #repFull .rf-kv b { color:#fff3d0; font-weight:700; }
+  #repFull .rf-sec { margin:9px 0 5px; font-family:'KS Title','Lilita One',sans-serif; font-size:15px; color:#f0c95f; border-bottom:1px dashed rgba(240,201,95,.45); padding-bottom:2px; }
+  #repFull .rf-heroes { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; } #repFull .rf-cols.one .rf-heroes { grid-template-columns:repeat(5, 1fr); }
+  #repFull .rf-hero img, #repFull .rf-hero span { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; object-position:50% 15%; border-radius:6px; border:2px solid #8a6a3a; background:#1a1208; box-sizing:border-box; text-align:center; font-size:22px; }
+  #repFull .rf-hero.r-legendary img { border-color:#e0a72a; } #repFull .rf-hero.r-epic img { border-color:#9a5ad0; } #repFull .rf-hero.r-rare img { border-color:#3a7ad0; }
+  #repFull .rf-hero b { display:block; text-align:center; font-weight:600; font-size:10px; color:#f3e9d2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  #repFull .rf-none { font-style:italic; font-size:12px; color:#b8a684; }
+  #repFull .rf-trh, #repFull .rf-tr { display:grid; grid-template-columns:1fr auto auto; gap:6px; align-items:center; font-size:12px; }
+  #repFull .rf-trh { color:#c9b48a; font-size:10px; text-transform:uppercase; letter-spacing:.04em; padding-bottom:2px; } #repFull .rf-trh span:not(:first-child), #repFull .rf-tr span:not(:first-child) { text-align:right; min-width:38px; }
+  #repFull .rf-tr { padding:3px 0; border-top:1px solid rgba(255,255,255,.08); } #repFull .rf-tn { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #repFull .rf-tl { color:#ff8a78; } #repFull .rf-tr.tot { font-weight:700; border-top:1px solid rgba(240,201,95,.45); }
+  #repFull .rf-tw { font-size:11px; color:#f0b45a; padding:0 0 2px 18px; }
+  #repFull .rf-left { font-size:12px; color:#c9b48a; margin-top:4px; text-align:right; } #repFull .rf-left b { color:#fff3d0; }
+  #repFull .rf-card { padding:10px 12px; border-radius:12px; background:linear-gradient(#5a3a1c, #3d2610); border:2px solid #8a6a2f; }
+  #repFull .rf-card .rf-sec { margin-top:0; }
+  #repFull .rf-fire { font-family:'KS Title','Lilita One',sans-serif; font-size:20px; color:#ff8a5a; margin-bottom:4px; }
+  #repFull .rf-small { font-size:12px; color:#c9b48a; font-style:italic; margin-top:4px; }
+  #repFull .rf-rw { display:flex; flex-direction:column; gap:4px; }
+  #repFull .rf-chip { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:rgba(0,0,0,.22); font-size:14px; }
+  #repFull .rf-chip i { font-style:normal; width:24px; display:flex; justify-content:center; } #repFull .rf-chip i img { width:100%; height:auto; }
+  #repFull .rf-chip span { flex:1; } #repFull .rf-chip b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; color:#9be27a; }
+  #repFull .rf-note { font-size:13px; color:#e6d6b4; line-height:1.4; }
+  #repFull .rf-big { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:40px; color:#9fd0ff; } #repFull .rf-big img { height:1em; vertical-align:-0.12em; }
+  #repFull .rf-big small { display:block; font-size:15px; color:#c9b48a; }
+  /* v1838: battle / gathering reports inside Mail */
+  #mailPanel .rp2-badge { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:calc(var(--mw) * 0.07); box-shadow:inset 0 0 0 3px rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,.35); }
+  #mailPanel .rp2-badge.w { background:radial-gradient(circle at 35% 30%, #7fd06a, #2f7d2a); } #mailPanel .rp2-badge.l { background:radial-gradient(circle at 35% 30%, #e07a64, #8a2a1e); }
+  #mailPanel .rp2-badge.g { background:radial-gradient(circle at 35% 30%, #7fc1e8, #2a5f8a); } #mailPanel .rp2-badge.n { background:radial-gradient(circle at 35% 30%, #d7b27a, #7a5228); }
+  #mailPanel .rp2-line { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:calc(var(--mw) * 0.031); color:#6b4a2a; margin-top:2px; }
+  #mailPanel .rp2-res { font-family:'KS Title','Lilita One',sans-serif; font-size:calc(var(--mw) * 0.03); padding:1px 7px; border-radius:6px; color:#fff; }
+  #mailPanel .rp2-res.w { background:#3c8a34; } #mailPanel .rp2-res.l { background:#a83a2a; } #mailPanel .rp2-res.g { background:#2f6f9a; }
+  #mailPanel .mdet.rp2 { gap:0; }
+  #mailPanel .rp2-ban { margin:6px 0 4px; padding:8px 10px; border-radius:10px; text-align:center; color:#fff; box-shadow:inset 0 -3px 0 rgba(0,0,0,.18); }
+  #mailPanel .rp2-ban b { display:block; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:calc(var(--mw) * 0.075); letter-spacing:.04em; text-transform:uppercase; text-shadow:0 2px 0 rgba(0,0,0,.3); }
+  #mailPanel .rp2-ban span { display:block; font-size:calc(var(--mw) * 0.033); opacity:.95; }
+  #mailPanel .rp2-ban.w { background:linear-gradient(#5fae4a, #2f7a2a); } #mailPanel .rp2-ban.l { background:linear-gradient(#c45a44, #8a2a1e); } #mailPanel .rp2-ban.g { background:linear-gradient(#5ea2cf, #2a5f8a); } #mailPanel .rp2-ban.n { background:linear-gradient(#b48a52, #7a5228); }
+  #mailPanel .rp2-vs { display:grid; grid-template-columns:1fr auto 1fr; gap:6px; align-items:center; margin:6px 0 2px; }
+  #mailPanel .rp2-side { min-width:0; padding:7px; border-radius:9px; background:rgba(122,80,40,.12); border:1px solid rgba(160,110,60,.45); }
+  #mailPanel .rp2-who { font-family:'KS Title','Lilita One',sans-serif; font-size:calc(var(--mw) * 0.04); line-height:1.1; color:#4a280e; overflow-wrap:anywhere; }
+  #mailPanel .rp2-rw { display:flex; flex-direction:column; gap:4px; }
+  #mailPanel .rp2-chip { display:flex; align-items:center; gap:8px; padding:4px 10px; border-radius:8px; background:rgba(122,80,40,.12); border:1px solid rgba(160,110,60,.4); font-size:calc(var(--mw) * 0.033); color:#4a2a10; }
+  #mailPanel .rp2-chip i { font-style:normal; width:calc(var(--mw) * 0.06); display:flex; justify-content:center; } #mailPanel .rp2-chip i img { width:100%; height:auto; }
+  #mailPanel .rp2-chip span { flex:1; } #mailPanel .rp2-chip b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; color:#2f6a2a; }
+  #mailPanel .rp2-big img { height:1em; vertical-align:-0.12em; } #mailPanel .rp2-badge img { width:62%; height:auto; }
+  #mailPanel .rp2-pw { font-size:calc(var(--mw) * 0.031); color:#6b4a2a; margin:1px 0 4px; }
+  #mailPanel .rp2-vsx { font-family:'KS Title','Lilita One',sans-serif; color:#9a6a3a; font-size:calc(var(--mw) * 0.045); }
+  #mailPanel .rp2-bar { position:relative; height:calc(var(--mw) * 0.04); border-radius:6px; background:#7a2a1e; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.4); }
+  #mailPanel .rp2-bar i { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(#7fd06a, #3c8a34); }
+  #mailPanel .rp2-bar.foe i { background:linear-gradient(#e8a25a, #b8642a); }
+  #mailPanel .rp2-bar span { position:relative; display:block; text-align:center; font-size:calc(var(--mw) * 0.027); line-height:calc(var(--mw) * 0.04); color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.6); font-weight:700; }
+  #mailPanel .rp2-at { margin-top:4px; font-size:calc(var(--mw) * 0.03); color:#2f5f8a; text-decoration:underline; cursor:pointer; }
+  #mailPanel .rp2-sec { margin:10px 0 4px; font-family:'KS Title','Lilita One',sans-serif; font-size:calc(var(--mw) * 0.038); color:#6b3a12; border-bottom:2px solid rgba(176,128,72,.45); padding-bottom:2px; }
+  #mailPanel .rp2-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; }
+  #mailPanel .rp2-kv { display:flex; justify-content:space-between; gap:6px; font-size:calc(var(--mw) * 0.032); color:#5a3a1a; padding:3px 0; }
+  #mailPanel .rp2-kv b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; color:#4a280e; }
+  #mailPanel .rp2-heroes { display:flex; gap:6px; flex-wrap:wrap; }
+  #mailPanel .rp2-hero { width:calc(var(--mw) * 0.14); text-align:center; }
+  #mailPanel .rp2-hero img, #mailPanel .rp2-hero span { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; object-position:50% 15%; border-radius:8px; border:2px solid #8a6a3a; background:#3a2a1a; font-size:calc(var(--mw) * 0.08); line-height:calc(var(--mw) * 0.18); box-sizing:border-box; }
+  #mailPanel .rp2-hero.r-legendary img { border-color:#e0a72a; } #mailPanel .rp2-hero.r-epic img { border-color:#9a5ad0; } #mailPanel .rp2-hero.r-rare img { border-color:#3a7ad0; }
+  #mailPanel .rp2-hero b { display:block; font-weight:600; font-size:calc(var(--mw) * 0.026); color:#4a2a10; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  #mailPanel .rp2-none { font-style:italic; font-size:calc(var(--mw) * 0.031); color:#8a6a4a; }
+  #mailPanel .rp2-tab { width:100%; border-collapse:collapse; font-size:calc(var(--mw) * 0.031); color:#4a2a10; }
+  #mailPanel .rp2-tab th { text-align:right; font-weight:600; color:#7a5634; font-size:calc(var(--mw) * 0.027); padding:2px 3px; } #mailPanel .rp2-tab th:first-child, #mailPanel .rp2-tab td:first-child { text-align:left; }
+  #mailPanel .rp2-tab td { text-align:right; padding:3px 3px; border-top:1px solid rgba(160,110,60,.3); white-space:nowrap; }
+  #mailPanel .rp2-tab td.lo { color:#a83a2a; } #mailPanel .rp2-tab td.wd { color:#b8742a; } #mailPanel .rp2-tab tr.tot td { font-weight:700; border-top:2px solid rgba(160,110,60,.55); }
+  #mailPanel .rp2-small, #mailPanel .rp2-note { font-size:calc(var(--mw) * 0.029); color:#7a5634; margin-top:4px; }
+  #mailPanel .rp2-note { padding:6px 8px; border-radius:8px; background:rgba(122,80,40,.12); }
+  #mailPanel .rp2-fire { font-family:'KS Title','Lilita One',sans-serif; color:#a83a2a; font-size:calc(var(--mw) * 0.04); display:flex; flex-direction:column; gap:4px; }
+  #mailPanel .rp2-fire small { font-family:inherit; font-size:calc(var(--mw) * 0.029); color:#7a5634; font-style:italic; }
+  #mailPanel .rp2-big { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:calc(var(--mw) * 0.09); color:#2a5f8a; margin:4px 0; }
+  #mailPanel .rp2-big small { display:block; font-size:calc(var(--mw) * 0.035); color:#6b4a2a; text-transform:capitalize; }
   #mailPanel.sk-c .mdet { border-image:none; background:var(--mail-cardtop) top center/100% auto no-repeat, var(--mail-cardbot) bottom center/100% auto no-repeat, var(--mail-cardmid) center/100% calc(100% - var(--mw) * 0.104) no-repeat; background-origin:border-box; background-clip:border-box; } /* open mail: caps + plain middle (middle only between the caps; cap height = card width x 0.069) */
   #mailPanel.sk-c.v-detail .mht { display:flex !important; }
   #mailPanel.sk-c .mbar { top:23.3%; height:4.3%; } /* v1746 (Harley: "the claim button needs more room"): the status line + Claim all sit wholly between the tabs and the list */
@@ -9132,6 +9228,8 @@ function createGame(opts) {
       if (state.battleReports.length > BATTLE_REPORTS_MAX) state.battleReports.length = BATTLE_REPORTS_MAX;
     } else if (tile.type === "resource") {
       loot = {}; loot[tile.resourceType] = Math.min(tile.amountLeft, Math.round(500 * gatherBonusMult())); tile.amountLeft -= loot[tile.resourceType]; if (loot[tile.resourceType] > 0) dailyBump("gather");
+      if (loot[tile.resourceType] > 0) { state.battleReports.unshift({ id: state.nextBattleReportId++, kind: "gather", marchId: march.id, time: now(), tileId: tile.id, tileType: "resource", tileLevel: tile.level || null, resourceType: tile.resourceType, gathered: loot[tile.resourceType], loot: Object.assign({}, loot), win: true, attackerArmy: Object.assign({}, march.army), attackerLosses: {}, defenderArmy: {}, defenderLosses: {}, heroKeys: asHeroKeyArray(march.heroKeys || march.heroKey), homeTileId: state.homeTileId, secs: 5 });
+        if (state.battleReports.length > BATTLE_REPORTS_MAX) state.battleReports.length = BATTLE_REPORTS_MAX; } /* v1838: gathering report (Mail > Reports) */
       log("March #" + march.id + " is gathering " + tile.resourceType + ".");
     } else { log("March #" + march.id + " found nothing at the target."); }
     march.result = { report: report, loot: loot };
@@ -14805,7 +14903,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1837"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1838"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20462,7 +20560,7 @@ function ksMailRoundIcon(m) { var cat = ksMailCat(m), t = String(m.title || "").
   return '<img alt="" draggable="false" src="' + ksA(KSM_MI[k], true) + '">'; }
 function ksIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + KSM_P[n] + "</svg>"; }
 function ksMailCat(m) { var c = m && m.category; return (c === "wars" || c === "alliance" || c === "reports") ? c : "system"; }
-function ksMailUnreadIn(cat) { return KSM.list.filter(function (m) { return !m.claimedAt && ksMailCat(m) === cat; }).length; }
+function ksMailUnreadIn(cat) { return ksMailAll().filter(function (m) { return !m.claimedAt && ksMailCat(m) === cat; }).length; }
 function ksMailPickTab() { /* on opening: go to the first tab (Wars first) with unclaimed mail; if none has any, stay on the tab used last */
   for (var i = 0; i < KSM_TABS.length - 1; i++) if (ksMailUnreadIn(KSM_TABS[i][0]) > 0) { KSM.tab = KSM_TABS[i][0]; return; }
 }
@@ -20516,8 +20614,9 @@ function ksMailClaim(id, quiet) {
     return true;
   }, function (e) { if (!quiet) game.log(ksErrText(e)); return false; }).then(function (ok) { delete KSM.busy[id]; ksMailRender(); return ok; });
 }
-function ksMailShown() { var sv = game.state.mailSaved || {}; return KSM.list.filter(function (m) { return KSM.tab === "saved" ? !!sv[m.id] : ksMailCat(m) === KSM.tab; }); }
+function ksMailShown() { var sv = game.state.mailSaved || {}; return ksMailAll().filter(function (m) { return KSM.tab === "saved" ? !!sv[m.id] : ksMailCat(m) === KSM.tab; }); }
 function ksMailRow(m, sv) {
+  if (m.rep) return ksRepRow(m, sv); /* v1838 */
   var cat = ksMailCat(m), it = ksMailItems(m), done = !!m.claimedAt, busy = !!KSM.busy[m.id], id = escapeHtml(m.id), on = !!sv[m.id], pv = String(m.body || "").split("\n")[0];
   var line = !it.length ? (done ? '<div class="mcl">' + ksIc("check", 14) + "Read</div>" : "") /* v939: message-only mail - nothing to claim */
     : done ? '<div class="mcl">' + ksIc("check", 14) + "Claimed · " + escapeHtml(it.map(function (c) { return c.label + " × " + c.qty.toLocaleString(); }).join(", ")) + "</div>"
@@ -21538,28 +21637,194 @@ function ksEvDockUpdate() {
   if (k === "shop") { if (typeof ksShopOpen === "function") ksShopOpen(); return; } if (k === "evw") { evWinOpen("fhw"); return; } if (k.indexOf("deal:") === 0) { dealOpen(+k.slice(5)); return; } KSE.tab = k.slice(3); ksEvOpen(); });
   ["pointerdown", "mousedown", "touchstart", "wheel"].forEach(function (t) { d.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true }); }); /* don't drag the map */
   setInterval(ksEvDockUpdate, 1000); })();
-function ksMailClaimAll() { /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
+function ksMailClaimAll() {
+  var rids = ksMailShown().filter(function (m) { return m.rep && !m.claimedAt; }).map(function (m) { return m.rep.id; }); if (rids.length) { ksRepMarkRead(rids); ksMailRender(); } /* v1838 */ /* every unclaimed mail in the open tab, one after the other (the wallet is one document) */
   var ids = ksMailShown().filter(function (m) { return !m.claimedAt; }).map(function (m) { return m.id; }); if (!ids.length || KSM.allBusy) return;
   KSM.allBusy = true; ksMailRender(); var done = 0;
   ids.reduce(function (p, id) { return p.then(function () { return ksMailClaim(id, true).then(function (ok) { if (ok) done++; }); }); }, Promise.resolve()).then(function () {
     KSM.allBusy = false; if (done) game.log("✉️ Claimed " + done + " mail" + (done > 1 ? "s" : "")); ksMailRender();
   });
 }
+/* v1838 (Harley): battle reports live in Mail - World PvP battles in Wars, everything else (enemy camps, monsters, guarded nodes, gathering) in Reports.
+   The list row shows the result at a glance; tapping it opens the full report (both sides, heroes, every troop type, damage, base hit, rewards). Read state: state.reportsRead. */
+function ksRepCat(r) { return r.tileType === "city" ? "wars" : "reports"; }
+function ksRepRead(r) { var rd = game.state.reportsRead || {}; return !!rd[r.id]; }
+function ksRepMarkRead(ids) { var st = game.state, rd = st.reportsRead = st.reportsRead || {}, keep = {}; (ids || []).forEach(function (i) { rd[i] = 1; });
+  (st.battleReports || []).forEach(function (r) { if (rd[r.id]) keep[r.id] = 1; }); st.reportsRead = keep; try { persist(); } catch (e) {} }
+function ksRepFoe(r) { if (r.tileType !== "city") return ksRepPlace(r); var n = r.defName; if (!n && r.ownerId) { var p = fetchOwnerProfile(r.ownerId); n = p && p.name; } return n || "Player"; }
+function ksRepIsGather(r) { return r.kind === "gather"; }
+function ksRepCap(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
+function ksRepPlace(r) { /* plain-text name of what was attacked / gathered (reportTargetLabel carries an <img> icon) */
+  if (r.tileType === "city") return ksRepFoe(r) + "'s city";
+  if (r.tileType === "npc") return "Level " + r.tileLevel + " Enemy Camp";
+  if (r.tileType === "monster") return "Level " + r.tileLevel + " " + ((MONSTER_DEFS[r.monsterType] || {}).name || "Monster");
+  if (r.tileType === "resource") return (ksRepIsGather(r) ? "" : "Guarded ") + ksRepCap(r.resourceType) + " Node" + (ksRepIsGather(r) && r.tileLevel ? " · Lv " + r.tileLevel : "");
+  return "Unknown target"; }
+function ksRepTitle(r) {
+  if (ksRepIsGather(r)) return "Gathered " + (r.resourceType ? r.resourceType.charAt(0).toUpperCase() + r.resourceType.slice(1) : "resources");
+  if (r.note) return r.tileType === "city" ? "War report" : ksRepPlace(r);
+  var mut = r.tileType === "city" && r.atkHpLeft === 0 && r.defHpLeft === 0 && !r.win;
+  return (r.win ? "Victory" : mut ? "Draw" : "Defeat") + (r.tileType === "city" ? " vs " + ksRepFoe(r) : " · " + ksRepPlace(r));
+}
+function ksRepSum(o) { var n = 0; for (var k in o || {}) n += o[k] || 0; return n; }
+function ksRepCoordTxt(id) { if (!id) return ""; var p = String(id).split(","); return p[0] + ", " + p[1]; }
+function ksRepMails() { if (!game.state.reportsRead) { game.state.reportsRead = {}; (game.state.battleReports || []).forEach(function (r) { game.state.reportsRead[r.id] = 1; }); } return (game.state.battleReports || []).map(function (r) { return { id: "rep_" + r.id, rep: r, category: ksRepCat(r), sentAt: r.time, claimedAt: ksRepRead(r) ? r.time : null, title: ksRepTitle(r) }; }); }
+function ksMailAll() { return KSM.list.concat(ksRepMails()).sort(function (a, b) { return (b.sentAt || 0) - (a.sentAt || 0); }); }
+function ksRepBadge(r) { var g = ksRepIsGather(r), cls = g ? "g" : r.note ? "n" : r.win ? "w" : "l", ic = g ? (RES_ICON[r.resourceType] || "⛏️") : r.note ? "📜" : r.tileType === "city" ? (r.win ? "⚔️" : "🛡️") : r.tileType === "monster" ? "👹" : r.tileType === "resource" ? (RES_ICON[r.resourceType] || "⛏️") : "💀";
+  return '<div class="rp2-badge ' + cls + '">' + ic + "</div>"; }
+function ksRepRow(m, sv) {
+  var r = m.rep, id = escapeHtml(m.id), on = !!sv[m.id], done = !!m.claimedAt, bits = [];
+  if (r.tileId) bits.push("📍 " + ksRepCoordTxt(r.tileId));
+  if (ksRepIsGather(r)) bits.push("+" + fmtCompact(r.gathered || ksRepSum(r.loot)));
+  else if (!r.note) { var lost = ksRepSum(r.attackerLosses); if (lost) bits.push("Lost " + fmtCompact(lost)); var lt = ksRepSum(r.loot); if (lt) bits.push("Loot " + fmtCompact(lt)); if (r.baseHit) bits.push("🔥 -" + fmtCompact(r.baseHit)); }
+  var res = ksRepIsGather(r) ? '<span class="rp2-res g">Done</span>' : r.note ? "" : '<span class="rp2-res ' + (r.win ? "w" : "l") + '">' + (r.win ? "Victory" : "Defeat") + "</span>";
+  return '<div class="mi rp2-row' + (done ? "" : " new") + '" data-open="' + id + '" tabindex="0"><div class="mic">' + ksRepBadge(r) + '</div><div class="mbd"><div class="mrow1"><span class="mtt">' + escapeHtml(m.title) + '</span><span class="md">' + escapeHtml(ksMailWhen(m.sentAt)) + "</span></div>"
+    + '<div class="rp2-line">' + res + "<span>" + escapeHtml(bits.join(" · ")) + "</span></div></div>"
+    + '<button type="button" class="ms' + (on ? " on" : "") + '" data-save="' + id + '" title="' + (on ? "Remove from Saved" : "Save this report") + '"><i class="i-star">' + ksIc("star", 22) + '</i><i class="i-mark">' + ksIc("mark", 22) + "</i></button></div>";
+}
+function ksRepHeroes(keys) { keys = (keys || []).filter(function (k) { return HERO_DEFS[k]; }); if (!keys.length) return '<div class="rp2-none">No heroes</div>';
+  return '<div class="rp2-heroes">' + keys.map(function (k) { var d = HERO_DEFS[k], f = evFace(k), rc = (d.rarity || "").toLowerCase();
+    return '<div class="rp2-hero r-' + rc + '">' + (f ? '<img alt="" src="' + f + '">' : '<span>' + d.icon + "</span>") + "<b>" + escapeHtml(d.name) + "</b></div>"; }).join("") + "</div>"; }
+function ksRepBar(left, max, foe) { var pct = max > 0 ? Math.max(0, Math.min(100, left / max * 100)) : 0;
+  return '<div class="rp2-bar' + (foe ? " foe" : "") + '"><i style="width:' + pct.toFixed(1) + '%"></i><span>' + fmt(Math.max(0, Math.round(left))) + " / " + fmt(Math.round(max)) + "</span></div>"; }
+function ksRepTroops(army, losses, wounded, dead, mine) {
+  var ts = Object.keys(TROOP_DEFS).filter(function (t) { return (army && army[t]) || (losses && losses[t]); });
+  if (!ts.length) return '<div class="rp2-none">No troops</div>';
+  var hasW = mine && wounded && ksRepSum(wounded) > 0;
+  var head = mine ? "<tr><th>Troop</th><th>Sent</th><th>Lost</th>" + (hasW ? "<th>Wounded</th>" : "") + "<th>Back</th></tr>" : "<tr><th>Troop</th><th>Had</th><th>Lost</th><th>Left</th></tr>";
+  var tot = { a: 0, l: 0, w: 0, b: 0 };
+  var rows = ts.map(function (t) { var a = (army && army[t]) || 0, l = (losses && losses[t]) || 0, w = (wounded && wounded[t]) || 0, b = Math.max(0, a - l); tot.a += a; tot.l += l; tot.w += w; tot.b += b;
+    return "<tr><td>" + TROOP_ICON[t] + " " + escapeHtml(TROOP_DEFS[t].name) + "</td><td>" + fmt(a) + '</td><td class="lo">' + (l ? "-" + fmt(l) : "0") + "</td>" + (hasW ? '<td class="wd">' + fmt(w) + "</td>" : "") + "<td>" + fmt(b) + "</td></tr>"; }).join("");
+  var foot = ts.length > 1 ? '<tr class="tot"><td>Total</td><td>' + fmt(tot.a) + '</td><td class="lo">' + (tot.l ? "-" + fmt(tot.l) : "0") + "</td>" + (hasW ? '<td class="wd">' + fmt(tot.w) + "</td>" : "") + "<td>" + fmt(tot.b) + "</td></tr>" : "";
+  return '<table class="rp2-tab">' + head + rows + foot + "</table>";
+}
+function ksRepDetail(m) {
+  var r = m.rep, when = new Date(r.time || 0).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }), cat = ksRepCat(r), h = "";
+  h += '<div class="mdet rp2"><div class="dh"><span class="dtag">' + ksIc(cat, 14) + KSM_CAT[cat] + '</span><span class="dwhen">' + escapeHtml(when) + "</span></div>";
+  if (ksRepIsGather(r)) {
+    h += '<div class="rp2-ban g"><b>Gathering complete</b><span>' + escapeHtml(ksRepPlace(r)) + "</span></div>";
+    h += '<div class="rp2-big">' + (RES_ICON[r.resourceType] || "") + " +" + fmt(r.gathered || ksRepSum(r.loot)) + '<small>' + escapeHtml(r.resourceType || "") + "</small></div>";
+    if (r.tileId) h += '<div class="rp2-at" data-goto="' + escapeHtml(r.tileId) + '">📍 ' + ksRepCoordTxt(r.tileId) + " ›</div>";
+    h += '<div class="rp2-sec">Heroes</div>' + ksRepHeroes(r.heroKeys) + '<div class="rp2-sec">Troops</div>' + ksRepTroops(r.attackerArmy, {}, null, null, true);
+    if (r.secs) h += '<div class="rp2-kv"><span>Time gathering</span><b>' + fmtTime(r.secs) + "</b></div>";
+    return h + "</div>";
+  }
+  if (r.note) { h += '<div class="rp2-ban n"><b>' + escapeHtml(ksRepTitle(r)) + '</b></div><div class="dbody">' + escapeHtml(r.note) + "</div>"; if (r.tileId) h += '<div class="rp2-at" data-goto="' + escapeHtml(r.tileId) + '">📍 ' + ksRepCoordTxt(r.tileId) + " ›</div>"; return h + "</div>"; }
+  var mut = r.tileType === "city" && r.atkHpLeft === 0 && r.defHpLeft === 0 && !r.win, foe = ksRepFoe(r);
+  var aMax = r.atkHpMax != null ? r.atkHpMax : r.atkPower, dMax = r.defHpMax != null ? r.defHpMax : r.defPower;
+  var aLeft = r.atkHpLeft != null ? r.atkHpLeft : (r.win ? Math.max(0, r.atkPower - r.defPower) : 0), dLeft = r.defHpLeft != null ? r.defHpLeft : (r.win ? 0 : Math.max(0, r.defPower - r.atkPower));
+  h += '<div class="rp2-ban ' + (r.win ? "w" : "l") + '"><b>' + (r.win ? "Victory" : mut ? "Draw" : "Defeat") + "</b><span>" + (r.tileType === "city" ? "Attack on " + escapeHtml(foe) + "'s city" : escapeHtml(ksRepPlace(r))) + (mut ? " · defender holds" : "") + "</span></div>";
+  h += '<div class="rp2-vs"><div class="rp2-side me"><div class="rp2-who">' + escapeHtml(getPlayerName()) + '</div><div class="rp2-pw">⚡ ' + fmt(r.atkPower || 0) + "</div>" + ksRepBar(aLeft, aMax) + (r.homeTileId ? '<div class="rp2-at" data-goto="' + escapeHtml(r.homeTileId) + '">📍 ' + ksRepCoordTxt(r.homeTileId) + "</div>" : "") + "</div>"
+    + '<div class="rp2-vsx">VS</div><div class="rp2-side foe"><div class="rp2-who">' + escapeHtml(foe) + '</div><div class="rp2-pw">⚡ ' + fmt(r.defPower || 0) + "</div>" + ksRepBar(dLeft, dMax, true) + (r.tileId ? '<div class="rp2-at" data-goto="' + escapeHtml(r.tileId) + '">📍 ' + ksRepCoordTxt(r.tileId) + " ›</div>" : "") + "</div></div>";
+  var notes = [];
+  if (r.undefended) notes.push("🚪 Their City Guard was off - no fight, straight to the walls.");
+  if (r.paperLosses) notes.push("🧪 Test mode - these losses are report-only.");
+  if (notes.length) h += '<div class="rp2-note">' + notes.join("<br>") + "</div>";
+  h += '<div class="rp2-sec">Battle</div><div class="rp2-grid">'
+    + '<div class="rp2-kv"><span>Damage dealt</span><b>' + fmt(Math.max(0, Math.round(dMax - dLeft))) + "</b></div>"
+    + '<div class="rp2-kv"><span>Damage taken</span><b>' + fmt(Math.max(0, Math.round(aMax - aLeft))) + "</b></div>"
+    + '<div class="rp2-kv"><span>Your armor</span><b>' + (r.atkArmor != null ? Math.round(r.atkArmor * 100) + "%" : "-") + "</b></div>"
+    + '<div class="rp2-kv"><span>Their armor</span><b>' + (r.defArmor != null ? Math.round(r.defArmor * 100) + "%" : "-") + "</b></div></div>";
+  if (r.baseHit != null) h += '<div class="rp2-sec">Base hit</div><div class="rp2-fire">🔥 -' + fmt(r.baseHit) + " HP" + ksRepBar(r.baseHpLeft, BASE_HP_MAX, true) + '<small>' + (r.baseZeroed ? "Knocked down to 0 - your raiders took a share of their troops." : "Their base is on fire.") + "</small></div>";
+  h += '<div class="rp2-sec">Your heroes</div>' + ksRepHeroes(r.heroKeys);
+  if (r.tileType === "city") h += '<div class="rp2-sec">Their heroes</div>' + ksRepHeroes(r.defenderHeroKeys);
+  h += '<div class="rp2-sec">Your troops</div>' + ksRepTroops(r.attackerArmy, r.attackerLosses, r.woundedSent, r.deadTroops, true);
+  if (r.woundedSent && ksRepSum(r.woundedSent)) h += '<div class="rp2-small">🏥 Wounded go to the Infirmary to be healed' + (r.deadTroops && ksRepSum(r.deadTroops) ? " · " + fmt(ksRepSum(r.deadTroops)) + " lost for good" : "") + ".</div>";
+  h += '<div class="rp2-sec">' + (r.tileType === "city" ? "Their troops" : "Enemy troops") + "</div>" + ksRepTroops(r.defenderArmy, r.defenderLosses, null, null, false);
+  var lk = Object.keys(r.loot || {}).filter(function (k) { return r.loot[k] > 0; }), rw = lk.map(function (k) { return [RES_ICON[k], k.charAt(0).toUpperCase() + k.slice(1), r.loot[k]]; });
+  if (r.valor) rw.push(["🎖️", "Valor", r.valor]); if (r.frags && HERO_DEFS[r.frags.hero]) rw.push(["🧩", HERO_DEFS[r.frags.hero].name + " fragments", r.frags.n]);
+  if (rw.length) h += '<div class="rp2-sec">Rewards</div><div class="rp2-rw">' + rw.map(function (x) { return '<div class="rp2-chip"><i>' + x[0] + "</i><span>" + escapeHtml(x[1]) + "</span><b>+" + fmt(x[2]) + "</b></div>"; }).join("") + "</div>";
+  return h + "</div>";
+}
+function ksRepFoot(m, sv) { var on = !!sv[m.id], id = escapeHtml(m.id), t = m.rep.tileId;
+  return '<button type="button" class="dsave' + (on ? " on" : "") + '" data-save="' + id + '"><i class="i-star">' + ksIc("star", 20) + '</i><i class="i-mark">' + ksIc("mark", 20) + "</i><span>" + (on ? "Saved" : "Save") + "</span></button>"
+    + (t ? '<button type="button" class="dclaim" data-goto="' + escapeHtml(t) + '">Go there</button>' : ""); }
+/* v1838 (Harley): tapping a report opens it full screen - you on the left, the opponent on the right, shared results below. */
+function repFullAvatar(src, fallback) { return '<div class="rf-av">' + (src ? '<img alt="" src="' + escapeHtml(src) + '">' : "<span>" + fallback + "</span>") + "</div>"; }
+function repFullHeroes(keys) { keys = (keys || []).filter(function (k) { return HERO_DEFS[k]; }); if (!keys.length) return '<div class="rf-none">No heroes</div>';
+  return '<div class="rf-heroes">' + keys.map(function (k) { var d = HERO_DEFS[k], f = evFace(k); return '<div class="rf-hero r-' + String(d.rarity || "").toLowerCase() + '">' + (f ? '<img alt="" src="' + f + '">' : "<span>" + d.icon + "</span>") + "<b>" + escapeHtml(d.name) + "</b></div>"; }).join("") + "</div>"; }
+function repFullTroops(army, losses, wounded, mine) {
+  var ts = Object.keys(TROOP_DEFS).filter(function (t) { return (army && army[t]) || (losses && losses[t]); });
+  if (!ts.length) return '<div class="rf-none">No troops</div>';
+  var ta = 0, tl = 0, tw = 0;
+  var rows = ts.map(function (t) { var a = (army && army[t]) || 0, l = (losses && losses[t]) || 0, w = (wounded && wounded[t]) || 0; ta += a; tl += l; tw += w;
+    return '<div class="rf-tr"><span class="rf-tn">' + TROOP_ICON[t] + " " + escapeHtml(TROOP_DEFS[t].name) + '</span><span class="rf-tc">' + fmt(a) + '</span><span class="rf-tl">' + (l ? "-" + fmt(l) : "0") + "</span></div>"
+      + (mine && w ? '<div class="rf-tw">🏥 ' + fmt(w) + " wounded</div>" : ""); }).join("");
+  return '<div class="rf-trh"><span>Troop</span><span>' + (mine ? "Sent" : "Had") + "</span><span>Lost</span></div>" + rows
+    + '<div class="rf-tr tot"><span class="rf-tn">Total</span><span class="rf-tc">' + fmt(ta) + '</span><span class="rf-tl">' + (tl ? "-" + fmt(tl) : "0") + "</span></div>"
+    + '<div class="rf-left">' + (mine ? "Came back: " : "Left: ") + "<b>" + fmt(Math.max(0, ta - tl)) + "</b></div>";
+}
+function repFullSide(o) {
+  return '<div class="rf-side ' + o.cls + '">' + repFullAvatar(o.av, o.avFb) + '<div class="rf-name">' + escapeHtml(o.name) + "</div>"
+    + (o.tile ? '<div class="rf-at" data-goto="' + escapeHtml(o.tile) + '">📍 ' + ksRepCoordTxt(o.tile) + "</div>" : '<div class="rf-at off">&nbsp;</div>')
+    + '<div class="rf-pw">⚡ ' + fmt(o.power || 0) + "</div>" + ksRepBar(o.left, o.max, o.cls === "foe")
+    + '<div class="rf-kv"><span>Armor</span><b>' + (o.armor != null ? Math.round(o.armor * 100) + "%" : "-") + "</b></div>"
+    + '<div class="rf-kv"><span>Damage dealt</span><b>' + fmt(Math.max(0, Math.round(o.dealt || 0))) + "</b></div>"
+    + '<div class="rf-sec">Heroes</div>' + repFullHeroes(o.heroes) + '<div class="rf-sec">Troops</div>' + repFullTroops(o.army, o.losses, o.wounded, o.cls === "me") + "</div>";
+}
+function repFullHtml(r) {
+  var when = new Date(r.time || 0).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }), h = "";
+  if (ksRepIsGather(r)) {
+    h += '<div class="rf-ban g"><b>Gathering complete</b><span>' + escapeHtml(ksRepPlace(r)) + " · " + escapeHtml(when) + "</span></div>";
+    h += '<div class="rf-big">' + (RES_ICON[r.resourceType] || "") + " +" + fmt(r.gathered || ksRepSum(r.loot)) + "<small>" + escapeHtml(ksRepCap(r.resourceType)) + "</small></div>";
+    h += '<div class="rf-cols one">' + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.tileId, power: 0, left: 1, max: 1, heroes: r.heroKeys, army: r.attackerArmy, losses: {} }).replace(/<div class="rf-pw">[\s\S]*?<div class="rf-sec">Heroes/, '<div class="rf-sec">Heroes') + "</div>";
+    return h;
+  }
+  if (r.note) return h + '<div class="rf-ban n"><b>' + escapeHtml(ksRepTitle(r)) + "</b><span>" + escapeHtml(when) + '</span></div><div class="rf-card"><div class="rf-note">' + escapeHtml(r.note) + "</div></div>";
+  var mut = r.tileType === "city" && r.atkHpLeft === 0 && r.defHpLeft === 0 && !r.win, foe = ksRepFoe(r), prof = r.ownerId ? fetchOwnerProfile(r.ownerId) : null;
+  var aMax = r.atkHpMax != null ? r.atkHpMax : r.atkPower, dMax = r.defHpMax != null ? r.defHpMax : r.defPower;
+  var aLeft = r.atkHpLeft != null ? r.atkHpLeft : (r.win ? Math.max(0, r.atkPower - r.defPower) : 0), dLeft = r.defHpLeft != null ? r.defHpLeft : (r.win ? 0 : Math.max(0, r.defPower - r.atkPower));
+  h += '<div class="rf-ban ' + (r.win ? "w" : "l") + '"><b>' + (r.win ? "Victory" : mut ? "Draw" : "Defeat") + "</b><span>" + (r.tileType === "city" ? "Attack on " + escapeHtml(foe) + "'s city" : escapeHtml(ksRepPlace(r))) + " · " + escapeHtml(when) + "</span></div>";
+  var foeFb = r.tileType === "city" ? "🏯" : r.tileType === "monster" ? "👹" : r.tileType === "resource" ? "⛏️" : "💀";
+  h += '<div class="rf-cols">'
+    + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.homeTileId, power: r.atkPower, left: aLeft, max: aMax, armor: r.atkArmor, dealt: dMax - dLeft, heroes: r.heroKeys, army: r.attackerArmy, losses: r.attackerLosses, wounded: r.woundedSent })
+    + '<div class="rf-vs">VS</div>'
+    + repFullSide({ cls: "foe", name: r.tileType === "city" ? foe : ksRepPlace(r), av: prof && prof.avatar, avFb: foeFb, tile: r.tileId, power: r.defPower, left: dLeft, max: dMax, armor: r.defArmor, dealt: aMax - aLeft, heroes: r.tileType === "city" ? r.defenderHeroKeys : [], army: r.defenderArmy, losses: r.defenderLosses })
+    + "</div>";
+  var notes = [];
+  if (r.undefended) notes.push("🚪 Their City Guard was off - no fight, straight to the walls.");
+  if (r.paperLosses) notes.push("🧪 Test mode - these losses are report-only.");
+  if (r.woundedSent && ksRepSum(r.woundedSent)) notes.push("🏥 " + fmt(ksRepSum(r.woundedSent)) + " wounded went to the Infirmary" + (r.deadTroops && ksRepSum(r.deadTroops) ? " · " + fmt(ksRepSum(r.deadTroops)) + " lost for good" : "") + ".");
+  if (r.baseHit != null) h += '<div class="rf-card"><div class="rf-sec">🔥 Base hit</div><div class="rf-fire">-' + fmt(r.baseHit) + " HP</div>" + ksRepBar(r.baseHpLeft, BASE_HP_MAX, true) + '<div class="rf-small">' + (r.baseZeroed ? "Knocked down to 0 - your raiders took a share of their troops." : "Their base is on fire.") + "</div></div>";
+  var lk = Object.keys(r.loot || {}).filter(function (k) { return r.loot[k] > 0; }), rw = lk.map(function (k) { return [RES_ICON[k], ksRepCap(k), r.loot[k]]; });
+  if (r.valor) rw.push(["🎖️", "Valor", r.valor]); if (r.frags && HERO_DEFS[r.frags.hero]) rw.push(["🧩", HERO_DEFS[r.frags.hero].name + " fragments", r.frags.n]);
+  if (rw.length) h += '<div class="rf-card"><div class="rf-sec">Rewards</div><div class="rf-rw">' + rw.map(function (x) { return '<div class="rf-chip"><i>' + x[0] + "</i><span>" + escapeHtml(x[1]) + "</span><b>+" + fmt(x[2]) + "</b></div>"; }).join("") + "</div></div>";
+  if (notes.length) h += '<div class="rf-card"><div class="rf-note">' + notes.join("<br>") + "</div></div>";
+  return h;
+}
+var REPF = { id: null };
+function repFullOpen(repId) {
+  var r = (game.state.battleReports || []).filter(function (q) { return q.id === repId; })[0]; if (!r) return;
+  var el = document.getElementById("repFull");
+  if (!el) { el = document.createElement("div"); el.id = "repFull"; document.body.appendChild(el);
+    el.addEventListener("click", function (e) { var t = e.target.closest ? e.target : e.target.parentNode, x;
+      if ((x = t.closest("[data-rfback]"))) { repFullClose(); return; }
+      if ((x = t.closest("[data-rfsave]"))) { ksMailToggleSave("rep_" + REPF.id); repFullOpen(REPF.id); return; }
+      if ((x = t.closest("[data-goto]"))) { var gt = x.getAttribute("data-goto"); repFullClose(); document.body.classList.remove("mail-open"); try { setScreen("world"); } catch (er) {} setTimeout(function () { goToWorldTile(gt); }, 60); } }); }
+  REPF.id = repId; ksRepMarkRead([repId]);
+  var on = !!(game.state.mailSaved || {})["rep_" + repId];
+  el.innerHTML = '<div class="rf-top"><button type="button" class="rf-back" data-rfback aria-label="Back">‹</button><div class="rf-title">' + (ksRepCat(r) === "wars" ? "War Report" : ksRepIsGather(r) ? "Gathering Report" : "Battle Report") + '</div><button type="button" class="rf-save' + (on ? " on" : "") + '" data-rfsave>' + (on ? "★ Saved" : "☆ Save") + "</button></div>"
+    + '<div class="rf-body">' + repFullHtml(r) + "</div>";
+  document.body.classList.add("repfull-open"); el.querySelector(".rf-body").scrollTop = 0;
+  try { ksMailRender(); } catch (e) {}
+}
+function repFullClose() { document.body.classList.remove("repfull-open"); REPF.id = null; try { ksMailRender(); } catch (e) {} }
 function ksMailRender() {
-  var unread = KSM.list.filter(function (m) { return !m.claimedAt; }).length, b = document.getElementById("mailBadge");
+  var unread = ksMailAll().filter(function (m) { return !m.claimedAt; }).length, b = document.getElementById("mailBadge");
   if (b) { b.textContent = unread > 9 ? "9+" : String(unread); b.classList.toggle("on", unread > 0); }
   var mb = document.getElementById("mapMailBadge"), mbt = document.getElementById("mapMailBtn"); /* v912: map mailbox mirrors it */
   if (mb) { mb.textContent = unread > 9 ? "9+" : String(unread); mb.classList.toggle("on", unread > 0); }
   if (mbt) { mbt.classList.toggle("has", unread > 0); var ic = mbt.querySelector(".mmi"); if (ic) ic.textContent = unread > 0 ? "📬" : "📪"; mbt.title = unread > 0 ? unread + " unclaimed mail" : "Mail"; }
   var p = document.getElementById("mailPanel"), el = document.getElementById("mailList"); if (!p || !el || !document.body.classList.contains("mail-open")) return;
   var sv = game.state.mailSaved || {}, om = null;
-  if (KSM.open) { KSM.list.forEach(function (m) { if (m.id === KSM.open) om = m; }); if (!om) KSM.open = null; }
+  if (KSM.open) { ksMailAll().forEach(function (m) { if (m.id === KSM.open) om = m; }); if (!om) KSM.open = null; }
   p.className = "sk-" + KSM.skin + (om ? " v-detail" : " v-list");
   var sk = document.getElementById("mailSkin"); if (sk) sk.textContent = KSM.skin === "a" ? "Parchment" : "Game UI";
   var foot = document.getElementById("mailFoot"), keep = el.scrollTop;
-  if (om) { el.innerHTML = ksMailDetail(om); foot.innerHTML = ksMailFoot(om, sv); return; }
+  if (om) { el.innerHTML = om.rep ? ksRepDetail(om) : ksMailDetail(om); foot.innerHTML = om.rep ? ksRepFoot(om, sv) : ksMailFoot(om, sv); return; }
   var shown = ksMailShown(), left = shown.filter(function (m) { return !m.claimedAt; }).length, nm = KSM.tab === "saved" ? "Saved" : KSM_CAT[KSM.tab];
-  document.getElementById("mailBar").innerHTML = '<span class="mcount">' + (left ? left + " unclaimed in " + nm : "Nothing waiting in " + nm) + '</span><button type="button" class="mall" data-act="all"' + (left && !KSM.allBusy ? "" : " disabled") + ">" + (KSM.allBusy ? "Claiming…" : "Claim all") + "</button>";
+  var repTab = KSM.tab === "wars" || KSM.tab === "reports"; /* v1838: reports are read, not claimed */
+  document.getElementById("mailBar").innerHTML = '<span class="mcount">' + (left ? left + (repTab ? " unread in " : " unclaimed in ") + nm : "Nothing waiting in " + nm) + '</span><button type="button" class="mall" data-act="all"' + (left && !KSM.allBusy ? "" : " disabled") + ">" + (KSM.allBusy ? "Claiming…" : repTab ? "Read all" : "Claim all") + "</button>";
   document.getElementById("mailTabs").innerHTML = KSM_TABS.map(function (t) { var n = t[0] === "saved" ? 0 : ksMailUnreadIn(t[0]);
     return '<button type="button" class="mtab' + (KSM.tab === t[0] ? " on" : "") + '" data-tab="' + t[0] + '">' + (KSM.skin === "c" ? '<img class="tic" alt="" draggable="false" src="' + ksA(KSM_TI[t[0]], true) + '">' : t[0] === "saved" ? '<i class="i-star">' + ksIc("star", 22) + '</i><i class="i-mark">' + ksIc("mark", 22) + "</i>" : ksIc(t[0], 22)) + '<span class="tl">' + t[1] + "</span>" + (n ? '<b class="tn">' + (n > 9 ? "9+" : n) + "</b>" : "") + "</button>"; }).join("");
   el.innerHTML = shown.length ? shown.map(function (m) { return ksMailRow(m, sv); }).join("") : '<div class="me">' + KSM_EMPTY[KSM.tab] + "</div>"; el.scrollTop = keep;
@@ -21573,10 +21838,11 @@ function ksMailRender() {
   var bd = document.getElementById("mailBackdrop"); if (bd) bd.onclick = close;
   var p = document.getElementById("mailPanel"); if (p) {
     [["--mail-cardrow", "assets/ui-mail-cardrow-83caa51f.webp"], ["--mail-cardtop", "assets/ui-mail-cardtop-9dd78a65.webp"], ["--mail-cardmid", "assets/ui-mail-cardmid-cc3d4ccf.webp"], ["--mail-cardbot", "assets/ui-mail-cardbot-b06bc591.webp"], ["--mail-tab-off", "assets/ui-mail-tab3off-4d430e6e.webp"], ["--mail-tab-on", "assets/ui-mail-tab3on-e0c9ac22.webp"], ["--mail-slab", "assets/ui-mail-slab2-360fe188.webp"], ["--mail-dot", "assets/ui-mail-dot-679562dc.webp"], ["--mail-bookmark", "assets/ui-mail-bookmark-bb8b2fc1.webp"], ["--mail-back", "assets/ui-bag-btnback-85a898f4.webp"], ["--mail-close", "assets/ui-bag-btnclose-6e30252a.webp"]].forEach(function (v) { p.style.setProperty(v[0], "url(" + ksA(v[1], true) + ")"); }); /* v1745 Mail look c art */
-    function openMail(id) { KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0;
+    function openMail(id) { if (/^rep_/.test(id)) { repFullOpen(+id.slice(4)); return; } /* v1838: reports open full screen */ KSM.open = id; ksMailRender(); var l = document.getElementById("mailList"); if (l) l.scrollTop = 0;
       KSM.list.forEach(function (m) { if (m.id === id && !m.claimedAt && !ksMailItems(m).length) ksMailClaim(id, true); }); } /* v939: opening a message-only mail marks it read */
     p.addEventListener("click", function (e) {
       var t = e.target.closest ? e.target : e.target.parentNode, x;
+      if ((x = t.closest("[data-goto]"))) { var gt = x.getAttribute("data-goto"); close(); try { setScreen("world"); } catch (er) {} setTimeout(function () { goToWorldTile(gt); }, 60); return; } /* v1838: report coordinates */
       if ((x = t.closest("[data-claim]"))) { ksMailClaim(x.getAttribute("data-claim")); return; }
       if ((x = t.closest("[data-save]"))) { ksMailToggleSave(x.getAttribute("data-save")); return; }
       if ((x = t.closest("[data-act]"))) { var a = x.getAttribute("data-act");
@@ -21639,6 +21905,7 @@ function cityAttackOutcome(G, m, def, ownerId, battleFn) {
   G.resolveArrival(m, null, { army: def.army, ownerId: ownerId, result: pr });
   var rep = G.state.battleReports[0] && G.state.battleReports[0].marchId === m.id ? G.state.battleReports[0] : null;
   if (rep && def.undefended) rep.undefended = true;
+  if (rep && ownerId) { var opf = fetchOwnerProfile(ownerId); if (opf && opf.name) rep.defName = opf.name; } /* v1838: their name in the report */
   if (!pr || !pr.win) return Promise.resolve();
   if (G === game && m.actionEnd) holdBaseFire(m.tileId, (m.actionEnd - vnow()) / (devSpeedMult || 1) + BASE_FIRE_AFTER_SHOTS_MS); /* v1205: the fire waits for the ship's volleys to finish */
   return hitBase(m.tileId).then(function (h) { if (rep) { rep.baseHit = h.before - h.after; rep.baseHpLeft = h.after; rep.baseZeroed = h.zeroed; } try { render(); } catch (e) {} });
@@ -34963,7 +35230,7 @@ function renderReports() {
     el.appendChild(empty);
     return;
   }
-  reports.forEach(function (r) {
+  reports.filter(function (r) { return r.kind !== "gather"; }).forEach(function (r) {
     var card = document.createElement("div");
     card.className = "marchcard report-card " + (r.win ? "report-win" : "report-loss");
 
@@ -36137,6 +36404,7 @@ function ensureConquestStarted() { if (game.openConquest()) { try { persist(); }
    exact spot on the way out, put it back on the way in. */
 var worldMapKeep = null;
 function setScreen(screen, sub) {
+  if (screen === "more" && sub === "reports") { var mbtn = document.getElementById("mapMailBtn"); KSM.open = null; document.body.classList.add("mail-open"); KSM.tab = "reports"; ksMailRender(); return; } /* v1838: battle reports moved into Mail */
   try { var vpK = document.getElementById("mapviewport"); if (appScreen === "world" && screen !== "world" && vpK && vpK.offsetParent) worldMapKeep = { L: vpK.scrollLeft, T: vpK.scrollTop, z: typeof mapZoom !== "undefined" ? mapZoom : null }; } catch (e) {}
   var wasWorld = appScreen === "world";
   if (screen === "conquest") ensureConquestStarted();
