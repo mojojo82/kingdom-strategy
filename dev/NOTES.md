@@ -6758,3 +6758,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1854 - hero picker tiles exactly the Weapons tile size (TEST)
 - Harley: the hero picker tiles must be the same size as the Weapons page icons. They were a fixed 63 px while the Weapons tiles follow their 5-column grid; now width = (min(100vw, 430px) - 116px) / 5 = the Weapons tile on every screen. Measured headless: 62.8 = 62.8 (430 wide), 52.8 = 52.8 (380), 62.8 = 62.8 (PC 1280).
+
+## v1855 - Overlord Gear panel closes on press (TEST)
+- Harley: on PC the ✕ needed several clicks (phone fine). Couldn't reproduce on a fresh account (headless + a throwaway TEST account in the built-in browser: closes first click, no long tasks, panel never redraws), so made closing robust: the ✕ and the dark backdrop close on pointerdown (press) instead of click (release); Esc closes it; the tap that closed it is swallowed for 450 ms so it can't land on a gear slot underneath and reopen the panel (found while testing: backdrop tap over a slot reopened it on touch).
+- Headless: mouse + touch, ✕ and backdrop-over-a-slot, all close and stay closed; no errors.

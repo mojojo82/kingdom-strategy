@@ -14975,7 +14975,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1854"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1855"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36285,10 +36285,12 @@ function renderGovGearSlots() {
 }
 function openGovGear(piece) {
   var ov = document.getElementById("govGearOverlay");
-  if (!ov) { ov = document.createElement("div"); ov.className = "hd-overlay"; ov.id = "govGearOverlay"; ov.style.zIndex = 120; ov.onclick = function (e) { if (e.target === ov) closeGovGear(); }; document.body.appendChild(ov); }
+  if (!ov) { ov = document.createElement("div"); ov.className = "hd-overlay"; ov.id = "govGearOverlay"; ov.style.zIndex = 120; ov.addEventListener("pointerdown", function (e) { if (e.target === ov) { e.preventDefault(); closeGovGear(); } }); /* v1855: close on press (a busy PC page could lose the click) */ document.body.appendChild(ov); }
   GG.open = piece; GG.confirmReset = false; GG.msg = ""; renderGovGear(); ov.style.display = "flex";
 }
-function closeGovGear() { GG.open = null; var ov = document.getElementById("govGearOverlay"); if (ov) ov.style.display = "none"; try { renderGovGearSlots(); } catch (e) {} }
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && GG.open) closeGovGear(); }); /* v1855: Esc closes it on PC */
+var ggSwallowUntil = 0; document.addEventListener("click", function (e) { if (Date.now() < ggSwallowUntil) { e.stopPropagation(); e.preventDefault(); } }, true); /* v1855: the tap that closed the panel must not land on what is under it */
+function closeGovGear() { ggSwallowUntil = Date.now() + 450; GG.open = null; var ov = document.getElementById("govGearOverlay"); if (ov) ov.style.display = "none"; try { renderGovGearSlots(); } catch (e) {} }
 function renderGovGear() {
   var ov = document.getElementById("govGearOverlay"), piece = GG.open; if (!ov || !piece) return;
   var P = GOV_GEAR_PIECES[piece], s = govGearStepOf(piece), nx = s + 1, maxed = nx >= GOV_GEAR_STEPS.length, un = govGearUnlocked();
@@ -36306,7 +36308,7 @@ function renderGovGear() {
     + '<button type="button" class="gg-reset' + (GG.confirmReset ? " on" : "") + '" id="ggReset"' + (s < 0 || rs < 1 || GG.busy ? " disabled" : "") + ">" + (GG.confirmReset ? "Tap again: reset, refund " + fmtCompact(refund) + " Arcsteel" : "Reset (" + rs + " left)") + "</button></div>";
   h += '<div class="gg-small">Reset takes this piece back to the start and gives back every Arcsteel spent on it. Uses one Gear Reset item.</div></div></div>';
   ov.innerHTML = h;
-  document.getElementById("ggClose").onclick = closeGovGear;
+  document.getElementById("ggClose").addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); closeGovGear(); }); /* v1855: on press, not release */
   document.getElementById("ggUp").onclick = function () { govGearCall("gearUpgrade", piece); };
   document.getElementById("ggReset").onclick = function () { if (!GG.confirmReset) { GG.confirmReset = true; renderGovGear(); return; } GG.confirmReset = false; govGearCall("gearReset", piece); };
 }
