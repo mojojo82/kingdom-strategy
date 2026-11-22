@@ -6672,3 +6672,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - The Arena hover drone now flies above the fortress in Conquest too (`cqDronePos`, same drawing as Arena); its cyan bolts leave the drone instead of the weapon slot. Visual only.
 - Harley: EMP in Conquest will only matter against mechanical bosses (not made yet) - no Conquest EMP visual until then; he'll say when the bosses come.
 - Headless Conquest with Droid Call: drone hovering above the hull, no errors. Not tested on a phone.
+
+## v1837 - EMP off in Conquest, icon greyed (TEST)
+- Harley: EMP only matters against mechanical bosses (not made yet). `CONQUEST_EMP_ON = false`: the Conquest engine skips EMP (no stun on Conquest enemies); its tile in the Conquest weapon row is greyed (grayscale) with the tooltip "(no effect in Conquest)". Arena / World PvP EMP unchanged. Turn the flag on (and add the mech-boss rule + a Conquest visual) when Harley says the bosses are coming.
+- Headless: Conquest weapon row shows EMP greyed next to a normal Flak tile; no errors. Not tested on a phone.

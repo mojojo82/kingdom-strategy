@@ -2061,6 +2061,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #arenaCard .idle-power-slots .power-slot { border-color:#836a41; }
   .idle-weapon-slots { margin-left:auto; display:flex; gap:10px; }
   .idle-weapon-slots .power-slot { padding:0; cursor:pointer; border-color:transparent !important; }
+  .idle-weapon-slots .power-slot.wp-off { filter: grayscale(1) brightness(0.6); } /* v1837: EMP greyed out in Conquest */
   .idle-weapon-slots .power-slot img { width:100%; height:100%; object-fit:cover; display:block; }
   .idle-weapon-slots .power-slot .wp-lv { position:absolute; left:2px; bottom:2px; padding:0 4px; border-radius:6px; background:rgba(0,0,0,.72); color:#f0d98c; font-size:10px; font-weight:800; line-height:14px; font-family:var(--bodyfont); pointer-events:none; }
   .idle-weapon-slots .power-slot.slot-sunken { background:rgba(0,0,0,.2); border:2px solid rgba(18,10,4,.6) !important; box-shadow:inset 0 3px 0 rgba(0,0,0,.28), inset 3px 0 0 rgba(0,0,0,.12); }
@@ -11394,7 +11395,7 @@ function createGame(opts) {
         cl.cd -= dt; if (cl.cd > 0) return; cl.cd += cl.ivl;
         var cdmg = cl.dmg * idleEnemyDefTake(cf, cl.dmg); cf.hp -= cdmg; I.cloneDmg = (I.cloneDmg || 0) + cdmg;
         if (cf.hp <= 0) idleRemoveDeadEnemyAt(0);
-      } else if (o.fx === "emp") {
+      } else if (o.fx === "emp" && CONQUEST_EMP_ON) { /* v1837 (Harley): EMP does nothing in Conquest until the mechanical bosses arrive */
         if (T.asT > 0) { T.asT -= dt; if (T.asT <= 0) { T.asT = 0; enemies.forEach(function (en) { if (en.arrived && en.hp > 0) en.atkCooldown = (en.atkCooldown == null ? IDLE_ENEMY_ATTACK_INTERVAL : en.atkCooldown) + (T.asSec || 0); }); T.asN = (T.asN || 0) + 1; } } /* v1198 (audit item 5): Lv50 Aftershock - a second stun aftershockDelay s later, like Arena */
         T.t -= dt;
         if (T.t <= 0) {
@@ -14804,7 +14805,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1836"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1837"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -32852,12 +32853,14 @@ function buildIconGrid(ph, gid) { // v703: shared by Conquest (spacer) and Arena
   var fit = function () { var h = ph.clientHeight; if (h > 0) g.style.setProperty("--ig", Math.max(20, Math.min(50, Math.floor((h - 4 - 4 - 4) / 2 * 1.05))) + "px"); }; // 2 rows must fit above the weapon row
   fit(); setTimeout(fit, 400); window.addEventListener("resize", fit);
 }
+var CONQUEST_EMP_ON = false; /* v1837 (Harley): EMP only matters against mechanical bosses (not made yet) - off in Conquest, its icon greyed there */
 function renderIdleWeaponSlots() { // v703: fills the weapon slots in BOTH the Conquest and Arena gear rows (whichever exist)
   ["idlePowerSlots", "arenaPowerSlots"].forEach(function (bid) { var box = document.getElementById(bid); if (box) renderWeaponSlotsInto(box); });
 }
 function renderWeaponSlotsInto(box) {
   var eq = (game.state.equippedWeapons || []).slice(0, WEAPON_EQUIP_MAX), lvOf = function (id) { return (game.state.weaponLevels && game.state.weaponLevels[id]) || 1; }, sig = eq.map(function (id) { return id + ":" + lvOf(id); }).join(","); /* v1047: level in the sig so the badge updates */
   var wrap = box.querySelector(".idle-weapon-slots");
+  var cqOff = box.id === "idlePowerSlots" && !CONQUEST_EMP_ON; sig += cqOff ? "|cq" : "";
   if (wrap && wrap.dataset.sig === sig) return;
   if (!wrap) { wrap = document.createElement("div"); wrap.className = "idle-weapon-slots"; box.appendChild(wrap); }
   wrap.dataset.sig = sig; wrap.innerHTML = "";
@@ -32870,6 +32873,7 @@ function renderWeaponSlotsInto(box) {
       else { d.classList.add("equipped"); d.textContent = w.icon; }
       d.style.position = "relative"; var lvb = document.createElement("span"); lvb.className = "wp-lv"; lvb.textContent = "Lv" + lvOf(w.id); d.appendChild(lvb); /* v1047 (Harley): each weapon's current level */
       (function (id) { d.onclick = function () { openWeaponInfo(id); }; })(w.id);
+      if (cqOff && w.fx === "emp") { d.classList.add("wp-off"); d.title = w.name + " (no effect in Conquest)"; } /* v1837 */
     }
     if (!w && !wrap.querySelector(".slot-sunken")) d.classList.add("slot-sunken"); // first empty slot: style test (sunken, reverse bevel)
     wrap.appendChild(d);
