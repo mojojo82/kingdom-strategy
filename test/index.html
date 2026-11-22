@@ -3322,7 +3322,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #repFull .rf-kv.sm { font-size:11px; padding:3px 0; }
   #repFull .rf-bon { display:grid; grid-template-columns:1fr 1fr; gap:4px; } #repFull .rf-bon div { display:flex; justify-content:space-between; padding:3px 6px; border-radius:6px; background:#f7e3c4; border:1px dashed #c99a5a; font-size:11px; font-weight:700; color:#7a5a36; } #repFull .rf-bon b { color:#2f7a2a; }
   #repFull .rf-wps { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; } #repFull .rf-wp { text-align:center; } 
-  #repFull .rf-wp i { display:block; font-style:normal; font-size:9px; font-weight:700; color:#7a5a36; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #repFull .rf-wp i { display:none !important; } /* v1852 (Harley): no names under report tiles */
+  #repFull .rf-wp i.x { display:block; font-style:normal; font-size:9px; font-weight:700; color:#7a5a36; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #repFull .rf-cards { display:flex; flex-wrap:wrap; gap:4px; } #repFull .rf-cards span { padding:2px 7px; border-radius:6px; background:#f7e3c4; border:1px dashed #c99a5a; font-size:11px; font-weight:700; color:#4a2a10; }
   #repFull .rf-wp .rf-st { display:block; font-style:normal; font-size:9px; line-height:1.1; color:#c98a12; }
   #repFull .rf-wp .wt { margin:0 auto; } #repFull .rf-wp .wt .lv { font-size:11px; }
@@ -14974,7 +14975,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1851"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1852"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21836,7 +21837,7 @@ function repFullInfo(info) {
     return '<div class="rf-wp"><div class="wt" style="--a:' + c[0] + ";--b:" + c[1] + ";--c:" + c[2] + '">' + (d.img ? '<img src="' + d.img + '" alt="">' : '<span class="wt-em">' + d.icon + "</span>") + '<div class="lv">' + (w[1] >= WEAPON_MAX_LEVEL ? "Lv.MAX" : "Lv." + w[1]) + "</div></div><i>" + escapeHtml(d.name) + "</i></div>"; }).join("") + "</div>" : '<div class="rf-none">No weapons</div>');
   h += '<div class="rf-sec">Equipment</div>' + (info.equip && info.equip.length ? '<div class="rf-eqs">' + info.equip.map(function (e) { var i = e[0] % TURRET_ICON_LIBRARY.length, mk = "url('" + TURRET_ICON_LIBRARY[i] + "')";
     return '<div class="rf-eq" title="ATK +' + e[3] + "% · HP +" + e[4] + "% · DEF +" + e[5] + '%"><div class="rf-eqt"><i style="-webkit-mask-image:' + mk + ";mask-image:" + mk + ";background:" + (EQ_BG_GRAD[e[1]] || EQ_BG_GRAD[0]) + '"></i><img alt="" src="' + TURRET_ICON_SPRITES[i] + '"></div><b>+' + e[2] + "%</b></div>"; }).join("") + "</div>" : info.equip ? '<div class="rf-none">None worn</div>' : '<div class="rf-none">Not recorded</div>');
-  if (info.gear) { var gks = ["troop", "fortHp", "heroAtk", "cannon", "boss", "heroSkill"]; h += '<div class="rf-sec">Overlord Gear</div><div class="rf-gg">' + gks.map(function (k) { var st0 = govGearStepOf(k, info.gear); return '<div class="rf-ggc">' + govGearTileHtml(k, st0) + "<b>" + (st0 >= 0 ? "+" + govGearBonus(k, st0) + "%" : "-") + "</b></div>"; }).join("") + "</div>"; } /* v1842 */
+  if (info.gear) { var gks = ["troop", "fortHp", "heroAtk", "cannon", "boss", "heroSkill"]; h += '<div class="rf-sec">Overlord Gear</div><div class="rf-gg">' + gks.map(function (k) { var st0 = govGearStepOf(k, info.gear); return '<div class="rf-ggc" title="' + (st0 >= 0 ? "+" + govGearBonus(k, st0) + "%" : "") + '">' + govGearTileHtml(k, st0) + "</div>"; /* v1852: no % under the tiles */ }).join("") + "</div>"; } /* v1842 */
   var es = info.esper && ESPER_DEFS[info.esper];
   h += '<div class="rf-sec">Esper</div>' + (es ? '<div class="rf-kv sm"><span>' + (es.icon || "") + " " + escapeHtml(es.name) + "</span><b></b></div>" : '<div class="rf-none">None</div>');
   h += '<div class="rf-sec">Cards</div>' + (info.cards && info.cards.length ? '<div class="rf-cards">' + info.cards.map(function (c) { return "<span>" + escapeHtml(c) + "</span>"; }).join("") + "</div>" : '<div class="rf-none">None</div>');
@@ -21848,7 +21849,7 @@ function repFullAvatar(src, fallback, frame) { /* v1842 (Harley): square like th
   return '<div class="rf-av' + (fr ? " framed" : "") + '">' + (fr ? avatarFramedFit(fr, 58, inner) : inner) + "</div>"; }
 function repFullHeroes(keys, info) { keys = (keys || []).filter(function (k) { return HERO_DEFS[k]; }); if (!keys.length) return '<div class="rf-none">No heroes</div>';
   var lv = {}; ((info && info.heroes) || []).forEach(function (x) { lv[x[0]] = x; });
-  return '<div class="rf-wps rf-hts">' + keys.map(function (k) { var d = HERO_DEFS[k], x = lv[k]; return '<div class="rf-wp">' + heroTileHtml(k, x ? x[1] : null) + "<i>" + escapeHtml(d.name) + "</i>" + (x && x[2] ? '<em class="rf-st">' + repFullStars(x[2]) + "</em>" : "") + "</div>"; }).join("") + "</div>"; } /* v1851: same tiles as the weapons */
+  return '<div class="rf-wps rf-hts">' + keys.map(function (k) { var d = HERO_DEFS[k], x = lv[k]; return '<div class="rf-wp">' + heroTileHtml(k, x ? x[1] : null) + "</div>"; }).join("") + "</div>"; } /* v1851: same tiles as the weapons */
 function repFullTroops(army, losses, wounded, mine) {
   var ts = Object.keys(TROOP_DEFS).filter(function (t) { return (army && army[t]) || (losses && losses[t]); });
   if (!ts.length) return '<div class="rf-none">No troops</div>';

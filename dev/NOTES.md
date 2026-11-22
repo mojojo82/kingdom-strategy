@@ -6746,3 +6746,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - The empty strip at the bottom is gone: the card art (card_blue / red / purple / guard) has its painted button strip cut out (rows 317-391 removed, art/originals/ui/formations_cards/*_v1.png -> *_cut.png); border-image bottom 94 -> 20.
 - New shared heroTileHtml(k, lv): same rounding (14%), rarity ring colours (Legendary gold, Epic purple, Rare blue), Lv strip as weaponTileHtml. Used by the formation slots, the hero picker (63 px tiles, same size as the Weapons page) and the war reports (hero cards -> the same 3-across tiles as the weapons, name + stars under).
 - Headless: card layout incl. City Guard, Select button switches the active formation, tapping a hero slot opens the picker, picker tiles 63 x 63 / 14%, report heroes match the weapons; no errors. Not tested on a phone.
+
+## v1852 - reports: no names / % under tiles (TEST)
+- Harley (circled): removed the hero names + stars under report hero tiles, the weapon names under weapon tiles, and the % under Overlord Gear tiles (still on long-press / hover title). Equipment % kept (not circled). Headless check only.
