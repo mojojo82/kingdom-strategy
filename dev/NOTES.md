@@ -6722,3 +6722,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1845 - chat Send button text (TEST)
 - Harley: the outline around "Send" in chat was big / had a drop shadow. An older chat rule gave the label a thick brown 4-way text shadow on top of the blue button's own outline; the chat button now uses the standard blue-button text shadow, same as every other blue button. Headless check only.
+
+## v1846 - Arena Challenge button smaller (TEST)
+- Harley (button-size tidy-up, 23 Nov): the Arena "Challenge" button 50 -> 44 px tall, its label 22 -> 20 px. Measured blue-button thicknesses before: 18 (Build badges) / 26 / 30 / 33 / 35 / 36 / 39 / 44 / 50 px - Harley is picking main sizes from these.
