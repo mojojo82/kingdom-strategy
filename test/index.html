@@ -3710,6 +3710,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .wt img { position:absolute; left:8%; top:5%; width:84%; height:76%; object-fit:contain; } .wt .wt-em { position:absolute; inset:0 0 22% 0; display:flex; align-items:center; justify-content:center; font-size:26px; }
   .wt .lv { position:absolute; left:3px; right:3px; bottom:3px; height:24%; background:rgba(0,0,0,.32); display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; -webkit-text-stroke:2.5px #1a0e08; paint-order:stroke fill; border-radius:0 0 9px 9px; }
   .wt .ck { position:absolute; right:3px; top:3px; width:20px; height:20px; border-radius:50%; background:#2bc8e2; border:2px solid #fff; color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center; }
+  #weaponsModeContent .wcell.locked .wt { filter:grayscale(1) brightness(.78); } #weaponsModeContent .wcell.locked .wnm { color:#8a6a44; } /* v1829 */
   .wt.empty { background:#d9b98a; box-shadow:inset 0 0 0 2px #b08a55; display:flex; align-items:center; justify-content:center; color:#a07a46; font-size:28px; }
   #weaponsModeContent .wcell { text-align:center; cursor:pointer; min-width:0; } #weaponsModeContent .wbar { position:relative; margin:5px 2px 0; height:14px; border-radius:7px; background:#4a3220; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
   #weaponsModeContent .wbar i { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(#5fd4ff,#2a9fd8); } #weaponsModeContent .wbar.up i { background:linear-gradient(#7fe08a,#33b04a); }
@@ -14778,7 +14779,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1828"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1829"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -15738,10 +15739,14 @@ function renderCards() {
 // Cards, weapons have no detail overlay — the list itself is the whole UI,
 // each row showing name/desc/icon plus its own Equip/Unequip button.
 function weaponEquipPos(id) { var a = game.state.equippedWeapons; return Array.isArray(a) ? a.indexOf(id) : -1; }
+/* v1829 (Harley): weapons a player hasn't unlocked yet are greyed out - still tappable to read about, but can't be equipped.
+   Unlocked = has a fragment, is past Lv.1, or is already equipped (same test as weapon power). */
+function weaponUnlocked(id) { var s = game.state; return !!((s.weaponFrags && s.weaponFrags[id] > 0) || (s.weaponLevels && s.weaponLevels[id] > 1) || (s.equippedWeapons || []).indexOf(id) !== -1); }
 function toggleWeaponEquip(id) {
   if (!Array.isArray(game.state.equippedWeapons)) game.state.equippedWeapons = [];
   var p = weaponEquipPos(id);
   if (p !== -1) game.state.equippedWeapons.splice(p, 1);
+  else if (!weaponUnlocked(id)) return;
   else if (game.state.equippedWeapons.length < WEAPON_EQUIP_MAX) game.state.equippedWeapons.push(id);
   else return;
   persist();
@@ -15844,7 +15849,8 @@ function renderWeaponInfo() {
     var fr = game.state.weaponFrags[w.id] || 0, maxL = st.level >= WEAPON_MAX_LEVEL, cst = game.weaponLevelUpCost(st.level);
     h += '<div class="wi-sec"><h4>Fragments</h4><div class="wi-row"><span>' + ico("fragment") + ' ' + w.name + ' fragments</span><span>' + fr + (maxL ? '' : ' / ' + cst) + '</span></div><div class="wi-btns"><button id="wiLevel"' + ((maxL || fr < cst) ? ' disabled' : '') + '>' + (maxL ? 'Max level' : 'Level up (' + cst + ' 🧩)') + '</button></div></div>';
   }
-  h += '<div class="wi-btns"><button id="wiEquip" class="' + (on ? "on" : "") + '"' + (full ? " disabled" : "") + '>' + (on ? "Unequip" : full ? "Slots full" : "Equip") + '</button></div>';
+  var lockd = !on && !weaponUnlocked(w.id); /* v1829 */
+  h += '<div class="wi-btns"><button id="wiEquip" class="' + (on ? "on" : "") + '"' + (full || lockd ? " disabled" : "") + '>' + (on ? "Unequip" : lockd ? "🔒 Locked · find it in Weapon Draw" : full ? "Slots full" : "Equip") + '</button></div>';
   h += '</div></div>';
   ov.innerHTML = h;
   document.getElementById("wiClose").onclick = closeWeaponInfo;
@@ -16191,7 +16197,7 @@ var WEAPON_TILE_ORDER = ["Legendary", "Epic", "Super Rare", "Elite", "Standard"]
 function weaponTileHtml(w, opts) { /* v1828: rounded rarity tile + new icon + level strip (Weapons page, Weapon Info) */
   opts = opts || {}; var c = WEAPON_TILE_RC[w.rarity] || WEAPON_TILE_RC.Standard, lv = w.visualOnly ? 0 : game.weaponLevel(w.id);
   return '<div class="wt" style="--a:' + c[0] + ';--b:' + c[1] + ';--c:' + c[2] + '">' + (w.img ? '<img src="' + w.img + '" alt="">' : '<span class="wt-em">' + w.icon + "</span>") +
-    (opts.noLv || w.visualOnly ? "" : '<div class="lv">' + (lv >= WEAPON_MAX_LEVEL ? "Lv.MAX" : "Lv." + lv) + "</div>") + (opts.check ? '<div class="ck">✓</div>' : "") + "</div>";
+    (opts.noLv || w.visualOnly ? "" : '<div class="lv">' + (opts.lock ? "🔒" : lv >= WEAPON_MAX_LEVEL ? "Lv.MAX" : "Lv." + lv) + "</div>") + (opts.check ? '<div class="ck">✓</div>' : "") + "</div>";
 }
 function renderWeapons() {
   var lbl = document.getElementById("weaponEquipMaxLabel");
@@ -16206,7 +16212,8 @@ function renderWeapons() {
   var W = WEAPON_DEFS.filter(function (w) { return !w.visualOnly; });
   var cell = function (w, eqTile) {
     var lv = game.weaponLevel(w.id), max = lv >= WEAPON_MAX_LEVEL, fr = game.state.weaponFrags[w.id] || 0, need = game.weaponLevelUpCost(lv), up = !max && fr >= need, on = weaponEquipPos(w.id) !== -1;
-    return '<div class="wcell" data-wid="' + w.id + '">' + weaponTileHtml(w, { check: on && !eqTile }) +
+    var lk = !eqTile && !weaponUnlocked(w.id);
+    return '<div class="wcell' + (lk ? " locked" : "") + '" data-wid="' + w.id + '">' + weaponTileHtml(w, { check: on && !eqTile, lock: lk }) +
       (eqTile ? "" : '<div class="wbar' + (up || max ? " up" : "") + '"><i style="width:' + (max ? 100 : Math.min(100, fr / need * 100)) + '%"></i><span>' + (max ? "MAX" : fr + " / " + need) + "</span></div>") +
       '<div class="wnm">' + w.name + "</div></div>";
   };
@@ -16214,7 +16221,7 @@ function renderWeapons() {
   for (var i = 0; i < WEAPON_EQUIP_MAX; i++) { var we = eq[i] && WEAPON_DEFS_BY_ID[eq[i]]; h += we ? cell(we, true) : '<div class="wcell"><div class="wt empty">+</div></div>'; }
   h += '</div><div class="wbon">Weapon levels: ATK, HP, DEF <em>+' + fmtCompact(weaponBonusOf(game.state)) + "%</em></div></div>";
   var L = W.slice().sort(function (a, b) { return WEAPON_TILE_ORDER.indexOf(a.rarity || "Standard") - WEAPON_TILE_ORDER.indexOf(b.rarity || "Standard"); });
-  h += '<div class="wpc"><div class="whd"><b>All weapons</b><span>' + W.length + ' weapons</span></div><div class="wgrid">' + L.map(function (w) { return cell(w, false); }).join("") + "</div></div>";
+  h += '<div class="wpc"><div class="whd"><b>All weapons</b><span>' + W.filter(function (w) { return weaponUnlocked(w.id); }).length + " / " + W.length + ' unlocked</span></div><div class="wgrid">' + L.map(function (w) { return cell(w, false); }).join("") + "</div></div>";
   el.innerHTML = h;
   [].forEach.call(el.querySelectorAll(".wcell[data-wid]"), function (c) { c.onclick = function () { openWeaponInfo(c.getAttribute("data-wid")); }; });
 }

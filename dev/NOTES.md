@@ -6625,3 +6625,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Rarity colours (weapons + Recon): Legendary gold, Epic purple (like the heroes), Super Rare green, Elite blue, Standard grey (WEAPON_RARITY_COLOR, RECON_RARITY_COLOR, WEAPON_TILE_RC).
 - Not changed: equipment (Conquest turret grid) keeps its own colours; nothing is locked (every weapon can still be equipped, as before).
 - Headless 430 / 375: 17 tiles + 3 equipped, no missing pictures, no sideways overflow, draw x10 works, tile opens Weapon Info, Conquest weapon slots OK, no errors. Not tested on a phone.
+
+## v1829 - Weapons not unlocked yet are greyed out (TEST)
+- Harley: grey out weapons the player hasn't unlocked; they can still tap them to read the ability. Unlocked = has a fragment, is past Lv.1, or is already equipped (same test as weapon power, weaponUnlocked()). Locked tiles are grey with a lock on the level strip; the header says "N / 17 unlocked".
+- Locked weapons can't be equipped any more (toggleWeaponEquip refuses; Weapon Info button reads "Locked · find it in Weapon Draw"). Already-equipped weapons always count as unlocked, so nobody loses a slot.
+- Headless: 13 locked on a fresh account, locked info opens, equip refused, a weapon with fragments equips, no errors. Not tested on a phone.
