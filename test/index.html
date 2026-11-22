@@ -1661,19 +1661,24 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .pd-note { padding:10px 14px 14px; color:#9a8c70; font-size:11.5px; line-height:1.35; }
   .wi-body { padding:12px; display:flex; flex-direction:column; gap:10px; }
   /* v1842: Overlord Gear tiles (rounded slab drawn in code, like the agreed mockup) + the upgrade card */
-  .gg-tile { position:relative; width:100%; aspect-ratio:1; border-radius:21%; background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(0,0,0,.08) 70%, rgba(255,255,255,.06)), var(--gc); box-shadow:0 0 0 2px rgba(0,0,0,.38), inset 0 0 0 3px rgba(255,240,210,.55), inset 0 -7px 6px -3px rgba(255,240,225,.35), 0 3px 6px rgba(0,0,0,.4); overflow:hidden; font-family:'KS Title','Lilita One',sans-serif; box-sizing:border-box; }
-  .gg-tile img { position:absolute; left:13%; top:11%; width:74%; height:74%; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(0,0,0,.45)); }
-  .gg-tile.empty { background:rgba(40,26,14,.55); box-shadow:inset 0 0 0 2px rgba(240,201,95,.45); border:2px dashed rgba(240,201,95,.6); } .gg-tile.empty img { opacity:.28; filter:grayscale(1); }
-  .gg-tile.locked img { opacity:.18; }
-  .gg-t { position:absolute; left:6%; top:3%; font-weight:400; font-size:clamp(10px, 28cqw, 22px); color:#fff; -webkit-text-stroke:3px rgba(40,20,8,.85); paint-order:stroke fill; line-height:1; }
-  .gg-st { position:absolute; left:4%; top:28%; display:flex; flex-direction:column; gap:0; } .gg-st i { font-style:normal; font-size:clamp(10px, 24cqw, 18px); line-height:1; color:#ffd23f; -webkit-text-stroke:2.5px #6a3a08; paint-order:stroke fill; }
-  .gg-tile { container-type:inline-size; }
-  .gg-lock { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:clamp(14px, 34cqw, 30px); }
-  .gg-plus { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:clamp(18px, 46cqw, 40px); color:#f0c95f; -webkit-text-stroke:3px #3a2410; paint-order:stroke fill; }
-  .gg-dot { position:absolute; right:6%; top:6%; width:16%; height:16%; border-radius:50%; background:#e8352a; box-shadow:0 0 0 2px #fff; }
+  /* v1842: the approved slab mockup (code_mock_v4_contrast.png): exact rounded square, thin darker outline, bright highlight ring, flat tier fill with a soft shade, light lip along the bottom */
+  .gg-wrap, .gg-big, .rf-ggc { container-type:inline-size; } /* cqw inside a tile = the tile's own width */
+  .gg-tile { position:relative; width:100%; aspect-ratio:1; border-radius:21%; box-sizing:border-box; font-family:'KS Title','Lilita One',sans-serif;
+    background:linear-gradient(180deg, rgba(255,255,255,.11), rgba(255,255,255,0) 50%, rgba(0,0,0,.1) 72%, rgba(0,0,0,0) 90%), var(--gc);
+    box-shadow:0 0 0 1.4cqw var(--go), inset 0 0 0 2.2cqw var(--gh), inset 0 -9cqw 4cqw -5cqw var(--gl), 0 1.5cqw 3cqw rgba(0,0,0,.35); }
+  .gg-tile img { position:absolute; left:15%; top:15%; width:70%; height:70%; object-fit:contain; }
+  .gg-tile.empty img { opacity:.55; filter:grayscale(.6); } .gg-tile.locked img { opacity:.3; }
+  .gg-t { position:absolute; left:7%; top:3%; font-weight:400; font-size:23cqw; line-height:1; color:#ffe43c; -webkit-text-stroke:5.5cqw #46230a; paint-order:stroke fill; }
+  .gg-st { position:absolute; left:4.5%; top:28.5%; display:flex; flex-direction:column; gap:0; } .gg-st svg { display:block; width:26cqw; height:26cqw; margin-bottom:-6.5cqw; overflow:visible; }
+  .gg-lv { position:absolute; left:10%; right:0; bottom:3%; text-align:center; font-weight:400; font-size:20.5cqw; line-height:1; color:#fff; -webkit-text-stroke:5.5cqw #321e0f; paint-order:stroke fill; }
+  .gg-lock { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:30cqw; }
+  .gg-dot { position:absolute; right:-5%; top:-5%; width:20%; height:20%; border-radius:50%; background:#e11e1e; box-shadow:0 0 0 2.7cqw #fff; box-sizing:border-box; }
   #govProfileOverlay .gp-col > div.gg-wrap { background:none !important; cursor:pointer; }
-  #govProfileOverlay:not(.gp2) .gg-wrap { width:64px; margin:6px 0; }
-  #govProfileOverlay.gp2 .gp-col.l > div.gg-wrap:nth-child(1), #govProfileOverlay.gp2 .gp-col.r > div.gg-wrap:nth-child(1) { width:calc(var(--gpd)*148); height:calc(var(--gpd)*149); margin-left:calc(var(--gpd)*4); margin-top:calc(var(--gpd)*4); }
+  #govProfileOverlay:not(.gp2) .gg-wrap { width:58px; margin:6px 0; }
+  /* sizes / places from the mockup: 112 px squares at x 42 / 706, y 150 / 300 / 450 on the 860 px shot = 120 design units at x 45 / 754, y 160 / 320 / 480 */
+  #govProfileOverlay.gp2 .gp-col > div.gg-wrap { width:calc(var(--gpd)*120) !important; height:calc(var(--gpd)*120) !important; margin:0 !important; }
+  #govProfileOverlay.gp2 .gp-col.l > div.gg-wrap { left:calc(var(--gpd)*45) !important; } #govProfileOverlay.gp2 .gp-col.r > div.gg-wrap { left:calc(var(--gpd)*754) !important; }
+  #govProfileOverlay.gp2 .gp-col > div.gg-wrap:nth-child(1) { top:calc(var(--gpd)*160) !important; } #govProfileOverlay.gp2 .gp-col > div.gg-wrap:nth-child(2) { top:calc(var(--gpd)*320) !important; } #govProfileOverlay.gp2 .gp-col > div.gg-wrap:nth-child(3) { top:calc(var(--gpd)*480) !important; }
   #govProfileOverlay.gp2 .gg-wrap .gg-tile { width:100%; height:100%; }
   .gg-card .gg-head { display:flex; gap:12px; align-items:center; } .gg-card .gg-big { flex:none; width:96px; }
   .gg-card .gg-info { min-width:0; } .gg-card .gg-name { font-family:'KS Title','Lilita One',sans-serif; font-size:20px; color:#f0c95f; } .gg-card .gg-step { font-weight:800; color:#f2ece0; font-size:14px; } .gg-card .gg-step small { color:#9a8c70; font-weight:600; }
@@ -36202,7 +36207,9 @@ var GP_SLOT_STONE = "data:image/webp;base64,UklGRv4UAABXRUJQVlA4WAoAAAAQAAAAewAA
    held by the server (wallet), so every upgrade / reset is a server call (gearUpgrade / gearReset); game.state.govGear mirrors wallet.govGear. */
 var GOV_GEAR_ICON = { troop: "helm", fortHp: "armour", heroAtk: "gauntlet", cannon: "gun", boss: "ring", heroSkill: "amulet" };
 var GOV_GEAR_SLOTS = [["troop", "fortHp", "heroAtk"], ["cannon", "boss", "heroSkill"]]; /* left column, right column (top to bottom) */
-var GOV_GEAR_COLOR = { grey: "#9a9aa2", blue: "#4f86d8", purple: "#b06fc0", yellow: "#e8901f", red: "#de5552" };
+var GOV_GEAR_COLOR = { grey: "#95959f", blue: "#3882f1", purple: "#b76eb3", yellow: "#ff8700", red: "#fc4846" };
+var GOV_GEAR_SLAB = { grey: ["#535359", "#d9d0c0", "#bdb7b8"], blue: ["#1f4886", "#b9c9dc", "#83abea"], purple: ["#663d64", "#e5c2c7", "#d29fc4"], yellow: ["#8e4b00", "#ffcb88", "#ffae55"], red: ["#8d2827", "#fdb5a1", "#fd8780"] }; /* outline, highlight ring, bottom lip - the approved mockup (art/originals/ui/gov_gear/code_mock_v4_contrast.png, dev/ui/gear_slab.py contrast 2.0) */
+var GG_STAR = '<svg viewBox="-12 -12 24 24"><path d="M0,-9.5 L2.6,-3.4 9.1,-2.9 4.2,1.4 5.6,7.7 0,4.4 -5.6,7.7 -4.2,1.4 -9.1,-2.9 -2.6,-3.4Z" fill="#ffce26" stroke="#6e3408" stroke-width="3.2" stroke-linejoin="round" paint-order="stroke"/><ellipse cx="-2.3" cy="-3.2" rx="1.9" ry="1.3" fill="#fffcdc" opacity=".65"/></svg>';
 var GOV_GEAR_COLOR_NAME = { grey: "Grey", blue: "Blue", purple: "Purple", yellow: "Gold", red: "Red" };
 var GOV_GEAR_DESC = { cannon: "More damage from your fortress cannon.", fortHp: "More fortress HP.", heroAtk: "Your heroes' basic attacks hit enemy fortresses harder.",
   heroSkill: "Your heroes' skills hit enemy fortresses harder.", troop: "Your troops deal more damage in World PvP and rallies.", boss: "More damage to bosses (Kaiju, Boss Rush, Conquest bosses)." };
@@ -36214,10 +36221,12 @@ function govGearStepOf(piece, map) { var g = map || game.state.govGear || {}, v 
 function govGearHave(id) { return Math.max(0, Math.floor((KSW && KSW[id]) || 0)); }
 function govGearCanUp(piece) { var s = govGearStepOf(piece); return govGearUnlocked() && s + 1 < GOV_GEAR_COST.length && govGearHave("arcsteel") >= GOV_GEAR_COST[s + 1]; }
 function govGearTileHtml(piece, step, opts) {
-  opts = opts || {}; var st = GOV_GEAR_STEPS[step], h = '<div class="gg-tile' + (st ? "" : " empty") + (opts.locked ? " locked" : "") + '" style="--gc:' + (st ? GOV_GEAR_COLOR[st.c] : "#6a5236") + '"><img alt="" src="' + govGearIconSrc(piece) + '">';
+  opts = opts || {}; var st = GOV_GEAR_STEPS[step], c = st ? st.c : "grey", sl = GOV_GEAR_SLAB[c];
+  var h = '<div class="gg-tile' + (st ? "" : " empty") + (opts.locked ? " locked" : "") + '" style="--gc:' + GOV_GEAR_COLOR[c] + ";--go:" + sl[0] + ";--gh:" + sl[1] + ";--gl:" + sl[2] + '"><img alt="" src="' + govGearIconSrc(piece) + '">';
   if (st && st.t) h += '<b class="gg-t">T' + st.t + "</b>";
-  if (st && st.s) { h += '<span class="gg-st">'; for (var i = 0; i < st.s; i++) h += "<i>★</i>"; h += "</span>"; }
-  if (opts.locked) h += '<span class="gg-lock">🔒</span>'; else if (!st && opts.plus) h += '<span class="gg-plus">+</span>';
+  if (st && st.s) { h += '<span class="gg-st">'; for (var i = 0; i < st.s; i++) h += GG_STAR; h += "</span>"; }
+  h += '<b class="gg-lv">Lv.' + (step + 1) + "</b>"; /* level = steps done (0-40) */
+  if (opts.locked) h += '<span class="gg-lock">🔒</span>';
   if (opts.dot) h += '<i class="gg-dot"></i>';
   return h + "</div>";
 }
