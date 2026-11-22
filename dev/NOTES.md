@@ -6686,3 +6686,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1839 - full-screen report in the game's own look (TEST)
 - Harley (phone screenshot): "needs to look like the rest of our UI". The report page now uses the standard title bar (ksBarEl, back in the left socket), cream cards with the orange frame like the Weapons page (#eecea7 / #e3a43a / #7a4a18 outline), dark-brown text, dotted section rules and dashed row lines, flat cyan buttons (ks-btn) for Save / Go there inside the result banner. You (blue "You" strip) left, opponent (red "Opponent" strip) right.
 - Headless: war victory (top + scrolled), camp defeat, gathering - no errors. Not tested on a phone.
+
+## v1840 - reports show everything that makes up power and changes the battle (TEST)
+- Harley: "everything that goes into someone's power number and that would affect battle needs to be on the reports". `repSideSnap` records a snapshot of a side at the moment of the fight: total power + the Power Details split (buildings, research, fortress research, heroes, troops, weapons, equipment, Sword of Power, Governor Gear), ATK / HP / DEF / Skill bonuses (bonusOf), each hero's level + stars, Esper, equipped weapons + levels, equipped cards, fortress type + research levels, Town Hall, Wall.
+- World PvP: both sides (worldPvpBattle -> pr.atkInfo / defInfo -> the report). Camps / monsters / guarded nodes: your side (mySnap in the engine).
+- Full-screen report: each column gets Power (total + split), Bonuses, Fortress, Weapons (icons + Lv), Esper, Cards; heroes show Lv + stars; the "⚡" line is now real power and the HP bar is labelled Battle HP. Reports from before v1840 say the snapshot wasn't recorded.
+- Tests: g205 / g207 / g208 pass; headless report with a real bot battle snapshot, no errors. Not tested on a phone.

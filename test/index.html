@@ -3284,6 +3284,14 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #repFull .rf-chip span { flex:1; } #repFull .rf-chip b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; color:#2f7a2a; }
   #repFull .rf-note { font-size:13px; font-weight:700; color:#5a3a1a; line-height:1.4; }
   #repFull .rf-big { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:40px; color:#fff; -webkit-text-stroke:5px #14354f; paint-order:stroke fill; } #repFull .rf-big img { height:1em; vertical-align:-0.12em; }
+  #repFull .rf-hpl { text-align:center; font-size:10px; font-weight:800; color:#8a6a4a; text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+  #repFull .rf-hero em { display:block; text-align:center; font-style:normal; font-size:10px; font-weight:800; color:#7a5a36; } #repFull .rf-hero em small { font-size:9px; }
+  #repFull .rf-kv.big { font-size:14px; } #repFull .rf-kv.big b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:16px; }
+  #repFull .rf-kv.sm { font-size:11px; padding:3px 0; }
+  #repFull .rf-bon { display:grid; grid-template-columns:1fr 1fr; gap:4px; } #repFull .rf-bon div { display:flex; justify-content:space-between; padding:3px 6px; border-radius:6px; background:#f7e3c4; border:1px dashed #c99a5a; font-size:11px; font-weight:700; color:#7a5a36; } #repFull .rf-bon b { color:#2f7a2a; }
+  #repFull .rf-wps { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; } #repFull .rf-wp { text-align:center; } #repFull .rf-wp img, #repFull .rf-wp span { display:block; width:100%; aspect-ratio:1; object-fit:contain; border-radius:8px; background:#3a2414; border:2px solid #9a8a7a; box-sizing:border-box; }
+  #repFull .rf-wp b { display:block; font-size:10px; font-weight:800; color:#4a2a10; } #repFull .rf-wp i { display:block; font-style:normal; font-size:9px; font-weight:700; color:#7a5a36; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #repFull .rf-cards { display:flex; flex-wrap:wrap; gap:4px; } #repFull .rf-cards span { padding:2px 7px; border-radius:6px; background:#f7e3c4; border:1px dashed #c99a5a; font-size:11px; font-weight:700; color:#4a2a10; }
   #repFull .rf-big small { display:block; font-size:15px; color:#4a2a10; -webkit-text-stroke:0; }
   /* v1838: battle / gathering reports inside Mail */
   #mailPanel .rp2-badge { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:calc(var(--mw) * 0.07); box-shadow:inset 0 0 0 3px rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,.35); }
@@ -9152,6 +9160,7 @@ function createGame(opts) {
     log("Healing " + count + " " + TROOP_DEFS[type].name + " (" + Math.round(dur) + "s)");
     return { ok: true };
   }
+  function mySnap(hk) { return typeof repSideSnap === "function" ? repSideSnap({ state: state, powerBreakdown: powerBreakdown, governorPower: governorPower }, asHeroKeyArray(hk), state.equippedEsper, state.fortressTech || {}, 0) : null; } /* v1840 */
   function resolveArrival(march, authoritative, pvp) {
     if (march.monster) return resolveMonsterArrival(march, authoritative);
     var tile = mapTileById(state.map, march.tileId);
@@ -9221,7 +9230,7 @@ function createGame(opts) {
         attackerArmy: attackerArmySnapshot, defenderArmy: defenderArmySnapshot,
         attackerLosses: report.attackerLosses, defenderLosses: report.defenderLosses,
         loot: loot, heroKeys: asHeroKeyArray(march.heroKeys || march.heroKey),
-        homeTileId: state.homeTileId,
+        homeTileId: state.homeTileId, atkInfo: mySnap(march.heroKeys || march.heroKey), /* v1840 */
         woundedSent: infirmaryResult.wounded, deadTroops: infirmaryResult.dead,
         // Battle-strength bars: the winner keeps whatever margin it won by, the loser is wiped out.
         atkHpMax: report.atkPower, defHpMax: report.defPower,
@@ -9266,7 +9275,7 @@ function createGame(opts) {
       log("March #" + march.id + " defeated the level " + L + " " + def.name + ".");
     } else log("March #" + march.id + " was beaten back by the level " + L + " " + def.name + ".");
     state.battleReports.unshift(Object.assign(base, { win: report.win, atkPower: report.atkPower, defPower: report.defPower, attackerArmy: atkSnap, defenderArmy: gar,
-      attackerLosses: report.attackerLosses, defenderLosses: report.defenderLosses, loot: loot, valor: valor, woundedSent: wounded, deadTroops: {},
+      attackerLosses: report.attackerLosses, defenderLosses: report.defenderLosses, loot: loot, valor: valor, woundedSent: wounded, deadTroops: {}, atkInfo: mySnap(heroKeys), /* v1840 */
       atkHpMax: report.atkPower, defHpMax: report.defPower, atkHpLeft: report.win ? Math.round(report.atkPower - report.defPower) : 0, defHpLeft: report.win ? 0 : Math.round(report.defPower - report.atkPower) }));
     if (state.battleReports.length > BATTLE_REPORTS_MAX) state.battleReports.length = BATTLE_REPORTS_MAX;
     march.result = { report: report, loot: loot, valor: valor, frags: frags, reportId: base.id };
@@ -14906,7 +14915,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1839"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1840"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21743,9 +21752,30 @@ function ksRepFoot(m, sv) { var on = !!sv[m.id], id = escapeHtml(m.id), t = m.re
   return '<button type="button" class="dsave' + (on ? " on" : "") + '" data-save="' + id + '"><i class="i-star">' + ksIc("star", 20) + '</i><i class="i-mark">' + ksIc("mark", 20) + "</i><span>" + (on ? "Saved" : "Save") + "</span></button>"
     + (t ? '<button type="button" class="dclaim" data-goto="' + escapeHtml(t) + '">Go there</button>' : ""); }
 /* v1838 (Harley): tapping a report opens it full screen - you on the left, the opponent on the right, shared results below. */
+/* v1840: the power / battle snapshot of one side on the full-screen report */
+function repFullStars(a) { var f = Math.floor(a / STAR_ARMS), r = a % STAR_ARMS; return (f ? "★" + f : "") + (r ? "<small> +" + r + "</small>" : f ? "" : "☆"); }
+function repFullInfo(info) {
+  if (!info) return '<div class="rf-sec">Power</div><div class="rf-none">Not recorded for this battle (reports from before v1840).</div>';
+  var h = '<div class="rf-sec">Power</div><div class="rf-kv big"><span>⚡ Total</span><b>' + fmt(info.pw || 0) + "</b></div>";
+  var pb = info.pb || {}, rows = [["Buildings", pb.buildings], ["Research", pb.research], ["Fortress research", pb.fortress], ["Heroes", pb.heroes], ["Troops", pb.troops], ["Weapons", pb.weapons], ["Equipment", pb.equipment], ["Sword of Power", pb.sword], ["Governor Gear", pb.gear]];
+  h += rows.filter(function (x) { return x[1] > 0; }).map(function (x) { return '<div class="rf-kv sm"><span>' + x[0] + "</span><b>" + fmtCompact(x[1]) + "</b></div>"; }).join("");
+  var bo = info.bonus || {};
+  h += '<div class="rf-sec">Bonuses</div><div class="rf-bon">' + [["ATK", bo.atk], ["HP", bo.hp], ["DEF", bo.def], ["Skill", bo.skill]].map(function (x) { return '<div><span>' + x[0] + "</span><b>+" + (x[1] || 0) + "%</b></div>"; }).join("") + "</div>";
+  h += '<div class="rf-sec">Fortress</div><div class="rf-kv sm"><span>Type</span><b>' + (info.fortType === 3 ? "III" : info.fortType === 2 ? "II" : "I") + "</b></div>"
+    + '<div class="rf-kv sm"><span>Fortress research</span><b>Lv ' + fmt(info.fortLv || 0) + "</b></div>"
+    + '<div class="rf-kv sm"><span>Town Hall</span><b>Lv ' + (info.th || 0) + "</b></div>"
+    + (info.wall ? '<div class="rf-kv sm"><span>Wall</span><b>Lv ' + info.wall + "</b></div>" : "");
+  h += '<div class="rf-sec">Weapons</div>' + (info.weapons && info.weapons.length ? '<div class="rf-wps">' + info.weapons.map(function (w) { var d = WEAPON_DEFS_BY_ID[w[0]]; if (!d) return "";
+    return '<div class="rf-wp">' + (d.img ? '<img alt="" src="' + d.img + '">' : "<span>" + (d.icon || "") + "</span>") + "<b>Lv " + w[1] + "</b><i>" + escapeHtml(d.name) + "</i></div>"; }).join("") + "</div>" : '<div class="rf-none">No weapons</div>');
+  var es = info.esper && ESPER_DEFS[info.esper];
+  h += '<div class="rf-sec">Esper</div>' + (es ? '<div class="rf-kv sm"><span>' + (es.icon || "") + " " + escapeHtml(es.name) + "</span><b></b></div>" : '<div class="rf-none">None</div>');
+  h += '<div class="rf-sec">Cards</div>' + (info.cards && info.cards.length ? '<div class="rf-cards">' + info.cards.map(function (c) { return "<span>" + escapeHtml(c) + "</span>"; }).join("") + "</div>" : '<div class="rf-none">None</div>');
+  return h;
+}
 function repFullAvatar(src, fallback) { return '<div class="rf-av">' + (src ? '<img alt="" src="' + escapeHtml(src) + '">' : "<span>" + fallback + "</span>") + "</div>"; }
-function repFullHeroes(keys) { keys = (keys || []).filter(function (k) { return HERO_DEFS[k]; }); if (!keys.length) return '<div class="rf-none">No heroes</div>';
-  return '<div class="rf-heroes">' + keys.map(function (k) { var d = HERO_DEFS[k], f = evFace(k); return '<div class="rf-hero r-' + String(d.rarity || "").toLowerCase() + '">' + (f ? '<img alt="" src="' + f + '">' : "<span>" + d.icon + "</span>") + "<b>" + escapeHtml(d.name) + "</b></div>"; }).join("") + "</div>"; }
+function repFullHeroes(keys, info) { keys = (keys || []).filter(function (k) { return HERO_DEFS[k]; }); if (!keys.length) return '<div class="rf-none">No heroes</div>';
+  var lv = {}; ((info && info.heroes) || []).forEach(function (x) { lv[x[0]] = x; });
+  return '<div class="rf-heroes">' + keys.map(function (k) { var d = HERO_DEFS[k], f = evFace(k), x = lv[k]; return '<div class="rf-hero r-' + String(d.rarity || "").toLowerCase() + '">' + (f ? '<img alt="" src="' + f + '">' : "<span>" + d.icon + "</span>") + "<b>" + escapeHtml(d.name) + "</b>" + (x ? '<em>Lv ' + x[1] + " " + repFullStars(x[2]) + "</em>" : "") + "</div>"; }).join("") + "</div>"; }
 function repFullTroops(army, losses, wounded, mine) {
   var ts = Object.keys(TROOP_DEFS).filter(function (t) { return (army && army[t]) || (losses && losses[t]); });
   if (!ts.length) return '<div class="rf-none">No troops</div>';
@@ -21760,17 +21790,17 @@ function repFullTroops(army, losses, wounded, mine) {
 function repFullSide(o) {
   return '<div class="rf-side ' + o.cls + '"><div class="rf-tagline">' + (o.cls === "me" ? "You" : "Opponent") + "</div>" + repFullAvatar(o.av, o.avFb) + '<div class="rf-name">' + escapeHtml(o.name) + "</div>"
     + (o.tile ? '<div class="rf-at" data-goto="' + escapeHtml(o.tile) + '">📍 ' + ksRepCoordTxt(o.tile) + "</div>" : '<div class="rf-at off">&nbsp;</div>')
-    + '<div class="rf-pw">⚡ ' + fmt(o.power || 0) + "</div>" + ksRepBar(o.left, o.max, o.cls === "foe")
+    + (o.info && o.info.pw ? '<div class="rf-pw">⚡ ' + fmt(o.info.pw) + " power</div>" : "") + '<div class="rf-hpl">Battle HP</div>' + ksRepBar(o.left, o.max, o.cls === "foe")
     + '<div class="rf-kv"><span>Armor</span><b>' + (o.armor != null ? Math.round(o.armor * 100) + "%" : "-") + "</b></div>"
     + '<div class="rf-kv"><span>Damage dealt</span><b>' + fmt(Math.max(0, Math.round(o.dealt || 0))) + "</b></div>"
-    + '<div class="rf-sec">Heroes</div>' + repFullHeroes(o.heroes) + '<div class="rf-sec">Troops</div>' + repFullTroops(o.army, o.losses, o.wounded, o.cls === "me") + "</div>";
+    + '<div class="rf-sec">Heroes</div>' + repFullHeroes(o.heroes, o.info) + '<div class="rf-sec">Troops</div>' + repFullTroops(o.army, o.losses, o.wounded, o.cls === "me") + (o.noInfo ? "" : repFullInfo(o.info)) + "</div>";
 }
 function repFullHtml(r) {
   var when = new Date(r.time || 0).toLocaleString([], { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }), h = "";
   if (ksRepIsGather(r)) {
     h += '<div class="rf-ban g"><b>Gathering complete</b><span>' + escapeHtml(ksRepPlace(r)) + " · " + escapeHtml(when) + "</span></div>";
     h += '<div class="rf-big">' + (RES_ICON[r.resourceType] || "") + " +" + fmt(r.gathered || ksRepSum(r.loot)) + "<small>" + escapeHtml(ksRepCap(r.resourceType)) + "</small></div>";
-    h += '<div class="rf-cols one">' + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.tileId, power: 0, left: 1, max: 1, heroes: r.heroKeys, army: r.attackerArmy, losses: {} }).replace(/<div class="rf-pw">[\s\S]*?<div class="rf-sec">Heroes/, '<div class="rf-sec">Heroes') + "</div>";
+    h += '<div class="rf-cols one">' + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.tileId, power: 0, left: 1, max: 1, heroes: r.heroKeys, army: r.attackerArmy, losses: {}, noInfo: true }).replace(/<div class="rf-pw">[\s\S]*?<div class="rf-sec">Heroes/, '<div class="rf-sec">Heroes') + "</div>";
     return h;
   }
   if (r.note) return h + '<div class="rf-ban n"><b>' + escapeHtml(ksRepTitle(r)) + "</b><span>" + escapeHtml(when) + '</span></div><div class="rf-card"><div class="rf-note">' + escapeHtml(r.note) + "</div></div>";
@@ -21780,9 +21810,9 @@ function repFullHtml(r) {
   h += '<div class="rf-ban ' + (r.win ? "w" : "l") + '"><b>' + (r.win ? "Victory" : mut ? "Draw" : "Defeat") + "</b><span>" + (r.tileType === "city" ? "Attack on " + escapeHtml(foe) + "'s city" : escapeHtml(ksRepPlace(r))) + " · " + escapeHtml(when) + "</span></div>";
   var foeFb = r.tileType === "city" ? "🏯" : r.tileType === "monster" ? "👹" : r.tileType === "resource" ? "⛏️" : "💀";
   h += '<div class="rf-cols">'
-    + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.homeTileId, power: r.atkPower, left: aLeft, max: aMax, armor: r.atkArmor, dealt: dMax - dLeft, heroes: r.heroKeys, army: r.attackerArmy, losses: r.attackerLosses, wounded: r.woundedSent })
+    + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.homeTileId, power: r.atkPower, left: aLeft, max: aMax, armor: r.atkArmor, dealt: dMax - dLeft, heroes: r.heroKeys, army: r.attackerArmy, losses: r.attackerLosses, wounded: r.woundedSent, info: r.atkInfo })
     + '<div class="rf-vs">VS</div>'
-    + repFullSide({ cls: "foe", name: r.tileType === "city" ? foe : ksRepPlace(r), av: prof && prof.avatar, avFb: foeFb, tile: r.tileId, power: r.defPower, left: dLeft, max: dMax, armor: r.defArmor, dealt: aMax - aLeft, heroes: r.tileType === "city" ? r.defenderHeroKeys : [], army: r.defenderArmy, losses: r.defenderLosses })
+    + repFullSide({ cls: "foe", name: r.tileType === "city" ? foe : ksRepPlace(r), av: prof && prof.avatar, avFb: foeFb, tile: r.tileId, power: r.defPower, left: dLeft, max: dMax, armor: r.defArmor, dealt: aMax - aLeft, heroes: r.tileType === "city" ? r.defenderHeroKeys : [], army: r.defenderArmy, losses: r.defenderLosses, info: r.defInfo, noInfo: r.tileType !== "city" })
     + "</div>";
   var notes = [];
   if (r.undefended) notes.push("🚪 Their City Guard was off - no fight, straight to the walls.");
@@ -21909,6 +21939,8 @@ function cityAttackOutcome(G, m, def, ownerId, battleFn) {
   G.resolveArrival(m, null, { army: def.army, ownerId: ownerId, result: pr });
   var rep = G.state.battleReports[0] && G.state.battleReports[0].marchId === m.id ? G.state.battleReports[0] : null;
   if (rep && def.undefended) rep.undefended = true;
+  if (rep && pr) { if (pr.atkInfo) rep.atkInfo = pr.atkInfo; if (pr.defInfo) rep.defInfo = pr.defInfo; } /* v1840 */
+  if (rep && !rep.atkInfo && G === game) rep.atkInfo = repSideSnap(game, m.heroKeys || [], game.state.equippedEsper, game.state.fortressTech || {}, 0);
   if (rep && ownerId) { var opf = fetchOwnerProfile(ownerId); if (opf && opf.name) rep.defName = opf.name; } /* v1838: their name in the report */
   if (!pr || !pr.win) return Promise.resolve();
   if (G === game && m.actionEnd) holdBaseFire(m.tileId, (m.actionEnd - vnow()) / (devSpeedMult || 1) + BASE_FIRE_AFTER_SHOTS_MS); /* v1205: the fire waits for the ship's volleys to finish */
@@ -24148,6 +24180,23 @@ function worldPvpAddTroops(stats, army, enemyArmy, heroKeys, simRef, wallLevel, 
   stats.dmgTakenMult = (stats.dmgTakenMult || 1) * (1 - armor); // keeps the fortress's own damage-taken reduction (Type 3)
   stats.armor = armor;
 }
+/* v1840 (Harley): everything that counts toward power and changes the battle goes on the report - a snapshot of each side at the moment of the fight. */
+function repSideSnap(sim, heroKeys, esper, fortMap, wallLv) {
+  try {
+    var useGame = typeof game !== "undefined" && game && sim && sim.state === game.state, G = useGame ? game : sim, st = sim.state, pb = null, pw = 0;
+    try { pb = G.powerBreakdown(); pw = G.governorPower(); } catch (e1) {}
+    var b = bonusOf(useGame ? game : sim) || {}, fm = fortMap || {}, fl = 0;
+    for (var k in fm) if (k.charAt(0) !== "_" && typeof fm[k] === "number") fl += fm[k];
+    var r1 = function (v) { return Math.round(v || 0); };
+    return { pw: r1(pw), pb: pb ? { buildings: r1(pb.buildings), research: r1(pb.research), fortress: r1(pb.fortress), heroes: r1(pb.heroes), troops: r1(pb.troops), weapons: r1(pb.weapons), equipment: r1(pb.equipment), sword: r1(pb.sword), gear: r1(pb.gear) } : null,
+      heroes: (heroKeys || []).filter(function (k) { return HERO_DEFS[k]; }).map(function (k) { var h = (st.heroes && st.heroes[k]) || {}; return [k, h.level || 1, heroStarArms(h)]; }),
+      esper: esper && ESPER_DEFS[esper] ? esper : null,
+      weapons: (st.equippedWeapons || []).filter(function (id) { return WEAPON_DEFS_BY_ID[id] && !WEAPON_DEFS_BY_ID[id].visualOnly; }).map(function (id) { return [id, (st.weaponLevels && st.weaponLevels[id]) || 1]; }),
+      cards: (st.equippedCards || []).map(function (i) { return st.cards && st.cards[i] ? st.cards[i].name : null; }).filter(Boolean),
+      bonus: { atk: Math.round((b.atk || 0) * 10) / 10, hp: Math.round((b.hp || 0) * 10) / 10, def: Math.round((b.def || 0) * 10) / 10, skill: Math.round((b.skill || 0) * 10) / 10 },
+      fortType: fortressTypeOf(fm), fortLv: fl, th: (st.buildings && st.buildings.townhall && st.buildings.townhall.level) || 0, wall: wallLv || 0 };
+  } catch (e) { return null; }
+}
 function worldPvpBattle(march, def, ownerId, opts) {
   // opts (used by the PvP Simulator dev tool): atkEsper / defEsper (an Esper key or null), atkSim (attacker's stat source, default the real game), seed (overrides the
   // seeded stagger), defBaseHp (defender's base HP, default the Arena AI setting), defCannon (false = no defender cannon),
@@ -24201,7 +24250,9 @@ function worldPvpBattle(march, def, ownerId, opts) {
   return { win: winner === "player", atkPower: atkMax, defPower: defMax, attackerLosses: aL, defenderLosses: dL, ticks: sim.tick, atkHpLeft: Math.round(sim.playerHp), defHpLeft: Math.round(sim.aiHp), atkArmor: atkStats.armor, defArmor: defStats.armor, defHeroKeys: def.heroKeys.slice(),
     // Only present when opts.trace was passed in (the PvP Simulator dev tool — see pvpSimRunOnce()); a real
     // battle never sets opts.trace, so these stay undefined there and reportColumns() simply skips the section.
-    atkDmgSrc: opts.trace ? opts.trace.src : undefined, defDmgSrc: opts.trace ? opts.trace.aiSrc : undefined };
+    atkDmgSrc: opts.trace ? opts.trace.src : undefined, defDmgSrc: opts.trace ? opts.trace.aiSrc : undefined,
+    atkInfo: repSideSnap(asim, atkKeys, atkEsper, march.fort ? fortMapAs(asim.state.fortressTech, march.fort) : (asim.state.fortressTech || {}), 0), /* v1840: power + battle snapshot of both sides */
+    defInfo: repSideSnap(dsim, def.heroKeys, opts.defEsper !== undefined ? opts.defEsper : (dsim.state.equippedEsper || null), def.fort ? fortMapAs(dsim.state.fortressTech, def.fort) : (dsim.state.fortressTech || {}), (dsim.state.buildings.wall && dsim.state.buildings.wall.level) || 0) };
 }
 // Visible-in-Reports diagnostic for an attack on a city that couldn't actually be fought.
 function pvpNoBattleReport(m, text) {
