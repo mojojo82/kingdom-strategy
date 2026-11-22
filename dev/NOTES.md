@@ -6755,3 +6755,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Card body = the frame as a 9-slice (border-image, slice 80 of the half-size art, gold edge ~ the Backpack's ~13 px), any height. The old card art is no longer drawn (.kpl / .kpat / .pc patches hidden on .fg2 cards).
 - Code pieces: dark title bar (inside the frame edge and corner brackets), round gold number badge on the banner, gold pencil button, medal icon by March size. Only the banner + badge overlap the frame. Layout otherwise = v1851 (rows nudged down a little).
 - Headless: Select switches the active formation, tapping a slot opens the hero picker, City Guard OK, no errors. Not tested on a phone.
+
+## v1854 - hero picker tiles exactly the Weapons tile size (TEST)
+- Harley: the hero picker tiles must be the same size as the Weapons page icons. They were a fixed 63 px while the Weapons tiles follow their 5-column grid; now width = (min(100vw, 430px) - 116px) / 5 = the Weapons tile on every screen. Measured headless: 62.8 = 62.8 (430 wide), 52.8 = 52.8 (380), 62.8 = 62.8 (PC 1280).
