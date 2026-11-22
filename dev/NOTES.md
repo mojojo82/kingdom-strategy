@@ -6591,3 +6591,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1822 - City tabs without the little icons (TEST)
 - Harley: remove the small icons on the City tab row (Buildings / Troops / Formations / Infirmary / Research). Hidden with CSS (.ct-ic); labels now fit without clipping ("Research" was cut off).
 - Headless 430 and 375 wide: all five labels fit, no errors. Not tested on a phone.
+
+## v1823 - One tab style: a code copy of the Mail tab (TEST)
+- Harley picked the code version of the painted Mail tab (cut top corners, gold rim, brown wood with a faint grain, white outlined text; cream with brown text when picked) for: City tabs, Troops (Infantry / Caster / Ranged + levels I-X), Formations I / II / III, Chat (World / Alliance / Private), Skins.
+- Spaced like the Mail tabs: 5px between the big tabs, 2px between the tiny ones; every tab stretches to fill its row. Troop level locks moved inside the cut corner (they were clipped).
+- CSS block "v1823 ... ONE tab style" (high-specificity prefix html body:not(#z1):not(#z2):not(#z3) so older tab rules can't win).
+- Headless 430 and 375 wide: all five pages, labels fit, Chat tab switching works, no errors. Not tested on a phone.
