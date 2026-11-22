@@ -14965,7 +14965,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1842"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1843"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -17785,7 +17785,7 @@ function pvpSimHtml(side, title) {
   h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Fortress tech</span><select class="ps-in ps-sel" data-f="fort"><option value="none">None</option><option value="mine">My fortress (type + tree)</option><option value="copied">Copied (from Load / Copy to Simulator)</option><option value="base">Type I (innate only)</option><option value="max">Type I (max tree)</option><option value="t2">Type II (innate only)</option><option value="t2max">Type II (max tree)</option><option value="t3">Type III (innate only)</option><option value="t3max">Type III (max tree)</option></select></div>';
   h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Esper</span><select class="ps-in ps-sel" data-f="esper"><option value="">None</option>' +
     Object.keys(ESPER_DEFS).map(function (k) { return '<option value="' + k + '">' + ESPER_DEFS[k].icon + ' ' + ESPER_DEFS[k].name + '</option>'; }).join("") + '</select></div>';
-  h += '<div class="ps-lbl">Hero bonus % · equipment + Sword of Power (training) + weapon levels + avatar frames + Dev Tools bonus</div>' + ["atk", "hp", "def", "skill"].map(function (k) { return '<div class="ps-srow"><span class="ps-sl">' + { atk: "ATK", hp: "HP", def: "DEF", skill: "Skill" }[k] + ' %</span><input class="ps-in ps-wide" type="number" min="0" step="0.1" data-f="bonus.' + k + '"></div>'; }).join("") +
+  h += '<div class="ps-lbl">Bonus % (heroes + fortress) · equipment + Sword of Power (training) + weapon levels + avatar frames + Dev Tools bonus</div>' + ["atk", "hp", "def", "skill"].map(function (k) { return '<div class="ps-srow"><span class="ps-sl">' + { atk: "ATK", hp: "HP", def: "DEF", skill: "Skill" }[k] + ' %</span><input class="ps-in ps-wide" type="number" min="0" step="0.1" data-f="bonus.' + k + '"></div>'; }).join("") +
     '<div class="dev-tools-hint">v1756: the same total the real game adds to every hero (Load mine copies yours). Before v1756 the simulators always used 0.</div>';
   h += '<div class="ps-srow" style="margin-top:6px;"><span class="ps-sl">Attack power constant ("the 4")</span><input class="ps-in" type="text" inputmode="decimal" placeholder="e.g. 4*10" data-f="atkPerPower"></div>' +
     '<div class="dev-tools-hint">The conversion factor from hero level/stars into actual damage — real game default is ' + HERO_ATK_PER_POWER + '. Raises/lowers this side\'s basic attacks AND every hero skill together (skills are a % of basic attack). Sim-only — never touches your save. You can type a plain math expression here (e.g. "4*10", "80/2") instead of computing it yourself — it\'s evaluated when you run.</div>';
@@ -36639,7 +36639,7 @@ function setScreen(screen, sub) {
 // look (banner, gold tab strip, cream rows, tan "equipped" row). Add a skin by adding it to its catalog; set locked:true
 // to hide it until it is unlocked (a skin is shown only when !locked).
 // Frame art lives in AVATAR_FRAME_ART (defined further down, next to the Arena leaderboard); the list is built lazily.
-function avatarFramesList() { return [{ id: "none", name: "No Frame", sub: "Plain avatar" }].concat(Object.keys(AVATAR_FRAME_ART).map(function (id) { var a = AVATAR_FRAME_ART[id]; return { id: id, name: a.name, sub: a.sub + (a.stat ? " · +" + FRAME_BONUS_PCT + "% hero " + FRAME_STAT_NAME[a.stat] + " (owned)" : "") }; })); } /* v1842: frame bonus shown */
+function avatarFramesList() { return [{ id: "none", name: "No Frame", sub: "Plain avatar" }].concat(Object.keys(AVATAR_FRAME_ART).map(function (id) { var a = AVATAR_FRAME_ART[id]; return { id: id, name: a.name, sub: a.sub + (a.stat ? " · +" + FRAME_BONUS_PCT + "% " + FRAME_STAT_NAME[a.stat] + " (owned)" : "") }; })); } /* v1842: frame bonus shown */
 var skinsTab = "fortress", skinsMarchForm = 0; /* v1048: which formation the Marches tab is choosing for */
 function skinsCatalog(cat) {
   var out = [];
