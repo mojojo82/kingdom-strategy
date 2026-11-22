@@ -3682,6 +3682,12 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   @media (max-width:900px) { html body[data-screen="city"] #techFortressHost .tf-title:not(#z) { display:none !important; } } /* v1804: the title bar already names the tree */
   html body[data-screen="city"] #techFortressHost .ft-boosts { background:#eecea7 !important; border:3px solid var(--pp-gold) !important; border-radius:12px !important; box-shadow:0 0 0 1.5px var(--pp-dk) !important; color:var(--pp-ink) !important; }
   html body[data-screen="city"] #techFortressHost .ft-boosts :is(span, div) { color:var(--pp-ink) !important; } html body[data-screen="city"] #techFortressHost .ft-boosts b { color:#9a5a10 !important; }
+  /* v1824: framed chat avatars - the frame reaches ~30% past the avatar on every side, so the column moves right and rows get more room */
+  .chat-avbox { position:relative; flex:none; --s:44px; width:44px; height:44px; }
+  .chat-avbox .chat-avatar { width:100% !important; height:100% !important; }
+  .chat-avbox { margin:6px 14px 0 20px; } .chat-avbox.framed .chat-avatar { border:0 !important; border-radius:4px !important; }
+  .chat-avbox .lb2-frameimg { z-index:1; }
+  html body #worldChatPanel #chatMessages { gap:22px !important; padding-top:20px !important; padding-left:12px !important; }
   /* v1823 (Harley): ONE tab style - a code copy of the painted Mail tab (cut top corners, gold rim, brown wood, cream when picked), spaced like the
      Mail tabs (5px between big tabs, 2px between the tiny ones) and stretched to fill the row. City tabs, Troops types + levels, Formations I/II/III, Chat, Skins. */
   html body:not(#z1):not(#z2):not(#z3) #screenBar .techtab,html body:not(#z1):not(#z2):not(#z3) #screenBar.chatbar .cb-tab,html body:not(#z1):not(#z2):not(#z3) .sk-tab,html body:not(#z1):not(#z2):not(#z3) #troopsModeContent .tr-wrap button.tr-type.tr-type,html body:not(#z1):not(#z2):not(#z3) #troopsModeContent .tr-tier,html body:not(#z1):not(#z2):not(#z3) #fmg .fg-fp button{position:relative!important;isolation:isolate;border:0!important;outline:0!important;border-radius:0!important;box-shadow:none!important;background:linear-gradient(#ffe08a,#e3a43a 45%,#a8701e)!important;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%,0 9px)!important;color:#fff3dc!important;font-family:'KS Title','Lilita One',sans-serif!important;font-weight:400!important;-webkit-text-stroke:.14em #3a1e08!important;paint-order:stroke fill!important;text-shadow:none!important;opacity:1!important;filter:none!important}
@@ -14734,7 +14740,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1823"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1824"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -24248,17 +24254,29 @@ function ticHtml(o) {
 var ownerProfileCache = {};
 var chatAvRedrawT = 0;
 function chatAvatarRedraw() { clearTimeout(chatAvRedrawT); chatAvRedrawT = setTimeout(function () { try { var el = document.getElementById("chatMessages"); if (el && el.offsetParent) renderWorldChat(); } catch (e) {} }, 150); } /* v1016: one redraw after a batch of avatars arrive */
+/* v1824 (Harley: avatar frames missing from chat): the equipped frame id is published next to the avatar (players/<me>/assetitems/<key>, a doc the
+   player may write) so other players' chat can show it. Written on equip and once per session when the chat opens. */
+var AVATAR_FRAME_PUB_KEY = "kingdom_avatar_frame_v1", avatarFramePubLast = null;
+function publishAvatarFrame() {
+  try { if (typeof assetSyncDb === "undefined" || !assetSyncDb || !PLAYER_ID) return; var id = (game.state.avatarFrame && AVATAR_FRAME_ART[game.state.avatarFrame]) ? game.state.avatarFrame : "none";
+    if (avatarFramePubLast === id) return; avatarFramePubLast = id;
+    assetSyncDb.doc(assetSyncPersonalDocIdFor(AVATAR_FRAME_PUB_KEY)).set({ data: id, ts: Date.now() }).catch(function () { avatarFramePubLast = null; }); } catch (e) {}
+}
+function chatAvatarBox(imgHtml, frameId) { /* v1824: the avatar with its frame laid over it (same art + fit as More > Skins) */
+  var fr = frameId && AVATAR_FRAME_ART[frameId] ? frameId : null;
+  return '<div class="chat-avbox' + (fr ? " framed" : "") + '">' + imgHtml + (fr ? avatarFrameImgHtml(fr) : "") + "</div>";
+}
 function fetchOwnerProfile(ownerId) { /* name + avatar a player saved for themselves (their own asset items); bots get a generated name */
   if (!ownerId) return null;
   var pc0 = ownerProfileCache[ownerId];
   if (pc0 && (pc0.bot || pc0.loading || Date.now() - (pc0.at || 0) < 60000)) return pc0; /* v1012: re-read a real player's name/avatar after a minute (it used to be read once per session, so a new avatar never showed until a reload) */
   if (ownerId.indexOf(BOT_OWNER_PREFIX) === 0 && botNameByOwner[ownerId]) { ownerProfileCache[ownerId] = { name: botNameByOwner[ownerId], avatar: null, bot: true }; return ownerProfileCache[ownerId]; }
   if (ownerId.indexOf(BOT_OWNER_PREFIX) === 0) { var tag = ownerId.slice(BOT_OWNER_PREFIX.length).replace(/[^a-z0-9]/gi, "").slice(-4).toUpperCase(); ownerProfileCache[ownerId] = { name: "Raider " + (tag || "Bot"), avatar: null, bot: true }; return ownerProfileCache[ownerId]; }
-  var p = ownerProfileCache[ownerId] = { name: pc0 ? pc0.name : null, avatar: pc0 ? pc0.avatar : null, loading: true }; /* keep showing the old ones while re-reading */
+  var p = ownerProfileCache[ownerId] = { name: pc0 ? pc0.name : null, avatar: pc0 ? pc0.avatar : null, frame: pc0 ? pc0.frame : null, loading: true }; /* keep showing the old ones while re-reading */
   if (!cloudDb) { p.loading = false; p.at = Date.now(); return p; }
   var base = ownerId === "owner" ? "assetitems/" : ("players/" + ownerId + "/assetitems/");
-  Promise.all([PLAYER_NAME_KEY, AVATAR_KEY].map(function (k) { return cloudDb.doc(base + k).get().then(function (sn) { return sn.exists && sn.data() ? sn.data().data : null; }, function () { return null; }); }))
-    .then(function (r) { var ch = p.name !== (r[0] || null) || p.avatar !== (r[1] || null); p.name = r[0] || null; p.avatar = r[1] || null; p.loading = false; p.at = Date.now(); if (ch) { try { renderTileInfo(); } catch (e) {} chatAvatarRedraw(); } });
+  Promise.all([PLAYER_NAME_KEY, AVATAR_KEY, AVATAR_FRAME_PUB_KEY].map(function (k) { return cloudDb.doc(base + k).get().then(function (sn) { return sn.exists && sn.data() ? sn.data().data : null; }, function () { return null; }); }))
+    .then(function (r) { var ch = p.name !== (r[0] || null) || p.avatar !== (r[1] || null) || p.frame !== (r[2] || null); p.name = r[0] || null; p.avatar = r[1] || null; p.frame = r[2] || null; /* v1824: + their avatar frame */ p.loading = false; p.at = Date.now(); if (ch) { try { renderTileInfo(); } catch (e) {} chatAvatarRedraw(); } });
   return p;
 }
 // Renders only the read-only header (garrison/remaining amounts) for the tile info panel.
@@ -36081,7 +36099,7 @@ function equipSkin(cat, id) {
   if (cat === "fortress") { game.state.fortressSkin = id; persist(); try { drawGovScene(); } catch (e) {} }
   else if (cat === "march") { var fm = game.state.formations[skinsMarchForm]; if (fm) { fm.marchSkin = id; persist(); } }
   else if (cat === "city") { setMapCitySkin(id); var sel = document.getElementById("mapCitySkinSelect"); if (sel) sel.value = id; }
-  else { game.state.avatarFrame = id; persist(); }
+  else { game.state.avatarFrame = id; persist(); try { publishAvatarFrame(); } catch (e) {} }
   renderSkinsScreen();
 }
 function renderSkinsScreen() {
@@ -38510,6 +38528,7 @@ function renderWorldChat() {
     el.innerHTML = '<div class="chat-empty">No messages yet — say hello to the realm!</div>';
     return;
   }
+  try { publishAvatarFrame(); } catch (e) {}
   var avatarSrc = getAvatar();
   var avatarHtml = avatarSrc ? '<img class="chat-avatar" src="' + avatarSrc + '">' : '<div class="chat-avatar">👤</div>';
   var prevTop = el.scrollTop, wasBottom = !el.childNodes.length || (el.scrollHeight - el.scrollTop - el.clientHeight < 40);
@@ -38521,7 +38540,7 @@ function renderWorldChat() {
     if (day !== lastDay) { sep = '<div class="chat-date">' + day + '</div>'; lastDay = day; }
     var own = m.pid ? m.pid === PLAYER_ID : m.name === me, key = m.ts + "|" + m.name;
     var op = !own && m.pid ? fetchOwnerProfile(m.pid) : null; /* v1016 (Harley): other players' avatars in chat (same cached, re-read-every-minute profile as the map) */
-    var av = own ? avatarHtml : (op && op.avatar ? '<img class="chat-avatar" src="' + op.avatar + '">' : '<div class="chat-avatar">👤</div>');
+    var av = chatAvatarBox(own ? avatarHtml : (op && op.avatar ? '<img class="chat-avatar" src="' + op.avatar + '">' : '<div class="chat-avatar">👤</div>'), own ? game.state.avatarFrame : (op && op.frame)); /* v1824: with their frame */
     var cls = String(m.text).indexOf("\n") !== -1 ? (/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFF00-\uFFEF\u3000-\u30FF]/u.test(m.text) ? ' multi emo' : ' multi') : '';
     var tr = chatTranslations[key];
     return sep + '<div class="chat-msg' + (own ? ' own' : '') + (chatSelKey === key ? ' sel' : '') + '" data-key="' + escapeHtml(key) + '">' + av +

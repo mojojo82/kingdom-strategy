@@ -6597,3 +6597,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Spaced like the Mail tabs: 5px between the big tabs, 2px between the tiny ones; every tab stretches to fill its row. Troop level locks moved inside the cut corner (they were clipped).
 - CSS block "v1823 ... ONE tab style" (high-specificity prefix html body:not(#z1):not(#z2):not(#z3) so older tab rules can't win).
 - Headless 430 and 375 wide: all five pages, labels fit, Chat tab switching works, no errors. Not tested on a phone.
+
+## v1824 - Avatar frames in chat (TEST)
+- Harley: avatar frames were missing in chat. Each player's equipped frame id is now published to players/<me>/assetitems/kingdom_avatar_frame_v1 (on equip, and once per session when the chat draws - a doc the player may already write; no rule change). fetchOwnerProfile reads it with the name + avatar, and chat draws the same frame art as More > Skins over each avatar (yours from your own save).
+- Avatar column moved right (20px in, 14px gap to the text) so the frame sits 12px from the panel edge; more space between messages for the frame. Players without a frame keep the plain avatar.
+- Note: other players' frames show once they've opened the game on v1824+ (that's when their frame is published).
+- Headless: 4 different frames + no-frame in one chat, own frame published to the fake store, no errors. Not tested on a phone.
