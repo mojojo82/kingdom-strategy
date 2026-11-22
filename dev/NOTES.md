@@ -6611,3 +6611,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1826 - Troops tabs reverted (TEST)
 - Harley: revert the Troops tabs. Infantry / Caster / Ranged and the I-X level tabs are back to their pre-v1823 look (tan, blue when picked); the Mail-style tabs stay on City, Formations I/II/III, Chat and Skins.
 - Headless: Troops and Formations checked, no errors. Not tested on a phone. (Formations slot frame mockup still waiting for Harley - not in the game.)
+
+## v1827 - Chat: "who is here" instead of the title bar (TEST)
+- Harley: remove the chat header, show who is online AND looking at that chat (round avatars + green dot, like Messenger); offline players not shown.
+- Presence: while the chat is open and the app is in front, each player keeps <server>/world/chatp_<uid> { kind:"chatp", pid, tab, aid, ts } fresh every 25 s (world/{d} is already signed-in writable - no rules change). It is deleted when they leave the chat, switch apps (visibilitychange) or close the page. Viewers subscribe only while in chat (where kind == "chatp") and show docs with ts < 70 s for the same tab; Alliance shows only the same alliance; Private shows just you. Names/avatars come from fetchOwnerProfile (cached).
+- Strip: "N here now", You first, then others newest first; scrolls sideways if many. The chat title bar is hidden on the phone (Back = bottom nav).
+- Not tracking: nothing is stored once a player leaves the chat.
+- Headless (fake store, 5 planted viewers): shows the 3 fresh World viewers + You, hides the expired one and the Alliance one; own doc written on open and deleted on leaving; listener closed; no errors. Not tested on a phone or with two real accounts.

@@ -3687,6 +3687,18 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     html body[data-screen="more"][data-sub="arena"] #screenBar .ksbar:not(#z) :is(.l, .m, .r, .t) { visibility:hidden !important; }
     html body[data-screen="more"][data-sub="arena"] #screenBar .ksbar:not(#z) { pointer-events:none; }
     html body[data-screen="more"][data-sub="arena"] #screenBar .ksbar .bk:not(#z) { pointer-events:auto; left:70px !important; top:34px !important; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6)); } }
+  /* v1827: chat header replaced by "who is here" (round avatars + green dot, Messenger style) */
+  @media (max-width:900px) { html body #screenBar.chatbar.has-ksbar .ksbar:not(#z) { display:none !important; } }
+  #chatOnline { padding:8px 10px 6px; }
+  #chatOnline .co-h { font-family:'KS Title','Lilita One',sans-serif; font-size:13px; color:#f0c95f; margin:0 2px 6px; }
+  #chatOnline .co-row { display:flex; gap:12px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+  #chatOnline .co-row::-webkit-scrollbar { display:none; }
+  #chatOnline .co-p { flex:none; width:54px; text-align:center; }
+  #chatOnline .co-av { position:relative; width:48px; height:48px; margin:0 auto; border-radius:50%; background:#3a2a18; border:2px solid #e3a43a; }
+  #chatOnline .co-av img { width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+  #chatOnline .co-av .co-ph { display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:22px; }
+  #chatOnline .co-av i { position:absolute; right:-1px; bottom:-1px; width:14px; height:14px; border-radius:50%; background:#31d158; border:3px solid #1c150f; }
+  #chatOnline .co-p span { display:block; margin-top:3px; font-size:11px; font-weight:700; color:#f3e8cf; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   /* v1824: framed chat avatars - the frame reaches ~30% past the avatar on every side, so the column moves right and rows get more room */
   .chat-avbox { position:relative; flex:none; --s:44px; width:44px; height:44px; }
   .chat-avbox .chat-avatar { width:100% !important; height:100% !important; }
@@ -14743,7 +14755,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1826"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1827"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36163,10 +36175,11 @@ function renderScreenBar() {
     cb.onclick = function () { var r = chatReturn; chatReturn = null; if (r) setScreen(r); else setScreen("more", "menu"); };
     var ct = document.createElement("div"); ct.className = "cb-title"; ct.textContent = "Chat";
     top.appendChild(cb); top.appendChild(ct); bar.appendChild(top); addKs("Chat", "💬", cb.onclick);
+    var co = document.createElement("div"); co.id = "chatOnline"; bar.appendChild(co); try { chatOnlinePaint(); } catch (e) {} /* v1827 */
     var tabs = document.createElement("div"); tabs.className = "cb-tabs";
     [["world", "World"], ["alliance", "Alliance"], ["private", "Private"]].forEach(function (c) {
       var t = document.createElement("div"); t.className = "cb-tab" + (chatTab === c[0] ? " active" : ""); t.textContent = c[1];
-      t.onclick = function () { chatTab = c[0]; renderScreenBar(); renderWorldChat(); }; tabs.appendChild(t);
+      t.onclick = function () { chatTab = c[0]; renderScreenBar(); renderWorldChat(); try { chatPresenceSync(); } catch (e) {} }; tabs.appendChild(t);
     });
     bar.appendChild(tabs);
   } else if (appScreen === "more" && appSub !== "menu") {
@@ -37580,6 +37593,7 @@ function arenaFightWake() { if (arenaFightLoopOn) return; arenaFightLoopOn = tru
 arenaFightWake();
 (function () { var orig = setScreen; setScreen = function () { var r = orig.apply(this, arguments);
   try { if (appScreen === "world") { fleetHudPosDirty = true; renderFleetHud(); } } catch (e) {} /* v1819: Marches box catches up on the World Map */
+  try { chatPresenceSync(); } catch (e) {} /* v1827: chat presence */
   try { if (appScreen === "world") fpsCounterWake(); if (appScreen === "more" && appSub === "arena") arenaFightWake(); } catch (e) {} /* v1819: restart the World / Arena-only loops */
   try { if (uiSkin() === "blue") { uiNavKey = ""; uiTopKey = ""; uiSkinApply(); } /* v1279: every screen - nav placed before the first paint (Harley's video: icons jumped for 1-2 frames) */
     if (uiSkin() === "blue" && document.body.getAttribute("data-screen") === "conquest") { resizeIdleCanvas(); resizeIdleCanvas(); uiSkinKey = ""; uiSkinApply(); } /* class first (it turns the slide-in off), then fit the canvas (twice: the fit settles in 2 steps), then place */ } catch (e) {} return r; }; })();
@@ -38511,6 +38525,45 @@ function renderChatTabsDesk() {
   var t = document.getElementById("chatTabsDesk"); if (!t) return;
   var want = [["world", "World"], ["alliance", "Alliance" + (ALLY.my ? " [" + ALLY.my.tag + "]" : "")], ["private", "Private"]].map(function (c) { return '<span data-ct="' + c[0] + '" class="' + (chatTab === c[0] ? "on" : "") + '">' + escapeHtml(c[1]) + '</span>'; }).join("");
   if (t._h !== want) { t._h = want; t.innerHTML = want; [].forEach.call(t.querySelectorAll("[data-ct]"), function (b) { b.onclick = function () { chatTab = b.getAttribute("data-ct"); renderWorldChat(); }; }); }
+}
+/* v1827 (Harley: "remove the chat header and instead show who is online AND looking at that chat area... round circle avatar and green online dot
+   like fb messenger"): chat presence. While a player has the chat open (app in front), they keep a small doc <server>/world/chatp_<uid>
+   { kind, pid, tab, aid, ts } fresh every 25 s; it is deleted when they leave the chat or the app goes to the background. Viewers list the docs
+   with a fresh ts (< 70 s) for the same tab (Alliance: same alliance only). Nothing is kept once they leave. world/{d} is already writable. */
+var CHP = { sub: null, list: {}, last: "", timer: 0, paint: 0, on: false };
+function chatPresenceDoc() { return cloudDb.doc(serverPrefix() + "world/chatp_" + PLAYER_ID); }
+function chatPresenceOpen() { return typeof appScreen !== "undefined" && appScreen === "more" && appSub === "chat" && !document.hidden; }
+function chatPresenceSync() {
+  try {
+    if (typeof cloudDb === "undefined" || !cloudDb || !PLAYER_ID) return;
+    var open = chatPresenceOpen();
+    if (!open) {
+      if (CHP.on) { CHP.on = false; CHP.last = ""; clearInterval(CHP.timer); clearInterval(CHP.paint); CHP.timer = CHP.paint = 0; chatPresenceDoc().delete().catch(function () {}); }
+      if (CHP.sub) { try { CHP.sub(); } catch (e) {} CHP.sub = null; CHP.list = {}; }
+      return;
+    }
+    if (!CHP.sub) CHP.sub = cloudDb.collection(serverPrefix() + "world").where("kind", "==", "chatp").onSnapshot(function (q) {
+      var l = {}; q.docs.forEach(function (d) { var v = d.data(); if (v && v.pid) l[v.pid] = v; }); CHP.list = l; chatOnlinePaint(); }, function () {});
+    var tab = typeof chatTab !== "undefined" ? chatTab : "world", aid = tab === "alliance" && ALLY.my ? ALLY.my.aid : null, key = tab + "|" + (aid || "");
+    var beat = function () { chatPresenceDoc().set({ kind: "chatp", pid: PLAYER_ID, tab: tab, aid: aid, ts: Date.now() }).catch(function () {}); };
+    if (!CHP.on || key !== CHP.last) { CHP.on = true; CHP.last = key; beat(); clearInterval(CHP.timer); CHP.timer = setInterval(function () { if (chatPresenceOpen()) beat(); }, 25000); }
+    if (!CHP.paint) CHP.paint = setInterval(chatOnlinePaint, 5000);
+    chatOnlinePaint();
+  } catch (e) {}
+}
+document.addEventListener("visibilitychange", function () { chatPresenceSync(); });
+window.addEventListener("pagehide", function () { try { if (CHP.on && cloudDb && PLAYER_ID) chatPresenceDoc().delete(); } catch (e) {} });
+function chatOnlinePaint() {
+  var el = document.getElementById("chatOnline"); if (!el) return;
+  var tab = typeof chatTab !== "undefined" ? chatTab : "world", aid = tab === "alliance" && ALLY.my ? ALLY.my.aid : null, now = Date.now();
+  var people = Object.keys(CHP.list).map(function (k) { return CHP.list[k]; }).filter(function (v) { return v.pid !== PLAYER_ID && v.tab === tab && (tab !== "alliance" || (aid && v.aid === aid)) && now - (v.ts || 0) < 70000; });
+  people.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+  var av = function (src) { return src ? '<img alt="" src="' + src + '">' : '<span class="co-ph">👤</span>'; };
+  var me = '<div class="co-p me"><div class="co-av">' + av(getAvatar()) + '<i></i></div><span>You</span></div>';
+  var html = me + people.map(function (v) { var op = fetchOwnerProfile(v.pid) || {}; var nm = op.name || "Lord"; return '<div class="co-p"><div class="co-av">' + av(op.avatar) + '<i></i></div><span>' + escapeHtml(nm) + "</span></div>"; }).join("");
+  var head = '<div class="co-h">' + (tab === "private" ? "Private chat" : (people.length + 1) + " here now") + "</div>";
+  html = head + '<div class="co-row">' + html + "</div>";
+  if (el._h !== html) { el._h = html; el.innerHTML = html; }
 }
 function renderWorldChat() {
   try { renderChatTabsDesk(); } catch (e) {}
