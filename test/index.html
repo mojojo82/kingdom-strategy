@@ -14804,7 +14804,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1834"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1835"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -25531,13 +25531,13 @@ function spawnSkillShot(fromX, fromY, toX, toY, style, landed, big) {
 // v448: `shotId` may be an ARRAY of per-missile shot ids (the engine now
 // fires one real shot per missile) — missile i then represents shot [i]
 // alone, so each one resolves, explodes and shows its own damage number.
-function spawnMissileVolley(fromX, fromY, toX, toY, count, targetId, speed, shotId) {
+function spawnMissileVolley(fromX, fromY, toX, toY, count, targetId, speed, shotId, wid) {
   fortLifeKick(); // v567
   var actualSpeed = speed || (IDLE_MIN_WEAPON_TRAVEL_DIST / IDLE_WEAPON_FLIGHT_SEC);
   for (var i = 0; i < count; i++) {
     var missileShotId = Array.isArray(shotId) ? shotId[i] : shotId;
     idleAnim.weaponMissiles.push({
-      x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: toY,
+      x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: toY, wid: wid || null, /* v1835 */
       t: 0, travelled: 0, age: 0, speed: actualSpeed,
       // shotId: the ONE real flight-queue shot all missiles in this volley
       // represent (see idleCombatStep's weapon-fire block). The update loop
@@ -26810,7 +26810,7 @@ function drawLaserBeams(ctx, w, h) {
     var fade = Math.min(1, lv.age / 0.08, Math.max(0, (lv.dur - lv.age) / 0.12));
     if (fade <= 0) return;
     touchLaserLoop("c" + key); // v464: hum while this beam is on screen
-    drawLaserBeamSegment(ctx, ox, oy, ax, ay, fade, tp.boss, vis, h);
+    if (lv.wid === "pulse_beam") drawPulseBeamSegment(ctx, ox, oy, ax, ay, fade); else drawLaserBeamSegment(ctx, ox, oy, ax, ay, fade, tp.boss, vis, h); /* v1835 */
   });
 }
 // Kessa's lightning stroke, shared (v459) by her Arc Burst bolt and the
@@ -27786,7 +27786,7 @@ function stepIdleAnim(dtSec, w, h) {
       var wshotIds = (game.state.idle.weaponLastShotIds || {})[wid];
       var wshotId = wshotIds && wshotIds.length ? wshotIds : (game.state.idle.weaponLastShotId || {})[wid];
       var msP = weaponSlotPoint(w, h, "cq", true, wid); // v1109: its weapon slot. v1165: this weapon's own (Flak / Scatter were using the Missile Barrage's)
-      spawnMissileVolley(msP ? msP.x : getCannonOriginX(w), msP ? msP.y : getCannonOriginY(h), frontVis.x, landY, wshotIds && wshotIds.length ? wshotIds.length : wstats.count, real[0].id, wshotSpeed, wshotId);
+      spawnMissileVolley(msP ? msP.x : getCannonOriginX(w), msP ? msP.y : getCannonOriginY(h), frontVis.x, landY, wshotIds && wshotIds.length ? wshotIds.length : wstats.count, real[0].id, wshotSpeed, wshotId, wid);
       // No damage number here anymore, and no sfxWeaponMissile() either (each
       // missile plays its own launch sound as it launches — see the
       // m.launched check in the weaponMissiles update loop below). The
@@ -28178,7 +28178,7 @@ function stepIdleAnim(dtSec, w, h) {
       p.x += p.driftX * step;
       p.y += p.driftY * step;
     });
-    m.trail.push({ x: m.x, y: m.y, age: 0, driftX: (Math.random() - 0.5) * 14, driftY: -(4 + Math.random() * 7) });
+    if (!gunIsOwnShot(m)) m.trail.push({ x: m.x, y: m.y, age: 0, driftX: (Math.random() - 0.5) * 14, driftY: -(4 + Math.random() * 7) }); /* v1835 */
     if (m.trail.length > 75) m.trail.shift(); // generous cap — MISSILE_SMOKE_MAX_AGE below decides how long a puff actually stays visible; this just keeps the array from growing unbounded, well past that fade time
     // x uses the UNclamped ramp (see the comment above m.t) so it keeps
     // sailing forward in a straight line past its original arrival point
@@ -28206,7 +28206,7 @@ function stepIdleAnim(dtSec, w, h) {
       // Every missile that touches a body gets its own burst, right where it
       // touched — a volley of several cosmetic missiles all genuinely
       // landing reads as several impacts, one after another.
-      spawnMissileImpactFx(contact.x, contact.y, contactOnBoss);
+      if (gunIsOwnShot(m)) { gunImpact("c", m.wid, contact.x, contact.y - (m.wid === "flak_burst" ? 14 : 0), contactOnBoss); if (m.wid === "scatter_rounds" && (m.t || 0) < 1 - GUN_SCATTER_FLY / IDLE_WEAPON_FLIGHT_SEC) gunFxList("c").sp.push({ x: m.startX, y: m.startY, vx: (contact.x - m.startX) * 4, vy: (contact.y - m.startY) * 4, life: 0.12, age: 0, col: "190,255,70" }); } else spawnMissileImpactFx(contact.x, contact.y, contactOnBoss); /* v1835 */
       var contactShotResult = m.shotId != null ? idleAnim.pendingShotResults[m.shotId] : null;
       if (contactShotResult && contactShotResult.hit && !contactShotResult.claimed) {
         // Engine already confirmed this shot hit: the one real damage number
@@ -32040,7 +32040,7 @@ function drawIdleAnim(ctx, w, h) {
     var T = game.state.idle && game.state.idle.fxT, st = { dome: false, wall: false, io: false, sw: false }, now = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, now - (idleAnim.defLt || now))); idleAnim.defLt = now;
     if (T) Object.keys(T).forEach(function (k) { var wd = WEAPON_DEFS_BY_ID[k.replace(/_dup$/, "")]; if (!wd || (game.state.equippedWeapons || []).indexOf(wd.id) < 0) return; var t = T[k];
       if (wd.fx === "dome" && t.up > 0) st.dome = true; else if (wd.fx === "wall" && t.up > 0) st.wall = true; else if (wd.fx === "io" && t.left > 0) st.io = true; });
-    drawDefFx(ctx, "c", fortHullBox(w, h, "cq", true, true), st, now, dt, w); })(); } catch (eD) {}
+    drawDefFx(ctx, "c", fortHullBox(w, h, "cq", true, true), st, now, dt, w); drawGunFx(ctx, "c"); /* v1835 */ })(); } catch (eD) {}
   ctx = ptCtx("fx", ptReal);
   if (idleAnim.pendingBar) { var pb = idleAnim.pendingBar; ctx.fillStyle = "#1a0f0f"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w, 4); ctx.fillStyle = "#c73b4e"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w * pb.frac, 4); idleAnim.pendingBar = null; }
   drawHeroWarps(ctx);
@@ -32196,6 +32196,7 @@ function drawIdleAnim(ctx, w, h) {
   // real rocket plume billows and dissipates.
   idleAnim.weaponMissiles.forEach(function (m) {
     if (m.delay > 0) return; // still waiting to launch — nothing to draw yet
+    if (gunIsOwnShot(m)) { drawGunShot(ctx, m, IDLE_WEAPON_FLIGHT_SEC); return; } /* v1835 */
     if (missileExhaustOn && missileExhaustTex && MISSILE_EXH_IMG.complete && MISSILE_EXH_IMG.naturalWidth) {
       // v720: exhaust as ONE textured ribbon (a flame-to-smoke streak image) laid along the missile's trail, a few slices per missile — instead of a gradient circle per puff
       var XMAXT = 0.9, step = 3, pts = [];
@@ -40869,12 +40870,53 @@ function drawMissileSmokeTrail(ctx, trail) {
     var r = 2.5 + (1 - life) * 11; ctx.globalAlpha = ga * life * 0.5; ctx.drawImage(missilePuffSprite(life), pt.x - r, pt.y - r, r * 2, r * 2); }
   ctx.globalAlpha = ga;
 }
+/* v1835 (Harley): own shots for Flak Burst, Scatter Rounds and Pulse Beam (they borrowed Missile Barrage's rockets / the Laser's beam). Code-drawn, Conquest + Arena, both sides.
+   Flak: brass shells lobbed in the missile arc, airburst over the target (orange starburst, shrapnel, dark smoke). Scatter: each round is a fast gold tracer that leaves
+   the muzzle in the last GUN_SCATTER_FLY s of its flight, so it still lands exactly when its damage does. Pulse Beam: thin cyan beam with bright half-rings rolling down it. */
+var GUN_SCATTER_FLY = 0.22, GUN_FX = {};
+function gunFxList(key) { return GUN_FX[key] || (GUN_FX[key] = { bursts: [], smoke: [], sp: [], lt: 0 }); }
+function gunStar(ctx, x, y, r, n, rot, fill) { ctx.beginPath(); for (var i = 0; i < n * 2; i++) { var a = rot + i * Math.PI / n, rr = i % 2 ? r * 0.45 : r; if (i) ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); else ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); }
+function gunImpact(key, wid, x, y, big) { var L = gunFxList(key), k;
+  if (wid === "flak_burst") { var s = big ? 1.5 : 1; L.bursts.push({ x: x, y: y, age: 0, rot: Math.random() * 6, s: s }); L.smoke.push({ x: x, y: y, age: 0, s: s });
+    for (k = 0; k < 10; k++) { var an = Math.random() * 6.28, v = (70 + Math.random() * 90) * s; L.sp.push({ x: x, y: y, vx: Math.cos(an) * v, vy: Math.sin(an) * v, life: 0.35 + Math.random() * 0.2, age: 0, col: "255,190,90" }); } }
+  else { for (k = 0; k < 4; k++) { var an2 = Math.PI + (Math.random() - 0.5) * 2, v2 = 50 + Math.random() * 80; L.sp.push({ x: x, y: y, vx: (x > 0 ? 1 : 1) * Math.cos(an2) * v2, vy: Math.sin(an2) * v2 - 30, life: 0.25, age: 0, col: "240,255,150" }); } L.bursts.push({ x: x, y: y, age: 0, spark: true }); } }
+function drawGunFx(ctx, key) { var L = gunFxList(key), now = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, now - (L.lt || now))); L.lt = now;
+  L.smoke = L.smoke.filter(function (m) { m.age += dt; var p = m.age / 1.1; if (p >= 1) return false; ctx.save(); ctx.globalAlpha = (1 - p) * 0.5; ctx.fillStyle = "#2b2a30"; for (var k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(m.x + Math.cos(k * 1.6) * 6 * (0.5 + p) * m.s, m.y - p * 10 + Math.sin(k * 1.6) * 4, (5 + p * 10) * m.s, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); return true; });
+  L.bursts = L.bursts.filter(function (z) { z.age += dt;
+    if (z.spark) { var q = z.age / 0.15; if (q >= 1) return false; wfxGlow(ctx, z.x, z.y, 8, "rgba(255,255,220,1)", "rgba(220,255,90,0.7)", 1 - q); return true; }
+    var p = z.age / 0.35; if (p >= 1) return false; ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 1 - p;
+    gunStar(ctx, z.x, z.y, 16 * z.s * (0.6 + p * 0.8), 7, z.rot, "rgba(255,140,30,0.9)"); gunStar(ctx, z.x, z.y, 10 * z.s * (0.6 + p * 0.6), 7, z.rot + 0.3, "rgba(255,230,120,1)"); ctx.restore();
+    wfxGlow(ctx, z.x, z.y, 26 * z.s * (1 - p * 0.3), "rgba(255,250,220,1)", "rgba(255,150,40,0.6)", 1 - p); return true; });
+  L.sp = L.sp.filter(function (s) { s.age += dt; if (s.age > s.life) return false; s.vy += 200 * dt; s.x += s.vx * dt; s.y += s.vy * dt; var a = 1 - s.age / s.life;
+    ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = "rgba(" + s.col + "," + a + ")"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x - s.vx * 0.03, s.y - s.vy * 0.03); ctx.stroke(); ctx.restore(); return true; }); }
+function gunIsOwnShot(m) { return m && (m.wid === "flak_burst" || m.wid === "scatter_rounds"); }
+/* one in-flight Flak / Scatter shot (m.t 0..1 of its flight, flightSec = its full flight time) */
+function drawGunShot(ctx, m, flightSec) { var t = Math.max(0, m.t || 0);
+  if (m.wid === "flak_burst") {
+    if (t < 0.06) wfxGlow(ctx, m.startX, m.startY, 14, "rgba(255,240,200,1)", "rgba(255,150,40,0.8)", 1 - t / 0.06);
+    if (t >= 1) return; var an = m.lpx != null && (m.x !== m.lpx || m.y !== m.lpy) ? Math.atan2(m.y - m.lpy, m.x - m.lpx) : (m.an || Math.atan2(m.toY - m.startY, m.toX - m.startX)); m.an = an; m.lpx = m.x; m.lpy = m.y;
+    ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(an); ctx.fillStyle = "#c9cfd6"; ctx.fillRect(-5, -2, 7, 4); ctx.fillStyle = "#d9a441"; ctx.beginPath(); ctx.moveTo(2, -2); ctx.lineTo(6, 0); ctx.lineTo(2, 2); ctx.closePath(); ctx.fill(); ctx.fillStyle = "#8a6a2a"; ctx.fillRect(-6, -2, 1.5, 4); ctx.restore();
+    wfxGlow(ctx, m.x - Math.cos(an) * 6, m.y - Math.sin(an) * 6, 5, "rgba(255,230,160,0.8)", "rgba(255,140,40,0.4)", 0.7); return; }
+  var t0 = 1 - GUN_SCATTER_FLY / Math.max(0.3, flightSec || 1.8); if (t < t0 || t >= 1) return; var u = (t - t0) / (1 - t0);
+  if (u < 0.2) wfxGlow(ctx, m.startX, m.startY, 10, "rgba(255,255,220,1)", "rgba(220,255,90,0.8)", 1 - u / 0.2);
+  var x = m.startX + (m.toX - m.startX) * u, y = m.startY + (m.toY - m.startY) * u, u2 = Math.max(0, u - 0.45), tx = m.startX + (m.toX - m.startX) * u2, ty = m.startY + (m.toY - m.startY) * u2;
+  ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round"; ctx.strokeStyle = "rgba(190,255,70,0.7)"; ctx.lineWidth = 3.6; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(x, y); ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(m.toY - m.startY, m.toX - m.startX)); ctx.fillStyle = "#f2c14e"; ctx.beginPath(); ctx.ellipse(0, 0, 4.5, 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+function drawPulseBeamSegment(ctx, ox, oy, ax, ay, fade) { var now = performance.now() / 1000, ang = Math.atan2(ay - oy, ax - ox), len = Math.hypot(ax - ox, ay - oy); if (!(fade > 0) || len < 1) return;
+  ctx.save(); ctx.translate(ox, oy); ctx.rotate(ang); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = fade;
+  var g = ctx.createLinearGradient(0, -5, 0, 5); g.addColorStop(0, "rgba(40,230,255,0)"); g.addColorStop(0.5, "rgba(90,245,255,0.55)"); g.addColorStop(1, "rgba(40,230,255,0)"); ctx.fillStyle = g; ctx.fillRect(0, -5, len, 10);
+  ctx.strokeStyle = "rgba(220,255,255,0.9)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(len, 0); ctx.stroke();
+  for (var d = (now * 260) % 26; d < len; d += 26) { var u = d / len, sz = 4 + 5 * Math.sin(Math.min(1, u * 3) * Math.PI / 2); ctx.globalAlpha = fade * (0.45 + 0.55 * u);
+    ctx.strokeStyle = "rgba(120,250,255,0.9)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(d, 0, 2.2, sz, 0, -Math.PI / 2, Math.PI / 2); ctx.stroke();
+    ctx.strokeStyle = "rgba(230,255,255,0.8)"; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(d, 0, 2.2, sz, 0, -Math.PI / 2, Math.PI / 2); ctx.stroke(); }
+  ctx.restore(); wfxGlow(ctx, ox, oy, 12, "rgba(230,255,255,1)", "rgba(40,230,255,0.8)", fade); wfxGlow(ctx, ax, ay, 18 + 4 * Math.sin(now * 30), "rgba(230,255,255,1)", "rgba(40,230,255,0.7)", fade);
+  if (Math.random() < 0.25) { var L = gunFxList(ctx.canvas && ctx.canvas.id === "arenaCanvas" ? "a" : "c"); L.sp.push({ x: ax, y: ay, vx: -Math.cos(ang) * (60 + Math.random() * 60), vy: (Math.random() - 0.5) * 120, life: 0.3, age: 0, col: "150,250,255" }); } }
 function spawnArenaMissileVolley(fromX, fromY, toX, toY, count, aim) {
   var now = performance.now() / 1000;
   for (var i = 0; i < count; i++) {
     if (aim) { var ap = weaponAimPoint(aim.w, aim.h, aim.onPlayer, aim.wid, now + i * 0.16 + 0.5); toX = ap.x + (WEAPON_TRACK[aim.wid] ? 0 : (Math.random() - 0.5) * 10); toY = ap.y + (WEAPON_TRACK[aim.wid] ? 0 : (Math.random() - 0.5) * 6); } /* v1560 */
     arenaAnim.weaponMissiles.push({
-      x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: toY,
+      x: fromX, y: fromY, startX: fromX, startY: fromY, toX: toX, toY: (aim && aim.wid === "flak_burst") ? toY - 18 : toY, wid: aim ? aim.wid : null, /* v1835: Flak bursts just over the hull */
       t: 0, delay: i * 0.16, trail: [], launched: false,
       arcLift: IDLE_WEAPON_MISSILE_ARC_LIFT * (1 - IDLE_WEAPON_MISSILE_ARC_LIFT_VARIANCE + Math.random() * IDLE_WEAPON_MISSILE_ARC_LIFT_VARIANCE * 2)
     });
@@ -41918,6 +41960,7 @@ function drawArenaFrame(ctx, w, h) {
   ctx = ptCtx("a_mrocket", ptRealA);
   arenaAnim.weaponMissiles.forEach(function (m) {
     if (m.delay > 0) return;
+    if (gunIsOwnShot(m)) { drawGunShot(ctx, m, ARENA_WEAPON_FLIGHT_TICKS * ARENA_TICK_MS / 1000); return; } /* v1835 */
     drawMissileSmokeTrail(ptCtx("a_msmoke", ptRealA), m.trail); /* v1513 (Harley: lag when both sides fire missiles): pre-drawn puff sprites instead of a new radial gradient per puff per frame */
     if (m.t < 1) {
       var amttForAngle = Math.min(1, m.t);
@@ -41943,7 +41986,7 @@ function drawArenaFrame(ctx, w, h) {
 
   // v453: missile explosions at the enemy fortress + Piercing Volley
   // fireball embers — the same shared drawing Conquest uses.
-  ctx = ptCtx("a_mboom", ptRealA); arenaAnim.missileImpacts.forEach(function (fx) { drawMissileImpactFx(ctx, fx); });
+  ctx = ptCtx("a_mboom", ptRealA); arenaAnim.missileImpacts.forEach(function (fx) { drawMissileImpactFx(ctx, fx); }); drawGunFx(ctx, "a"); /* v1835 */
   ctx = ptCtx("a_wfx", ptRealA); try { drawArenaWeaponFx(ctx, w, h); } catch (eW) {} /* v1833: EMP / Railgun / Droid Call */
   ctx = ptCtx("a_fx", ptRealA);
   if (arenaAnim.bulletSparks) drawBulletSparks(ctx, arenaAnim.bulletSparks); /* v1589 */
@@ -41960,12 +42003,13 @@ function drawArenaFrame(ctx, w, h) {
         var awP = weaponSlotPoint(w, h, "arena", false, bm.wid), ag0 = arenaFortressGeom(w, h, false), mx = awP ? awP.x : ag0.muzzleX, my = awP ? awP.y : ag0.muzzleY;
         var aT = arenaHullTarget(w, h, true), hitA = arenaHullContactPoint(w, h, true, mx, my, aT.y, aT.x);
         var apA = laserWanderPoint(bm.zone, bm.age, function () { return arenaLaserZonePoint(w, h, hitA, arguments[0], true); });
-        if (bf > 0) { drawLaserBeamSegment(ctx, mx, my, apA.x, apA.y, bf, true); touchLaserLoop(bm.sid); }
+        if (bf > 0) { if (bm.wid === "pulse_beam") drawPulseBeamSegment(ctx, mx, my, apA.x, apA.y, bf); else drawLaserBeamSegment(ctx, mx, my, apA.x, apA.y, bf, true); touchLaserLoop(bm.sid); } /* v1835 */
         return;
       }
       // v462: sweep across solid hull inside the fortress's hit zone.
       var ap = laserWanderPoint(bm.zone, bm.age, function () { return arenaLaserZonePoint(w, h, bHit, arguments[0]); });
-      if (bf > 0) { drawLaserBeamSegment(ctx, bpg.muzzleX, bpg.muzzleY, ap.x, ap.y, bf, true); touchLaserLoop(bm.sid); } // v464: hum while on screen
+      var bOwn = bm.wid ? weaponSlotPoint(w, h, "arena", true, bm.wid) : null, bmx = bOwn ? bOwn.x : bpg.muzzleX, bmy = bOwn ? bOwn.y : bpg.muzzleY; /* v1835: each beam from its own weapon's slot */
+      if (bf > 0) { if (bm.wid === "pulse_beam") drawPulseBeamSegment(ctx, bmx, bmy, ap.x, ap.y, bf); else drawLaserBeamSegment(ctx, bmx, bmy, ap.x, ap.y, bf, true); touchLaserLoop(bm.sid); } // v464: hum while on screen
     });
   }
   drawSkillEmbers(ctx, arenaAnim.skillEmbers, skillShotVisualScale / 100);
@@ -42122,7 +42166,7 @@ function stepArenaAnim(dtSec, w, h) {
       p.x += p.driftX * dtSec;
       p.y += p.driftY * dtSec;
     });
-    m.trail.push({ x: m.x, y: m.y, age: 0, driftX: (Math.random() - 0.5) * 14, driftY: -(4 + Math.random() * 7) });
+    if (!gunIsOwnShot(m)) m.trail.push({ x: m.x, y: m.y, age: 0, driftX: (Math.random() - 0.5) * 14, driftY: -(4 + Math.random() * 7) }); /* v1835: no rocket smoke for Flak / Scatter */
     if (m.trail.length > 40) m.trail.shift();
     m.t += dtSec / (ARENA_WEAPON_FLIGHT_TICKS * ARENA_TICK_MS / 1000); /* v968: the volley lands when the sim's shot lands */
     var mtt = Math.min(1, m.t);
@@ -42131,7 +42175,7 @@ function stepArenaAnim(dtSec, w, h) {
     // v453: it just reached the enemy fortress it was fired at (a fixed
     // point on the fortress's front — see spawnArenaMissileVolley) — the
     // same code-drawn explosion Conquest plays on contact, right there.
-    if (m.t >= 1) spawnMissileImpactFx(m.toX, m.toY, false, arenaAnim.missileImpacts);
+    if (m.t >= 1) { if (gunIsOwnShot(m)) gunImpact("a", m.wid, m.toX, m.toY); else spawnMissileImpactFx(m.toX, m.toY, false, arenaAnim.missileImpacts); } /* v1835 */
   });
   arenaAnim.missileImpacts.forEach(function (fx) { fx.age += dtSec; });
   if (arenaAnim.bulletSparks) stepBulletSparks(arenaAnim.bulletSparks, dtSec); /* v1589 */

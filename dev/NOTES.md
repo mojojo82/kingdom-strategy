@@ -6660,3 +6660,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Arena: both sides; sim info gains fxP/fxA dome + io and fxEv sw / wallblk (with mirror flag) / domehit (visual only, no combat change). Conquest: Dome, Wall, IO Repair from the engine's fxT timers; a Conquest wall block logs `wallblk` (no Conquest enemy targets ranged heroes yet).
 - Projection Wall card: removed the out-of-date "enemy shots can't hit ranged heroes yet" note.
 - Tests: g205-g209 + g294 pass; sim check: Lv50 wall vs Hanzo/Aurek area skills -> wallblk events with the mirror flag, Lv1 without; headless Arena (dome, wall, bot, dome ripples) and Conquest (dome, wall, bot), no errors. Not tested on a phone.
+
+## v1835 - Flak Burst / Scatter Rounds / Pulse Beam: their own shots (TEST)
+- Harley: these three borrowed Missile Barrage's rockets / the Laser's beam. Now code-drawn from their icons, Conquest + Arena, both sides (shots carry `wid`):
+  - Flak Burst: brass-and-silver shells in the missile arc (no rocket smoke), airburst just over the target: orange starburst, shrapnel streaks, dark smoke puff (`gunImpact` / `drawGunFx`).
+  - Scatter Rounds: each round is a fast gold round with a yellow-green tracer that leaves the muzzle in the last 0.22 s of its flight (`GUN_SCATTER_FLY`), so it still lands exactly when its damage does; small sparks on impact.
+  - Pulse Beam: thin cyan beam with bright half-rings rolling down it (`drawPulseBeamSegment`); Arena beams now each leave their own weapon's slot.
+- Visual only - timing and damage unchanged. Headless: Arena fight with all three on both sides (shells, tracers, pulse beams), Conquest shells + tracers drawn; no errors. Not tested on a phone.
