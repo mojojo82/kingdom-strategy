@@ -6736,3 +6736,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1849 - Formations Save / Release 13 px text (TEST)
 - Harley: Save and Release (Formations, 26 px tan buttons) 17 -> 13 px text, matching Select / Selected / Guard next to them. Headless check only.
+
+## v1850 - Formations: Infantry slider below the heroes, bigger small text (TEST)
+- Harley: the troop sliders were in different places (Infantry above the heroes, Caster / Ranged below) - Infantry now joins the others below the heroes (same row style + icon); plain parchment covers its old painted row. The space above the hero slots is now empty (the slots are painted into the card art).
+- "Some text on this screen is really tiny": troop names 22 -> 28 units (~9 -> ~12 px), tier line ("T1 100") 14 -> 22 (~6 -> ~9 px), slider numbers 22 -> 28, March size 22 -> 27, Reserve subtitle 19 -> 24; troop rows a bit taller (56 -> 66) to fit. Headless only.
