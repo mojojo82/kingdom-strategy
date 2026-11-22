@@ -6587,3 +6587,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: the chests need a closed and an open version. ChatGPT made open versions of the 3 activity chests (wood / blue / purple) and a new closed purple chest that matches its open one (no pink glow). Originals: art/originals/events/shared/chest_open_gpt_v1.png, chest_purple_closed_gpt_v1.png, cut pieces in .../shared/cut/.
 - New files (old chest_act_1-3 kept, LIVE still uses them): art/events/chest_open_1/2/3.webp, chest_act_3b.webp. evDailyHtml: claimed -> chest_open_<tier>, the 100 chest uses chest_act_3b; a claimed chest is no longer faded.
 - Headless: 60 Activity with 20/40 claimed shows two open wooden chests, the 60 chest glowing, new purple at 100; no errors. Not tested on a phone.
+
+## v1822 - City tabs without the little icons (TEST)
+- Harley: remove the small icons on the City tab row (Buildings / Troops / Formations / Infirmary / Research). Hidden with CSS (.ct-ic); labels now fit without clipping ("Research" was cut off).
+- Headless 430 and 375 wide: all five labels fit, no errors. Not tested on a phone.
