@@ -6639,3 +6639,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1831 - World Chat in the Research style: one cream page (TEST)
 - Harley picked "one cream page" with slider tabs, his own messages near-white, softer translate buttons. On the phone the chat is one cream panel with a gold frame: slider tabs (World / Alliance / Private) and "here now" at the top (moved into #worldChatPanel by renderScreenBar), cream message cards with gold frames, brown names in the game font, brown date plate, brown typing bar + blue Send. The dark chat bar above is hidden. PC layout untouched.
 - Headless: tabs + "here now" inside the panel, tab switching works, no duplicates after leaving and re-opening chat, other More pages keep their title bar, no errors. Not tested on a phone.
+
+## v1832 - Clone Task clone as a hologram (TEST)
+- Harley: make the clone look like a hologram. heroHoloBlit replaces the solid green fill (CLONE_TINT) everywhere the clone is drawn - Conquest (drawIdleClones) and Arena (drawArenaClones): see-through cyan that keeps his shading ("color" blend), scanlines every ~6 px drifting down, a bright band sweeping up every 2.6 s, gentle pulse + a quick flicker with a 1.5 px sideways glitch every ~3.3 s, soft cyan glow. Looks only - no gameplay change.
+- Cost (headless micro-benchmark): ~0.96 ms per clone per frame vs 0.29 ms for the old green; the glow barely matters.
+- Headless: Conquest with Clone Task, real-speed comparison clip shown to Harley; no errors. Not tested on a phone.

@@ -14804,7 +14804,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1831"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1832"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -29445,7 +29445,31 @@ function heroBigHitCheck(key, dmg) {
 }
 // v975: tint (optional, e.g. "rgba(40,220,90,0.62)") colours the sprite - used for Clone Task's clone (Gareth's art, heavy green, until it has its own art)
 var heroTintCv = null;
+/* v1832 (Harley): Clone Task's clone drawn as a hologram (Conquest + Arena) - see-through cyan that keeps his shading, drifting scanlines, a bright band sweeping up, a gentle pulse + a quick flicker, soft cyan glow. Replaces the solid green fill. */
+var heroHoloCv = null;
+function heroHoloBlit(ctx, im, sx, sy, cw, ch, dx, dy, dw, dh) {
+  var t = performance.now() / 1000;
+  if (!heroHoloCv) heroHoloCv = document.createElement("canvas");
+  if (heroHoloCv.width !== cw || heroHoloCv.height !== ch) { heroHoloCv.width = cw; heroHoloCv.height = ch; }
+  var tx = heroHoloCv.getContext("2d"), k = dh / ch; /* screen px per sheet px */
+  tx.globalCompositeOperation = "source-over"; tx.globalAlpha = 1; tx.clearRect(0, 0, cw, ch); tx.drawImage(im, sx, sy, cw, ch, 0, 0, cw, ch);
+  tx.globalCompositeOperation = "color"; tx.fillStyle = "rgb(70,210,255)"; tx.fillRect(0, 0, cw, ch);          /* cyan, keeps his shading */
+  tx.globalCompositeOperation = "destination-in"; tx.drawImage(im, sx, sy, cw, ch, 0, 0, cw, ch);             /* back to his outline */
+  tx.globalCompositeOperation = "source-atop"; tx.fillStyle = "rgba(90,220,255,0.28)"; tx.fillRect(0, 0, cw, ch); /* light cyan wash */
+  var gap = 6 / k, off = (t * 14 / k) % gap;                                                                  /* scanlines ~3 screen px apart, drifting down */
+  tx.globalCompositeOperation = "destination-out"; tx.fillStyle = "rgba(0,0,0,0.55)";
+  for (var y = -gap + off; y < ch; y += gap) tx.fillRect(0, y, cw, gap * 0.45);
+  var sp = 2.6, u = (t % sp) / sp, by = ch * (1.15 - u * 1.4), bh = ch * 0.12;                                 /* bright band sweeping up */
+  tx.globalCompositeOperation = "source-atop"; var g = tx.createLinearGradient(0, by - bh, 0, by + bh);
+  g.addColorStop(0, "rgba(200,250,255,0)"); g.addColorStop(0.5, "rgba(210,252,255,0.55)"); g.addColorStop(1, "rgba(200,250,255,0)");
+  tx.fillStyle = g; tx.fillRect(0, by - bh, cw, bh * 2); tx.globalCompositeOperation = "source-over";
+  var fl = 0.78 + 0.06 * Math.sin(t * 9); var q = (t * 1.7) % 3.3; if (q < 0.09) fl *= 0.45; else if (q > 0.16 && q < 0.21) fl *= 0.6; /* gentle pulse + a quick flicker every few s */
+  var jx = (q < 0.09) ? 1.5 : 0;                                                                                /* tiny sideways glitch during the flicker */
+  ctx.save(); ctx.globalAlpha *= fl; ctx.shadowColor = "rgba(80,220,255,0.9)"; ctx.shadowBlur = 12;
+  ctx.drawImage(heroHoloCv, 0, 0, cw, ch, dx + jx, dy, dw, dh); ctx.restore();
+}
 function heroTintBlit(ctx, im, sx, sy, cw, ch, dx, dy, dw, dh, tint) {
+  if (tint === CLONE_TINT) { heroHoloBlit(ctx, im, sx, sy, cw, ch, dx, dy, dw, dh); return; } /* v1832: the clone is a hologram */
   if (!tint) { ctx.drawImage(im, sx, sy, cw, ch, dx, dy, dw, dh); return; }
   if (!heroTintCv) heroTintCv = document.createElement("canvas");
   if (heroTintCv.width !== cw || heroTintCv.height !== ch) { heroTintCv.width = cw; heroTintCv.height = ch; }
