@@ -6607,3 +6607,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1825 - Arena: back button only, no title bar (TEST)
 - Harley: in the Arena show just the back button, not the whole header. On the phone the Arena's title bar strip is gone (zero height) and only the octagon + arrow floats over the top-left of the arena (leaderboard and fight). Other More pages keep the full bar.
 - Headless: button on top and tappable (Back from a fight -> leaderboard), Weapons page bar unchanged, no errors. Not tested on a phone.
+
+## v1826 - Troops tabs reverted (TEST)
+- Harley: revert the Troops tabs. Infantry / Caster / Ranged and the I-X level tabs are back to their pre-v1823 look (tan, blue when picked); the Mail-style tabs stay on City, Formations I/II/III, Chat and Skins.
+- Headless: Troops and Formations checked, no errors. Not tested on a phone. (Formations slot frame mockup still waiting for Harley - not in the game.)
