@@ -6728,3 +6728,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1847 - Events "Hero details" button at the 26 px small size (TEST)
 - Harley: try Hero details (Featured Hero Week banner) at 26 px. Was 30 px with a 12 px label; now height 26 px, label 13 px (fits the height better). Headless check only.
+
+## v1848 - 26 px buttons all use 13 px text; alliance Create button narrower (TEST)
+- Harley: every 26 px button gets 13 px text. Changed: Rig (12 -> 13), profile Cards (12.6) and ••• (18.7), Formations Select / Guard (17), Mail Read all (15.8; it scaled with the panel) - Hero details was already 13. Rig and Read all were sized by their padding, so they now have a fixed 26 px height to stay at 26.
+- Alliance "Create" no longer stretches the whole card: 384 -> 140 px wide, centred.
+- Headless measurements: all seven 26 px buttons = 26 px / 13 px text; Create 140 x 35. Not tested on a phone.
