@@ -3280,10 +3280,13 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #repFull .rf-cols { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:start; } #repFull .rf-cols.one { grid-template-columns:1fr; }
   #repFull .rf-vs { display:none; }
   #repFull .rf-side { min-width:0; padding:0 8px 9px; overflow:hidden; }
-  #repFull .rf-tagline { margin:0 -8px 8px; padding:4px 6px; text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:14px; color:#fff; -webkit-text-stroke:3px rgba(0,0,0,.45); paint-order:stroke fill; border-bottom:2px dashed rgba(122,74,24,.45); }
+  #repFull .rf-tagline { margin:0 -8px 8px; padding:4px 6px; text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:14px; color:#fff; -webkit-text-stroke:3px rgba(0,0,0,.45); paint-order:stroke fill; border-bottom:2px dashed rgba(122,74,24,.45); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #repFull .rf-side.me .rf-tagline { background:linear-gradient(#5c9be0, #3a72b8); } #repFull .rf-side.foe .rf-tagline { background:linear-gradient(#e0705c, #b8463a); }
-  #repFull .rf-av { width:54px; height:54px; margin:0 auto 4px; border-radius:50%; overflow:hidden; border:3px solid #e3a43a; box-shadow:0 0 0 1.5px #7a4a18; background:#3a2414; display:flex; align-items:center; justify-content:center; font-size:28px; }
-  #repFull .rf-av img { width:100%; height:100%; object-fit:cover; }
+  #repFull .rf-av { position:relative; --s:58px; width:58px; height:58px; margin:4px auto 8px; }
+  #repFull .rf-avin { position:absolute; inset:0; box-sizing:border-box; border-radius:9px; border:4px solid #fff; box-shadow:0 2px 5px rgba(0,0,0,.35); background:#362f28; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:28px; } /* like the profile's default avatar square */
+  #repFull .rf-av.framed .rf-avin { border:0; border-radius:4px; box-shadow:none; }
+  #repFull .rf-av.framed { --s:52px; width:52px; height:52px; margin:24px auto 18px; } /* room for the frame art, which reaches past the square (most above it) */
+  #repFull .rf-avin img { width:100%; height:100%; object-fit:cover; } #repFull .rf-av .lb2-frameimg { z-index:1; }
   #repFull .rf-name { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:17px; line-height:1.1; color:#4a2a10; overflow-wrap:anywhere; }
   #repFull .rf-at { text-align:center; font-size:12px; font-weight:700; color:#1f6c80; text-decoration:underline; cursor:pointer; margin:2px 0 4px; } #repFull .rf-at.off { text-decoration:none; }
   #repFull .rf-pw { text-align:center; font-size:13px; font-weight:800; color:#6b4a2a; margin-bottom:5px; }
@@ -21819,7 +21822,9 @@ function repFullInfo(info) {
   h += '<div class="rf-sec">Cards</div>' + (info.cards && info.cards.length ? '<div class="rf-cards">' + info.cards.map(function (c) { return "<span>" + escapeHtml(c) + "</span>"; }).join("") + "</div>" : '<div class="rf-none">None</div>');
   return h;
 }
-function repFullAvatar(src, fallback) { return '<div class="rf-av">' + (src ? '<img alt="" src="' + escapeHtml(src) + '">' : "<span>" + fallback + "</span>") + "</div>"; }
+function repFullAvatar(src, fallback, frame) { /* v1842 (Harley): square like the profile's default avatar, with the player's avatar frame on top */
+  var fr = frame && AVATAR_FRAME_ART[frame] ? frame : null;
+  return '<div class="rf-av' + (fr ? " framed" : "") + '"><div class="rf-avin">' + (src ? '<img alt="" src="' + escapeHtml(src) + '">' : "<span>" + fallback + "</span>") + "</div>" + (fr ? avatarFrameImgHtml(fr) : "") + "</div>"; }
 function repFullHeroes(keys, info) { keys = (keys || []).filter(function (k) { return HERO_DEFS[k]; }); if (!keys.length) return '<div class="rf-none">No heroes</div>';
   var lv = {}; ((info && info.heroes) || []).forEach(function (x) { lv[x[0]] = x; });
   return '<div class="rf-heroes">' + keys.map(function (k) { var d = HERO_DEFS[k], f = evFace(k), x = lv[k]; return '<div class="rf-hero r-' + String(d.rarity || "").toLowerCase() + '">' + (f ? '<img alt="" src="' + f + '">' : "<span>" + d.icon + "</span>") + "<b>" + escapeHtml(d.name) + "</b>" + (x ? '<em>Lv ' + x[1] + " " + repFullStars(x[2]) + "</em>" : "") + "</div>"; }).join("") + "</div>"; }
@@ -21835,7 +21840,7 @@ function repFullTroops(army, losses, wounded, mine) {
     + '<div class="rf-left">' + (mine ? "Came back: " : "Left: ") + "<b>" + fmt(Math.max(0, ta - tl)) + "</b></div>";
 }
 function repFullSide(o) {
-  return '<div class="rf-side ' + o.cls + '"><div class="rf-tagline">' + (o.cls === "me" ? "You" : "Opponent") + "</div>" + repFullAvatar(o.av, o.avFb) + '<div class="rf-name">' + escapeHtml(o.name) + "</div>"
+  return '<div class="rf-side ' + o.cls + '"><div class="rf-tagline">' + escapeHtml(o.cls === "me" ? o.name : "Opponent") + "</div>" + repFullAvatar(o.av, o.avFb, o.frame) + '<div class="rf-name">' + escapeHtml(o.name) + "</div>"
     + (o.tile ? '<div class="rf-at" data-goto="' + escapeHtml(o.tile) + '">📍 ' + ksRepCoordTxt(o.tile) + "</div>" : '<div class="rf-at off">&nbsp;</div>')
     + (o.info && o.info.pw ? '<div class="rf-pw">⚡ ' + fmt(o.info.pw) + " power</div>" : "") + '<div class="rf-hpl">Battle HP</div>' + ksRepBar(o.left, o.max, o.cls === "foe")
     + '<div class="rf-kv"><span>Armor</span><b>' + (o.armor != null ? Math.round(o.armor * 100) + "%" : "-") + "</b></div>"
@@ -21847,7 +21852,7 @@ function repFullHtml(r) {
   if (ksRepIsGather(r)) {
     h += '<div class="rf-ban g"><b>Gathering complete</b><span>' + escapeHtml(ksRepPlace(r)) + " · " + escapeHtml(when) + "</span></div>";
     h += '<div class="rf-big">' + (RES_ICON[r.resourceType] || "") + " +" + fmt(r.gathered || ksRepSum(r.loot)) + "<small>" + escapeHtml(ksRepCap(r.resourceType)) + "</small></div>";
-    h += '<div class="rf-cols one">' + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.tileId, power: 0, left: 1, max: 1, heroes: r.heroKeys, army: r.attackerArmy, losses: {}, noInfo: true }).replace(/<div class="rf-pw">[\s\S]*?<div class="rf-sec">Heroes/, '<div class="rf-sec">Heroes') + "</div>";
+    h += '<div class="rf-cols one">' + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "👑", frame: game.state.avatarFrame, tile: r.tileId, power: 0, left: 1, max: 1, heroes: r.heroKeys, army: r.attackerArmy, losses: {}, noInfo: true }).replace(/<div class="rf-pw">[\s\S]*?<div class="rf-sec">Heroes/, '<div class="rf-sec">Heroes') + "</div>";
     return h;
   }
   if (r.note) return h + '<div class="rf-ban n"><b>' + escapeHtml(ksRepTitle(r)) + "</b><span>" + escapeHtml(when) + '</span></div><div class="rf-card"><div class="rf-note">' + escapeHtml(r.note) + "</div></div>";
@@ -21855,11 +21860,11 @@ function repFullHtml(r) {
   var aMax = r.atkHpMax != null ? r.atkHpMax : r.atkPower, dMax = r.defHpMax != null ? r.defHpMax : r.defPower;
   var aLeft = r.atkHpLeft != null ? r.atkHpLeft : (r.win ? Math.max(0, r.atkPower - r.defPower) : 0), dLeft = r.defHpLeft != null ? r.defHpLeft : (r.win ? 0 : Math.max(0, r.defPower - r.atkPower));
   h += '<div class="rf-ban ' + (r.win ? "w" : "l") + '"><b>' + (r.win ? "Victory" : mut ? "Draw" : "Defeat") + "</b><span>" + (r.tileType === "city" ? "Attack on " + escapeHtml(foe) + "'s city" : escapeHtml(ksRepPlace(r))) + " · " + escapeHtml(when) + "</span></div>";
-  var foeFb = r.tileType === "city" ? "🏯" : r.tileType === "monster" ? "👹" : r.tileType === "resource" ? "⛏️" : "💀";
+  var foeFb = r.tileType === "city" ? "👑" : r.tileType === "monster" ? "👹" : r.tileType === "resource" ? "⛏️" : "💀";
   h += '<div class="rf-cols">'
-    + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "🏰", tile: r.homeTileId, power: r.atkPower, left: aLeft, max: aMax, armor: r.atkArmor, dealt: dMax - dLeft, heroes: r.heroKeys, army: r.attackerArmy, losses: r.attackerLosses, wounded: r.woundedSent, info: r.atkInfo })
+    + repFullSide({ cls: "me", name: getPlayerName(), av: getAvatar(), avFb: "👑", frame: game.state.avatarFrame, tile: r.homeTileId, power: r.atkPower, left: aLeft, max: aMax, armor: r.atkArmor, dealt: dMax - dLeft, heroes: r.heroKeys, army: r.attackerArmy, losses: r.attackerLosses, wounded: r.woundedSent, info: r.atkInfo })
     + '<div class="rf-vs">VS</div>'
-    + repFullSide({ cls: "foe", name: r.tileType === "city" ? foe : ksRepPlace(r), av: prof && prof.avatar, avFb: foeFb, tile: r.tileId, power: r.defPower, left: dLeft, max: dMax, armor: r.defArmor, dealt: aMax - aLeft, heroes: r.tileType === "city" ? r.defenderHeroKeys : [], army: r.defenderArmy, losses: r.defenderLosses, info: r.defInfo, noInfo: r.tileType !== "city" })
+    + repFullSide({ cls: "foe", name: r.tileType === "city" ? foe : ksRepPlace(r), av: prof && prof.avatar, avFb: foeFb, frame: r.tileType === "city" && prof ? prof.frame : null, tile: r.tileId, power: r.defPower, left: dLeft, max: dMax, armor: r.defArmor, dealt: aMax - aLeft, heroes: r.tileType === "city" ? r.defenderHeroKeys : [], army: r.defenderArmy, losses: r.defenderLosses, info: r.defInfo, noInfo: r.tileType !== "city" })
     + "</div>";
   var notes = [];
   if (r.undefended) notes.push("🚪 Their City Guard was off - no fight, straight to the walls.");
