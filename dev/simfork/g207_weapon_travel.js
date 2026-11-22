@@ -1,4 +1,4 @@
-/* v968: nothing a weapon fires is instant in Arena - Missile shots, EMP pulses and Railgun shots land ARENA_WEAPON_FLIGHT_TICKS (1.8s) after firing. Run: node dev/simfork/g207_weapon_travel.js */
+/* v968 (v1833: the Railgun flies 1 tick, not 4): nothing a weapon fires is instant in Arena - Missile shots, EMP pulses and Railgun shots land ARENA_WEAPON_FLIGHT_TICKS (1.8s) after firing. Run: node dev/simfork/g207_weapon_travel.js */
 const fs = require("fs"), path = require("path"), assert = require("assert");
 const ROOT = path.join(__dirname, "../..");
 const { chromium } = require(process.env.PW_PATH || "/opt/npm-tools/node_modules/playwright");
@@ -22,7 +22,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
     const FIVE = ["gareth", "lyra", "roran", "kessa", "sera"], hs = {}; FIVE.forEach((k) => { hs[k] = { owned: true, level: 40, stars: 10, skillLevels: { conquest: [3, 3, 3], expedition: [3, 3, 3] } }; });
     const side = (isP) => { const st = arenaSideStats(FIVE, hs, 15, 0, false, null, null, undefined, ZERO_BONUS); (st.heroHp || []).forEach((e) => { e.runL = arenaRunDist(400, 240, FIVE.indexOf(e.id), isP); }); return st; };
     const kit = (ids) => { const m = {}; ids.forEach((id) => { m[id] = 30; }); return botWeaponsToSim(m); };
-    const o = { flightTicks: ARENA_WEAPON_FLIGHT_TICKS };
+    const o = { flightTicks: ARENA_WEAPON_FLIGHT_TICKS, railFlight: ARENA_RAIL_FLIGHT_TICKS };
     /* missile: fired on tick 1, its damage shows up in the trace ARENA_WEAPON_FLIGHT_TICKS later */
     { const k = kit(["missile_barrage"]), tr = { src: {}, aiSrc: {}, perTick: [] }; const sim = arenaMakeSim(side(true), side(false), { rng: worldPvpSeededRng("t"), critSeed: "t", weapons: k.specs, trace: tr });
       let fireT = null, landT = null; for (let t = 1; t <= 20 && landT == null; t++) { const x = sim.step(); if (fireT == null && (x.info.playerWeaponFires || x.playerWeaponFires || []).length) fireT = t; if (landT == null && (tr.src["weapon:missile_barrage"] || 0) > 0) landT = t; }
@@ -37,6 +37,7 @@ const store = {}, call = require(path.join(ROOT, "dev/tests/fnrunner.js"))(store
   assert.strictEqual(r.flightTicks, 4, "weapon flight = 1.8s = 4 ticks");
   assert.ok(r.missileFire != null && r.missileLand === r.missileFire + r.flightTicks, "missile damage lands one flight after firing");
   assert.strictEqual(r.empStunTick, 1 + r.flightTicks, "EMP stun lands one flight after it fires");
-  assert.ok(r.railKoTick >= r.railCountdownTicks + r.flightTicks, "railgun knockout lands one flight after the countdown");
+  assert.strictEqual(r.railFlight, 1, "v1833: the Railgun slug is fast - 1 tick (0.45s)");
+  assert.ok(r.railKoTick >= r.railCountdownTicks + r.railFlight && r.railKoTick < r.railCountdownTicks + r.flightTicks, "railgun knockout lands one (short) rail flight after the countdown");
   console.log("errs", errs); assert.deepStrictEqual(errs, []); console.log("ALL OK"); await b.close();
 })().catch((e) => { console.error("FAIL", e.message); process.exit(1); });
