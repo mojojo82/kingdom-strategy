@@ -313,3 +313,17 @@ Clone+railgun+Hex F3 99 -> 81 | Hex+Dome+railgun F3 92 -> 83 | Salvo+railgun+las
 Lv40 same picture (x0.3 top: Salvo+EMP+missile F1 96, Salvo+railgun+laser F1 90). Lv20: F3 builds on top either way; Salvo+EMP+missile F2 4% / 0%.
 Findings: F2 is mid-table with defensive weapons (Hex/Dome/Clone ~57-68%) and near the bottom with attack builds (same build on F1 vs F2: Salvo+EMP+missile 71 vs 22). x0.3 barely moves F2. F2 has no weapon build that suits it (it didn't exist when weapons were made).
 Harley (21 Nov): "I'll probably lean into these results in the future. F1 already focused on cannons, now it looks like it has the most potential to use weapons." (direction only - nothing changed)
+
+## Avatar frame stat pick - Arena (v1842, 23 Nov 2026)
+`node dev/balance/frame_stat_pick.js`. Same 5 heroes both sides (Lv80 5*, full Fortress 1 research), one side +X% to ONE hero bonus stat. Win % of the boosted side / its fortress-HP margin:
+
+| Setup | +ATK | +HP | +DEF |
+|---|---|---|---|
+| no bonus, no weapons, +10 | 66 / 14 | 69 / 20.5 | 58 / 4.6 |
+| no bonus, no weapons, +25 | 68 / 25 | 78 / 39.6 | 63 / 8.5 |
+| +300 bonus, no weapons, +25 (40 teams) | 63 / 12.8 | 62 / 12.8 | 55 / 2.5 |
+| +300 bonus, weapons Lv15, +25 | 54 / -0.3 | 51 / -2.9 | 48 / -4.8 |
+| +300 bonus, weapons Lv30, +25 | 54 / 0 | 50 / -2.5 | 48 / -4.9 |
+| +300 bonus, weapons Lv30, +100 | 58 / 7.4 | 56 / 4.6 | 48 / -4.4 |
+
+Read: DEF is clearly the weakest. HP and ATK are close: HP wins while bonuses are small (newer players), they tie at a realistic +300%, ATK edges ahead once weapons are strong. With Lv30 weapons fights end in ~58 ticks and hero bonuses barely matter at all.
