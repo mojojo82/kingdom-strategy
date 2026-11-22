@@ -6713,3 +6713,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1843 - frame bonus wording (TEST)
 - Harley: frames shouldn't say "hero" - the bonus is the same one Sword of Power gives, and it lifts the fortress too. More > Skins now reads "+2% HP (owned)" etc.; the stats panel label says "Bonus % (heroes + fortress)".
+
+## v1844 - 4 more avatar frames + locked frames (TEST)
+- Harley picked the third ChatGPT set (art/originals/frames/v2_concepts/frames_concepts_v3.png; cut with dev/frames/cut_frames.py -> art/originals/frames/v2 + art/frames): Pathfinder (DEF), Boss Breaker (ATK), Siege Breaker (HP), Hero's Spotlight (ATK).
+- Pathfinder is the easy one for testing on his admin account: unlocked by the save (FRAME_REQS.ch1 = Conquest chapter 1 done, state.idle.chapter >= 2). Boss Breaker / Siege Breaker / Hero's Spotlight are LOCKED until their events hand them out (st.framesOwned[id], not wired to events yet). The first four stay free for now.
+- More > Skins lists locked frames greyed with "🔒 Locked" and how to get them; they can't be equipped and give no bonus until owned. The "unlocked" count skips locked ones.
+- Headless: chapter 1 -> Pathfinder locked, can't equip; chapter 3 -> Pathfinder owned, equips, DEF bonus +2 more; locked Boss Breaker refuses to equip; no errors. Not tested on a phone.
