@@ -3699,6 +3699,28 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #chatOnline .co-av .co-ph { display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:22px; }
   #chatOnline .co-av i { position:absolute; right:-1px; bottom:-1px; width:14px; height:14px; border-radius:50%; background:#31d158; border:3px solid #1c150f; }
   #chatOnline .co-p span { display:block; margin-top:3px; font-size:11px; font-weight:700; color:#f3e8cf; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* v1831 (Harley picked "one cream page", slider tabs, your messages white, soft translate button): World Chat in the Research style - tabs and
+     "here now" move inside the cream chat panel on the phone (renderScreenBar), the dark chat bar is gone */
+  @media (max-width:900px) {
+    html body[data-screen=more][data-sub=chat] #worldChatPanel{background:#f4d5a7!important;border:3px solid #e3a43a!important;border-radius:14px!important;box-shadow:0 0 0 2px #7a4a18,inset 0 0 0 2px #fff3d6!important}
+    html body #worldChatPanel .chat-date{background:linear-gradient(#8a5a2e,#5e3a1a)!important;border:2px solid #e3a43a;color:#fff!important;font-family:'KS Title','Lilita One',sans-serif!important;font-weight:400!important}
+    html body #worldChatPanel .chat-name{color:#4a2a10!important;font-family:'KS Title','Lilita One',sans-serif!important;font-weight:400!important;font-size:14px!important}
+    html body #worldChatPanel .chat-time{color:#8a6a44!important}
+    html body #worldChatPanel .chat-avatar{border:2px solid #e3a43a!important;background:#c19d6c!important;box-shadow:0 0 0 1.5px #7a4a18}
+    html body #worldChatPanel .chat-text{background:#eecea7!important;border:2px solid #e3a43a!important;box-shadow:0 0 0 1.5px #7a4a18,inset 0 0 0 1.5px #fff6dc!important;color:#4a2a10!important;font-weight:600}
+    html body #worldChatPanel .chat-tr{background:#e6c592!important;border:1px solid #c79a5a!important;color:#8a6238!important;box-shadow:none!important}
+    html body #worldChatPanel .chat-input-row{background:linear-gradient(#8a5a2e,#5e3a1a)!important;border-top:3px solid #e3a43a!important}
+    html body #worldChatPanel .chat-input-row textarea{background:#fff4dc!important;border:2px solid #e3a43a!important;color:#4a2a10!important}
+    html body #worldChatPanel .chat-input-row button{--ksb-bg:#2bc8e2;--ksb-edge:#136a80;--ksb-ring:#bff3fb;--ksb-ink:#0e5466;background:var(--ksb-bg)!important;color:#fff!important;border:2px solid var(--ksb-edge)!important;border-radius:10px!important;font-family:'KS Title','Lilita One',sans-serif!important;font-weight:400!important;-webkit-text-stroke:.12em var(--ksb-ink)!important;paint-order:stroke fill!important;box-shadow:inset 0 0 0 2px var(--ksb-bg),inset 0 0 0 3px var(--ksb-ring),0 2px 0 var(--ksb-edge)!important;opacity:1!important}
+    html body #worldChatPanel .chat-empty{color:#7a5a36!important}
+    html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel .chat-msg.own .chat-text{background:#fffaf0!important;border-color:#e3a43a!important}
+    html body[data-screen=more][data-sub=chat] #screenBar.chatbar{display:none!important}
+    html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel > .cb-tabs{display:flex;gap:0;margin:10px 10px 0;padding:4px;border-radius:12px;background:#c9a676;box-shadow:inset 0 2px 3px rgba(80,45,10,.35)}
+    html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel > .cb-tabs .cb-tab{flex:1;text-align:center;cursor:pointer;padding:7px 0;border-radius:9px;color:#6b4520;background:none;border:0;font-family:'KS Title','Lilita One',sans-serif!important;font-weight:400!important;font-size:15px;-webkit-tap-highlight-color:transparent}
+    html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel > .cb-tabs .cb-tab.active{color:#4a2a10;background:#fff4dc;box-shadow:0 0 0 2px #e3a43a,0 2px 0 rgba(90,50,15,.35)}
+    html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel > #chatOnline{margin:0 10px;padding:8px 4px 6px;border-bottom:2px solid #d9b07a}
+    html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel #chatOnline .co-h{color:#7a4a18} html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel #chatOnline .co-p span{color:#4a2a10} html body:not(#z1):not(#z2):not(#z3):not(#z4) #worldChatPanel #chatOnline .co-av i{border-color:#f4d5a7}
+  }
   /* v1830: top-bar numbers - fixed width box + equal-width digits, so values like 12.7K / 12.8K don't move the pill */
   html body #resbar .res:not(.res-basic) .rv { display:inline-block; width:5.6ch; text-align:left; font-variant-numeric:tabular-nums; white-space:nowrap; }
   html body #resbar .res:not(.res-basic):last-child .rv { width:4.2ch; } /* books: narrower frame, values stay short (366, 1.2K) */
@@ -14782,7 +14804,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1830"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1831"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -36212,6 +36234,9 @@ function renderScreenBar() {
       t.onclick = function () { chatTab = c[0]; renderScreenBar(); renderWorldChat(); try { chatPresenceSync(); } catch (e) {} }; tabs.appendChild(t);
     });
     bar.appendChild(tabs);
+    /* v1831: on the phone the tabs + "here now" sit at the top of the cream chat panel (one page) */
+    var cpan = document.getElementById("worldChatPanel"), cmsg = document.getElementById("chatMessages");
+    if (window.innerWidth <= 900 && cpan && cmsg && cmsg.parentNode === cpan) { [].forEach.call(cpan.querySelectorAll(":scope > .cb-tabs, :scope > #chatOnline"), function (x) { if (x !== tabs && x !== co) x.remove(); }); cpan.insertBefore(tabs, cmsg); cpan.insertBefore(co, cmsg); }
   } else if (appScreen === "more" && appSub !== "menu") {
     bar.classList.add("on");
     var b = document.createElement("button"); b.className = "secondary sb-back"; b.textContent = "◀ Back";

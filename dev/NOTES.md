@@ -6635,3 +6635,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: the gems / medals / books numbers moved left and right. Cause: each pill is fitted to its frame by its text width; digits differ in width, so every value change re-fitted the pill (and rewrote the Blue top bar's layout CSS).
 - Now: short form via fmtCompact (18.6K, 12.7K, 366, 1.1M) and a fixed-width, equal-width-digit number box (books box a little narrower), so the pills keep the same width and position whatever the value - no re-fit, no layout rewrite.
 - Headless: three very different value sets -> same pill positions and widths; no errors. Not tested on a phone.
+
+## v1831 - World Chat in the Research style: one cream page (TEST)
+- Harley picked "one cream page" with slider tabs, his own messages near-white, softer translate buttons. On the phone the chat is one cream panel with a gold frame: slider tabs (World / Alliance / Private) and "here now" at the top (moved into #worldChatPanel by renderScreenBar), cream message cards with gold frames, brown names in the game font, brown date plate, brown typing bar + blue Send. The dark chat bar above is hidden. PC layout untouched.
+- Headless: tabs + "here now" inside the panel, tab switching works, no duplicates after leaving and re-opening chat, other More pages keep their title bar, no errors. Not tested on a phone.
