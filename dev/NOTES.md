@@ -6630,3 +6630,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: grey out weapons the player hasn't unlocked; they can still tap them to read the ability. Unlocked = has a fragment, is past Lv.1, or is already equipped (same test as weapon power, weaponUnlocked()). Locked tiles are grey with a lock on the level strip; the header says "N / 17 unlocked".
 - Locked weapons can't be equipped any more (toggleWeaponEquip refuses; Weapon Info button reads "Locked · find it in Weapon Draw"). Already-equipped weapons always count as unlocked, so nobody loses a slot.
 - Headless: 13 locked on a fresh account, locked info opens, equip refused, a weapon with fragments equips, no errors. Not tested on a phone.
+
+## v1830 - Top-bar numbers: short form, no jiggle (TEST)
+- Harley: the gems / medals / books numbers moved left and right. Cause: each pill is fitted to its frame by its text width; digits differ in width, so every value change re-fitted the pill (and rewrote the Blue top bar's layout CSS).
+- Now: short form via fmtCompact (18.6K, 12.7K, 366, 1.1M) and a fixed-width, equal-width-digit number box (books box a little narrower), so the pills keep the same width and position whatever the value - no re-fit, no layout rewrite.
+- Headless: three very different value sets -> same pill positions and widths; no errors. Not tested on a phone.

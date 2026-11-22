@@ -3699,6 +3699,9 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #chatOnline .co-av .co-ph { display:flex; width:100%; height:100%; align-items:center; justify-content:center; font-size:22px; }
   #chatOnline .co-av i { position:absolute; right:-1px; bottom:-1px; width:14px; height:14px; border-radius:50%; background:#31d158; border:3px solid #1c150f; }
   #chatOnline .co-p span { display:block; margin-top:3px; font-size:11px; font-weight:700; color:#f3e8cf; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* v1830: top-bar numbers - fixed width box + equal-width digits, so values like 12.7K / 12.8K don't move the pill */
+  html body #resbar .res:not(.res-basic) .rv { display:inline-block; width:5.6ch; text-align:left; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  html body #resbar .res:not(.res-basic):last-child .rv { width:4.2ch; } /* books: narrower frame, values stay short (366, 1.2K) */
   /* v1828: Weapons page - Research style, grid of rarity tiles */
   html body #weaponsModeContent:not(#z) { background:#f4d5a7 !important; color:#4a2a10 !important; border:3px solid #e3a43a !important; border-radius:14px !important; box-shadow:0 0 0 2px #7a4a18, inset 0 0 0 2px #fff3d6 !important; margin:8px 6px !important; padding:10px 10px 16px !important; }
   html body #weaponsModeContent > :is(h2, .dev-tools-hint, #weaponsHint) { display:none !important; }
@@ -14779,7 +14782,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1829"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1830"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -15395,9 +15398,11 @@ function renderResources() {
   }
   var E = el._resEls, put = function (k, txt) { if (E[k].textContent !== txt) E[k].textContent = txt; };
   ["food","wood","stone","gold"].forEach(function (res) { put(res, fmt(game.state.resources[res])); });
-  put("gems", fmt(game.state.gems || 0));
-  put("valor", fmt(game.state.idle.valor));
-  put("books", fmt(game.state.idle.conquestBooks));
+  /* v1830 (Harley: the numbers jiggled left/right; "shorten the numbers eg 1.2k"): short form (18.6K), and a fixed-width number box (CSS) so a new value
+     never changes the pill's width - the Blue top bar no longer re-fits (and rewrites its layout) every time a number ticks */
+  put("gems", fmtCompact(game.state.gems || 0));
+  put("valor", fmtCompact(game.state.idle.valor || 0));
+  put("books", fmtCompact(game.state.idle.conquestBooks || 0));
   renderResOverlay();
 }
 // Phones show a single resources button in the top bar; tapping it opens this small popup with every resource.
