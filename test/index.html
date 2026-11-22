@@ -14804,7 +14804,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1835"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1836"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -27004,7 +27004,7 @@ function stepIdleAnim(dtSec, w, h) {
     var fxs = game.state.idle.fxShotLog.shift();
     if (fxs.kind === "drone") {
       var dv = idleAnim.enemyById[fxs.id]; if (!dv) continue;
-      var dSP = weaponSlotPoint(w, h, "cq", true, "droid_call"), dFromX = dSP ? dSP.x : w * 0.16, dFromY = dSP ? dSP.y : getFortressTopY(h) - 18; // v1109: its weapon slot
+      var dSP = cqDronePos(w, h, performance.now() / 1000), dFromX = dSP ? dSP.x + 15 : w * 0.16, dFromY = dSP ? dSP.y + 2 : getFortressTopY(h) - 18; // v1836: from the drone itself
       spawnProjectile(w, h, dFromX, dFromY, dv.x - 4, groundYFor(h) - 18, false, fxs.id, fxs.dmg, false, "drone");
       idleAnim.pendingArrows[fxs.id] = (idleAnim.pendingArrows[fxs.id] || 0) + 1;
     } else if (fxs.kind === "wallblk") { /* v1834 */
@@ -32040,7 +32040,8 @@ function drawIdleAnim(ctx, w, h) {
     var T = game.state.idle && game.state.idle.fxT, st = { dome: false, wall: false, io: false, sw: false }, now = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, now - (idleAnim.defLt || now))); idleAnim.defLt = now;
     if (T) Object.keys(T).forEach(function (k) { var wd = WEAPON_DEFS_BY_ID[k.replace(/_dup$/, "")]; if (!wd || (game.state.equippedWeapons || []).indexOf(wd.id) < 0) return; var t = T[k];
       if (wd.fx === "dome" && t.up > 0) st.dome = true; else if (wd.fx === "wall" && t.up > 0) st.wall = true; else if (wd.fx === "io" && t.left > 0) st.io = true; });
-    drawDefFx(ctx, "c", fortHullBox(w, h, "cq", true, true), st, now, dt, w); drawGunFx(ctx, "c"); /* v1835 */ })(); } catch (eD) {}
+    drawDefFx(ctx, "c", fortHullBox(w, h, "cq", true, true), st, now, dt, w); drawGunFx(ctx, "c"); /* v1835 */
+    if ((game.state.equippedWeapons || []).indexOf("droid_call") !== -1) { var dP = cqDronePos(w, h, now), fe = (game.state.idle.enemies || []).filter(function (e) { return e.arrived && e.hp > 0; })[0], fv = fe ? idleAnim.enemyById[fe.id] : null; if (dP) drawArenaDrone(ctx, dP, true, now, fv ? { x: fv.x, y: groundYFor(h) - 18 } : { x: dP.x + 100, y: dP.y }); } /* v1836 */ })(); } catch (eD) {}
   ctx = ptCtx("fx", ptReal);
   if (idleAnim.pendingBar) { var pb = idleAnim.pendingBar; ctx.fillStyle = "#1a0f0f"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w, 4); ctx.fillStyle = "#c73b4e"; ctx.fillRect(pb.x - pb.w / 2, pb.y, pb.w * pb.frac, 4); idleAnim.pendingBar = null; }
   drawHeroWarps(ctx);
@@ -41194,6 +41195,9 @@ function arenaWfxEvents(state) { /* called once per battle tick with the sim's i
 function arenaDronePos(w, h, isP, now) { var b = isP ? arenaShieldBox(w, h) : arenaAiShieldBox(w, h); if (!b) return null;
   var ht = arenaHullTarget(w, h, isP); /* hovers a little above its own hull's middle, clear of the HUD chips */
   return { x: b.x + b.sw * (isP ? 0.72 : 0.28) + Math.sin(now * 1.3 + (isP ? 0 : 2)) * 5, y: Math.max(b.y + b.sh * 0.12, ht.y - 40) + Math.sin(now * 2.6 + (isP ? 0 : 1)) * 3 }; }
+function cqDronePos(w, h, now) { /* v1836: Droid Call's drone in Conquest - hovers above the fortress like in Arena */
+  var b = fortHullBox(w, h, "cq", true, true); if (!b) return null; var ht = fortHullPoint(b, SKIN_HULLT[b.skin.id] || [0.5, 0.6]);
+  return { x: b.x + b.sw * 0.72 + Math.sin(now * 1.3) * 5, y: Math.max(b.y + b.sh * 0.12, ht.y - 40) + Math.sin(now * 2.6) * 3 }; }
 function drawArenaDrone(ctx, d, isP, now, tgt) {
   ctx.save(); ctx.translate(d.x, d.y); ctx.scale(isP ? 1.5 : -1.5, 1.5); var ang = Math.max(-0.35, Math.min(0.35, Math.atan2(tgt.y - d.y, Math.abs(tgt.x - d.x)) * 0.25)); ctx.rotate(ang);
   ctx.globalAlpha = 0.45; ctx.fillStyle = "#9fdcff"; [-7, 7].forEach(function (rx) { ctx.beginPath(); ctx.ellipse(rx, -5, 6, 1.1 + Math.abs(Math.sin(now * 40)) * 0.6, 0, 0, Math.PI * 2); ctx.fill(); }); ctx.globalAlpha = 1;

@@ -6667,3 +6667,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
   - Scatter Rounds: each round is a fast gold round with a yellow-green tracer that leaves the muzzle in the last 0.22 s of its flight (`GUN_SCATTER_FLY`), so it still lands exactly when its damage does; small sparks on impact.
   - Pulse Beam: thin cyan beam with bright half-rings rolling down it (`drawPulseBeamSegment`); Arena beams now each leave their own weapon's slot.
 - Visual only - timing and damage unchanged. Headless: Arena fight with all three on both sides (shells, tracers, pulse beams), Conquest shells + tracers drawn; no errors. Not tested on a phone.
+
+## v1836 - Conquest: Droid Call drone (TEST)
+- The Arena hover drone now flies above the fortress in Conquest too (`cqDronePos`, same drawing as Arena); its cyan bolts leave the drone instead of the weapon slot. Visual only.
+- Harley: EMP in Conquest will only matter against mechanical bosses (not made yet) - no Conquest EMP visual until then; he'll say when the bosses come.
+- Headless Conquest with Droid Call: drone hovering above the hull, no errors. Not tested on a phone.
