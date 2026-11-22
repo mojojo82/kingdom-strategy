@@ -6618,3 +6618,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Strip: "N here now", You first, then others newest first; scrolls sideways if many. The chat title bar is hidden on the phone (Back = bottom nav).
 - Not tracking: nothing is stored once a player leaves the chat.
 - Headless (fake store, 5 planted viewers): shows the 3 fresh World viewers + You, hides the expired one and the Alliance one; own doc written on open and deleted on leaving; listener closed; no errors. Not tested on a phone or with two real accounts.
+
+## v1828 - New Weapons page + new weapon icons + weapon rarity colours (TEST)
+- Harley picked the mockup. More > Weapons is now a Research-style grid: a compact draw bar (tickets, pool level + progress, x10 / x100 / All, odds + Legendary pity, last draw), Equipped (3 tiles, same size as the rest), All weapons in rows of 5 sorted Legendary > Epic > Super Rare > Elite. Each tile: rarity colour, thin rim + dark outline, level strip, shard bar (green when it can level up, MAX), name, blue tick when equipped. Tap = Weapon Info (equip / level up stay there).
+- Icons: all 17 weapons redrawn by ChatGPT in the Backpack item style (fresh descriptions of what each weapon does, Backpack icons as style ref). art/weapons/<id>.webp (256 px); originals art/originals/items/weapon_slabs/ (sheets + cut/). The new pictures also show in Weapon Info and Conquest's weapon slots.
+- Rarity colours (weapons + Recon): Legendary gold, Epic purple (like the heroes), Super Rare green, Elite blue, Standard grey (WEAPON_RARITY_COLOR, RECON_RARITY_COLOR, WEAPON_TILE_RC).
+- Not changed: equipment (Conquest turret grid) keeps its own colours; nothing is locked (every weapon can still be equipped, as before).
+- Headless 430 / 375: 17 tiles + 3 equipped, no missing pictures, no sideways overflow, draw x10 works, tile opens Weapon Info, Conquest weapon slots OK, no errors. Not tested on a phone.
