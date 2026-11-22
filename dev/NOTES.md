@@ -6719,3 +6719,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Pathfinder is the easy one for testing on his admin account: unlocked by the save (FRAME_REQS.ch1 = Conquest chapter 1 done, state.idle.chapter >= 2). Boss Breaker / Siege Breaker / Hero's Spotlight are LOCKED until their events hand them out (st.framesOwned[id], not wired to events yet). The first four stay free for now.
 - More > Skins lists locked frames greyed with "🔒 Locked" and how to get them; they can't be equipped and give no bonus until owned. The "unlocked" count skips locked ones.
 - Headless: chapter 1 -> Pathfinder locked, can't equip; chapter 3 -> Pathfinder owned, equips, DEF bonus +2 more; locked Boss Breaker refuses to equip; no errors. Not tested on a phone.
+
+## v1845 - chat Send button text (TEST)
+- Harley: the outline around "Send" in chat was big / had a drop shadow. An older chat rule gave the label a thick brown 4-way text shadow on top of the blue button's own outline; the chat button now uses the standard blue-button text shadow, same as every other blue button. Headless check only.
