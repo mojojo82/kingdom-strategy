@@ -6694,5 +6694,5 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Tests: g205 / g207 / g208 pass; headless report with a real bot battle snapshot, no errors. Not tested on a phone.
 
 ## v1841 - reports: Weapons page tiles + worn equipment (TEST)
-- Harley: weapon icons should look like the Weapons menu, and equipment was missing. Weapons on the report use the Weapons page tile (rarity colour, new icon, Lv strip) at the level they had in the fight. New Equipment section: every worn piece as its Overlord gear tile (rarity background + turret icon) with its total % (ATK / HP / DEF on hover/long-press title); snapshot field `equip`.
+- Harley: weapon icons should look like the Weapons menu, and equipment was missing. Weapons on the report use the Weapons page tile (rarity colour, new icon, Lv strip) at the level they had in the fight. New Equipment section: every worn piece as its equipment tile from the Conquest/Arena gear grid (rarity background + turret icon; NOT Overlord gear - that is Governor Gear, the 6 profile slots, not in fights yet) with its total % (ATK / HP / DEF on hover/long-press title); snapshot field `equip`.
 - Headless: report with 6 worn pieces + weapons on both sides, no errors. Not tested on a phone.
