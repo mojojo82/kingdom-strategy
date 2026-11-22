@@ -6650,3 +6650,13 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - New Arena visuals (code-drawn, both sides, driven by the sim's new `info.fxEv`): EMP electric orb; while a side is stunned (`fxP/fxA.stun`) its fortress is held on the frame it was hit and tinted blue - instant on, instant off (Harley: no wave, no fade). Railgun muzzle flash + fast violet-white slug with a glowing rail, flash + sparks on the hull. Droid Call: small hover drone above its fortress, cyan bolts to the enemy hull.
 - Balance (`run.js --only meta`): META missile+laser+railgun F3 Lv20 82% -> 78%, Lv40 57% -> 54%, Lv80 52% -> 51%. Top builds unchanged (Clone+Railgun+Hex / Hex+Dome+Railgun). The "meta not strongest" warning was already there before this change.
 - Tests: g207 updated (Railgun flight 1 tick) - passes; g205/g206/g208/g209/g294 pass; g210 + g216 fail before and after (pre-existing). Headless Arena fight with all three weapons on both sides recorded, no errors. Not tested on a phone.
+
+## v1834 - Deflector Dome / Projection Wall / IO Repair / Status Wave visuals (TEST)
+- Harley picked the looks from mockups. All code-drawn (`drawDefFx`, one state per side: DEF_FX.aP / aA / c):
+  - Deflector Dome: amber energy bubble over the hull while up (pops up, shine slides down); a small amber ripple where shots land on it (sim `fxEv` domehit = projectile damage landed on a raised dome this tick).
+  - Projection Wall: blue hologram line wall just in front of the hull (scanlines, glowing ends, flicker). A blocked hit flashes on it; Lv50 Mirror Wall fires a violet-white Tesla-coil arc (3 crawling plasma strands + tendrils) back at the enemy hull - made to look unlike Kessa's blue lightning.
+  - IO Repair: a small repair bot drawn after its icon (round white body, dark visor, cyan eyes, gold caps, wrench, green thruster) flies to random spots on the hull and welds (sparks, green pluses); flies off when the repair ends.
+  - Status Wave: silver ring wave on cast, dotted silver ring + sparkles round the hull while EMP-immune (Arena only - nothing to block in Conquest).
+- Arena: both sides; sim info gains fxP/fxA dome + io and fxEv sw / wallblk (with mirror flag) / domehit (visual only, no combat change). Conquest: Dome, Wall, IO Repair from the engine's fxT timers; a Conquest wall block logs `wallblk` (no Conquest enemy targets ranged heroes yet).
+- Projection Wall card: removed the out-of-date "enemy shots can't hit ranged heroes yet" note.
+- Tests: g205-g209 + g294 pass; sim check: Lv50 wall vs Hanzo/Aurek area skills -> wallblk events with the mirror flag, Lv1 without; headless Arena (dome, wall, bot, dome ripples) and Conquest (dome, wall, bot), no errors. Not tested on a phone.
