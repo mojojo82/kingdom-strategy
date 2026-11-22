@@ -6682,3 +6682,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Tapping a report opens it full screen (#repFull, repFullOpen): top bar (back / Save), result banner, you on the LEFT and the opponent on the RIGHT (avatar, name, coords, power, HP-left bar, armor, damage dealt, heroes, troop table sent/had + lost + wounded, came back / left), then Base hit, Rewards, Infirmary note. Gathering reports: one panel.
 - New gathering report (`kind: "gather"`, pushed when a march starts gathering). Their name is saved on PvP reports (rep.defName from fetchOwnerProfile). More > Reports now opens Mail on the Reports tab.
 - Headless: lists, full-screen PvP win/loss, camp defeat, monster, gathering; no errors. Not tested on a phone. Not yet: reports for being attacked (not recorded), hero levels.
+
+## v1839 - full-screen report in the game's own look (TEST)
+- Harley (phone screenshot): "needs to look like the rest of our UI". The report page now uses the standard title bar (ksBarEl, back in the left socket), cream cards with the orange frame like the Weapons page (#eecea7 / #e3a43a / #7a4a18 outline), dark-brown text, dotted section rules and dashed row lines, flat cyan buttons (ks-btn) for Save / Go there inside the result banner. You (blue "You" strip) left, opponent (red "Opponent" strip) right.
+- Headless: war victory (top + scrolled), camp defeat, gathering - no errors. Not tested on a phone.

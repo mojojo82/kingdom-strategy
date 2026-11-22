@@ -3233,55 +3233,58 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #mailPanel.sk-c .mtab .tn { top:-12%; right:-6%; }
   #mailPanel.sk-c .mtab, #mailPanel.sk-c .mtab.on { border:0; border-image:none; background:var(--mail-tab-off) center/100% 100% no-repeat; padding:0 0 2%; } #mailPanel.sk-c .mtab.on { background-image:var(--mail-tab-on); } /* v1751: whole picture at its own shape - no 9-slice seams */
   #mailPanel.sk-c .mi { border-image:none; background:var(--mail-cardrow) center/100% 100% no-repeat; background-origin:border-box; background-clip:border-box; } /* v1751: row card drawn whole at the rows' shape (no seams) */
-  /* v1838: full-screen report (tapped from Mail) */
-  #repFull { display:none; position:fixed; inset:0; z-index:100060; flex-direction:column; background:linear-gradient(#0d1a33, #0a1222 60%, #070d19); color:#f3e9d2; font-family:'Chakra Petch',system-ui,-apple-system,'Segoe UI',sans-serif; padding-top:env(safe-area-inset-top, 0px); }
+  /* v1838: full-screen report (tapped from Mail) - same look as the other pages: title bar, cream cards with the orange frame, cyan buttons */
+  #repFull { display:none; position:fixed; inset:0; z-index:100060; flex-direction:column; background:#0b1426; color:#4a2a10; font-family:var(--bodyfont, 'Chakra Petch', sans-serif); padding-top:env(safe-area-inset-top, 0px); }
   body.repfull-open #repFull { display:flex; }
-  #repFull .rf-top { flex:none; display:flex; align-items:center; gap:10px; padding:10px max(12px, env(safe-area-inset-left, 0px)) 10px; background:linear-gradient(#6b4320, #4a2c12); border-bottom:2px solid #c9a35a; box-shadow:0 3px 8px rgba(0,0,0,.5); }
-  #repFull .rf-back { width:40px; height:40px; border-radius:50%; border:2px solid #f0c95f; background:#3a220c; color:#f0c95f; font-size:28px; line-height:30px; padding:0 0 4px; cursor:pointer; }
-  #repFull .rf-title { flex:1; font-family:'KS Title','Lilita One',sans-serif; font-size:22px; color:#ffe7a8; text-shadow:0 2px 0 rgba(0,0,0,.5); }
-  #repFull .rf-save { border:2px solid #c9a35a; background:#3a220c; color:#f3dcb0; border-radius:10px; padding:6px 10px; font-family:'KS Title','Lilita One',sans-serif; font-size:15px; cursor:pointer; } #repFull .rf-save.on { background:#8a5a1c; color:#fff1c8; }
-  #repFull .rf-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px max(10px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); display:flex; flex-direction:column; gap:10px; }
-  #repFull .rf-ban { padding:10px 12px; border-radius:12px; text-align:center; color:#fff; box-shadow:inset 0 -3px 0 rgba(0,0,0,.2), 0 3px 10px rgba(0,0,0,.4); border:2px solid rgba(255,255,255,.18); }
-  #repFull .rf-ban b { display:block; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:34px; letter-spacing:.05em; text-transform:uppercase; text-shadow:0 2px 0 rgba(0,0,0,.35); }
-  #repFull .rf-ban span { display:block; font-size:13px; opacity:.95; }
-  #repFull .rf-ban.w { background:linear-gradient(#5fae4a, #2f7a2a); } #repFull .rf-ban.l { background:linear-gradient(#c45a44, #8a2a1e); } #repFull .rf-ban.g { background:linear-gradient(#5ea2cf, #2a5f8a); } #repFull .rf-ban.n { background:linear-gradient(#b48a52, #7a5228); }
-  #repFull .rf-cols { display:grid; grid-template-columns:1fr auto 1fr; gap:6px; align-items:start; } #repFull .rf-cols.one { grid-template-columns:1fr; }
-  #repFull .rf-vs { align-self:start; margin-top:34px; font-family:'KS Title','Lilita One',sans-serif; font-size:18px; color:#f0c95f; text-shadow:0 2px 0 #000; }
-  #repFull .rf-side { min-width:0; padding:9px 8px; border-radius:12px; background:linear-gradient(#5a3a1c, #3d2610); border:2px solid #8a6a2f; box-shadow:inset 0 0 12px rgba(0,0,0,.35); }
-  #repFull .rf-side.me { border-color:#5a8fc8; background:linear-gradient(#24406a, #172a47); } #repFull .rf-side.foe { border-color:#c8665a; background:linear-gradient(#5e2a22, #3d1a15); }
-  #repFull .rf-av { width:54px; height:54px; margin:0 auto 4px; border-radius:50%; overflow:hidden; border:2px solid #f0c95f; background:#1a1208; display:flex; align-items:center; justify-content:center; font-size:28px; }
+  #repFull .rf-head { flex:none; padding:4px 6px 6px; } #repFull .rf-head .ksbar { display:flex !important; margin:0; }
+  #repFull .rf-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px max(10px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); display:flex; flex-direction:column; gap:10px; }
+  #repFull .rf-card, #repFull .rf-side, #repFull .rf-ban { background:#eecea7; border:3px solid #e3a43a; border-radius:12px; box-shadow:0 0 0 1.5px #7a4a18, inset 0 0 0 1.5px #fff6dc, 0 3px 0 rgba(90,50,15,.35); }
+  #repFull .rf-card { padding:10px; }
+  #repFull .rf-ban { padding:10px 10px 8px; text-align:center; }
+  #repFull .rf-ban b { display:block; font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:36px; line-height:1.05; letter-spacing:.04em; text-transform:uppercase; color:#fff; -webkit-text-stroke:5px #1d4a14; paint-order:stroke fill; }
+  #repFull .rf-ban.l b { -webkit-text-stroke-color:#5a1410; } #repFull .rf-ban.g b { -webkit-text-stroke-color:#14354f; } #repFull .rf-ban.n b { -webkit-text-stroke-color:#4a2a10; font-size:26px; }
+  #repFull .rf-ban.w { background:linear-gradient(#a8dc7e, #6fb44c); } #repFull .rf-ban.l { background:linear-gradient(#f0a08a, #d0644c); } #repFull .rf-ban.g { background:linear-gradient(#a6d4f0, #5ea2cf); }
+  #repFull .rf-ban span { display:block; margin-top:4px; font-size:12px; font-weight:700; color:#3a2410; }
+  #repFull .rf-ban .rf-acts { display:flex; justify-content:center; gap:8px; margin-top:8px; }
+  #repFull .rf-ban .ks-btn { padding:5px 14px; font-size:14px; }
+  #repFull .rf-cols { display:grid; grid-template-columns:1fr 1fr; gap:8px; align-items:start; } #repFull .rf-cols.one { grid-template-columns:1fr; }
+  #repFull .rf-vs { display:none; }
+  #repFull .rf-side { min-width:0; padding:0 8px 9px; overflow:hidden; }
+  #repFull .rf-tagline { margin:0 -8px 8px; padding:4px 6px; text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:14px; color:#fff; -webkit-text-stroke:3px rgba(0,0,0,.45); paint-order:stroke fill; border-bottom:2px dashed rgba(122,74,24,.45); }
+  #repFull .rf-side.me .rf-tagline { background:linear-gradient(#5c9be0, #3a72b8); } #repFull .rf-side.foe .rf-tagline { background:linear-gradient(#e0705c, #b8463a); }
+  #repFull .rf-av { width:54px; height:54px; margin:0 auto 4px; border-radius:50%; overflow:hidden; border:3px solid #e3a43a; box-shadow:0 0 0 1.5px #7a4a18; background:#3a2414; display:flex; align-items:center; justify-content:center; font-size:28px; }
   #repFull .rf-av img { width:100%; height:100%; object-fit:cover; }
-  #repFull .rf-name { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:16px; line-height:1.1; color:#fff3d0; overflow-wrap:anywhere; }
-  #repFull .rf-at { text-align:center; font-size:12px; color:#9fd0ff; text-decoration:underline; cursor:pointer; margin:2px 0 4px; } #repFull .rf-at.off { text-decoration:none; }
-  #repFull .rf-pw { text-align:center; font-size:13px; color:#ffe7a8; margin-bottom:4px; }
-  #repFull .rp2-bar { position:relative; height:16px; border-radius:6px; background:#4a1a14; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.5); }
-  #repFull .rp2-bar i { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(#7fd06a, #3c8a34); } #repFull .rp2-bar.foe i { background:linear-gradient(#e8a25a, #b8642a); }
-  #repFull .rp2-bar span { position:relative; display:block; text-align:center; font-size:11px; line-height:16px; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.7); font-weight:700; }
-  #repFull .rf-kv { display:flex; justify-content:space-between; gap:4px; font-size:12px; color:#e6d6b4; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.08); }
-  #repFull .rf-kv b { color:#fff3d0; font-weight:700; }
-  #repFull .rf-sec { margin:9px 0 5px; font-family:'KS Title','Lilita One',sans-serif; font-size:15px; color:#f0c95f; border-bottom:1px dashed rgba(240,201,95,.45); padding-bottom:2px; }
-  #repFull .rf-heroes { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; } #repFull .rf-cols.one .rf-heroes { grid-template-columns:repeat(5, 1fr); }
-  #repFull .rf-hero img, #repFull .rf-hero span { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; object-position:50% 15%; border-radius:6px; border:2px solid #8a6a3a; background:#1a1208; box-sizing:border-box; text-align:center; font-size:22px; }
-  #repFull .rf-hero.r-legendary img { border-color:#e0a72a; } #repFull .rf-hero.r-epic img { border-color:#9a5ad0; } #repFull .rf-hero.r-rare img { border-color:#3a7ad0; }
-  #repFull .rf-hero b { display:block; text-align:center; font-weight:600; font-size:10px; color:#f3e9d2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
-  #repFull .rf-none { font-style:italic; font-size:12px; color:#b8a684; }
-  #repFull .rf-trh, #repFull .rf-tr { display:grid; grid-template-columns:1fr auto auto; gap:6px; align-items:center; font-size:12px; }
-  #repFull .rf-trh { color:#c9b48a; font-size:10px; text-transform:uppercase; letter-spacing:.04em; padding-bottom:2px; } #repFull .rf-trh span:not(:first-child), #repFull .rf-tr span:not(:first-child) { text-align:right; min-width:38px; }
-  #repFull .rf-tr { padding:3px 0; border-top:1px solid rgba(255,255,255,.08); } #repFull .rf-tn { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  #repFull .rf-tl { color:#ff8a78; } #repFull .rf-tr.tot { font-weight:700; border-top:1px solid rgba(240,201,95,.45); }
-  #repFull .rf-tw { font-size:11px; color:#f0b45a; padding:0 0 2px 18px; }
-  #repFull .rf-left { font-size:12px; color:#c9b48a; margin-top:4px; text-align:right; } #repFull .rf-left b { color:#fff3d0; }
-  #repFull .rf-card { padding:10px 12px; border-radius:12px; background:linear-gradient(#5a3a1c, #3d2610); border:2px solid #8a6a2f; }
+  #repFull .rf-name { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:17px; line-height:1.1; color:#4a2a10; overflow-wrap:anywhere; }
+  #repFull .rf-at { text-align:center; font-size:12px; font-weight:700; color:#1f6c80; text-decoration:underline; cursor:pointer; margin:2px 0 4px; } #repFull .rf-at.off { text-decoration:none; }
+  #repFull .rf-pw { text-align:center; font-size:13px; font-weight:800; color:#6b4a2a; margin-bottom:5px; }
+  #repFull .rp2-bar { position:relative; height:16px; border-radius:8px; background:#7a3a26; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,.4); border:1px solid #7a4a18; }
+  #repFull .rp2-bar i { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(#8fdc6e, #4a9a34); } #repFull .rp2-bar.foe i { background:linear-gradient(#f0b26a, #c8742a); }
+  #repFull .rp2-bar span { position:relative; display:block; text-align:center; font-size:11px; line-height:15px; color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.7); font-weight:800; }
+  #repFull .rf-kv { display:flex; justify-content:space-between; gap:4px; font-size:12px; font-weight:700; color:#7a5a36; padding:4px 0; border-bottom:1px dashed rgba(122,74,24,.35); }
+  #repFull .rf-kv b { color:#4a2a10; font-weight:800; }
+  #repFull .rf-sec { margin:10px 0 6px; font-family:'KS Title','Lilita One',sans-serif; font-size:15px; color:#4a2a10; display:flex; align-items:center; gap:6px; }
+  #repFull .rf-sec::after { content:""; flex:1; border-bottom:2px dotted rgba(122,74,24,.45); }
   #repFull .rf-card .rf-sec { margin-top:0; }
-  #repFull .rf-fire { font-family:'KS Title','Lilita One',sans-serif; font-size:20px; color:#ff8a5a; margin-bottom:4px; }
-  #repFull .rf-small { font-size:12px; color:#c9b48a; font-style:italic; margin-top:4px; }
-  #repFull .rf-rw { display:flex; flex-direction:column; gap:4px; }
-  #repFull .rf-chip { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:rgba(0,0,0,.22); font-size:14px; }
+  #repFull .rf-heroes { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; } #repFull .rf-cols.one .rf-heroes { grid-template-columns:repeat(5, 1fr); }
+  #repFull .rf-hero img, #repFull .rf-hero span { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; object-position:50% 15%; border-radius:8px; border:2px solid #9a8a7a; background:#3a2414; box-sizing:border-box; text-align:center; font-size:22px; }
+  #repFull .rf-hero.r-legendary img { border-color:#e0a72a; } #repFull .rf-hero.r-epic img { border-color:#9a5ad0; } #repFull .rf-hero.r-rare img { border-color:#3a7ad0; } #repFull .rf-hero.r-uncommon img, #repFull .rf-hero.r-super img { border-color:#3c9a3a; }
+  #repFull .rf-hero b { display:block; text-align:center; font-weight:800; font-size:10px; color:#4a2a10; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  #repFull .rf-none { font-style:italic; font-size:12px; color:#8a6a4a; }
+  #repFull .rf-trh, #repFull .rf-tr { display:grid; grid-template-columns:1fr auto auto; gap:6px; align-items:center; font-size:12px; font-weight:700; color:#4a2a10; }
+  #repFull .rf-trh { color:#8a6a4a; font-size:10px; text-transform:uppercase; letter-spacing:.04em; padding-bottom:2px; } #repFull .rf-trh span:not(:first-child), #repFull .rf-tr span:not(:first-child) { text-align:right; min-width:36px; }
+  #repFull .rf-tr { padding:4px 0; border-top:1px dashed rgba(122,74,24,.35); } #repFull .rf-tn { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #repFull .rf-tl { color:#b8321e; } #repFull .rf-tr.tot { font-weight:800; border-top:2px solid rgba(122,74,24,.5); }
+  #repFull .rf-tw { font-size:11px; font-weight:700; color:#a8641a; padding:0 0 3px 18px; }
+  #repFull .rf-left { font-size:12px; font-weight:700; color:#7a5a36; margin-top:4px; text-align:right; } #repFull .rf-left b { color:#4a2a10; }
+  #repFull .rf-fire { font-family:'KS Title','Lilita One',sans-serif; font-size:22px; color:#c8321e; margin-bottom:5px; }
+  #repFull .rf-small { font-size:12px; font-weight:700; color:#7a5a36; margin-top:5px; }
+  #repFull .rf-rw { display:flex; flex-direction:column; gap:5px; }
+  #repFull .rf-chip { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:8px; background:#f7e3c4; border:1.5px dashed #c99a5a; font-size:14px; font-weight:700; color:#4a2a10; }
   #repFull .rf-chip i { font-style:normal; width:24px; display:flex; justify-content:center; } #repFull .rf-chip i img { width:100%; height:auto; }
-  #repFull .rf-chip span { flex:1; } #repFull .rf-chip b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; color:#9be27a; }
-  #repFull .rf-note { font-size:13px; color:#e6d6b4; line-height:1.4; }
-  #repFull .rf-big { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:40px; color:#9fd0ff; } #repFull .rf-big img { height:1em; vertical-align:-0.12em; }
-  #repFull .rf-big small { display:block; font-size:15px; color:#c9b48a; }
+  #repFull .rf-chip span { flex:1; } #repFull .rf-chip b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; color:#2f7a2a; }
+  #repFull .rf-note { font-size:13px; font-weight:700; color:#5a3a1a; line-height:1.4; }
+  #repFull .rf-big { text-align:center; font-family:'KS Title','Lilita One',sans-serif; font-size:40px; color:#fff; -webkit-text-stroke:5px #14354f; paint-order:stroke fill; } #repFull .rf-big img { height:1em; vertical-align:-0.12em; }
+  #repFull .rf-big small { display:block; font-size:15px; color:#4a2a10; -webkit-text-stroke:0; }
   /* v1838: battle / gathering reports inside Mail */
   #mailPanel .rp2-badge { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:calc(var(--mw) * 0.07); box-shadow:inset 0 0 0 3px rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,.35); }
   #mailPanel .rp2-badge.w { background:radial-gradient(circle at 35% 30%, #7fd06a, #2f7d2a); } #mailPanel .rp2-badge.l { background:radial-gradient(circle at 35% 30%, #e07a64, #8a2a1e); }
@@ -14903,7 +14906,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1838"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1839"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21755,7 +21758,7 @@ function repFullTroops(army, losses, wounded, mine) {
     + '<div class="rf-left">' + (mine ? "Came back: " : "Left: ") + "<b>" + fmt(Math.max(0, ta - tl)) + "</b></div>";
 }
 function repFullSide(o) {
-  return '<div class="rf-side ' + o.cls + '">' + repFullAvatar(o.av, o.avFb) + '<div class="rf-name">' + escapeHtml(o.name) + "</div>"
+  return '<div class="rf-side ' + o.cls + '"><div class="rf-tagline">' + (o.cls === "me" ? "You" : "Opponent") + "</div>" + repFullAvatar(o.av, o.avFb) + '<div class="rf-name">' + escapeHtml(o.name) + "</div>"
     + (o.tile ? '<div class="rf-at" data-goto="' + escapeHtml(o.tile) + '">📍 ' + ksRepCoordTxt(o.tile) + "</div>" : '<div class="rf-at off">&nbsp;</div>')
     + '<div class="rf-pw">⚡ ' + fmt(o.power || 0) + "</div>" + ksRepBar(o.left, o.max, o.cls === "foe")
     + '<div class="rf-kv"><span>Armor</span><b>' + (o.armor != null ? Math.round(o.armor * 100) + "%" : "-") + "</b></div>"
@@ -21803,8 +21806,9 @@ function repFullOpen(repId) {
       if ((x = t.closest("[data-goto]"))) { var gt = x.getAttribute("data-goto"); repFullClose(); document.body.classList.remove("mail-open"); try { setScreen("world"); } catch (er) {} setTimeout(function () { goToWorldTile(gt); }, 60); } }); }
   REPF.id = repId; ksRepMarkRead([repId]);
   var on = !!(game.state.mailSaved || {})["rep_" + repId];
-  el.innerHTML = '<div class="rf-top"><button type="button" class="rf-back" data-rfback aria-label="Back">‹</button><div class="rf-title">' + (ksRepCat(r) === "wars" ? "War Report" : ksRepIsGather(r) ? "Gathering Report" : "Battle Report") + '</div><button type="button" class="rf-save' + (on ? " on" : "") + '" data-rfsave>' + (on ? "★ Saved" : "☆ Save") + "</button></div>"
-    + '<div class="rf-body">' + repFullHtml(r) + "</div>";
+  var acts = '<div class="rf-acts"><button type="button" class="ks-btn" data-rfsave>' + (on ? "Saved ✓" : "Save") + "</button>" + (r.tileId ? '<button type="button" class="ks-btn" data-goto="' + escapeHtml(r.tileId) + '">Go there</button>' : "") + "</div>";
+  el.innerHTML = '<div class="rf-head"></div><div class="rf-body">' + repFullHtml(r).replace(/(<div class="rf-ban[^"]*">[\s\S]*?<\/span>)(<\/div>)/, "$1" + acts + "$2") + "</div>";
+  el.querySelector(".rf-head").appendChild(ksBarEl(ksRepCat(r) === "wars" ? "War Report" : ksRepIsGather(r) ? "Gathering Report" : "Battle Report", "", repFullClose));
   document.body.classList.add("repfull-open"); el.querySelector(".rf-body").scrollTop = 0;
   try { ksMailRender(); } catch (e) {}
 }
