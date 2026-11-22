@@ -6725,3 +6725,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1846 - Arena Challenge button smaller (TEST)
 - Harley (button-size tidy-up, 23 Nov): the Arena "Challenge" button 50 -> 44 px tall, its label 22 -> 20 px. Measured blue-button thicknesses before: 18 (Build badges) / 26 / 30 / 33 / 35 / 36 / 39 / 44 / 50 px - Harley is picking main sizes from these.
+
+## v1847 - Events "Hero details" button at the 26 px small size (TEST)
+- Harley: try Hero details (Featured Hero Week banner) at 26 px. Was 30 px with a 12 px label; now height 26 px, label 13 px (fits the height better). Headless check only.
