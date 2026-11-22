@@ -6749,3 +6749,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1852 - reports: no names / % under tiles (TEST)
 - Harley (circled): removed the hero names + stars under report hero tiles, the weapon names under weapon tiles, and the % under Overlord Gear tiles (still on long-press / hover title). Equipment % kept (not circled). Headless check only.
+
+## v1853 - Formation cards rebuilt on the Backpack-style frame (TEST)
+- Harley: use the Backpack as the design reference. ChatGPT made an empty frame in that style (picked B, the thicker one; art/originals/ui/formations_v2/frame_gpt_b.png -> frame_b_keyed.png) and 4 standalone banners (blue lion, red swords, purple bow, black helm for City Guard; banners_gpt_v1.png -> banner_*.png).
+- Card body = the frame as a 9-slice (border-image, slice 80 of the half-size art, gold edge ~ the Backpack's ~13 px), any height. The old card art is no longer drawn (.kpl / .kpat / .pc patches hidden on .fg2 cards).
+- Code pieces: dark title bar (inside the frame edge and corner brackets), round gold number badge on the banner, gold pencil button, medal icon by March size. Only the banner + badge overlap the frame. Layout otherwise = v1851 (rows nudged down a little).
+- Headless: Select switches the active formation, tapping a slot opens the hero picker, City Guard OK, no errors. Not tested on a phone.
