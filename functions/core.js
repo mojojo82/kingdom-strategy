@@ -923,5 +923,31 @@ function decideDailyClaim(rec, kind, id, now) {
   throw new GameError("invalid-argument", "bad kind");
 }
 
-module.exports = { sgRankOf, sgRankRow, sgMsRows, sgBoss, sgMarchCap, sgRallyCap, sgArmy, sgArmyTotal, sgTroopPower, sgDmgCap, sgHeroCap, LIVE_HS_DEFAULT, normalizeHS, decideHeroShop, LIVE_CD_DEFAULT, normalizeCD, cardActive, anyCardActive, PACK_GRANTS, applyGrant, LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
+// ---- v1842: Overlord gear (Governor Gear). Server-held like gems (Harley: "server-checked"): wallet.arcsteel, wallet.gearReset, wallet.govGear = { piece: step }.
+// Step -1 / missing = no gear; 0..39 = reached that step. GEAR_COST[i] = Arcsteel to reach step i (must match the game's GOV_GEAR_COST - a unit test checks).
+const GEAR_PIECES = ["cannon", "fortHp", "heroAtk", "heroSkill", "troop", "boss"];
+const GEAR_COST = [1500, 2500, 3500, 4500, 5500, 6500, 6000, 6500, 7000, 7500, 8500, 9500, 10500, 11500, 26000, 29000, 32000, 34000, 37000, 45000, 52000, 58000, 64000, 70000, 76000, 82000, 90000, 241000, 330000, 400000, 450000, 500000, 560000, 620000, 710000, 880000, 980000, 1080000, 1150000, 1210000];
+const GEAR_UNLOCK_TH = 22;
+function gearStep(wallet, piece) { const g = (wallet && wallet.govGear) || {}; const v = g[piece]; return (typeof v === "number" && v >= 0) ? Math.min(GEAR_COST.length - 1, Math.floor(v)) : -1; }
+function decideGearUpgrade(wallet, piece, th) {
+  if (GEAR_PIECES.indexOf(piece) === -1) throw new GameError("invalid-argument", "bad_piece");
+  if (!(th >= GEAR_UNLOCK_TH)) throw new GameError("failed-precondition", "locked", { need: GEAR_UNLOCK_TH, have: th || 0 });
+  const w = wallet || {}, cur = gearStep(w, piece), next = cur + 1;
+  if (next >= GEAR_COST.length) throw new GameError("failed-precondition", "maxed");
+  const cost = GEAR_COST[next], have = Math.max(0, Math.floor(w.arcsteel || 0));
+  if (have < cost) throw new GameError("failed-precondition", "not_enough", { need: cost, have });
+  const govGear = Object.assign({}, w.govGear || {}); govGear[piece] = next;
+  return { step: next, cost, arcsteel: have - cost, govGear };
+}
+function decideGearReset(wallet, piece) {
+  if (GEAR_PIECES.indexOf(piece) === -1) throw new GameError("invalid-argument", "bad_piece");
+  const w = wallet || {}, cur = gearStep(w, piece), items = Math.max(0, Math.floor(w.gearReset || 0));
+  if (cur < 0) throw new GameError("failed-precondition", "nothing_to_reset");
+  if (items < 1) throw new GameError("failed-precondition", "no_reset_item");
+  let refund = 0; for (let i = 0; i <= cur; i++) refund += GEAR_COST[i];
+  const govGear = Object.assign({}, w.govGear || {}); delete govGear[piece];
+  return { refund, arcsteel: Math.max(0, Math.floor(w.arcsteel || 0)) + refund, gearReset: items - 1, govGear };
+}
+
+module.exports = { GEAR_PIECES, GEAR_COST, GEAR_UNLOCK_TH, gearStep, decideGearUpgrade, decideGearReset, sgRankOf, sgRankRow, sgMsRows, sgBoss, sgMarchCap, sgRallyCap, sgArmy, sgArmyTotal, sgTroopPower, sgDmgCap, sgHeroCap, LIVE_HS_DEFAULT, normalizeHS, decideHeroShop, LIVE_CD_DEFAULT, normalizeCD, cardActive, anyCardActive, PACK_GRANTS, applyGrant, LIVE_FS_DEFAULT, normalizeFS, fsAt, LIVE_HC_DEFAULT, normalizeHC, hcOwned, hcStars, LIVE_CB_DEFAULT, normalizeCB, comebackCheck, WK_HEROES_DEFAULT, PICK_SHARDS_LABEL, resolvePickShards, LIVE_GEMS_PATCH, liveGemsPatch, GEM_ACTS, LIVE_GA_DEFAULT, normalizeGA, decideGemAct, ITEM_MODE_DEFAULT, normalizeItemModes, itemServerPaid, EV_SRCS, evPeriodAt, evClaimPlan, decideEvClaim, sgTier, sgShare, LIVE_SG_DEFAULT, resolveFeatured, bossRunOver, bossRunOpen, LIVE_BR_DEFAULT, LIVE_FF_DEFAULT, normalizeLiveops, LIVEOPS_KINDS, LIVE_ARENA_DEFAULT, arenaKeys, arenaRankReward, DAILY_TASK_PTS, DAILY_TASK_GEMS, DAILY_CHEST_GEMS, decideDailyClaim, PATCH_TILES, patchIdOfCity, patchEntry, buildPatches, AC_DEFAULT, LIMIT_KEYS, LIMIT_LABELS, mergeLimits, normalizeSecConfig, reasonKey, SEC_ACTIONS, SUSPEND_MAX_HOURS, banActive, secSummary, CARD_SLOTS, mergeCardCatalog, AC, checkSave, mailAllowance, BASE, LEVEL_CLEAR_GEMS, LEVELS_PER_CHAPTER, HIT_COOLDOWN_MS, hordeQuota, hordeCount, levelFloorSec, globalLevel, baseHpAt, GameError,
   decideLevelClaim, needGems, ITEMS, LEDGER_ITEMS, ledgerEntry, purchaseId, decidePurchase, normalizePack, normalizeShop, shopEntryLive, EVENT_GOALS, normalizeEvents, eventWindow, eventProgress, decideEventClaim, signinProgress, prepareImportSave, IMPORT_KEEP, utcDay, TOPUP_PERIODS, topupKey, topupEnd, addTopup, decideTopupClaim, limitPeriodStart, limitPeriodEnd, packBuysLeft, PACK_RESETS, SHOP_CURRENCIES, DEFAULT_TIERS, packIdFrom, normalizeItems, makeMail, MAIL_CATEGORIES, decideMailClaim, decideExtinguish, decideRepair, decideHit, checkHitCooldown, envRoot, cityDocId };

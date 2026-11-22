@@ -405,4 +405,23 @@ t("v1636 Hero Shop: gems taken on the server, weekly stock per player, featured 
   assert.throws(() => C.decideHeroShop(null, L.hs, "kessa", 1, 99, L, now), /not_enough_gems/); assert.throws(() => C.normalizeLiveops({ hs: { items: [{ item: "gems", price: 1 }] } }), /can't sell gems/);
   assert.deepStrictEqual(C.decideHeroShop(null, L.hs, "feat", 1, 100, L, now).items, { ["shards_" + L.fhw.hero]: 1 });
 });
+t("v1842 Overlord gear: costs match the game, upgrade / reset rules", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../../test/index.html"), "utf8");
+  const gameCost = JSON.parse(html.match(/var GOV_GEAR_COST = (\[[^\]]*\]);/)[1]);
+  assert.deepStrictEqual(C.GEAR_COST, gameCost, "server GEAR_COST = game GOV_GEAR_COST");
+  assert.ok(/var GOV_GEAR_UNLOCK_TH = 22;/.test(html) && C.GEAR_UNLOCK_TH === 22);
+  C.GEAR_PIECES.forEach((k) => assert.ok(new RegExp("\\n  " + k + ":\\s+\\{ label:").test(html), "piece " + k + " exists in the game"));
+  assert.throws(() => C.decideGearUpgrade({ arcsteel: 1e9 }, "cannon", 21), /locked/);
+  assert.throws(() => C.decideGearUpgrade({ arcsteel: 1e9 }, "nope", 30), /bad_piece/);
+  assert.throws(() => C.decideGearUpgrade({ arcsteel: 10 }, "cannon", 22), /not_enough/);
+  let w = { arcsteel: 30000 };
+  const a = C.decideGearUpgrade(w, "cannon", 22); assert.strictEqual(a.step, 0); assert.strictEqual(a.arcsteel, 30000 - C.GEAR_COST[0]);
+  w = { arcsteel: a.arcsteel, govGear: a.govGear }; const b = C.decideGearUpgrade(w, "cannon", 22); assert.strictEqual(b.step, 1); assert.strictEqual(b.govGear.cannon, 1);
+  assert.throws(() => C.decideGearUpgrade({ arcsteel: 1e12, govGear: { boss: 39 } }, "boss", 30), /maxed/);
+  assert.throws(() => C.decideGearReset({ arcsteel: 0, govGear: { cannon: 1 } }, "cannon"), /no_reset_item/);
+  assert.throws(() => C.decideGearReset({ gearReset: 1 }, "cannon"), /nothing_to_reset/);
+  const rs = C.decideGearReset({ arcsteel: b.arcsteel, govGear: b.govGear, gearReset: 2 }, "cannon");
+  assert.strictEqual(rs.arcsteel, 30000, "full refund"); assert.strictEqual(rs.gearReset, 1); assert.strictEqual(rs.govGear.cannon, undefined);
+  assert.strictEqual(C.ITEMS.arcsteel.kind, "wallet"); assert.strictEqual(C.ITEMS.gearReset.kind, "wallet");
+});
 console.log(n + " tests passed");

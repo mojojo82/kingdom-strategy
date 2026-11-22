@@ -620,8 +620,10 @@ exports.claimMail = wrap(async (req, uid, R, d) => {
     const r = C.decideMailClaim(ms.exists ? ms.data() : null, Date.now());
     if (r.dup) return { dup: true, id: ref.id, items: r.list, claimedAt: ms.data().claimedAt };
     let gems = (ws.data() || {}).gems || 0, walletPatch = null;
+    const w0 = ws.data() || {};
     r.list.forEach((x) => {
-      if (x.kind === "wallet" && x.id === "gems") { gems += x.qty; walletPatch = { gems }; ledger(tx, R, uid, "gems", x.qty, gems, "mail", ref.id); }
+      if (x.kind === "wallet" && x.id === "gems") { gems += x.qty; walletPatch = Object.assign(walletPatch || {}, { gems }); ledger(tx, R, uid, "gems", x.qty, gems, "mail", ref.id); }
+      else if (x.kind === "wallet") { const nv = Math.max(0, Math.floor((walletPatch && walletPatch[x.id] != null ? walletPatch[x.id] : w0[x.id]) || 0)) + x.qty; walletPatch = Object.assign(walletPatch || {}, { [x.id]: nv }); ledger(tx, R, uid, x.id, x.qty, nv, "mail", ref.id); } /* v1842: Arcsteel, Gear Reset */
       else ledger(tx, R, uid, x.id, x.qty, null, "mail", ref.id);
     });
     if (walletPatch) tx.set(walletRef(R, uid), walletPatch, { merge: true });
@@ -629,6 +631,30 @@ exports.claimMail = wrap(async (req, uid, R, d) => {
     return { dup: false, id: ref.id, items: r.list, gems, claimedAt: r.patch.claimedAt };
   });
 });
+
+// ---- v1842: Overlord gear. Upgrade one piece one step (pays Arcsteel), or reset one piece (uses a Gear Reset item, full Arcsteel refund).
+// The levels are mirrored to players/<uid>/pub/gear so other players' games read the real values when they fight this player.
+const gearPubRef = (R, uid) => db.doc(R + "players/" + uid + "/pub/gear");
+exports.gearUpgrade = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
+  const piece = String(d.piece || "");
+  const [ws, ss] = await Promise.all([tx.get(walletRef(R, uid)), tx.get(db.doc(R + "players/" + uid + "/save/main"))]);
+  const sv = ss.exists ? ss.data() || {} : {}, th = (sv.buildings && sv.buildings.townhall && +sv.buildings.townhall.level) || 0;
+  const r = C.decideGearUpgrade(ws.data() || {}, piece, th);
+  tx.set(walletRef(R, uid), { arcsteel: r.arcsteel, govGear: r.govGear }, { merge: true });
+  tx.set(gearPubRef(R, uid), { g: r.govGear, t: Date.now() });
+  ledger(tx, R, uid, "arcsteel", -r.cost, r.arcsteel, "gear_" + piece, String(r.step));
+  return { piece, step: r.step, cost: r.cost, arcsteel: r.arcsteel, govGear: r.govGear };
+}));
+exports.gearReset = wrap(async (req, uid, R, d) => db.runTransaction(async (tx) => {
+  const piece = String(d.piece || "");
+  const ws = await tx.get(walletRef(R, uid));
+  const r = C.decideGearReset(ws.data() || {}, piece);
+  tx.set(walletRef(R, uid), { arcsteel: r.arcsteel, gearReset: r.gearReset, govGear: r.govGear }, { merge: true });
+  tx.set(gearPubRef(R, uid), { g: r.govGear, t: Date.now() });
+  ledger(tx, R, uid, "arcsteel", r.refund, r.arcsteel, "gear_reset_" + piece, null);
+  ledger(tx, R, uid, "gearReset", -1, r.gearReset, "gear_reset_" + piece, null);
+  return { piece, refund: r.refund, arcsteel: r.arcsteel, gearReset: r.gearReset, govGear: r.govGear };
+}));
 
 // ---- admin panel lookups ----
 // v942: maintenance switch. { set: { on, msg, until } } changes it; always returns the current state.

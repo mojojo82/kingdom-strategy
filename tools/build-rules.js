@@ -11,7 +11,7 @@ const BODY = `
       // ---- players: each player writes only their own data. Wallet (gems), ledger (item history) and meta (account dates)
       //      are written by the server only, and readable only by that player and admins. ----
       match /players/{pid}/{coll}/{docId} {
-        allow read: if signedIn() && (!(coll in serverOnly()) || isMe(pid) || isAdmin());
+        allow read: if signedIn() && (!(coll in serverOnly()) || coll == 'pub' || isMe(pid) || isAdmin()); // v1842: pub (Overlord gear levels) is readable by everyone, written by the server only
         allow write: if !(coll in serverOnly()) && (isMe(pid) || (isAdmin() && pid.matches('bot_.*'))) && open();
       }
       // ---- purchases: written by the server only; a player can read their own, admins all ----
@@ -99,7 +99,7 @@ service cloud.firestore {
     function isMe(pid) { return signedIn() && request.auth.uid == pid; }
     function isAdmin() { return signedIn() && request.auth.uid in ${adminList}${adminProv}; }
     function hpKeys() { return ['hp', 'hpT', 'burnLeft', 'raidedAt']; }
-    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail', 'evclaims']; }
+    function serverOnly() { return ['wallet', 'ledger', 'meta', 'mail', 'evclaims', 'pub']; }
 
     // ===== live =====
     function liveOpen() { return isAdmin() || (!(exists(${MAINT_LIVE}) && get(${MAINT_LIVE}).data.on == true) && ${notBanned(BAN_LIVE)}); } // v942: maintenance locks player writes; v995: so does a ban / suspension
