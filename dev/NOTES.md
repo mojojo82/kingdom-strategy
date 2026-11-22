@@ -6733,3 +6733,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: every 26 px button gets 13 px text. Changed: Rig (12 -> 13), profile Cards (12.6) and ••• (18.7), Formations Select / Guard (17), Mail Read all (15.8; it scaled with the panel) - Hero details was already 13. Rig and Read all were sized by their padding, so they now have a fixed 26 px height to stay at 26.
 - Alliance "Create" no longer stretches the whole card: 384 -> 140 px wide, centred.
 - Headless measurements: all seven 26 px buttons = 26 px / 13 px text; Create 140 x 35. Not tested on a phone.
+
+## v1849 - Formations Save / Release 13 px text (TEST)
+- Harley: Save and Release (Formations, 26 px tan buttons) 17 -> 13 px text, matching Select / Selected / Guard next to them. Headless check only.
