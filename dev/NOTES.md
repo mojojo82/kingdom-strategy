@@ -6603,3 +6603,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Avatar column moved right (20px in, 14px gap to the text) so the frame sits 12px from the panel edge; more space between messages for the frame. Players without a frame keep the plain avatar.
 - Note: other players' frames show once they've opened the game on v1824+ (that's when their frame is published).
 - Headless: 4 different frames + no-frame in one chat, own frame published to the fake store, no errors. Not tested on a phone.
+
+## v1825 - Arena: back button only, no title bar (TEST)
+- Harley: in the Arena show just the back button, not the whole header. On the phone the Arena's title bar strip is gone (zero height) and only the octagon + arrow floats over the top-left of the arena (leaderboard and fight). Other More pages keep the full bar.
+- Headless: button on top and tappable (Back from a fight -> leaderboard), Weapons page bar unchanged, no errors. Not tested on a phone.
