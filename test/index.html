@@ -3265,7 +3265,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #repFull .rf-sec { margin:10px 0 6px; font-family:'KS Title','Lilita One',sans-serif; font-size:15px; color:#4a2a10; display:flex; align-items:center; gap:6px; }
   #repFull .rf-sec::after { content:""; flex:1; border-bottom:2px dotted rgba(122,74,24,.45); }
   #repFull .rf-card .rf-sec { margin-top:0; }
-  #repFull .rf-heroes { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; } #repFull .rf-cols.one .rf-heroes { grid-template-columns:repeat(5, 1fr); }
+  #repFull .rf-heroes { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; } #repFull .rf-cols.one .rf-heroes { grid-template-columns:repeat(5, 1fr); }
   #repFull .rf-hero img, #repFull .rf-hero span { display:block; width:100%; aspect-ratio:3/4; object-fit:cover; object-position:50% 15%; border-radius:8px; border:2px solid #9a8a7a; background:#3a2414; box-sizing:border-box; text-align:center; font-size:22px; }
   #repFull .rf-hero.r-legendary img { border-color:#e0a72a; } #repFull .rf-hero.r-epic img { border-color:#9a5ad0; } #repFull .rf-hero.r-rare img { border-color:#3a7ad0; } #repFull .rf-hero.r-uncommon img, #repFull .rf-hero.r-super img { border-color:#3c9a3a; }
   #repFull .rf-hero b { display:block; text-align:center; font-weight:800; font-size:10px; color:#4a2a10; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
@@ -3289,9 +3289,14 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #repFull .rf-kv.big { font-size:14px; } #repFull .rf-kv.big b { font-family:'KS Title','Lilita One',sans-serif; font-weight:400; font-size:16px; }
   #repFull .rf-kv.sm { font-size:11px; padding:3px 0; }
   #repFull .rf-bon { display:grid; grid-template-columns:1fr 1fr; gap:4px; } #repFull .rf-bon div { display:flex; justify-content:space-between; padding:3px 6px; border-radius:6px; background:#f7e3c4; border:1px dashed #c99a5a; font-size:11px; font-weight:700; color:#7a5a36; } #repFull .rf-bon b { color:#2f7a2a; }
-  #repFull .rf-wps { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; } #repFull .rf-wp { text-align:center; } #repFull .rf-wp img, #repFull .rf-wp span { display:block; width:100%; aspect-ratio:1; object-fit:contain; border-radius:8px; background:#3a2414; border:2px solid #9a8a7a; box-sizing:border-box; }
-  #repFull .rf-wp b { display:block; font-size:10px; font-weight:800; color:#4a2a10; } #repFull .rf-wp i { display:block; font-style:normal; font-size:9px; font-weight:700; color:#7a5a36; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #repFull .rf-wps { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:4px; } #repFull .rf-wp { text-align:center; } 
+  #repFull .rf-wp i { display:block; font-style:normal; font-size:9px; font-weight:700; color:#7a5a36; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   #repFull .rf-cards { display:flex; flex-wrap:wrap; gap:4px; } #repFull .rf-cards span { padding:2px 7px; border-radius:6px; background:#f7e3c4; border:1px dashed #c99a5a; font-size:11px; font-weight:700; color:#4a2a10; }
+  #repFull .rf-wp .wt { margin:0 auto; } #repFull .rf-wp .wt .lv { font-size:11px; }
+  #repFull .rf-eqs { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:3px; } #repFull .rf-eq { text-align:center; min-width:0; }
+  #repFull .rf-eqt { position:relative; width:100%; aspect-ratio:1; } #repFull .rf-eqt i { position:absolute; inset:0; -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; }
+  #repFull .rf-eqt img { position:relative; display:block; width:100%; height:100%; filter:contrast(1.35) saturate(1.2) brightness(1.03); }
+  #repFull .rf-eq b { display:block; font-size:9px; font-weight:800; color:#2f7a2a; white-space:nowrap; }
   #repFull .rf-big small { display:block; font-size:15px; color:#4a2a10; -webkit-text-stroke:0; }
   /* v1838: battle / gathering reports inside Mail */
   #mailPanel .rp2-badge { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:calc(var(--mw) * 0.07); box-shadow:inset 0 0 0 3px rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,.35); }
@@ -14915,7 +14920,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1840"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1841"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -21765,8 +21770,10 @@ function repFullInfo(info) {
     + '<div class="rf-kv sm"><span>Fortress research</span><b>Lv ' + fmt(info.fortLv || 0) + "</b></div>"
     + '<div class="rf-kv sm"><span>Town Hall</span><b>Lv ' + (info.th || 0) + "</b></div>"
     + (info.wall ? '<div class="rf-kv sm"><span>Wall</span><b>Lv ' + info.wall + "</b></div>" : "");
-  h += '<div class="rf-sec">Weapons</div>' + (info.weapons && info.weapons.length ? '<div class="rf-wps">' + info.weapons.map(function (w) { var d = WEAPON_DEFS_BY_ID[w[0]]; if (!d) return "";
-    return '<div class="rf-wp">' + (d.img ? '<img alt="" src="' + d.img + '">' : "<span>" + (d.icon || "") + "</span>") + "<b>Lv " + w[1] + "</b><i>" + escapeHtml(d.name) + "</i></div>"; }).join("") + "</div>" : '<div class="rf-none">No weapons</div>');
+  h += '<div class="rf-sec">Weapons</div>' + (info.weapons && info.weapons.length ? '<div class="rf-wps">' + info.weapons.map(function (w) { var d = WEAPON_DEFS_BY_ID[w[0]]; if (!d) return ""; var c = WEAPON_TILE_RC[d.rarity] || WEAPON_TILE_RC.Standard; /* v1841: the Weapons page tile */
+    return '<div class="rf-wp"><div class="wt" style="--a:' + c[0] + ";--b:" + c[1] + ";--c:" + c[2] + '">' + (d.img ? '<img src="' + d.img + '" alt="">' : '<span class="wt-em">' + d.icon + "</span>") + '<div class="lv">' + (w[1] >= WEAPON_MAX_LEVEL ? "Lv.MAX" : "Lv." + w[1]) + "</div></div><i>" + escapeHtml(d.name) + "</i></div>"; }).join("") + "</div>" : '<div class="rf-none">No weapons</div>');
+  h += '<div class="rf-sec">Equipment</div>' + (info.equip && info.equip.length ? '<div class="rf-eqs">' + info.equip.map(function (e) { var i = e[0] % TURRET_ICON_LIBRARY.length, mk = "url('" + TURRET_ICON_LIBRARY[i] + "')";
+    return '<div class="rf-eq" title="ATK +' + e[3] + "% · HP +" + e[4] + "% · DEF +" + e[5] + '%"><div class="rf-eqt"><i style="-webkit-mask-image:' + mk + ";mask-image:" + mk + ";background:" + (EQ_BG_GRAD[e[1]] || EQ_BG_GRAD[0]) + '"></i><img alt="" src="' + TURRET_ICON_SPRITES[i] + '"></div><b>+' + e[2] + "%</b></div>"; }).join("") + "</div>" : info.equip ? '<div class="rf-none">None worn</div>' : '<div class="rf-none">Not recorded</div>');
   var es = info.esper && ESPER_DEFS[info.esper];
   h += '<div class="rf-sec">Esper</div>' + (es ? '<div class="rf-kv sm"><span>' + (es.icon || "") + " " + escapeHtml(es.name) + "</span><b></b></div>" : '<div class="rf-none">None</div>');
   h += '<div class="rf-sec">Cards</div>' + (info.cards && info.cards.length ? '<div class="rf-cards">' + info.cards.map(function (c) { return "<span>" + escapeHtml(c) + "</span>"; }).join("") + "</div>" : '<div class="rf-none">None</div>');
@@ -24193,6 +24200,7 @@ function repSideSnap(sim, heroKeys, esper, fortMap, wallLv) {
       esper: esper && ESPER_DEFS[esper] ? esper : null,
       weapons: (st.equippedWeapons || []).filter(function (id) { return WEAPON_DEFS_BY_ID[id] && !WEAPON_DEFS_BY_ID[id].visualOnly; }).map(function (id) { return [id, (st.weaponLevels && st.weaponLevels[id]) || 1]; }),
       cards: (st.equippedCards || []).map(function (i) { return st.cards && st.cards[i] ? st.cards[i].name : null; }).filter(Boolean),
+      equip: ((st.equipment && st.equipment.slots) || []).map(function (pc) { if (!pc) return null; var sm = (pc.atk || 0) + (pc.hp || 0) + (pc.def || 0); (pc.sec || []).forEach(function (l) { sm += l.v || 0; }); return [pc.icon | 0, pc.r | 0, Math.round(sm * 10) / 10, Math.round((pc.atk || 0) * 10) / 10, Math.round((pc.hp || 0) * 10) / 10, Math.round((pc.def || 0) * 10) / 10]; }).filter(Boolean), /* v1841: worn equipment */
       bonus: { atk: Math.round((b.atk || 0) * 10) / 10, hp: Math.round((b.hp || 0) * 10) / 10, def: Math.round((b.def || 0) * 10) / 10, skill: Math.round((b.skill || 0) * 10) / 10 },
       fortType: fortressTypeOf(fm), fortLv: fl, th: (st.buildings && st.buildings.townhall && st.buildings.townhall.level) || 0, wall: wallLv || 0 };
   } catch (e) { return null; }

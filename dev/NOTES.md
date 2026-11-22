@@ -6692,3 +6692,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - World PvP: both sides (worldPvpBattle -> pr.atkInfo / defInfo -> the report). Camps / monsters / guarded nodes: your side (mySnap in the engine).
 - Full-screen report: each column gets Power (total + split), Bonuses, Fortress, Weapons (icons + Lv), Esper, Cards; heroes show Lv + stars; the "⚡" line is now real power and the HP bar is labelled Battle HP. Reports from before v1840 say the snapshot wasn't recorded.
 - Tests: g205 / g207 / g208 pass; headless report with a real bot battle snapshot, no errors. Not tested on a phone.
+
+## v1841 - reports: Weapons page tiles + worn equipment (TEST)
+- Harley: weapon icons should look like the Weapons menu, and equipment was missing. Weapons on the report use the Weapons page tile (rarity colour, new icon, Lv strip) at the level they had in the fight. New Equipment section: every worn piece as its Overlord gear tile (rarity background + turret icon) with its total % (ATK / HP / DEF on hover/long-press title); snapshot field `equip`.
+- Headless: report with 6 worn pieces + weapons on both sides, no errors. Not tested on a phone.
