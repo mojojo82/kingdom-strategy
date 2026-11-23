@@ -6802,3 +6802,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Dev Tools > Chapter Boss > Boss look: Classic / Boss 2 (Tank) / Boss 3 (Dragon) (shared admin setting; default still the Tank). bossBox / bossTopY / bossShotOrigin / shock crawl box know the dragon. Stats and the boss name are unchanged (look only).
 - Previews: dev/bosses/serpent_idle_rig_v3.html, serpent_attack_rig_v1.html; mockup art/originals/bosses/clockwork_dragon/mock_foundry_v1.png.
 - Headless (Conquest 9-1 foundry, boss look Dragon, fortress kept alive): dragon drawn on the floor at the boss spot, attacks play, fireballs fly to the fortress, no errors. Not tested on a phone.
+
+## v1865 - Boss 4: the Bone Reaper (TEST, look only)
+- Harley approved the Bone Reaper look (dark iron, darker feet) and the attack; "add it in".
+- REAPERB (code rig next to DRAGONB): parts art/bosses/bone_reaper/*.webp (half-size copies of art/originals/bosses/bone_reaper/parts_iron, cut straight from the approved render). Idle: scythes sway, jaw chatters, core + eyes pulse, feet planted. Sized from the approved foundry mockup (0.5/3 rig units per CSS px at 430 wide), hangs ~27 px off the right edge.
+- Attack: on a boss hit the upper scythe telescopes out (extra arm length = the arm's own bar, iron collars), slices straight through the target (fortress hull, or the hero it hits) into the floor, then scrapes back along the floor (sparks + glowing scratch) and retracts. No projectile: the hit lands (damage number, HP) as the blade passes through, ~0.78 s into the swing; extra hits during a swing land with it. Enemy projectile flag `reap` = not drawn, lands at once.
+- Dev Tools > Chapter Boss > Boss look: + Boss 4 (Reaper). bossBox / bossTopY / bossShotOrigin / shock crawl box know it. Stats and the boss name unchanged.
+- Headless (Conquest 9-1 foundry, boss look Reaper, fortress kept alive): reaper at the boss spot, swings play, blade cuts through the fortress to the floor and scrapes back with sparks, damage numbers on hit, no errors. Not tested on a phone.

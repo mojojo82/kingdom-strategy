@@ -6021,7 +6021,7 @@ function initDeviceLock(db) {
             try { renderBossScaleButtons(); } catch (e) {}
           } },
         { key: BOSS_LOOK_KEY, apply: function (v) {
-            if (v !== "classic" && v !== "tank" && v !== "dragon") return; bossLook = v;
+            if (v !== "classic" && v !== "tank" && v !== "dragon" && v !== "reaper") return; bossLook = v;
             try { localStorage.setItem(BOSS_LOOK_KEY, v); } catch (e) {}
             try { renderBossLookButtons(); } catch (e) {}
           } },
@@ -14990,7 +14990,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1864"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1865"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -25389,6 +25389,7 @@ function boss3dStompImpact(footX, footY, sp) {
 function drawBossAnim(ctx, x, feetY, size) { // size = on-screen height from the ground to the top of his head (same meaning as before: 58 * bossSpriteScale)
   if (tankBossOn()) return drawTankBoss(ctx, x, feetY, size); // v1116: Boss 2, the Steam Tank
   if (dragonBossOn()) return DRAGONB.draw(ctx, x, feetY, size); // v1864: Boss 3, the Clockwork Dragon
+  if (reaperBossOn()) return REAPERB.draw(ctx, x, feetY, size); // v1865: Boss 4, the Bone Reaper
   if (drawBoss3D(ctx, x, feetY, size)) return true; // v1112
   if (!BOSS_ANIM_ON) return false; // off: the original uploaded boss sprite is used again
   var b = BOSS_ANIM, im = bossAnimImg(); if (!im) return false;
@@ -25417,7 +25418,7 @@ function drawKnightPreview(ctx, w, groundY) {
 /* v1116: Boss 2 - the Steam Tank (2D cutout from Harley's GPT parts sheet, dev/tank). Temporary chapter-boss look; stats are untouched (look only).
    Dev Tools > Chapter Boss > "Boss look" switches Classic / Boss 2 (shared admin setting). Look numbers are Harley's picks from the live mockup. */
 var BOSS_LOOK_KEY = "kingdom_prototype_bosslook_v1", bossLook = "tank";
-try { var _bl = localStorage.getItem(BOSS_LOOK_KEY); if (_bl === "classic" || _bl === "tank" || _bl === "dragon") bossLook = _bl; } catch (e) {}
+try { var _bl = localStorage.getItem(BOSS_LOOK_KEY); if (_bl === "classic" || _bl === "tank" || _bl === "dragon" || _bl === "reaper") bossLook = _bl; } catch (e) {}
 function setBossLook(v) { bossLook = v; try { localStorage.setItem(BOSS_LOOK_KEY, v); } catch (e) {} assetSyncUpload(BOSS_LOOK_KEY, v); }
 function tankBossOn() { return bossLook === "tank"; }
 var TANK_BOSS = { size: 0.55, contrast: 0.89, colour: 0.42, bright: 0.86, edge: 0.05, aimY: 13, rumble: 0.5, rumbleHz: 17, lift: 7, /* lift: boss feet sit 15px under the ground line, heroes' 8px - raise the tracks to Gareth's feet (Harley) */
@@ -25598,19 +25599,116 @@ var DRAGONB = (function () {
   return { draw: draw, mouth: mouth, shoot: shoot, target: target, box: box, fire: function () { var t = performance.now() / 1000; if (t - st.atk > 2) st.atk = t - 0.7; } };
 })();
 function dragonBossOn() { return bossLook === "dragon"; }
+/* v1865: Boss 4 - the Bone Reaper (Harley's four-legged crawler, dark iron like the concept). Parts are cut straight from the approved render
+   (art/originals/bosses/bone_reaper/parts_iron, preview dev/bosses/reaper_attack_rig_v1.html) so it looks exactly like the picture.
+   Idle: scythes sway, jaw chatters, core and eyes pulse, feet stay planted. Attack: the upper scythe telescopes out, slices straight through the
+   fortress (or the hero it targets) into the floor, then scrapes back along the floor throwing sparks and retracts. The hit lands as the blade
+   passes through. Hangs a little off the right edge. Look only - stats are the chapter boss's. Dev Tools > Chapter Boss > Boss look. */
+var REAPER_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/bosses/bone_reaper/" : "art/bosses/bone_reaper/";
+var REAPERB = (function () {
+  var R = { plate: [48, 287, 1480, 696], jaw: [406, 527, 147, 175], strut1: [681, 226, 173, 232], fore1i: [528, 90, 352, 368], fore1o: [44, 19, 506, 485], strut2: [591, 301, 142, 149], fore2: [105, 228, 631, 473], shoulder: [647, 427, 127, 127] };
+  var P0 = [710, 490], E1 = [835, 185], E2 = [695, 282], JW = [525, 545], TIP = [52, 503], BAR = { s0: 215, s1: 285, t0: -15, t1: 19, SC: 300 }, D = [-0.96508, -0.26195];
+  var RIGHT = 1528, GROUND = 975, OFF = 27, LIFT = 7, K430 = 0.5 / 3; /* rig units -> CSS px on a 430 px wide screen (the approved foundry mockup) */
+  var V = [TIP[0] - E1[0], TIP[1] - E1[1]], img = {}, loaded = false;
+  var st = { lastW: 430, lastH: 258, lastT: 0, atk: -99, keys: null, hitAt: 0, pend: [], sparks: [], scratch: [], lastTipY: null, hullY: 0, lastA: -1 };
+  function load() { if (loaded) return; loaded = true; ["plate", "jaw", "strut1", "fore1i", "fore1o", "strut2", "fore2", "shoulder", "barslice"].forEach(function (n) { var im = new Image(); im.src = REAPER_ART_BASE + n + ".webp?v=1"; img[n] = im; }); }
+  function ready() { load(); for (var n in img) if (!img[n].complete || !img[n].naturalWidth) return false; return true; }
+  function ez(u) { return u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u); }
+  function geom(bx, feetY) { var w = st.lastW, k = K430 * w / 430; return { k: k, ax: bx + (w + OFF * w / 430 - idleBossX(w)), fy: feetY - LIFT }; }
+  function toU(g, sx, sy) { return [RIGHT + (sx - g.ax) / g.k, GROUND + (sy - g.fy) / g.k]; }
+  function put(x, n) { var r = R[n]; x.drawImage(img[n], r[0], r[1], r[2], r[3]); }
+  function rot(x, p, a, f) { x.save(); x.translate(p[0], p[1]); x.rotate(a); x.translate(-p[0], -p[1]); f(); x.restore(); }
+  function solve(Q, a1) { var ca = Math.cos(a1), sa = Math.sin(a1), ex = E1[0] - P0[0], ey = E1[1] - P0[1], Ew = [P0[0] + ex * ca - ey * sa, P0[1] + ex * sa + ey * ca], w = [Q[0] - Ew[0], Q[1] - Ew[1]];
+    var vd = V[0] * D[0] + V[1] * D[1], vv2 = V[0] * V[0] + V[1] * V[1], ww2 = w[0] * w[0] + w[1] * w[1], ext = -vd + Math.sqrt(Math.max(0, vd * vd - vv2 + ww2)); if (!(ext > 0)) ext = 0;
+    var vx = V[0] + ext * D[0], vy = V[1] + ext * D[1]; return { a1: a1, b1: Math.atan2(w[1], w[0]) - Math.atan2(vy, vx) - a1, ext: ext }; }
+  function polar(q) { return [Math.hypot(q[0] - E1[0], q[1] - E1[1]), Math.atan2(q[1] - E1[1], q[0] - E1[0])]; }
+  function makeKeys(slamX) { var gy = GROUND - 17;
+    return [{ t: 0, q: TIP, a: 0 }, { t: 0.55, q: [380, 70], a: 0.10, e: "s" }, { t: 0.88, q: [slamX, gy], a: -0.14, e: "in" }, { t: 1.02, q: [slamX + 15, gy], a: -0.13, e: "s" },
+      { t: 1.85, q: [110, gy - 3], a: -0.04, e: "lin" }, { t: 2.45, q: TIP, a: 0, e: "s" }]; }
+  function attackPose(A, K) { if (!K || A <= 0 || A >= K[K.length - 1].t) return null;
+    var i = 1; while (K[i].t < A) i++; var k0 = K[i - 1], k1 = K[i], u = (A - k0.t) / (k1.t - k0.t), q;
+    u = k1.e === "in" ? Math.pow(u, 2.2) : k1.e === "lin" ? u : ez(u);
+    if (k1.e === "lin") q = [k0.q[0] + (k1.q[0] - k0.q[0]) * u, k0.q[1] + (k1.q[1] - k0.q[1]) * u];
+    else { var p0 = polar(k0.q), p1 = polar(k1.q), da = p1[1] - p0[1]; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; var r = p0[0] + (p1[0] - p0[0]) * u, an = p0[1] + da * u; q = [E1[0] + r * Math.cos(an), E1[1] + r * Math.sin(an)]; }
+    return solve(q, k0.a + (k1.a - k0.a) * u); }
+  function draw(x, bx, feetY, size) {
+    if (!ready()) return false;
+    var main = !!(x.canvas && x.canvas.clientWidth);
+    if (main) { st.lastW = x.canvas.clientWidth; st.lastH = x.canvas.clientHeight - (x.canvas._skyH || 0); }
+    var g = geom(bx, feetY), t = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, t - st.lastT)); if (main) st.lastT = t;
+    var s = Math.sin, A = t - st.atk, ap = attackPose(A, st.keys), last = st.keys ? st.keys[st.keys.length - 1].t : 0;
+    var br = 0.006 * s(t * 1.6), a1 = 0.035 * s(t * 1.3), b1 = 0.05 * s(t * 1.3 + 0.8), a2 = 0.04 * s(t * 1.3 + 1.2), b2 = 0.06 * s(t * 1.3 + 2.0), jaw = 0.03 * s(t * 2.1), glow = 0.5 + 0.5 * s(t * 2.4), ext = 0;
+    if (ap) { var bl = ez(Math.min(A / 0.25, (last - A) / 0.25)); a1 = a1 * (1 - bl) + ap.a1 * bl; b1 = b1 * (1 - bl) + ap.b1 * bl; ext = ap.ext * bl;
+      var wu = A < 0.88 ? ez(A / 0.55) : Math.max(0, 1 - (A - 0.88) / 0.5); a2 += 0.08 * wu; jaw += A < 0.88 ? 0.16 * ez(A / 0.55) : -0.1 * Math.max(0, 1 - (A - 0.88) / 0.6); }
+    else jaw += (function () { var u = t % 3.2; return u < 0.5 ? 0.16 * Math.sin(u / 0.5 * Math.PI) : 0; })();
+    var B0 = x.getTransform(), B0i = B0.inverse(), tipD = null;
+    x.save(); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    /* floor scratch (screen px) under the boss */
+    if (main) { for (var q0 = 0; q0 < st.scratch.length; q0++) st.scratch[q0].l += dt; while (st.scratch.length && st.scratch[0].l > 0.6) st.scratch.shift(); }
+    if (st.scratch.length > 1) { x.save(); x.globalCompositeOperation = "lighter"; x.lineCap = "round"; for (var i = 1; i < st.scratch.length; i++) { var p = st.scratch[i - 1], q = st.scratch[i], al = Math.max(0, 1 - q.l / 0.6); x.strokeStyle = "rgba(255,150,50," + (0.8 * al) + ")"; x.lineWidth = (4 * al + 1) * g.k / 0.5; x.beginPath(); x.moveTo(p.x, p.y); x.lineTo(q.x, q.y); x.stroke(); } x.restore(); }
+    x.translate(g.ax, g.fy); x.scale(g.k, g.k); x.translate(-RIGHT, -GROUND);
+    x.fillStyle = "rgba(0,0,0,.25)"; x.beginPath(); x.ellipse(800, 982, 700, 22, 0, 0, 7); x.fill();
+    x.save(); x.translate(0, GROUND); x.scale(1, 1 + br); x.translate(0, -GROUND);
+    put(x, "plate"); rot(x, JW, jaw, function () { put(x, "jaw"); });
+    rot(x, P0, a2, function () { put(x, "strut2"); rot(x, E2, b2, function () { put(x, "fore2"); }); });
+    rot(x, P0, a1, function () { put(x, "strut1"); rot(x, E1, b1, function () { put(x, "fore1i");
+        if (ext > 0.5) { x.save(); x.translate(E1[0], E1[1]); x.rotate(Math.atan2(D[1], D[0])); var L = BAR.s1 - BAR.s0, th = (BAR.t1 - BAR.t0 + 1) * 1.25, tc = (BAR.t0 + BAR.t1) / 2;
+          for (var s0 = BAR.SC - 12; s0 < BAR.SC + ext + 4; s0 += L - 2) x.drawImage(img.barslice, s0, tc - th / 2, L, th);
+          for (var cs = BAR.SC + 20; cs < BAR.SC + ext - 10; cs += 170) { var cg = x.createLinearGradient(0, tc - th * 0.8, 0, tc + th * 0.8); cg.addColorStop(0, "#2a2622"); cg.addColorStop(0.35, "#8e8780"); cg.addColorStop(0.6, "#5c5650"); cg.addColorStop(1, "#221f1c");
+            x.fillStyle = cg; x.strokeStyle = "#141210"; x.lineWidth = 3; x.beginPath(); if (x.roundRect) x.roundRect(cs - 11, tc - th * 0.78, 22, th * 1.56, 6); else x.rect(cs - 11, tc - th * 0.78, 22, th * 1.56); x.fill(); x.stroke(); x.fillStyle = "rgba(230,225,215,.45)"; x.fillRect(cs - 6, tc - th * 0.7, 4, th * 1.4); }
+          x.restore(); }
+        x.save(); x.translate(D[0] * ext, D[1] * ext); put(x, "fore1o"); tipD = x.getTransform().transformPoint(new DOMPoint(TIP[0], TIP[1])); x.restore(); }); });
+    put(x, "shoulder");
+    x.globalCompositeOperation = "lighter";
+    var gr = x.createRadialGradient(990, 470, 0, 990, 470, 170); gr.addColorStop(0, "rgba(255,70,30," + (0.10 + 0.16 * glow) + ")"); gr.addColorStop(1, "rgba(255,30,0,0)"); x.fillStyle = gr; x.beginPath(); x.arc(990, 470, 170, 0, 7); x.fill();
+    gr = x.createRadialGradient(452, 497, 0, 452, 497, 38); gr.addColorStop(0, "rgba(255,90,40," + (0.25 + 0.35 * glow) + ")"); gr.addColorStop(1, "rgba(255,30,0,0)"); x.fillStyle = gr; x.beginPath(); x.arc(452, 497, 38, 0, 7); x.fill();
+    x.restore(); x.restore();
+    /* sparks (screen px): through the hull, on the floor hit, and a stream while the blade scrapes back */
+    var tp = tipD ? B0i.transformPoint(tipD) : null, sc = g.k / 0.1667;
+    if (main && tp) {
+      if (ap && A > 0.55 && A < 0.88 && st.lastTipY != null && st.lastTipY < st.hullY && tp.y >= st.hullY) for (var q1 = 0; q1 < 22; q1++) { var an = -Math.PI * Math.random(), v = (40 + Math.random() * 120) * sc; st.sparks.push({ x: tp.x, y: tp.y, vx: Math.cos(an) * v, vy: Math.sin(an) * v, l: 0, L: 0.25 + Math.random() * 0.4 }); }
+      if (st.lastA < 0.88 && A >= 0.88 && A < 1) for (var q2 = 0; q2 < 34; q2++) { var an2 = -Math.PI * Math.random(), v2 = (50 + Math.random() * 140) * sc; st.sparks.push({ x: tp.x, y: tp.y, vx: Math.cos(an2) * v2, vy: Math.sin(an2) * v2, l: 0, L: 0.3 + Math.random() * 0.5 }); }
+      if (A >= 0.88 && A <= 1.85) { st.scratch.push({ x: tp.x, y: tp.y, l: 0 }); for (var q3 = 0; q3 < 5; q3++) { var an3 = -Math.PI * (0.55 + 0.4 * Math.random()), v3 = (40 + Math.random() * 120) * sc; st.sparks.push({ x: tp.x, y: tp.y, vx: Math.cos(an3) * v3 - 20 * sc, vy: Math.sin(an3) * v3, l: 0, L: 0.2 + Math.random() * 0.45 }); } }
+      st.lastTipY = tp.y;
+    }
+    if (main) st.lastA = A;
+    if (st.sparks.length || (tp && A >= 0.88 && A <= 1.85)) { x.save(); x.globalCompositeOperation = "lighter"; x.lineCap = "round";
+      for (var j = st.sparks.length - 1; j >= 0; j--) { var sp = st.sparks[j]; if (main) { sp.l += dt; if (sp.l > sp.L) { st.sparks.splice(j, 1); continue; } sp.vy += 370 * sc * dt; } var ox = sp.x, oy = sp.y; if (main) { sp.x += sp.vx * dt; sp.y += sp.vy * dt; } var u = sp.l / sp.L;
+        x.strokeStyle = "rgba(255," + Math.round(235 - 120 * u) + "," + Math.round(120 - 90 * u) + "," + (1 - u) + ")"; x.lineWidth = (1.1 * (1 - u) + 0.4) * sc; x.beginPath(); x.moveTo(ox, oy); x.lineTo(sp.x, sp.y); x.stroke(); }
+      if (tp && A >= 0.88 && A <= 1.85) { var rr = 9 * sc, rg = x.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, rr); rg.addColorStop(0, "rgba(255,230,150,0.9)"); rg.addColorStop(1, "rgba(255,120,30,0)"); x.fillStyle = rg; x.beginPath(); x.arc(tp.x, tp.y, rr, 0, 7); x.fill(); }
+      x.restore(); }
+    /* the hit lands as the blade passes through the target */
+    if (main) for (var pi = st.pend.length - 1; pi >= 0; pi--) { var pd = st.pend[pi]; if (t < pd.at) continue; spawnEnemyProjectile(pd.x, pd.y, pd.w, pd.h, false, pd.dmg, true, pd.heroKey); var lp = idleAnim.enemyProjectiles[idleAnim.enemyProjectiles.length - 1]; if (lp) { lp.reap = true; lp.t = 1; lp.toX = pd.x; lp.toY = pd.y; } st.pend.splice(pi, 1); }
+    return true;
+  }
+  function targetPt(w, h, heroKey) { var hv = heroKey && idleAnim.heroVis ? idleAnim.heroVis[heroKey] : null; if (hv) return { x: hv.x, y: hv.y - 6 * (heroSpriteVisualScale / 100) };
+    var hh = st.lastH || h, mm = fortHullMass(st.lastW, hh); return mm || { x: st.lastW * (enemyTargetXPct / 100), y: hh * (enemyTargetYPct / 100) }; }
+  function shoot(bx, feetY, w, h, dmg, heroKey) { var t = performance.now() / 1000, tg = targetPt(w, h, heroKey);
+    if (!st.keys || t - st.atk > st.keys[st.keys.length - 1].t) { /* start a new swing aimed at this target; the hit lands ~0.78 s in, as the blade passes through */
+      var g = geom(bx, feetY), u = toU(g, tg.x, tg.y); st.keys = makeKeys(u[0]); st.atk = t; st.hullY = tg.y; st.pend.push({ at: t + 0.78, x: tg.x, y: tg.y, w: w, h: h, dmg: dmg, heroKey: heroKey }); }
+    else st.pend.push({ at: Math.max(t, st.atk + 0.78), x: tg.x, y: tg.y, w: w, h: h, dmg: dmg, heroKey: heroKey }); /* a swing is already playing: this hit lands with it (or straight away) */
+  }
+  function mouth(bx, feetY) { var g = geom(bx, feetY); return { x: g.ax + (TIP[0] - RIGHT) * g.k, y: g.fy + (TIP[1] - GROUND) * g.k }; }
+  function box(bx, feetY) { var g = geom(bx, feetY), X = function (u) { return g.ax + (u - RIGHT) * g.k; }, Y = function (v) { return g.fy + (v - GROUND) * g.k; }, l = X(180), r = Math.min(X(RIGHT), st.lastW);
+    return { colX: (l + r) / 2, halfW: (r - l) / 2, top: Y(330), bottom: g.fy, cx: X(900), cy: Y(520), zx: 140 * g.k, zy: 110 * g.k }; }
+  return { draw: draw, shoot: shoot, mouth: mouth, box: box, fire: function (bx, feetY) { var t = performance.now() / 1000; if (st.keys && t - st.atk <= st.keys[st.keys.length - 1].t) return; var tg = targetPt(st.lastW, st.lastH, null), u = toU(geom(bx, feetY), tg.x, tg.y); st.keys = makeKeys(u[0]); st.atk = t; st.hullY = tg.y; } };
+})();
+function reaperBossOn() { return bossLook === "reaper"; }
 /* v1118: where the boss's body is on screen (lasers, missiles, shock crawl, damage numbers) - classic boss or the tank */
 function bossBox(vis, h) {
   var gy = groundYFor(h), size = 58 * bossSpriteScale, x = vis ? vis.x : idleBossX(430); /* no vis = only sizes are wanted */
   if (tankBossOn()) return TANKB.box(x, gy + 15, size);
   if (dragonBossOn()) return DRAGONB.box(x, gy + 15);
+  if (reaperBossOn()) return REAPERB.box(x, gy + 15);
   return { colX: x, halfW: 0.42 * size, top: gy + 15 - 0.9 * size, bottom: gy + 15, cx: x, cy: gy + 15 - 0.5 * size, zx: 0.2 * size, zy: 0.22 * size };
 }
-function bossTopY(h) { return (tankBossOn() || dragonBossOn()) ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
+function bossTopY(h) { return (tankBossOn() || dragonBossOn() || reaperBossOn()) ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
 /* where a boss shot starts: the tank's muzzle (and the tank fires) or the classic boss's hand */
 function bossShotOrigin(bx, h, fire) {
   var size = 58 * bossSpriteScale, feetY = groundYFor(h) + 15;
   if (tankBossOn()) { if (fire) TANKB.fire(); return TANKB.muzzle(bx, feetY, size); }
   if (dragonBossOn()) { if (fire) DRAGONB.fire(); return DRAGONB.mouth(bx, feetY); }
+  if (reaperBossOn()) { if (fire) REAPERB.fire(bx, feetY); return REAPERB.mouth(bx, feetY); }
   return { x: bx + size * -0.30, y: feetY - size * 0.58 };
 }
 
@@ -25888,7 +25986,7 @@ function spawnEnemyProjectile(fromX, fromY, w, h, arc, dmg, isBossOrb, heroKey) 
   // dmg travels WITH the shot (rather than being applied on launch) so the
   // "-HP" number pops the moment this specific shot actually lands, not
   // when it's fired — see the arrival loop in stepIdleAnim.
-  idleAnim.enemyProjectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: w * (enemyTargetXPct / 100), toY: h * (enemyTargetYPct / 100), t: 0, dmg: dmg || 0, orb: !!isBossOrb, shell: !!isBossOrb && tankBossOn(), fireball: !!isBossOrb && dragonBossOn(), heroKey: heroKey || null }); /* v1116: shell = the tank's cannonball look */
+  idleAnim.enemyProjectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: w * (enemyTargetXPct / 100), toY: h * (enemyTargetYPct / 100), t: 0, dmg: dmg || 0, orb: !!isBossOrb, shell: !!isBossOrb && tankBossOn(), fireball: !!isBossOrb && dragonBossOn(), reap: !!isBossOrb && reaperBossOn(), heroKey: heroKey || null }); /* v1116: shell = the tank's cannonball look */
   var lp = idleAnim.enemyProjectiles[idleAnim.enemyProjectiles.length - 1]; if (lp.shell && !lp.heroKey) { var tt = TANKB.target(h); lp.toX = tt.x; lp.toY = tt.y; } if (lp.fireball && !lp.heroKey) { var dtg = DRAGONB.target(h); lp.toX = dtg.x; lp.toY = dtg.y; } /* v1117: a shell at the fortress lands where the cannon points */
 }
 // Code-drawn "pop" explosion for a normal enemy's death: a ring of small
@@ -27383,7 +27481,7 @@ function spawnShockCrawl(enemyId) {
 function shockCrawlBodyBox(vis, h) {
   var gy = groundYFor(h);
   if (vis.type === "boss") {
-    if (tankBossOn() || dragonBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
+    if (tankBossOn() || dragonBossOn() || reaperBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
     var size = 58 * bossSpriteScale;
     return { x: vis.x, halfW: 0.42 * size * 0.62, top: gy + 15 - 0.9 * size, bottom: gy + 15 - 0.08 * size };
   }
@@ -28026,6 +28124,7 @@ function stepIdleAnim(dtSec, w, h) {
         var bSize = 58 * bossSpriteScale, bFeetY = groundYFor(h) + 15;
         if (tankBossOn()) { var tmz = bossShotOrigin(launchVis.x, h, true); spawnEnemyProjectile(tmz.x, tmz.y, w, h, false, launch.dmg, true, launch.heroKey); } else /* v1116: the tank fires from its muzzle */
         if (dragonBossOn()) DRAGONB.shoot(launchVis.x, bFeetY, w, h, launch.dmg, launch.heroKey); else /* v1864: the dragon rears back and spits a fireball */
+        if (reaperBossOn()) REAPERB.shoot(launchVis.x, bFeetY, w, h, launch.dmg, launch.heroKey); else /* v1865: the reaper swings its scythe through the target */
         if (BOSS3D_ON && boss3dImg()) boss3dShot(launchVis.x, bFeetY, bSize, w, h, launch.dmg, launch.heroKey); else /* v1112: the 3D boss raises his arm / stomps */
         spawnEnemyProjectile(launchVis.x + bSize * BOSS_HAND_DX, bFeetY - bSize * BOSS_HAND_DY, w, h, false, launch.dmg, true, launch.heroKey); /* v916: a boss shot aimed at a hero is the orb too */
       } else {
@@ -32863,6 +32962,7 @@ function drawIdleAnim(ctx, w, h) {
     ctx.restore();
   }
   idleAnim.enemyProjectiles.forEach(function (p) {
+    if (p.reap) return; /* v1865: the reaper's hit has no projectile - the scythe is the attack */
     if (p.orb && p.fireball) { /* v1864: Boss 3 dragon - molten fireball with a fire trail (no impact explosion yet) */
       var fa = Math.atan2(p.toY - p.startY, p.toX - p.startX), fq = 1 + 0.1 * Math.sin(performance.now() / 25);
       ctx.save();
@@ -33670,7 +33770,7 @@ function renderBossScaleButtons() {
 renderBossScaleButtons();
 function renderBossLookButtons() { /* v1116: Classic boss / Boss 2 (Steam Tank) - look only, shared with everyone like the boss size */
   var el = document.getElementById("bossLookBtns"); if (!el) return; el.innerHTML = "";
-  [["classic", "Classic"], ["tank", "Boss 2 (Tank)"], ["dragon", "Boss 3 (Dragon)"]].forEach(function (o) {
+  [["classic", "Classic"], ["tank", "Boss 2 (Tank)"], ["dragon", "Boss 3 (Dragon)"], ["reaper", "Boss 4 (Reaper)"]].forEach(function (o) {
     var btn = document.createElement("div"); btn.className = "dev-speed-btn" + (bossLook === o[0] ? " active" : ""); btn.textContent = o[1];
     btn.onclick = function () { setBossLook(o[0]); renderBossLookButtons(); }; el.appendChild(btn);
   });
