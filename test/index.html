@@ -6021,7 +6021,7 @@ function initDeviceLock(db) {
             try { renderBossScaleButtons(); } catch (e) {}
           } },
         { key: BOSS_LOOK_KEY, apply: function (v) {
-            if (v !== "classic" && v !== "tank") return; bossLook = v;
+            if (v !== "classic" && v !== "tank" && v !== "dragon") return; bossLook = v;
             try { localStorage.setItem(BOSS_LOOK_KEY, v); } catch (e) {}
             try { renderBossLookButtons(); } catch (e) {}
           } },
@@ -14990,7 +14990,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1863"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1864"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -25388,6 +25388,7 @@ function boss3dStompImpact(footX, footY, sp) {
 }
 function drawBossAnim(ctx, x, feetY, size) { // size = on-screen height from the ground to the top of his head (same meaning as before: 58 * bossSpriteScale)
   if (tankBossOn()) return drawTankBoss(ctx, x, feetY, size); // v1116: Boss 2, the Steam Tank
+  if (dragonBossOn()) return DRAGONB.draw(ctx, x, feetY, size); // v1864: Boss 3, the Clockwork Dragon
   if (drawBoss3D(ctx, x, feetY, size)) return true; // v1112
   if (!BOSS_ANIM_ON) return false; // off: the original uploaded boss sprite is used again
   var b = BOSS_ANIM, im = bossAnimImg(); if (!im) return false;
@@ -25416,7 +25417,7 @@ function drawKnightPreview(ctx, w, groundY) {
 /* v1116: Boss 2 - the Steam Tank (2D cutout from Harley's GPT parts sheet, dev/tank). Temporary chapter-boss look; stats are untouched (look only).
    Dev Tools > Chapter Boss > "Boss look" switches Classic / Boss 2 (shared admin setting). Look numbers are Harley's picks from the live mockup. */
 var BOSS_LOOK_KEY = "kingdom_prototype_bosslook_v1", bossLook = "tank";
-try { var _bl = localStorage.getItem(BOSS_LOOK_KEY); if (_bl === "classic" || _bl === "tank") bossLook = _bl; } catch (e) {}
+try { var _bl = localStorage.getItem(BOSS_LOOK_KEY); if (_bl === "classic" || _bl === "tank" || _bl === "dragon") bossLook = _bl; } catch (e) {}
 function setBossLook(v) { bossLook = v; try { localStorage.setItem(BOSS_LOOK_KEY, v); } catch (e) {} assetSyncUpload(BOSS_LOOK_KEY, v); }
 function tankBossOn() { return bossLook === "tank"; }
 var TANK_BOSS = { size: 0.55, contrast: 0.89, colour: 0.42, bright: 0.86, edge: 0.05, aimY: 13, rumble: 0.5, rumbleHz: 17, lift: 7, /* lift: boss feet sit 15px under the ground line, heroes' 8px - raise the tracks to Gareth's feet (Harley) */
@@ -25512,17 +25513,104 @@ var TANKB = (function () {
   return { draw: draw, muzzle: muzzle, target: target, box: box, fire: function () { st.fireT = performance.now() / 1000; st.smoked = false; } };
 })();
 function drawTankBoss(ctx, x, feetY, size) { return TANKB.draw(ctx, x, feetY, size); }
+/* v1864: Boss 3 - the Clockwork Dragon (Harley's coiled serpent, code rig from art/originals/bosses/clockwork_dragon/parts, dev/bosses/serpent_attack_rig_v1.html).
+   Idles in place (head, neck and tail sway, body flat on the floor), gears spin, chimneys smoke. Attack: rears back with a molten fireball growing in its jaws,
+   lunges and spits it at the fortress (or a hero). No impact explosion yet (Harley, 23 Nov 2026: more guidance coming). Hangs a little off the right edge.
+   Look only - stats are the chapter boss's. Dev Tools > Chapter Boss > Boss look. */
+var DRAGON_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/bosses/clockwork_dragon/" : "art/bosses/clockwork_dragon/";
+var DRAGONB = (function () {
+  var PW = { head: [589, 358], jaw: [260, 184], ring_plain: [262, 356], ring_gear: [272, 356], ring_stack: [275, 409], tail1: [202, 279], tail2: [156, 226], tail3: [126, 186], tailtip: [436, 170], gear: [195, 200] }; /* original part sizes (the rig's units) */
+  var S = 0.42, STEP = 196, HS = 0.5, RIGHT = 1218, GROUND = 707, TOPU = 91, LEFT = 96, OFF = 30, LIFT = 7, K430 = 0.68 / 3; /* K430: rig units -> CSS px on a 430 px wide screen (the approved foundry mockup) */
+  var CP = [[274,198],[386,254],[418,350],[346,438],[258,510],[290,620],[418,632],[546,632],[674,632],[818,632],[946,632],[1070,610],[1145,500],[1130,380],[1050,300],[950,285],[880,310]];
+  var WOB = [14,12,9,6,2,0,0,0,0,0,0,1,6,10,14,17,19], HW = [1, 0.6, 0.25];
+  var RINGS = ["ring_gear","ring_plain","ring_stack","ring_plain","ring_gear","ring_plain","ring_stack","ring_plain","ring_gear","ring_plain","ring_stack","ring_plain"];
+  var img = {}, loaded = false, st = { lastW: 430, lastH: 258, lastT: 0, atk: -99, pend: [], smoke: [], flip: [], mouth: null, k: K430 };
+  function load() { if (loaded) return; loaded = true; Object.keys(PW).forEach(function (n) { var im = new Image(); im.src = DRAGON_ART_BASE + n + ".webp?v=1"; img[n] = im; }); }
+  function ready() { load(); for (var n in PW) if (!img[n].complete || !img[n].naturalWidth) return false; return true; }
+  function ez(u) { return u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u); }
+  function attack(t) { var A = t - st.atk, o = { x: 0, y: 0, r: 0, open: 0, glow: 0, fired: A >= 0.7 };
+    if (A < 0 || A > 2) return o;
+    if (A < 0.6) { var e = ez(A / 0.6); o.x = 45 * e; o.y = -35 * e; o.r = -0.32 * e; o.open = 0.3 * e; o.glow = e; }
+    else if (A < 0.8) { var f = ez((A - 0.6) / 0.2); o.x = 45 - 125 * f; o.y = -35 + 60 * f; o.r = -0.32 + 0.47 * f; o.open = 0.3 + 0.7 * f; o.glow = 1 - 0.5 * f; }
+    else if (A < 1.1) { o.x = -80; o.y = 25; o.r = 0.15; o.open = 1; o.glow = 0.5 * (1 - (A - 0.8) / 0.3); }
+    else { var g = ez((A - 1.1) / 0.9); o.x = -80 * (1 - g); o.y = 25 * (1 - g); o.r = 0.15 * (1 - g); o.open = 1 - g; }
+    return o; }
+  function cr(p0, p1, p2, p3, u) { var u2 = u * u, u3 = u2 * u; return [0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * u + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * u2 + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * u3), 0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * u + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * u2 + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * u3)]; }
+  function path(t, HO) { var P = CP.map(function (p, i) { return [p[0] + WOB[i] * 0.5 * Math.sin(t * 1.1 + i * 0.7) + (HW[i] || 0) * HO.x, p[1] + WOB[i] * Math.sin(t * 1.4 + i * 0.55) + (HW[i] || 0) * HO.y]; });
+    var out = []; for (var i = 0; i < P.length - 1; i++) { var p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)]; for (var k = 0; k < 12; k++) out.push(cr(p0, p1, p2, p3, k / 12)); } out.push(P[P.length - 1]);
+    var L = [0]; for (var j = 1; j < out.length; j++) L.push(L[j - 1] + Math.hypot(out[j][0] - out[j - 1][0], out[j][1] - out[j - 1][1])); return { pts: out, L: L }; }
+  function at(pa, d) { var pts = pa.pts, L = pa.L; if (d <= 0) return { x: pts[0][0], y: pts[0][1], a: Math.atan2(pts[1][1] - pts[0][1], pts[1][0] - pts[0][0]) };
+    var i = 1; while (i < L.length - 1 && L[i] < d) i++; var f = (d - L[i - 1]) / Math.max(1e-6, L[i] - L[i - 1]);
+    return { x: pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, y: pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f, a: Math.atan2(pts[i][1] - pts[i - 1][1], pts[i][0] - pts[i - 1][0]) }; }
+  function geom(bx, feetY) { var w = st.lastW, k = K430 * w / 430; /* right end of the tail OFF px past the screen edge when the boss stands at its spot */
+    return { k: k, ax: bx + (w + OFF * w / 430 - idleBossX(w)), fy: feetY - LIFT }; }
+  function X(g, u) { return g.ax + (u - RIGHT) * g.k; }
+  function Y(g, v) { return g.fy + (v - GROUND) * g.k; }
+  function part(x, n, dx, dy, s) { var p = PW[n]; x.drawImage(img[n], dx, dy, p[0] * (s || 1), p[1] * (s || 1)); }
+  function fireball(x, px, py, q) { x.fillStyle = "rgba(70,15,0,0.35)"; x.beginPath(); x.arc(px, py, 51 * q, 0, 7); x.fill();
+    x.fillStyle = "#e8461a"; x.beginPath(); x.arc(px, py, 40 * q, 0, 7); x.fill(); x.fillStyle = "#ff9a2a"; x.beginPath(); x.arc(px - 2, py - 2, 30 * q, 0, 7); x.fill(); x.fillStyle = "#ffe07a"; x.beginPath(); x.arc(px - 4, py - 4, 16 * q, 0, 7); x.fill(); }
+  function draw(x, bx, feetY, size) {
+    if (!ready()) return false;
+    var main = !!(x.canvas && x.canvas.clientWidth);
+    if (main) { st.lastW = x.canvas.clientWidth; st.lastH = x.canvas.clientHeight - (x.canvas._skyH || 0); }
+    var g = geom(bx, feetY), t = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, t - st.lastT)); if (main) st.lastT = t; st.k = g.k;
+    var HO = attack(t), open = HO.open, pa = path(t, HO), tot = pa.L[pa.L.length - 1];
+    x.save(); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    x.translate(g.ax, g.fy); x.scale(g.k, g.k); x.translate(-RIGHT, -GROUND); var U = x.getTransform(), Ui = U.inverse();
+    function unitPt(lx, ly) { return Ui.transformPoint(x.getTransform().transformPoint(new DOMPoint(lx, ly))); }
+    x.fillStyle = "rgba(0,0,0,.22)"; x.beginPath(); x.ellipse(660, 704, 520, 22, 0, 0, 7); x.fill();
+    var segs = [], d = 70, ri = 0, tailLen = STEP * S * (0.75 + 0.62 + 0.5) + 60, taperLen = STEP * S * 4.2, tailStart = tot - tailLen;
+    while (d < tailStart) { var r = tailStart - d, sc = r < taperLen ? 0.78 + 0.22 * (r / taperLen) : 1; segs.push({ k: RINGS[ri % RINGS.length], d: d, s: sc }); ri++; d += STEP * S * sc * 0.97; }
+    ["tail1", "tail2", "tail3"].forEach(function (k, i) { segs.push({ k: k, d: d, s: 1 }); d += STEP * S * (0.75 - 0.13 * i); });
+    segs.push({ k: "tailtip", d: d - 8, s: 1 });
+    /* head: upright, neck socket (head px 445,255) tucked into the first ring, drawn under the rings */
+    var h = at(pa, 26); x.save(); x.translate(h.x, h.y); x.rotate(-0.12 + 0.05 * Math.sin(t * 1.1) + HO.r); x.scale(HS, HS);
+    x.save(); x.translate(300 - 420, 292 - 255); x.rotate(-open * 0.7); part(x, "jaw", -232, -32); x.restore(); part(x, "head", -420, -255);
+    st.mouthU = unitPt(95 - 420, 318 - 255); x.restore();
+    for (var i = segs.length - 1; i >= 0; i--) { var sg = segs[i], pw = PW[sg.k], p = at(pa, sg.d); x.save(); x.translate(p.x, p.y); x.rotate(p.a); x.scale(S * sg.s, S * sg.s);
+      if (st.flip[i] === undefined) st.flip[i] = sg.d > tot * 0.6 && Math.cos(p.a) < -0.4; if (st.flip[i]) x.scale(1, -1);
+      if (sg.k === "tailtip") { x.scale(-1, 1); part(x, "tailtip", -pw[0] + 25, -pw[1] / 2 - 10); }
+      else { var off = sg.k === "ring_stack" ? -pw[1] / 2 - 26 : -pw[1] / 2; part(x, sg.k, -pw[0] / 2, off);
+        if (sg.k === "ring_gear") { x.save(); x.translate(-pw[0] / 2 + 162, -pw[1] / 2 + 218); x.rotate(t * 2.2); var gs = 0.7; part(x, "gear", -PW.gear[0] / 2 * gs, -PW.gear[1] / 2 * gs, gs); x.restore(); }
+        if (main && sg.k === "ring_stack" && Math.random() < dt * 7.5) { var sp = unitPt(-pw[0] / 2 + 128, off + 10); st.smoke.push({ x: sp.x, y: sp.y, vx: (Math.random() - 0.5) * 20, vy: -60, r: 5, l: 0 }); } }
+      x.restore(); }
+    /* the fireball growing in its jaws during the wind-up */
+    var m = st.mouthU;
+    if (HO.glow > 0.01 && !HO.fired) fireball(x, m.x, m.y, HO.glow * 0.75 * (1 + 0.08 * Math.sin(t * 50)) / 0.68);
+    if (HO.glow > 0.01) { x.save(); x.globalCompositeOperation = "lighter"; var rr = (60 * HO.glow + 10) / 0.68, rg = x.createRadialGradient(m.x, m.y, 0, m.x, m.y, rr); rg.addColorStop(0, "rgba(255,240,170," + (0.9 * HO.glow) + ")"); rg.addColorStop(0.4, "rgba(255,140,30," + (0.6 * HO.glow) + ")"); rg.addColorStop(1, "rgba(255,60,0,0)"); x.fillStyle = rg; x.beginPath(); x.arc(m.x, m.y, rr, 0, 7); x.fill(); x.restore(); }
+    if (main) { for (var j = st.smoke.length - 1; j >= 0; j--) { var sm = st.smoke[j]; sm.l += dt; if (sm.l > 1.4) { st.smoke.splice(j, 1); continue; } sm.x += sm.vx * dt; sm.y += sm.vy * dt; sm.r += dt * 15; } }
+    for (var q = 0; q < st.smoke.length; q++) { var s2 = st.smoke[q], al = Math.max(0, 0.5 * (1 - s2.l / 1.4)); x.fillStyle = "rgba(235,240,245," + al + ")"; x.beginPath(); x.arc(s2.x, s2.y, s2.r, 0, 7); x.fill(); }
+    x.restore();
+    /* queued fireballs leave the mouth on the spit frame */
+    if (main) for (var pi = st.pend.length - 1; pi >= 0; pi--) { var pd = st.pend[pi]; if (t < pd.at) continue; var mo = mouth(bx, feetY); spawnEnemyProjectile(mo.x, mo.y, pd.w, pd.h, false, pd.dmg, true, pd.heroKey); st.pend.splice(pi, 1); }
+    return true;
+  }
+  function mouth(bx, feetY) { var g = geom(bx, feetY), m = st.mouthU || { x: 180, y: 300 }; return { x: X(g, m.x), y: Y(g, m.y) }; }
+  function shoot(bx, feetY, w, h, dmg, heroKey) { /* start the attack (if one isn't already playing) and spit the shot on the lunge */
+    var t = performance.now() / 1000;
+    if (t - st.atk > 2) { st.atk = t; st.pend.push({ at: t + 0.7, w: w, h: h, dmg: dmg, heroKey: heroKey }); }
+    else if (t < st.atk + 0.7) st.pend.push({ at: st.atk + 0.7, w: w, h: h, dmg: dmg, heroKey: heroKey });
+    else { var mo = mouth(bx, feetY); spawnEnemyProjectile(mo.x, mo.y, w, h, false, dmg, true, heroKey); }
+  }
+  function target(h) { var hh = h || st.lastH || 258, mm = fortHullMass(st.lastW, hh); return mm || { x: st.lastW * (enemyTargetXPct / 100), y: hh * (enemyTargetYPct / 100) }; }
+  function box(bx, feetY) { var g = geom(bx, feetY), l = X(g, LEFT), r = Math.min(X(g, RIGHT), st.lastW);
+    return { colX: (l + r) / 2, halfW: (r - l) / 2, top: Y(g, 200), bottom: g.fy, cx: X(g, 400), cy: Y(g, 540), zx: 110 * g.k, zy: 110 * g.k }; }
+  return { draw: draw, mouth: mouth, shoot: shoot, target: target, box: box, fire: function () { var t = performance.now() / 1000; if (t - st.atk > 2) st.atk = t - 0.7; } };
+})();
+function dragonBossOn() { return bossLook === "dragon"; }
 /* v1118: where the boss's body is on screen (lasers, missiles, shock crawl, damage numbers) - classic boss or the tank */
 function bossBox(vis, h) {
   var gy = groundYFor(h), size = 58 * bossSpriteScale, x = vis ? vis.x : idleBossX(430); /* no vis = only sizes are wanted */
   if (tankBossOn()) return TANKB.box(x, gy + 15, size);
+  if (dragonBossOn()) return DRAGONB.box(x, gy + 15);
   return { colX: x, halfW: 0.42 * size, top: gy + 15 - 0.9 * size, bottom: gy + 15, cx: x, cy: gy + 15 - 0.5 * size, zx: 0.2 * size, zy: 0.22 * size };
 }
-function bossTopY(h) { return tankBossOn() ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
+function bossTopY(h) { return (tankBossOn() || dragonBossOn()) ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
 /* where a boss shot starts: the tank's muzzle (and the tank fires) or the classic boss's hand */
 function bossShotOrigin(bx, h, fire) {
   var size = 58 * bossSpriteScale, feetY = groundYFor(h) + 15;
   if (tankBossOn()) { if (fire) TANKB.fire(); return TANKB.muzzle(bx, feetY, size); }
+  if (dragonBossOn()) { if (fire) DRAGONB.fire(); return DRAGONB.mouth(bx, feetY); }
   return { x: bx + size * -0.30, y: feetY - size * 0.58 };
 }
 
@@ -25800,8 +25888,8 @@ function spawnEnemyProjectile(fromX, fromY, w, h, arc, dmg, isBossOrb, heroKey) 
   // dmg travels WITH the shot (rather than being applied on launch) so the
   // "-HP" number pops the moment this specific shot actually lands, not
   // when it's fired — see the arrival loop in stepIdleAnim.
-  idleAnim.enemyProjectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: w * (enemyTargetXPct / 100), toY: h * (enemyTargetYPct / 100), t: 0, dmg: dmg || 0, orb: !!isBossOrb, shell: !!isBossOrb && tankBossOn(), heroKey: heroKey || null }); /* v1116: shell = the tank's cannonball look */
-  var lp = idleAnim.enemyProjectiles[idleAnim.enemyProjectiles.length - 1]; if (lp.shell && !lp.heroKey) { var tt = TANKB.target(h); lp.toX = tt.x; lp.toY = tt.y; } /* v1117: a shell at the fortress lands where the cannon points */
+  idleAnim.enemyProjectiles.push({ arc: !!arc, x: fromX, y: fromY, startX: fromX, startY: fromY, toX: w * (enemyTargetXPct / 100), toY: h * (enemyTargetYPct / 100), t: 0, dmg: dmg || 0, orb: !!isBossOrb, shell: !!isBossOrb && tankBossOn(), fireball: !!isBossOrb && dragonBossOn(), heroKey: heroKey || null }); /* v1116: shell = the tank's cannonball look */
+  var lp = idleAnim.enemyProjectiles[idleAnim.enemyProjectiles.length - 1]; if (lp.shell && !lp.heroKey) { var tt = TANKB.target(h); lp.toX = tt.x; lp.toY = tt.y; } if (lp.fireball && !lp.heroKey) { var dtg = DRAGONB.target(h); lp.toX = dtg.x; lp.toY = dtg.y; } /* v1117: a shell at the fortress lands where the cannon points */
 }
 // Code-drawn "pop" explosion for a normal enemy's death: a ring of small
 // rotating fragment squares flying outward, plus a quick expanding shockwave
@@ -27295,7 +27383,7 @@ function spawnShockCrawl(enemyId) {
 function shockCrawlBodyBox(vis, h) {
   var gy = groundYFor(h);
   if (vis.type === "boss") {
-    if (tankBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
+    if (tankBossOn() || dragonBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
     var size = 58 * bossSpriteScale;
     return { x: vis.x, halfW: 0.42 * size * 0.62, top: gy + 15 - 0.9 * size, bottom: gy + 15 - 0.08 * size };
   }
@@ -27937,6 +28025,7 @@ function stepIdleAnim(dtSec, w, h) {
         var BOSS_HAND_DX = -0.30, BOSS_HAND_DY = 0.58;
         var bSize = 58 * bossSpriteScale, bFeetY = groundYFor(h) + 15;
         if (tankBossOn()) { var tmz = bossShotOrigin(launchVis.x, h, true); spawnEnemyProjectile(tmz.x, tmz.y, w, h, false, launch.dmg, true, launch.heroKey); } else /* v1116: the tank fires from its muzzle */
+        if (dragonBossOn()) DRAGONB.shoot(launchVis.x, bFeetY, w, h, launch.dmg, launch.heroKey); else /* v1864: the dragon rears back and spits a fireball */
         if (BOSS3D_ON && boss3dImg()) boss3dShot(launchVis.x, bFeetY, bSize, w, h, launch.dmg, launch.heroKey); else /* v1112: the 3D boss raises his arm / stomps */
         spawnEnemyProjectile(launchVis.x + bSize * BOSS_HAND_DX, bFeetY - bSize * BOSS_HAND_DY, w, h, false, launch.dmg, true, launch.heroKey); /* v916: a boss shot aimed at a hero is the orb too */
       } else {
@@ -32774,7 +32863,16 @@ function drawIdleAnim(ctx, w, h) {
     ctx.restore();
   }
   idleAnim.enemyProjectiles.forEach(function (p) {
-    if (p.orb && p.shell) { /* v1116: Boss 2 tank shell - dark iron ball, hot orange glow, smoky trail */
+    if (p.orb && p.fireball) { /* v1864: Boss 3 dragon - molten fireball with a fire trail (no impact explosion yet) */
+      var fa = Math.atan2(p.toY - p.startY, p.toX - p.startX), fq = 1 + 0.1 * Math.sin(performance.now() / 25);
+      ctx.save();
+      for (var ft2 = 6; ft2 >= 1; ft2--) { var fx2 = p.x - Math.cos(fa) * ft2 * 5.5, fy2 = p.y - Math.sin(fa) * ft2 * 5.5, fr2 = 7.5 * (1 - ft2 / 7) + 1.5; ctx.globalAlpha = 0.6 * (1 - ft2 / 7); ctx.fillStyle = "#c8280a"; ctx.beginPath(); ctx.arc(fx2, fy2 - 0.7, fr2 * 1.15, 0, 7); ctx.fill(); ctx.fillStyle = "#ff9620"; ctx.beginPath(); ctx.arc(fx2, fy2, fr2 * 0.8, 0, 7); ctx.fill(); }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(70,15,0,0.35)"; ctx.beginPath(); ctx.arc(p.x, p.y, 11.5 * fq, 0, 7); ctx.fill();
+      ctx.fillStyle = "#e8461a"; ctx.beginPath(); ctx.arc(p.x, p.y, 9 * fq, 0, 7); ctx.fill(); ctx.fillStyle = "#ff9a2a"; ctx.beginPath(); ctx.arc(p.x - 0.5, p.y - 0.5, 6.8 * fq, 0, 7); ctx.fill(); ctx.fillStyle = "#ffe07a"; ctx.beginPath(); ctx.arc(p.x - 1, p.y - 1, 3.6 * fq, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = "lighter"; var fgl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 20); fgl.addColorStop(0, "rgba(255,170,60,0.45)"); fgl.addColorStop(1, "rgba(255,60,0,0)"); ctx.fillStyle = fgl; ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, 7); ctx.fill();
+      ctx.restore();
+    } else if (p.orb && p.shell) { /* v1116: Boss 2 tank shell - dark iron ball, hot orange glow, smoky trail */
       var sa2 = Math.atan2(p.toY - p.startY, p.toX - p.startX);
       ctx.save();
       for (var st2 = 4; st2 >= 1; st2--) { var sx2 = p.x - Math.cos(sa2) * st2 * 5, sy2 = p.y - Math.sin(sa2) * st2 * 5; ctx.globalAlpha = 0.12 * (5 - st2); ctx.fillStyle = st2 > 2 ? "#6b6560" : "#ff9a3c"; ctx.beginPath(); ctx.arc(sx2, sy2, 2 + st2 * 0.9, 0, Math.PI * 2); ctx.fill(); }
@@ -33572,7 +33670,7 @@ function renderBossScaleButtons() {
 renderBossScaleButtons();
 function renderBossLookButtons() { /* v1116: Classic boss / Boss 2 (Steam Tank) - look only, shared with everyone like the boss size */
   var el = document.getElementById("bossLookBtns"); if (!el) return; el.innerHTML = "";
-  [["classic", "Classic"], ["tank", "Boss 2 (Tank)"]].forEach(function (o) {
+  [["classic", "Classic"], ["tank", "Boss 2 (Tank)"], ["dragon", "Boss 3 (Dragon)"]].forEach(function (o) {
     var btn = document.createElement("div"); btn.className = "dev-speed-btn" + (bossLook === o[0] ? " active" : ""); btn.textContent = o[1];
     btn.onclick = function () { setBossLook(o[0]); renderBossLookButtons(); }; el.appendChild(btn);
   });
