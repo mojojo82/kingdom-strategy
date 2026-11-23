@@ -8,23 +8,26 @@ function put(n){ const r=M[n]; x.drawImage(I[n], r[0], r[1]); }
 const ez=u=>u<0?0:u>1?1:u*u*(3-2*u), lerp=(a,b,u)=>a+(b-a)*u;
 function R(v,a){ const c=Math.cos(a), s=Math.sin(a); return [v[0]*c-v[1]*s, v[0]*s+v[1]*c]; }
 // arm swing (deg; + = hammer lifts up in front, over the head and behind), body lean (deg)
-const KEYS=[{t:0,a:0,tr:0,dy:0},{t:0.3,a:-3,tr:1.5,dy:4,e:'s'},{t:1.15,a:34,tr:-5,dy:-6,e:'s'},{t:1.45,a:36,tr:-6,dy:-7,e:'s'},{t:1.62,a:-1.5,tr:6,dy:12,e:'in'},{t:2.2,a:-1,tr:4.5,dy:9,e:'s'},{t:2.7,a:0,tr:0,dy:0,e:'s'}];
-function atkPose(A){ if (A<=0||A>=KEYS[KEYS.length-1].t) return {a:0,tr:0,dy:0,on:false}; let i=1; while(KEYS[i].t<A) i++; const k0=KEYS[i-1],k1=KEYS[i]; let u=(A-k0.t)/(k1.t-k0.t); u=k1.e==='in'?Math.pow(u,2.4):ez(u); return {a:lerp(k0.a,k1.a,u),tr:lerp(k0.tr,k1.tr,u),dy:lerp(k0.dy,k1.dy,u),on:true}; }
+const KEYS=[{t:0,a:0,tr:0,dy:0,dx:0},{t:0.3,a:-3,tr:1.5,dy:6,dx:2,e:'s'},{t:1.15,a:34,tr:-5,dy:-8,dx:-8,e:'s'},{t:1.45,a:36,tr:-6,dy:-9,dx:-9,e:'s'},{t:1.62,a:-1.5,tr:6,dy:18,dx:10,e:'in'},{t:2.2,a:-1,tr:4.5,dy:14,dx:7,e:'s'},{t:2.7,a:0,tr:0,dy:0,dx:0,e:'s'}];
+function atkPose(A){ if (A<=0||A>=KEYS[KEYS.length-1].t) return {a:0,tr:0,dy:0,dx:0,on:false}; let i=1; while(KEYS[i].t<A) i++; const k0=KEYS[i-1],k1=KEYS[i]; let u=(A-k0.t)/(k1.t-k0.t); u=k1.e==='in'?Math.pow(u,2.4):ez(u); return {a:lerp(k0.a,k1.a,u),tr:lerp(k0.tr,k1.tr,u),dy:lerp(k0.dy,k1.dy,u),dx:lerp(k0.dx,k1.dx,u),on:true}; }
 const toS=(u,v)=>[OX+u*K, OY+v*K];
 const smoke=[], shards=[], spikes=[], mist=[]; let lastA=-1, shakeT=-9;
+function drawLegs(dx,dy){ const r=M.legs, im=I.legs, Y0=505, Y1=880, ST=3;
+  for (let sy=0; sy<r[3]; sy+=ST){ const y=r[1]+sy; let w=(Y1-y)/(Y1-Y0); w=w<0?0:w>1?1:w; w=w*w*(3-2*w);
+    const hh=Math.min(ST,r[3]-sy); x.drawImage(im,0,sy,r[2],hh, r[0]+dx*w, y+dy*w, r[2], hh+ (w>0&&w<1?1:0)); } }
 function draw(t){
   const s=Math.sin, A=(t%CYC)-ATK0, ap=atkPose(A);
   const br=0.006*s(t*1.5), idleA=ap.on?0:0.8*s(t*1.2);
   const al=(ap.a+idleA)*Math.PI/180;
-  function hamPt(p){ const r=R([p[0]-SH[0],p[1]-SH[1]],al); const q=[SH[0]+r[0]-790,SH[1]+r[1]-490], tr=(ap.tr)*Math.PI/180, r2=R(q,tr); return [790+r2[0],490+ap.dy+r2[1]]; }
+  function hamPt(p){ const r=R([p[0]-SH[0],p[1]-SH[1]],al); const q=[SH[0]+r[0]-790,SH[1]+r[1]-490], tr=(ap.tr)*Math.PI/180, r2=R(q,tr); return [790+(ap.dx||0)+r2[0],490+ap.dy+r2[1]]; }
   if (lastA<1.62 && A>=1.62) { shakeT=t; impact(); }
   x.setTransform(1,0,0,1,0,0); const sh=t-shakeT<0.3?(1-(t-shakeT)/0.3)*8:0; x.translate((Math.random()-.5)*2*sh,(Math.random()-.5)*2*sh);
   x.drawImage(I.bg,0,0);
   x.save(); x.translate(OX,OY); x.scale(K,K);
   x.fillStyle='rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(830,990,330,20,0,0,7); x.fill();
-  const HIP=P.HIP, trR=(ap.tr+ (ap.on?0:0.8*s(t*1.2+0.4)))*Math.PI/180, tdy=ap.dy+3*s(t*1.5);
-  put('legs');
-  x.save(); x.translate(HIP[0],HIP[1]+tdy); x.rotate(trR); x.translate(-HIP[0],-HIP[1]);
+  const HIP=P.HIP, trR=(ap.tr+1.2*s(t*1.1+0.4))*Math.PI/180, tdy=ap.dy+5*s(t*1.6), tdx=ap.dx+3*s(t*1.1);
+  drawLegs(tdx,tdy);
+  x.save(); x.translate(HIP[0]+tdx,HIP[1]+tdy); x.rotate(trR); x.translate(-HIP[0],-HIP[1]);
   x.save(); x.translate(SH[0],SH[1]); x.rotate(al); x.translate(-SH[0],-SH[1]); put('arm'); x.restore();
   put('upper');
   // core + eye + piston glow
