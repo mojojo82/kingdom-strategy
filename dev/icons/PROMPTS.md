@@ -2,7 +2,18 @@
 
 Every ChatGPT prompt used for the game's icons, copied word for word from Harley's ChatGPT history (exported 24 Nov 2026), oldest style first. Attachments are listed with their repo path where the file is in the repo.
 
-**Which style to follow (Harley, 24 Nov 2026):** the icon session of 14 Nov, when the speedups and the other item types were made together, is the reference for the game's icon style. The icons in the game come from the 14 Nov **"Redraw Item Icons"** chat: Kingshot-style, soft painted 3D look, THIN soft outlines in a darker shade of each object's own colour (no thick black outlines), slightly muted colours. It made 32 icons in 6 sheets: speedups, Peace Shield, teleports, March Speed, Recall, Stamina, selector / card / equipment chests, Enhance Stone, Anti-Scout, resources, Gold, Gems, Valor, Conquest Books, Energon, Research Points, Weapon Draw Ticket and Hero Fragment. Refs: `art/originals/items/style_ref_kingshot_icons.png` + `art/originals/items/icons_v1_contact.jpg`; results in `art/originals/items/ks/` (v1591). The earlier "Create Speedup Icons" chat the same day (thick dark outlines) was the first version that this redraw replaced; later chats that attach `style_ref_existing_icons.png` used that older look.
+## WHICH ICON STYLE FOR WHAT (Harley, 24 Nov 2026 - until further notice)
+
+Picture: `dev/icons/icon_styles_compare.png` (one row per style). Each row is also saved on its own as a reference strip to attach in ChatGPT: `art/originals/items/style_row1_backpack_items.png` ... `style_row4_fortress_weapons.png`.
+
+| Making... | Follow | Prompts below | Reference files to attach |
+|---|---|---|---|
+| Anything stored in the BACKPACK (consumables, speedups, chests, resources, materials, tickets...) | **Row 1** - 14 Nov Kingshot-style redraw | "Item icons - THE GAME'S ICON STYLE" | `art/originals/items/style_row1_backpack_items.png` (+ originally `style_ref_kingshot_icons.png`, `icons_v1_contact.jpg`) |
+| Gear-family items like Arcsteel / Gear Reset | Row 2 exists (made with the old reference); new backpack items still follow Row 1 | "Gear material (Arcsteel)...", "Gear Reset" | `style_row2_arcsteel_gearreset.png` |
+| Menu / map / tab button icons | **Row 3** - 17 Nov menu icons | "Menu / UI icons" | `art/originals/items/style_row3_menu.png` (+ originally `icon_fhw.png`, `tab_icons_v1_gpt.png`) |
+| Fortress WEAPONS (e.g. a new legendary weapon) | **Row 4** - 22 Nov weapon icons | "Fortress weapon icons" (the 15 + 2 prompts) | `art/originals/items/style_row4_fortress_weapons.png` (+ originally `items/weapon_slabs/ref_4weapons.png` / `style_ref.png`) |
+
+Nothing gets replaced for now; Harley may do a consistency pass later. Background of the rows: the 14 Nov "Create Speedup Icons" chat (thick outlines) was the first version, replaced the same day by the Kingshot-style redraw (32 icons, `art/originals/items/ks/`, v1591). Later chats for Rows 2-4 attached the older `style_ref_existing_icons.png`, which is why they have heavier outlines and more gold.
 
 How to reuse: new chat, attach the same reference files, paste the prompt and change only the objects. Keep the layout rules: grid, equal cells, flat magenta #FF00FF or green #00FF00 background, no text, no tiles. Then key it (`python3 dev/skins/key_magenta.py`, or `dev/cards/key_frame.py IN OUT green`).
 
