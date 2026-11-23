@@ -218,3 +218,10 @@ Make an exploded PARTS SHEET of ONLY that near arm, in exactly the same design, 
 3. FIST: the closed fist gripping nothing (a hole where the handle goes), with its wrist cuff.
 Do NOT draw the shoulder pad, the body or the hammer. Parts separated with lots of space between them, not touching. Flat solid GREEN background (#00FF00), no text, no labels, no shadows.
 ```
+
+**Prompt 10 (24 Nov)** - attached: `art/originals/bosses/frost_hammer/style_v5_thead.png` -> `layer_nopad_gpt_unaligned.png` (NOT lined up - ChatGPT redrew the torso; not used. The shoulder pad was cut from the approved picture instead and the gap under it filled in code)
+```
+Edit the attached image (the final approved ice knight) for animation layers. It must line up EXACTLY with the attached image.
+
+REMOVE: the near arm that holds the hammer (upper arm, elbow, forearm, fist), the whole hammer, AND the big near SHOULDER PAD (the spiky snowy armour plate on his left-side shoulder, closest to the hammer). Keep EVERYTHING ELSE exactly identical: same canvas size, same position, same scale, same colours and lighting, same helmet, chest core, torso, chimneys, legs, the other shoulder pad and the other arm. Where the removed shoulder pad and arm were, paint the bare mechanical SHOULDER JOINT (a round brass ball-joint socket on the side of the torso) and the side of the torso, so it looks complete. Same flat green background (#00FF00), no text.
+```
