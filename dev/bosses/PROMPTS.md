@@ -207,3 +207,14 @@ Change the head design
 ```
 Undo that. Keep face visible
 ```
+
+**Prompt 9 (24 Nov)** - attached: `art/originals/bosses/frost_hammer/style_v5_thead.png` -> `art/originals/bosses/frost_hammer/arm_parts_v1.png` (ChatGPT did not keep the scale; the parts are scaled in code)
+```
+The attached image is the FINAL approved ice knight. I am animating it in code: his hand will lift the hammer straight up and slam it straight down, so his near arm (the one holding the hammer) must bend at the elbow. In this image his UPPER ARM is hidden behind the big shoulder pad, so I need the arm drawn as separate parts.
+
+Make an exploded PARTS SHEET of ONLY that near arm, in exactly the same design, colours, ice, brass rings, lighting and art style, at EXACTLY the same scale as the attached image (same thickness of the forearm and same size of the fist as in the attached picture):
+1. UPPER ARM: the complete upper arm from the round shoulder ball-joint down to the elbow, drawn fully (the part normally hidden under the shoulder pad), pointing straight DOWN, with a round joint cap at the shoulder end and a round elbow joint at the bottom.
+2. FOREARM: from the round elbow joint to the wrist cuff, drawn straight and horizontal, with a round elbow cap at the elbow end.
+3. FIST: the closed fist gripping nothing (a hole where the handle goes), with its wrist cuff.
+Do NOT draw the shoulder pad, the body or the hammer. Parts separated with lots of space between them, not touching. Flat solid GREEN background (#00FF00), no text, no labels, no shadows.
+```
