@@ -11,6 +11,7 @@ Rules that matter most (details in HANDOVER.md):
 - Anti-cheat revert (`AC_REVERT`) stays off until Harley asks. No player tracking or analytics.
 - Mobile first: don't touch the mobile layout unless asked (PC is only for Harley's testing).
 - Heroes/skills work the same in Conquest and Arena; combat has no dice; bots get the same kit as players; don't add new stats. Check balance changes with `node dev/balance/run.js`.
+- Save every ChatGPT / Atlas art prompt word for word in that art type's PROMPTS.md (dev/icons, dev/frames, dev/fx, dev/bosses, dev/levels, dev/skins ...).
 - Art: keep the full-size original in `art/originals/` plus a phone-size copy; show a mockup before new art goes in.
 - The meta build (strongest overall weapon build) must stay on top: after any combat/weapon change run `node dev/balance/run.js --only meta`.
 - Hero animation frames: always keep a keyed LARGE set (>= 3x on-screen size, ~510 px+ tall) in `art/originals/heroes/<hero>/large/` as a buffer for sizing heroes up later (see HANDOVER.md).
