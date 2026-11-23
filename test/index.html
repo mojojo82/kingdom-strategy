@@ -974,7 +974,11 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   }
   .city-icon-img.city-drop-anim { animation: cityTpAppear 1.3s ease-out both; } /* v1206: Kingshot-style beam-in (was a 0.2 s fall) */
   /* v1857 (Harley): the castle itself stays sharp - it only moves (transform / opacity); the bright wash + blue glow is a second copy of the same picture on top that just fades out (its filter never animates) */
-  .city-icon-img.city-drop-anim.tp2 { animation-name: cityTpMove; }
+  /* v1858: v1857 still went soft - any animation on the castle img makes the browser draw it as a moving layer with cheaper scaling. Now the castle img is
+     NOT animated at all: hidden until the bolt hits, then simply shown (a timer flips a class), so it is always drawn sharp. The squash/bounce + wash + glow
+     all live on the copy on top, which fades away and reveals the sharp castle. */
+  .city-icon-img.city-drop-anim.tp2 { animation: none; visibility: hidden; }
+  .city-icon-img.city-drop-anim.tp2.tp-on { visibility: visible; }
   .city-icon-img.city-drop-glow { animation: cityTpMove 1.3s ease-out both, cityTpGlow 1.3s linear both; filter: brightness(2.4) saturate(.35) drop-shadow(0 0 10px #7fe3ff); pointer-events: none; }
   @keyframes cityTpMove {
     0%, 37% { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 0; }
@@ -1095,7 +1099,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     38%  { opacity: 1; }
     100% { opacity: 1; }
   }
-  .tile.city-drop-anim-bg { animation: cityDropTileReveal 1.3s linear both; }
+  .tile.city-drop-anim-bg { visibility: hidden; } /* v1858: was an opacity animation on the whole tile for 1.3 s - that kept the castle as a soft moving layer until it ended (the "pop to sharp"). Now hidden until the bolt hits, then shown by a timer. */
   @keyframes cityDropImpactShake {
     0%, 100% { transform: translateY(0); }
     30% { transform: translateY(2px); }
@@ -14988,7 +14992,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1857"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1858"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19419,7 +19423,7 @@ function renderVisibleTiles() {
     // same fall timing.
     var isFreshDropTarget = (isMyCity || isOtherCity) && tile.id === dropAnimTileId && Date.now() < dropAnimUntil;
     var cls = "tile " + (isMyCity ? "mycity" : isOtherCity ? "othercity" : hiddenAsEmpty ? "empty" : tile.type + (tile.type === "resource" ? " " + tile.resourceType + (RES_NODE_ART[tile.resourceType] && mapLod() === 0 ? " art" : "") : ""))
-      + (selectedTile === tile.id ? " selected" : "") + (fpMark[tile.id] ? " " + fpMark[tile.id] : "") + (isFreshDropTarget ? " city-drop-anim-bg" : "");
+      + (selectedTile === tile.id ? " selected" : "") + (fpMark[tile.id] ? " " + fpMark[tile.id] : "") + (isFreshDropTarget && Date.now() < dropAnimUntil - DROP_ANIM_DURATION_MS + 490 ? " city-drop-anim-bg" : "");
     if (div.className !== cls) div.className = cls;
     div.style.zIndex = (mapIso && (isMyCity || isOtherCity || (tile.type === "resource" && RES_NODE_ART[tile.resourceType] && !hiddenAsEmpty))) ? String(10 + tile.x + tile.y) : ""; /* v875: node art overlaps its neighbours too */ /* v825: nearer bases draw over farther ones */
     var icon, lvlTag = "";
@@ -19445,7 +19449,7 @@ function renderVisibleTiles() {
       // cutting the effect short at a essentially random point.
       var alreadyBuilt = isFreshDropTarget && div.querySelector(".city-drop-anim");
       if (!alreadyBuilt) {
-        var cityImgCls = "city-icon-img" + (isFreshDropTarget ? " city-drop-anim tp2" : "");
+        var cityImgCls = "city-icon-img" + (isFreshDropTarget ? " city-drop-anim tp2" + (Date.now() > dropAnimUntil - DROP_ANIM_DURATION_MS + 490 ? " tp-on" : "") : "");
         var cityImgStyleParts = [];
         if (isFreshDropTarget) cityImgStyleParts.push("--drop-distance:" + (-dropAnimFallPx) + "px");
         var cSkinId = isMyCity ? (skinAlignPreview && CITY_SKINS[skinAlignPreview] ? skinAlignPreview : myCitySkinId()) : citySkinIdAt(tile.id), cSkin = CITY_SKINS[cSkinId]; /* v1012: other players' skins too */
@@ -19524,6 +19528,7 @@ var dropAnimUntil = 0;
 var dropAnimFallPx = 0;
 var DROP_ANIM_DURATION_MS = 1300; /* v1206: beam-in (was 200 for the fall); must match cityTpAppear / cityDropTileReveal in the CSS */
 function armTeleportDropEffect(tileId) {
+  setTimeout(function () { document.querySelectorAll(".city-icon-img.city-drop-anim.tp2").forEach(function (e) { e.classList.add("tp-on"); }); document.querySelectorAll(".tile.city-drop-anim-bg").forEach(function (e) { e.classList.remove("city-drop-anim-bg"); }); }, 490); /* v1858: show the (static, sharp) castle on the bolt's impact */
   dropAnimTileId = tileId;
   dropAnimUntil = Date.now() + DROP_ANIM_DURATION_MS;
   dropAnimFallPx = tilePxZ() * 6; // scales with zoom rather than a fixed guess
