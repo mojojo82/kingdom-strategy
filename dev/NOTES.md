@@ -6790,3 +6790,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1862 - invasion dev tool: bots land with their picture ready (TEST)
 - Harley: with the Invasion dev tool the first bot's skin disappeared for a moment. A bot using a skin not seen yet this session landed while its picture was still downloading. Now every city skin is loaded + decoded (and kept in memory) when the tool is switched on / when I teleport, and a bot is placed only once its picture is decoded. Headless (logging every bot tile every 16 ms for 7 s): no bot ever shows without its picture (before: some bots blank for 50-90 ms).
+
+## v1863 - city skin "Mecha Platform" removed (TEST)
+- Harley: delete the old Gundam city skin (the white/red/blue mech on its round platform - NOT the Mecha fortress skin). Removed from CITY_SKINS, CITY_SKIN_ORDER and CITY_ART_BAKED; test/assets/city-skins-mecha-d00ec66f.png deleted; art kept in art/originals/skins/retired/city_mecha_platform.png (originals in art/originals/skins/mech_test stay - they are the style refs for the skin prompts). Anyone who had it equipped (or a city doc saying "mecha") now shows the default Sea Furnace. Copying to LIVE must also drop assets/city-skins-mecha-*.png.
+- Headless: equipped "mecha" falls back to Sea Furnace; Skins > City lists 10 skins without it; no errors.
