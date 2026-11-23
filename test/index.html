@@ -14991,7 +14991,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1861"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1862"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -33790,6 +33790,8 @@ document.getElementById("devFreeSkillToggle").onchange = function (e) { devFreeS
 var DEV_INV_PREFIX = "devinv_", DEV_INV_COUNT = 10, DEV_INV_MAXDELAY = 5000, DEV_INV_LIFE = 30000, DEV_INV_NEAR = 14;
 var devInvasionOn = false, devInvBots = {}, devInvTimers = [], devInvSeq = 0, devInvTick = null; /* devInvBots: tileId -> { owner, sk, until } */
 function devInvSkins() { return Object.keys(CITY_SKINS); }
+var devInvDecoded = {}, devInvKeep = []; /* v1862 (Harley): a skin seen for the first time was still downloading when its bot landed, so that bot had no picture for a moment - load + decode every skin before the bots arrive */
+function devInvPreload() { Object.keys(CITY_SKINS).forEach(function (k) { var src = CITY_SKINS[k].src; if (!src || devInvDecoded[src]) return; var im = new Image(); im.src = src; devInvKeep.push(im); /* held so the decoded picture stays in memory */ devInvDecoded[src] = (im.decode ? im.decode() : Promise.resolve()).then(function () { devInvDecoded[src] = true; }, function () { devInvDecoded[src] = true; }); }); }
 function devInvSpotOk(id, hx, hy) {
   var xy = tileXY(id); if (Math.max(Math.abs(xy[0] - hx), Math.abs(xy[1] - hy)) <= BASE_FP_R * 2) return false; /* not touching my own block */
   var t = mapTileAt(game.state.map, xy[0], xy[1]); if (!t || t.type !== "empty") return false;
@@ -33823,12 +33825,13 @@ function devInvLand() {
   devInvBots[id] = { owner: owner, sk: sk, until: Date.now() + DEV_INV_LIFE };
   try { spawnTeleportDropExtras(id); } catch (e) {} /* the same bolt / flash / dust as my own teleport; the base appears on the impact (0.5 s) */
   try { sfxTeleport(); } catch (e) {}
-  devInvTimers.push(setTimeout(function () { if (!devInvBots[id]) return; occupiedTileIds[id] = owner; citySkinByTile[id] = sk; devInvRedraw(); }, 500));
+  var srcK = CITY_SKINS[sk] && CITY_SKINS[sk].src, ready = devInvDecoded[srcK] === true ? Promise.resolve() : (devInvPreload(), Promise.resolve(devInvDecoded[srcK]));
+  devInvTimers.push(setTimeout(function () { ready.then(function () { if (!devInvBots[id]) return; occupiedTileIds[id] = owner; citySkinByTile[id] = sk; devInvRedraw(); }); }, 500)); /* v1862: placed only once its picture is decoded */
   devInvTimers.push(setTimeout(function () { devInvRemove(id); devInvRedraw(); }, DEV_INV_LIFE));
   devInvStartTick();
 }
 function devInvasionOnTeleport() {
-  if (!devInvasionOn) return;
+  if (!devInvasionOn) return; devInvPreload();
   for (var i = 0; i < DEV_INV_COUNT; i++) devInvTimers.push(setTimeout(devInvLand, Math.random() * DEV_INV_MAXDELAY));
 }
 function devInvStartTick() {
@@ -33855,7 +33858,7 @@ function devInvasionClear() {
   devInvRedraw();
 }
 (function () { var cb = document.getElementById("devInvasionToggle"); if (!cb) return; cb.checked = false;
-  cb.onchange = function () { devInvasionOn = cb.checked; if (devInvasionOn) devInvStartTick(); else devInvasionClear(); }; })();
+  cb.onchange = function () { devInvasionOn = cb.checked; if (devInvasionOn) { devInvPreload(); devInvStartTick(); } else devInvasionClear(); }; })();
 (function () { var b = document.getElementById("devStressLandBtn"), note = document.getElementById("devStressLandNote"); if (!b) return; b.onclick = function () { /* v1160 */
   if (terrainStress) { location.reload(); return; }
   if (!confirm("Draw 4 test continents (~40% land) on this phone only?\n\nNothing is saved or sent. Reload the game to get your real map back.")) return;

@@ -6787,3 +6787,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1861 - teleport: castle no longer stays bright white on iPhone (TEST)
 - Harley's iPhone recording: after landing the castle stayed fully white for ~0.8 s, then snapped to its colours. The glow copy ran two animations that both set opacity (cityTpMove + cityTpGlow); Chrome lets the later one win (fades), but iPhone Safari kept cityTpMove's opacity 1 until the copy was removed. cityTpMove now only moves (no opacity); cityTpGlow alone fades the copy. Headless Chrome: glow 0.96 -> 0.45 -> 0.19 -> gone. No WebKit in the test box - Harley to check on his phone.
+
+## v1862 - invasion dev tool: bots land with their picture ready (TEST)
+- Harley: with the Invasion dev tool the first bot's skin disappeared for a moment. A bot using a skin not seen yet this session landed while its picture was still downloading. Now every city skin is loaded + decoded (and kept in memory) when the tool is switched on / when I teleport, and a bot is placed only once its picture is decoded. Headless (logging every bot tile every 16 ms for 7 s): no bot ever shows without its picture (before: some bots blank for 50-90 ms).
