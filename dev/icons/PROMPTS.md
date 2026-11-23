@@ -2,12 +2,54 @@
 
 Every ChatGPT prompt used for the game's icons, copied word for word from Harley's ChatGPT history (exported 24 Nov 2026), oldest style first. Attachments are listed with their repo path where the file is in the repo.
 
-**Which style to follow (Harley, 24 Nov 2026):** the icons from about a week back (14-17 Nov) are the most accurate reference for the game's icon style. The 14 Nov "Create Speedup Icons" chat set the item-icon look (thick dark outline, glossy cartoon shading, bright saturated colours, chunky shapes; style ref `art/originals/items/style_ref_existing_icons.png`), and later icon chats attach that same file. The same day's "Redraw Item Icons" chat tried a Kingshot-style alternative (thin soft outlines).
+**Which style to follow (Harley, 24 Nov 2026):** the icon session of 14 Nov, when the speedups and the other item types were made together, is the reference for the game's icon style. The icons in the game come from the 14 Nov **"Redraw Item Icons"** chat: Kingshot-style, soft painted 3D look, THIN soft outlines in a darker shade of each object's own colour (no thick black outlines), slightly muted colours. It made 32 icons in 6 sheets: speedups, Peace Shield, teleports, March Speed, Recall, Stamina, selector / card / equipment chests, Enhance Stone, Anti-Scout, resources, Gold, Gems, Valor, Conquest Books, Energon, Research Points, Weapon Draw Ticket and Hero Fragment. Refs: `art/originals/items/style_ref_kingshot_icons.png` + `art/originals/items/icons_v1_contact.jpg`; results in `art/originals/items/ks/` (v1591). The earlier "Create Speedup Icons" chat the same day (thick dark outlines) was the first version that this redraw replaced; later chats that attach `style_ref_existing_icons.png` used that older look.
 
 How to reuse: new chat, attach the same reference files, paste the prompt and change only the objects. Keep the layout rules: grid, equal cells, flat magenta #FF00FF or green #00FF00 background, no text, no tiles. Then key it (`python3 dev/skins/key_magenta.py`, or `dev/cards/key_frame.py IN OUT green`).
 
 
-## Item icons - main style (14 Nov)
+## Item icons - THE GAME'S ICON STYLE (14 Nov, Kingshot-style redraw, in the game since v1591)
+
+### Redraw Item Icons (2026-11-14)
+ChatGPT: https://chatgpt.com/c/6af7eeb9-f134-83ec-9ad3-6159184cb4b4
+
+**Prompt 1** - attached: `art/originals/items/style_ref_kingshot_icons.png`, `art/originals/items/icons_v1_contact.jpg`
+```
+Image 1 shows item icons from the mobile game Kingshot (ignore the coloured tiles and the numbers - only the item art matters). Image 2 shows my game's current item icons.
+
+I want my icons redrawn in the Kingshot ICON STYLE: soft painted 3D look, gentle shading and highlights, THIN soft outlines in a darker shade of each object's own colour (no thick black outlines), slightly muted pleasant colours, clean readable shapes. Keep each item's design and idea from image 2, only change the style.
+
+Layout: 6 icons in a 3 x 2 grid (3 columns, 2 rows), each centred in its own equal square cell with plenty of empty space around it. Flat solid magenta #FF00FF background everywhere. No text, no letters, no numbers, no tiles or frames behind the icons.
+
+This first sheet (top row of image 2, left to right): 1. General speedup (golden hourglass with a blue lightning badge at its lower LEFT), 2. Construction speedup (same hourglass, orange hammer badge lower left), 3. Research speedup (purple flask badge lower left), 4. Troop Training speedup (red crossed-swords badge lower left), 5. Healing speedup (green heart-cross badge lower left), 6. Peace Shield (blue-and-gold kite shield with a soft blue aura).
+```
+
+**Prompt 2**
+```
+Lovely. Same Kingshot style and same rules (3 x 2 grid, equal square cells, flat magenta #FF00FF background, no text or numbers, no tiles). Next 6, from the middle of image 2: 1. Advanced Teleport (purple-and-gold scroll with a swirling portal), 2. Random Teleport (blue scroll with a question-mark swirl), 3. Alliance Teleport (cream scroll with a green banner showing a handshake), 4. Beginner Teleport (light-green scroll with a sprout), 5. March Speed (golden boot with small white wings), 6. Recall (golden horn with a blue return arrow).
+```
+
+**Prompt 3**
+```
+Great. Same Kingshot style and rules (3 x 2 grid, equal square cells, flat magenta #FF00FF, no text or numbers, no tiles). Next 6: 1. Stamina (round red-orange potion bottle with a cork and a lightning emblem), 2. Hero Fragment Selector Chest (gold-and-purple chest, open and glowing, golden puzzle-piece emblem), 3. Weapon Fragment Selector Chest (steel-and-gold chest with a small cannon and a missile on the front), 4. Custom Card Chest (royal blue-and-gold chest with three blank cards fanned out of it), 5. Equipment Chest (bronze-and-iron chest with a knight helmet and sword), 6. Enhance Stone (glowing cyan crystal stone with gold runes).
+```
+
+**Prompt 4**
+```
+Great. Same Kingshot style and rules (3 x 2 grid, equal square cells, flat magenta #FF00FF, no text or numbers, no tiles). Next 6: 1. Anti-Scout (dark blue hooded cloak with a closed golden eye emblem), 2. Custom Resource Chest (open wooden chest with gold trim and a blue gem, bread, a log, a stone and a gold coin inside), 3. Resource Supply Crate (wooden crate with metal corners and a yellow question mark, bread, logs and stone on top), 4. Food (two golden loaves of bread), 5. Wood (a small stack of three logs), 6. Stone (a pile of grey stones).
+```
+
+**Prompt 5**
+```
+Great. Same Kingshot style and rules (3 x 2 grid, equal square cells, flat magenta #FF00FF, no text or numbers, no tiles). Next 6: 1. Gold (a small stack of gold coins with a crown stamp), 2. Gems (a big faceted blue diamond gem), 3. Valor (a gold medal with a red star centre and a red ribbon), 4. Conquest Books (a red leather skill book with gold corners and a ribbon bookmark), 5. Energon (a glowing blue lightning bolt crystal), 6. Research Points (a round glass potion flask with green liquid and a cork).
+```
+
+**Prompt 6**
+```
+Great. Same Kingshot style and rules, but a 2 x 1 row this time (2 equal square cells side by side, flat magenta #FF00FF, no text or numbers, no tiles): 1. Weapon Draw Ticket (a red ticket with a gold crown and perforated edge), 2. Hero Fragment (a golden jigsaw puzzle piece).
+```
+
+
+## Item icons - first version, replaced (14 Nov, thick outlines)
 
 ### Create Speedup Icons (2026-11-14)
 ChatGPT: https://chatgpt.com/c/6af7e952-3cc0-83ec-9bcd-1ad5507087a0
@@ -55,48 +97,6 @@ Great. Same style and rules, but a 3 x 1 row this time (3 equal square cells sid
 1. Anti-Scout: a dark blue hooded cloak with a closed golden eye emblem, meaning hidden from spies.
 2. Custom Resource Chest: a wooden chest with gold trim, open, with a loaf of bread, a log, a stone and a gold coin spilling out together.
 3. Resource Supply Chest: a plain wooden supply crate with a question mark on the side and a little bread, wood and stone peeking out.
-```
-
-
-## Item icons - Kingshot-style alternative (14 Nov)
-
-### Redraw Item Icons (2026-11-14)
-ChatGPT: https://chatgpt.com/c/6af7eeb9-f134-83ec-9ad3-6159184cb4b4
-
-**Prompt 1** - attached: `art/originals/items/style_ref_kingshot_icons.png`, `art/originals/items/icons_v1_contact.jpg`
-```
-Image 1 shows item icons from the mobile game Kingshot (ignore the coloured tiles and the numbers - only the item art matters). Image 2 shows my game's current item icons.
-
-I want my icons redrawn in the Kingshot ICON STYLE: soft painted 3D look, gentle shading and highlights, THIN soft outlines in a darker shade of each object's own colour (no thick black outlines), slightly muted pleasant colours, clean readable shapes. Keep each item's design and idea from image 2, only change the style.
-
-Layout: 6 icons in a 3 x 2 grid (3 columns, 2 rows), each centred in its own equal square cell with plenty of empty space around it. Flat solid magenta #FF00FF background everywhere. No text, no letters, no numbers, no tiles or frames behind the icons.
-
-This first sheet (top row of image 2, left to right): 1. General speedup (golden hourglass with a blue lightning badge at its lower LEFT), 2. Construction speedup (same hourglass, orange hammer badge lower left), 3. Research speedup (purple flask badge lower left), 4. Troop Training speedup (red crossed-swords badge lower left), 5. Healing speedup (green heart-cross badge lower left), 6. Peace Shield (blue-and-gold kite shield with a soft blue aura).
-```
-
-**Prompt 2**
-```
-Lovely. Same Kingshot style and same rules (3 x 2 grid, equal square cells, flat magenta #FF00FF background, no text or numbers, no tiles). Next 6, from the middle of image 2: 1. Advanced Teleport (purple-and-gold scroll with a swirling portal), 2. Random Teleport (blue scroll with a question-mark swirl), 3. Alliance Teleport (cream scroll with a green banner showing a handshake), 4. Beginner Teleport (light-green scroll with a sprout), 5. March Speed (golden boot with small white wings), 6. Recall (golden horn with a blue return arrow).
-```
-
-**Prompt 3**
-```
-Great. Same Kingshot style and rules (3 x 2 grid, equal square cells, flat magenta #FF00FF, no text or numbers, no tiles). Next 6: 1. Stamina (round red-orange potion bottle with a cork and a lightning emblem), 2. Hero Fragment Selector Chest (gold-and-purple chest, open and glowing, golden puzzle-piece emblem), 3. Weapon Fragment Selector Chest (steel-and-gold chest with a small cannon and a missile on the front), 4. Custom Card Chest (royal blue-and-gold chest with three blank cards fanned out of it), 5. Equipment Chest (bronze-and-iron chest with a knight helmet and sword), 6. Enhance Stone (glowing cyan crystal stone with gold runes).
-```
-
-**Prompt 4**
-```
-Great. Same Kingshot style and rules (3 x 2 grid, equal square cells, flat magenta #FF00FF, no text or numbers, no tiles). Next 6: 1. Anti-Scout (dark blue hooded cloak with a closed golden eye emblem), 2. Custom Resource Chest (open wooden chest with gold trim and a blue gem, bread, a log, a stone and a gold coin inside), 3. Resource Supply Crate (wooden crate with metal corners and a yellow question mark, bread, logs and stone on top), 4. Food (two golden loaves of bread), 5. Wood (a small stack of three logs), 6. Stone (a pile of grey stones).
-```
-
-**Prompt 5**
-```
-Great. Same Kingshot style and rules (3 x 2 grid, equal square cells, flat magenta #FF00FF, no text or numbers, no tiles). Next 6: 1. Gold (a small stack of gold coins with a crown stamp), 2. Gems (a big faceted blue diamond gem), 3. Valor (a gold medal with a red star centre and a red ribbon), 4. Conquest Books (a red leather skill book with gold corners and a ribbon bookmark), 5. Energon (a glowing blue lightning bolt crystal), 6. Research Points (a round glass potion flask with green liquid and a cork).
-```
-
-**Prompt 6**
-```
-Great. Same Kingshot style and rules, but a 2 x 1 row this time (2 equal square cells side by side, flat magenta #FF00FF, no text or numbers, no tiles): 1. Weapon Draw Ticket (a red ticket with a gold crown and perforated edge), 2. Hero Fragment (a golden jigsaw puzzle piece).
 ```
 
 
