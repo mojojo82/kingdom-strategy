@@ -973,6 +973,18 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
     100% { transform: translateX(-50%) translateY(0) scale(1); }
   }
   .city-icon-img.city-drop-anim { animation: cityTpAppear 1.3s ease-out both; } /* v1206: Kingshot-style beam-in (was a 0.2 s fall) */
+  /* v1857 (Harley): the castle itself stays sharp - it only moves (transform / opacity); the bright wash + blue glow is a second copy of the same picture on top that just fades out (its filter never animates) */
+  .city-icon-img.city-drop-anim.tp2 { animation-name: cityTpMove; }
+  .city-icon-img.city-drop-glow { animation: cityTpMove 1.3s ease-out both, cityTpGlow 1.3s linear both; filter: brightness(2.4) saturate(.35) drop-shadow(0 0 10px #7fe3ff); pointer-events: none; }
+  @keyframes cityTpMove {
+    0%, 37% { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 0; }
+    38%     { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 1; }
+    44%     { transform: translateX(-50%) translateY(0) scale(1.12, .86); }
+    52%     { transform: translateX(-50%) translateY(-3%) scale(.96, 1.05); }
+    60%     { transform: translateX(-50%) translateY(0) scale(1.02, .98); }
+    68%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  }
+  @keyframes cityTpGlow { 0%, 37% { opacity: 0; } 38% { opacity: 1; } 60% { opacity: .45; } 100% { opacity: 0; } }
   @keyframes cityTpAppear { /* v1207: hidden until the bolt hits (0.5 s), then lands with a squash */
     0%, 37% { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 0; filter: brightness(2.6) saturate(.3); }
     38%     { transform: translateX(-50%) translateY(-22%) scale(.9, 1.1); opacity: 1; filter: brightness(2.6) saturate(.3) drop-shadow(0 0 12px #7fe3ff); }
@@ -14976,7 +14988,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1856"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1857"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19433,7 +19445,7 @@ function renderVisibleTiles() {
       // cutting the effect short at a essentially random point.
       var alreadyBuilt = isFreshDropTarget && div.querySelector(".city-drop-anim");
       if (!alreadyBuilt) {
-        var cityImgCls = "city-icon-img" + (isFreshDropTarget ? " city-drop-anim" : "");
+        var cityImgCls = "city-icon-img" + (isFreshDropTarget ? " city-drop-anim tp2" : "");
         var cityImgStyleParts = [];
         if (isFreshDropTarget) cityImgStyleParts.push("--drop-distance:" + (-dropAnimFallPx) + "px");
         var cSkinId = isMyCity ? (skinAlignPreview && CITY_SKINS[skinAlignPreview] ? skinAlignPreview : myCitySkinId()) : citySkinIdAt(tile.id), cSkin = CITY_SKINS[cSkinId]; /* v1012: other players' skins too */
@@ -19451,7 +19463,7 @@ function renderVisibleTiles() {
         var ctag = isMyCity ? (ALLY.my ? ALLY.my.tag : "") : allyTagOf(occupiedTileIds[tile.id]); /* v895: alliance tag over the base */
         var cAlly = !isMyCity && isAlly(occupiedTileIds[tile.id]);
         if (!allyIndexLoaded) { /* v1078: until the alliance list arrives, use the tags remembered on this device */ var rt = isMyCity ? nearBasesMe : nearBasesTags[occupiedTileIds[tile.id]]; if (rt) { ctag = rt[0] || ""; cAlly = !isMyCity && !!(rt[1] && nearBasesMe && rt[1] === nearBasesMe[1]); } }
-        setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : cAlly ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
+        setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (isFreshDropTarget ? '<img class="city-icon-img city-drop-glow"' + cityImgStyle + ' src="' + citySrc + '" alt="">' : "") + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : cAlly ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
       }
     } else if (hiddenAsEmpty) {
       setTileHtml(div, "");

@@ -6768,3 +6768,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - CITY_SKINS.royal2 "Royal Castle II", scale 1.0 (about the Titan's size on the map), added to CITY_SKIN_ORDER, free; foundation baked into CITY_ART_BAKED (fx 0.4949, fy 0.7221, aspect 1.2383, measured headless).
 - Style 3 prompt recorded in dev/skins/PROMPTS.md.
 - Headless map mockup next to Titan / Royal Castle / Frost Gate III, no errors. Not tested on a phone.
+
+## v1857 - teleport landing keeps the castle sharp (TEST)
+- Harley: after a teleport the base looked blurry, then "changed to the real (sharp) version". Cause: the landing animation ran brightness/saturate/drop-shadow filters ON the castle image while it scaled, so the browser drew it as a lower-quality moving layer and re-drew it crisp when the filter ended.
+- Now the castle image only moves (cityTpMove: transform + opacity, same squash/bounce timing); the bright wash + blue glow is a second copy of the same picture on top (.city-drop-glow) with a FIXED filter that just fades out (cityTpGlow, opacity only). Same look, same 1.3 s.
+- Performance (headless, 430x932, 4x CPU slowdown, 8 teleports each): before 51.6 fps, 11 slow frames (>33 ms) per teleport, worst 83 ms, 2 long tasks; after 54.9 fps, 7.5 slow frames, worst 50 ms, 0 long tasks. Not tested on a phone.
