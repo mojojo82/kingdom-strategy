@@ -28,6 +28,13 @@ Repaint my mech in EXACTLY the art style of images 2 and 3, so it looks like it 
 Good direction. Now make a second version that is CLEANER and more heroic, closer to image 2 (the blue and gold mech skin): polished painted armour with only light edge wear (no rust, no dirt streaks), crisp bevelled panel edges catching the light, glossy highlights, a stronger gold trim, slightly brighter warm-white armour (still not pure white), the same deep navy/teal shadows and teal glow. Same design, pose, weapon, shield, platform and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
 ```
 
+
+## Soft prompt = "STYLE 3" (follow-up in the same chat, after style 2; Harley 23 Nov 2026: "add the soft one permanently as a 3rd style" - first used on Royal Castle v7)
+Styles 1 and 2 are high contrast (strong sunlight). Style 3 = the clean look with soft, low-contrast daylight. Swap the colour words for the skin's own colours.
+```
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight hitting the castle. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the upper left, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights on the stone, only subtle rim light, and colours slightly more muted (calm cream stone, softer royal blue roofs, satin gold). Keep the same polish and detail, light edge wear, the same design, towers, roofs, flags, gates, cannons, plinth and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+```
+
 ---
 # Getting the starting picture (DRAFT - to be filled in when Harley locks this part down)
 

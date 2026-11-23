@@ -6762,3 +6762,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1855 - Overlord Gear panel closes on press (TEST)
 - Harley: on PC the ✕ needed several clicks (phone fine). Couldn't reproduce on a fresh account (headless + a throwaway TEST account in the built-in browser: closes first click, no long tasks, panel never redraws), so made closing robust: the ✕ and the dark backdrop close on pointerdown (press) instead of click (release); Esc closes it; the tap that closed it is swallowed for 450 ms so it can't land on a gear slot underneath and reopen the panel (found while testing: backdrop tap over a slot reopened it on touch).
 - Headless: mouse + touch, ✕ and backdrop-over-a-slot, all close and stay closed; no errors.
+
+## v1856 - new city skin: Royal Castle II (TEST)
+- Harley's Royal Castle v7 render (triple cannons, 44 deg) restyled in ChatGPT with the skin prompts: style 1 (weathered), style 2 (clean) and a new style 3 (soft, low-contrast daylight - Harley: styles 1 and 2 look like heavy sunlight). He picked style 1 for this skin. Originals in art/originals/skins/royal_castle_v7/ (source render, gpt_style1-3 + keyed); game copy test/assets/city-skins-royal2-94d1ecab.webp (600 px).
+- CITY_SKINS.royal2 "Royal Castle II", scale 1.0 (about the Titan's size on the map), added to CITY_SKIN_ORDER, free; foundation baked into CITY_ART_BAKED (fx 0.4949, fy 0.7221, aspect 1.2383, measured headless).
+- Style 3 prompt recorded in dev/skins/PROMPTS.md.
+- Headless map mockup next to Titan / Royal Castle / Frost Gate III, no errors. Not tested on a phone.
