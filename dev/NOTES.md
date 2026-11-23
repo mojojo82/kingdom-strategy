@@ -6781,3 +6781,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1859 - teleport landing marker fades out (TEST)
 - Harley: a glow sat dead centre on the castle and was very noticeable when it vanished. It was the landing marker (.tpx-mark): it grew in over 0.5 s and then stayed at full strength ON TOP of the landed castle until the effect was removed at 1.8 s. Now it peaks at the bolt's impact (0.48 s) and fades to nothing by 0.75 s. All other teleport pieces already fade out. Headless: marker 0.72 at 0.55 s, 0 from 0.7 s.
+
+## v1860 - formation cards fit the 3 buttons (TEST)
+- Harley: with only one troop type (just Infantry) the Save / Select / Release column ran over the card's bottom gold edge. The middle area of the new cards (.fg2 .fg-mid) now has a minimum height that always clears the bottom edge (272 units incl. 44 padding). Headless: Release ends 33 px above the card bottom with 1 or 3 troop rows; City Guard OK; Select + hero picker still work.
