@@ -6784,3 +6784,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1860 - formation cards fit the 3 buttons (TEST)
 - Harley: with only one troop type (just Infantry) the Save / Select / Release column ran over the card's bottom gold edge. The middle area of the new cards (.fg2 .fg-mid) now has a minimum height that always clears the bottom edge (272 units incl. 44 padding). Headless: Release ends 33 px above the card bottom with 1 or 3 troop rows; City Guard OK; Select + hero picker still work.
+
+## v1861 - teleport: castle no longer stays bright white on iPhone (TEST)
+- Harley's iPhone recording: after landing the castle stayed fully white for ~0.8 s, then snapped to its colours. The glow copy ran two animations that both set opacity (cityTpMove + cityTpGlow); Chrome lets the later one win (fades), but iPhone Safari kept cityTpMove's opacity 1 until the copy was removed. cityTpMove now only moves (no opacity); cityTpGlow alone fades the copy. Headless Chrome: glow 0.96 -> 0.45 -> 0.19 -> gone. No WebKit in the test box - Harley to check on his phone.
