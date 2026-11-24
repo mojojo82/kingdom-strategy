@@ -935,8 +935,8 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .tile.fp.mycity::before, .tile.fp.othercity::before { content:""; position:absolute; inset:-2px; z-index:-1; pointer-events:none; border:2px solid rgba(120,205,255,.95); border-radius:inherit; background:rgba(70,165,255,.30); box-shadow:0 0 8px 1px rgba(60,160,255,.75), inset 0 0 6px rgba(120,205,255,.5); animation:baseFootPulse 1.6s ease-in-out infinite; }
   .tile.fp.bad.mycity::before, .tile.fp.bad.othercity::before { border-color:rgba(255,130,130,.95); background:rgba(255,80,80,.30); box-shadow:0 0 8px 1px rgba(255,70,70,.75), inset 0 0 6px rgba(255,130,130,.5); }
   .city-icon-img { position:absolute; left:50%; bottom:0; transform:translateX(-50%);
-    width:calc(var(--tile-px) * var(--city-w, 2.2)); max-width:none; height:auto; pointer-events:none;
-    filter:drop-shadow(0 2px 4px rgba(0,0,0,.45)); }
+    width:calc(var(--tile-px) * var(--city-w, 2.2)); max-width:none; height:auto; pointer-events:none; } /* v1868: no drop shadow - cast shadows instead (.cast-shd) */
+  .cast-shd { position:absolute; left:50%; transform:translateX(-50%); max-width:none; height:auto; pointer-events:none; opacity:.5; }
   .tile .map-ico { display:block; width:86%; height:86%; pointer-events:none; }
   .tile .map-ico svg { display:block; width:100%; height:100%; filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45)); }
   .tile .map-ico img { display:block; width:100%; height:100%; pointer-events:none; }
@@ -4447,7 +4447,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
                   </label>
                 </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
-                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button><button class="dev-btn" id="devContinentLandBtn">🌍 Supercontinent land 30% (this phone only)</button>
+                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button><button class="dev-btn" id="devContinentLandBtn">🌍 Supercontinent land 30% (this phone only)</button><button class="dev-btn" id="devCastShadowBtn">🌗 Cast shadows: on</button>
                   <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
                 </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:4px 8px;">
@@ -12718,7 +12718,47 @@ function resNodeArtHtml(type) {
   var u = resArtUrlCache[type];
   if (!u) { try { var bin = atob(a.src.split(",")[1]), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); u = URL.createObjectURL(new Blob([arr], { type: "image/webp" })); } catch (e) { u = a.src; } resArtUrlCache[type] = u; }
   var tp = tilePxZ(), w = (mapIso ? Math.SQRT2 : 1) * (tp + gapPxZ()) / tp / a.fw * a.scale; /* in tiles: the art's ground diamond spans exactly one tile */
-  return '<img class="res-art" alt="" draggable="false" src="' + u + '" style="width:calc(var(--tile-px) * ' + w.toFixed(3) + ');margin-left:calc(var(--tile-px) * ' + (w * (0.5 - a.fx)).toFixed(3) + ');bottom:calc(var(--tile-px) * ' + (0.5 - w * a.aspect * (1 - a.fy)).toFixed(3) + ');">';
+  var ml = w * (0.5 - a.fx), bot = 0.5 - w * a.aspect * (1 - a.fy);
+  return (mapIso ? castShadowHtml(u, a.fy, w, ml, bot) : "") + '<img class="res-art" alt="" draggable="false" src="' + u + '" style="width:calc(var(--tile-px) * ' + w.toFixed(3) + ');margin-left:calc(var(--tile-px) * ' + ml.toFixed(3) + ');bottom:calc(var(--tile-px) * ' + bot.toFixed(3) + ');">';
+}
+/* v1868: cast shadows (Harley 24 Nov, after Lord Rush / Kingshot). Each picture's shadow is made once from its own outline: the part above its
+   ground line is slid up-left in proportion to height (one fixed sun: CAST_SUN_ELEV degrees above the ground; the shadow falls CAST_SUN_AZ degrees
+   left of straight up the screen - Harley picked this over the tile diagonal (45), worked out for the map's MAP_ELEV_DEG camera), the rest stays put under the art.
+   Drawn at half size (soft edge for free), solid, shown at 50% opacity under the art. Same darkness as Lord Rush (shadow ~61% of the lit grass).
+   Iso map only. Dev Tools can switch it off on this device (FPS check). */
+var CAST_SHADOW_KEY = "kingdom_prototype_castShadow_v1", castShadowOn = true;
+try { castShadowOn = localStorage.getItem(CAST_SHADOW_KEY) !== "0"; } catch (e) {}
+var CAST_SUN_ELEV = 53.6, CAST_SUN_AZ = 32.5, castShadowCache = {}, castShadowTimer = null;
+function castShadowGet(src, fy) {
+  if (!castShadowOn || !src) return null;
+  var key = (src.length > 300 ? src.length + ":" + src.slice(-160) : src) + "|" + fy.toFixed(3), c = castShadowCache[key];
+  if (c) return c.u ? c : null;
+  castShadowCache[key] = {};
+  var im = new Image();
+  im.onload = function () {
+    try {
+      var sc = Math.min(1, 300 / im.naturalWidth), W = Math.max(1, Math.round(im.naturalWidth * sc)), H = Math.max(1, Math.round(im.naturalHeight * sc)), by = fy * H;
+      var E = MAP_ELEV_DEG * Math.PI / 180, L = 1 / Math.cos(E) / Math.tan(CAST_SUN_ELEV * Math.PI / 180), az = CAST_SUN_AZ * Math.PI / 180;
+      var KX = L * Math.sin(az), KY = L * Math.cos(az) * Math.sin(E); /* a point h px above the ground line lands KX*h left and KY*h up of its foot */
+      var pad = 4, mx = Math.ceil(KX * by) + pad, my = pad, cw = W + mx + pad, ch = H + 2 * pad;
+      var t = document.createElement("canvas"); t.width = W; t.height = H; var tx = t.getContext("2d");
+      tx.drawImage(im, 0, 0, W, H); tx.globalCompositeOperation = "source-in"; tx.fillStyle = "rgb(20,32,8)"; tx.fillRect(0, 0, W, H);
+      var cv = document.createElement("canvas"); cv.width = cw; cv.height = ch; var x = cv.getContext("2d");
+      if (by > 1) { x.setTransform(1, 0, KX, KY, mx - KX * by, my + (1 - KY) * by); x.drawImage(t, 0, 0, W, by, 0, 0, W, by); }
+      x.setTransform(1, 0, 0, 1, mx, my); if (H - by > 1) x.drawImage(t, 0, by, W, H - by, 0, by, W, H - by);
+      cv.toBlob(function (bl) {
+        if (!bl) return;
+        castShadowCache[key] = { u: URL.createObjectURL(bl), w: cw / W, dx: cw / W / 2 - mx / W - 0.5, b: (ch - my - H) / W };
+        if (!castShadowTimer) castShadowTimer = setTimeout(function () { castShadowTimer = null; try { renderVisibleTiles(); } catch (e) {} }, 60);
+      }, "image/png");
+    } catch (e) {}
+  };
+  im.src = src; return null;
+}
+/* artW = the art's width in tiles; ml / bot = its margin-left / bottom in tiles (as the art img uses them) */
+function castShadowHtml(src, fy, artW, ml, bot) {
+  var c = castShadowGet(src, fy); if (!c) return "";
+  return '<img class="cast-shd" alt="" draggable="false" src="' + c.u + '" style="width:calc(var(--tile-px) * ' + (artW * c.w).toFixed(3) + ');margin-left:calc(var(--tile-px) * ' + (ml + artW * c.dx).toFixed(3) + ');bottom:calc(var(--tile-px) * ' + (bot - artW * c.b).toFixed(3) + ');">';
 }
 function mapTileIconHtml(kind) { /* v866: each icon becomes ONE cached image (shadow baked in) instead of an inline SVG + live CSS filter per tile - much cheaper with resources everywhere */
   var u = mapIcoUrlCache[kind];
@@ -14990,7 +15030,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1867"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1868"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19452,12 +19492,13 @@ function renderVisibleTiles() {
         var cityImgStyleParts = [];
         if (isFreshDropTarget) cityImgStyleParts.push("--drop-distance:" + (-dropAnimFallPx) + "px");
         var cSkinId = isMyCity ? (skinAlignPreview && CITY_SKINS[skinAlignPreview] ? skinAlignPreview : myCitySkinId()) : citySkinIdAt(tile.id), cSkin = CITY_SKINS[cSkinId]; /* v1012: other players' skins too */
-        var sAl = skinAlign(cSkinId), cwMul = ((cSkin && cSkin.scale) || 1) * sAl.s, cMl = "", cBot = 0; /* v1013: per-skin size / offset */
+        var sAl = skinAlign(cSkinId), cwMul = ((cSkin && cSkin.scale) || 1) * sAl.s, cMl = "", cBot = 0, cityShdHtml = ""; /* v1013: per-skin size / offset */
         if (cwMul !== 1) cityImgStyleParts.push("width:calc(var(--tile-px) * var(--city-w, 2.2) * " + cwMul.toFixed(3) + ")");
         var citySrc = cSkin ? cSkin.src : CITY_SKINS.tower.src;
         if (mapIso) { /* v827: line the art's FOUNDATION (measured from its pixels) up with the centre of the 3x3 block, whatever the skin; v1013: plus the skin's own nudge */
           var am = cityArtGet(citySrc), acw = isoCfg.base * cwMul;
           cMl = "calc(var(--tile-px) * " + (acw * (0.5 - am.fx) + sAl.x).toFixed(3) + ")"; cBot = 0.5 - isoCfg.y / 100 - acw * am.aspect * (1 - am.fy) + sAl.y;
+          if (!isFreshDropTarget && lod === 0) cityShdHtml = castShadowHtml(citySrc, am.fy, acw, acw * (0.5 - am.fx) + sAl.x, cBot); /* v1868 */
           cityImgStyleParts.push("margin-left:" + cMl);
           cityImgStyleParts.push("bottom:calc(var(--tile-px) * " + cBot.toFixed(3) + ")");
         }
@@ -19466,7 +19507,7 @@ function renderVisibleTiles() {
         var ctag = isMyCity ? (ALLY.my ? ALLY.my.tag : "") : allyTagOf(occupiedTileIds[tile.id]); /* v895: alliance tag over the base */
         var cAlly = !isMyCity && isAlly(occupiedTileIds[tile.id]);
         if (!allyIndexLoaded) { /* v1078: until the alliance list arrives, use the tags remembered on this device */ var rt = isMyCity ? nearBasesMe : nearBasesTags[occupiedTileIds[tile.id]]; if (rt) { ctag = rt[0] || ""; cAlly = !isMyCity && !!(rt[1] && nearBasesMe && rt[1] === nearBasesMe[1]); } }
-        setTileHtml(div, waterHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (isFreshDropTarget ? '<img class="city-icon-img city-drop-glow"' + cityImgStyle + ' src="' + citySrc + '" alt="">' : "") + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : cAlly ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
+        setTileHtml(div, waterHtml + cityShdHtml + '<img class="' + cityImgCls + '"' + cityImgStyle + ' src="' + citySrc + '" alt="city">' + (isFreshDropTarget ? '<img class="city-icon-img city-drop-glow"' + cityImgStyle + ' src="' + citySrc + '" alt="">' : "") + (ctag ? '<span class="city-tag' + (isMyCity ? " mine" : cAlly ? " ally" : "") + '">[' + escapeHtml(ctag) + ']</span>' : ''));
       }
     } else if (hiddenAsEmpty) {
       setTileHtml(div, "");
@@ -19558,7 +19599,7 @@ var TERRAIN_KEY = "kingdom_prototype_terrain_v1", TERRAIN_DEV_KEY = "kingdom_pro
 try { terrainDev = localStorage.getItem(TERRAIN_DEV_KEY) === "1"; } catch (e) {}
 var terrainStress = false; /* v1160: dev stress-test land is on (this device only, gone on reload) */
 var TERRAIN_PX = 20, TERRAIN_EDGE_PX = 2, TERRAIN_CHUNK = 20, terrainN = 0, terrainArr = null, terrainEls = {}, terrainDirty = {}, terrainFlushTimer = null, terrainLastWrite = {};
-var TERR_GRASS = [[0x48,0x85,0x2c],[0x68,0x9d,0x2d],[0x79,0xa6,0x2c],[0x89,0xb2,0x2e],[0xa2,0xbf,0x2f]];
+var TERR_GRASS = [[0x7a,0x87,0x34],[0x84,0x93,0x39],[0x8c,0x9b,0x3e],[0x92,0xa1,0x41],[0x9c,0xa0,0x4a]]; /* v1868: Kingshot olive (was [[0x48,0x85,0x2c],[0x68,0x9d,0x2d],[0x79,0xa6,0x2c],[0x89,0xb2,0x2e],[0xa2,0xbf,0x2f]]); 0-3 = soft patches, 4 = pale haze */
 var TERR_DIRT = [[0xb1,0x78,0x47],[0xcd,0x93,0x50],[0xd2,0x99,0x53],[0xd4,0x9c,0x56],[0xe0,0xac,0x63]];
 var TERR_SAND = [[0xcf,0x96,0x4a],[0xdd,0x9e,0x50],[0xe6,0xb0,0x62]];
 /* v881: "Grass 2" (code 4) - trial painted grass texture, tinted to the original grass colour, 4 tiles per repeat, blended with a mirrored copy under a soft noise mask so its stroke direction and repeat don't show. Cells touching it draw at 64px instead of 20. */
@@ -19670,7 +19711,7 @@ function terrainSupercontinentGenerate(landFrac) { /* v1867 (Harley: try concept
   if (!terrainEnsure()) return 0;
   var n = terrainN, N = n * n, f = new Float32Array(N);
   function fbm(x, y) { var v = 0, a = 1, t = 0, sc = n / 5; for (var o = 0; o < 6; o++) { v += tnoise(x / sc, y / sc, 520 + o * 11) * a; t += a; a *= 0.5; sc /= 2; } return v / t; }
-  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) { var dx = (x / n - 0.5) * 1.15, dy = y / n - 0.52; f[y * n + x] = -Math.sqrt(dx * dx + dy * dy) * 2.4 + fbm(x, y) * 1.5; }
+  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) { var dx = (x / n - 0.5) * 1.15, dy = y / n - 0.52; var eg = Math.min(x, y, n - 1 - x, n - 1 - y) / n; f[y * n + x] = -Math.sqrt(dx * dx + dy * dy) * 2.4 + fbm(x, y) * 1.5 - (eg < 0.08 ? (0.08 - eg) * 60 : 0); } /* v1868: sea all along the kingdom edge (a cape reached the edge before) */
   var srt = f.slice().sort(), cut = srt[Math.max(0, Math.floor(N * (1 - (landFrac || 0.3))))], land = 0;
   for (var i = 0; i < N; i++) { var v = f[i]; if (v < cut) { terrainArr[i] = 0; continue; } terrainArr[i] = v - cut < 0.012 ? 2 : 1; land++; }
   terrainStress = true; terrGL.on = true; terrainDirty = {}; if (terrainFlushTimer) { clearTimeout(terrainFlushTimer); terrainFlushTimer = null; }
@@ -20169,7 +20210,7 @@ var TERR_GL_FS = "#version 300 es\nprecision highp float; precision highp int; p
   "float th(int x, int y, int s) { uint h = uint(x) * 374761393u + uint(y) * 668265263u + uint(s) * 1442695041u; h = (h ^ (h >> 13u)) * 1274126177u; h = h ^ (h >> 16u); return float(h >> 8u) / 16777216.0; }\n" +
   "float tn(float x, float y, int s) { float xi = floor(x), yi = floor(y), xf = x - xi, yf = y - yi; xf = xf * xf * (3.0 - 2.0 * xf); yf = yf * yf * (3.0 - 2.0 * yf); int X = int(xi), Y = int(yi);" +
   " float a = th(X, Y, s), b = th(X + 1, Y, s), c = th(X, Y + 1, s), d = th(X + 1, Y + 1, s); return a + (b - a) * xf + (c - a) * yf + (a - b - c + d) * xf * yf; }\n" +
-  "int at(int x, int y) { return int(texelFetch(uT, ivec2(clamp(x, 0, uN - 1), clamp(y, 0, uN - 1)), 0).r); }\n" +
+  "int at(int x, int y) { if (x < 0 || y < 0 || x >= uN || y >= uN) return 0; return int(texelFetch(uT, ivec2(x, y), 0).r); }\n" /* v1868: outside the kingdom is sea (clamping drew a land line out to the edge of the world) */ +
   "vec3 g2(float wx, float wy) { float m = clamp((tn(wx * 0.45, wy * 0.45, 9) - 0.5) * 3.0 + 0.5, 0.0, 1.0); float W = uG2W;" +
   " float u = fract(wx / uG2Per), v = fract(wy / uG2Per), u2 = 1.0 - fract((wx + 1.7) / uG2Per), v2 = fract((wy + 0.9) / uG2Per);" +
   " vec3 c1 = texelFetch(uG2, ivec2(min(W - 1.0, floor(u * W)), min(W - 1.0, floor(v * W))), 0).rgb, c2 = texelFetch(uG2, ivec2(min(W - 1.0, floor(u2 * W)), min(W - 1.0, floor(v2 * W))), 0).rgb;" +
@@ -20179,17 +20220,19 @@ var TERR_GL_FS = "#version 300 es\nprecision highp float; precision highp int; p
   " if (uIso == 1) { float A = (mp.x - uGeo.x) / uGeo.z, B = (mp.y - uGeo.y) / (uGeo.z * uGeo.w); rx = (A + B) * 0.5; ry = (B - A) * 0.5; } else { rx = (mp.x - uGeo.x) / uGeo.z; ry = (mp.y - uGeo.y) / uGeo.z; }\n" +
   " int fx = int(floor(rx)), fy = int(floor(ry)); int t00 = at(fx, fy), t10 = at(fx + 1, fy), t01 = at(fx, fy + 1), t11 = at(fx + 1, fy + 1);\n" +
   " if (t00 + t10 + t01 + t11 == 0) { o = vec4(0.0); return; }\n" +
-  " bool hd = uHd == 1 && (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4); float N = uTexN > 0.0 ? uTexN : (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4 ? 64.0 : 20.0);\n" +
+  " bool hd = uHd == 1 && (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4); float N = uTexN > 0.0 ? uTexN : 1200.0;\n" +
   " float gxf = floor(rx * N), gyf = floor(ry * N); int gx = int(gxf), gy = int(gyf); float wx = (gxf + 0.5) / N, wy = (gyf + 0.5) / N, u = wx - float(fx), v = wy - float(fy);\n" +
   " float w00 = (1.0 - u) * (1.0 - v), w10 = u * (1.0 - v), w01 = (1.0 - u) * v, w11 = u * v;\n" +
   " float f = w00 * float(t00 > 0) + w10 * float(t10 > 0) + w01 * float(t01 > 0) + w11 * float(t11 > 0);\n" +
-  " float nz = (tn(wx * 4.0, wy * 4.0, 1) - 0.5) * 0.26 + (tn(wx * 9.0, wy * 9.0, 2) - 0.5) * 0.1; float dd = f + nz - 0.5, hh = th(gx, gy, 7); vec3 col;\n" +
+  " float nz = (tn(wx * 4.0, wy * 4.0, 1) - 0.5) * 0.26 + (tn(wx * 9.0, wy * 9.0, 2) - 0.5) * 0.1; float dd = f + nz - 0.5, hh = tn(wx * 24.0, wy * 24.0, 7); vec3 col;\n" +
   " if (dd >= 0.0) {\n" +
-  "  if (dd < 0.075) col = uSand[min(2, int(floor(hh * 3.0)))];\n" +
+  "  if (dd < 0.075) col = mix(uSand[1], uSand[2], tn(wx * 3.0, wy * 3.0, 13));\n" +
   "  else if (w00 * float(t00 == 2) + w10 * float(t10 == 2) + w01 * float(t01 == 2) + w11 * float(t11 == 2) + (tn(wx * 3.0, wy * 3.0, 3) - 0.5) * 0.5 > 0.5) col = uDirt[min(4, int(floor((0.5 * tn(wx * 5.0, wy * 5.0, 4) + 0.5 * hh) * 5.0)))];\n" +
   "  else if (w00 * float(t00 == 3) + w10 * float(t10 == 3) + w01 * float(t01 == 3) + w11 * float(t11 == 3) + (tn(wx * 3.0, wy * 3.0, 6) - 0.5) * 0.4 > 0.5) col = uForest[min(4, int(floor((0.55 * tn(wx * 2.2, wy * 2.2, 5) + 0.45 * hh) * 5.0)))];\n" +
   "  else if (hd && w00 * float(t00 == 4) + w10 * float(t10 == 4) + w01 * float(t01 == 4) + w11 * float(t11 == 4) + (tn(wx * 3.0, wy * 3.0, 8) - 0.5) * 0.4 > 0.5) col = g2(wx, wy);\n" +
-  "  else col = uGrass[min(4, int(floor((0.55 * tn(wx * 2.2, wy * 2.2, 5) + 0.45 * hh) * 5.0)))];\n" +
+  "  else { float t = clamp(0.5 + (tn(wx * 0.5, wy * 0.5, 11) - 0.5) * 0.9 + (tn(wx * 2.0, wy * 2.0, 12) - 0.5) * 0.4, 0.0, 1.0) * 3.0; int i = int(min(2.0, floor(t))); col = mix(uGrass[i], uGrass[i + 1], t - float(i));" +
+  " float bl = tn(wx * 26.0 + wy * 6.0, wy * 9.0, 15) * 0.6 + tn(wx * 55.0, wy * 18.0 + wx * 9.0, 16) * 0.4; col *= 0.955 + bl * 0.09;" +
+  " float hz = smoothstep(0.58, 0.82, tn(wx * 0.16, wy * 0.16, 17) * 0.75 + tn(wx * 0.6, wy * 0.6, 18) * 0.25); col = mix(col, uGrass[4], hz * 0.8); }\n" /* v1868: soft grass (Kingshot olive, Harley 24 Nov) - smooth patches + fine grain + pale haze, no pixel speckle */ +
   " } else if (dd > -0.045) col = vec3(86.0, 146.0, 186.0); else { o = vec4(0.0); return; }\n" +
   " o = vec4(floor(col + 0.5) / 255.0, 1.0);\n}\n";
 function terrGLFail(why) {
@@ -34173,6 +34216,8 @@ function devInvasionClear() {
   var t0 = performance.now(), fr = terrainStressGenerate(0.4);
   b.textContent = "🔄 Remove stress-test land (reloads)"; note.textContent = "Stress land ON: " + Math.round(fr * 100) + "% land, built in " + Math.round(performance.now() - t0) + " ms. Not saved - reload removes it.";
 }; })();
+(function () { var b = document.getElementById("devCastShadowBtn"); if (!b) return; var lab = function () { b.textContent = "🌗 Cast shadows: " + (castShadowOn ? "on" : "off") + " (this phone)"; }; lab(); b.onclick = function () { /* v1868: FPS check */
+  castShadowOn = !castShadowOn; try { localStorage.setItem(CAST_SHADOW_KEY, castShadowOn ? "1" : "0"); } catch (e) {} lab(); try { renderVisibleTiles(); } catch (e) {} }; })();
 (function () { var b = document.getElementById("devContinentLandBtn"), note = document.getElementById("devStressLandNote"); if (!b) return; b.onclick = function () { /* v1867: land concept C */
   if (terrainStress) { location.reload(); return; }
   if (!confirm("Draw the supercontinent land (30% of the kingdom, basic grass + sand coast) on this phone only?\n\nNothing is saved or sent. Reload the game to get your real map back.")) return;
