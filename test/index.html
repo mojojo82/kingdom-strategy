@@ -15030,7 +15030,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1869"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1870"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20237,7 +20237,7 @@ var TERR_GL_FS = "#version 300 es\nprecision highp float; precision highp int; p
   " o = vec4(floor(col + 0.5) / 255.0, 1.0);\n}\n";
 function terrGLFail(why) {
   terrGL.failed = why || "failed"; console.warn("GPU land off:", terrGL.failed);
-  if (terrGL.cv) { terrGL.cv.remove(); terrGL.cv = null; } terrGL.gl = null;
+  if (terrGL.cv) { terrGL.cv.remove(); terrGL.cv = null; } terrGL.gl = null; if (terrBack.cv) { terrBack.cv.remove(); terrBack.cv = null; terrBack.rev = -1; }
   try { terrainClearAll(); renderVisibleTiles(); } catch (e) {}
   try { var n = document.getElementById("devTerrGLNote"); if (n) n.textContent = "GPU land not available here: " + terrGL.failed; } catch (e) {}
 }
@@ -20278,6 +20278,7 @@ function terrGLRender(force) {
   var t0 = performance.now();
   if (terrGL.rev !== terrainRev) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, terrGL.tex); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, terrainN, terrainN, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, terrainArr); terrGL.rev = terrainRev; }
   if (!terrGL.g2ok && grass2Tex) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, terrGL.g2); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, grass2Tex.w, grass2Tex.w, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(grass2Tex.d.buffer, grass2Tex.d.byteOffset, grass2Tex.d.length)); terrGL.g2ok = true; }
+  if (mapIso) { try { terrBackdrop(layer); } catch (e) { console.warn("land backdrop", e); } } /* v1870: blurry whole-kingdom land under the sharp layer */
   var mx = Math.round(vw * 0.35), my = Math.round(vh * 0.35); b = terrGL.box = { x: Math.round(sl - mx), y: Math.round(st - my), w: vw + 2 * mx, h: vh + 2 * my }; terrGL.key = key;
   var res = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(b.w * res), H = Math.round(b.h * res), cv = terrGL.cv;
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
@@ -20290,10 +20291,36 @@ function terrGLRender(force) {
   terrGL.lastMs = performance.now() - t0; terrGL.draws = (terrGL.draws || 0) + 1;
   return true;
 }
+/* v1870 (Harley's recording: zooming out showed bare sea round the edges until the fingers lifted - during a pinch the map is only stretched,
+   and the sharp land picture covers the screen + 35%): the WHOLE kingdom's land drawn once by the same shader into one low-detail picture
+   (TERR_BACK_W px wide, ~1.3 px per tile) that sits under the sharp layer. Stored in tile units, so a zoom only moves / resizes it; redrawn
+   only when the land changes. Iso map only. */
+var TERR_BACK_W = 1536, terrBack = { cv: null, rev: -1, n: 0, box: null };
+function terrBackdrop(layer) {
+  var g = isoGeom(), n = terrainN, gl = terrGL.gl, L = terrGL.L;
+  if (!terrBack.cv) { terrBack.cv = document.createElement("canvas"); terrBack.cv.className = "terr-gl terr-back"; terrBack.cv.style.position = "absolute"; terrBack.cv.style.pointerEvents = "none"; }
+  if (terrBack.cv.parentNode !== layer || terrBack.cv.nextSibling !== terrGL.cv) layer.insertBefore(terrBack.cv, terrGL.cv.parentNode === layer ? terrGL.cv : null);
+  var due = terrBack.rev !== terrainRev || terrBack.n !== n;
+  if (due && terrBack.box && terrBack.n === n && Date.now() - (terrBack.t || 0) < 600) { /* painting: at most ~2 redraws a second (the copy stalls the GPU briefly) */
+    if (!terrBack.timer) terrBack.timer = setTimeout(function () { terrBack.timer = null; try { terrGLRender(true); } catch (e) {} }, 650); due = false; }
+  if (due) {
+    /* box in "r2 units" from the kingdom's tile-0 centre: x -n-2 .. n+2, y -2 .. 2n*K+2 */
+    var bx = -n - 2, by = -2, bw = 2 * n + 4, bh = 2 * n * ISO_K + 4, W = TERR_BACK_W, H = Math.round(W * bh / bw);
+    var cv = terrGL.cv; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    gl.uniform4f(L.uGeo, g.offX, g.offY, g.r2, ISO_K); gl.uniform1i(L.uIso, 1); gl.uniform1i(L.uN, n); gl.uniform1i(L.uHd, 0); gl.uniform1f(L.uTexN, 2);
+    gl.uniform1f(L.uScale, bw * g.r2 / W); gl.uniform1f(L.uH, H); gl.uniform2f(L.uOrig, g.offX + bx * g.r2, g.offY + by * g.r2); gl.uniform1f(L.uG2W, grass2Tex ? grass2Tex.w : 1);
+    gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    var bc = terrBack.cv; if (bc.width !== W || bc.height !== H) { bc.width = W; bc.height = H; }
+    var x = bc.getContext("2d"); x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0);
+    terrBack.rev = terrainRev; terrBack.n = n; terrBack.box = { x: bx, y: by, w: bw, h: bh }; terrBack.t = Date.now();
+  }
+  var bb = terrBack.box, st = terrBack.cv.style;
+  st.left = (g.offX + bb.x * g.r2) + "px"; st.top = (g.offY + bb.y * g.r2) + "px"; st.width = (bb.w * g.r2) + "px"; st.height = (bb.h * g.r2) + "px";
+}
 function terrGLSet(on) { /* switches the land drawing live (this device, until reload) */
   terrGL.on = !!on; if (on) terrGL.failed = terrGL.failed === "graphics context lost" ? "" : terrGL.failed;
   Object.keys(terrainEls).forEach(function (k) { try { terrainEls[k].remove(); } catch (e) {} }); terrainEls = {}; terrainChunksClear(); terrainOverviewRemove();
-  if (!on && terrGL.cv) terrGL.cv.remove();
+  if (!on && terrGL.cv) terrGL.cv.remove(); if (!on && terrBack.cv) terrBack.cv.remove(); terrBack.rev = -1;
   terrGL.key = ""; terrainRev++; treeSheet.key = ""; try { renderVisibleTiles(); } catch (e) {}
   var t = document.getElementById("devTerrGLToggle"); if (t) t.checked = terrGLWanted();
 }

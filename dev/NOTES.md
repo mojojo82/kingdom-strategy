@@ -6836,3 +6836,9 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Wood resource node = the new lumber camp (Harley's render restyled with ChatGPT soft style 3; art/originals/nodes/wood_v2/style3_keyed.png), 400 px webp, fx 0.5 / fy 0.6953 / fw 1 / aspect 1.0263. Old wood art is in git history before v1868.
 - Dev Tools supercontinent button is now a toggle (localStorage kingdom_prototype_continentAuto_v1, default ON): on an admin account the land is drawn automatically once the admin check is final and the map exists (Harley: "i dont want to turn it on everytime"). Still this phone only, never saved or sent; turning it off reloads to the real map. Non-admin accounts never draw it.
 - Headless: normal account - no land drawn; account forced to admin - 30% land drawn by itself ~1 s after the World map, new wood nodes with their cast shadows, no errors. Not tested on a phone.
+
+## v1870 - whole-kingdom land backdrop (TEST)
+- Harley's recording: zooming out showed bare sea round the edges until the fingers lifted (a pinch only CSS-stretches the map; the sharp GPU land picture covers the screen + 35%).
+- terrBackdrop(): the same shader draws the WHOLE kingdom once into a 1536 px-wide picture (~1.3 px per tile, uTexN 2) copied to its own canvas under the sharp layer. Stored in tile units, so zooms only move/resize it; redrawn only when the land changes (at most ~2x a second while painting - the copy stalls the GPU briefly). Iso map only. ~6.5 MB.
+- Headless: mid-pinch at 0.35x and 0.12x - land everywhere instead of sea, matches the sharp layer; no errors. Not tested on a phone.
+- Resource node count (Harley asked): proceduralTile() puts a node on 7% of tiles (v865, 5 Oct, marked TEMP "to be replaced"); the original 20x20 corner uses 35%. Nodes ignore land/sea.
