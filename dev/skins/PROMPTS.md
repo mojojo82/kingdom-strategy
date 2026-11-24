@@ -166,3 +166,27 @@ Redraw image 1 in EXACTLY the art style of image 2, so it looks like it was draw
 
 ### Fortress toon / cel-shaded in Blender (Codex, same chat, 25 Nov 2026)
 Next job: a TOON / CEL-SHADED version of the 6x6 fortress, done in Blender on the model itself (not a 2D filter on the PNG). Open fortress-v5.blend, save as fortress-v6-toon.blend and keep v5 untouched. Do NOT change any geometry, the camera (44 degree elevation / 45 degree rotation orthographic) or the framing. (1) Toon shading on every material: flat colour bands instead of smooth shading - 3 hard steps (lit, mid, shadow) using Shader to RGB + a Constant colour ramp (Eevee), with the key light still from the lower right of the image (lit faces point camera-right, shadow bands on the upper-left faces); shadows a soft cool blue-grey, not black. (2) Flat base colours instead of the detailed photo textures: pale warm cream stone (keep simple brick/block lines as darker lines), blue roof tiles (keep the tile rows as simple lines), gold trim, dark steel base and gate with simple panel lines and rivet dots, gunmetal cannons, dark wooden doors. (3) Clean dark outlines round every part and on the main creases, like a 2D mobile-game illustration: Line Art modifier or Freestyle, dark brown-grey (not pure black), even thickness that still reads when the whole fortress is shown about 300 px wide. (4) No ambient occlusion smudges, no contact shadow, no shadow-catcher plane, nothing outside the model; transparent background. Export the transparent 1600 px PNG as fortress-v6-toon-44deg.png.
+
+## 6x6 fortress concepts (25 Nov 2026) - rough designs for Codex to model later
+Two fresh ChatGPT chats ("Fortress Concept Sheet"), each with art/originals/skins/fortress6_relight/graded_e.png attached (camera / footprint / detail reference only). Shared prompt, only the numbered list differs:
+
+I'm designing capturable fortresses for my mobile strategy game's world map (fantasy with heavy tech). Each fortress covers a 6x6 tile area (four times a normal player city) and sits on its own square platform. The attached image is the first approved fortress - use it only for the camera angle, the square footprint and the level of detail, NOT the design.
+
+Make a concept sheet of 4 NEW, clearly different fortress designs in a 2x2 grid, one per cell:
+[sheet A]
+1. a dark iron war-forge fortress: black steel walls, glowing orange furnaces and molten channels, smokestacks, heavy cannons
+2. a frozen crystal citadel: pale ice-blue stone, huge ice crystals growing from the towers, frosted battlements, cyan lights
+3. a desert sun temple fortress: sandstone ziggurat at the centre, gold sun disc, palm courtyards, bronze cannons
+4. a high-tech sky-bastion: white and teal armour plating, a central energy reactor dome, radar dishes, laser turrets
+[sheet B]
+1. a sea-dragon harbour fortress: green-bronze and dark stone, a giant dragon skull over the gate, harbour walls with chains, harpoon cannons
+2. a jungle overgrown ruin fortress: mossy ancient stone, vines and giant roots wrapping the towers, a glowing green relic at the centre, stone turrets
+3. a gothic shadow keep: dark purple-grey stone, tall pointed spires, stained-glass windows with violet glow, floating rune stones
+4. a steampunk clockwork citadel: copper and brass towers, giant gears and pipes, steam vents, a big clock tower in the middle, gatling turrets
+
+For every design:
+- square footprint on a thick square base platform, seen from the same high isometric angle as the attached image (about 44 degrees from above, looking at the front corner), whole fortress in its cell
+- outer walls with corner towers and a main gate centred on the lower-right wall, guns/turrets in several places all facing outwards
+- big, bold, readable silhouette that still reads when shown small on a phone
+- painterly semi-realistic mobile-game render, warm key light from the lower right, shadows to the upper left
+- plain flat light grey background in every cell, no text, no labels
