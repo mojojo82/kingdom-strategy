@@ -6894,3 +6894,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Dev Tools "📅 Node levels: server day N" cycles real / 0 / 12 / 35 / 50 (this phone only).
 - Note: existing touched nodes keep their old remaining amount until they reset (24 h). Amount follows the real (uncapped) level - a capped Lv 9 shown as Lv 4 holds more than a true Lv 4.
 - Headless: day 0 all nodes <= Lv 4; day 50 centre 6-10, mid 3-4, edge 1-2; no errors.
+
+## v1884 - Sea Furnace replaced by the relit version (TEST)
+- Harley: the furnace looked like it floated (Codex built it with lighting off; the shading came from the ChatGPT pass). Codex rebuilt it in Blender with real materials, soft light from the lower right, AO and a darker base edge -> ChatGPT style 1 -> 2 -> 3 (soft, keeping the Codex lighting) -> hand-tuned in-between (contrast x1.12, colour x1.15, brightness x0.97: soft looked washed out on water, clean too strong). No baked blurry contact shadow (Harley).
+- Completely replaces the old skin: CITY_SKINS.seafurnace -> assets/city-skins-seafurnace-f5dbc532.webp (600x615), old test asset removed (LIVE keeps its own copy until the next LIVE update); CITY_ART_BAKED.seafurnace fx 0.5026 / fy 0.6614 / aspect 1.0250 (measured with the game's own foundation method; it reproduces the old baked values exactly on the old file). Still the default skin for new players and bots.
+- Headless: in the sea (base water, no shadows) and on land (cast shadows), no errors. Art + prompts: art/originals/skins/seafurnace_relight, dev/skins/PROMPTS.md.
