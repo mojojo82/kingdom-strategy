@@ -206,3 +206,25 @@ New model, from scratch in Blender: the SKY-BASTION fortress, a capturable 6x6-t
 
 ### Sky-bastion v2 fixes (sent; Harley: remove the radar dish - may come back as its own animated model - and change the gun styles)
 Good start - the shape, gate, textures and lighting are right. Fixes for sky-bastion-v2 (keep v1): (1) REMOVE the radar dish and its support arm from the render completely - but keep it in the .blend as a separate, hidden object/collection named radar_dish (we may animate it later as its own 3D model), so the glowing reactor dome is fully visible; (2) CHANGE THE GUN STYLE on all 6 towers - replace the box-and-tube laser turrets with a new, chunkier sci-fi design: a rounded armoured turret head on a short swivel base, with TWIN parallel barrels ending in glowing cyan energy emitters, white armour with gold trim and a dark gunmetal underside, all facing outwards, about 20% bigger than now so they read at phone size; (3) the central building is a plain cylinder - make it stepped like the concept: 2-3 tiers with gold-trimmed ledges, small entrances and a short stairway from the courtyard up to the front of the central building; (4) the courtyard floor is empty - add a few details (cyan floor light lines, small crates/consoles, a landing pad marking). Same camera (44 degrees, due south), same gentle lower-right lighting, AO, no contact shadow, transparent 1600 px PNG sky-bastion-v2-44deg-south.png + sky-bastion-v2.blend.
+
+### Sky-bastion soft style (ChatGPT chat "Repaint Fortress Style")
+Attached: 1) fortresses/sky_bastion/codex_v2_white.png, 2) mech_test/ref_skin_mecha.png, 3) mech_test/ref_skin_titan.png. Outputs gpt_style1-3.png. Also a values-only grade of codex_v2: graded_e.png (same recipe as the castle "E", gentler colour shift).
+
+Style 1:
+I'm making a capturable fortress for my mobile strategy game's world map (it covers a 6x6 tile area, four times a normal city). Image 1 is my fortress (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
+
+Repaint my fortress in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
+- same design, same layout, same round armoured ring wall, the 6 twin-barrel turrets on the towers, the stepped central building with the glowing cyan reactor dome, the courtyard details and the front gate with the winged emblem as image 1, seen from EXACTLY the same camera angle as image 1 (about 44 degrees from above, looking straight from the front, gate centred), the whole thing in frame
+- KEEP THE LIGHT DIRECTION OF IMAGE 1: the key light comes from the lower right (camera side, right), the upper-left faces are in shade and shadows fall to the upper left
+- the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light, deep cool navy / teal shadows, bright rim highlights on the edges, dark crevices between parts
+- materials like images 2 and 3: painted metal armour with wear, scratches and chipped edges, gold trim and rivets, glowing cyan lights - not clean plastic
+- keep the fortress's own colours: white armour plating, gold trim, dark gunmetal, teal doors, glowing cyan lights and reactor; richer and warmer, no flat dull colours
+- no black outlines
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no water, no ground, no shadow outside the fortress, no text
+- square image, 1024x1024
+
+Style 2:
+Good direction. Now make a second version that is CLEANER and more heroic, closer to image 2: polished painted white armour with only light edge wear (no rust, no dirt streaks), crisp bevelled panel edges catching the light, glossy highlights, a stronger gold trim, the same deep navy/teal shadows and cyan glow, and the same light direction as image 1 (key light from the lower right, shade on the upper-left faces). Same design, layout, ring wall, turrets, central building, reactor dome, gate and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+
+Style 3:
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight hitting the fortress. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft white armour, satin gold, soft gunmetal, gentle cyan glow). Keep the same polish and detail, light edge wear, the same design, layout, turrets, reactor dome, gate and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
