@@ -7557,10 +7557,11 @@ function buildMap(size, seed, populatedSize) { return new WorldMap(size, seed, p
 // v865: TEMPORARY content for the rest of the world (to be replaced) - each tile decided by a hash of seed + position, so any chunk
 // can be built on its own and comes out the same on every phone. ~7% of tiles are resource nodes.
 function mapHash(seed, x, y, salt) { var h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(seed | 0, 1442695041) + Math.imul(salt | 0, 2246822519)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+/* v1879 (Harley): 5% fewer resource nodes - 7% -> 6.65% of tiles (~100k -> ~95k in the kingdom); same hash, so the nodes that stay are where they were */
 var PROC_RES_TYPES = ["food", "wood", "stone", "gold"];
 function proceduralTile(seed, x, y) {
   var id = x + "," + y;
-  if (mapHash(seed, x, y, 1) < 0.07) return { id: id, x: x, y: y, type: "resource", resourceType: PROC_RES_TYPES[Math.floor(mapHash(seed, x, y, 2) * 4)], amountLeft: 2000 + Math.floor(mapHash(seed, x, y, 3) * 4000), garrison: null };
+  if (mapHash(seed, x, y, 1) < 0.0665) return { id: id, x: x, y: y, type: "resource", resourceType: PROC_RES_TYPES[Math.floor(mapHash(seed, x, y, 2) * 4)], amountLeft: 2000 + Math.floor(mapHash(seed, x, y, 3) * 4000), garrison: null };
   return { id: id, x: x, y: y, type: "empty" };
 }
 
@@ -12757,7 +12758,7 @@ function castShadowGet(src, fy) {
   im.src = src; return null;
 }
 /* artW = the art's width in tiles; ml / bot = its margin-left / bottom in tiles (as the art img uses them) */
-var CAST_SHADOW_MIN_PX = 28; /* v1878 (Harley): no shadows once zoomed out past this tile size - they are too small to matter there */
+var CAST_SHADOW_MIN_PX = 20; /* v1878 (Harley): no shadows once zoomed out past this tile size - they are too small to matter there. v1879: 28 -> 20 (Harley wants them at ~0.75 zoom, ~22 px tiles) */
 function castShadowHtml(src, fy, artW, ml, bot) {
   if (tilePxZ() < CAST_SHADOW_MIN_PX) return "";
   var c = castShadowGet(src, fy); if (!c) return "";
@@ -15033,7 +15034,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1878"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1879"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {

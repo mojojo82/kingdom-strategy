@@ -6869,3 +6869,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1878 - shadows only when zoomed in (TEST)
 - Harley: still crashes on v1877 WITHOUT land (zoom 0.07, after a pinch; "takes more effort" than with land); LIVE v1865 seems stable. Suspect: cast shadows (an extra img per base/node, built and removed as you zoom through LOD 0).
 - Harley: "at a certain zoom point we shouldnt bother with drawing a shadow" -> CAST_SHADOW_MIN_PX 28: no shadow imgs below 28 px tiles (default zoom is 30 px). Was all of LOD 0 (>= 16 px).
+
+## v1879 - shadows from ~0.67 zoom, 5% fewer resource nodes (TEST)
+- Harley: no crashes on v1878 (shadows cut below 28 px tiles) - so the cast-shadow churn while zooming out was the crash cause (with land just making it likelier). He wants shadows at ~0.75 zoom: CAST_SHADOW_MIN_PX 28 -> 20.
+- proceduralTile(): resource node chance 7% -> 6.65% of tiles (Harley: "~100k, 5 percent off that"): counted over the 1200x1200 kingdom 100,574 -> 95,391 (-5.2%). Same hash, so remaining nodes stay put; the old 20x20 corner (35%) untouched. Client-only (the server doesn't generate tiles).
