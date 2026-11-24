@@ -15031,7 +15031,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1874"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1875"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20266,7 +20266,7 @@ function terrGLInit() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
   } catch (e) { terrGLFail("shader: " + (e && e.message)); return false; }
-  cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); terrGLFail("graphics context lost"); });
+  cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); try { window.ksCrumb && window.ksCrumb("GPU CONTEXT LOST"); } catch (x) {} terrGLFail("graphics context lost"); });
   terrGL.cv = cv; terrGL.gl = gl; terrGL.rev = -1; terrGL.key = ""; terrGL.box = null; terrGL.g2ok = false; return true;
 }
 function terrGLRender(force) {
@@ -34257,11 +34257,15 @@ function devInvasionClear() {
   sw("devTerrBackBtn", "kingdom_prototype_terrBack_v1", function () { return terrBackOn; }, function (v) { terrBackOn = v; }, "🗺️ Land backdrop");
   var CK = "kingdom_prototype_crumb_v1", prev = null; try { prev = localStorage.getItem(CK); } catch (e) {}
   var note = document.getElementById("devCrumbNote"); if (note && prev) { var txt = prev; try { var o = JSON.parse(prev); txt = Object.keys(o).map(function (k) { return k + ": " + o[k]; }).join("\n"); } catch (e) {} note.textContent = "Map state ~1 s before the last reload/crash:\n" + txt; } /* v1874: one item per line (the JSON line was cut off) */
-  setInterval(function () {
+  var crumb = window.ksCrumb = function (why) {
     try { if (document.body.getAttribute("data-screen") !== "world") return;
       var c = { v: KS_BUILD, at: new Date().toTimeString().slice(0, 8), zoom: +mapZoom.toFixed(4), tilePx: +tilePxZ().toFixed(1), lod: mapLod(), land: terrainStress ? "on" : "off", gpu: terrGLWanted() ? "on" : "off", glMs: terrGL.lastMs ? +terrGL.lastMs.toFixed(1) : 0, glCv: terrGL.cv ? terrGL.cv.width + "x" + terrGL.cv.height : "-", back: terrBack.cv ? "yes" : "no", soft: terrSoftOn ? 1 : 0, shadows: castShadowOn ? document.querySelectorAll(".cast-shd").length : "off", tiles: Object.keys(mapTileEls).length, imgs: document.querySelectorAll("#mapworld img").length, els: document.getElementsByTagName("*").length, pinch: (document.getElementById("mapworld").style.transform || "").indexOf("scale") >= 0 ? "yes" : "no" };
+      if (why) c.why = why; c.ms = Date.now() % 100000;
       localStorage.setItem(CK, JSON.stringify(c)); } catch (e) {}
-  }, 700);
+  };
+  setInterval(function () { crumb(""); }, 700);
+  var lastT = 0; document.addEventListener("touchmove", function (e) { if (e.touches && e.touches.length === 2) { var t = Date.now(); if (t - lastT > 150) { lastT = t; crumb("pinching"); } } }, { passive: true, capture: true }); /* v1875: also while pinching */
+  document.addEventListener("touchend", function () { crumb("pinch end"); }, { passive: true, capture: true });
 })();
 (function () { var b = document.getElementById("devCastShadowBtn"); if (!b) return; var lab = function () { b.textContent = "🌗 Cast shadows: " + (castShadowOn ? "on" : "off") + " (this phone)"; }; lab(); b.onclick = function () { /* v1868: FPS check */
   castShadowOn = !castShadowOn; try { localStorage.setItem(CAST_SHADOW_KEY, castShadowOn ? "1" : "0"); } catch (e) {} lab(); try { renderVisibleTiles(); } catch (e) {} }; })();
