@@ -6865,3 +6865,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1877 - land backdrop built without WebGL (TEST)
 - Harley turned soft grass + backdrop back on (v1876) and crashed - note: v1876, zoom 1.62 (close, LOD 0), NOT pinching, 48 shadows, 3609 elements. So the crash is not the pinch itself: it is building the backdrop through the GPU (resize the WebGL canvas to 1536x1068, draw, read it back into a 2D canvas, resize back) - that happens when you open the map / the land changes.
 - v1877: the backdrop picture is built on the CPU straight from terrainArr (1 px per tile, 1200x1200, flat olive / sand coast / dirt / forest colours), no WebGL involved; shown through the same screen-sized window with an iso setTransform. Headless: mid-pinch land everywhere, no errors. Needs Harley's phone.
+
+## v1878 - shadows only when zoomed in (TEST)
+- Harley: still crashes on v1877 WITHOUT land (zoom 0.07, after a pinch; "takes more effort" than with land); LIVE v1865 seems stable. Suspect: cast shadows (an extra img per base/node, built and removed as you zoom through LOD 0).
+- Harley: "at a certain zoom point we shouldnt bother with drawing a shadow" -> CAST_SHADOW_MIN_PX 28: no shadow imgs below 28 px tiles (default zoom is 30 px). Was all of LOD 0 (>= 16 px).
