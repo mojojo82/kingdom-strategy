@@ -6819,3 +6819,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Attack: on a boss hit it rears back while an icy energy orb charges in its jaws (1.05 s), lunges and fires it straight and fast (0.28 s) at the fortress hull (or the hero it targets); the orb shatters into ice shards, glittering frost and mist (particles only). The hit lands (damage number, HP) when the orb arrives; extra hits during an attack land with it. Uses the `reap` projectile flag (not drawn, lands at once).
 - Dev Tools > Chapter Boss > Boss look: + Boss 5 (Ice Kaiju). Stats and the boss name unchanged.
 - Headless (Conquest 9-1 foundry, boss look Ice Kaiju): attacks play, orbs fly and shatter, damage numbers on hit, no errors. Not tested on a phone.
+
+## v1867 - Supercontinent land preview (TEST, Dev Tools)
+- Harley picked land concept C (one supercontinent with bays, sea all round, 30% land - dev/worldmap/land_concepts_v1.png) to try on the real map, basic land painting only.
+- terrainSupercontinentGenerate(0.3): same shape as concept C, over the whole 1200x1200 kingdom (centre ~X:600 Y:620); grass with a thin sand rim on the coast, no forest / dirt / decor. Dev Tools button "🌍 Supercontinent land 30% (this phone only)" next to the stress-test land: device only, never saved or sent (uses the terrainStress switch), reload removes it.
+- Headless: builds in ~0.5 s, exactly 30% land, shows on the World map and the kingdom overview, no errors. Not tested on a phone.
