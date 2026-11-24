@@ -84,3 +84,4 @@ Style 3 soft (same chat):
 Now a third version based on the clean one, with much SOFTER, lower-contrast lighting: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft red and cream chimney, soft steel greys, soft tan deck, gentle cyan glow). Keep the base's bottom row in soft shade so it still sits on the ground. Keep the same polish and detail, the same design, every part and camera angle. Plain flat solid magenta (#FF00FF) background with no shadow, square, 1024x1024.
 ```
 Harley: no blurry baked contact shadow (dropped).
+style3_tuned.png = style 3 soft + contrast x1.12, saturation x1.15, brightness x0.97 (Harley: soft a tad washed out on water, clean too strong).
