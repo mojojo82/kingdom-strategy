@@ -367,3 +367,11 @@ ci/                   integration.test.js (emulator), e2e.test.js (real browser)
 dev/NOTES.md          full version history          dev/tests/  headless stand-ins          dev/simfork/  test scripts
 dev/assets/           art sources (sprites, forest pieces, hills/mountains, fire sheet, grass tiles, obelisk, towers ...)
 ```
+
+## New map items from scratch: Codex + Blender (Harley, 24 Nov 2026)
+Applies to new city skins, resource nodes, map decorations (e.g. "make 1x1 tree decorations"). Plain ChatGPT is much worse at 3D - always Codex.
+1. Use the SAME Codex chat every time: "Model an isometric city base" on Harley's PC (DESKTOP-NTT1DRR), working folder C:\Users\Harley\Documents\Codex\2026-11-19\are-x20, session file C:\Users\Harley\.codex\sessions\2026\11\19\rollout-2026-11-19T23-24-40-01a1f356-....jsonl. It runs in the Codex app on his PC (not chatgpt.com/codex cloud - that list is empty), so drive it there (computer use on his PC / the Codex app), PC must be awake.
+2. Ask Codex to model the item in Blender at the map camera (44 deg elevation, isometric), soft fading ground patch (no hard slab/rim), gentle soft lighting - NOT harsh (light so cast shadows fall up-left: sun lower-right of the camera... match CAST_SUN_AZ / the game's shadows).
+3. Codex returns a .blend + a PNG. Look at the PNG before accepting: it often has missing/untextured parts - ask it to texture those parts in Blender, and to fix harsh lighting, until it is adequate.
+4. Bring the plain transparent PNG here (art/originals/<type>/<item>/) AND make the ChatGPT soft style version (dev/skins/PROMPTS.md style 1 -> 2 -> 3 in one chat, see dev/nodes/PROMPTS.md). Save every prompt word for word (Codex prompts too) in that art type's PROMPTS.md.
+5. Mock both up on the map (K grass, cast shadows) and show Harley before anything goes in.
