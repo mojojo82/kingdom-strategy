@@ -123,3 +123,8 @@ Redraw image 1 in EXACTLY the art style of image 2, so it looks like it was draw
 - KEEP THE LIGHT DIRECTION OF IMAGE 1: light from the lower right, the upper-left faces in shade
 - plain flat solid magenta (#FF00FF) background, nothing else in the picture: no shadow on the ground outside the platform, no text
 - square image, 1024x1024
+
+## 6x6 capturable fortress relight (25 Nov 2026)
+Codex chat "Model an isometric city base" (Harley sent it). Source: fortress-v4 (art/originals/skins/fortress6_relight/codex_v4.png).
+
+Next job: the 6x6 capturable fortress from earlier in this chat (fortress-v4.blend - the castle with blue roofs, outward-facing single-barrel cannons, steel front gate and the thick riveted steel-plated base). Please open fortress-v4.blend and relight it in Blender WITHOUT changing the model: (1) same 44 degree elevation / 45 degree rotation orthographic camera, the whole fortress in frame with a small margin; (2) make sure every part has a real material/texture (pale stone blocks, blue roof tiles, gold trim, dark riveted steel plates on the base and gate, gunmetal cannons, wooden doors, glass windows) - texture anything that is still flat or untextured; (3) gentle soft daylight - key light from the lower right of the image so lit faces point camera-right and shadows fall towards the upper left, soft fill so no side goes dark, NOT harsh, no blown-out highlights; (4) ambient occlusion so the crevices, battlements and the bottom edge of the steel base read with depth; NO contact shadow, NO shadow-catcher plane, nothing outside the model itself; (5) transparent background. Save as fortress-v5.blend and a transparent 1600 px PNG fortress-v5-44deg.png (keep v4 untouched).
