@@ -6904,3 +6904,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley rendered the mech in Rhino with the sun from the lower right (Manual, North 90, Azimuth 102.5, Altitude 54) -> ChatGPT style 1 -> 2 -> 3 (same prompts as the base skins, light direction kept) -> soft style hand-tuned 35% toward style 1 (Lab brightness/contrast/colour moved 35% of the way to style 1's averages: a bit darker and richer). Harley picked it on the grass mockup. ChatGPT added teal eye glow (kept).
 - Completely replaces the old skin: CITY_SKINS.ironsent -> assets/city-skins-ironsent-35416c71.webp (600x764), old test asset removed (LIVE keeps its own copy until the next LIVE update); CITY_ART_BAKED.ironsent fx 0.5244 / fy 0.7308 / aspect 1.2733 (game's foundation method at today's 44 deg map view, same as the mockup; the old value was measured at 35 deg).
 - Art + prompts: art/originals/skins/ironsent_relight (v2_* files), dev/skins/PROMPTS.md.
+
+## v1886 - Field Sentinel replaced by a 2D version of Harley's Rhino render (TEST)
+- Harley: keep the Field Sentinel's flat 2D look but on his relit Rhino model. ChatGPT redraw of rhino_render2_white.png in the style of the current Field Sentinel (prompt in dev/skins/PROMPTS.md), used exactly as ChatGPT gave it (keyed only, no extra style pass, no tuning).
+- Completely replaces the old skin: CITY_SKINS.fieldsent -> assets/city-skins-fieldsent-87d9a886.webp (600x749), old test asset removed (LIVE keeps its own copy until the next LIVE update); CITY_ART_BAKED.fieldsent fx 0.5231 / fy 0.7236 / aspect 1.2483 (game's foundation method at 44 deg).
+- Art: art/originals/skins/ironsent_relight/v2_gpt_flat.png, v2_flat_keyed.png.
