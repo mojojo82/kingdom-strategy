@@ -6885,3 +6885,12 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1882 - no cast shadows on water (TEST)
 - Harley: no shadow casting on water, base skins included. castShadowLand(x, y) = terrainAt(x, y) > 0; resource nodes (resNodeArtHtml(type, onLand)) and city skins only get a .cast-shd when their tile is land. No land data = no shadows.
 - Headless: real map (all sea) 0 shadows; supercontinent coast 46 shadows on the land nodes, none on the sea ones; no errors.
+
+## v1883 - resource node levels 1-10 (TEST)
+- Harley: 10 node levels, low in the outer kingdom, high towards the centre, opening up as the server ages (researched Kingshot: Badlands -> Plains ~day 11-13 -> Fertile Land ~day 33-38 "higher-level resources", King's Castle ~day 48-52; no public per-level schedule found).
+- resNodeBaseLevel(x, y): 10 at the kingdom centre down to 1 at the edge (distance rings + jitter), fixed by position, works for every node incl. the old 20x20 corner. Mix over the kingdom: L1 36%, L2 13%, L3 12%, L4 10%, L5 9%, L6 7%, L7 6%, L8 4%, L9 2%, L10 1%.
+- RES_LEVEL_UNLOCKS: day 0 -> up to Lv 4, day 12 -> 7, day 35 -> 9, day 50 -> 10 (server day from servers/{id}.createdAt). A node above the cap shows / gathers as the cap.
+- Amount (generated): ~3,000 x base level (+-15%) (L1 ~3k, L10 ~30k; was 2-6k flat). Gather per march x(1 + 12% per level) on top of the gather bonus. Round level badge under each node; tile panel shows "Lv N" and gather speed.
+- Dev Tools "📅 Node levels: server day N" cycles real / 0 / 12 / 35 / 50 (this phone only).
+- Note: existing touched nodes keep their old remaining amount until they reset (24 h). Amount follows the real (uncapped) level - a capped Lv 9 shown as Lv 4 holds more than a true Lv 4.
+- Headless: day 0 all nodes <= Lv 4; day 50 centre 6-10, mid 3-4, edge 1-2; no errors.

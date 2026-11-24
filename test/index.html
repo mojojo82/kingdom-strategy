@@ -941,6 +941,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   .tile .map-ico { display:block; width:86%; height:86%; pointer-events:none; }
   .tile .map-ico svg { display:block; width:100%; height:100%; filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45)); }
   .tile .map-ico img { display:block; width:100%; height:100%; pointer-events:none; }
+  #mapworld .tile .res-lv { position:absolute; left:50%; bottom:calc(var(--tile-px) * -0.05); transform:translateX(-50%); z-index:3; min-width:calc(var(--tile-px) * 0.52); height:calc(var(--tile-px) * 0.52); border-radius:50%; background:radial-gradient(circle at 40% 35%, #a07a5a, #5a3a24); border:calc(var(--tile-px) * 0.045) solid #f3dfb8; color:#fff; font-weight:900; font-size:calc(var(--tile-px) * 0.3); line-height:calc(var(--tile-px) * 0.43); text-shadow:0 1px 1px #000a; text-align:center; box-shadow:0 1px 3px #0008; pointer-events:none; } /* v1883: node level badge (like Lord Rush's round number) */
   .tile .lvl { position:absolute; bottom:-3px; right:-3px; font-size:9px; background:#000c; color:#fff; border-radius:5px; padding:1px 4px; font-weight:700; border:1px solid #fff5; }
 
   /* ---- Teleport "drop from the sky" effect (see armTeleportDropEffect()/spawnTeleportDropExtras()) ----
@@ -4448,7 +4449,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
                   </label>
                 </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
-                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button><button class="dev-btn" id="devContinentLandBtn">🌍 Supercontinent land 30% (this phone only)</button><button class="dev-btn" id="devCastShadowBtn">🌗 Cast shadows: on</button><button class="dev-btn" id="devTerrSoftBtn">🌱 Soft grass</button><button class="dev-btn" id="devTerrBackBtn">🗺️ Land backdrop</button><span id="devCrumbNote" style="display:block;font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-all;max-width:100%;"></span>
+                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button><button class="dev-btn" id="devContinentLandBtn">🌍 Supercontinent land 30% (this phone only)</button><button class="dev-btn" id="devResAgeBtn">📅 Node levels: server day</button><button class="dev-btn" id="devCastShadowBtn">🌗 Cast shadows: on</button><button class="dev-btn" id="devTerrSoftBtn">🌱 Soft grass</button><button class="dev-btn" id="devTerrBackBtn">🗺️ Land backdrop</button><span id="devCrumbNote" style="display:block;font-size:12px;color:var(--muted);white-space:pre-wrap;word-break:break-all;max-width:100%;"></span>
                   <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
                 </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:4px 8px;">
@@ -7559,9 +7560,28 @@ function buildMap(size, seed, populatedSize) { return new WorldMap(size, seed, p
 function mapHash(seed, x, y, salt) { var h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(seed | 0, 1442695041) + Math.imul(salt | 0, 2246822519)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
 /* v1879 (Harley): 5% fewer resource nodes - 7% -> 6.65% of tiles (~100k -> ~95k in the kingdom); same hash, so the nodes that stay are where they were */
 var PROC_RES_TYPES = ["food", "wood", "stone", "gold"];
+/* v1883 (Harley): resource node levels 1-10 - low levels in the outer kingdom, high levels towards the centre (like Kingshot's Badlands -> Plains ->
+   Fertile Land), and the high levels open up as the server ages. resNodeBaseLevel = the node's real level (fixed by position: distance from the kingdom
+   centre, with a little jitter so the rings are not perfect circles); resNodeLevel = what it is today, capped by RES_LEVEL_UNLOCKS (server day). */
+var RES_LEVEL_UNLOCKS = [[0, 4], [12, 7], [35, 9], [50, 10]]; /* [server day, highest node level open] - Kingshot: Plains ~day 11-13, Fertile Land ~day 33-38, King's Castle ~day 48-52 */
+var RES_AGE_KEY = "kingdom_prototype_resAgeDays_v1";
+function resNodeBaseLevel(x, y) {
+  var c = (typeof WORLD_MAP_SIZE !== "undefined" ? WORLD_MAP_SIZE : 1200) / 2, dx = x - c, dy = y - c, r = Math.sqrt(dx * dx + dy * dy) / c;
+  var j = (mapHash(7331, x, y, 9) - 0.5) * 1.2, lv = 10 - Math.floor(Math.min(1, r) * 10 + j);
+  return lv < 1 ? 1 : lv > 10 ? 10 : lv;
+}
+function resServerDay() {
+  try { var o = localStorage.getItem(RES_AGE_KEY); if (o !== null && o !== "") return +o; } catch (e) {}
+  try { var k = kingdomInfo[CURRENT_SERVER_ID]; if (k && k.createdAt) return Math.max(0, Math.floor((Date.now() - +k.createdAt) / 86400000)); } catch (e) {}
+  return 0;
+}
+function resLevelCap() { var d = resServerDay(), cap = 1; RES_LEVEL_UNLOCKS.forEach(function (u) { if (d >= u[0]) cap = u[1]; }); return cap; }
+function resNodeLevel(tile) { return Math.min(resNodeBaseLevel(tile.x, tile.y), resLevelCap()); }
+function resNodeAmount(x, y, salt) { var L = resNodeBaseLevel(x, y); return Math.round(3000 * L * (0.85 + mapHash(7331, x, y, salt || 3) * 0.3)); } /* L1 ~3k ... L10 ~30k */
+function resGatherMult(tile) { return 1 + 0.12 * (resNodeLevel(tile) - 1); } /* +12% per level */
 function proceduralTile(seed, x, y) {
   var id = x + "," + y;
-  if (mapHash(seed, x, y, 1) < 0.0665) return { id: id, x: x, y: y, type: "resource", resourceType: PROC_RES_TYPES[Math.floor(mapHash(seed, x, y, 2) * 4)], amountLeft: 2000 + Math.floor(mapHash(seed, x, y, 3) * 4000), garrison: null };
+  if (mapHash(seed, x, y, 1) < 0.0665) return { id: id, x: x, y: y, type: "resource", resourceType: PROC_RES_TYPES[Math.floor(mapHash(seed, x, y, 2) * 4)], amountLeft: resNodeAmount(x, y), garrison: null };
   return { id: id, x: x, y: y, type: "empty" };
 }
 
@@ -9290,7 +9310,7 @@ function createGame(opts) {
         if (tile.type === "npc") {
           loot = {}; for (var lr in tile.loot) loot[lr] = Math.round(tile.loot[lr] * gatherBonusMult());
           log("March #" + march.id + " defeated the level " + tile.level + " camp and looted resources.");
-        } else { loot = {}; loot[tile.resourceType] = Math.min(tile.amountLeft, Math.round(400 * gatherBonusMult())); tile.amountLeft -= loot[tile.resourceType]; log("March #" + march.id + " broke through the guard and is gathering " + tile.resourceType + "."); }
+        } else { loot = {}; loot[tile.resourceType] = Math.min(tile.amountLeft, Math.round(400 * gatherBonusMult() * resGatherMult(tile))); tile.amountLeft -= loot[tile.resourceType]; log("March #" + march.id + " broke through the guard and is gathering " + tile.resourceType + "."); }
       } else { log("March #" + march.id + " was repelled and is retreating."); }
       state.battleReports.unshift({
         id: state.nextBattleReportId++, marchId: march.id, time: now(),
@@ -9308,7 +9328,7 @@ function createGame(opts) {
       });
       if (state.battleReports.length > BATTLE_REPORTS_MAX) state.battleReports.length = BATTLE_REPORTS_MAX;
     } else if (tile.type === "resource") {
-      loot = {}; loot[tile.resourceType] = Math.min(tile.amountLeft, Math.round(500 * gatherBonusMult())); tile.amountLeft -= loot[tile.resourceType]; if (loot[tile.resourceType] > 0) dailyBump("gather");
+      loot = {}; loot[tile.resourceType] = Math.min(tile.amountLeft, Math.round(500 * gatherBonusMult() * resGatherMult(tile))); tile.amountLeft -= loot[tile.resourceType]; if (loot[tile.resourceType] > 0) dailyBump("gather");
       if (loot[tile.resourceType] > 0) { state.battleReports.unshift({ id: state.nextBattleReportId++, kind: "gather", marchId: march.id, time: now(), tileId: tile.id, tileType: "resource", tileLevel: tile.level || null, resourceType: tile.resourceType, gathered: loot[tile.resourceType], loot: Object.assign({}, loot), win: true, attackerArmy: Object.assign({}, march.army), attackerLosses: {}, defenderArmy: {}, defenderLosses: {}, heroKeys: asHeroKeyArray(march.heroKeys || march.heroKey), homeTileId: state.homeTileId, secs: 5 });
         if (state.battleReports.length > BATTLE_REPORTS_MAX) state.battleReports.length = BATTLE_REPORTS_MAX; } /* v1838: gathering report (Mail > Reports) */
       log("March #" + march.id + " is gathering " + tile.resourceType + ".");
@@ -15036,7 +15056,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1882"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1883"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -19521,6 +19541,7 @@ function renderVisibleTiles() {
       icon = TILE_ICON[tile.type]; if (tile.type === "npc") lvlTag = '<span class="lvl">L' + tile.level + '</span>'; if (tile.type === "resource") icon = RES_ICON[tile.resourceType];
       if (mapIconsCustom) { if (tile.type === "npc") icon = mapTileIconHtml("threat"); else if (tile.type === "resource" && MAP_TILE_SVG[tile.resourceType]) icon = mapTileIconHtml(tile.resourceType); }
       if (tile.type === "resource" && RES_NODE_ART[tile.resourceType]) icon = resNodeArtHtml(tile.resourceType, castShadowLand(tile.x, tile.y)); /* v875; v1882: shadow only on land */
+      if (tile.type === "resource") lvlTag = '<span class="res-lv">' + resNodeLevel(tile) + '</span>'; /* v1883 */
       setTileHtml(div, icon + lvlTag);
     }
   };
@@ -24891,7 +24912,7 @@ function tileHeaderHtml(tile) {
   var html = "";
   if (tile.type === "resource") { /* v852 */
     var rn = tile.resourceType.charAt(0).toUpperCase() + tile.resourceType.slice(1);
-    return ticHtml({ id: tile.id, theme: tile.resourceType, res: true, portrait: RES_ICON[tile.resourceType], name: rn + " Node", sub: "Free to gather", stats: [["Remaining", fmt(tile.amountLeft)]] });
+    return ticHtml({ id: tile.id, theme: tile.resourceType, res: true, portrait: RES_ICON[tile.resourceType], name: "Lv " + resNodeLevel(tile) + " " + rn + " Node", sub: "Free to gather", stats: [["Remaining", fmt(tile.amountLeft)], ["Gather speed", "+" + Math.round((resGatherMult(tile) - 1) * 100) + "%"]] });
   }
   if (tile.type === "npc") {
     html += '<div><b>💀 Level ' + tile.level + ' Enemy Camp</b></div>';
@@ -34264,6 +34285,11 @@ function devInvasionClear() {
   var t0 = performance.now(), fr = terrainStressGenerate(0.4);
   b.textContent = "🔄 Remove stress-test land (reloads)"; note.textContent = "Stress land ON: " + Math.round(fr * 100) + "% land, built in " + Math.round(performance.now() - t0) + " ms. Not saved - reload removes it.";
 }; })();
+(function () { var b = document.getElementById("devResAgeBtn"); if (!b) return; /* v1883: pretend the server is older (this phone only) to see the node levels open up */
+  var DAYS = ["", "0", "12", "35", "50"], lab = function () { var o = ""; try { o = localStorage.getItem(RES_AGE_KEY) || ""; } catch (e) {} b.textContent = "📅 Node levels: server day " + resServerDay() + (o === "" ? " (real)" : " (pretend)") + " - up to Lv " + resLevelCap(); };
+  lab(); setInterval(lab, 5000);
+  b.onclick = function () { var o = ""; try { o = localStorage.getItem(RES_AGE_KEY) || ""; } catch (e) {} var i = (DAYS.indexOf(o) + 1) % DAYS.length; try { if (DAYS[i] === "") localStorage.removeItem(RES_AGE_KEY); else localStorage.setItem(RES_AGE_KEY, DAYS[i]); } catch (e) {} lab(); try { terrainClearAll && 0; Object.keys(mapTileEls).forEach(function (id) { mapTileEls[id].remove(); }); mapTileEls = {}; renderVisibleTiles(); } catch (e) {} };
+})();
 (function () { /* v1873: crash hunt - switches + the map state just before the last reload */
   var sw = function (id, key, get, set, name) { var b = document.getElementById(id); if (!b) return; var lab = function () { b.textContent = name + ": " + (get() ? "on" : "off") + " (this phone)"; }; lab();
     b.onclick = function () { set(!get()); try { localStorage.setItem(key, get() ? "1" : "0"); } catch (e) {} lab(); terrGL.key = ""; try { renderVisibleTiles(); } catch (e) {} }; };
