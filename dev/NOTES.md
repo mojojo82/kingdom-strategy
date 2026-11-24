@@ -6877,3 +6877,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1880 - new food node: bread mill (TEST)
 - First item made with the Codex + Blender process (HANDOVER "New map items from scratch"): Codex v1 -> texture/lighting feedback -> v2 accepted -> ChatGPT styles 1-3; Harley picked the soft style (style3_keyed.png). RES_NODE_ART.food: 400 px webp, fx 0.5 / fy 0.6124 / fw 1 / aspect 0.8796. Prompts in dev/nodes/PROMPTS.md, art in art/originals/nodes/breadmill.
 - Headless: bread mills show as food nodes with cast shadows, no errors. Not tested on a phone.
+
+## v1881 - new stone (quarry) and gold (mine) nodes (TEST)
+- Codex + Blender: v1 (faceted pale rocks, hidden gold) -> texture/detail pass -> v2 accepted -> ChatGPT soft style 3 (same as the bread mill, which Harley picked). RES_NODE_ART.stone / .gold replaced. Art in art/originals/nodes/stone_quarry and gold_mine, prompts in dev/nodes/PROMPTS.md. All four node types now new art (wood = Harley's render, soft style).
+- Headless: quarries, gold mines, bread mills and lumber camps all show on the map with cast shadows; no errors. Not tested on a phone.

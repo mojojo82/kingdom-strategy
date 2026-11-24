@@ -81,3 +81,39 @@ Result v1 (codex_v1_44deg.png): faceted low-poly rocks, flat grey, gold barely v
 Not accepted yet - both need a detail and texture pass in Blender (save as v2, keep v1). For BOTH: (1) the rocks are very low-poly faceted blobs with flat grey surfaces - make them natural rock: more subdivided/displaced organic shapes, visible rock texture (strata layers, cracks, lichen/moss patches, colour variation from warm grey to cool blue-grey), darker crevices; (2) the dirt patch has gone back to one flat beige - give it the same ground detail as bread mill v2 (damp patches, pebbles, worn paths between the props, scattered chips/debris); (3) wood planks look clean - add grain, weathering and a few iron nails/brackets. QUARRY: the cliff should read as a cut quarry face - horizontal sedimentary layers, chisel/drill marks on the cut faces, clean pale cut stone blocks contrasting with the rougher natural rock, rope with visible twist on the crane, chips of stone around the bench. GOLD MINE: the gold barely shows - make the gold the hero: thick glinting gold veins in the rock face around the entrance, the cart heaped with ore where bright gold nuggets clearly sparkle (warm metallic gold with highlights), a bigger nugget pile in a pan or crate, a little gold glint in the sluice water; the sluice water should look like water (slightly blue-green, reflective, with ripples) and the dark mine entrance should have a warm lantern glow inside. Keep the gentle soft lighting from the lower right, same camera, framing and layout.
 ```
 Result v2 (codex_v2_44deg.png): accepted - gold, water, glow and ground good; rocks still pale/cloud-like (left for the ChatGPT repaint).
+
+### ChatGPT soft style - quarry (chat "Repaint Quarry Art Style") and gold mine (chat "Repaint Gold Mine Art Style"), each with codex_v2_white.png + ref_skin_mecha + ref_skin_titan
+Quarry style 1:
+```
+I'm making a resource node (a stone quarry) for my mobile strategy game's world map. Image 1 is my quarry on its patch of ground (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
+
+Repaint my quarry in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
+- same design: the stepped quarry rock face with cut terraces and drill marks, the wooden crane with rope and pulley holding a stone block, the stacked cut stone blocks, the stone-cutter's lean-to with bench and tools, the handcart with rough stone, the chips and pebbles, and the same soft dirt patch fading into grass as image 1, seen from the same high isometric angle as image 1, the whole thing in frame
+- make the rock look like real natural rock: layered warm-grey to cool blue-grey stone with cracks, darker crevices, a little moss and lichen (the render's rocks are too pale and cloud-like); the cut blocks stay paler and cleaner than the natural rock
+- the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light from the lower right, deep cool navy / teal shadows on the upper-left side, bright rim highlights on the edges, dark crevices between parts
+- materials like images 2 and 3: rock strata, dressed stone, timber with grain, twisted rope, worn iron - not clean plastic or low-poly
+- no black outlines
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no water, no shadow on the ground outside the patch, no text
+- square image, 1024x1024
+```
+Gold mine style 1:
+```
+I'm making a resource node (a gold mine) for my mobile strategy game's world map. Image 1 is my gold mine on its patch of ground (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
+
+Repaint my gold mine in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
+- same design: the rocky outcrop with gold veins, the timber-framed mine entrance with warm lantern light inside, the mine cart on rails heaped with gold ore, the ore crusher frame, the sluice with blue-green water, the small miner's hut with lanterns, the sacks, the pan of gold nuggets, and the same soft dirt patch fading into grass as image 1, seen from the same high isometric angle as image 1, the whole thing in frame
+- make the rock look like real natural rock: dark warm-grey to cool blue-grey stone with cracks and darker crevices (the render's rocks are too pale and cloud-like), with thick glinting gold veins; the gold must be the hero - bright warm metallic gold nuggets that sparkle
+- the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light from the lower right, deep cool navy / teal shadows on the upper-left side, bright rim highlights on the edges, dark crevices between parts
+- materials like images 2 and 3: rock, timber with grain, iron rails and bands, burlap, water - not clean plastic or low-poly
+- no black outlines
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no text
+- square image, 1024x1024
+```
+Style 2 (both):
+```
+Good direction. Now make a second version that is CLEANER and more polished, closer to image 2: well-kept stone and timber with only light edge wear (no dirt streaks), crisp bevelled edges catching the light, the same colours, the same deep navy/teal shadows. Same design, every prop, ground patch and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+```
+Style 3 soft (both):
+```
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft greys for the rock, soft warm brown timber, soft earthy ground - but keep the gold clearly golden). Keep the same polish and detail, light edge wear, the same design, every prop, ground patch and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+```
