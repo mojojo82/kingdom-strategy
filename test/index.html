@@ -15031,7 +15031,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1876"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1877"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20300,36 +20300,35 @@ function terrGLRender(force) {
 var TERR_BACK_W = 1536, terrBack = { cv: null, src: null, rev: -1, n: 0, box: null };
 /* v1873: crash hunt switches (this device): soft grass shader and the backdrop can be turned off */
 var terrSoftOn = true, terrBackOn = true; try { terrSoftOn = localStorage.getItem("kingdom_prototype_terrSoft_v1") !== "0"; terrBackOn = localStorage.getItem("kingdom_prototype_terrBack_v1") !== "0"; } catch (e) {}
-function terrBackdrop(layer) { /* v1876: the whole-kingdom picture is kept OFF the page; only a viewport-sized window of it (4x the screen each way,
-     half resolution) is shown - one canvas stretched over the whole kingdom (~20000 css px wide) crashed iPhones when it appeared during a pinch */
-  var g = isoGeom(), n = terrainN, gl = terrGL.gl, L = terrGL.L;
+function terrBackdrop(layer) { /* v1876: only a screen-sized window of the whole-kingdom picture is on the page.
+     v1877: the picture itself is built on the CPU straight from the land data (1 pixel per tile, no WebGL) - building it through the GPU
+     (resize the WebGL canvas, draw, copy it into a 2D canvas) crashed Harley's iPhone even at close zoom with no pinch */
+  var g = isoGeom(), n = terrainN;
   if (!terrBack.cv) { terrBack.cv = document.createElement("canvas"); terrBack.cv.className = "terr-gl terr-back"; terrBack.cv.style.position = "absolute"; terrBack.cv.style.pointerEvents = "none"; }
   if (terrBack.cv.parentNode !== layer || terrBack.cv.nextSibling !== terrGL.cv) layer.insertBefore(terrBack.cv, terrGL.cv.parentNode === layer ? terrGL.cv : null);
   var due = terrBack.rev !== terrainRev || terrBack.n !== n;
-  if (due && terrBack.box && terrBack.n === n && Date.now() - (terrBack.t || 0) < 600) { /* painting: at most ~2 redraws a second (the copy stalls the GPU briefly) */
+  if (due && terrBack.src && terrBack.n === n && Date.now() - (terrBack.t || 0) < 600) { /* painting: at most ~2 rebuilds a second */
     if (!terrBack.timer) terrBack.timer = setTimeout(function () { terrBack.timer = null; try { terrGLRender(true); } catch (e) {} }, 650); due = false; }
   if (due) {
-    /* box in "r2 units" from the kingdom's tile-0 centre: x -n-2 .. n+2, y -2 .. 2n*K+2 */
-    var bx = -n - 2, by = -2, bw = 2 * n + 4, bh = 2 * n * ISO_K + 4, W = TERR_BACK_W, H = Math.round(W * bh / bw);
-    var cv = terrGL.cv; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-    gl.uniform1f(L.uSoft, terrSoftOn ? 1 : 0); gl.uniform4f(L.uGeo, g.offX, g.offY, g.r2, ISO_K); gl.uniform1i(L.uIso, 1); gl.uniform1i(L.uN, n); gl.uniform1i(L.uHd, 0); gl.uniform1f(L.uTexN, 2);
-    gl.uniform1f(L.uScale, bw * g.r2 / W); gl.uniform1f(L.uH, H); gl.uniform2f(L.uOrig, g.offX + bx * g.r2, g.offY + by * g.r2); gl.uniform1f(L.uG2W, grass2Tex ? grass2Tex.w : 1);
-    gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
     if (!terrBack.src) terrBack.src = document.createElement("canvas");
-    var sc = terrBack.src; if (sc.width !== W || sc.height !== H) { sc.width = W; sc.height = H; }
-    var x = sc.getContext("2d"); x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0);
-    terrBack.rev = terrainRev; terrBack.n = n; terrBack.box = { x: bx, y: by, w: bw, h: bh }; terrBack.t = Date.now();
+    var sc = terrBack.src; if (sc.width !== n || sc.height !== n) { sc.width = n; sc.height = n; }
+    var x = sc.getContext("2d"), img = x.createImageData(n, n), d = img.data, A = terrainArr, G = TERR_GRASS[2], D = TERR_DIRT[2], F = TERR_FOREST[2], S = TERR_SAND[1];
+    for (var ty = 0; ty < n; ty++) for (var tx = 0; tx < n; tx++) {
+      var i = ty * n + tx, t = A[i]; if (!t) continue;
+      var coast = tx === 0 || ty === 0 || tx === n - 1 || ty === n - 1 || !A[i - 1] || !A[i + 1] || !A[i - n] || !A[i + n];
+      var c = coast ? S : t === 2 ? D : t === 3 ? F : G, o = i * 4; d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    terrBack.rev = terrainRev; terrBack.n = n; terrBack.t = Date.now();
   }
-  if (!terrBack.src || !terrBack.box) return;
+  if (!terrBack.src) return;
   var vp = document.getElementById("mapviewport"), vw = Math.min(vp.clientWidth, window.innerWidth), vh = Math.min(vp.clientHeight, window.innerHeight);
-  var dx = vp.scrollLeft - 1.5 * vw, dy = vp.scrollTop - 1.5 * vh, dw = 4 * vw, dh = 4 * vh, RES = 0.5, DW = Math.round(dw * RES), DH = Math.round(dh * RES), d = terrBack.cv;
-  if (d.width !== DW || d.height !== DH) { d.width = DW; d.height = DH; }
-  var bb = terrBack.box, X0 = g.offX + bb.x * g.r2, Y0 = g.offY + bb.y * g.r2, k = terrBack.src.width / (bb.w * g.r2);
-  var dc = d.getContext("2d"); dc.clearRect(0, 0, DW, DH);
-  var sx = (dx - X0) * k, sy = (dy - Y0) * k, sw = dw * k, sh = dh * k, SW = terrBack.src.width, SH = terrBack.src.height;
-  var cx0 = Math.max(0, sx), cy0 = Math.max(0, sy), cx1 = Math.min(SW, sx + sw), cy1 = Math.min(SH, sy + sh); /* clip to the picture (Safari draws nothing for out-of-range source rects) */
-  if (cx1 > cx0 && cy1 > cy0) dc.drawImage(terrBack.src, cx0, cy0, cx1 - cx0, cy1 - cy0, (cx0 - sx) / sw * DW, (cy0 - sy) / sh * DH, (cx1 - cx0) / sw * DW, (cy1 - cy0) / sh * DH);
-  var st = d.style; st.left = dx + "px"; st.top = dy + "px"; st.width = dw + "px"; st.height = dh + "px";
+  var dx = vp.scrollLeft - 1.5 * vw, dy = vp.scrollTop - 1.5 * vh, dw = 4 * vw, dh = 4 * vh, RES = 0.5, DW = Math.round(dw * RES), DH = Math.round(dh * RES), cv = terrBack.cv;
+  if (cv.width !== DW || cv.height !== DH) { cv.width = DW; cv.height = DH; }
+  var dc = cv.getContext("2d"), r = g.r2, rk = g.r2 * ISO_K; dc.setTransform(1, 0, 0, 1, 0, 0); dc.clearRect(0, 0, DW, DH);
+  /* tile-space picture -> the iso map: pixel (u,v) lands at (offX + (u - v) r2, offY + (u + v - 1) r2 K) */
+  dc.imageSmoothingEnabled = true; dc.setTransform(RES * r, RES * rk, -RES * r, RES * rk, RES * (g.offX - dx), RES * (g.offY - rk - dy)); dc.drawImage(terrBack.src, 0, 0); dc.setTransform(1, 0, 0, 1, 0, 0);
+  var st = cv.style; st.left = dx + "px"; st.top = dy + "px"; st.width = dw + "px"; st.height = dh + "px";
 }
 function terrGLSet(on) { /* switches the land drawing live (this device, until reload) */
   terrGL.on = !!on; if (on) terrGL.failed = terrGL.failed === "graphics context lost" ? "" : terrGL.failed;

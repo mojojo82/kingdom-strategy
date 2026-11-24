@@ -6861,3 +6861,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Cause (most likely): v1870's backdrop was ONE canvas stretched over the whole kingdom (~20,700 x 14,400 css px at that zoom); it becomes visible when a pinch starts and the iPhone's compositor falls over. (v1869's crashes were before the backdrop - probably the 2x land canvases fixed in v1871.)
 - v1876: the whole-kingdom picture stays off the page (terrBack.src); only a window of it is shown - 4x the screen each way, half resolution (860x1864 canvas, 1720x3728 css px), redrawn with the sharp layer. Covers a pinch down to 1/4; a bigger single pinch-out still shows sea at the edges until fingers lift.
 - Headless: mid-pinch 0.35x land everywhere; 0.12x land in the middle 1/4, sea outside; no errors. Needs Harley's phone.
+
+## v1877 - land backdrop built without WebGL (TEST)
+- Harley turned soft grass + backdrop back on (v1876) and crashed - note: v1876, zoom 1.62 (close, LOD 0), NOT pinching, 48 shadows, 3609 elements. So the crash is not the pinch itself: it is building the backdrop through the GPU (resize the WebGL canvas to 1536x1068, draw, read it back into a 2D canvas, resize back) - that happens when you open the map / the land changes.
+- v1877: the backdrop picture is built on the CPU straight from terrainArr (1 px per tile, 1200x1200, flat olive / sand coast / dirt / forest colours), no WebGL involved; shown through the same screen-sized window with an iso setTransform. Headless: mid-pinch land everywhere, no errors. Needs Harley's phone.
