@@ -6909,3 +6909,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: keep the Field Sentinel's flat 2D look but on his relit Rhino model. ChatGPT redraw of rhino_render2_white.png in the style of the current Field Sentinel (prompt in dev/skins/PROMPTS.md), used exactly as ChatGPT gave it (keyed only, no extra style pass, no tuning).
 - Completely replaces the old skin: CITY_SKINS.fieldsent -> assets/city-skins-fieldsent-87d9a886.webp (600x749), old test asset removed (LIVE keeps its own copy until the next LIVE update); CITY_ART_BAKED.fieldsent fx 0.5231 / fy 0.7236 / aspect 1.2483 (game's foundation method at 44 deg).
 - Art: art/originals/skins/ironsent_relight/v2_gpt_flat.png, v2_flat_keyed.png.
+
+## v1887 - Circle base waves for the round skins (TEST)
+- Harley: Iron Sentinel, Field Sentinel and Titan (Neptune) stand on round platforms, so their base water now uses the oval shape (BASE_WATER2_SKIN shape 1); all other skins unchanged (diamond, Pirate = boat).
+- The oval is now a true circle lying on the 44 deg map (Harley: the first try's rings were too tall): ISO_K times as tall as wide, bottom on the lowest opaque row, width read on its own centre row so the gun/shield doesn't widen it. Only shape 1 changed; no other skin used it.
+- Headless before/after on the sea, no errors.
