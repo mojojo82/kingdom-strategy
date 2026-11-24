@@ -107,3 +107,6 @@ Good direction. Now make a second version that is CLEANER and more heroic, close
 
 ### Style 3 (soft)
 Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight hitting the mech. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft olive armour, soft gunmetal, satin brass, gentle teal glow). Keep the same polish and detail, light edge wear, the same design, pose, weapon, shield, platform and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+
+### Iron Sentinel relight v2 (25 Nov 2026)
+Harley's second Rhino export (rhino_render2*.png). New ChatGPT chat "Repaint Mech City Skin", same three attachments order (rhino_render2_white.png, ref_skin_mecha.png, ref_skin_titan.png) and the SAME three prompts above, word for word (style 1, style 2, style 3). Outputs: v2_gpt_style1-3.png, v2_style*_keyed.png.
