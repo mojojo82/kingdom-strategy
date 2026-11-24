@@ -44,3 +44,27 @@ Result v1 (codex_v1_44deg.png): good layout + feathered ground, but sails / plas
 Good start - layout and the feathered ground work. Before I accept it, a texture and lighting pass in Blender, please: (1) the sails read as flat white panels - give the cloth a visible canvas weave, slight off-white/cream tint, some wear and a soft sag between the frame bars; (2) the plaster upper of the mill is plain white - add a lime-plaster texture with slight colour variation, small cracks and a little grime near the timber beams; (3) the bread oven is flat grey - give it clay-plaster / stone texture with soot darkening around the mouth and chimney top, and a warm ember glow inside the mouth; (4) the flour sacks look smooth - burlap weave, a few folds and tied tops; (5) the dirt patch is one flat beige - add subtle variation (darker damp patches, small pebbles, a worn path from the cart to the mill door, a little spilled straw); (6) the scarecrow is very simple - straw poking out of the sleeves and hat, patched tunic; (7) lighting: keep it gentle and soft, but make sure the key light really comes from the lower right of the image (lit faces toward the camera-right, soft shade on the upper-left faces) with a soft fill so no side goes dark. Same camera, framing and layout. Re-export the .blend and the transparent 1600 px PNG as v2 (keep v1).
 ```
 Result v2 (codex_v2_44deg.png, codex_v2.blend): accepted for the test run.
+
+### ChatGPT soft style (fresh chat "Repaint Bread Mill Style", attach codex_v2_white.png + ref_skin_mecha + ref_skin_titan) -> gpt_style1/2/3.png, style*_keyed.png
+Style 1:
+```
+I'm making a resource node (a bread mill / bakery farm) for my mobile strategy game's world map. Image 1 is my bread mill on its patch of ground (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
+
+Repaint my bread mill in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
+- same design, same windmill with thatched cap and four cloth sails, same bread oven with chimney, flour sacks, barrels, wheat sheaves, scarecrow with fence, hand cart and the same soft dirt patch fading into grass as image 1, seen from the same high isometric angle as image 1, the whole thing in frame
+- the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light from the lower right, deep cool navy / teal shadows on the upper-left side, bright rim highlights on the edges, dark crevices between parts
+- materials like images 2 and 3: weathered stone and lime plaster, timber with grain, straw thatch with texture, canvas sails, burlap sacks - not clean plastic or low-poly
+- keep the mill's own colours (golden thatch, cream plaster, grey stone, brown timber, warm ember glow), richer and warmer; no flat dull colours
+- no black outlines
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no water, no shadow on the ground outside the patch, no text
+- square image, 1024x1024
+```
+Style 2:
+```
+Good direction. Now make a second version that is CLEANER and more polished, closer to image 2: well-kept stone, plaster and timber with only light edge wear (no dirt streaks), crisp bevelled edges catching the light, neat golden thatch, clean canvas sails, the mill's own colours (golden thatch, cream plaster, grey stone, warm brown timber), the same deep navy/teal shadows. Same design, windmill, oven, sacks, barrels, wheat, scarecrow, cart, ground patch and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+```
+Style 3 (soft):
+```
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight hitting the bread mill. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights on the plaster or sails, only subtle rim light, and colours slightly more muted (calm straw-gold thatch, soft cream plaster, soft grey stone, soft warm brown timber, gentle ember glow, soft earthy ground). Keep the same polish and detail, light edge wear, the same design, windmill, sails, oven, sacks, barrels, wheat, scarecrow, cart, ground patch and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+```
+Note: ChatGPT again turned the faded ground into a grassy diamond with a dirt middle.
