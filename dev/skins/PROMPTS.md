@@ -128,3 +128,38 @@ Redraw image 1 in EXACTLY the art style of image 2, so it looks like it was draw
 Codex chat "Model an isometric city base" (Harley sent it). Source: fortress-v4 (art/originals/skins/fortress6_relight/codex_v4.png).
 
 Next job: the 6x6 capturable fortress from earlier in this chat (fortress-v4.blend - the castle with blue roofs, outward-facing single-barrel cannons, steel front gate and the thick riveted steel-plated base). Please open fortress-v4.blend and relight it in Blender WITHOUT changing the model: (1) same 44 degree elevation / 45 degree rotation orthographic camera, the whole fortress in frame with a small margin; (2) make sure every part has a real material/texture (pale stone blocks, blue roof tiles, gold trim, dark riveted steel plates on the base and gate, gunmetal cannons, wooden doors, glass windows) - texture anything that is still flat or untextured; (3) gentle soft daylight - key light from the lower right of the image so lit faces point camera-right and shadows fall towards the upper left, soft fill so no side goes dark, NOT harsh, no blown-out highlights; (4) ambient occlusion so the crevices, battlements and the bottom edge of the steel base read with depth; NO contact shadow, NO shadow-catcher plane, nothing outside the model itself; (5) transparent background. Save as fortress-v5.blend and a transparent 1600 px PNG fortress-v5-44deg.png (keep v4 untouched).
+
+### Fortress soft style (ChatGPT chat "Repaint Fortress Artwork")
+Attached: 1) fortress6_relight/codex_v5_white.png, 2) mech_test/ref_skin_mecha.png, 3) mech_test/ref_skin_titan.png. Outputs gpt_style1-3.png.
+
+Style 1:
+I'm making a capturable fortress for my mobile strategy game's world map (it covers a 6x6 tile area, four times a normal city). Image 1 is my fortress (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
+
+Repaint my fortress in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
+- same design, same layout, same castle, towers, walls, blue roofs, outward-facing cannons, steel front gate and the thick riveted steel-plated square base as image 1, seen from EXACTLY the same camera angle as image 1 (about 44 degrees from above, looking at the front corner), the whole thing in frame
+- KEEP THE LIGHT DIRECTION OF IMAGE 1: the key light comes from the lower right (camera side, right), the upper-left faces are in shade and shadows fall to the upper left
+- the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light, deep cool navy / teal shadows, bright rim highlights on the edges, dark crevices between parts
+- materials like images 2 and 3: weathered stone blocks, painted metal with wear, scratches and chipped edges, gold trim and rivets - not clean plastic
+- keep the fortress's own colours: pale cream stone, blue roof tiles, gold trim, dark steel base and gate, gunmetal cannons; richer and warmer, no flat dull colours
+- no black outlines
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no water, no shadow on the ground outside the base, no text
+- square image, 1024x1024
+
+Style 2:
+Good direction. Now make a second version that is CLEANER and more heroic, closer to image 2: polished stone and painted metal with only light edge wear (no rust, no dirt streaks), crisp bevelled edges catching the light, glossy highlights on the roof tiles and metal, a stronger gold trim, the same deep navy/teal shadows, and the same light direction as image 1 (key light from the lower right, shade on the upper-left faces). Same design, layout, castle, towers, walls, roofs, cannons, steel gate, steel base and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+
+Style 3:
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight hitting the fortress. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft cream stone, soft blue roofs, satin gold, soft gunmetal steel). Keep the same polish and detail, light edge wear, the same design, layout, cannons, gate, steel base and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+
+### Fortress 2D style (ChatGPT chat "Redraw Fortress")
+Attached: 1) fortress6_relight/codex_v5_white.png, 2) fortress6_relight/ref_fieldsent2d.png (the new Field Sentinel skin). Output gpt_2d.png.
+
+I'm making a capturable fortress for my mobile strategy game's world map (it covers a 6x6 tile area, four times a normal city). Image 1 is my fortress (a 3D render). Image 2 is an existing city skin in the game: the art style it has to match.
+
+Redraw image 1 in EXACTLY the art style of image 2, so it looks like it was drawn by the same artist:
+- same design, same layout, same castle, towers, walls, blue roofs, outward-facing cannons, steel front gate and the thick riveted steel-plated square base as image 1, seen from EXACTLY the same camera angle as image 1 (about 44 degrees from above, looking at the front corner), the whole thing in frame
+- the 2D illustrated look of image 2: clean dark outlines around every part, flat cel-shaded colour areas with one or two simple shade tones, crisp hard-edged highlights, very little texture, no photo-realistic rendering
+- the fortress's own colours: pale cream stone, blue roof tiles, gold/tan trim, dark steel base and gate, gunmetal cannons
+- KEEP THE LIGHT DIRECTION OF IMAGE 1: light from the lower right, the upper-left faces in shade
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no shadow on the ground outside the base, no text
+- square image, 1024x1024
