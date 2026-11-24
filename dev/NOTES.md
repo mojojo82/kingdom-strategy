@@ -6831,3 +6831,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Supercontinent dev land: sea all along the kingdom edge; the GPU land shader treats anything outside the kingdom as sea (it clamped to the edge row, so a cape touching the edge drew a line of land out across the world - Harley's screenshot).
 - Wood node candidates (Harley's render + ChatGPT style 3, art/originals/nodes/wood_v2, dev/nodes/PROMPTS.md) mocked up on the map; not in the game yet - waiting for Harley's pick.
 - Headless: shader compiles, 30% land, 0 land tiles on the kingdom edge, no line in the world view, 64 shadows drawn in the test scene, no errors. Not tested on a phone.
+
+## v1869 - soft-style wood node in, supercontinent on by default for the admin (TEST)
+- Wood resource node = the new lumber camp (Harley's render restyled with ChatGPT soft style 3; art/originals/nodes/wood_v2/style3_keyed.png), 400 px webp, fx 0.5 / fy 0.6953 / fw 1 / aspect 1.0263. Old wood art is in git history before v1868.
+- Dev Tools supercontinent button is now a toggle (localStorage kingdom_prototype_continentAuto_v1, default ON): on an admin account the land is drawn automatically once the admin check is final and the map exists (Harley: "i dont want to turn it on everytime"). Still this phone only, never saved or sent; turning it off reloads to the real map. Non-admin accounts never draw it.
+- Headless: normal account - no land drawn; account forced to admin - 30% land drawn by itself ~1 s after the World map, new wood nodes with their cast shadows, no errors. Not tested on a phone.
