@@ -6881,3 +6881,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1881 - new stone (quarry) and gold (mine) nodes (TEST)
 - Codex + Blender: v1 (faceted pale rocks, hidden gold) -> texture/detail pass -> v2 accepted -> ChatGPT soft style 3 (same as the bread mill, which Harley picked). RES_NODE_ART.stone / .gold replaced. Art in art/originals/nodes/stone_quarry and gold_mine, prompts in dev/nodes/PROMPTS.md. All four node types now new art (wood = Harley's render, soft style).
 - Headless: quarries, gold mines, bread mills and lumber camps all show on the map with cast shadows; no errors. Not tested on a phone.
+
+## v1882 - no cast shadows on water (TEST)
+- Harley: no shadow casting on water, base skins included. castShadowLand(x, y) = terrainAt(x, y) > 0; resource nodes (resNodeArtHtml(type, onLand)) and city skins only get a .cast-shd when their tile is land. No land data = no shadows.
+- Headless: real map (all sea) 0 shadows; supercontinent coast 46 shadows on the land nodes, none on the sea ones; no errors.
