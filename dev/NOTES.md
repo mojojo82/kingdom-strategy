@@ -6854,3 +6854,10 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - v1873 Dev Tools switches (this phone, saved): "🌱 Soft grass shader" (uSoft uniform - off = the v1867 pixel shader with the new olive colours) and "🗺️ Land backdrop"; plus a crash note: every 0.7 s on the World map the map state is saved (zoom, tile px, LOD, land/GPU/backdrop/shadows, canvas size, tiles, imgs, element count, pinch) and shown under the switches after the next load = the moment just before a crash.
 - Backdrop now only visible while pinching (CSS on #mapworld's inline scale) - it is blurry and showed a sandy glow past the coasts.
 - Test order for Harley: land on -> zoom far out -> crash? then soft grass off / backdrop off / cast shadows off / GPU land off, one at a time.
+
+## v1874-v1876 - crash found: the land backdrop canvas (TEST)
+- v1874/v1875: crash note one item per line; also saved while pinching (why: pinching / pinch end) and on GPU context loss.
+- Harley's note: crash in the middle of a pinch-out starting at zoom ~0.37 (11 px tiles, LOD 1), page light (~4000 elements, 1 img, no redraw, no context loss). Switch test: soft grass off - still crashes; land backdrop off - no crash ("maybe").
+- Cause (most likely): v1870's backdrop was ONE canvas stretched over the whole kingdom (~20,700 x 14,400 css px at that zoom); it becomes visible when a pinch starts and the iPhone's compositor falls over. (v1869's crashes were before the backdrop - probably the 2x land canvases fixed in v1871.)
+- v1876: the whole-kingdom picture stays off the page (terrBack.src); only a window of it is shown - 4x the screen each way, half resolution (860x1864 canvas, 1720x3728 css px), redrawn with the sharp layer. Covers a pinch down to 1/4; a bigger single pinch-out still shows sea at the edges until fingers lift.
+- Headless: mid-pinch 0.35x land everywhere; 0.12x land in the middle 1/4, sea outside; no errors. Needs Harley's phone.
