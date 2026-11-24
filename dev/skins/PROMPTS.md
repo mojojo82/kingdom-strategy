@@ -75,3 +75,12 @@ Repaint image 1 in EXACTLY the art style of images 2 and 3, with the detail and 
 - plain flat solid magenta (#FF00FF) background with NO shadow on it (I add the ground shadow in the game), nothing else, no text
 - square image, 1024x1024
 ```
+Style 2 (same chat):
+```
+Good direction. Now make a second version that is CLEANER and more polished, closer to image 3: well-kept steel and deck plates with only light edge wear (no rust streaks or dirt), crisp bevelled edges catching the light, the same colours, keeping the image 1 lighting (soft light from the lower right, the base's bottom row in shade so it sits on the ground). Same design, every part and camera angle as before. Plain flat solid magenta (#FF00FF) background with no shadow, square, 1024x1024.
+```
+Style 3 soft (same chat):
+```
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft red and cream chimney, soft steel greys, soft tan deck, gentle cyan glow). Keep the base's bottom row in soft shade so it still sits on the ground. Keep the same polish and detail, the same design, every part and camera angle. Plain flat solid magenta (#FF00FF) background with no shadow, square, 1024x1024.
+```
+Harley: no blurry baked contact shadow (dropped).
