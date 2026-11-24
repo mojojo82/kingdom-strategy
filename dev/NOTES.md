@@ -6914,3 +6914,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: Iron Sentinel, Field Sentinel and Titan (Neptune) stand on round platforms, so their base water now uses the oval shape (BASE_WATER2_SKIN shape 1); all other skins unchanged (diamond, Pirate = boat).
 - The oval is now a true circle lying on the 44 deg map (Harley: the first try's rings were too tall): ISO_K times as tall as wide, bottom on the lowest opaque row, width read on its own centre row so the gun/shield doesn't widen it. Only shape 1 changed; no other skin used it.
 - Headless before/after on the sea, no errors.
+
+## v1888 - Circle base waves a third fainter (TEST)
+- Harley: tone down the round ones. Iron Sentinel / Field Sentinel / Titan base water: glow 0.45 -> 0.3, foam line 0.35 -> 0.23, rings 0.4 -> 0.26. Other skins unchanged. Headless before/after on the sea, no errors.
