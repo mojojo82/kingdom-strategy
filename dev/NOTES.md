@@ -6809,3 +6809,13 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Attack: on a boss hit the upper scythe telescopes out (extra arm length = the arm's own bar, iron collars), slices straight through the target (fortress hull, or the hero it hits) into the floor, then scrapes back along the floor (sparks + glowing scratch) and retracts. No projectile: the hit lands (damage number, HP) as the blade passes through, ~0.78 s into the swing; extra hits during a swing land with it. Enemy projectile flag `reap` = not drawn, lands at once.
 - Dev Tools > Chapter Boss > Boss look: + Boss 4 (Reaper). bossBox / bossTopY / bossShotOrigin / shock crawl box know it. Stats and the boss name unchanged.
 - Headless (Conquest 9-1 foundry, boss look Reaper, fortress kept alive): reaper at the boss spot, swings play, blade cuts through the fortress to the floor and scrapes back with sparks, damage numbers on hit, no errors. Not tested on a phone.
+
+## v1865 LIVE - LIVE updated to the TEST build (Harley, 24 Nov 2026)
+- Root index.html = copy of test/index.html (v1865; LIVE was v1198). Also copied test/assets/ -> assets/, the icons, splash.webp, phone.html, and a LIVE manifest.webmanifest ("Kingdom Strategy" / "Kingdom"). seed-world.json left as it was. Headless check at the root path: loads as v1865 with the LIVE tag, no errors. Not tested on a phone.
+
+## v1866 - Boss 5: the Ice Kaiju (TEST, look only)
+- Harley approved the Ice Kaiju (four-legged ice beast, top-right concept) and its attack ("its fine"); "put that boss into test".
+- ICEKB (code rig next to REAPERB): parts art/bosses/ice_kaiju/*.webp (half-size copies of art/originals/bosses/ice_kaiju/parts, cut straight from the approved render). Idle: breathes (legs flex, feet planted), head sways, jaw opens a little, frost puffs, tail swings, crystals and cracks pulse. Hangs ~10 px off the right edge.
+- Attack: on a boss hit it rears back while an icy energy orb charges in its jaws (1.05 s), lunges and fires it straight and fast (0.28 s) at the fortress hull (or the hero it targets); the orb shatters into ice shards, glittering frost and mist (particles only). The hit lands (damage number, HP) when the orb arrives; extra hits during an attack land with it. Uses the `reap` projectile flag (not drawn, lands at once).
+- Dev Tools > Chapter Boss > Boss look: + Boss 5 (Ice Kaiju). Stats and the boss name unchanged.
+- Headless (Conquest 9-1 foundry, boss look Ice Kaiju): attacks play, orbs fly and shatter, damage numbers on hit, no errors. Not tested on a phone.

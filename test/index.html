@@ -6021,7 +6021,7 @@ function initDeviceLock(db) {
             try { renderBossScaleButtons(); } catch (e) {}
           } },
         { key: BOSS_LOOK_KEY, apply: function (v) {
-            if (v !== "classic" && v !== "tank" && v !== "dragon" && v !== "reaper") return; bossLook = v;
+            if (v !== "classic" && v !== "tank" && v !== "dragon" && v !== "reaper" && v !== "icekaiju") return; bossLook = v;
             try { localStorage.setItem(BOSS_LOOK_KEY, v); } catch (e) {}
             try { renderBossLookButtons(); } catch (e) {}
           } },
@@ -14990,7 +14990,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1865"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1866"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -25390,6 +25390,7 @@ function drawBossAnim(ctx, x, feetY, size) { // size = on-screen height from the
   if (tankBossOn()) return drawTankBoss(ctx, x, feetY, size); // v1116: Boss 2, the Steam Tank
   if (dragonBossOn()) return DRAGONB.draw(ctx, x, feetY, size); // v1864: Boss 3, the Clockwork Dragon
   if (reaperBossOn()) return REAPERB.draw(ctx, x, feetY, size); // v1865: Boss 4, the Bone Reaper
+  if (icekBossOn()) return ICEKB.draw(ctx, x, feetY, size); // v1866: Boss 5, the Ice Kaiju
   if (drawBoss3D(ctx, x, feetY, size)) return true; // v1112
   if (!BOSS_ANIM_ON) return false; // off: the original uploaded boss sprite is used again
   var b = BOSS_ANIM, im = bossAnimImg(); if (!im) return false;
@@ -25418,7 +25419,7 @@ function drawKnightPreview(ctx, w, groundY) {
 /* v1116: Boss 2 - the Steam Tank (2D cutout from Harley's GPT parts sheet, dev/tank). Temporary chapter-boss look; stats are untouched (look only).
    Dev Tools > Chapter Boss > "Boss look" switches Classic / Boss 2 (shared admin setting). Look numbers are Harley's picks from the live mockup. */
 var BOSS_LOOK_KEY = "kingdom_prototype_bosslook_v1", bossLook = "tank";
-try { var _bl = localStorage.getItem(BOSS_LOOK_KEY); if (_bl === "classic" || _bl === "tank" || _bl === "dragon" || _bl === "reaper") bossLook = _bl; } catch (e) {}
+try { var _bl = localStorage.getItem(BOSS_LOOK_KEY); if (_bl === "classic" || _bl === "tank" || _bl === "dragon" || _bl === "reaper" || _bl === "icekaiju") bossLook = _bl; } catch (e) {}
 function setBossLook(v) { bossLook = v; try { localStorage.setItem(BOSS_LOOK_KEY, v); } catch (e) {} assetSyncUpload(BOSS_LOOK_KEY, v); }
 function tankBossOn() { return bossLook === "tank"; }
 var TANK_BOSS = { size: 0.55, contrast: 0.89, colour: 0.42, bright: 0.86, edge: 0.05, aimY: 13, rumble: 0.5, rumbleHz: 17, lift: 7, /* lift: boss feet sit 15px under the ground line, heroes' 8px - raise the tracks to Gareth's feet (Harley) */
@@ -25694,21 +25695,117 @@ var REAPERB = (function () {
   return { draw: draw, shoot: shoot, mouth: mouth, box: box, fire: function (bx, feetY) { var t = performance.now() / 1000; if (st.keys && t - st.atk <= st.keys[st.keys.length - 1].t) return; var tg = targetPt(st.lastW, st.lastH, null), u = toU(geom(bx, feetY), tg.x, tg.y); st.keys = makeKeys(u[0]); st.atk = t; st.hullY = tg.y; } };
 })();
 function reaperBossOn() { return bossLook === "reaper"; }
+/* v1866: Boss 5 - the Ice Kaiju (Harley's four-legged ice beast). Parts cut straight from the approved render
+   (art/originals/bosses/ice_kaiju/parts, preview dev/bosses/icekaiju_rig_v1.html). Idle: breathes (legs flex, feet planted), head sways,
+   jaw opens a little, frost puffs from the mouth, tail swings, crystals and cracks pulse. Attack: rears back while an icy energy orb charges
+   in its jaws, lunges and fires it straight and fast at the fortress (or the hero it targets); the orb shatters into ice shards and frost
+   on impact, and the hit lands then. Hangs a little off the right edge. Look only - stats are the chapter boss's. Dev Tools > Chapter Boss > Boss look. */
+var ICEK_ART_BASE = /\/test\/[^\/]*$/.test(location.pathname) ? "../art/bosses/ice_kaiju/" : "art/bosses/ice_kaiju/";
+var ICEKB = (function () {
+  var R = { head: [91, 276, 433, 486], jaw: [184, 582, 177, 137], tail: [1244, 500, 261, 334], body: [191, 36, 1149, 913], glow: [192, 37, 1125, 909], mouth: [188, 582, 162, 76] };
+  var NECK = [440, 570], HINGE = [345, 595], TAILP = [1262, 680], MOUTH = [205, 640], RIGHT = 1505, GROUND = 945, OFF = 10, LIFT = 6, K430 = 0.54 / 3;
+  var KEYS = [{ t: 0, hr: 0, jw: 0, by: 0 }, { t: 0.7, hr: -9, jw: 6, by: -6, e: "s" }, { t: 0.9, hr: -10, jw: 8, by: -7, e: "s" }, { t: 1.1, hr: 5, jw: 16, by: 6, e: "in" }, { t: 2.0, hr: 6, jw: 16, by: 6, e: "s" }, { t: 2.6, hr: 0, jw: 0, by: 0, e: "s" }];
+  var FIRE_AT = 1.05, FLIGHT = 0.28, img = {}, loaded = false;
+  var st = { lastW: 430, lastH: 258, lastT: 0, atk: -99, fired: true, pend: [], balls: [], puffs: [], sparks: [], shards: [], dust: [], frost: [], lastPuff: 0, mouthS: null };
+  function load() { if (loaded) return; loaded = true; Object.keys(R).forEach(function (n) { var im = new Image(); im.src = ICEK_ART_BASE + n + ".webp?v=1"; img[n] = im; }); }
+  function ready() { load(); for (var n in R) if (!img[n].complete || !img[n].naturalWidth) return false; return true; }
+  function ez(u) { return u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u); }
+  function lerp(a, b, u) { return a + (b - a) * u; }
+  function geom(bx, feetY) { var w = st.lastW, k = K430 * w / 430; return { k: k, ax: bx + (w + OFF * w / 430 - idleBossX(w)), fy: feetY - LIFT }; }
+  function put(x, n, dy) { var r = R[n]; x.drawImage(img[n], r[0], r[1] + (dy || 0), r[2], r[3]); }
+  function rot(x, p, a, f) { x.save(); x.translate(p[0], p[1]); x.rotate(a); x.translate(-p[0], -p[1]); f(); x.restore(); }
+  function atk(A) { if (A <= 0 || A >= KEYS[KEYS.length - 1].t) return { hr: 0, jw: 0, by: 0, on: false }; var i = 1; while (KEYS[i].t < A) i++; var k0 = KEYS[i - 1], k1 = KEYS[i], u = (A - k0.t) / (k1.t - k0.t); u = k1.e === "in" ? u * u : ez(u); return { hr: lerp(k0.hr, k1.hr, u), jw: lerp(k0.jw, k1.jw, u), by: lerp(k0.by, k1.by, u), on: true }; }
+  function drawBody(x, dy) { var r = R.body, im = img.body, sx = im.naturalWidth / r[2], Y0 = 640, Y1 = 880, ST = 3;
+    for (var sy = 0; sy < r[3]; sy += ST) { var y = r[1] + sy, w = (Y1 - y) / (Y1 - Y0); w = w < 0 ? 0 : w > 1 ? 1 : w; w = w * w * (3 - 2 * w); var hh = Math.min(ST, r[3] - sy);
+      x.drawImage(im, 0, sy * sx, im.naturalWidth, hh * sx, r[0], y + dy * w, r[2], hh + (w > 0 && w < 1 ? 1 : 0)); } }
+  function orb(x, px, py, r, t, al, vx, vy) {
+    x.save(); x.globalAlpha = al; x.globalCompositeOperation = "lighter"; var fl = 1 + 0.12 * Math.sin(t * 47) + 0.06 * Math.sin(t * 83), g;
+    if (vx !== undefined) { var L = Math.hypot(vx, vy) || 1, ux = vx / L, uy = vy / L, len = r * 7; g = x.createLinearGradient(px, py, px - ux * len, py - uy * len); g.addColorStop(0, "rgba(170,235,255,0.85)"); g.addColorStop(0.4, "rgba(80,180,255,0.4)"); g.addColorStop(1, "rgba(40,120,255,0)");
+      x.fillStyle = g; x.beginPath(); x.moveTo(px - uy * r * 0.9, py + ux * r * 0.9); x.lineTo(px - ux * len, py - uy * len); x.lineTo(px + uy * r * 0.9, py - ux * r * 0.9); x.closePath(); x.fill();
+      x.strokeStyle = "rgba(255,255,255,0.8)"; x.lineWidth = r * 0.35; x.lineCap = "round"; x.beginPath(); x.moveTo(px, py); x.lineTo(px - ux * len * 0.55, py - uy * len * 0.55); x.stroke(); }
+    g = x.createRadialGradient(px, py, 0, px, py, r * 2.6 * fl); g.addColorStop(0, "rgba(120,210,255,0.6)"); g.addColorStop(0.45, "rgba(60,150,255,0.25)"); g.addColorStop(1, "rgba(30,100,255,0)"); x.fillStyle = g; x.beginPath(); x.arc(px, py, r * 2.6 * fl, 0, 7); x.fill();
+    g = x.createRadialGradient(px, py, 0, px, py, r * fl); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(210,245,255,0.95)"); g.addColorStop(0.7, "rgba(90,200,255,0.75)"); g.addColorStop(1, "rgba(40,140,255,0)"); x.fillStyle = g; x.beginPath(); x.arc(px, py, r * fl, 0, 7); x.fill();
+    x.strokeStyle = "rgba(200,240,255,0.85)"; x.lineWidth = Math.max(0.6, r * 0.07);
+    for (var k = 0; k < 4; k++) { var a0 = t * 9 + k * 1.7 + Math.sin(t * 31 + k) * 0.8; x.beginPath(); x.moveTo(px + Math.cos(a0) * r * 0.4, py + Math.sin(a0) * r * 0.4);
+      for (var j = 1; j <= 4; j++) { var rr = r * (0.4 + 0.28 * j), aa = a0 + (Math.random() - 0.5) * 0.7; x.lineTo(px + Math.cos(aa) * rr, py + Math.sin(aa) * rr); } x.stroke(); }
+    x.restore(); }
+  function shatter(px, py, vx, vy, sc) { var L = Math.hypot(vx, vy) || 1, ux = vx / L, uy = vy / L, q;
+    for (q = 0; q < 26; q++) { var an = Math.atan2(-uy, -ux) + (Math.random() - 0.5) * 2.6 - 0.5, v = (40 + Math.random() * 127) * sc; st.shards.push({ x: px + (Math.random() - 0.5) * 5 * sc, y: py + (Math.random() - 0.5) * 5 * sc, vx: Math.cos(an) * v, vy: Math.sin(an) * v - 40 * sc, a: Math.random() * 6, va: (Math.random() - 0.5) * 18, s: (2.7 + Math.random() * 4) * sc, l: 0, L: 0.7 + Math.random() * 0.6, ground: py + (10 + Math.random() * 13) * sc }); }
+    for (q = 0; q < 40; q++) { var an2 = Math.random() * Math.PI * 2, v2 = (13 + Math.random() * 87) * sc; st.dust.push({ x: px, y: py, vx: Math.cos(an2) * v2 - ux * 20 * sc, vy: Math.sin(an2) * v2 - 20 * sc, r: (0.7 + Math.random()) * sc, l: 0, L: 0.4 + Math.random() * 0.5 }); }
+    for (q = 0; q < 8; q++) st.frost.push({ x: px + (Math.random() - 0.5) * 10 * sc, y: py + (Math.random() - 0.5) * 7 * sc, vx: (Math.random() - 0.5) * 20 * sc, vy: (-7 - Math.random() * 10) * sc, r: (3.3 + Math.random() * 2.7) * sc, l: 0, L: 0.7 + Math.random() * 0.4 }); }
+  function draw(x, bx, feetY, size) {
+    if (!ready()) return false;
+    var main = !!(x.canvas && x.canvas.clientWidth);
+    if (main) { st.lastW = x.canvas.clientWidth; st.lastH = x.canvas.clientHeight - (x.canvas._skyH || 0); }
+    var g = geom(bx, feetY), t = performance.now() / 1000, dt = Math.min(0.05, Math.max(0, t - st.lastT)); if (main) st.lastT = t;
+    var s = Math.sin, A = t - st.atk, ap = atk(A), sc = g.k / 0.18;
+    var dy = 4 * s(t * 1.3) + ap.by, hr = (ap.hr + 1.6 * s(t * 0.9 + 0.5)) * Math.PI / 180, jw = (ap.jw + (ap.on ? 0 : Math.max(0, 3 * s(t * 1.3 - 0.6)))) * Math.PI / 180, tr = 2.5 * s(t * 1.1 + 1.2) * Math.PI / 180, glow = 0.5 + 0.5 * s(t * 2.0);
+    var B0i = x.getTransform().inverse(), mD = null;
+    x.save(); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    x.translate(g.ax, g.fy); x.scale(g.k, g.k); x.translate(-RIGHT, -GROUND);
+    x.fillStyle = "rgba(0,0,0,.25)"; x.beginPath(); x.ellipse(800, 950, 690, 24, 0, 0, 7); x.fill();
+    drawBody(x, dy);
+    x.save(); x.globalCompositeOperation = "lighter"; x.globalAlpha = 0.10 + 0.18 * glow + (ap.on && A > 0.4 && A < 2.2 ? 0.25 : 0); put(x, "glow", dy); x.restore();
+    x.save(); x.translate(0, dy);
+    rot(x, TAILP, tr, function () { put(x, "tail"); });
+    rot(x, NECK, hr, function () { put(x, "mouth"); rot(x, HINGE, -jw, function () { put(x, "jaw"); }); put(x, "head"); mD = x.getTransform().transformPoint(new DOMPoint(MOUTH[0], MOUTH[1])); });
+    x.restore(); x.restore();
+    var mp = B0i.transformPoint(mD); st.mouthS = { x: mp.x, y: mp.y };
+    if (main) {
+      if (!ap.on && t - st.lastPuff > 0.12 && s(t * 1.3) > 0.3) { st.lastPuff = t; st.puffs.push({ x: mp.x, y: mp.y, vx: (-8 - Math.random() * 7) * sc, vy: (-3 + Math.random() * 2) * sc, r: (2 + Math.random() * 1.3) * sc, l: 0 }); }
+      if (A >= FIRE_AT && !st.fired && st.tgt) { st.fired = true; st.balls.push({ x0: mp.x - 2 * sc, y0: mp.y, t0: t, tg: st.tgt }); }
+    }
+    x.save();
+    for (var i = st.puffs.length - 1; i >= 0; i--) { var p = st.puffs[i]; if (main) { p.l += dt; if (p.l > 1.4) { st.puffs.splice(i, 1); continue; } p.x += p.vx * dt; p.y += p.vy * dt; p.r += 5 * sc * dt; } x.fillStyle = "rgba(225,240,255," + (0.55 * (1 - p.l / 1.4)) + ")"; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); }
+    if (ap.on && A > 0.25 && A < FIRE_AT) { var gg = ez((A - 0.25) / 0.7); orb(x, mp.x - 2 * sc, mp.y, (2.7 + 8.7 * gg) * sc, t, 0.95);
+      x.save(); x.globalCompositeOperation = "lighter"; for (var k = 0; k < 10; k++) { var ph = (t * 1.8 + k * 0.1) % 1, aa = k * 2.4, rr = 30 * sc * (1 - ph); x.fillStyle = "rgba(170,230,255," + (0.9 * ph) + ")"; x.beginPath(); x.arc(mp.x - 2 * sc + Math.cos(aa) * rr, mp.y + Math.sin(aa) * rr, (1 + 0.7 * ph) * sc, 0, 7); x.fill(); } x.restore(); }
+    for (i = st.balls.length - 1; i >= 0; i--) { var b = st.balls[i], u = (t - b.t0) / FLIGHT, vx = b.tg.x - b.x0, vy = b.tg.y - b.y0;
+      if (u >= 1) { if (main) { st.balls.splice(i, 1); shatter(b.tg.x, b.tg.y, vx, vy, sc); } continue; }
+      var bx2 = b.x0 + vx * u, by2 = b.y0 + vy * u;
+      if (main) for (var q = 0; q < 4; q++) st.sparks.push({ x: bx2, y: by2, vx: -vx * 0.15 / FLIGHT * 0.28 + (Math.random() - 0.5) * 53 * sc, vy: -vy * 0.15 / FLIGHT * 0.28 + (Math.random() - 0.5) * 53 * sc, l: 0, L: 0.25 + Math.random() * 0.25 });
+      orb(x, bx2, by2, 11.3 * sc, t, 1, vx, vy); }
+    for (i = st.frost.length - 1; i >= 0; i--) { var f = st.frost[i]; if (main) { f.l += dt; if (f.l > f.L) { st.frost.splice(i, 1); continue; } f.x += f.vx * dt; f.y += f.vy * dt; f.r += 9 * sc * dt; } var fu = f.l / f.L; x.fillStyle = "rgba(" + Math.round(150 + 90 * fu) + "," + Math.round(215 + 30 * fu) + ",255," + (0.75 * (1 - fu)) + ")"; x.beginPath(); x.arc(f.x, f.y, f.r, 0, 7); x.fill(); }
+    for (i = st.shards.length - 1; i >= 0; i--) { var sh = st.shards[i]; if (main) { sh.l += dt; if (sh.l > sh.L) { st.shards.splice(i, 1); continue; } sh.vy += 367 * sc * dt; sh.x += sh.vx * dt; sh.y += sh.vy * dt; sh.a += sh.va * dt; if (sh.y > sh.ground) { sh.y = sh.ground; sh.vy *= -0.3; sh.vx *= 0.6; sh.va *= 0.5; } }
+      x.save(); x.translate(sh.x, sh.y); x.rotate(sh.a); x.globalAlpha = Math.min(1, (sh.L - sh.l) / 0.25); x.fillStyle = "#d8f3ff"; x.strokeStyle = "#3d9be0"; x.lineWidth = 0.5 * sc; var z = sh.s;
+      x.beginPath(); x.moveTo(0, -z * 1.4); x.lineTo(z * 0.55, -z * 0.2); x.lineTo(z * 0.3, z); x.lineTo(-z * 0.45, z * 0.6); x.lineTo(-z * 0.5, -z * 0.5); x.closePath(); x.fill(); x.stroke();
+      x.fillStyle = "rgba(255,255,255,0.9)"; x.beginPath(); x.moveTo(0, -z * 1.2); x.lineTo(z * 0.3, -z * 0.25); x.lineTo(-z * 0.1, -z * 0.1); x.closePath(); x.fill(); x.restore(); }
+    x.globalCompositeOperation = "lighter";
+    for (i = st.sparks.length - 1; i >= 0; i--) { var sp = st.sparks[i]; if (main) { sp.l += dt; if (sp.l > sp.L) { st.sparks.splice(i, 1); continue; } sp.x += sp.vx * dt; sp.y += sp.vy * dt; } var su = sp.l / sp.L; x.fillStyle = "rgba(190,240,255," + (1 - su) + ")"; x.beginPath(); x.arc(sp.x, sp.y, (0.8 * (1 - su) + 0.35) * sc, 0, 7); x.fill(); }
+    for (i = st.dust.length - 1; i >= 0; i--) { var d = st.dust[i]; if (main) { d.l += dt; if (d.l > d.L) { st.dust.splice(i, 1); continue; } d.vx *= 0.94; d.vy = d.vy * 0.94 + 2.7 * sc; d.x += d.vx * dt; d.y += d.vy * dt; } var du = d.l / d.L; x.fillStyle = "rgba(200,240,255," + (0.9 * (1 - du)) + ")"; x.beginPath(); x.arc(d.x, d.y, d.r * (1 - 0.5 * du), 0, 7); x.fill(); }
+    x.restore();
+    /* the hit lands when the orb reaches the target */
+    if (main) for (var pi = st.pend.length - 1; pi >= 0; pi--) { var pd = st.pend[pi]; if (t < pd.at) continue; spawnEnemyProjectile(pd.x, pd.y, pd.w, pd.h, false, pd.dmg, true, pd.heroKey); var lp = idleAnim.enemyProjectiles[idleAnim.enemyProjectiles.length - 1]; if (lp) { lp.reap = true; lp.t = 1; lp.toX = pd.x; lp.toY = pd.y; } st.pend.splice(pi, 1); }
+    return true;
+  }
+  function targetPt(w, h, heroKey) { var hv = heroKey && idleAnim.heroVis ? idleAnim.heroVis[heroKey] : null; if (hv) return { x: hv.x, y: hv.y - 6 * (heroSpriteVisualScale / 100) };
+    var hh = st.lastH || h, mm = fortHullMass(st.lastW, hh); return mm || { x: st.lastW * (enemyTargetXPct / 100), y: hh * (enemyTargetYPct / 100) }; }
+  function shoot(bx, feetY, w, h, dmg, heroKey) { var t = performance.now() / 1000, tg = targetPt(w, h, heroKey), end = KEYS[KEYS.length - 1].t;
+    if (t - st.atk > end) { st.atk = t; st.fired = false; st.tgt = tg; st.pend.push({ at: t + FIRE_AT + FLIGHT, x: tg.x, y: tg.y, w: w, h: h, dmg: dmg, heroKey: heroKey }); }
+    else st.pend.push({ at: Math.max(t, st.atk + FIRE_AT + FLIGHT), x: tg.x, y: tg.y, w: w, h: h, dmg: dmg, heroKey: heroKey }); /* an attack is already playing: this hit lands with its orb (or straight away) */
+  }
+  function mouth(bx, feetY) { if (st.mouthS) return st.mouthS; var g = geom(bx, feetY); return { x: g.ax + (MOUTH[0] - RIGHT) * g.k, y: g.fy + (MOUTH[1] - GROUND) * g.k }; }
+  function box(bx, feetY) { var g = geom(bx, feetY), X = function (u) { return g.ax + (u - RIGHT) * g.k; }, Y = function (v) { return g.fy + (v - GROUND) * g.k; }, l = X(120), r = Math.min(X(RIGHT), st.lastW);
+    return { colX: (l + r) / 2, halfW: (r - l) / 2, top: Y(300), bottom: g.fy, cx: X(780), cy: Y(560), zx: 150 * g.k, zy: 120 * g.k }; }
+  return { draw: draw, shoot: shoot, mouth: mouth, box: box, fire: function () { var t = performance.now() / 1000; if (t - st.atk > KEYS[KEYS.length - 1].t) { st.atk = t; st.fired = false; st.tgt = targetPt(st.lastW, st.lastH, null); } } };
+})();
+function icekBossOn() { return bossLook === "icekaiju"; }
 /* v1118: where the boss's body is on screen (lasers, missiles, shock crawl, damage numbers) - classic boss or the tank */
 function bossBox(vis, h) {
   var gy = groundYFor(h), size = 58 * bossSpriteScale, x = vis ? vis.x : idleBossX(430); /* no vis = only sizes are wanted */
   if (tankBossOn()) return TANKB.box(x, gy + 15, size);
   if (dragonBossOn()) return DRAGONB.box(x, gy + 15);
   if (reaperBossOn()) return REAPERB.box(x, gy + 15);
+  if (icekBossOn()) return ICEKB.box(x, gy + 15);
   return { colX: x, halfW: 0.42 * size, top: gy + 15 - 0.9 * size, bottom: gy + 15, cx: x, cy: gy + 15 - 0.5 * size, zx: 0.2 * size, zy: 0.22 * size };
 }
-function bossTopY(h) { return (tankBossOn() || dragonBossOn() || reaperBossOn()) ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
+function bossTopY(h) { return (tankBossOn() || dragonBossOn() || reaperBossOn() || icekBossOn()) ? bossBox(null, h).top : groundYFor(h) + 15 - 58 * bossSpriteScale; }
 /* where a boss shot starts: the tank's muzzle (and the tank fires) or the classic boss's hand */
 function bossShotOrigin(bx, h, fire) {
   var size = 58 * bossSpriteScale, feetY = groundYFor(h) + 15;
   if (tankBossOn()) { if (fire) TANKB.fire(); return TANKB.muzzle(bx, feetY, size); }
   if (dragonBossOn()) { if (fire) DRAGONB.fire(); return DRAGONB.mouth(bx, feetY); }
   if (reaperBossOn()) { if (fire) REAPERB.fire(bx, feetY); return REAPERB.mouth(bx, feetY); }
+  if (icekBossOn()) { if (fire) ICEKB.fire(); return ICEKB.mouth(bx, feetY); }
   return { x: bx + size * -0.30, y: feetY - size * 0.58 };
 }
 
@@ -27481,7 +27578,7 @@ function spawnShockCrawl(enemyId) {
 function shockCrawlBodyBox(vis, h) {
   var gy = groundYFor(h);
   if (vis.type === "boss") {
-    if (tankBossOn() || dragonBossOn() || reaperBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
+    if (tankBossOn() || dragonBossOn() || reaperBossOn() || icekBossOn()) { var tb = bossBox(vis, h); return { x: tb.cx, halfW: tb.zx * 1.3, top: tb.cy - tb.zy * 1.8, bottom: tb.cy + tb.zy * 1.6 }; } /* v1118 */
     var size = 58 * bossSpriteScale;
     return { x: vis.x, halfW: 0.42 * size * 0.62, top: gy + 15 - 0.9 * size, bottom: gy + 15 - 0.08 * size };
   }
@@ -28124,6 +28221,7 @@ function stepIdleAnim(dtSec, w, h) {
         var bSize = 58 * bossSpriteScale, bFeetY = groundYFor(h) + 15;
         if (tankBossOn()) { var tmz = bossShotOrigin(launchVis.x, h, true); spawnEnemyProjectile(tmz.x, tmz.y, w, h, false, launch.dmg, true, launch.heroKey); } else /* v1116: the tank fires from its muzzle */
         if (dragonBossOn()) DRAGONB.shoot(launchVis.x, bFeetY, w, h, launch.dmg, launch.heroKey); else /* v1864: the dragon rears back and spits a fireball */
+        if (icekBossOn()) ICEKB.shoot(launchVis.x, bFeetY, w, h, launch.dmg, launch.heroKey); else /* v1866: the ice kaiju charges and fires an energy orb */
         if (reaperBossOn()) REAPERB.shoot(launchVis.x, bFeetY, w, h, launch.dmg, launch.heroKey); else /* v1865: the reaper swings its scythe through the target */
         if (BOSS3D_ON && boss3dImg()) boss3dShot(launchVis.x, bFeetY, bSize, w, h, launch.dmg, launch.heroKey); else /* v1112: the 3D boss raises his arm / stomps */
         spawnEnemyProjectile(launchVis.x + bSize * BOSS_HAND_DX, bFeetY - bSize * BOSS_HAND_DY, w, h, false, launch.dmg, true, launch.heroKey); /* v916: a boss shot aimed at a hero is the orb too */
@@ -33770,7 +33868,7 @@ function renderBossScaleButtons() {
 renderBossScaleButtons();
 function renderBossLookButtons() { /* v1116: Classic boss / Boss 2 (Steam Tank) - look only, shared with everyone like the boss size */
   var el = document.getElementById("bossLookBtns"); if (!el) return; el.innerHTML = "";
-  [["classic", "Classic"], ["tank", "Boss 2 (Tank)"], ["dragon", "Boss 3 (Dragon)"], ["reaper", "Boss 4 (Reaper)"]].forEach(function (o) {
+  [["classic", "Classic"], ["tank", "Boss 2 (Tank)"], ["dragon", "Boss 3 (Dragon)"], ["reaper", "Boss 4 (Reaper)"], ["icekaiju", "Boss 5 (Ice Kaiju)"]].forEach(function (o) {
     var btn = document.createElement("div"); btn.className = "dev-speed-btn" + (bossLook === o[0] ? " active" : ""); btn.textContent = o[1];
     btn.onclick = function () { setBossLook(o[0]); renderBossLookButtons(); }; el.appendChild(btn);
   });
