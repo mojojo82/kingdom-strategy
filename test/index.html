@@ -902,6 +902,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
   #mapTerrainLayer { position:absolute; top:0; left:0; width:0; height:0; pointer-events:none; z-index:0; }
   .terr { position:absolute; image-rendering:pixelated; pointer-events:none; }
   .terr-gl { position:absolute; pointer-events:none; }
+  .terr-back { visibility:hidden; } #mapworld[style*="scale"] .terr-back { visibility:visible; } /* v1873: only while pinching (it is blurry - a sandy glow showed past the coasts) */
   .tree-sheet { position:absolute; pointer-events:none; } /* v1163: trees drawn in one canvas (with GPU land) */ /* v1162: GPU land - one canvas, already in screen orientation */
   #mapworld.iso .terr { transform:scaleY(var(--isoK,0.69466)) rotate(45deg); }
   #terrainPainter { display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:70px; z-index:100001; width:min(400px, calc(100vw - 16px)); background:linear-gradient(180deg,#3a3126,#231c14); border:2px solid #8a7548; border-radius:12px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.55); color:#f3e9d2; font-size:12px; }
@@ -4447,7 +4448,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
                   </label>
                 </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
-                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button><button class="dev-btn" id="devContinentLandBtn">🌍 Supercontinent land 30% (this phone only)</button><button class="dev-btn" id="devCastShadowBtn">🌗 Cast shadows: on</button>
+                  <button class="dev-btn" id="devStressLandBtn">🧪 Stress-test land (this phone only)</button><button class="dev-btn" id="devContinentLandBtn">🌍 Supercontinent land 30% (this phone only)</button><button class="dev-btn" id="devCastShadowBtn">🌗 Cast shadows: on</button><button class="dev-btn" id="devTerrSoftBtn">🌱 Soft grass</button><button class="dev-btn" id="devTerrBackBtn">🗺️ Land backdrop</button><span id="devCrumbNote" style="display:block;font-size:11px;color:var(--muted);white-space:pre-wrap;"></span>
                   <span id="devStressLandNote" style="font-size:11px;color:var(--muted);">Fills the map with 4 continents (~40% land). Not saved, nobody else sees it - reload the game to get your real map back.</span>
                 </div>
                 <div class="dev-tools-row" style="flex-wrap:wrap;gap:4px 8px;">
@@ -15030,7 +15031,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1872"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1873"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20205,7 +20206,7 @@ var TERR_USE_CHUNKS = true; /* v1790: the v1157 per-square land drawing switch i
 var terrGL = { on: false, failed: "", cv: null, gl: null, prog: null, tex: null, g2: null, g2ok: false, L: {}, rev: -1, key: "", box: null };
 function terrGLWanted() { return terrGL.on && !terrGL.failed; }
 var TERR_GL_FS = "#version 300 es\nprecision highp float; precision highp int; precision highp usampler2D;\n" +
-  "uniform usampler2D uT; uniform sampler2D uG2; uniform int uN, uIso, uHd; uniform float uScale, uH, uTexN, uG2W, uG2Per; uniform vec2 uOrig; uniform vec4 uGeo;\n" +
+  "uniform usampler2D uT; uniform sampler2D uG2; uniform int uN, uIso, uHd; uniform float uScale, uH, uTexN, uG2W, uG2Per, uSoft; uniform vec2 uOrig; uniform vec4 uGeo;\n" +
   "uniform vec3 uGrass[5]; uniform vec3 uDirt[5]; uniform vec3 uSand[3]; uniform vec3 uForest[5]; out vec4 o;\n" +
   "float th(int x, int y, int s) { uint h = uint(x) * 374761393u + uint(y) * 668265263u + uint(s) * 1442695041u; h = (h ^ (h >> 13u)) * 1274126177u; h = h ^ (h >> 16u); return float(h >> 8u) / 16777216.0; }\n" +
   "float tn(float x, float y, int s) { float xi = floor(x), yi = floor(y), xf = x - xi, yf = y - yi; xf = xf * xf * (3.0 - 2.0 * xf); yf = yf * yf * (3.0 - 2.0 * yf); int X = int(xi), Y = int(yi);" +
@@ -20220,16 +20221,17 @@ var TERR_GL_FS = "#version 300 es\nprecision highp float; precision highp int; p
   " if (uIso == 1) { float A = (mp.x - uGeo.x) / uGeo.z, B = (mp.y - uGeo.y) / (uGeo.z * uGeo.w); rx = (A + B) * 0.5; ry = (B - A) * 0.5; } else { rx = (mp.x - uGeo.x) / uGeo.z; ry = (mp.y - uGeo.y) / uGeo.z; }\n" +
   " int fx = int(floor(rx)), fy = int(floor(ry)); int t00 = at(fx, fy), t10 = at(fx + 1, fy), t01 = at(fx, fy + 1), t11 = at(fx + 1, fy + 1);\n" +
   " if (t00 + t10 + t01 + t11 == 0) { o = vec4(0.0); return; }\n" +
-  " bool hd = uHd == 1 && (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4); float N = uTexN > 0.0 ? uTexN : 1200.0;\n" +
+  " bool hd = uHd == 1 && (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4); float N = uTexN > 0.0 ? uTexN : (uSoft > 0.5 ? 1200.0 : (t00 == 4 || t10 == 4 || t01 == 4 || t11 == 4 ? 64.0 : 20.0));\n" +
   " float gxf = floor(rx * N), gyf = floor(ry * N); int gx = int(gxf), gy = int(gyf); float wx = (gxf + 0.5) / N, wy = (gyf + 0.5) / N, u = wx - float(fx), v = wy - float(fy);\n" +
   " float w00 = (1.0 - u) * (1.0 - v), w10 = u * (1.0 - v), w01 = (1.0 - u) * v, w11 = u * v;\n" +
   " float f = w00 * float(t00 > 0) + w10 * float(t10 > 0) + w01 * float(t01 > 0) + w11 * float(t11 > 0);\n" +
-  " float nz = (tn(wx * 4.0, wy * 4.0, 1) - 0.5) * 0.26 + (tn(wx * 9.0, wy * 9.0, 2) - 0.5) * 0.1; float dd = f + nz - 0.5, hh = tn(wx * 24.0, wy * 24.0, 7); vec3 col;\n" +
+  " float nz = (tn(wx * 4.0, wy * 4.0, 1) - 0.5) * 0.26 + (tn(wx * 9.0, wy * 9.0, 2) - 0.5) * 0.1; float dd = f + nz - 0.5, hh = uSoft > 0.5 ? tn(wx * 24.0, wy * 24.0, 7) : th(gx, gy, 7); vec3 col;\n" +
   " if (dd >= 0.0) {\n" +
-  "  if (dd < 0.075) col = mix(uSand[1], uSand[2], tn(wx * 3.0, wy * 3.0, 13));\n" +
+  "  if (dd < 0.075) col = uSoft > 0.5 ? mix(uSand[1], uSand[2], tn(wx * 3.0, wy * 3.0, 13)) : uSand[min(2, int(floor(hh * 3.0)))];\n" +
   "  else if (w00 * float(t00 == 2) + w10 * float(t10 == 2) + w01 * float(t01 == 2) + w11 * float(t11 == 2) + (tn(wx * 3.0, wy * 3.0, 3) - 0.5) * 0.5 > 0.5) col = uDirt[min(4, int(floor((0.5 * tn(wx * 5.0, wy * 5.0, 4) + 0.5 * hh) * 5.0)))];\n" +
   "  else if (w00 * float(t00 == 3) + w10 * float(t10 == 3) + w01 * float(t01 == 3) + w11 * float(t11 == 3) + (tn(wx * 3.0, wy * 3.0, 6) - 0.5) * 0.4 > 0.5) col = uForest[min(4, int(floor((0.55 * tn(wx * 2.2, wy * 2.2, 5) + 0.45 * hh) * 5.0)))];\n" +
   "  else if (hd && w00 * float(t00 == 4) + w10 * float(t10 == 4) + w01 * float(t01 == 4) + w11 * float(t11 == 4) + (tn(wx * 3.0, wy * 3.0, 8) - 0.5) * 0.4 > 0.5) col = g2(wx, wy);\n" +
+  "  else if (uSoft < 0.5) col = uGrass[min(4, int(floor((0.55 * tn(wx * 2.2, wy * 2.2, 5) + 0.45 * hh) * 5.0)))];\n" +
   "  else { float t = clamp(0.5 + (tn(wx * 0.5, wy * 0.5, 11) - 0.5) * 0.9 + (tn(wx * 2.0, wy * 2.0, 12) - 0.5) * 0.4, 0.0, 1.0) * 3.0; int i = int(min(2.0, floor(t))); col = mix(uGrass[i], uGrass[i + 1], t - float(i));" +
   " float bl = tn(wx * 26.0 + wy * 6.0, wy * 9.0, 15) * 0.6 + tn(wx * 55.0, wy * 18.0 + wx * 9.0, 16) * 0.4; col *= 0.955 + bl * 0.09;" +
   " float hz = smoothstep(0.58, 0.82, tn(wx * 0.16, wy * 0.16, 17) * 0.75 + tn(wx * 0.6, wy * 0.6, 18) * 0.25); col = mix(col, uGrass[4], hz * 0.8); }\n" /* v1868: soft grass (Kingshot olive, Harley 24 Nov) - smooth patches + fine grain + pale haze, no pixel speckle */ +
@@ -20253,7 +20255,7 @@ function terrGLInit() {
     gl.useProgram(p); terrGL.prog = p;
     var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     var al = gl.getAttribLocation(p, "a"); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
-    ["uT", "uG2", "uN", "uIso", "uHd", "uScale", "uH", "uTexN", "uG2W", "uG2Per", "uOrig", "uGeo", "uGrass", "uDirt", "uSand", "uForest"].forEach(function (k) { terrGL.L[k] = gl.getUniformLocation(p, k); });
+    ["uT", "uG2", "uN", "uIso", "uHd", "uScale", "uH", "uTexN", "uG2W", "uG2Per", "uSoft", "uOrig", "uGeo", "uGrass", "uDirt", "uSand", "uForest"].forEach(function (k) { terrGL.L[k] = gl.getUniformLocation(p, k); });
     var flat = function (a) { var o = []; a.forEach(function (c) { o.push(c[0], c[1], c[2]); }); return new Float32Array(o); };
     gl.uniform3fv(terrGL.L.uGrass, flat(TERR_GRASS)); gl.uniform3fv(terrGL.L.uDirt, flat(TERR_DIRT)); gl.uniform3fv(terrGL.L.uSand, flat(TERR_SAND)); gl.uniform3fv(terrGL.L.uForest, flat(TERR_FOREST));
     gl.uniform1i(terrGL.L.uT, 0); gl.uniform1i(terrGL.L.uG2, 1); gl.uniform1f(terrGL.L.uG2Per, GRASS2_PER);
@@ -20278,14 +20280,14 @@ function terrGLRender(force) {
   var t0 = performance.now();
   if (terrGL.rev !== terrainRev) { gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, terrGL.tex); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8UI, terrainN, terrainN, 0, gl.RED_INTEGER, gl.UNSIGNED_BYTE, terrainArr); terrGL.rev = terrainRev; }
   if (!terrGL.g2ok && grass2Tex) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, terrGL.g2); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, grass2Tex.w, grass2Tex.w, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(grass2Tex.d.buffer, grass2Tex.d.byteOffset, grass2Tex.d.length)); terrGL.g2ok = true; }
-  if (mapIso) { try { terrBackdrop(layer); } catch (e) { console.warn("land backdrop", e); } } /* v1870: blurry whole-kingdom land under the sharp layer */
+  if (mapIso && terrBackOn) { try { terrBackdrop(layer); } catch (e) { console.warn("land backdrop", e); } } else if (terrBack.cv) { terrBack.cv.remove(); terrBack.cv = null; terrBack.rev = -1; } /* v1870: blurry whole-kingdom land under the sharp layer */
   var mx = Math.round(vw * 0.35), my = Math.round(vh * 0.35); b = terrGL.box = { x: Math.round(sl - mx), y: Math.round(st - my), w: vw + 2 * mx, h: vh + 2 * my }; terrGL.key = key;
   var res = 1, W = Math.round(b.w * res), H = Math.round(b.h * res), cv = terrGL.cv; /* v1871: 1 pixel per screen point (was up to 2x2) - the soft grass looks the same and the canvas uses a quarter of the memory (iPhone crashes while zooming out with land on) */
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   cv.style.left = b.x + "px"; cv.style.top = b.y + "px"; cv.style.width = b.w + "px"; cv.style.height = b.h + "px";
   var s = tilePxZ(), p = s + gapPxZ(), ov = terrainOverviewWanted(), ON = p >= 10 ? 8 : p >= 5 ? 4 : 2;
   if (mapIso) { var g = isoGeom(); gl.uniform4f(L.uGeo, g.offX, g.offY, g.r2, ISO_K); } else { var o0 = padPxZ() + s / 2; gl.uniform4f(L.uGeo, o0, o0, p, 0); }
-  gl.uniform1i(L.uIso, mapIso ? 1 : 0); gl.uniform1i(L.uN, terrainN); gl.uniform1i(L.uHd, !ov && grass2Tex ? 1 : 0); gl.uniform1f(L.uTexN, ov ? ON : 0);
+  gl.uniform1f(L.uSoft, terrSoftOn ? 1 : 0); gl.uniform1i(L.uIso, mapIso ? 1 : 0); gl.uniform1i(L.uN, terrainN); gl.uniform1i(L.uHd, !ov && grass2Tex ? 1 : 0); gl.uniform1f(L.uTexN, ov ? ON : 0);
   gl.uniform1f(L.uScale, b.w / W); gl.uniform1f(L.uH, H); gl.uniform2f(L.uOrig, b.x, b.y); gl.uniform1f(L.uG2W, grass2Tex ? grass2Tex.w : 1);
   gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
   terrGL.lastMs = performance.now() - t0; terrGL.draws = (terrGL.draws || 0) + 1;
@@ -20296,6 +20298,8 @@ function terrGLRender(force) {
    (TERR_BACK_W px wide, ~1.3 px per tile) that sits under the sharp layer. Stored in tile units, so a zoom only moves / resizes it; redrawn
    only when the land changes. Iso map only. */
 var TERR_BACK_W = 1536, terrBack = { cv: null, rev: -1, n: 0, box: null };
+/* v1873: crash hunt switches (this device): soft grass shader and the backdrop can be turned off */
+var terrSoftOn = true, terrBackOn = true; try { terrSoftOn = localStorage.getItem("kingdom_prototype_terrSoft_v1") !== "0"; terrBackOn = localStorage.getItem("kingdom_prototype_terrBack_v1") !== "0"; } catch (e) {}
 function terrBackdrop(layer) {
   var g = isoGeom(), n = terrainN, gl = terrGL.gl, L = terrGL.L;
   if (!terrBack.cv) { terrBack.cv = document.createElement("canvas"); terrBack.cv.className = "terr-gl terr-back"; terrBack.cv.style.position = "absolute"; terrBack.cv.style.pointerEvents = "none"; }
@@ -20307,7 +20311,7 @@ function terrBackdrop(layer) {
     /* box in "r2 units" from the kingdom's tile-0 centre: x -n-2 .. n+2, y -2 .. 2n*K+2 */
     var bx = -n - 2, by = -2, bw = 2 * n + 4, bh = 2 * n * ISO_K + 4, W = TERR_BACK_W, H = Math.round(W * bh / bw);
     var cv = terrGL.cv; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-    gl.uniform4f(L.uGeo, g.offX, g.offY, g.r2, ISO_K); gl.uniform1i(L.uIso, 1); gl.uniform1i(L.uN, n); gl.uniform1i(L.uHd, 0); gl.uniform1f(L.uTexN, 2);
+    gl.uniform1f(L.uSoft, terrSoftOn ? 1 : 0); gl.uniform4f(L.uGeo, g.offX, g.offY, g.r2, ISO_K); gl.uniform1i(L.uIso, 1); gl.uniform1i(L.uN, n); gl.uniform1i(L.uHd, 0); gl.uniform1f(L.uTexN, 2);
     gl.uniform1f(L.uScale, bw * g.r2 / W); gl.uniform1f(L.uH, H); gl.uniform2f(L.uOrig, g.offX + bx * g.r2, g.offY + by * g.r2); gl.uniform1f(L.uG2W, grass2Tex ? grass2Tex.w : 1);
     gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
     var bc = terrBack.cv; if (bc.width !== W || bc.height !== H) { bc.width = W; bc.height = H; }
@@ -34246,6 +34250,19 @@ function devInvasionClear() {
   var t0 = performance.now(), fr = terrainStressGenerate(0.4);
   b.textContent = "🔄 Remove stress-test land (reloads)"; note.textContent = "Stress land ON: " + Math.round(fr * 100) + "% land, built in " + Math.round(performance.now() - t0) + " ms. Not saved - reload removes it.";
 }; })();
+(function () { /* v1873: crash hunt - switches + the map state just before the last reload */
+  var sw = function (id, key, get, set, name) { var b = document.getElementById(id); if (!b) return; var lab = function () { b.textContent = name + ": " + (get() ? "on" : "off") + " (this phone)"; }; lab();
+    b.onclick = function () { set(!get()); try { localStorage.setItem(key, get() ? "1" : "0"); } catch (e) {} lab(); terrGL.key = ""; try { renderVisibleTiles(); } catch (e) {} }; };
+  sw("devTerrSoftBtn", "kingdom_prototype_terrSoft_v1", function () { return terrSoftOn; }, function (v) { terrSoftOn = v; }, "🌱 Soft grass shader");
+  sw("devTerrBackBtn", "kingdom_prototype_terrBack_v1", function () { return terrBackOn; }, function (v) { terrBackOn = v; }, "🗺️ Land backdrop");
+  var CK = "kingdom_prototype_crumb_v1", prev = null; try { prev = localStorage.getItem(CK); } catch (e) {}
+  var note = document.getElementById("devCrumbNote"); if (note && prev) note.textContent = "Map state ~1 s before the last reload/crash: " + prev;
+  setInterval(function () {
+    try { if (document.body.getAttribute("data-screen") !== "world") return;
+      var c = { v: KS_BUILD, at: new Date().toTimeString().slice(0, 8), zoom: +mapZoom.toFixed(4), tilePx: +tilePxZ().toFixed(1), lod: mapLod(), land: terrainStress ? "on" : "off", gpu: terrGLWanted() ? "on" : "off", glMs: terrGL.lastMs ? +terrGL.lastMs.toFixed(1) : 0, glCv: terrGL.cv ? terrGL.cv.width + "x" + terrGL.cv.height : "-", back: terrBack.cv ? "yes" : "no", soft: terrSoftOn ? 1 : 0, shadows: castShadowOn ? document.querySelectorAll(".cast-shd").length : "off", tiles: Object.keys(mapTileEls).length, imgs: document.querySelectorAll("#mapworld img").length, els: document.getElementsByTagName("*").length, pinch: (document.getElementById("mapworld").style.transform || "").indexOf("scale") >= 0 ? "yes" : "no" };
+      localStorage.setItem(CK, JSON.stringify(c)); } catch (e) {}
+  }, 700);
+})();
 (function () { var b = document.getElementById("devCastShadowBtn"); if (!b) return; var lab = function () { b.textContent = "🌗 Cast shadows: " + (castShadowOn ? "on" : "off") + " (this phone)"; }; lab(); b.onclick = function () { /* v1868: FPS check */
   castShadowOn = !castShadowOn; try { localStorage.setItem(CAST_SHADOW_KEY, castShadowOn ? "1" : "0"); } catch (e) {} lab(); try { renderVisibleTiles(); } catch (e) {} }; })();
 (function () { var b = document.getElementById("devContinentLandBtn"), note = document.getElementById("devStressLandNote"); if (!b) return; /* v1867: land concept C; v1868: a toggle, ON by default for the admin (Harley: "i dont want to turn it on everytime") */
