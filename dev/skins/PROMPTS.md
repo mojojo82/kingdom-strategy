@@ -85,3 +85,25 @@ Now a third version based on the clean one, with much SOFTER, lower-contrast lig
 ```
 Harley: no blurry baked contact shadow (dropped).
 style3_tuned.png = style 3 soft + contrast x1.12, saturation x1.15, brightness x0.97 (Harley: soft a tad washed out on water, clean too strong).
+
+## Iron Sentinel relight (25 Nov 2026)
+Source: Harley's Rhino render with the sun set (Manual, North 90, Azimuth 102.5, Altitude 54): art/originals/skins/ironsent_relight/rhino_render*.png. ChatGPT chat "Repaint Mech City Skin". Attached: 1) rhino_render_white.png, 2) mech_test/ref_skin_mecha.png, 3) mech_test/ref_skin_titan.png. Outputs: gpt_style1-3.png, style*_keyed.png.
+
+### Style 1 (adapted base prompt 1)
+I'm making a city skin for my mobile strategy game's world map. Image 1 is my mech on its round platform (a 3D render). Images 2 and 3 are two of the existing city skins in the game: the art style it has to match.
+
+Repaint my mech in EXACTLY the art style of images 2 and 3, so it looks like it was made by the same artist for the same game:
+- same design, same pose, same weapon, same shield and same round platform as image 1, seen from the same high isometric angle (about 44 degrees from above), the whole thing in frame
+- KEEP THE LIGHT DIRECTION OF IMAGE 1: the key light comes from the lower right (camera side, right), the upper-left faces are in shade and the shadow on the platform falls to the upper left
+- the painterly, highly detailed, semi-realistic mobile-game render look of images 2 and 3: strong warm key light, deep cool navy / teal shadows, bright rim highlights on the edges, dark crevices between parts
+- materials like images 2 and 3: painted metal armour with wear, scratches and chipped edges, brass trim and rivets, glowing teal lights - not clean plastic
+- keep the mech's own colours: olive-green armour, dark gunmetal joints, brass edges and bolts, teal lights; richer and warmer, no flat dull colours
+- no black outlines
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no water, no shadow on the ground outside the platform, no text
+- square image, 1024x1024
+
+### Style 2 (clean)
+Good direction. Now make a second version that is CLEANER and more heroic, closer to image 2: polished painted olive armour with only light edge wear (no rust, no dirt streaks), crisp bevelled panel edges catching the light, glossy highlights, a stronger brass trim, the same deep navy/teal shadows and teal glow, and the same light direction as image 1 (key light from the lower right, shade on the upper-left faces). Same design, pose, weapon, shield, platform and camera angle as before. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
+
+### Style 3 (soft)
+Now a third version based on the clean one, with much SOFTER, lower-contrast lighting. Both versions so far look like harsh, strong sunlight hitting the mech. Instead: soft, even, diffuse daylight (like a bright overcast day), a gentle key light from the lower right, shadows that are lighter and softer (soft cool blue-grey, not deep navy or near-black), smaller difference between the lit side and the shadow side, no blown-out bright highlights, only subtle rim light, and colours slightly more muted (soft olive armour, soft gunmetal, satin brass, gentle teal glow). Keep the same polish and detail, light edge wear, the same design, pose, weapon, shield, platform and camera angle. Plain flat solid magenta (#FF00FF) background, square, 1024x1024.
