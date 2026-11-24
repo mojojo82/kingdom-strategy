@@ -6917,3 +6917,12 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1888 - Circle base waves a third fainter (TEST)
 - Harley: tone down the round ones. Iron Sentinel / Field Sentinel / Titan base water: glow 0.45 -> 0.3, foam line 0.35 -> 0.23, rings 0.4 -> 0.26. Other skins unchanged. Headless before/after on the sea, no errors.
+
+## v1889 - First 6x6 sea fortress on the map (TEST)
+- Harley: use grade "E" of the plain Codex fortress (fortress-v5 relit in Blender from the lower right, colours/light hand-graded only: warm cream stone, cooler shadows, a little richer - no ChatGPT redraw, so the geometry is exact) and place one on the sea with base waves.
+- DECOR_SPRITES.fortress6 (foot 6, scale 1, fx 0.5 / fy 0.616 / fw 1, aspect 0.9067), art test/assets/decor-fortress6-cf2ed3ba.webp (1200 px). No drop shadow (sea).
+- FORT_SEA: placed by code, not painted, so nothing is written to the server: the first 6x6 block (plus a 2-tile ring) that is all sea, searched outwards from the middle of the kingdom on the shared land map - same spot for every player; re-found only if land is painted over it. Plain sea map: 599,599 (the middle); supercontinent: 381,737.
+- Base waves: the same water as the bases (baseWaterHtml) in a box matching the art, under it; BASE_WATER2_SKIN.fortress6 (diamond, thinner foam/rings and shorter travel since the art is ~2x a base).
+- No resource nodes on its 6x6 block or the tile ring round it (map chunks under it rebuilt when the spot is found), no monsters on/near it.
+- Purely visual for now (like painted sprites): cities can still be placed on it and it can't be tapped/captured yet.
+- Headless: plain sea map and supercontinent, waves showing, no errors. Art: art/originals/skins/fortress6_relight (graded_e.png).
