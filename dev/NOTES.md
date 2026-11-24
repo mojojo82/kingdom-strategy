@@ -6873,3 +6873,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1879 - shadows from ~0.67 zoom, 5% fewer resource nodes (TEST)
 - Harley: no crashes on v1878 (shadows cut below 28 px tiles) - so the cast-shadow churn while zooming out was the crash cause (with land just making it likelier). He wants shadows at ~0.75 zoom: CAST_SHADOW_MIN_PX 28 -> 20.
 - proceduralTile(): resource node chance 7% -> 6.65% of tiles (Harley: "~100k, 5 percent off that"): counted over the 1200x1200 kingdom 100,574 -> 95,391 (-5.2%). Same hash, so remaining nodes stay put; the old 20x20 corner (35%) untouched. Client-only (the server doesn't generate tiles).
+
+## v1880 - new food node: bread mill (TEST)
+- First item made with the Codex + Blender process (HANDOVER "New map items from scratch"): Codex v1 -> texture/lighting feedback -> v2 accepted -> ChatGPT styles 1-3; Harley picked the soft style (style3_keyed.png). RES_NODE_ART.food: 400 px webp, fx 0.5 / fy 0.6124 / fw 1 / aspect 0.8796. Prompts in dev/nodes/PROMPTS.md, art in art/originals/nodes/breadmill.
+- Headless: bread mills show as food nodes with cast shadows, no errors. Not tested on a phone.
