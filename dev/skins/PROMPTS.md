@@ -110,3 +110,16 @@ Now a third version based on the clean one, with much SOFTER, lower-contrast lig
 
 ### Iron Sentinel relight v2 (25 Nov 2026)
 Harley's second Rhino export (rhino_render2*.png). New ChatGPT chat "Repaint Mech City Skin", same three attachments order (rhino_render2_white.png, ref_skin_mecha.png, ref_skin_titan.png) and the SAME three prompts above, word for word (style 1, style 2, style 3). Outputs: v2_gpt_style1-3.png, v2_style*_keyed.png.
+
+### Field Sentinel 2D look on Rhino render v2 (25 Nov 2026)
+New ChatGPT chat "Redraw Mech City Skin". Attached: 1) ironsent_relight/rhino_render2_white.png, 2) ironsent_relight/ref_fieldsent_current.png (the current Field Sentinel skin on white). Output: v2_gpt_flat.png, v2_flat_keyed.png.
+
+I'm making a city skin for my mobile strategy game's world map. Image 1 is my mech on its round platform (a 3D render). Image 2 is an existing city skin in the game of the same mech: the art style it has to match.
+
+Redraw image 1 in EXACTLY the art style of image 2, so it looks like it was drawn by the same artist:
+- same design, same pose, same weapon, same shield and same round platform as image 1, seen from the same high isometric angle as image 1 (about 44 degrees from above), the whole thing in frame
+- the 2D illustrated look of image 2: clean dark outlines around every part, flat cel-shaded colour areas with one or two simple shade tones, crisp hard-edged highlights, very little texture, no photo-realistic rendering
+- the colours of image 2: olive-green armour, dark gunmetal joints and platform, tan/brass trim and rivets
+- KEEP THE LIGHT DIRECTION OF IMAGE 1: light from the lower right, the upper-left faces in shade
+- plain flat solid magenta (#FF00FF) background, nothing else in the picture: no shadow on the ground outside the platform, no text
+- square image, 1024x1024
