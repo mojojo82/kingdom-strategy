@@ -15030,7 +15030,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1870"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1871"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -20280,7 +20280,7 @@ function terrGLRender(force) {
   if (!terrGL.g2ok && grass2Tex) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, terrGL.g2); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, grass2Tex.w, grass2Tex.w, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(grass2Tex.d.buffer, grass2Tex.d.byteOffset, grass2Tex.d.length)); terrGL.g2ok = true; }
   if (mapIso) { try { terrBackdrop(layer); } catch (e) { console.warn("land backdrop", e); } } /* v1870: blurry whole-kingdom land under the sharp layer */
   var mx = Math.round(vw * 0.35), my = Math.round(vh * 0.35); b = terrGL.box = { x: Math.round(sl - mx), y: Math.round(st - my), w: vw + 2 * mx, h: vh + 2 * my }; terrGL.key = key;
-  var res = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(b.w * res), H = Math.round(b.h * res), cv = terrGL.cv;
+  var res = 1, W = Math.round(b.w * res), H = Math.round(b.h * res), cv = terrGL.cv; /* v1871: 1 pixel per screen point (was up to 2x2) - the soft grass looks the same and the canvas uses a quarter of the memory (iPhone crashes while zooming out with land on) */
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   cv.style.left = b.x + "px"; cv.style.top = b.y + "px"; cv.style.width = b.w + "px"; cv.style.height = b.h + "px";
   var s = tilePxZ(), p = s + gapPxZ(), ov = terrainOverviewWanted(), ON = p >= 10 ? 8 : p >= 5 ? 4 : 2;
@@ -20644,9 +20644,12 @@ function treeSheetReposition() { /* during a pinch: stretch the last sheet (map 
   var cv = treeSheet.cv, b = treeSheet.box; if (!cv || !b || cv.style.display === "none" || !treeSheet.zoom) return; var k = mapZoom / treeSheet.zoom;
   cv.style.left = b.x * k + "px"; cv.style.top = b.y * k + "px"; cv.style.width = b.w * k + "px"; cv.style.height = b.h * k + "px";
 }
+var forestAny = false, forestAnyRev = -1;
 function forestRender(minX, maxX, minY, maxY, isoRect, isoG) {
   var world = document.getElementById("mapworld"); if (!world || !terrainArr) return;
   var wanted = {}, M = 2, any = false; for (var lk in terrainLandChunks) { any = true; break; }
+  if (any && forestAnyRev !== terrainRev) { forestAnyRev = terrainRev; forestAny = false; for (var fi = 0; fi < terrainArr.length; fi++) if (terrainArr[fi] === 3) { forestAny = true; break; } } /* v1871: no forest anywhere = no tree sheet (it is a full-screen canvas) */
+  if (!forestAny) any = false;
   var sheetCache = any && treeSheetOn() ? treeSheetUpdate(world) : null; if (!sheetCache) treeSheetHide(); /* v1163 */
   if (any && mapLod() === 0) {
     var TC = TERRAIN_CHUNK, NV = FOREST_PIECES.length;
