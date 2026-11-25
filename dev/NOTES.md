@@ -6926,3 +6926,11 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - No resource nodes on its 6x6 block or the tile ring round it (map chunks under it rebuilt when the spot is found), no monsters on/near it.
 - Purely visual for now (like painted sprites): cities can still be placed on it and it can't be tapped/captured yet.
 - Headless: plain sea map and supercontinent, waves showing, no errors. Art: art/originals/skins/fortress6_relight (graded_e.png).
+
+## v1890 - Sky-Bastion on the sea with live 3D guns (TEST)
+- Harley's plan: the fort picture has no guns; the guns are real 3D models placed on it and turned in code, only while someone is looking.
+- Codex: sky-bastion-v3 rendered due SOUTH at 44 deg without its 6 guns (mounting sockets left on the towers; values-only grade like the castle), the twin gun exported on its own (sky-bastion-gun.glb, 2650 triangles, one 1024 texture, pivot at the swivel's foot) + every gun's pivot / heading (sky-bastion-guns.json). No ChatGPT pass (large items = Codex model only).
+- DECOR_SPRITES.skybastion (foot 6, round: tower ring radius 5.84 Blender units = 3 tiles, so fw = sqrt2; fx 0.5 / fy 0.5972 / aspect 0.7964, upt 1.9466 units per tile), art test/assets/decor-skybastion-a4276897.webp. Circle base waves (BASE_WATER2_SKIN.skybastion, shape 1, faint like the round skins).
+- FORT_SEAS: the sea forts are now a list; each takes the next free sea spot outwards from the middle, at least 6 tiles from the forts before it (plain sea: castle 599,599, sky-bastion 587,587). No nodes / monsters on or next to any of them.
+- Guns: model art/models/skygun.json + .webp (axes converted to the march renderer's, pivot kept: new M.pivot flag skips the ship keel centring). Drawn by the march WebGL layer (marchGLDraw), textured, lit from the lower right like the render (new uLD light uniform; ships keep their old light). fortGunsList() only returns guns while the fort is on screen at close zoom (mapLod <= 1); the march loop keeps running only then (one clearing pass after). Each gun sweeps slowly (+-38 deg, ~9 s, eased in and out) round its outward heading - cost: 6 small draws a frame while visible, nothing otherwise.
+- Headless: plain sea + supercontinent, guns sit on their sockets and turn, waves showing, no errors. Not tried on the phone.
