@@ -6937,3 +6937,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1891 - Sky-Bastion moved to its own part of the sea (TEST)
 - Harley: put it somewhere else on the map, not next to the castle fort. A sea fort can now start its spot search from its own point of the kingdom (FORT_SEAS[].at, fractions of the map size); the sky-bastion starts from 32% / 36% (north-west of the middle) and takes the nearest free sea there. Plain sea map: 383,431 (castle stays 599,599); supercontinent: 351,463 (castle 381,737). Still decoration only. Headless: guns turning, waves, no errors.
+
+## v1892 - Aurek no longer shrinks during his skill (TEST)
+- Harley (spotted in the Unity copy, same in the web game): Aurek got smaller while Sunforge Slam played and grew back after. v1546 set his main sheet to sizeMul 1.2 but the skill sheet (aurek_skill) stayed at 1. Both sheets are cut at the same pixel scale (dispH / ch = 0.333), so aurek_skill now has sizeMul 1.2 too. Only hero with a sizeMul other than 1. Look only - no balance change.
