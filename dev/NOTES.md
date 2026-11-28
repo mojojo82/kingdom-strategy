@@ -6940,3 +6940,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1892 - Aurek no longer shrinks during his skill (TEST)
 - Harley (spotted in the Unity copy, same in the web game): Aurek got smaller while Sunforge Slam played and grew back after. v1546 set his main sheet to sizeMul 1.2 but the skill sheet (aurek_skill) stayed at 1. Both sheets are cut at the same pixel scale (dispH / ch = 0.333), so aurek_skill now has sizeMul 1.2 too. Only hero with a sizeMul other than 1. Look only - no balance change.
+
+## v1893 - Classic UI is now a copy of Blue (TEST)
+- Harley: the classic UI is being retired and restyled; to start, "copy the blue ui over to the classic ui" - Blue stays its own thing, Classic gets a copy he will restyle (some Blue parts stay).
+- Classic now shows the Blue frame, nav and top bar on every phone screen, exactly like Blue (both use the same code; body.skin-classic / body.skin-blue tell them apart). Per-style art: UI_SKIN_ART.classic (a copy of Blue's for now). Notes in dev/plans/ui_skins.md.
+- Tests (headless, 430x932): Classic vs Blue on Conquest and Heroes - same pixels apart from running numbers (gold, timers); Blue unchanged against v1892; no page errors.

@@ -8,3 +8,9 @@
 - Night sky (art/conquest/night_sky_loop.webp + moon.webp) is separate from the skin; drift on/off toggle planned.
 - Order: switcher + skin plumbing first, then blue on Conquest, then Arena. Other phone sizes: stretch the gaps between sections, not the frames.
 - Still open on the blue skin: top lip (~6-8 px), merged bottom-left card slot, Challenge Boss / round buttons / Stats / toggle / Forge text styling.
+
+## v1893 - Classic is now a copy of Blue (start of the Classic restyle)
+- Harley: "the classic ui will be abolished soon. Im going to restyle it" / "copy the blue ui over to the classic ui ... the original blue is its own thing".
+- Classic shows exactly what Blue shows (frame, nav, top bar, spots, styling). Both run on the Blue code; body.ui-blue / ui-blue-nav / ui-blue-top now mean "a framed style is on", and body.skin-blue / body.skin-classic say which.
+- Restyle Classic without touching Blue: its own art in UI_SKIN_ART.classic (top / bot / nav spikes), Classic-only CSS under body.skin-classic. Blue-only rules go under body.skin-blue.
+- uiFramed() replaces the old uiSkin() === "blue" checks. The old brown Classic frame is gone; new players (no saved choice) get Classic = the Blue look.
