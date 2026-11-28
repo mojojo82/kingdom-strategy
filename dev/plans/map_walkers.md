@@ -11,6 +11,7 @@ Mockup scripts (session scratchpad, not in the repo): walk.js (headless capture)
 - NO live lighting: shading baked into the vertex colours once. Keep them as light as possible.
 - Each one has a trip: comes out of a city / node (grows in at its front) or in from the screen edge; walks road-like legs along the tile axes; goes into a city / node (shrinks away, deleted) or off screen (deleted). Max ~9, one every 1-2 s.
 - Not shown at all when zoomed out further than map zoom 1.2.
+- If two cities are close together, troops may walk through the gap between them (Harley, 29 Nov). So the "keep off" area is each base's real ground footprint (its platform / foundation, measured per skin) with a small margin - not the whole picture - and the route finder must be able to use narrow gaps (not just the two L-shaped routes the mockup tries).
 
 ## Measured (headless, mockup build) - too expensive as built
 - Zoom 2: 60 -> 13 fps with ~8 soldiers; posing on the CPU 8.2 ms/frame, drawing 1.3 ms; ~12k triangles (~1,500 per soldier).
