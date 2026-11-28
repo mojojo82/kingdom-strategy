@@ -15058,7 +15058,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1893"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1894"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38583,6 +38583,18 @@ var uiSkinKey = "", uiSkinEls = [];
     'body.ui-blue-nav #bottomNav, body.ui-blue-nav #bottomNav * { text-shadow:none !important; }\n' +
     'body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active, body.ui-blue-nav:not(.ui-blue) #bottomNav .bn.active * { color:#eaf7ff !important; }\n' +
     '#uiNavActive { display:none; position:absolute; pointer-events:none; z-index:0; }\n' +
+    /* v1894 (Harley's Classic restyle, concept "Colorful Chibi Heroes": "is the bar design possible in just code?" - "Go ahead"): Classic's nav is drawn
+       in CSS - a cream bar with soft dividers and a raised gold tab for the chosen screen, labels only on the chosen tab - on every screen. Blue keeps its art nav. */
+    'body.skin-classic :is(#uiNavArt, #uiNavPatch, #uiNavSpikeL, #uiNavSpikeR, #uiNavActive, #uiSkinNavPatch, #uiSkinNavAct) { display:none !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) { background:linear-gradient(180deg,#fffaf0 0%,#f3ead7 55%,#e4d8bf 100%) !important; border-top:2px solid #a8977a !important; border-left:none !important; border-right:none !important; border-bottom:none !important; box-shadow:0 -3px 8px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.85) !important; position:relative; z-index:50; padding:0 0 calc(env(safe-area-inset-bottom) + 10px) !important; align-items:stretch; overflow:visible !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn { transform:none !important; background:transparent !important; border:none !important; border-radius:0 !important; box-shadow:none !important; padding:9px 0 6px !important; position:relative; z-index:1; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn + .bn { box-shadow:-1px 0 0 rgba(140,118,84,.35), inset 1px 0 0 rgba(255,255,255,.75) !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn .ic { width:38px !important; height:38px !important; filter:drop-shadow(0 2px 1px rgba(80,50,20,.35)) !important; transform:none !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn:not(.active) { font-size:0 !important; gap:0 !important; }\n' + /* the label is a bare text node: hidden by size */
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn.active { flex:1.35 1 0 !important; margin:-14px 2px 0 !important; padding:8px 0 7px !important; z-index:2; border-radius:11px !important; border:2px solid #b8700f !important; background:linear-gradient(180deg,#fff0a8 0%,#ffd54a 30%,#ffbf2b 62%,#f19a1c 100%) !important; box-shadow:inset 0 0 0 2px rgba(255,246,200,.9), inset 0 -5px 0 rgba(190,100,10,.28), 0 4px 6px rgba(0,0,0,.35) !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn.active .ic { width:46px !important; height:46px !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn.active, html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn.active * { color:#fff !important; font-family:"KS Title","Lilita One",sans-serif !important; font-size:14px !important; font-weight:400 !important; letter-spacing:.01em !important; -webkit-text-stroke:3px #3d2306 !important; paint-order:stroke fill !important; }\n' +
+    'html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn.active .ic, html body.skin-classic.ui-blue-nav #bottomNav:not(#z) > .bn.active .ic * { -webkit-text-stroke:0 !important; }\n' +
     /* v1273 (Harley: the gap above the nav closed up on Conquest): on Conquest the nav stays see-through over the Conquest art (its own nav, with the
        original gap) and the buttons are placed on it as before; the cut nav bar is for the other screens */
     B + '#bottomNav, ' + B + '#bottomNav .bn { background:transparent !important; border-color:transparent !important; box-shadow:none !important; }\n' +
@@ -38612,6 +38624,7 @@ function uiSkinCanvasBox() { /* the canvas's layout box: its own rect moves with
 var uiNavSheet = (function () { var st = document.createElement("style"); st.id = "uiNavPos"; document.head.appendChild(st); return st; })(), uiNavKey = "";
 function uiNavApply() { /* v1275: the Blue nav on screens other than Conquest, placed with the same numbers as Conquest's (art units, 430 wide) */
   var nav = document.getElementById("bottomNav"); if (!nav || !nav.offsetParent) return;
+  if (uiSkin() === "classic") { if (uiNavSheet.textContent) uiNavSheet.textContent = ""; uiNavKey = ""; return; } /* v1894: Classic's nav is plain CSS (the bar + gold tab) */
   var k = window.innerWidth / 430, bns = [].slice.call(nav.querySelectorAll(":scope > .bn")), act = bns.findIndex(function (b) { return b.classList.contains("active"); });
   var key = [window.innerWidth, nav.offsetHeight, bns.length, act].join("|"); if (key === uiNavKey) return; uiNavKey = key;
   var stripTop = -5 * k - nav.clientTop, base = stripTop - 336 * k + nav.clientTop; /* v1278: art positions are measured from inside the 2 px border */ /* art row 336 = 5 px above the nav box, as on Conquest */
@@ -38659,6 +38672,7 @@ function uiSkinApply() {
   var Y0 = Math.round(cvR.bottom - 30 * k), TOPY = -28 * k; /* v1278: whole pixels, so the nav art lands on exactly the same pixels as on the other screens */
   var ti = document.getElementById("uiSkinTopImg"), bi = document.getElementById("uiSkinBotImg");
   ti.style.width = bi.style.width = (430 * k) + "px"; ti.style.top = TOPY + "px"; bi.style.top = Y0 + "px";
+  bi.style.clipPath = uiSkin() === "classic" ? "inset(0 0 " + ((UI_SKIN_BOT_H - 336) * k).toFixed(1) + "px 0)" : ""; /* v1894: Classic draws its own nav bar (CSS) - the art's nav part (rows 336+) is cut off */
   /* v1761: the art has the Conquest tab lit - on the Arena, cover that glow with a plain tab (cut from the same art, like the other screens' nav) and light the active tab */
   (function () { var Lr = document.getElementById("uiSkinLayer"), act = [].slice.call(document.querySelectorAll("#bottomNav > .bn")).findIndex(function (b) { return b.classList.contains("active"); });
     var piece = function (id, artX, artY, w, h, x, y) { var d = document.getElementById(id); if (!d) { d = document.createElement("div"); d.id = id; d.style.position = "absolute"; Lr.appendChild(d); }
@@ -38688,7 +38702,7 @@ function uiSkinApply() {
   var ins = function (t) { return [t[0] + 0.5, t[1] + 0.5, t[2] - 1, t[3] - 1]; };
   left.forEach(function (e, i) { var t = LT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
   right.forEach(function (e, i) { var t = RT[i]; if (t) { t = ins(t); fit(e, t[0], t[1], t[2], t[3], Y0, null, true); } });
-  var nx = [3, 88, 173, 258, 343]; qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
+  var nx = [3, 88, 173, 258, 343]; if (uiSkin() !== "classic") qa("#bottomNav .bn").forEach(function (e, i) { if (i < 5) fit(e, nx[i], 348, 85, 66, Y0); }); /* v1273: back */
   fit(q(".idle-forge-btn"), 160, 236, 110, 74, Y0); fit(q(".idle-stats-btn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 340.3, 298.3, 77, 21, Y0, null, true); /* v1288 (Harley: not lined up): stretched to the inside of its frame (outline at x 338.7-418, y 297.1-319.9, measured) */
   var css = uiJobsCss(jobs, 'body.ui-blue:is([data-screen="conquest"],[data-screen="more"]) ');
   if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;

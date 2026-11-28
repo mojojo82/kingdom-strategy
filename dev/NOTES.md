@@ -6945,3 +6945,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: the classic UI is being retired and restyled; to start, "copy the blue ui over to the classic ui" - Blue stays its own thing, Classic gets a copy he will restyle (some Blue parts stay).
 - Classic now shows the Blue frame, nav and top bar on every phone screen, exactly like Blue (both use the same code; body.skin-classic / body.skin-blue tell them apart). Per-style art: UI_SKIN_ART.classic (a copy of Blue's for now). Notes in dev/plans/ui_skins.md.
 - Tests (headless, 430x932): Classic vs Blue on Conquest and Heroes - same pixels apart from running numbers (gold, timers); Blue unchanged against v1892; no page errors.
+
+## v1894 - Classic: code-drawn nav bar from Harley's concept (TEST)
+- Harley (concept image "Colorful Chibi Heroes Collection UI"): "is the bar design possible in just code? ignore the inner icons" - "Go ahead".
+- Classic's bottom nav is now pure CSS on every screen: a cream bar (soft top-to-bottom shade, light top line, thin dividers), a raised gold tab for the chosen screen (gold gradient, light inner rim, dark edge, drop shadow) with a white outlined Lilita label; other tabs show only their icon (bigger, full colour). On Conquest / Arena the Blue frame art's nav part is cut off for Classic (clip) and the art nav pieces are hidden. Blue keeps its art nav (unchanged).
+- Tests (headless 430x932 @3x): Heroes, Conquest, City, More in Classic + Heroes in Blue; no page errors.

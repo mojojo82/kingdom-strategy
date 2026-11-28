@@ -14,3 +14,4 @@
 - Classic shows exactly what Blue shows (frame, nav, top bar, spots, styling). Both run on the Blue code; body.ui-blue / ui-blue-nav / ui-blue-top now mean "a framed style is on", and body.skin-blue / body.skin-classic say which.
 - Restyle Classic without touching Blue: its own art in UI_SKIN_ART.classic (top / bot / nav spikes), Classic-only CSS under body.skin-classic. Blue-only rules go under body.skin-blue.
 - uiFramed() replaces the old uiSkin() === "blue" checks. The old brown Classic frame is gone; new players (no saved choice) get Classic = the Blue look.
+- v1894: Classic nav = CSS bar (body.skin-classic rules in uiSkinCss; uiNavApply returns early for Classic; Conquest/Arena crop the art below row 336 for Classic).
