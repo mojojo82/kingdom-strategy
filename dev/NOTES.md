@@ -6963,3 +6963,7 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: "Use chatgpt colours and also the outline you did is too thick" + "Crisp edges" (reference: blue menu buttons with a thin dark edge).
 - Colours sampled from ChatGPT mockup v3: page #2250b4, panels #0a6dfc -> #0056df -> #0050d2, buttons #22b4ff -> #089bfd -> #0a7cf4 with a hard #84e7fc top rim, slots #0e3572, resource/avatar boxes #052153, empty skill circles #09295e with a #2b75ce ring.
 - Outlines 3 px -> 1.5 px solid #021547 on every panel / button / slot / circle; text outline 2.5-3 px -> 2 px; every shadow is now hard (no blur), so the edges stay crisp. One 10 px corner everywhere as before.
+
+## v1898 - Classic Conquest: 5 card slots, weapon-slot size (TEST)
+- Harley: "the 6 bottom left slots. reduce to 5 slots. also make sure they are the same size as the 3 adjacent weapon slots".
+- Only 5 cards can be equipped (CARD_EQUIP_MAX = 5), so the 6th box was always empty: Classic hides it. The 5 card slots now use the weapon slots' size (40x41 on a 430 phone) - 3 in the weapons' row with their spacing, 2 centred below. Measured headless: all 8 slots 40x41. Blue keeps its 6 boxes on its art.
