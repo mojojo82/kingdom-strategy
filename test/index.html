@@ -4969,7 +4969,7 @@ function ksA(p, lazy) { var u; try { u = new URL(p, document.baseURI).href; } ca
                 <div class="dev-tools-row"><span class="dev-tools-hint">Base water look (all players):</span><button class="dev-btn" id="devBaseWaterStyleBtn">🌊 Base water: Shape</button></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint">Other kingdoms' bases (this device, reload to apply):</span><button class="dev-btn" id="devPatchModeBtn">📦 Bases: by patch</button><button class="dev-btn" id="devPatchKingdomBtn">🌍 This kingdom (all players): by patch</button><button class="dev-btn" id="devPatchRebuildBtn">🔁 Rebuild this kingdom's patch lists (admin)</button><span class="dev-tools-hint" id="devPatchRebuildSt"></span></div>
                 <div class="dev-tools-row"><button class="dev-btn" id="devMapIconsBtn">🗺️ World map icons: Custom</button></div>
-                <div class="dev-tools-row"><span class="dev-tools-hint">Map:</span><button class="dev-btn" id="devMapIsoBtn">🗺️ Isometric map (35°): Off</button><button class="dev-btn" id="devTerrainBtn">🖌️ Terrain painter: Off</button><button class="dev-btn" id="devMarch3dBtn">🚢 3D march ships: On</button></div>
+                <div class="dev-tools-row"><span class="dev-tools-hint">Map:</span><button class="dev-btn" id="devMapIsoBtn">🗺️ Isometric map (35°): Off</button><button class="dev-btn" id="devTerrainBtn">🖌️ Terrain painter: Off</button><button class="dev-btn" id="devMarch3dBtn">🚢 3D march ships: On</button><button class="dev-btn" id="devWalkBtn">🚶 Map troops: On</button></div>
                 <div class="dev-tools-hint" style="margin-top:6px;">🗺️ Isometric map look (shown when the toggle below is On):</div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:88px;">Tile size:</span><input type="range" class="dev-slider" id="devIsoTile" min="16" max="56" step="1"><span class="dev-slider-val" id="devIsoTileVal"></span></div>
                 <div class="dev-tools-row"><span class="dev-tools-hint" style="width:88px;">Base art size:</span><input type="range" class="dev-slider" id="devIsoBase" min="1" max="6" step="0.1"><span class="dev-slider-val" id="devIsoBaseVal"></span></div>
@@ -15058,7 +15058,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1901"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1902"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23033,12 +23033,13 @@ function marchVisualHeading(gx, gz, M) {
 // ships: [{id, ox, oy (viewport px of the ground point), tx, ty (tile coords), gx, gz (ground heading in tile coords)}]; u = pixels per tile step
 var MARCH_OUTLINE_K = 0.011; /* v1712 (Harley: "It should be thin not thick"): the thin zoomed-in look at every zoom */ /* v1707: outline for models made with one; v1711 (Harley: "zoomed out it looks thick vs the ship, zoomed in it looks thin"): width = this share of the ship's on-screen length (~1.1px at normal zoom), so it scales with zoom */
 var MARCH_GL_PX = 600000; /* v1238: most device pixels the 3D ship layer may use (~775 x 775) */
-function marchGLDraw(ships, u) {
+function marchGLDraw(ships, u, walkers) {
   var G = marchGL; if (!G.ok) return;
+  var walk = (walkers || []).filter(function (w) { return !w.hidden && w.s > 0.02; }); /* v1902: mini troops */
   var guns = ships.filter(function (s0) { return s0.gun; }); if (guns.length) ships = ships.filter(function (s0) { return !s0.gun; }); /* v1890: fort guns */
   var vp = document.getElementById("mapviewport"); if (!vp) return;
   var gl = G.gl, cv = G.cv;
-  if (!ships.length && !guns.length) { if (G.hadShips) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); G.hadShips = false; cv.style.display = "none"; } return; }
+  if (!ships.length && !guns.length && !walk.length) { if (G.hadShips) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); G.hadShips = false; cv.style.display = "none"; } return; }
   /* v1236: the canvas only covers the box round the ships (+ their wakes), not the whole screen + 160px border - far fewer pixels to clear,
      draw and blend over the map every frame. Size moves in 64px steps and only shrinks when it's much too big (no resize every frame). */
   var VW = vp.clientWidth, VH = vp.clientHeight, dpr = Math.min(window.devicePixelRatio || 1, 2), PADV = 40;
@@ -23049,6 +23050,7 @@ function marchGLDraw(ships, u) {
     var tx = sh.ox - (Dx - Dz) * 0.70711 * u * w, ty = sh.oy - (Dx + Dz) * 0.40558 * u * w;
     bx0 = Math.min(bx0, sh.ox - R, tx - R); by0 = Math.min(by0, sh.oy - R, ty - R); bx1 = Math.max(bx1, sh.ox + R, tx + R); by1 = Math.max(by1, sh.oy + R, ty + R);
   });
+  walk.forEach(function (w) { var c = tileCenterPx({ x: w.x, y: w.y }), R = 0.45 * u; bx0 = Math.min(bx0, c.x - R); by0 = Math.min(by0, c.y - R - 0.25 * tilePxZ()); bx1 = Math.max(bx1, c.x + R); by1 = Math.max(by1, c.y + R); });
   guns.forEach(function (g) { var R = 1.3 * u; bx0 = Math.min(bx0, g.ox - R); by0 = Math.min(by0, g.oy - R - g.lift * ISO_C * u); bx1 = Math.max(bx1, g.ox + R); by1 = Math.max(by1, g.oy + R); });
   bx0 = Math.max(bx0, vx0); by0 = Math.max(by0, vy0); bx1 = Math.min(bx1, vx1); by1 = Math.min(by1, vy1);
   if (!(bx1 > bx0 && by1 > by0)) { if (G.hadShips) { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); G.hadShips = false; cv.style.display = "none"; } return; }
@@ -23068,7 +23070,7 @@ function marchGLDraw(ships, u) {
   var water = march3dWater && marchWaterInitGL(gl) && marchWaterBuild(ships, u, G); /* v1058: water on the GPU, same canvas */
   if (water) { gl.bindBuffer(gl.ARRAY_BUFFER, marchWater.buf); gl.bufferData(gl.ARRAY_BUFFER, marchWater.arr.subarray(0, marchWater.n * 6), gl.DYNAMIC_DRAW); marchWaterGLDraw(gl, 0, marchWater.nU, W, H); }
   gl.uniform2f(L.uRes, W, H); gl.uniform1f(L.uU, u);
-  var zRef = 0; ships.concat(guns).forEach(function (sh) { zRef += sh.tx + sh.ty; }); zRef /= (ships.length + guns.length); gl.uniform3f(L.uLD, -0.35, 0.85, 0.45);
+  var zRef = 0; ships.concat(guns).forEach(function (sh) { zRef += sh.tx + sh.ty; }); walk.forEach(function (w) { zRef += w.x + w.y; }); zRef /= (ships.length + guns.length + walk.length); gl.uniform3f(L.uLD, -0.35, 0.85, 0.45);
   ships.forEach(function (sh) {
     // heading: bow is -x in the model, so rotate it onto the travel direction; ease toward the target angle so turns at the end of a leg aren't instant
     var mk0 = MARCH_SKINS_BY_ID[sh.skin] || MARCH_SKINS[0], mo0 = marchModelFor(mk0), vh = marchVisualHeading(sh.gx, sh.gz, mo0.M); /* v1223 */
@@ -23091,6 +23093,7 @@ function marchGLDraw(ships, u) {
       gl.uniform1f(L.uZ0, (g.tx + g.ty - zRef) * 0.70711 * 0.81915); gl.drawElements(gl.TRIANGLES, mo.n, gl.UNSIGNED_SHORT, 0); });
     gl.uniform3f(L.uLD, -0.35, 0.85, 0.45);
   }
+  if (walk.length) try { mapWalkersDraw(gl, G, walk, u, zRef); } catch (e) { console.warn("map walkers draw:", e && e.message); } /* v1902 */
   G.hadShips = true;
 }
 
@@ -23109,6 +23112,274 @@ function clipSegToRect(a, b, r) { /* v1075: the part [t0,t1] of the line a->b in
 function marchTileCenterPx(tile) { return tileCenterPx(tile); } /* v825: flat or isometric */
 function clamp01(n) { return n < 0 ? 0 : n > 1 ? 1 : n; }
 
+/* ---- v1902 (Harley, 29 Nov 2026): mini troops walking on the world map (dev/plans/map_walkers.md). Medieval soldiers in navy + gold walk
+   short trips on land: out of a city / node (or in from the screen edge) -> into a city / node (or off screen), then they are deleted.
+   Drawn in the march ships' 3D layer (same canvas, pixel budget, camera). Cheap by design: each outfit's mesh is built and uploaded ONCE;
+   per frame each soldier only sends its ~22 joint matrices (posed on the GPU); NO live lighting (shading baked into the colours); a lighter
+   mesh when they are small; none at all zoomed out past MAP_WALK_MIN_ZOOM. Routes come from a small grid search (half-tile cells) that keeps
+   off each city's 3x3 block, single-tile nodes / monsters / decorations and the sea, and can use narrow gaps between bases. */
+var MAP_WALK_KEY = "kingdom_mapWalkers_v1", mapWalkOn = true, MAP_WALK_MIN_ZOOM = 1.2, MAP_WALK_MAX = 9;
+try { mapWalkOn = localStorage.getItem(MAP_WALK_KEY) !== "0"; } catch (e) {}
+function setMapWalkOn(on) { mapWalkOn = !!on; try { localStorage.setItem(MAP_WALK_KEY, on ? "1" : "0"); } catch (e) {} if (!on) mapWalk.list = []; }
+var mapWalk = { list: [], meshes: null, prog: null, loc: null, nextId: 0, spawnT: 0, last: 0, perf: { n: 0, ms: 0 }, zoomOk: false };
+var WALK_J = ["hips", "torso", "head", "thighL", "shinL", "footL", "thighR", "shinR", "footR", "upperL", "foreL", "handL", "upperR", "foreR", "handR", "shield", "spear", "sword", "bow", "quiver", "pole", "flag"];
+function walkHex(h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16) / 255; }); }
+var WALK_SKIN = [-1, 0, 0], WALK_HAIR = [-2, 0, 0]; /* colour slots filled per soldier in the shader */
+var WALK_SKINS = ["#f1c7a0", "#e0b088", "#b97f55", "#8a5a38"].map(walkHex), WALK_HAIRS = ["#2b1a0e", "#6b3b16", "#c9a35a", "#141414", "#8b8b8b"].map(walkHex);
+var WALK_OUTFITS = (function () {
+  var H = walkHex, NAVY = H("#24407e"), NAVY2 = H("#2c4c94"), MAIL = H("#8d939d"), PLATE = H("#a3acb9"), HOSE = H("#5a3f2a"), BOOT = H("#3a2616"), BELT = H("#4a2f19");
+  return [
+    { name: "knight", sh: PLATE, sleeve: PLATE, pad: H("#c3cad4"), vest: NAVY, trim: true, skirt: true, tr: PLATE, boot: H("#7d8592"), belt: BELT, great: true, items: ["sword", "shield"] },
+    { name: "footman", sh: MAIL, sleeve: MAIL, vest: NAVY, trim: true, skirt: true, tr: HOSE, boot: BOOT, belt: BELT, kettle: true, items: ["spear", "shield"] },
+    { name: "archer", sh: H("#6b4a2b"), sleeve: H("#7a5634"), vest: H("#4f6b2e"), tr: H("#4a3a24"), boot: BOOT, belt: BELT, hood: H("#3f5a26"), items: ["bow", "quiver"] },
+    { name: "spearman", sh: H("#c9b48a"), sleeve: H("#c2ab7e"), vest: H("#b8a074"), tr: HOSE, boot: BOOT, belt: BELT, nasal: true, items: ["spear"] },
+    { name: "bannerman", sh: MAIL, sleeve: MAIL, vest: NAVY2, trim: true, skirt: true, tr: HOSE, boot: BOOT, belt: BELT, nasal: true, items: ["banner"] },
+    { name: "sergeant", sh: MAIL, sleeve: MAIL, vest: NAVY, trim: true, skirt: true, tr: H("#3a3a44"), boot: BOOT, belt: BELT, kettle: true, items: ["sword", "shield"] },
+    { name: "footman2", sh: MAIL, sleeve: MAIL, vest: NAVY, trim: true, skirt: true, tr: HOSE, boot: BOOT, belt: BELT, nasal: true, items: ["spear", "shield"] },
+    { name: "archer2", sh: H("#6b4a2b"), sleeve: H("#7a5634"), vest: NAVY, trim: true, tr: H("#4a3a24"), boot: BOOT, belt: BELT, hood: H("#5a4030"), items: ["bow", "quiver"] }
+  ];
+})();
+/* ---- 3x4 matrices ---- */
+function walkMul(a, b) { var r = new Array(12); for (var i = 0; i < 3; i++) { for (var j = 0; j < 3; j++) r[i * 4 + j] = a[i * 4] * b[j] + a[i * 4 + 1] * b[4 + j] + a[i * 4 + 2] * b[8 + j]; r[i * 4 + 3] = a[i * 4] * b[3] + a[i * 4 + 1] * b[7] + a[i * 4 + 2] * b[11] + a[i * 4 + 3]; } return r; }
+function walkT(x, y, z) { return [1, 0, 0, x, 0, 1, 0, y, 0, 0, 1, z]; }
+function walkRz(a) { var c = Math.cos(a), s = Math.sin(a); return [c, -s, 0, 0, s, c, 0, 0, 0, 0, 1, 0]; }
+function walkRy(a) { var c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 0, 1, 0, 0, -s, 0, c, 0]; }
+function walkRx(a) { var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0]; }
+function walkAp(m, p) { return [m[0] * p[0] + m[1] * p[1] + m[2] * p[2] + m[3], m[4] * p[0] + m[5] * p[1] + m[6] * p[2] + m[7], m[8] * p[0] + m[9] * p[1] + m[10] * p[2] + m[11]]; }
+function walkAd(m, p) { return [m[0] * p[0] + m[1] * p[1] + m[2] * p[2], m[4] * p[0] + m[5] * p[1] + m[6] * p[2], m[8] * p[0] + m[9] * p[1] + m[10] * p[2]]; }
+/* ---- the soldier, built from simple round parts (facing +x, 1 unit tall); lod 1 = lighter mesh for small sizes ---- */
+function walkBuildPerson(o, lod) {
+  var K = lod ? 0.42 : 0.6;
+  function nrm(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+  function ell(c, r, col, seg, rings, keep) { var P = [], N = []; seg = Math.max(lod ? 5 : 6, Math.round(seg * K)); rings = Math.max(lod ? 3 : 4, Math.round(rings * K));
+    function pt(i, j) { var th = Math.PI * i / rings, ph = 2 * Math.PI * j / seg, u = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)]; return [[c[0] + u[0] * r[0], c[1] + u[1] * r[1], c[2] + u[2] * r[2]], nrm([u[0] / r[0], u[1] / r[1], u[2] / r[2]]), u]; }
+    for (var i = 0; i < rings; i++) for (var j = 0; j < seg; j++) { var a = pt(i, j), b = pt(i + 1, j), d = pt(i + 1, j + 1), e = pt(i, j + 1);
+      if (keep) { var m = [(a[2][0] + d[2][0]) / 2, (a[2][1] + d[2][1]) / 2, (a[2][2] + d[2][2]) / 2]; if (!keep(m)) continue; }
+      [a, b, d, a, d, e].forEach(function (q) { P.push(q[0]); N.push(q[1]); }); }
+    return { P: P, N: N, col: col }; }
+  function loft(rings, col, seg, capB, capT) { var P = [], N = []; seg = seg <= 6 ? seg : Math.max(lod ? 5 : 6, Math.round(seg * K));
+    function pt(k, j) { var R = rings[k], ph = 2 * Math.PI * j / seg, c = Math.cos(ph), s = Math.sin(ph); return [[R[3] + c * R[1], R[0], s * R[2]], nrm([c / R[1], 0, s / R[2]])]; }
+    for (var k = 0; k < rings.length - 1; k++) for (var j = 0; j < seg; j++) { var a = pt(k, j), b = pt(k + 1, j), d = pt(k + 1, j + 1), e = pt(k, j + 1); [a, e, d, a, d, b].forEach(function (q) { P.push(q[0]); N.push(q[1]); }); }
+    [[capB, 0, -1], [capT, rings.length - 1, 1]].forEach(function (cp) { if (!cp[0]) return; var k = cp[1], sg = cp[2], y = rings[k][0], ox = rings[k][3];
+      for (var j = 0; j < seg; j++) { var a = pt(k, j), b = pt(k, j + 1), tri = sg > 0 ? [[ox, y, 0], b[0], a[0]] : [[ox, y, 0], a[0], b[0]]; tri.forEach(function (p) { P.push(p); N.push([0, sg, 0]); }); } });
+    return { P: P, N: N, col: col }; }
+  function limb(len, r1, r2, col) { return loft([[-len, r2, r2, 0], [0, r1, r1, 0]], col, lod ? 4 : 5, false, false); }
+  function cyl(y0, y1, r, col, seg, ox, oz) { var m = loft([[y0, r, r, 0], [y1, r, r, 0]], col, Math.min(seg || 8, lod ? 5 : 8), true, true); if (ox || oz) m.P = m.P.map(function (p) { return [p[0] + (ox || 0), p[1], p[2] + (oz || 0)]; }); return m; }
+  function box(c, s, col) { var P = [], N = [], F = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 0, 1], [0, 1, 0]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [0, 1, 0], [1, 0, 0]]];
+    F.forEach(function (f) { var n = f[0], u = f[1], v = f[2]; function q(a, b) { return [0, 1, 2].map(function (k) { return c[k] + (n[k] + u[k] * a + v[k] * b) * s[k] / 2; }); } var p = [q(-1, -1), q(1, -1), q(1, 1), q(-1, 1)]; [0, 1, 2, 0, 2, 3].forEach(function (i) { P.push(p[i]); N.push(n); }); });
+    return { P: P, N: N, col: col }; }
+  function rp(m, ang, piv) { var R = walkRx(ang); m.P = m.P.map(function (p) { var q = walkAp(R, [p[0] - piv[0], p[1] - piv[1], p[2] - piv[2]]); return [q[0] + piv[0], q[1] + piv[1], q[2] + piv[2]]; }); m.N = m.N.map(function (n) { return walkAd(R, n); }); return m; }
+  var H = walkHex, SK = WALK_SKIN, HR = WALK_HAIR, STEEL = H("#aab3c0"), STEELD = H("#6d7684"), WOOD = H("#7a5230"), GOLD = H("#e0b04a"), LEATH = H("#6b4526"), DARK = H("#151a26");
+  var nodes = {}; function add(name, parent, prims, pos) { nodes[name] = { parent: parent, prims: prims, pos: pos || null }; }
+  var has = function (k) { return (o.items || []).indexOf(k) >= 0; }, sleeve = o.sleeve || o.sh;
+  add("hips", null, [ell([0, 0.5, 0], [0.085, 0.07, 0.115], o.tr, 10, 6), loft([[0.505, 0.092, 0.122, 0], [0.545, 0.092, 0.122, 0]], o.belt, 10, false, false)]);
+  add("torso", "hips", [loft([[0.52, 0.083, 0.108, 0], [0.6, 0.092, 0.125, 0.004], [0.7, 0.096, 0.142, 0.006], [0.765, 0.085, 0.14, 0], [0.8, 0.05, 0.08, -0.005]], o.sh, 12, false, true),
+    cyl(0.79, 0.84, 0.036, SK, 8)].concat(o.vest ? [loft([[0.55, 0.088, 0.112, 0.006], [0.7, 0.1, 0.146, 0.008], [0.75, 0.094, 0.142, 0.004]], o.vest, 12, false, false)] : []));
+  add("head", "torso", [ell([0.005, 0.905, 0], [0.088, 0.1, 0.084], SK, 12, 8), ell([0.085, 0.89, 0], [0.018, 0.022, 0.016], SK, 6, 4),
+    ell([0.074, 0.912, -0.032], [0.012, 0.015, 0.012], H("#1a1410"), 6, 4), ell([0.074, 0.912, 0.032], [0.012, 0.015, 0.012], H("#1a1410"), 6, 4),
+    ell([-0.008, 0.925, 0], [0.096, 0.094, 0.091], HR, 12, 8, function (u) { return u[1] > -0.05 && (u[0] < 0.25 || u[1] > 0.62); })]);
+  ["L", "R"].forEach(function (sd) { var z = sd === "L" ? -1 : 1;
+    add("thigh" + sd, "hips", [ell([0, 0, 0], [0.058, 0.05, 0.058], o.tr, 8, 5), limb(0.2, 0.056, 0.044, o.tr)], [0, 0.47, z * 0.062]);
+    var bootM = limb(0.09, 0.046, 0.041, o.boot); bootM.P = bootM.P.map(function (p) { return [p[0], p[1] - 0.08, p[2]]; });
+    add("shin" + sd, "thigh" + sd, [ell([0, 0, 0], [0.045, 0.045, 0.045], o.tr, 8, 5), limb(0.17, 0.044, 0.036, o.tr), bootM], [0, -0.2, 0]);
+    add("foot" + sd, "shin" + sd, [ell([0.03, -0.012, 0], [0.068, 0.03, 0.042], o.boot, 10, 5, function (u) { return u[1] > -0.2; }), box([0.03, -0.035, 0], [0.13, 0.012, 0.075], H("#1b140d"))], [0, -0.2, 0]);
+    add("upper" + sd, "torso", [ell([0, 0, 0], [0.052, 0.05, 0.05], o.pad || sleeve, 8, 5), limb(0.15, 0.044, 0.037, sleeve)], [0, 0.755, z * 0.152]);
+    add("fore" + sd, "upper" + sd, [ell([0, 0, 0], [0.037, 0.037, 0.037], sleeve, 8, 5), limb(0.13, 0.036, 0.029, sleeve)], [0, -0.15, 0]);
+    add("hand" + sd, "fore" + sd, [ell([0.005, -0.03, 0], [0.03, 0.038, 0.026], SK, 8, 5)], [0, -0.13, 0]); });
+  if (o.skirt) nodes.hips.prims.push(loft([[0.33, 0.1, 0.125, 0.004], [0.43, 0.095, 0.122, 0.002], [0.5, 0.09, 0.118, 0]], o.vest, 12, false, false), loft([[0.33, 0.102, 0.127, 0.004], [0.345, 0.102, 0.127, 0.004]], GOLD, 12, false, false));
+  if (o.vest && o.trim) nodes.torso.prims.push(loft([[0.755, 0.096, 0.143, 0.004], [0.77, 0.09, 0.14, 0.002]], GOLD, 12, false, false), box([0.1, 0.66, 0], [0.008, 0.11, 0.025], GOLD), box([0.1, 0.665, 0], [0.008, 0.025, 0.08], GOLD));
+  if (o.hood) nodes.head.prims.push(ell([-0.005, 0.915, 0], [0.104, 0.11, 0.1], o.hood, 12, 8, function (u) { return u[0] < 0.4 || u[1] > 0.6; }), loft([[0.76, 0.1, 0.15, -0.01], [0.82, 0.07, 0.1, -0.01]], o.hood, 12, false, false));
+  if (o.kettle) nodes.head.prims.push(ell([0, 0.94, 0], [0.098, 0.085, 0.096], STEEL, 12, 8, function (u) { return u[1] > 0.05; }), cyl(0.94, 0.955, 0.135, STEELD, 16), loft([[0.79, 0.07, 0.09, -0.01], [0.86, 0.095, 0.092, -0.01]], H("#8a909a"), 12, false, false));
+  if (o.nasal) nodes.head.prims.push(ell([0, 0.94, 0], [0.098, 0.1, 0.096], STEEL, 12, 8, function (u) { return u[1] > 0.0; }), box([0.096, 0.905, 0], [0.012, 0.07, 0.02], STEEL), loft([[0.79, 0.07, 0.09, -0.01], [0.88, 0.098, 0.096, -0.01]], H("#8a909a"), 12, false, false));
+  if (o.great) nodes.head.prims.push(loft([[0.8, 0.104, 0.1, 0], [0.97, 0.104, 0.1, 0], [1.01, 0.08, 0.077, 0]], STEEL, 14, false, true), box([0.1, 0.925, 0], [0.012, 0.016, 0.15], DARK), box([0.103, 0.88, 0], [0.006, 0.07, 0.016], GOLD), ell([-0.01, 1.05, 0], [0.06, 0.04, 0.02], H("#c0392b"), 8, 4));
+  if (has("shield")) add("shield", "foreL", [ell([0, -0.02, -0.045], [0.12, 0.15, 0.022], o.vest, 12, 6), box([0, -0.02, -0.068], [0.02, 0.2, 0.006], GOLD), box([0, 0.01, -0.068], [0.15, 0.02, 0.006], GOLD)], [0, -0.08, 0]);
+  if (has("spear")) add("spear", "handR", [cyl(-0.3, 0.62, 0.011, WOOD, 6), loft([[0.62, 0.02, 0.008, 0], [0.75, 0.002, 0.002, 0]], STEEL, 6, true, false)]);
+  if (has("sword")) add("sword", "handR", [box([0, -0.055, 0], [0.025, 0.02, 0.1], GOLD), box([0, -0.03, 0], [0.018, 0.045, 0.018], LEATH), box([0, -0.2, 0], [0.026, 0.27, 0.006], H("#d6dde6"))]);
+  if (has("bow")) add("bow", "handL", [-4, -3, -2, -1, 0, 1, 2, 3].map(function (k) { var y0 = k * 0.085, x0 = 0.05 * Math.cos(k / 4 * 1.2), x1 = 0.05 * Math.cos((k + 1) / 4 * 1.2), m = loft([[y0, 0.012, 0.012, 0], [y0 + 0.085, 0.012, 0.012, 0]], WOOD, lod ? 4 : 5, false, false); m.P = m.P.map(function (p) { return [p[0] + x0 + (x1 - x0) * (p[1] - y0) / 0.085, p[1], p[2]]; }); return m; }).concat([cyl(-0.33, 0.33, 0.003, H("#e8e2d0"), 4, -0.005, 0)]));
+  if (has("quiver")) add("quiver", "torso", [rp(cyl(0.5, 0.78, 0.035, LEATH, 8, -0.12, 0.05), -0.45, [-0.12, 0.64, 0.05])]);
+  if (has("banner")) { add("pole", "handR", [cyl(-0.3, 0.75, 0.011, WOOD, 6), ell([0, 0.77, 0], [0.022, 0.022, 0.022], GOLD, 6, 4)]); add("flag", "pole", [box([-0.13, 0.6, 0], [0.24, 0.24, 0.008], o.vest), box([-0.13, 0.6, 0.006], [0.24, 0.04, 0.004], GOLD), box([-0.13, 0.6, 0.006], [0.04, 0.24, 0.004], GOLD)]); }
+  /* flatten: position, outline direction, baked colour (or skin / hair slot), joint index */
+  var P = [], N = [], C = [], J = [];
+  WALK_J.forEach(function (name, ji) { var nd = nodes[name]; if (!nd) return; nd.prims.forEach(function (pm) { for (var i = 0; i < pm.P.length; i++) { var n = pm.N[i], f = 0.78 + 0.3 * Math.max(0, n[1]) - 0.22 * Math.max(0, -n[1]) + 0.04 * (n[0] + n[2]);
+    P.push(pm.P[i][0], pm.P[i][1], pm.P[i][2]); N.push(n[0], n[1], n[2]); if (pm.col[0] < 0) C.push(f, f, -pm.col[0]); else C.push(Math.min(1, pm.col[0] * f), Math.min(1, pm.col[1] * f), Math.min(1, pm.col[2] * f) + 10); J.push(ji); } }); });
+  /* corners shared between triangles (round parts repeat each corner ~6x) -> an index buffer: far fewer vertices for the GPU to pose */
+  var key = {}, P2 = [], N2 = [], C2 = [], J2 = [], I = [];
+  for (var vi = 0; vi < J.length; vi++) { var kk = [P[vi * 3], P[vi * 3 + 1], P[vi * 3 + 2], N[vi * 3], N[vi * 3 + 1], N[vi * 3 + 2], C[vi * 3], C[vi * 3 + 1], C[vi * 3 + 2], J[vi]].map(function (x) { return Math.round(x * 1e4); }).join(","), id = key[kk];
+    if (id === undefined) { id = key[kk] = J2.length; P2.push(P[vi * 3], P[vi * 3 + 1], P[vi * 3 + 2]); N2.push(N[vi * 3], N[vi * 3 + 1], N[vi * 3 + 2]); C2.push(C[vi * 3], C[vi * 3 + 1], C[vi * 3 + 2]); J2.push(J[vi]); } I.push(id); }
+  return { nodes: nodes, P: new Float32Array(P2), N: new Float32Array(N2), C: new Float32Array(C2), J: new Float32Array(J2), I: new Uint16Array(I), n: I.length, nv: J2.length };
+}
+function walkPose(w, t) { /* joint angles this frame */
+  var p = w.ph, m = w.mv ? 1 : 0, sp = m ? Math.sin(p) : 0, cp = m ? Math.cos(p) : 0, J = {}, has = function (k) { return (w.o.items || []).indexOf(k) >= 0; };
+  J.bob = m ? 0.018 * (Math.cos(2 * p) + 1) / 2 : 0;
+  J.hips = walkMul(walkRx(0.05 * sp), walkRy(-0.1 * sp)); J.torso = walkMul(walkRy(0.16 * sp), walkRz(m ? -0.06 : 0)); J.head = walkMul(walkRy(-0.06 * sp), walkRz(0.05 * m));
+  ["L", "R"].forEach(function (sd, k) { var s = k ? -sp : sp, c = k ? -cp : cp;
+    J["thigh" + sd] = walkRz(0.5 * s); J["shin" + sd] = walkRz(-(0.12 + 0.85 * Math.max(0, c)) * m); J["foot" + sd] = walkRz(m ? (0.12 + 0.85 * Math.max(0, c)) * 0.45 - 0.15 * s : 0);
+    J["upper" + sd] = walkMul(walkRz(-0.42 * s), walkRx((k ? -1 : 1) * 0.08)); J["fore" + sd] = walkRz(0.25 + 0.25 * Math.max(0, -s) * m); });
+  if (has("spear") || has("banner")) { J.upperR = walkMul(walkRz(0.1), walkRx(-0.1)); J.foreR = walkRz(1.25); J.spear = J.pole = walkRz(-1.35); }
+  if (has("banner")) J.flag = walkRy(0.35 * Math.sin(t * 5 + w.id) + 0.25 * m);
+  if (has("shield")) { J.upperL = walkMul(walkRz(0.25 - 0.12 * sp), walkRx(0.18)); J.foreL = walkRz(1.2); J.shield = walkRz(-1.4); }
+  if (has("sword")) { J.foreR = walkRz(0.55 + 0.2 * Math.max(0, sp) * m); J.sword = walkRz(0.9); }
+  if (has("bow")) { J.upperL = walkMul(walkRz(0.2 - 0.15 * sp), walkRx(0.1)); J.foreL = walkRz(0.55); J.bow = walkRz(-0.75); }
+  return J;
+}
+var WALK_PIV = { hips: 0.5, torso: 0.53, head: 0.82 };
+function walkBones(w, t, out) { /* the soldier's 22 joint matrices (incl. facing + bob) -> out (Float32Array 22*12) */
+  var J = walkPose(w, t), mesh = w.mesh, M = {}, root = walkMul(walkRy(-w.ang), walkT(0, J.bob, 0));
+  WALK_J.forEach(function (name, ji) { var nd = mesh.nodes[name], m;
+    if (!nd) { m = root; } else {
+      var par = nd.parent ? M[nd.parent] : root, local = nd.pos ? walkT(nd.pos[0], nd.pos[1], nd.pos[2]) : walkT(0, 0, 0);
+      if (J[name]) local = nd.pos ? walkMul(local, J[name]) : walkMul(walkMul(walkT(0, WALK_PIV[name] || 0, 0), J[name]), walkT(0, -(WALK_PIV[name] || 0), 0));
+      m = walkMul(par, local); }
+    M[name] = m; for (var k = 0; k < 12; k++) out[ji * 12 + k] = m[k]; });
+}
+function walkGLInit(gl) {
+  if (mapWalk.prog) return true;
+  try {
+    var NJ = WALK_J.length;
+    var vs = "attribute vec3 aP; attribute vec3 aN; attribute vec3 aC; attribute float aJ; uniform vec4 uB[" + (NJ * 3) + "]; uniform vec2 uRes; uniform vec2 uOrg; uniform float uU; uniform float uS; uniform float uZ0; uniform float uOL; uniform float uDO; uniform float uShadow; varying vec3 vC; varying float vK;" +
+      "void main(){ int j = int(aJ + 0.5) * 3; vec4 r0 = uB[j], r1 = uB[j + 1], r2 = uB[j + 2];" + /* vertex shaders may index uniform arrays directly (GLSL ES 1.0, appendix A) */
+      " vec3 w = vec3(dot(r0.xyz, aP) + r0.w, dot(r1.xyz, aP) + r1.w, dot(r2.xyz, aP) + r2.w) * uS; if (uShadow > 0.5) w = vec3(aP.x * uS, 0.0, aP.z * uS);" +
+      " vC = aC; vK = uShadow > 0.5 ? 2.0 : 0.0;" +
+      " vec2 scr = uOrg + vec2((w.x - w.z) * 0.70711, (w.x + w.z) * 0.70711 * " + ISO_K.toFixed(5) + " - w.y * " + ISO_C.toFixed(5) + ") * uU;" +
+      " float depth = uZ0 + (w.x + w.z) * 0.70711 * " + ISO_C.toFixed(5) + " + w.y * " + ISO_K.toFixed(5) + ";" +
+      " if (uOL > 0.0) { vec3 n = vec3(dot(r0.xyz, aN), dot(r1.xyz, aN), dot(r2.xyz, aN)); vec2 d = vec2((n.x - n.z) * 0.70711, (n.x + n.z) * 0.70711 * " + ISO_K.toFixed(5) + " - n.y * " + ISO_C.toFixed(5) + "); float l = length(d); if (l > 0.001) scr += d / l * uOL; depth -= uDO; vK = 1.0; }" +
+      " gl_Position = vec4(scr.x / uRes.x * 2.0 - 1.0, 1.0 - scr.y / uRes.y * 2.0, -depth / 400.0, 1.0); }";
+    var fs = "precision mediump float; uniform vec3 uSkin; uniform vec3 uHair; varying vec3 vC; varying float vK; void main(){" +
+      " if (vK > 1.5) { gl_FragColor = vec4(0.0, 0.0, 0.0, 0.24); return; } if (vK > 0.5) { gl_FragColor = vec4(0.07, 0.08, 0.13, 1.0); return; }" +
+      " vec3 c = vC.z > 5.0 ? vec3(vC.xy, vC.z - 10.0) : (vC.z > 1.5 ? uHair : uSkin) * vC.x; gl_FragColor = vec4(c, 1.0); }"; /* no lighting: colours were shaded once when the mesh was built */
+    function sh(t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
+    var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+    var L = {}; ["uB", "uRes", "uOrg", "uU", "uS", "uZ0", "uOL", "uDO", "uShadow", "uSkin", "uHair"].forEach(function (n) { L[n] = gl.getUniformLocation(pr, n); });
+    ["aP", "aN", "aC", "aJ"].forEach(function (n) { L[n] = gl.getAttribLocation(pr, n); });
+    function buf(d) { var b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, d, gl.STATIC_DRAW); return b; }
+    mapWalk.meshes = WALK_OUTFITS.map(function (o) { return [0, 1].map(function (lod) { var m = walkBuildPerson(o, lod); m.bP = buf(m.P); m.bN = buf(m.N); m.bC = buf(m.C); m.bJ = buf(m.J); m.bI = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.bI); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, m.I, gl.STATIC_DRAW); m.P = m.N = m.C = m.J = m.I = null; return m; }); });
+    var sd = [], SEG = 12; for (var i = 0; i < SEG; i++) { var a0 = i / SEG * 6.2832, a1 = (i + 1) / SEG * 6.2832; sd.push(0, 0, 0, Math.cos(a0) * 0.17, 0, Math.sin(a0) * 0.17, Math.cos(a1) * 0.17, 0, Math.sin(a1) * 0.17); }
+    mapWalk.shadow = { b: buf(new Float32Array(sd)), n: SEG * 3, z: buf(new Float32Array(SEG * 3 * 3)), j: buf(new Float32Array(SEG * 3)) };
+    mapWalk.prog = pr; mapWalk.loc = L; mapWalk.bones = new Float32Array(WALK_J.length * 12); mapWalk.boneV = new Float32Array(WALK_J.length * 12);
+    return true;
+  } catch (e) { console.warn("map walkers GL:", e && e.message); mapWalk.prog = null; mapWalkOn = false; return false; }
+}
+/* ---- what's around: places to come from / go to, and things to keep off ---- */
+function walkScan(x0, y0, x1, y1) {
+  var map = game.state.map, home = mapTileById(map, game.state.homeTileId), objs = [], seen = {};
+  function addObj(x, y, kind) { var k = x + "," + y; if (seen[k]) return; seen[k] = 1; var big = kind === "city";
+    objs.push({ x: x, y: y, kind: kind, half: big ? 1.5 : 0.5, enter: kind === "city" || kind === "resource", hw: big ? 1.6 : 0.75, h: big ? 3.4 : 1.35 }); }
+  if (home) addObj(home.x, home.y, "city");
+  for (var id in occupiedTileIds) { var c = id.indexOf(","); if (c < 0) continue; var cx = +id.slice(0, c), cy = +id.slice(c + 1); if (cx >= x0 - 2 && cx <= x1 + 2 && cy >= y0 - 2 && cy <= y1 + 2) addObj(cx, cy, "city"); }
+  for (var y = Math.max(0, y0); y <= y1; y++) for (var x = Math.max(0, x0); x <= x1; x++) { var t = mapTileAt(map, x, y); if (!t || t.type === "empty" || t.type === "home") continue; addObj(x, y, t.type === "resource" ? "resource" : "other"); }
+  try { for (var dk in mapDecor) { var d = mapDecor[dk]; if (d && d.x >= x0 && d.x <= x1 && d.y >= y0 && d.y <= y1) addObj(d.x, d.y, "decor"); } } catch (e) {}
+  return objs;
+}
+function walkView() { /* visible ground area in tile coords (from the viewport corners) */
+  var vp = document.getElementById("mapviewport"), g = isoGeom(); if (!vp || !g) return null;
+  function toT(px, py) { var a = (px - g.offX) / g.r2, b = (py - g.offY) / (g.r2 * ISO_K); return [(a + b) / 2, (b - a) / 2]; }
+  var L = vp.scrollLeft, T = vp.scrollTop, W = vp.clientWidth, H = vp.clientHeight, c = [toT(L, T), toT(L + W, T), toT(L, T + H), toT(L + W, T + H)];
+  return { L: L, T: T, W: W, H: H, toT: toT, x0: Math.floor(Math.min(c[0][0], c[1][0], c[2][0], c[3][0])), x1: Math.ceil(Math.max(c[0][0], c[1][0], c[2][0], c[3][0])), y0: Math.floor(Math.min(c[0][1], c[1][1], c[2][1], c[3][1])), y1: Math.ceil(Math.max(c[0][1], c[1][1], c[2][1], c[3][1])) };
+}
+function walkOnScreen(v, x, y, m) { var p = tileCenterPx({ x: x, y: y }); return p.x > v.L - m && p.x < v.L + v.W + m && p.y > v.T - m && p.y < v.T + v.H + m; }
+function walkGrid(v, objs) { /* half-tile cells over the view + a margin: 1 = sea or a base / node / decoration footprint (+ a small margin) */
+  var S = 2, gx0 = v.x0 - 4, gy0 = v.y0 - 4, NX = (v.x1 - v.x0 + 8) * S, NY = (v.y1 - v.y0 + 8) * S, N = NX * NY; if (N > 40000) return null;
+  var block = new Uint8Array(N), hasTerr = typeof terrainArr !== "undefined" && terrainArr && terrainN;
+  if (hasTerr) for (var j = 0; j < NY; j++) for (var i = 0; i < NX; i++) if (terrainAt(Math.round(gx0 + (i + 0.5) / S), Math.round(gy0 + (j + 0.5) / S)) === 0) block[j * NX + i] = 1;
+  objs.forEach(function (o) { var m = o.half + 0.12; for (var j = Math.floor((o.y - m - gy0) * S); j <= Math.ceil((o.y + m - gy0) * S); j++) for (var i = Math.floor((o.x - m - gx0) * S); i <= Math.ceil((o.x + m - gx0) * S); i++) {
+    if (i < 0 || j < 0 || i >= NX || j >= NY) continue; var x = gx0 + (i + 0.5) / S, y = gy0 + (j + 0.5) / S; if (Math.abs(x - o.x) < m && Math.abs(y - o.y) < m) block[j * NX + i] = 1; } });
+  return { S: S, gx0: gx0, gy0: gy0, NX: NX, NY: NY, block: block, cost: new Float32Array(N * 4), from: new Int32Array(N * 4) };
+}
+function walkRoute(g, a, b) { /* A* on the grid, moves along the tile axes (diagonals on screen, like roads), turning costs extra; narrow gaps between bases are fine */
+  if (!g) return null; var S = g.S, NX = g.NX, NY = g.NY, block = g.block, cost = g.cost, from = g.from;
+  function cell(p) { var i = Math.floor((p[0] - g.gx0) * S), j = Math.floor((p[1] - g.gy0) * S); return i < 0 || j < 0 || i >= NX || j >= NY ? -1 : j * NX + i; }
+  var s0 = cell(a), s1 = cell(b); if (s0 < 0 || s1 < 0 || block[s0] || block[s1]) return null;
+  cost.fill(1e9); from.fill(-1);
+  var hx = s1 % NX, hy = (s1 - hx) / NX, DX = [1, -1, 0, 0], DY = [0, 0, 1, -1], heap = [], hk = [];
+  function h(c) { var x = c % NX; return Math.abs(x - hx) + Math.abs((c - x) / NX - hy); }
+  function push(k, st) { heap.push(st); hk.push(k); var i = heap.length - 1; while (i > 0) { var p = (i - 1) >> 1; if (hk[p] <= hk[i]) break; var t = heap[p]; heap[p] = heap[i]; heap[i] = t; t = hk[p]; hk[p] = hk[i]; hk[i] = t; i = p; } }
+  function pop() { var top = heap[0], lst = heap.pop(), lk = hk.pop(); if (heap.length) { heap[0] = lst; hk[0] = lk; var i = 0, n = heap.length; for (;;) { var l = i * 2 + 1, r = l + 1, m = i; if (l < n && hk[l] < hk[m]) m = l; if (r < n && hk[r] < hk[m]) m = r; if (m === i) break; var t = heap[m]; heap[m] = heap[i]; heap[i] = t; t = hk[m]; hk[m] = hk[i]; hk[i] = t; i = m; } } return top; }
+  for (var d = 0; d < 4; d++) { cost[s0 * 4 + d] = 0; push(h(s0), s0 * 4 + d); }
+  var done = -1, it = 0;
+  while (heap.length && it++ < 60000) { var cur = pop(), c = cur >> 2, hd = cur & 3; if (c === s1) { done = cur; break; }
+    var cx = c % NX, cy = (c - cx) / NX;
+    for (var nd = 0; nd < 4; nd++) { var nx = cx + DX[nd], ny = cy + DY[nd]; if (nx < 0 || ny < 0 || nx >= NX || ny >= NY) continue; var nc = ny * NX + nx; if (block[nc]) continue;
+      var st = nc * 4 + nd, ncost = cost[cur] + 1 + (nd !== hd ? 1.5 : 0); if (ncost < cost[st]) { cost[st] = ncost; from[st] = cur; push(ncost + h(nc), st); } } }
+  if (done < 0) return null;
+  var cells = []; for (var q = done; q >= 0; q = from[q]) cells.push(q >> 2); cells.reverse();
+  var pts = [a]; for (var r = 1; r < cells.length - 1; r++) { var p0 = cells[r - 1], p1 = cells[r], p2 = cells[r + 1]; if ((p1 - p0) !== (p2 - p1)) { var x2 = p1 % NX, y2 = (p1 - x2) / NX; pts.push([g.gx0 + (x2 + 0.5) / S, g.gy0 + (y2 + 0.5) / S]); } }
+  pts.push(b); return pts;
+}
+function walkDoor(o) { var d = o.half + 0.3; return Math.random() < 0.5 ? [o.x + d, o.y + (Math.random() - 0.5) * o.half] : [o.x + (Math.random() - 0.5) * o.half, o.y + d]; } /* a camera-facing side, so coming out / going in is seen */
+function walkEdge(v) { var side = Math.floor(Math.random() * 4), m = 30, px = side === 0 ? v.L - m : side === 1 ? v.L + v.W + m : v.L + Math.random() * v.W, py = side === 2 ? v.T - m : side === 3 ? v.T + v.H + m : v.T + 90 + Math.random() * (v.H - 90); return v.toT(px, py); }
+function walkSpawn(v, objs, pre) { var g = mapWalk.grid;
+  var ents = objs.filter(function (o) { return o.enter && walkOnScreen(v, o.x, o.y, -10); }), cities = ents.filter(function (o) { return o.kind === "city"; });
+  function pk() { return cities.length && Math.random() < 0.35 ? cities[Math.floor(Math.random() * cities.length)] : ents[Math.floor(Math.random() * ents.length)]; }
+  for (var tries = 0; tries < 6; tries++) {
+    var fromO = ents.length && Math.random() < 0.45 ? pk() : null, toO = ents.length && Math.random() < 0.55 ? pk() : null;
+    if (fromO && fromO === toO) continue; if (!fromO && !toO && Math.random() < 0.6) continue;
+    var a = fromO ? walkDoor(fromO) : walkEdge(v), b = toO ? walkDoor(toO) : walkEdge(v); if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 2.5) continue;
+    var pts = walkRoute(g, a, b); if (!pts) continue;
+    var oi = Math.floor(Math.random() * WALK_OUTFITS.length), w = { id: mapWalk.nextId++, oi: oi, o: WALK_OUTFITS[oi], sk: WALK_SKINS[Math.floor(Math.random() * WALK_SKINS.length)], hair: WALK_HAIRS[Math.floor(Math.random() * WALK_HAIRS.length)],
+      pts: pts, leg: 0, k: 0, toO: toO, sp: 0.45 + Math.random() * 0.15, ph: Math.random() * 6, s: fromO ? 0 : 1, mv: true, state: "walk", age: 0 };
+    w.x = pts[0][0]; w.y = pts[0][1]; w.ang = Math.atan2(pts[1][1] - pts[0][1], pts[1][0] - pts[0][0]);
+    if (pre) { w.k = Math.random() * 0.9 * Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]); w.s = 1; }
+    mapWalk.list.push(w); return true;
+  }
+  return false;
+}
+function walkHidden(w, objs) { /* the 3D layer sits above the map art, so a soldier walking behind a base is not drawn while he's there */
+  var p = tileCenterPx({ x: w.x, y: w.y }), u = tilePxZ() + gapPxZ();
+  for (var i = 0; i < objs.length; i++) { var o = objs[i]; if (o === w.toO && w.state === "enter") continue; if ((w.x - o.x) + (w.y - o.y) >= 0) continue;
+    var c = tileCenterPx({ x: o.x, y: o.y }); if (Math.abs(p.x - c.x) < o.hw * u && p.y > c.y - o.h * u && p.y < c.y + 0.5 * u) return true; }
+  return false;
+}
+/* called once per map frame (updateMarchMarkers): moves the soldiers, starts new trips, returns the ones to draw */
+function mapWalkersFrame() {
+  var now = performance.now(), dt = mapWalk.last ? Math.min(0.1, (now - mapWalk.last) / 1000) : 0.016; mapWalk.last = now;
+  var ok = mapWalkOn && mapIso && march3dOn && mapZoom >= MAP_WALK_MIN_ZOOM - 1e-6 && mapLod() <= 1 && !document.hidden;
+  if (!ok) { if (mapWalk.list.length) mapWalk.list = []; mapWalk.zoomOk = false; return mapWalk.list; }
+  var v = walkView(); if (!v) return mapWalk.list;
+  var vk = v.x0 + "," + v.y0 + "," + v.x1 + "," + v.y1;
+  if (!mapWalk.objs || mapWalk.vk !== vk || now - (mapWalk.scanAt || 0) > 3000) { mapWalk.objs = walkScan(v.x0 - 3, v.y0 - 3, v.x1 + 3, v.y1 + 3); mapWalk.grid = walkGrid(v, mapWalk.objs); mapWalk.vk = vk; mapWalk.scanAt = now; }
+  var objs = mapWalk.objs;
+  if (!mapWalk.zoomOk) { mapWalk.zoomOk = true; for (var p = 0; p < 5; p++) walkSpawn(v, objs, true); } /* arriving on the map / zooming in: a few already on their way */
+  mapWalk.spawnT -= dt; if (mapWalk.spawnT <= 0) { if (mapWalk.list.length < MAP_WALK_MAX) walkSpawn(v, objs, false); mapWalk.spawnT = 0.8 + Math.random(); }
+  var L = mapWalk.list;
+  for (var i = L.length - 1; i >= 0; i--) { var w = L[i]; w.age += dt;
+    if (w.state === "walk" && w.s < 1) w.s = Math.min(1, w.s + dt * 2.5);
+    var a = w.pts[w.leg], b = w.pts[Math.min(w.leg + 1, w.pts.length - 1)], len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6; w.k += w.sp * dt;
+    if (w.k >= len) { if (w.leg < w.pts.length - 2) { w.leg++; w.k -= len; } else { w.k = len; if (w.toO && w.state !== "enter") { w.state = "enter"; var o = w.toO; w.pts.push([w.x + (o.x - w.x) * 0.4, w.y + (o.y - w.y) * 0.4]); w.leg++; w.k = 0; } } }
+    a = w.pts[w.leg]; b = w.pts[Math.min(w.leg + 1, w.pts.length - 1)]; len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6; var f = Math.min(1, w.k / len);
+    w.x = a[0] + (b[0] - a[0]) * f; w.y = a[1] + (b[1] - a[1]) * f;
+    if (len > 1e-5) { var want = Math.atan2(b[1] - a[1], b[0] - a[0]); w.ang += Math.atan2(Math.sin(want - w.ang), Math.cos(want - w.ang)) * Math.min(1, dt * 10); }
+    w.ph += dt * 9;
+    if (w.state === "enter") { w.s -= dt * 2.2; if (w.s <= 0) { L.splice(i, 1); continue; } } /* went in: gone */
+    if ((!w.toO && w.leg >= w.pts.length - 2 && !walkOnScreen(v, w.x, w.y, 40)) || w.age > 90) { L.splice(i, 1); continue; } /* walked off screen: gone */
+    w.hidden = walkHidden(w, objs) || !walkOnScreen(v, w.x, w.y, 40);
+  }
+  return L;
+}
+/* drawn inside marchGLDraw, after the ships (same canvas, depth and camera) */
+function mapWalkersDraw(gl, G, walkers, u, zRef) {
+  if (!walkers.length || !walkGLInit(gl)) return;
+  var L = mapWalk.loc, t0 = performance.now(), t = t0 / 1000, PHs = 0.17 * tilePxZ() / (ISO_C * u), lod = 0.17 * tilePxZ() < 9 ? 1 : 0;
+  gl.useProgram(mapWalk.prog);
+  gl.uniform2f(L.uRes, G.w, G.h); gl.uniform1f(L.uU, u); gl.uniform1f(L.uDO, PHs * 0.05);
+  [L.aN, L.aC, L.aJ].forEach(function (a) { if (a >= 0) gl.enableVertexAttribArray(a); }); gl.enableVertexAttribArray(L.aP);
+  function bindMesh(m) { gl.bindBuffer(gl.ARRAY_BUFFER, m.bP); gl.vertexAttribPointer(L.aP, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, m.bN); gl.vertexAttribPointer(L.aN, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, m.bC); gl.vertexAttribPointer(L.aC, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, m.bJ); gl.vertexAttribPointer(L.aJ, 1, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.bI); }
+  /* shadows first: soft discs on the ground, blended, no depth writes */
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.uniform1f(L.uShadow, 1); gl.uniform1f(L.uOL, 0);
+  var sh = mapWalk.shadow; gl.bindBuffer(gl.ARRAY_BUFFER, sh.b); gl.vertexAttribPointer(L.aP, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, sh.z); gl.vertexAttribPointer(L.aN, 3, gl.FLOAT, false, 0, 0); gl.vertexAttribPointer(L.aC, 3, gl.FLOAT, false, 0, 0); gl.bindBuffer(gl.ARRAY_BUFFER, sh.j); gl.vertexAttribPointer(L.aJ, 1, gl.FLOAT, false, 0, 0);
+  walkers.forEach(function (w) { if (w.hidden || w.s < 0.02) return; var c = tileCenterPx({ x: w.x, y: w.y }); gl.uniform2f(L.uOrg, c.x - G.ox, c.y - G.oy); gl.uniform1f(L.uS, PHs * w.s); gl.uniform1f(L.uZ0, (w.x + w.y - zRef) * 0.70711 * 0.81915); gl.drawArrays(gl.TRIANGLES, 0, sh.n); });
+  gl.depthMask(true); gl.disable(gl.BLEND); gl.uniform1f(L.uShadow, 0);
+  var olPx = Math.max(0.3, Math.min(0.8, tilePxZ() * 0.0075)), drawn = 0;
+  walkers.forEach(function (w) { if (w.hidden || w.s < 0.02) return; var m = mapWalk.meshes[w.oi][lod]; w.mesh = m; walkBones(w, t, mapWalk.bones);
+    gl.uniform4fv(L.uB, mapWalk.bones); var c = tileCenterPx({ x: w.x, y: w.y }); gl.uniform2f(L.uOrg, c.x - G.ox, c.y - G.oy); gl.uniform1f(L.uS, PHs * w.s); gl.uniform1f(L.uZ0, (w.x + w.y - zRef) * 0.70711 * 0.81915);
+    gl.uniform3fv(L.uSkin, w.sk); gl.uniform3fv(L.uHair, w.hair); bindMesh(m);
+    gl.uniform1f(L.uOL, olPx); gl.drawElements(gl.TRIANGLES, m.n, gl.UNSIGNED_SHORT, 0); gl.uniform1f(L.uOL, 0); gl.drawElements(gl.TRIANGLES, m.n, gl.UNSIGNED_SHORT, 0); drawn++; });
+  [L.aN, L.aC, L.aJ].forEach(function (a) { if (a >= 0) gl.disableVertexAttribArray(a); });
+  gl.useProgram(G.prog); G.bound = null;
+  var P = mapWalk.perf; P.n++; P.ms += performance.now() - t0; P.drawn = drawn;
+}
+
 function updateMarchMarkers(manual) {
   var layer = document.getElementById("mapMarchLayer");
   /* v1320 audit: this ran its whole body every frame even with NOTHING on the sea (own + foreign + stress all empty) - measured ~16% of a
@@ -23117,7 +23388,9 @@ function updateMarchMarkers(manual) {
   var anyShips = game.state.marches.length > 0 || stressMarches.length > 0;
   if (!anyShips) { var _t0 = vnow(); for (var _wk in worldMarches) { var _wr = worldMarches[_wk]; if (_wr && _wr.ownerId !== PLAYER_ID && _t0 < _wr.returnAt) { anyShips = true; break; } } }
   var fortGuns = []; try { if (march3dOn && mapIso && layer && deviceIsActive && marchGLInit()) fortGuns = fortGunsList(tilePxZ() + gapPxZ()); } catch (e) {} /* v1890 */
-  if (!anyShips && !fortGuns.length && !marchAnim.hadAny && !marchAnim.hadGuns) { if (manual !== true) marchAnim.rafId = requestAnimationFrame(updateMarchMarkers); return; }
+  var walk3d = []; try { if (mapWalkOn && march3dOn && mapIso && layer && deviceIsActive && marchGLInit()) walk3d = mapWalkersFrame(); } catch (e) { console.warn("map walkers:", e && e.message); } /* v1902 */
+  if (!anyShips && !fortGuns.length && !walk3d.length && !marchAnim.hadAny && !marchAnim.hadGuns && !marchAnim.hadWalk) { if (manual !== true) marchAnim.rafId = requestAnimationFrame(updateMarchMarkers); return; }
+  marchAnim.hadWalk = walk3d.length > 0;
   marchAnim.hadGuns = fortGuns.length > 0; /* one more pass after the guns leave the screen, so the layer is cleared */
   marchAnim.hadAny = anyShips;
   if (layer && deviceIsActive) {
@@ -23204,7 +23477,7 @@ function updateMarchMarkers(manual) {
         }
       });
     }
-    if (marchGL.ok !== null && marchGL.ok) marchGLDraw((use3d ? ships3d : []).concat(fortGuns), tilePxZ() + gapPxZ());
+    if (marchGL.ok !== null && marchGL.ok) marchGLDraw((use3d ? ships3d : []).concat(fortGuns), tilePxZ() + gapPxZ(), use3d ? walk3d : []);
     // Drop markers for marches that resolved/returned since the last frame —
     // same seen-map-diff idea as idleAnim's enemyById, just far fewer entries.
     Object.keys(marchMarkerEls).forEach(function (id) {
@@ -34691,6 +34964,8 @@ function syncIsoSliders() {
 syncIsoSliders();
 function renderMarch3dBtn() { var b = document.getElementById("devMarch3dBtn"); if (!b) return; b.textContent = "🚢 3D march ships: " + (march3dOn ? (mapIso ? "On" : "On (needs Isometric map)") : "Off"); b.className = "dev-btn" + (march3dOn ? " active" : ""); }
 document.getElementById("devMarch3dBtn").onclick = function () { march3dOn = !march3dOn; try { localStorage.setItem(MARCH3D_KEY, march3dOn ? "1" : "0"); } catch (e) {} assetSyncUpload(MARCH3D_KEY, march3dOn ? "1" : "0"); renderMarch3dBtn(); };
+function renderWalkBtn() { var b = document.getElementById("devWalkBtn"); if (!b) return; b.textContent = "🚶 Map troops: " + (mapWalkOn ? "On" : "Off"); b.className = "dev-btn" + (mapWalkOn ? " active" : ""); }
+try { renderWalkBtn(); document.getElementById("devWalkBtn").onclick = function () { setMapWalkOn(!mapWalkOn); renderWalkBtn(); }; } catch (e) {} /* v1902 */
 (function () { var el = document.getElementById("devMeleeReach"), lb = document.getElementById("devMeleeReachVal"); el.value = meleeReachExtra; lb.textContent = "+" + meleeReachExtra + "px"; el.addEventListener("input", function () { meleeReachExtra = parseFloat(this.value); lb.textContent = "+" + meleeReachExtra + "px"; try { localStorage.setItem(MELEE_REACH_KEY, String(meleeReachExtra)); } catch (e) {} assetSyncUpload(MELEE_REACH_KEY, String(meleeReachExtra)); }); })();
 (function () { var el = document.getElementById("devMarch3dBob"), lb = document.getElementById("devMarch3dBobVal"); el.value = march3dBob; lb.textContent = march3dBob + "%"; el.addEventListener("input", function () { march3dBob = parseFloat(this.value); lb.textContent = march3dBob + "%"; try { localStorage.setItem(MARCH3D_BOB_KEY, String(march3dBob)); } catch (e) {} assetSyncUpload(MARCH3D_BOB_KEY, String(march3dBob)); }); })();
 (function () { var el = document.getElementById("devMarch3dSize"), lb = document.getElementById("devMarch3dSizeVal"); el.value = march3dSize; lb.textContent = march3dSize + " tiles"; el.addEventListener("input", function () { march3dSize = parseFloat(this.value); lb.textContent = march3dSize + " tiles"; try { localStorage.setItem(MARCH3D_SIZE_KEY, String(march3dSize)); } catch (e) {} assetSyncUpload(MARCH3D_SIZE_KEY, String(march3dSize)); }); })();
