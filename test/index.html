@@ -15058,7 +15058,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1895"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1896"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -38611,6 +38611,25 @@ var uiSkinKey = "", uiSkinEls = [];
 })();
 /* positions are written as CSS rules (by a stable path selector), not inline styles: the skill bar and power slots are rebuilt every so often, and a
    rebuilt element picks up its rule straight away instead of jumping back for a moment */
+/* v1896 (Harley's Classic restyle - ChatGPT mockup v3 "same round corner on every element", then "take over for chatgpt and do the buttons yourself"):
+   Classic's Conquest drops the Blue frame art and is drawn in code - plain rounded royal-blue panels (placed around the game's own parts, so they fit any
+   phone), blue buttons (AUTO / Forge / Stats), blue skill circles, darker inset slots, white outlined text, and ONE corner size (10 px) everywhere.
+   The bottom nav keeps its own look (v1895). Blue is untouched (every rule needs body.skin-classic). The Arena still uses the Blue frame for now. */
+(function uiClassicCss() { var st = document.createElement("style"); st.id = "uiClassicCss"; st.textContent = "html body.skin-classic.ui-blue[data-screen=\"conquest\"] #uiSkinTopImg, html body.skin-classic.ui-blue[data-screen=\"conquest\"] #uiSkinBotImg, html body.skin-classic.ui-blue[data-screen=\"conquest\"] .ui-skin-strip { display:none !important; }\nbody.skin-classic.ui-blue[data-screen=\"conquest\"] { background:linear-gradient(180deg,#1d4fae 0%,#163f93 100%) !important; }\n.clp { position:absolute; box-sizing:border-box; border-radius:10px; background:linear-gradient(180deg,#3a7cf0 0%,#2a64d8 45%,#2153c2 100%); border:3px solid #0e2c78; box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.18), 0 3px 0 rgba(6,20,60,.55); }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] #avatarWrap:not(#z):not(#y) { background:#0f2a6e !important; border:3px solid #6fb2ff !important; border-radius:10px !important; box-sizing:border-box; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] #topbar .res:not(#z):not(#y), html body.skin-classic.ui-blue[data-screen=\"conquest\"] #topbar [class*=\"res-\"]:not(#resBtn):not(#z):not(#y) { background:#0f2a6e !important; border-radius:10px !important; border:2px solid #0b2160 !important; box-shadow:inset 0 2px 3px rgba(0,0,0,.35) !important; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] :is(.skill-auto-btn, #idleForgeBtn, #idleStatsBtn):not(#z):not(#y) { background:linear-gradient(180deg,#63b6ff 0%,#3a8ff0 50%,#2a72de 100%) !important; border:3px solid #0d3c8f !important; border-radius:10px !important; box-shadow:inset 0 2px 0 rgba(255,255,255,.55), inset 0 -3px 0 rgba(0,0,0,.18), 0 3px 0 rgba(6,20,60,.6) !important; box-sizing:border-box; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] :is(.skill-auto-btn, #idleForgeBtn, #idleForgeBtn *, #idleStatsBtn):not(#z):not(#y) { color:#fff !important; -webkit-text-stroke:3px #0b2a66 !important; paint-order:stroke fill !important; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] .fort-pick:not(#z):not(#z):not(#y) { border-radius:10px !important; border:3px solid #0d3c8f !important; background:#163e8c !important; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] .skill-slot .skill-icon-wrap:not(#z):not(#y) { border-radius:50% !important; background:#173f98 !important; border:3px solid #0d3c8f !important; box-shadow:0 0 0 2px #5aa6ff, 0 3px 0 rgba(6,20,60,.55) !important; box-sizing:border-box; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] :is(.ig-cell, .lg-cell, .power-slot):not(#z):not(#y) { background:#1b4199 !important; border:2px solid #10307e !important; border-radius:10px !important; box-shadow:inset 0 3px 4px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.18) !important; box-sizing:border-box; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] :is(.idle-header, .idle-header *, #powerBadge, #powerBadge *, #topbar .res, #topbar .res *, .skill-slot .skill-hero-tag, .skill-slot .cd-text):not(#z):not(#y) { color:#fff !important; -webkit-text-stroke:2.5px #0b2a66 !important; paint-order:stroke fill !important; }\nhtml body.skin-classic.ui-blue[data-screen=\"conquest\"] :is(.idle-header img, #topbar img):not(#z):not(#y) { -webkit-text-stroke:0 !important; }"; document.head.appendChild(st); })();
+function uiClassicPanels(on) {
+  var L = document.getElementById("uiSkinLayer"); if (!L) return; [].slice.call(L.querySelectorAll(".clp")).forEach(function (e) { e.remove(); }); if (!on) return;
+  function box(sel) { var els = [].slice.call(document.querySelectorAll(sel)).filter(function (e) { return e.offsetParent; }); if (!els.length) return null; var l = 1e9, t = 1e9, r = -1e9, b = -1e9;
+    els.forEach(function (e) { var q = e.getBoundingClientRect(); l = Math.min(l, q.left); t = Math.min(t, q.top); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }); return { l: l, t: t, r: r, b: b }; }
+  var cvE = document.getElementById("idleCanvas"), navE = document.getElementById("bottomNav"); if (!cvE || !navE) return;
+  var W = window.innerWidth, M = 5, tb = box("#topbar"), hd = box(".idle-header > *"), cv = cvE.getBoundingClientRect(), nav = navE.getBoundingClientRect();
+  var sk = box(".skill-auto-btn, .idle-skillbar > .skill-slot"), it = box(".ig-cell, .lg-cell"), fg = box(".power-slot, #idleForgeBtn, #idleStatsBtn, .fort-pick");
+  function panel(t, b) { if (!(b > t)) return; var d = document.createElement("div"); d.className = "clp"; d.style.cssText = "left:" + M + "px;width:" + (W - 2 * M) + "px;top:" + t + "px;height:" + (b - t) + "px"; L.appendChild(d); }
+  if (tb) panel(4, tb.b - 4);
+  if (hd) panel(hd.t - 8, Math.min(hd.b + 8, cv.top - 2));
+  if (sk) panel(Math.max(sk.t - 7, cv.bottom + 4), sk.b + 3);
+  if (sk && it) panel(sk.b + 7, it.b + 7);
+  if (it && fg) panel(it.b + 11, Math.min(fg.b + 9, nav.top - 6));
+}
 var uiSkinSheet = (function () { var st = document.createElement("style"); st.id = "uiSkinPos"; document.head.appendChild(st); return st; })();
 function uiSkinSel(el) { var parts = []; while (el && el !== document.body) { if (el.id) { parts.unshift("#" + el.id); break; } var i = [].indexOf.call(el.parentNode.children, el) + 1; parts.unshift(el.tagName.toLowerCase() + ":nth-child(" + i + ")"); el = el.parentNode; } return parts.join(" > "); }
 function uiSkinClear() { uiSkinSheet.textContent = ""; }
@@ -38663,7 +38682,7 @@ function uiSkinApply() {
   if (document.body.classList.contains("ui-blue-nav") && !document.body.classList.contains("ui-blue")) { try { uiNavApply(); } catch (e) {} } else uiNavKey = "";
   var on = uiSkinActive();
   document.body.classList.toggle("ui-blue", uiFramed() && on);
-  if (!on) { if (uiSkinSheet.textContent) uiSkinClear(); uiSkinKey = ""; return; }
+  if (!on) { if (uiSkinSheet.textContent) uiSkinClear(); uiSkinKey = ""; try { uiClassicPanels(false); } catch (e) {} return; }
   var R = uiSkinRoot() || document, AR = uiSkinArena(); /* v1761: only the shown screen's parts (Conquest's stay in the page, hidden, while the Arena shows) */
   var q = function (s) { return /bottomNav/.test(s) ? document.querySelector(s) : R.querySelector(s); }, qa = function (s) { return [].slice.call(/bottomNav/.test(s) ? document.querySelectorAll(s) : R.querySelectorAll(s)); };
   if (AR) arenaBlueParts();
@@ -38709,6 +38728,7 @@ function uiSkinApply() {
   fit(q(".idle-forge-btn"), 160, 236, 110, 74, Y0); fit(q(".idle-stats-btn"), 280, 295.5, 50, 28, Y0); /* v1271: y 299 -> 295.5 */ fit(q(".fort-pick"), 340.3, 298.3, 77, 21, Y0, null, true); /* v1288 (Harley: not lined up): stretched to the inside of its frame (outline at x 338.7-418, y 297.1-319.9, measured) */
   var css = uiJobsCss(jobs, 'body.ui-blue:is([data-screen="conquest"],[data-screen="more"]) ');
   if (uiSkinSheet.textContent !== css) uiSkinSheet.textContent = css;
+  try { uiClassicPanels(uiSkin() === "classic" && !AR); } catch (e) {} /* v1896 */
   uiSkinKey = key;
 }
 function uiJobsCss(jobs, prefix) { /* placement rules for a list of fit jobs (v1284: shared by the Conquest layout and the top bar on every screen) */

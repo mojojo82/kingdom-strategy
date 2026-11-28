@@ -6953,3 +6953,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 
 ## v1895 - Classic nav bar redone closer to the concept (TEST)
 - Harley: "Why is the design very different". v1894 had a warm cream bar and a floating rounded gold button. Now, matched to the concept: cool light-grey bar with a dark top line, light top edge and a darker strip at the very bottom; darker dividers and small bevelled corners at the top of each section; the gold tab runs from just above the bar to the bottom of the screen, 1.5x wider, cut (octagon) corners, dark brown outline + orange band + light yellow inner rim; bigger icons (44 px, chosen 50 px) and a bigger outlined label. Headless check side by side with the concept; no page errors.
+
+## v1896 - Classic Conquest drawn in code from the ChatGPT mockup (TEST)
+- Harley: rounded corners on the blue mockup, all the same size (ChatGPT v3), then "take over for chatgpt and do the buttons yourself on the mockup".
+- Classic's Conquest no longer shows the Blue frame art: plain rounded royal-blue panels (top bar, stage header, skill bar, item grid, forge area - placed around the game's own parts by uiClassicPanels, so they fit any phone), bright blue AUTO / Forge / Stats buttons, blue skill circles, darker inset slots, dark inset resource boxes, white outlined text, ONE 10 px corner everywhere. CSS in uiClassicCss (every rule needs body.skin-classic on Conquest). Bottom nav unchanged (v1895); the Arena still uses the Blue frame.
+- Tests (headless 430x932): Classic Conquest matches the mockup layout; Blue Conquest unchanged vs v1893 (only running numbers differ); no page errors. Mockups + prompts: art/originals/ui/classic_restyle, dev/ui/PROMPTS.md.
