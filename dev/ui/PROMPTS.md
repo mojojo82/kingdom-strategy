@@ -11,3 +11,11 @@ Keep the same layout and every element in roughly the same place: the top bar (a
 
 Use image 1's look: bright royal blue panels with simple rounded shapes, chunky white text with dark outlines, gold/yellow accents, light grey/cream bars, soft shading. Keep it simple and clean: no intricate sci-fi frames, circuit lines, glowing neon edges or ornate borders like the current blue UI in image 2. Big tap targets, clear spacing, easy to read on a phone. Keep the icons from image 2. No extra text or labels outside the UI.
 Result: art/originals/ui/classic_restyle/gpt_conquest_mockup_v1.png (851x1847; ChatGPT chat "Redesign Game UI Mockup")
+
+## 28 Nov 2026 - Classic restyle, Conquest mockup v2 (more grey) - same chat, follow-up
+Harley: "show me an alternate version of this that keeps some of those blue buttons but has more grey introduced (like the bottom nav bar)"
+
+Prompt:
+Make an alternate version of this mockup. Keep the same layout, the same battle scene (exactly as it is) and the same icons. Introduce much more light grey, like the bottom navigation bar: the top bar, the stage header panel, the skill bar panel and the item/forge panel become light grey / off-white panels with soft shading and thin darker grey borders (the same grey and the same look as the bottom nav bar). Keep some of the bright blue as accent buttons only: the AUTO button, the hero skill circles, the Forge button, the Stats button and the speed toggle stay bright royal blue, and the empty item slots become slightly darker grey insets. Text on the grey panels: dark grey/navy with no outline, numbers and titles chunky; text on blue buttons stays white with dark outlines. Keep the gold raised tab in the bottom bar. Simple and clean, no intricate frames.
+
+Result: art/originals/ui/classic_restyle/gpt_conquest_mockup_v2_grey.png (851x1847)
