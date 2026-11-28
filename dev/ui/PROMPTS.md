@@ -19,3 +19,11 @@ Prompt:
 Make an alternate version of this mockup. Keep the same layout, the same battle scene (exactly as it is) and the same icons. Introduce much more light grey, like the bottom navigation bar: the top bar, the stage header panel, the skill bar panel and the item/forge panel become light grey / off-white panels with soft shading and thin darker grey borders (the same grey and the same look as the bottom nav bar). Keep some of the bright blue as accent buttons only: the AUTO button, the hero skill circles, the Forge button, the Stats button and the speed toggle stay bright royal blue, and the empty item slots become slightly darker grey insets. Text on the grey panels: dark grey/navy with no outline, numbers and titles chunky; text on blue buttons stays white with dark outlines. Keep the gold raised tab in the bottom bar. Simple and clean, no intricate frames.
 
 Result: art/originals/ui/classic_restyle/gpt_conquest_mockup_v2_grey.png (851x1847)
+
+## 28 Nov 2026 - Classic restyle, Conquest mockup v3 (blue, all round corners) - same chat, follow-up
+Harley: "on the blue one for the corner radius instead of making it a sharp angle or 45, make those corners all have a round radius (Except for anything on the bottom nav bar) also, make the radii the same on all elements, not changing size"
+
+Prompt:
+Go back to the FIRST mockup (the blue version, not the grey one) and make one change: every corner on every panel, button, slot and frame becomes a round radius corner - no sharp corners, no 45-degree cut/chamfered corners anywhere. Use exactly the same corner radius size on all elements (panels, top bar boxes, stage header, AUTO button, item slots, Forge button, Stats button, speed toggle) - the radius must not change size from element to element. The hero skill circles stay circles. Do NOT change the bottom navigation bar at all: keep it exactly as it is, including the gold tab with its cut corners. Everything else stays the same: layout, colours, battle scene, icons, text.
+
+Result: art/originals/ui/classic_restyle/gpt_conquest_mockup_v3_round.png (851x1847)
