@@ -6958,3 +6958,8 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 - Harley: rounded corners on the blue mockup, all the same size (ChatGPT v3), then "take over for chatgpt and do the buttons yourself on the mockup".
 - Classic's Conquest no longer shows the Blue frame art: plain rounded royal-blue panels (top bar, stage header, skill bar, item grid, forge area - placed around the game's own parts by uiClassicPanels, so they fit any phone), bright blue AUTO / Forge / Stats buttons, blue skill circles, darker inset slots, dark inset resource boxes, white outlined text, ONE 10 px corner everywhere. CSS in uiClassicCss (every rule needs body.skin-classic on Conquest). Bottom nav unchanged (v1895); the Arena still uses the Blue frame.
 - Tests (headless 430x932): Classic Conquest matches the mockup layout; Blue Conquest unchanged vs v1893 (only running numbers differ); no page errors. Mockups + prompts: art/originals/ui/classic_restyle, dev/ui/PROMPTS.md.
+
+## v1897 - Classic Conquest: the mockup's colours, thin crisp outlines (TEST)
+- Harley: "Use chatgpt colours and also the outline you did is too thick" + "Crisp edges" (reference: blue menu buttons with a thin dark edge).
+- Colours sampled from ChatGPT mockup v3: page #2250b4, panels #0a6dfc -> #0056df -> #0050d2, buttons #22b4ff -> #089bfd -> #0a7cf4 with a hard #84e7fc top rim, slots #0e3572, resource/avatar boxes #052153, empty skill circles #09295e with a #2b75ce ring.
+- Outlines 3 px -> 1.5 px solid #021547 on every panel / button / slot / circle; text outline 2.5-3 px -> 2 px; every shadow is now hard (no blur), so the edges stay crisp. One 10 px corner everywhere as before.
