@@ -9,7 +9,7 @@ Mockup scripts (session scratchpad, not in the repo): walk.js (headless capture)
 - Medieval troops in the kingdom's navy + gold: knight (great helm, sword, shield), footmen (kettle / nasal helm, spear, shield), archers (hood, bow, quiver), spearman (gambeson), banner bearer (navy flag with gold cross), sergeant.
 - Mainly on land. Walk near cities ("the sentinels") but never on them or on nodes.
 - NO live lighting: shading baked into the vertex colours once. Keep them as light as possible.
-- Each one has a trip: comes out of a city / node (grows in at its front) or in from the screen edge; walks road-like legs along the tile axes; goes into a city / node (shrinks away, deleted) or off screen (deleted). Max ~9, one every 1-2 s.
+- Each one has a trip: always comes out of a city / node (grows in at its front; Harley v1903 - no screen-edge starts); walks road-like legs along the tile axes; goes into a city / node (shrinks away, deleted) or off screen (deleted). Max ~9, one every 1-2 s.
 - Not shown at all when zoomed out further than map zoom 1.2.
 - If two cities are close together, troops may walk through the gap between them (Harley, 29 Nov). So the "keep off" area is each base's real ground footprint (its platform / foundation, measured per skin) with a small margin - not the whole picture - and the route finder must be able to use narrow gaps (not just the two L-shaped routes the mockup tries).
 

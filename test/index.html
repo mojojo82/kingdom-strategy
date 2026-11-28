@@ -15058,7 +15058,7 @@ function setIdleSpawnIntervalSetting(v) {
 // until the player has seen the error and can decide what to do (re-import,
 // check the raw data via Save Data, etc.) instead of it being silently
 // clobbered a second later.
-var KS_BUILD = "v1902"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
+var KS_BUILD = "v1903"; /* v942: this game version. tools/stamp-version.js copies it into version.json next to the page; the game compares the two to offer an update. */
 var saveLoadFailed = false;
 var ksBootLocalSave = null; /* v1473: this device's save exactly as it was when the page opened (the 1 s autosave rewrites it before the cloud loads) */
 try {
@@ -23312,9 +23312,10 @@ function walkSpawn(v, objs, pre) { var g = mapWalk.grid;
   var ents = objs.filter(function (o) { return o.enter && walkOnScreen(v, o.x, o.y, -10); }), cities = ents.filter(function (o) { return o.kind === "city"; });
   function pk() { return cities.length && Math.random() < 0.35 ? cities[Math.floor(Math.random() * cities.length)] : ents[Math.floor(Math.random() * ents.length)]; }
   for (var tries = 0; tries < 6; tries++) {
-    var fromO = ents.length && Math.random() < 0.45 ? pk() : null, toO = ents.length && Math.random() < 0.55 ? pk() : null;
-    if (fromO && fromO === toO) continue; if (!fromO && !toO && Math.random() < 0.6) continue;
-    var a = fromO ? walkDoor(fromO) : walkEdge(v), b = toO ? walkDoor(toO) : walkEdge(v); if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 2.5) continue;
+    if (!ents.length) return false; /* v1903 (Harley): every soldier starts by walking out of a city or node */
+    var fromO = pk(), toO = Math.random() < 0.6 ? pk() : null;
+    if (fromO === toO) continue;
+    var a = walkDoor(fromO), b = toO ? walkDoor(toO) : walkEdge(v); if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 2.5) continue;
     var pts = walkRoute(g, a, b); if (!pts) continue;
     var oi = Math.floor(Math.random() * WALK_OUTFITS.length), w = { id: mapWalk.nextId++, oi: oi, o: WALK_OUTFITS[oi], sk: WALK_SKINS[Math.floor(Math.random() * WALK_SKINS.length)], hair: WALK_HAIRS[Math.floor(Math.random() * WALK_HAIRS.length)],
       pts: pts, leg: 0, k: 0, toO: toO, sp: 0.45 + Math.random() * 0.15, ph: Math.random() * 6, s: fromO ? 0 : 1, mv: true, state: "walk", age: 0 };
