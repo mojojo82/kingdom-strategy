@@ -6974,3 +6974,6 @@ Harley: "We need to undo it for now. Zero change at all." Baelgor back on his v1
 ## v1900 - Classic Conquest: calmer panel blue (TEST)
 - Harley: "is the blue too bright? ... people need to be able to look at the game for long amounts of hours" -> side-by-side -> "push that in so i can look".
 - Panels deeper and less saturated (#3563b6 -> #244c98 -> #21468e instead of the vivid #0a6dfc -> #0056df), background #1b3a7a, slots #0c2a5c, resource / avatar boxes #071b45, empty skill circles #0a2556 with a #3a6fb8 ring. Buttons (AUTO / Forge / Stats / speed toggle) stay bright so they stand out.
+
+## v1901 - Classic Conquest: text back to the Blue UI style (TEST)
+- Harley (phone screenshot): "Text shouldnt have a thick outline. It should be the same as the regular blue ui". Removed the outlines Classic had added (top bar, stage header, hero names, cooldowns, AUTO / Forge / Stats labels) - the text now uses Blue's own styling (gold numbers, no outline). Panels / buttons / colours unchanged.
